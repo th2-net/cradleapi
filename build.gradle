@@ -1,0 +1,58 @@
+ext {
+	version = file('version').text.trim()
+}
+
+buildscript {
+	repositories {
+		maven {
+			url "https://plugins.gradle.org/m2/"
+		}
+	}
+	dependencies {
+		classpath "org.jfrog.buildinfo:build-info-extractor-gradle:2.2.5"
+	}
+}
+
+subprojects {
+	repositories {
+		jcenter()
+	}
+	
+	apply plugin: 'java-library'
+	apply plugin: 'maven'
+	apply plugin: 'com.jfrog.artifactory'
+	apply plugin: 'maven-publish'
+	
+	defaultTasks 'build'
+	
+	sourceCompatibility = 1.8 //Java version compatibility to use when compiling Java source.
+	targetCompatibility = 1.8 //Java version to generate classes for.
+	compileJava.options.debugOptions.debugLevel = 'source,lines,vars' // Include debug information
+	
+	version	 = rootProject.ext.version
+	group	 = 'com.exactpro.cradle'
+	
+	jar {
+		manifest {
+			attributes('Created-By': System.getProperty('java.version') + ' (' + System.getProperty('java.vendor') + ')')
+			attributes('Specification-Title': '')
+			attributes('Specification-Vendor': 'Exactpro Systems LLC')
+			attributes('Implementation-Title': "${project.name}")
+			attributes('Implementation-Vendor': 'Exactpro Systems LLC')
+			attributes('Implementation-Vendor-Id': 'com.exactpro')
+			attributes('Implementation-Version': "${version}")
+			attributes('Implementation-Version-Date': getDate())
+		}
+	}
+	
+	task javadocJar(type: Jar) {
+		from javadoc
+		classifier = 'javadoc'
+	}
+}
+
+static def getDate() {
+	def date = new Date()
+	def formattedDate = date.format('yyyyMMdd-HH:mm:ss.SSS')
+	return formattedDate
+}

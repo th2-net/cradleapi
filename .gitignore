@@ -1,0 +1,15 @@
+/build
+/.gradle
+/.settings
+/cradle-cassandra/bin
+/cradle-cassandra/.settings
+/cradle-cassandra/.project
+/cradle-cassandra/.classpath
+/cradle-cassandra/build
+/cradle-core/.classpath
+/cradle-core/.project
+/cradle-core/.settings
+/cradle-core/bin
+/cradle-core/build
+/.classpath
+/.project

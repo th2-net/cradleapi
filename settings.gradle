@@ -1,0 +1,2 @@
+include 'cradle-core'
+include 'cradle-cassandra'
