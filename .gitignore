@@ -13,3 +13,6 @@
 /cradle-core/build
 /.classpath
 /.project
+
+# IntelliJ Idea
+.idea
