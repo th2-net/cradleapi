@@ -1,8 +1,12 @@
+ext {
+    driver_version = '4.2.0'
+}
+
 dependencies {
 	compile project(":cradle-core")
-	compile 'com.datastax.oss:java-driver-core:4.2.0'
-	compile 'com.datastax.oss:java-driver-query-builder:4.2.0'
-	compile 'commons-lang:commons-lang:2.6'
+	compile "com.datastax.oss:java-driver-core:${driver_version}"
+	compile "com.datastax.oss:java-driver-query-builder:${driver_version}"
+	compile 'org.apache.commons:commons-lang3:3.8.1'
 }
 
 jar {
