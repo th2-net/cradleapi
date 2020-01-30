@@ -12,7 +12,7 @@ package com.exactpro.cradle.cassandra;
 
 import java.util.UUID;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import com.exactpro.cradle.ReportNavigator;
 import com.exactpro.cradle.StoredReport;

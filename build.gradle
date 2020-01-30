@@ -1,5 +1,8 @@
 ext {
-	version = file('version').text.trim()
+    version = file('version').text.trim()
+
+    slf4j_version = '1.7.26'
+    jackson_version = '2.9.7'
 }
 
 buildscript {

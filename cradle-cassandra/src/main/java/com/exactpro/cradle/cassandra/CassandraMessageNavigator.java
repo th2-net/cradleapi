@@ -13,7 +13,7 @@ package com.exactpro.cradle.cassandra;
 import java.util.List;
 import java.util.UUID;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import com.exactpro.cradle.MessageNavigator;
 import com.exactpro.cradle.StoredMessage;

@@ -33,7 +33,7 @@ import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.CradleUtils;
 import com.exactpro.cradle.utils.JsonMarshaller;
 
-import org.apache.commons.lang.SerializationUtils;
+import org.apache.commons.lang3.SerializationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
