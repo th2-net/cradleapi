@@ -16,6 +16,8 @@ public class CassandraConnectionSettings
 	private String host;
 	private int port;
 	private String keyspace;
+	private String username,
+			password;
 
 	public CassandraConnectionSettings()
 	{
@@ -23,6 +25,8 @@ public class CassandraConnectionSettings
 		host = "";
 		port = -1;
 		keyspace = "";
+		username = "";
+		password = "";
 	}
 
 	public CassandraConnectionSettings(String localDataCenter, String host, int port, String keyspace)
@@ -41,6 +45,8 @@ public class CassandraConnectionSettings
 		this.host = settings.host;
 		this.port = settings.port;
 		this.keyspace = settings.keyspace;
+		this.username = settings.username;
+		this.password = settings.password;
 	}
 
 	
@@ -66,12 +72,12 @@ public class CassandraConnectionSettings
 	}
 	
 	
-	public Integer getPort()
+	public int getPort()
 	{
 		return port;
 	}
 	
-	public void setPort(Integer port)
+	public void setPort(int port)
 	{
 		this.port = port;
 	}
@@ -85,5 +91,27 @@ public class CassandraConnectionSettings
 	public void setKeyspace(String keyspace)
 	{
 		this.keyspace = keyspace;
+	}
+	
+	
+	public String getUsername()
+	{
+		return username;
+	}
+	
+	public void setUsername(String username)
+	{
+		this.username = username;
+	}
+	
+	
+	public String getPassword()
+	{
+		return password;
+	}
+	
+	public void setPassword(String password)
+	{
+		this.password = password;
 	}
 }
