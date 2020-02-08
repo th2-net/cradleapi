@@ -50,8 +50,9 @@ public abstract class CradleStorage
 	
 	/**
 	 * Disposes resources occupied by storage which means closing of opened connections, flushing all buffers, etc.
+	 * @throws CradleStorageException if there was error during storage disposal, which may mean issue with data flushing, unexpected connection break, etc.
 	 */
-	public abstract void dispose();
+	public abstract void dispose() throws CradleStorageException;
 	
 	/**
 	 * Writes data about given message to storage, providing ID to find this record in future

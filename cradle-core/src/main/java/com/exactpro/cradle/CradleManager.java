@@ -51,8 +51,9 @@ public abstract class CradleManager
 	
 	/**
 	 * Closes access to Cradle storage, closing all related connections, flushing buffers, etc.
+	 * @throws CradleStorageException if there was error during Cradle storage disposal, which may mean issue with data flushing, unexpected connection break, etc.
 	 */
-	public void dispose()
+	public void dispose() throws CradleStorageException
 	{
 		if (storage != null)
 			storage.dispose();
