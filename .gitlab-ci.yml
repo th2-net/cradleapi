@@ -1,8 +1,12 @@
-stages:
-  - external
+image: openjdk:8-slim
 
-dummy:
-  stage: external
-  script: echo 'dummy'
-  only:
-    - /$never^/
+stages:
+  - build
+
+variables:
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+
+build:
+  stage: build
+  script:
+    - ./gradlew clean build
