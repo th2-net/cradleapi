@@ -1,0 +1,36 @@
+apply plugin: 'java'
+apply plugin: 'application'
+
+dependencies {
+	compile project(":cradle-cassandra")
+}
+
+mainClassName = 'com.exactpro.cradle.feeder.CassandraFeeder'
+
+jar {
+	archivesBaseName = 'cradle-cassandra-feeder'
+	manifest {
+		attributes('Specification-Title': 'Cradle Cassandra Feeder')
+		attributes('Main-Class': 'com.exactpro.cradle.feeder.CassandraFeeder')
+		attributes("Class-Path": configurations.compile.collect { "lib/" + it.getName() }.join(' '))
+	}
+}
+
+task release(type: Zip, dependsOn: jar) {
+	archiveName = "cradle-cassandra-feeder_"+getDate('yyyyMMdd.HHmmss')+".zip"
+	from(configurations.compile) {
+		into "lib"
+	}
+	from ("${projectDir}/feeder.cfg")
+	from ("${projectDir}/log.properties")
+	from jar
+}
+
+assemble.dependsOn.add(release)
+
+
+static def getDate(String format) {
+	def date = new Date()
+	def formattedDate = date.format(format)
+	return formattedDate
+}

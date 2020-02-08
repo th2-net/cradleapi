@@ -1,2 +1,3 @@
 include 'cradle-core'
 include 'cradle-cassandra'
+include 'cradle-cassandra-feeder'

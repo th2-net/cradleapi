@@ -1,0 +1,3 @@
+{ "name": "FIXStream1", "streamData": "SocketConnectHost=localhost, SocketConnectPort=50066, SenderCompID=SourceFIX, TargetCompID=DestFIX, DataDictionary=cfg/dicts/FIX44.xml, BeginString=FIX.4.4, DefaultApplVerID=FIX.4.4, HeartBtInt=30, LogonTimeout=60, LogoutTimeout=60, MaxLatency=120, ReconnectInterval=3, RejectInvalidMessage=Y, ResetOnDisconnect=N, ResetOnLogout=N, ValidateFieldsHaveValues=N, ValidateFieldsOutOfOrder=N, ValidateUserDefinedFields=N, StartTime=00:00:00, EndTime=00:00:00" }
+
+{ "name": "MQStream1", "streamData": "hostname=xxx100, port=1414, queueManager=TestManager, channel=ChannelX, sendQueue=qlocal1, receiveQueue=qlocal2, readDelay=100, broker=IBM MQ" }
