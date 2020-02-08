@@ -16,3 +16,8 @@
 
 # IntelliJ Idea
 .idea
+/cradle-cassandra-feeder/logs
+/cradle-cassandra-feeder/bin
+/cradle-cassandra-feeder/build
+/cradle-cassandra-feeder/.classpath
+/cradle-cassandra-feeder/.project
