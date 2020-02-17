@@ -103,9 +103,13 @@ public class CassandraCradleStorage extends CradleStorage
 		batchFlusher.scheduleWithFixedDelay(new BatchIdleFlusher(BATCH_IDLE_LIMIT), BATCH_IDLE_LIMIT, BATCH_IDLE_LIMIT, TimeUnit.MILLISECONDS);
 		return getInstanceId(instanceName).toString();
 	}
-
+	
+	/**
+	 * Disposes resources occupied by storage which means closing of opened connections, flushing all buffers, etc.
+	 * @throws BatchStorageException if there was error while flushing message buffer. Exception contains all messages from the buffer.
+	 */
 	@Override
-	public void dispose() throws CradleStorageException
+	public void dispose() throws BatchStorageException
 	{
 		try
 		{

@@ -15,6 +15,9 @@ import java.util.List;
 import com.exactpro.cradle.StoredMessage;
 import com.exactpro.cradle.utils.CradleStorageException;
 
+/**
+ * Extended exception which holds messages whose storing failed
+ */
 public class BatchStorageException extends CradleStorageException
 {
 	private static final long serialVersionUID = -4452963436263568944L;
@@ -35,6 +38,9 @@ public class BatchStorageException extends CradleStorageException
 	}
 	
 	
+	/**
+	 * @return list of messages whose storing failed and caused this exception
+	 */
 	public List<StoredMessage> getMessages()
 	{
 		return messages;
