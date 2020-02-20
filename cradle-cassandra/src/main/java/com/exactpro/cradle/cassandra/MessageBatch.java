@@ -52,6 +52,14 @@ public class MessageBatch
 	{
 		return messages;
 	}
+	
+	public List<StoredMessage> getMessagesList()
+	{
+		List<StoredMessage> result = new ArrayList<>();
+		for (int i = 0; i < storedMessagesCount; i++)
+			result.add(messages[i]);
+		return result;
+	}
 
 	public void addMessage(StoredMessage msg)
 	{

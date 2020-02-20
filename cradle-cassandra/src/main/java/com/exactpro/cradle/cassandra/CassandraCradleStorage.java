@@ -29,6 +29,7 @@ import com.exactpro.cradle.StoredMessage;
 import com.exactpro.cradle.StoredMessageId;
 import com.exactpro.cradle.StoredReport;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
+import com.exactpro.cradle.cassandra.utils.BatchStorageException;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.CradleUtils;
 import com.exactpro.cradle.utils.JsonMarshaller;
@@ -102,9 +103,13 @@ public class CassandraCradleStorage extends CradleStorage
 		batchFlusher.scheduleWithFixedDelay(new BatchIdleFlusher(BATCH_IDLE_LIMIT), BATCH_IDLE_LIMIT, BATCH_IDLE_LIMIT, TimeUnit.MILLISECONDS);
 		return getInstanceId(instanceName).toString();
 	}
-
+	
+	/**
+	 * Disposes resources occupied by storage which means closing of opened connections, flushing all buffers, etc.
+	 * @throws BatchStorageException if there was error while flushing message buffer. Exception contains all messages from the buffer.
+	 */
 	@Override
-	public void dispose()
+	public void dispose() throws BatchStorageException
 	{
 		try
 		{
@@ -118,13 +123,27 @@ public class CassandraCradleStorage extends CradleStorage
 					logger.debug("Batch with ID {} has been saved in storage", batchId);
 				}
 			}
-			connection.stop();
 		}
 		catch (Exception e)
 		{
-			logger.error("Error while closing Cassandra connection", e);
+			synchronized (writingMonitor)
+			{
+				throw new BatchStorageException("Error while storing current messages batch", e, currentBatch.getMessagesList());
+			}
+		}
+		finally
+		{
+			try
+			{
+				connection.stop();
+			}
+			catch (Exception e)
+			{
+				logger.error("Error while closing Cassandra connection", e);
+			}
 		}
 	}
+
 
 	@Override
 	protected String queryStreamId(String streamName)
