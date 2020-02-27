@@ -150,6 +150,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		Select select = selectFrom(settings.getKeyspace(), STREAMS_TABLE_DEFAULT_NAME)
 				.column(ID)
+				.whereColumn(INSTANCE_ID).isEqualTo(literal(UUID.fromString(getInstanceId())))
 				.whereColumn(NAME).isEqualTo(literal(streamName))
 				.allowFiltering();
 		Row resultRow = connection.getSession().execute(select.asCql()).one();
@@ -165,6 +166,7 @@ public class CassandraCradleStorage extends CradleStorage
 		UUID id = UUID.randomUUID();
 		RegularInsert insert = insertInto(settings.getKeyspace(), STREAMS_TABLE_DEFAULT_NAME)
 				.value(ID, literal(id))
+				.value(INSTANCE_ID, literal(UUID.fromString(getInstanceId())))
 				.value(NAME, literal(stream.getName()))
 				.value(STREAM_DATA, literal(streamMarshaller.marshal(stream.getStreamData())));
 		executeQuery(insert.asCql());
@@ -178,7 +180,8 @@ public class CassandraCradleStorage extends CradleStorage
 		Update update = update(settings.getKeyspace(), STREAMS_TABLE_DEFAULT_NAME)
 				.setColumn(NAME, literal(newStream.getName()))
 				.setColumn(STREAM_DATA, literal(streamMarshaller.marshal(newStream.getStreamData())))
-				.whereColumn(ID).isEqualTo(literal(uuid));
+				.whereColumn(ID).isEqualTo(literal(uuid))
+				.whereColumn(INSTANCE_ID).isEqualTo(literal(UUID.fromString(getInstanceId())));
 		executeQuery(update.asCql());
 	}
 	
@@ -188,7 +191,8 @@ public class CassandraCradleStorage extends CradleStorage
 		UUID uuid = UUID.fromString(id);
 		Update update = update(settings.getKeyspace(), STREAMS_TABLE_DEFAULT_NAME)
 				.setColumn(NAME, literal(newName))
-				.whereColumn(ID).isEqualTo(literal(uuid));
+				.whereColumn(ID).isEqualTo(literal(uuid))
+				.whereColumn(INSTANCE_ID).isEqualTo(literal(UUID.fromString(getInstanceId())));
 		executeQuery(update.asCql());
 	}
 	
@@ -285,6 +289,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		RegularInsert insert = insertInto(settings.getKeyspace(), settings.getBatchDirMetadataTableName())
 				.value(BATCH_ID, literal(currentBatch.getBatchId()))
+				.value(INSTANCE_ID, literal(UUID.fromString(getInstanceId())))
 				.value(DIRECTION, literal(currentBatch.getMsgsDirections().getLabel()));
 
 		executeQuery(insert.asCql());
@@ -297,6 +302,7 @@ public class CassandraCradleStorage extends CradleStorage
 			UUID id = UUID.randomUUID();
 			RegularInsert insert = insertInto(settings.getKeyspace(), settings.getBatchStreamsMetadataTableName())
 					.value(ID, literal(id))
+					.value(INSTANCE_ID, literal(UUID.fromString(getInstanceId())))
 					.value(BATCH_ID, literal(currentBatch.getBatchId()))
 					.value(STREAM_ID, literal(UUID.fromString(queryStreamId(streamName))));
 
@@ -384,6 +390,7 @@ public class CassandraCradleStorage extends CradleStorage
 			UUID id = UUID.randomUUID();
 			RegularInsert insert = insertInto(settings.getKeyspace(), settings.getReportMsgsLinkTableName())
 					.value(ID, literal(id))
+					.value(INSTANCE_ID, literal(UUID.fromString(getInstanceId())))
 					.value(REPORT_ID, literal(UUID.fromString(reportId)))
 					.value(MESSAGES_IDS, literal(curMsgsIds));
 			executeQuery(insert.asCql());
@@ -398,6 +405,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		Select selectFrom = selectFrom(settings.getKeyspace(), settings.getReportMsgsLinkTableName())
 				.column(REPORT_ID)
+				.whereColumn(INSTANCE_ID).isEqualTo(literal(UUID.fromString(getInstanceId())))
 				.whereColumn(MESSAGES_IDS).contains(literal(messageId))
 				.allowFiltering();
 
@@ -417,6 +425,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		Select selectFrom = selectFrom(settings.getKeyspace(), settings.getReportMsgsLinkTableName())
 				.column(MESSAGES_IDS)
+				.whereColumn(INSTANCE_ID).isEqualTo(literal(UUID.fromString(getInstanceId())))
 				.whereColumn(REPORT_ID).isEqualTo(literal(UUID.fromString(reportId)))
 				.allowFiltering();
 
@@ -440,6 +449,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		Select selectFrom = selectFrom(settings.getKeyspace(), settings.getReportMsgsLinkTableName())
 				.column(MESSAGES_IDS)
+				.whereColumn(INSTANCE_ID).isEqualTo(literal(UUID.fromString(getInstanceId())))
 				.whereColumn(REPORT_ID).isEqualTo(literal(UUID.fromString(reportId)))
 				.limit(1)
 				.allowFiltering();
@@ -568,6 +578,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), STREAMS_TABLE_DEFAULT_NAME).ifNotExists()
 				.withPartitionKey(ID, DataTypes.UUID)
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
 				.withColumn(NAME, DataTypes.TEXT)
 				.withColumn(STREAM_DATA, DataTypes.TEXT);
 		
@@ -578,7 +589,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getMessagesTableName()).ifNotExists()
 				.withPartitionKey(ID, DataTypes.UUID)
-				.withColumn(INSTANCE_ID, DataTypes.UUID)
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
 				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
 				.withColumn(TIMESTAMP, DataTypes.TIMESTAMP)
 				.withColumn(BATCH_CONTENT, DataTypes.BLOB)
@@ -590,6 +601,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected void createBatchDirMetadataTable()
 	{
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getBatchDirMetadataTableName()).ifNotExists()
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
 				.withPartitionKey(BATCH_ID, DataTypes.UUID)
 				.withColumn(DIRECTION, DataTypes.TEXT);
 
@@ -601,6 +613,7 @@ public class CassandraCradleStorage extends CradleStorage
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(),
 				settings.getBatchStreamsMetadataTableName()).ifNotExists()
 				.withPartitionKey(ID, DataTypes.UUID)
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
 				.withColumn(BATCH_ID, DataTypes.UUID)
 				.withColumn(STREAM_ID, DataTypes.UUID);
 
@@ -611,7 +624,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getReportsTableName()).ifNotExists()
 				.withPartitionKey(ID, DataTypes.UUID)
-				.withColumn(INSTANCE_ID, DataTypes.UUID)
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
 				.withColumn(TIMESTAMP, DataTypes.TIMESTAMP)
 				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
 				.withColumn(REPORT_PATH, DataTypes.TEXT)
@@ -626,6 +639,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getReportMsgsLinkTableName()).ifNotExists()
 				.withPartitionKey(ID, DataTypes.UUID)
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
 				.withColumn(REPORT_ID, DataTypes.UUID)
 				.withColumn(MESSAGES_IDS, DataTypes.listOf(DataTypes.TEXT));
 
