@@ -17,7 +17,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
-import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
+import com.datastax.oss.driver.api.querybuilder.insert.Insert;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
@@ -164,11 +164,12 @@ public class CassandraCradleStorage extends CradleStorage
 	protected String doStoreStream(CradleStream stream) throws IOException
 	{
 		UUID id = UUID.randomUUID();
-		RegularInsert insert = insertInto(settings.getKeyspace(), STREAMS_TABLE_DEFAULT_NAME)
+		Insert insert = insertInto(settings.getKeyspace(), STREAMS_TABLE_DEFAULT_NAME)
 				.value(ID, literal(id))
 				.value(INSTANCE_ID, literal(UUID.fromString(getInstanceId())))
 				.value(NAME, literal(stream.getName()))
-				.value(STREAM_DATA, literal(streamMarshaller.marshal(stream.getStreamData())));
+				.value(STREAM_DATA, literal(streamMarshaller.marshal(stream.getStreamData())))
+				.ifNotExists();
 		executeQuery(insert.asCql());
 		return id.toString();
 	}
@@ -269,13 +270,14 @@ public class CassandraCradleStorage extends CradleStorage
 		if (prevBatchId == null)
 			prevBatchId = getExtremeRecordId(ExtremeFunction.MAX, settings.getMessagesTableName());
 		
-		RegularInsert insert = insertInto(settings.getKeyspace(), settings.getMessagesTableName())
+		Insert insert = insertInto(settings.getKeyspace(), settings.getMessagesTableName())
 				.value(ID, literal(currentBatch.getBatchId()))
 				.value(INSTANCE_ID, literal(UUID.fromString(getInstanceId())))
 				.value(COMPRESSED, literal(toCompress))
 				.value(TIMESTAMP, literal(batchStartTimestamp))
 				.value(BATCH_CONTENT, literal(ByteBuffer.wrap(batchContent)))
-				.value(PREV_BATCH_ID, literal(prevBatchId));
+				.value(PREV_BATCH_ID, literal(prevBatchId))
+				.ifNotExists();
 		executeQuery(insert.asCql());
 	}
 
@@ -287,10 +289,11 @@ public class CassandraCradleStorage extends CradleStorage
 
 	private void storeBatchDirectionLink()
 	{
-		RegularInsert insert = insertInto(settings.getKeyspace(), settings.getBatchDirMetadataTableName())
+		Insert insert = insertInto(settings.getKeyspace(), settings.getBatchDirMetadataTableName())
 				.value(BATCH_ID, literal(currentBatch.getBatchId()))
 				.value(INSTANCE_ID, literal(UUID.fromString(getInstanceId())))
-				.value(DIRECTION, literal(currentBatch.getMsgsDirections().getLabel()));
+				.value(DIRECTION, literal(currentBatch.getMsgsDirections().getLabel()))
+				.ifNotExists();
 
 		executeQuery(insert.asCql());
 	}
@@ -300,11 +303,12 @@ public class CassandraCradleStorage extends CradleStorage
 		for (String streamName : currentBatch.getMsgsStreamsNames())
 		{
 			UUID id = UUID.randomUUID();
-			RegularInsert insert = insertInto(settings.getKeyspace(), settings.getBatchStreamsMetadataTableName())
+			Insert insert = insertInto(settings.getKeyspace(), settings.getBatchStreamsMetadataTableName())
 					.value(ID, literal(id))
 					.value(INSTANCE_ID, literal(UUID.fromString(getInstanceId())))
 					.value(BATCH_ID, literal(currentBatch.getBatchId()))
-					.value(STREAM_ID, literal(UUID.fromString(queryStreamId(streamName))));
+					.value(STREAM_ID, literal(UUID.fromString(queryStreamId(streamName))))
+					.ifNotExists();
 
 			executeQuery(insert.asCql());
 		}
@@ -361,7 +365,7 @@ public class CassandraCradleStorage extends CradleStorage
 		
 		UUID id = UUID.randomUUID();
 		Instant timestamp = Instant.now();
-		RegularInsert insert = insertInto(settings.getKeyspace(), settings.getReportsTableName())
+		Insert insert = insertInto(settings.getKeyspace(), settings.getReportsTableName())
 				.value(ID, literal(id))
 				.value(INSTANCE_ID, literal(UUID.fromString(getInstanceId())))
 				.value(TIMESTAMP, literal(timestamp))
@@ -369,7 +373,8 @@ public class CassandraCradleStorage extends CradleStorage
 				.value(REPORT_PATH, literal(reportPathStr))
 				.value(REPORT_CONTENT, literal(ByteBuffer.wrap(reportContent)))
 				.value(PREV_REPORT_ID, literal(prevReportId))
-				.value(MATRIX_NAME, literal(matrixName));
+				.value(MATRIX_NAME, literal(matrixName))
+				.ifNotExists();
 		executeQuery(insert.asCql());
 
 		prevReportId = id;
@@ -388,11 +393,12 @@ public class CassandraCradleStorage extends CradleStorage
 			int right = min(left + REPORT_MSGS_LINK_MAX_MSGS, msgsSize);
 			List<String> curMsgsIds = messagesIdsAsStrings.subList(left, right);
 			UUID id = UUID.randomUUID();
-			RegularInsert insert = insertInto(settings.getKeyspace(), settings.getReportMsgsLinkTableName())
+			Insert insert = insertInto(settings.getKeyspace(), settings.getReportMsgsLinkTableName())
 					.value(ID, literal(id))
 					.value(INSTANCE_ID, literal(UUID.fromString(getInstanceId())))
 					.value(REPORT_ID, literal(UUID.fromString(reportId)))
-					.value(MESSAGES_IDS, literal(curMsgsIds));
+					.value(MESSAGES_IDS, literal(curMsgsIds))
+					.ifNotExists();
 			executeQuery(insert.asCql());
 			ids.add(id.toString());
 			left = right - 1;
@@ -660,9 +666,10 @@ public class CassandraCradleStorage extends CradleStorage
 		else
 		{
 			id = UUID.randomUUID();
-			RegularInsert insert = insertInto(settings.getKeyspace(), INSTANCES_TABLE_DEFAULT_NAME)
+			Insert insert = insertInto(settings.getKeyspace(), INSTANCES_TABLE_DEFAULT_NAME)
 					.value(ID, literal(id))
-					.value(NAME, literal(instanceName));
+					.value(NAME, literal(instanceName))
+					.ifNotExists();
 			executeQuery(insert.asCql());
 		}
 		
