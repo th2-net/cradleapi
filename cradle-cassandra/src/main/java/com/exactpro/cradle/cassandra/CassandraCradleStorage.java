@@ -92,16 +92,24 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		
 		createKeyspace();
-		createInstancesTable();
-		createStreamsTable();
-		createMessagesTable();
-		createBatchDirMetadataTable();
-		createBatchStreamsMetadataTable();
-		createReportsTable();
-		createReportMessagesLinkTable();
-		currentBatch = new MessageBatch(BATCH_MESSAGES_LIMIT);
-		batchFlusher.scheduleWithFixedDelay(new BatchIdleFlusher(BATCH_IDLE_LIMIT), BATCH_IDLE_LIMIT, BATCH_IDLE_LIMIT, TimeUnit.MILLISECONDS);
-		return getInstanceId(instanceName).toString();
+		
+		try
+		{
+			createInstancesTable();
+			createStreamsTable();
+			createMessagesTable();
+			createBatchDirMetadataTable();
+			createBatchStreamsMetadataTable();
+			createReportsTable();
+			createReportMessagesLinkTable();
+			currentBatch = new MessageBatch(BATCH_MESSAGES_LIMIT);
+			batchFlusher.scheduleWithFixedDelay(new BatchIdleFlusher(BATCH_IDLE_LIMIT), BATCH_IDLE_LIMIT, BATCH_IDLE_LIMIT, TimeUnit.MILLISECONDS);
+			return getInstanceId(instanceName).toString();
+		}
+		catch (IOException e)
+		{
+			throw new CradleStorageException("Could not initialize storage", e);
+		}
 	}
 	
 	/**
@@ -187,7 +195,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected void doModifyStreamName(String id, String newName)
+	protected void doModifyStreamName(String id, String newName) throws IOException
 	{
 		UUID uuid = UUID.fromString(id);
 		Update update = update(settings.getKeyspace(), STREAMS_TABLE_DEFAULT_NAME)
@@ -281,13 +289,13 @@ public class CassandraCradleStorage extends CradleStorage
 		executeQuery(insert.asCql());
 	}
 
-	private void storeCurrentBatchMetadata()
+	private void storeCurrentBatchMetadata() throws IOException
 	{
 		storeBatchDirectionLink();
 		storeBatchStreamsLink();
 	}
 
-	private void storeBatchDirectionLink()
+	private void storeBatchDirectionLink() throws IOException
 	{
 		Insert insert = insertInto(settings.getKeyspace(), settings.getBatchDirMetadataTableName())
 				.value(BATCH_ID, literal(currentBatch.getBatchId()))
@@ -298,7 +306,7 @@ public class CassandraCradleStorage extends CradleStorage
 		executeQuery(insert.asCql());
 	}
 
-	private void storeBatchStreamsLink()
+	private void storeBatchStreamsLink() throws IOException
 	{
 		for (String streamName : currentBatch.getMsgsStreamsNames())
 		{
@@ -383,7 +391,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	public List<String> storeReportMessagesLink(String reportId, Set<StoredMessageId> messagesIds)
+	public List<String> storeReportMessagesLink(String reportId, Set<StoredMessageId> messagesIds) throws IOException
 	{
 		List<String> ids = new ArrayList<>();
 		List<String> messagesIdsAsStrings = messagesIds.stream().map(StoredMessageId::toString).collect(toList());
@@ -571,7 +579,7 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 	}
 
-	protected void createInstancesTable()
+	protected void createInstancesTable() throws IOException
 	{
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), INSTANCES_TABLE_DEFAULT_NAME).ifNotExists()
 				.withPartitionKey(ID, DataTypes.UUID)
@@ -580,7 +588,7 @@ public class CassandraCradleStorage extends CradleStorage
 		executeQuery(create.asCql());
 	}
 	
-	protected void createStreamsTable()
+	protected void createStreamsTable() throws IOException
 	{
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), STREAMS_TABLE_DEFAULT_NAME).ifNotExists()
 				.withPartitionKey(ID, DataTypes.UUID)
@@ -591,7 +599,7 @@ public class CassandraCradleStorage extends CradleStorage
 		executeQuery(create.asCql());
 	}
 
-	protected void createMessagesTable()
+	protected void createMessagesTable() throws IOException
 	{
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getMessagesTableName()).ifNotExists()
 				.withPartitionKey(ID, DataTypes.UUID)
@@ -604,7 +612,7 @@ public class CassandraCradleStorage extends CradleStorage
 		executeQuery(create.asCql());
 	}
 
-	protected void createBatchDirMetadataTable()
+	protected void createBatchDirMetadataTable() throws IOException
 	{
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getBatchDirMetadataTableName()).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
@@ -614,7 +622,7 @@ public class CassandraCradleStorage extends CradleStorage
 		executeQuery(create.asCql());
 	}
 
-	protected void createBatchStreamsMetadataTable()
+	protected void createBatchStreamsMetadataTable() throws IOException
 	{
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(),
 				settings.getBatchStreamsMetadataTableName()).ifNotExists()
@@ -626,7 +634,7 @@ public class CassandraCradleStorage extends CradleStorage
 		executeQuery(create.asCql());
 	}
 
-	protected void createReportsTable()
+	protected void createReportsTable() throws IOException
 	{
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getReportsTableName()).ifNotExists()
 				.withPartitionKey(ID, DataTypes.UUID)
@@ -641,7 +649,7 @@ public class CassandraCradleStorage extends CradleStorage
 		executeQuery(create.asCql());
 	}
 
-	protected void createReportMessagesLinkTable()
+	protected void createReportMessagesLinkTable() throws IOException
 	{
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getReportMsgsLinkTableName()).ifNotExists()
 				.withPartitionKey(ID, DataTypes.UUID)
@@ -652,7 +660,7 @@ public class CassandraCradleStorage extends CradleStorage
 		executeQuery(create.asCql());
 	}
 	
-	protected UUID getInstanceId(String instanceName)
+	protected UUID getInstanceId(String instanceName) throws IOException
 	{
 		UUID id;
 		Select selectFrom = selectFrom(settings.getKeyspace(), INSTANCES_TABLE_DEFAULT_NAME)
@@ -676,9 +684,12 @@ public class CassandraCradleStorage extends CradleStorage
 		return id;
 	}
 	
-	protected ResultSet executeQuery(String cqlQuery)
+	protected ResultSet executeQuery(String cqlQuery) throws IOException
 	{
-		return connection.getSession().execute(makeSimpleStatement(cqlQuery));
+		ResultSet rs = connection.getSession().execute(makeSimpleStatement(cqlQuery));
+		if (!rs.wasApplied())
+			throw new IOException("Query was rejected by database. Probably, key fields are duplicated. Rejected query: "+cqlQuery);
+		return rs;
 	}
 
 
