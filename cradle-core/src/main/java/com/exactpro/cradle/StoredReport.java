@@ -11,59 +11,79 @@
 package com.exactpro.cradle;
 
 import java.time.Instant;
-import java.util.UUID;
 
 public class StoredReport
 {
-	private UUID id;
+	private String id;
+	private String name;
 	private Instant timestamp;
-	private String reportPath;
-	private boolean compressed;
-	private byte[] reportContent;
-	private String matrixName;
-
+	private boolean success;
+	private byte[] content;
+	
 	public StoredReport()
 	{
 	}
 
-	public StoredReport(UUID id, Instant timestamp, String reportPath, boolean compressed, byte[] reportContent,
-	                    String matrixName)
+	public StoredReport(StoredReport copyFrom)
 	{
-		this.id = id;
-		this.timestamp = timestamp;
-		this.reportPath = reportPath;
-		this.compressed = compressed;
-		this.reportContent = reportContent;
-		this.matrixName = matrixName;
+		this.id = copyFrom.getId();
+		this.name = copyFrom.getName();
+		this.timestamp = copyFrom.getTimestamp();
+		this.success = copyFrom.isSuccess();
+		this.content = copyFrom.getContent();
 	}
 
-	public UUID getId()
+	public String getId()
 	{
 		return id;
 	}
+	
+	public void setId(String id)
+	{
+		this.id = id;
+	}
+	
+	
+	public String getName()
+	{
+		return name;
+	}
+	
+	public void setName(String name)
+	{
+		this.name = name;
+	}
+	
 
 	public Instant getTimestamp()
 	{
 		return timestamp;
 	}
-
-	public String getReportPath()
+	
+	public void setTimestamp(Instant timestamp)
 	{
-		return reportPath;
+		this.timestamp = timestamp;
 	}
-
-	public boolean isCompressed()
+	
+	
+	public boolean isSuccess()
 	{
-		return compressed;
+		return success;
 	}
-
-	public byte[] getReportContent()
+	
+	public void setSuccess(boolean success)
 	{
-		return reportContent;
+		this.success = success;
 	}
+	
 
-	public String getMatrixName()
+	public byte[] getContent()
 	{
-		return matrixName;
+		return content;
+	}
+	
+	public void setContent(byte[] content)
+	{
+		this.content = content;
 	}
 }

@@ -11,7 +11,6 @@
 package com.exactpro.cradle;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -63,14 +62,20 @@ public abstract class CradleStorage
 	public abstract StoredMessageId storeMessage(StoredMessage message) throws IOException;
 	
 	/**
-	 * Writes contents of given report to storage, providing ID to find this record in future
-	 * @param reportPath path to report to write
-	 * @param matrixName name of matrix which produced the report
+	 * Writes contents of given report to storage, providing ID to find this record in future.
+	 * @param report to store
 	 * @return ID of record in storage to find written data
 	 * @throws IOException if data writing failed
 	 */
-	public abstract String storeReport(Path reportPath, String matrixName) throws IOException;
-
+	public abstract String storeReport(StoredReport report) throws IOException;
+	
+	/**
+	 * Updates report in storage using report ID to find report to update.
+	 * @param report to replace existing report. Report ID is used to find existing report
+	 * @throws IOException if data writing failed
+	 */
+	public abstract void modifyReport(StoredReport report) throws IOException;
+	
 	/**
 	 * Writes links of given report and messages to storage, providing IDs to find this records in
 	 * future
@@ -120,7 +125,7 @@ public abstract class CradleStorage
 	 * @throws IOException if report data retrieval failed
 	 */
 	public abstract StoredReport getReport(String id) throws IOException;
-
+	
 	/**
 	 * Makes query to storage to obtain ID of stream with given name
 	 * @param streamName name of stream to get ID for

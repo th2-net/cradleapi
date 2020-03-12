@@ -20,13 +20,14 @@ public class StorageConstants
 			DIRECTION = "direction",
 			COMPRESSED = "compressed",
 			TIMESTAMP = "timestamp",
+			CONTENT = "content",
+			SUCCESS = "success",
+			TYPE = "type",
+			PREV_ID = "prev_id",
+			START_TIMESTAMP = "start_timestamp",
+			END_TIMESTAMP = "end_timestamp",
 			REPORT_ID = "report_id",
-			REPORT_PATH = "report_path",
-			REPORT_CONTENT = "report_content",
-			PREV_REPORT_ID = "prev_report_id",
 			BATCH_ID = "batch_id",
-			BATCH_CONTENT = "batch_content",
-			PREV_BATCH_ID = "prev_batch_id",
 			MESSAGES_IDS = "messages_ids",
-			MATRIX_NAME = "matrix_name";
+			PARENT_ID = "parent_id";
 }
