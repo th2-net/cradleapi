@@ -2,6 +2,7 @@ dependencies {
 	compile "org.slf4j:slf4j-api:${slf4j_version}"
 	compile "org.slf4j:slf4j-log4j12:${slf4j_version}"
 	compile "com.fasterxml.jackson.core:jackson-databind:${jackson_version}"
+	compile "commons-io:commons-io:2.5"
 }
 
 jar {

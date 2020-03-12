@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.io.FileUtils;
+
 /**
  * Wrapper for data writing operations related to {@link CradleStorage}.
  */
@@ -58,17 +60,20 @@ public class CradleWriter
 	}
 	
 	/**
-	 * Stores automation report found by given path
-	 * @param reportPath path to automation report to store
-	 * @param matrixName name of matrix which produced the report
+	 * Stores script execution report found by given path
+	 * @param reportPath path to script execution report to store
+	 * @param scriptName name of script which produced the report
+	 * @param executionTimestamp date and time when execution was started
+	 * @param executionSuccessful flag that indicates if execution was successful
 	 * @return ID of record in storage to find written data
 	 * @throws IOException if data writing failed
 	 */
-	public String storeReport(Path reportPath, String matrixName) throws IOException
+	public String storeReport(Path reportPath, String scriptName, Instant executionTimestamp, boolean executionSuccessful) throws IOException
 	{
-		return storage.storeReport(reportPath, matrixName);
+		StoredReport sr = createStoredReport(scriptName, reportPath, executionTimestamp, executionSuccessful);
+		return storage.storeReport(sr);
 	}
-
+	
 	/**
 	 * Stores the links of messages and related report
 	 * @param reportId id of stored report
@@ -80,7 +85,7 @@ public class CradleWriter
 	{
 		return storage.storeReportMessagesLink(reportId, messagesIds);
 	}
-
+	
 	
 	protected StoredMessage createStoredMessage(byte[] message, Map<String, Object> metadata, CradleStream stream, Direction direction)
 	{
@@ -90,6 +95,17 @@ public class CradleWriter
 				.direction(direction)
 				.streamName(stream.getName())
 				.timestamp(Instant.now())
+				.build();
+	}
+	
+	protected StoredReport createStoredReport(String scriptName, Path reportPath, Instant executionTimestamp, boolean executionSuccessful) throws IOException
+	{
+		StoredReportBuilder builder = new StoredReportBuilder();
+		
+		return builder.name(scriptName)
+				.success(executionSuccessful)
+				.timestamp(executionTimestamp)
+				.content(FileUtils.readFileToByteArray(reportPath.toFile()))
 				.build();
 	}
 }
