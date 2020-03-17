@@ -13,12 +13,15 @@ package com.exactpro.cradle.cassandra;
 import java.io.IOException;
 import java.util.Optional;
 
+import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
+import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
+
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 public class TablesCreator
@@ -40,8 +43,12 @@ public class TablesCreator
 		createMessagesTable();
 		createBatchDirMetadataTable();
 		createBatchStreamsMetadataTable();
+		
 		createReportsTable();
 		createReportMessagesLinkTable();
+		
+		createTestEventsTable();
+		createTestEventMessagesLinkTable();
 	}
 	
 	public void createKeyspace()
@@ -109,17 +116,19 @@ public class TablesCreator
 		
 		exec.executeQuery(create.asCql());
 	}
-
+	
+	
 	public void createReportsTable() throws IOException
 	{
-		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getReportsTableName()).ifNotExists()
-				.withPartitionKey(ID, DataTypes.UUID)
+		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getReportsTableName()).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				.withClusteringColumn(ID, DataTypes.TIMEUUID)
 				.withColumn(NAME, DataTypes.TEXT)
 				.withColumn(TIMESTAMP, DataTypes.TIMESTAMP)
 				.withColumn(SUCCESS, DataTypes.BOOLEAN)
 				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
-				.withColumn(CONTENT, DataTypes.BLOB);
+				.withColumn(CONTENT, DataTypes.BLOB)
+				.withClusteringOrder(ID, ClusteringOrder.ASC);
 		
 		exec.executeQuery(create.asCql());
 	}
@@ -129,7 +138,38 @@ public class TablesCreator
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getReportMsgsLinkTableName()).ifNotExists()
 				.withPartitionKey(ID, DataTypes.UUID)
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withColumn(REPORT_ID, DataTypes.UUID)
+				.withColumn(REPORT_ID, DataTypes.TIMEUUID)
+				.withColumn(MESSAGES_IDS, DataTypes.listOf(DataTypes.TEXT));
+		
+		exec.executeQuery(create.asCql());
+	}
+	
+	
+	public void createTestEventsTable() throws IOException
+	{
+		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getTestEventsTableName()).ifNotExists()
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				.withPartitionKey(REPORT_ID, DataTypes.TIMEUUID)
+				.withClusteringColumn(ID, DataTypes.TIMEUUID)
+				.withColumn(NAME, DataTypes.TEXT)
+				.withColumn(TYPE, DataTypes.TEXT)
+				.withColumn(START_TIMESTAMP, DataTypes.TIMESTAMP)
+				.withColumn(END_TIMESTAMP, DataTypes.TIMESTAMP)
+				.withColumn(SUCCESS, DataTypes.BOOLEAN)
+				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
+				.withColumn(CONTENT, DataTypes.BLOB)
+				.withColumn(PARENT_ID, DataTypes.TIMEUUID)
+				.withClusteringOrder(ID, ClusteringOrder.ASC);
+		
+		exec.executeQuery(create.asCql());
+	}
+	
+	public void createTestEventMessagesLinkTable() throws IOException
+	{
+		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getTestEventsMsgsLinkTableName()).ifNotExists()
+				.withPartitionKey(ID, DataTypes.UUID)
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				.withColumn(TEST_EVENT_ID, DataTypes.UUID)
 				.withColumn(MESSAGES_IDS, DataTypes.listOf(DataTypes.TEXT));
 		
 		exec.executeQuery(create.asCql());

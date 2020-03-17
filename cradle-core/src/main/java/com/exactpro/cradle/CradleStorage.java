@@ -53,6 +53,7 @@ public abstract class CradleStorage
 	 */
 	public abstract void dispose() throws CradleStorageException;
 	
+	
 	/**
 	 * Writes data about given message to storage, providing ID to find this record in future
 	 * @param message data to write
@@ -61,8 +62,10 @@ public abstract class CradleStorage
 	 */
 	public abstract StoredMessageId storeMessage(StoredMessage message) throws IOException;
 	
+	
 	/**
 	 * Writes contents of given report to storage, providing ID to find this record in future.
+	 * Calls to {@link #storeTestEvent(StoredTestEvent event) storeTestEvent} require result of this method to be used as reportId
 	 * @param report to store
 	 * @return ID of record in storage to find written data
 	 * @throws IOException if data writing failed
@@ -76,8 +79,25 @@ public abstract class CradleStorage
 	 */
 	public abstract void modifyReport(StoredReport report) throws IOException;
 	
+	
 	/**
-	 * Writes links of given report and messages to storage, providing IDs to find this records in
+	 * Writes contents of given test event to storage, providing ID to find this record in future.
+	 * @param testEvent to store. Event is bound to existing report by report ID. Additionally, event can be bound to another event by parentId
+	 * @return ID of record in storage to find written data
+	 * @throws IOException if data writing failed
+	 */
+	public abstract String storeTestEvent(StoredTestEvent testEvent) throws IOException;
+	
+	/**
+	 * Updates test event in storage using event ID to find event to update.
+	 * @param testEvent to replace existing event. Event ID is used to find existing event
+	 * @throws IOException if data writing failed
+	 */
+	public abstract void modifyTestEvent(StoredTestEvent testEvent) throws IOException;
+	
+	
+	/**
+	 * Writes links of given report and messages to storage, providing IDs to find these records in
 	 * future
 	 * @param reportId ID of stored report
 	 * @param messagesIds list of stored message IDs
@@ -85,31 +105,18 @@ public abstract class CradleStorage
 	 * @throws IOException if data writing failed
 	 */
 	public abstract List<String> storeReportMessagesLink(String reportId, Set<StoredMessageId> messagesIds) throws IOException;
-
+	
 	/**
-	 * Retrieves ID of stored report by linked message ID
-	 * @param messageId ID of stored message
-	 * @return ID of stored report
-	 * @throws IOException if report data retrieval failed
+	 * Writes links of given test event and messages to storage, providing IDs to find these records in
+	 * future
+	 * @param eventId ID of stored test event
+	 * @param messagesIds list of stored message IDs
+	 * @return list of record IDs in storage to find written data
+	 * @throws IOException if data writing failed
 	 */
-	public abstract String getReportIdByMessageId(String messageId) throws IOException;
-
-	/**
-	 * Retrieves IDs of stored messages by linked report ID
-	 * @param reportId ID of stored report
-	 * @return list of stored message IDs
-	 * @throws IOException if messages data retrieval failed
-	 */
-	public abstract List<String> getMessageIdsByReportId(String reportId) throws IOException;
-
-	/**
-	 * Check if report has messages related to it
-	 * @param reportId ID of stored report
-	 * @return true - if report has related messages, false otherwise
-	 * @throws IOException if messages data retrieval failed
-	 */
-	public abstract boolean doMessagesRelatedToReportExist(String reportId) throws IOException;
-
+	public abstract List<String> storeTestEventMessagesLink(String eventId, Set<StoredMessageId> messagesIds) throws IOException;
+	
+	
 	/**
 	 * Retrieves messages data stored under given ID
 	 * @param rowId ID of database row to retrieve messages data from
@@ -125,6 +132,44 @@ public abstract class CradleStorage
 	 * @throws IOException if report data retrieval failed
 	 */
 	public abstract StoredReport getReport(String id) throws IOException;
+	
+	/**
+	 * Retrieves test event data stored under given ID
+	 * @param id of stored test event to retrieve
+	 * @return data of stored test event
+	 * @throws IOException if test event data retrieval failed
+	 */
+	public abstract StoredTestEvent getTestEvent(String id) throws IOException;
+	
+	
+	/**
+	 * ReportsMessagesLinker is used to obtain links between reports and messages
+	 * @return new instance of ReportsMessagesLinker
+	 */
+	public abstract ReportsMessagesLinker getReportsMessagesLinker();
+	
+	/**
+	 * TestEventsMessagesLinker is used to obtain links between test events and messages
+	 * @return new instance of TestEventsMessagesLinker
+	 */
+	public abstract TestEventsMessagesLinker getTestEventsMessagesLinker();
+	
+	
+	/**
+	 * Allows to enumerate stored reports
+	 * @return iterable object to enumerate reports
+	 * @throws IOException if data retrieval failed
+	 */
+	public abstract Iterable<StoredReport> getReports() throws IOException;
+	
+	/**
+	 * Allows to enumerate stored test events linked to given report ID
+	 * @param reportId for test events to obtain
+	 * @return iterable object to enumerate test events linked with given report ID
+	 * @throws IOException if data retrieval failed
+	 */
+	public abstract Iterable<StoredTestEvent> getReportTestEvents(String reportId) throws IOException;
+	
 	
 	/**
 	 * Makes query to storage to obtain ID of stream with given name

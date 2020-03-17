@@ -8,22 +8,27 @@
  * information which is the property of Exactpro Systems LLC or its licensors.
  ******************************************************************************/
 
-package com.exactpro.cradle;
+package com.exactpro.cradle.cassandra.utils;
 
-/**
- * Default implementation of CradleManager that does nothing and works like a stub.
- */
-public class DefaultCradleManager extends CradleManager
+import java.io.IOException;
+
+import com.exactpro.cradle.StoredReport;
+
+public class ReportException extends IOException
 {
-	@Override
-	protected CradleStorage createStorage()
+	private static final long serialVersionUID = -7294739795386845145L;
+	
+	private final StoredReport report;
+	
+	public ReportException(String message, Throwable cause, StoredReport report)
 	{
-		return null;
+		super(message, cause);
+		this.report = report;
 	}
 	
-	@Override
-	public MessageNavigator getStorageMessageNavigator()
+	
+	public StoredReport getReport()
 	{
-		return null;
+		return report;
 	}
 }

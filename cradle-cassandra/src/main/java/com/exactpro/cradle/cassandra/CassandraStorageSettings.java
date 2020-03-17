@@ -15,19 +15,20 @@ import org.slf4j.LoggerFactory;
 
 public class CassandraStorageSettings
 {
-	private Logger logger = LoggerFactory.getLogger(CassandraStorageSettings.class);
-
 	public static final int BATCH_SIZE_LIMIT_BYTES = 5000;
 	public static final long BATCH_IDLE_LIMIT = 100;
-	public static final int REPORT_SIZE_LIMIT_BYTES = 5000;
+	public static final int REPORT_SIZE_LIMIT_BYTES = 5000,
+			TEST_EVENT_SIZE_LIMIT_BYTES = 5000;
 	public static final String DEFAULT_KEYSPACE = "cradle",
 			INSTANCES_TABLE_DEFAULT_NAME = "instances",
 			STREAMS_TABLE_DEFAULT_NAME = "streams",
 			MESSAGES_TABLE_DEFAULT_NAME = "messages",
 			REPORTS_TABLE_DEFAULT_NAME = "reports",
+			TEST_EVENTS_TABLE_DEFAULT_NAME = "test_events",
 			BATCH_DIRECTION_METADATA_TABLE_DEFAULT_NAME = "batch_dir_metadata",
 			BATCH_STREAMS_METADATA_TABLE_DEFAULT_NAME = "batch_streams_metadata",
-			REPORT_MSGS_LINK_TABLE_DEFAULT_NAME = "report_msgs_link";
+			REPORT_MSGS_LINK_TABLE_DEFAULT_NAME = "report_msgs_link",
+			TEST_EVENT_MSGS_LINK_TABLE_DEFAULT_NAME = "test_event_msgs_link";
 	private static final long DEFAULT_TIMEOUT = 5000;
 	private static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1;
 	protected static final int BATCH_MESSAGES_LIMIT = 10;
@@ -38,7 +39,9 @@ public class CassandraStorageSettings
 			batchDirMetadataTableName,
 			batchStreamsMetadataTableName,
 			reportsTableName,
-			reportMsgsLinkTableName;
+			testEventsTableName,
+			reportMsgsLinkTableName,
+			testEventsMsgsLinkTableName;
 	private final int keyspaceReplicationFactor;
 	private long timeout;
 
@@ -48,7 +51,9 @@ public class CassandraStorageSettings
 		this.batchDirMetadataTableName = BATCH_DIRECTION_METADATA_TABLE_DEFAULT_NAME;
 		this.batchStreamsMetadataTableName = BATCH_STREAMS_METADATA_TABLE_DEFAULT_NAME;
 		this.reportsTableName = REPORTS_TABLE_DEFAULT_NAME;
+		this.testEventsTableName = TEST_EVENTS_TABLE_DEFAULT_NAME;
 		this.reportMsgsLinkTableName = REPORT_MSGS_LINK_TABLE_DEFAULT_NAME;
+		this.testEventsMsgsLinkTableName = TEST_EVENT_MSGS_LINK_TABLE_DEFAULT_NAME;
 		this.keyspace = keyspace;
 		this.keyspaceReplicationFactor = keyspaceReplicationFactor;
 		this.timeout = timeout;
@@ -119,6 +124,17 @@ public class CassandraStorageSettings
 	}
 	
 	
+	public String getTestEventsTableName()
+	{
+		return testEventsTableName;
+	}
+	
+	public void setTestEventsTableName(String testEventsTableName)
+	{
+		this.testEventsTableName = testEventsTableName;
+	}
+	
+	
 	public String getReportMsgsLinkTableName()
 	{
 		return reportMsgsLinkTableName;
@@ -127,6 +143,17 @@ public class CassandraStorageSettings
 	public void setReportMsgsLinkTableName(String reportMsgsLinkTableName)
 	{
 		this.reportMsgsLinkTableName = reportMsgsLinkTableName;
+	}
+	
+	
+	public String getTestEventsMsgsLinkTableName()
+	{
+		return testEventsMsgsLinkTableName;
+	}
+	
+	public void setTestEventsMsgsLinkTableName(String testEventsMsgsLinkTableName)
+	{
+		this.testEventsMsgsLinkTableName = testEventsMsgsLinkTableName;
 	}
 	
 	

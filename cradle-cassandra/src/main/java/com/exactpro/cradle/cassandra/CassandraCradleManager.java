@@ -13,7 +13,6 @@ package com.exactpro.cradle.cassandra;
 import com.exactpro.cradle.CradleManager;
 import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.MessageNavigator;
-import com.exactpro.cradle.ReportNavigator;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 
 public class CassandraCradleManager extends CradleManager
@@ -36,11 +35,5 @@ public class CassandraCradleManager extends CradleManager
 	public MessageNavigator getStorageMessageNavigator()
 	{
 		return new CassandraMessageNavigator((CassandraCradleStorage)getStorage());
-	}
-
-	@Override
-	public ReportNavigator getStorageReportNavigator()
-	{
-		return new CassandraReportNavigator((CassandraCradleStorage)getStorage());
 	}
 }

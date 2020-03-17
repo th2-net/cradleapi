@@ -12,6 +12,7 @@ package com.exactpro.cradle.cassandra;
 
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.datastax.oss.driver.api.querybuilder.insert.Insert;
 import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
@@ -20,13 +21,17 @@ import com.datastax.oss.driver.api.querybuilder.update.Update;
 import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
 import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.CradleStream;
+import com.exactpro.cradle.ReportsMessagesLinker;
 import com.exactpro.cradle.StoredMessage;
 import com.exactpro.cradle.StoredMessageId;
 import com.exactpro.cradle.StoredReport;
-import com.exactpro.cradle.StoredReportBuilder;
+import com.exactpro.cradle.StoredTestEvent;
+import com.exactpro.cradle.TestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.utils.BatchStorageException;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
+import com.exactpro.cradle.cassandra.utils.ReportUtils;
+import com.exactpro.cradle.cassandra.utils.TestEventUtils;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.CradleUtils;
 import com.exactpro.cradle.utils.JsonMarshaller;
@@ -35,6 +40,9 @@ import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.lang.Math.min;
+import static java.util.stream.Collectors.toList;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -58,23 +66,22 @@ public class CassandraCradleStorage extends CradleStorage
 	private final CassandraConnection connection;
 	private final CassandraStorageSettings settings;
 
-	private final Object messageWritingMonitor = new Object(),
-			reportWritingMonitor = new Object();
-	private UUID prevBatchId,
-			prevReportId;
+	private final Object messageWritingMonitor = new Object();
+	private UUID prevBatchId;
 	private MessageBatch currentBatch;
 	private Instant lastBatchFlush;
-	private final QueryExecutor exec;
-	private MessagesLinker messagesReportsLinker;
+	private QueryExecutor exec;
 	private final ScheduledExecutorService batchFlusher;
 
 	private JsonMarshaller<String> streamMarshaller = new JsonMarshaller<>();
-
+	
+	private ReportsMessagesLinker reportsMessagesLinker;
+	private TestEventsMessagesLinker testEventsMessagesLinker;
+	
 	public CassandraCradleStorage(CassandraConnection connection, CassandraStorageSettings settings)
 	{
 		this.connection = connection;
 		this.settings = settings;
-		this.exec = new QueryExecutor(connection.getSession(), settings.getTimeout());
 		this.batchFlusher = Executors.newScheduledThreadPool(1, r -> new Thread(r, "BatchFlusher"));
 	}
 
@@ -92,14 +99,18 @@ public class CassandraCradleStorage extends CradleStorage
 		
 		try
 		{
+			exec = new QueryExecutor(connection.getSession(), settings.getTimeout());
+			
 			new TablesCreator(exec, settings).createAll();
 			
 			currentBatch = new MessageBatch(BATCH_MESSAGES_LIMIT);
 			batchFlusher.scheduleWithFixedDelay(new BatchIdleFlusher(BATCH_IDLE_LIMIT), BATCH_IDLE_LIMIT, BATCH_IDLE_LIMIT, TimeUnit.MILLISECONDS);
 			UUID instanceId = getInstanceId(instanceName);
 			
-			messagesReportsLinker = new MessagesLinker(exec, 
+			reportsMessagesLinker = new CassandraReportsMessagesLinker(exec, 
 					settings.getKeyspace(), settings.getReportMsgsLinkTableName(), REPORT_ID, instanceId);
+			testEventsMessagesLinker = new CassandraTestEventsMessagesLinker(exec, 
+					settings.getKeyspace(), settings.getTestEventsMsgsLinkTableName(), TEST_EVENT_ID, instanceId);
 			
 			return instanceId.toString();
 		}
@@ -273,7 +284,7 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		
 		if (prevBatchId == null)
-			prevBatchId = getExtremeRecordId(ExtremeFunction.MAX, settings.getMessagesTableName());
+			prevBatchId = getExtremeRecordId(ExtremeFunction.MAX, settings.getMessagesTableName(), TIMESTAMP);
 		
 		Insert insert = insertInto(settings.getKeyspace(), settings.getMessagesTableName())
 				.value(ID, literal(currentBatch.getBatchId()))
@@ -319,11 +330,11 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 	}
 
-	protected UUID getExtremeRecordId(ExtremeFunction extremeFunForTimestamp, String tableName)
+	protected UUID getExtremeRecordId(ExtremeFunction extremeFunForTimestamp, String tableName, String timestampColumnName)
 	{
 		// check MAX/MIN timestamp in table, if table is empty = null
 		Select selectTimestamp = selectFrom(settings.getKeyspace(), tableName)
-				.function(extremeFunForTimestamp.getValue(), Selector.column(TIMESTAMP))
+				.function(extremeFunForTimestamp.getValue(), Selector.column(timestampColumnName))
 				.as(TIMESTAMP)
 				.whereColumn(INSTANCE_ID).isEqualTo(literal(UUID.fromString(getInstanceId())))
 				.allowFiltering();
@@ -334,7 +345,7 @@ public class CassandraCradleStorage extends CradleStorage
 		{
 			Select selectId = selectFrom(settings.getKeyspace(), tableName)
 					.column(ID)
-					.whereColumn(TIMESTAMP).isEqualTo(literal(timestamp))
+					.whereColumn(timestampColumnName).isEqualTo(literal(timestamp))
 					.whereColumn(INSTANCE_ID).isEqualTo(literal(UUID.fromString(getInstanceId())))
 					.allowFiltering();
 			
@@ -363,28 +374,20 @@ public class CassandraCradleStorage extends CradleStorage
 			}
 		}
 		
-		synchronized (reportWritingMonitor)
-		{
-			if (prevReportId == null)
-				prevReportId = getExtremeRecordId(ExtremeFunction.MAX, settings.getReportsTableName());
 			
-			UUID id = UUID.randomUUID();
-			Insert insert = insertInto(settings.getKeyspace(), settings.getReportsTableName())
-					.value(ID, literal(id))
-					.value(INSTANCE_ID, literal(UUID.fromString(getInstanceId())))
-					.value(NAME, literal(report.getName()))
-					.value(TIMESTAMP, literal(report.getTimestamp()))
-					.value(SUCCESS, literal(report.isSuccess()))
-					.value(COMPRESSED, literal(toCompress))
-					.value(CONTENT, literal(ByteBuffer.wrap(reportContent)))
-					.value(PREV_ID, literal(prevReportId))
-					.ifNotExists();
-			exec.executeQuery(insert.asCql());
-			
-			prevReportId = id;
-			
-			return id.toString();
-		}
+		UUID id = Uuids.timeBased();
+		Insert insert = insertInto(settings.getKeyspace(), settings.getReportsTableName())
+				.value(ID, literal(id))
+				.value(INSTANCE_ID, literal(UUID.fromString(getInstanceId())))
+				.value(NAME, literal(report.getName()))
+				.value(TIMESTAMP, literal(report.getTimestamp()))
+				.value(SUCCESS, literal(report.isSuccess()))
+				.value(COMPRESSED, literal(toCompress))
+				.value(CONTENT, literal(ByteBuffer.wrap(reportContent)))
+				.ifNotExists();
+		exec.executeQuery(insert.asCql());
+		
+		return id.toString();
 	}
 	
 	@Override
@@ -417,32 +420,95 @@ public class CassandraCradleStorage extends CradleStorage
 		exec.executeQuery(update.asCql());
 	}
 	
+	@Override
+	public String storeTestEvent(StoredTestEvent testEvent) throws IOException
+	{
+		byte[] content = testEvent.getContent();
+		boolean toCompress = isNeedCompressTestEvent(content);
+		if (toCompress)
+		{
+			try
+			{
+				content = CradleUtils.compressData(content);
+			}
+			catch (IOException e)
+			{
+				throw new IOException(String.format("Could not compress contents of test event '%s' "
+						+ " to save in global storage", testEvent.getName()), e);
+			}
+		}
+		
+			
+		UUID id = Uuids.timeBased();
+		RegularInsert insert = insertInto(settings.getKeyspace(), settings.getTestEventsTableName())
+				.value(ID, literal(id))
+				.value(INSTANCE_ID, literal(UUID.fromString(getInstanceId())))
+				.value(NAME, literal(testEvent.getName()))
+				.value(TYPE, literal(testEvent.getType()))
+				.value(START_TIMESTAMP, literal(testEvent.getStartTimestamp()))
+				.value(END_TIMESTAMP, literal(testEvent.getEndTimestamp()))
+				.value(SUCCESS, literal(testEvent.isSuccess()))
+				.value(COMPRESSED, literal(toCompress))
+				.value(CONTENT, literal(ByteBuffer.wrap(content)))
+				.value(REPORT_ID, literal(UUID.fromString(testEvent.getReportId())));
+		if (!StringUtils.isEmpty(testEvent.getParentId()))
+			insert = insert.value(PARENT_ID, literal(UUID.fromString(testEvent.getParentId())));
+		exec.executeQuery(insert.ifNotExists().asCql());
+		
+		return id.toString();
+	}
 	
+	@Override
+	public void modifyTestEvent(StoredTestEvent testEvent) throws IOException
+	{
+		byte[] content = testEvent.getContent();
+		boolean toCompress = isNeedCompressTestEvent(content);
+		if (toCompress)
+		{
+			try
+			{
+				content = CradleUtils.compressData(content);
+			}
+			catch (IOException e)
+			{
+				throw new IOException(String.format("Could not compress updated contents of test event '%s' "
+						+ " to save in global storage", testEvent.getId()), e);
+			}
+		}
+		
+		UpdateWithAssignments updateColumns = update(settings.getKeyspace(), settings.getTestEventsTableName())
+				.setColumn(NAME, literal(testEvent.getName()))
+				.setColumn(TYPE, literal(testEvent.getType()))
+				.setColumn(START_TIMESTAMP, literal(testEvent.getStartTimestamp()))
+				.setColumn(END_TIMESTAMP, literal(testEvent.getEndTimestamp()))
+				.setColumn(SUCCESS, literal(testEvent.isSuccess()))
+				.setColumn(COMPRESSED, literal(toCompress))
+				.setColumn(CONTENT, literal(ByteBuffer.wrap(content)))
+				.setColumn(REPORT_ID, literal(UUID.fromString(testEvent.getReportId())));
+		if (!StringUtils.isEmpty(testEvent.getParentId()))
+			updateColumns = updateColumns.setColumn(PARENT_ID, literal(UUID.fromString(testEvent.getParentId())));
+		
+		UUID id = UUID.fromString(testEvent.getId());
+		Update update = updateColumns.whereColumn(ID).isEqualTo(literal(id))
+				.whereColumn(INSTANCE_ID).isEqualTo(literal(UUID.fromString(getInstanceId())));
+		
+		exec.executeQuery(update.asCql());
+	}
 
+	
 	@Override
 	public List<String> storeReportMessagesLink(String reportId, Set<StoredMessageId> messagesIds) throws IOException
 	{
-		return messagesReportsLinker.linkIdToMessages(reportId, messagesIds);
+		return linkMessagesTo(messagesIds, settings.getReportMsgsLinkTableName(), REPORT_ID, reportId);
 	}
-
+	
 	@Override
-	public String getReportIdByMessageId(String messageId) throws IOException
+	public List<String> storeTestEventMessagesLink(String eventId, Set<StoredMessageId> messagesIds) throws IOException
 	{
-		return messagesReportsLinker.getLinkedIdByMessageId(messageId);
+		return linkMessagesTo(messagesIds, settings.getTestEventsMsgsLinkTableName(), TEST_EVENT_ID, eventId);
 	}
-
-	@Override
-	public List<String> getMessageIdsByReportId(String reportId) throws IOException
-	{
-		return messagesReportsLinker.getMessageIdsByLinkedId(reportId);
-	}
-
-	@Override
-	public boolean doMessagesRelatedToReportExist(String reportId) throws IOException
-	{
-		return messagesReportsLinker.doMessagesLinkedToIdExist(reportId);
-	}
-
+	
+	
 	@Override
 	public List<StoredMessage> getMessages(String rowId) throws IOException
 	{
@@ -461,7 +527,61 @@ public class CassandraCradleStorage extends CradleStorage
 		
 		return buildMessagesFromRow(resultRow);
 	}
-
+	
+	@Override
+	public StoredReport getReport(String id) throws IOException
+	{
+		Select selectFrom = ReportUtils.prepareSelect(settings.getKeyspace(), settings.getReportsTableName(), UUID.fromString(getInstanceId()))
+				.whereColumn(ID).isEqualTo(literal(UUID.fromString(id)));
+		
+		Row resultRow = exec.executeQuery(selectFrom.asCql()).one();
+		if (resultRow == null)
+			return null;
+		
+		return ReportUtils.toReport(resultRow);
+	}
+	
+	@Override
+	public StoredTestEvent getTestEvent(String id) throws IOException
+	{
+		Select selectFrom = TestEventUtils.prepareSelect(settings.getKeyspace(), settings.getTestEventsTableName(), UUID.fromString(getInstanceId()))
+				.whereColumn(ID).isEqualTo(literal(UUID.fromString(id)));
+		
+		Row resultRow = exec.executeQuery(selectFrom.asCql()).one();
+		if (resultRow == null)
+			return null;
+		
+		return TestEventUtils.toTestEvent(resultRow);
+	}
+	
+	
+	@Override
+	public ReportsMessagesLinker getReportsMessagesLinker()
+	{
+		return reportsMessagesLinker;
+	}
+	
+	@Override
+	public TestEventsMessagesLinker getTestEventsMessagesLinker()
+	{
+		return testEventsMessagesLinker;
+	}
+	
+	
+	@Override
+	public Iterable<StoredReport> getReports() throws IOException
+	{
+		return new CassandraReportsIteratorAdapter(exec, settings.getKeyspace(), settings.getReportsTableName(), UUID.fromString(getInstanceId()));
+	}
+	
+	@Override
+	public Iterable<StoredTestEvent> getReportTestEvents(String reportId) throws IOException
+	{
+		return new CassandraTestEventsIteratorAdapter(UUID.fromString(reportId), 
+				exec, settings.getKeyspace(), settings.getTestEventsTableName(), UUID.fromString(getInstanceId()));
+	}
+	
+	
 	public String getNextRowId(String batchId)
 	{
 		return getRecordId(settings.getMessagesTableName(), PREV_ID, batchId, ID);
@@ -503,59 +623,6 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 
-	@Override
-	public StoredReport getReport(String id) throws IOException
-	{
-		Select selectFrom = selectFrom(settings.getKeyspace(), settings.getReportsTableName())
-				.column(NAME)
-				.column(TIMESTAMP)
-				.column(SUCCESS)
-				.column(COMPRESSED)
-				.column(CONTENT)
-				.whereColumn(ID).isEqualTo(literal(UUID.fromString(id)))
-				.whereColumn(INSTANCE_ID).isEqualTo(literal(UUID.fromString(getInstanceId())))
-				.allowFiltering();
-		
-		Row resultRow = connection.getSession().execute(selectFrom.asCql()).one();
-		if (resultRow == null)
-			return null;
-
-		ByteBuffer reportByteBuffer = resultRow.getByteBuffer(CONTENT);
-		byte[] reportContent = reportByteBuffer == null ? new byte[0] : reportByteBuffer.array();
-		if (resultRow.getBoolean(COMPRESSED))
-		{
-			try
-			{
-				reportContent = CradleUtils.decompressData(reportContent);
-			}
-			catch (IOException | DataFormatException e)
-			{
-				throw new IOException(String.format("Could not decompress report contents (ID: '%s') from global " +
-						"storage",	id), e);
-			}
-		}
-		
-		return new StoredReportBuilder().id(id)
-				.name(resultRow.getString(NAME))
-				.timestamp(resultRow.getInstant(TIMESTAMP))
-				.success(resultRow.getBoolean(SUCCESS))
-				.content(reportContent)
-				.build();
-	}
-
-
-	public String getNextReportId(String reportId)
-	{
-		return getRecordId(settings.getReportsTableName(), PREV_ID, reportId, ID);
-	}
-
-	public String getPrevReportId(String reportId)
-	{
-		return getRecordId(settings.getReportsTableName(), ID, reportId, PREV_ID);
-	}
-
-	
-	
 	protected UUID getInstanceId(String instanceName) throws IOException
 	{
 		UUID id;
@@ -615,6 +682,11 @@ public class CassandraCradleStorage extends CradleStorage
 		return reportBytes.length > REPORT_SIZE_LIMIT_BYTES;
 	}
 	
+	private boolean isNeedCompressTestEvent(byte[] testEventBytes)
+	{
+		return testEventBytes.length > TEST_EVENT_SIZE_LIMIT_BYTES;
+	}
+	
 
 	protected byte[] serializeStoredMsgs() throws IOException
 	{
@@ -664,6 +736,30 @@ public class CassandraCradleStorage extends CradleStorage
 		
 		return storedMessages;
 	}
+	
+	private List<String> linkMessagesTo(Set<StoredMessageId> messagesIds, String linksTable, String linkColumn, String linkedId) throws IOException
+	{
+		List<String> ids = new ArrayList<>();
+		List<String> messagesIdsAsStrings = messagesIds.stream().map(StoredMessageId::toString).collect(toList());
+		int msgsSize = messagesIdsAsStrings.size();
+		for (int left = 0; left < msgsSize; left++)
+		{
+			int right = min(left + REPORT_MSGS_LINK_MAX_MSGS, msgsSize);
+			List<String> curMsgsIds = messagesIdsAsStrings.subList(left, right);
+			UUID id = UUID.randomUUID();
+			Insert insert = insertInto(settings.getKeyspace(), linksTable)
+					.value(ID, literal(id))
+					.value(INSTANCE_ID, literal(UUID.fromString(getInstanceId())))
+					.value(linkColumn, literal(UUID.fromString(linkedId)))
+					.value(MESSAGES_IDS, literal(curMsgsIds))
+					.ifNotExists();
+			exec.executeQuery(insert.asCql());
+			ids.add(id.toString());
+			left = right - 1;
+		}
+		return ids;
+	}
+	
 
 	protected enum ExtremeFunction
 	{
