@@ -95,10 +95,10 @@ public class CassandraMessageNavigator implements MessageNavigator
 		if (batchId == null) // Current message wasn't set, so we start from the very first message in storage
 		{
 			UUID firstBatchId = storage.getExtremeRecordId(CassandraCradleStorage.ExtremeFunction.MIN,
-					storage.getSettings().getMessagesTableName());
+					storage.getSettings().getMessagesTableName(), StorageConstants.TIMESTAMP);
 			if (firstBatchId == null) // Storage is empty now
 				return null;
-
+			
 			return setCurrentMessage(firstBatchId + ":" + messageIndex);
 		}
 		else if (messageIndex + 1 < batchMessages.size())

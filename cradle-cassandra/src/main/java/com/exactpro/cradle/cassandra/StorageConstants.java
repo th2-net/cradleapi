@@ -29,5 +29,6 @@ public class StorageConstants
 			REPORT_ID = "report_id",
 			BATCH_ID = "batch_id",
 			MESSAGES_IDS = "messages_ids",
+			TEST_EVENT_ID = "test_event_id",
 			PARENT_ID = "parent_id";
 }
