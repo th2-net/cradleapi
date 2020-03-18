@@ -11,13 +11,8 @@
 package com.exactpro.cradle;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
-import org.apache.commons.io.FileUtils;
 
 /**
  * Wrapper for data writing operations related to {@link CradleStorage}.
@@ -59,33 +54,6 @@ public class CradleWriter
 		return storage.storeMessage(sm);
 	}
 	
-	/**
-	 * Stores script execution report found by given path
-	 * @param reportPath path to script execution report to store
-	 * @param scriptName name of script which produced the report
-	 * @param executionTimestamp date and time when execution was started
-	 * @param executionSuccessful flag that indicates if execution was successful
-	 * @return ID of record in storage to find written data
-	 * @throws IOException if data writing failed
-	 */
-	public String storeReport(Path reportPath, String scriptName, Instant executionTimestamp, boolean executionSuccessful) throws IOException
-	{
-		StoredReport sr = createStoredReport(scriptName, reportPath, executionTimestamp, executionSuccessful);
-		return storage.storeReport(sr);
-	}
-	
-	/**
-	 * Stores the links of messages and related report
-	 * @param reportId id of stored report
-	 * @param messagesIds ids of stored messages
-	 * @return list of record ID in storage to find written data
-	 * @throws IOException if data writing failed
-	 */
-	public List<String> storeReportMessagesLink(String reportId, Set<StoredMessageId> messagesIds) throws IOException
-	{
-		return storage.storeReportMessagesLink(reportId, messagesIds);
-	}
-	
 	
 	protected StoredMessage createStoredMessage(byte[] message, Map<String, Object> metadata, CradleStream stream, Direction direction)
 	{
@@ -95,17 +63,6 @@ public class CradleWriter
 				.direction(direction)
 				.streamName(stream.getName())
 				.timestamp(Instant.now())
-				.build();
-	}
-	
-	protected StoredReport createStoredReport(String scriptName, Path reportPath, Instant executionTimestamp, boolean executionSuccessful) throws IOException
-	{
-		StoredReportBuilder builder = new StoredReportBuilder();
-		
-		return builder.name(scriptName)
-				.success(executionSuccessful)
-				.timestamp(executionTimestamp)
-				.content(FileUtils.readFileToByteArray(reportPath.toFile()))
 				.build();
 	}
 }

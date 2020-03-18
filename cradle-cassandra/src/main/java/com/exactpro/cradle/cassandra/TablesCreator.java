@@ -136,10 +136,9 @@ public class TablesCreator
 	public void createReportMessagesLinkTable() throws IOException
 	{
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getReportMsgsLinkTableName()).ifNotExists()
-				.withPartitionKey(ID, DataTypes.UUID)
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withColumn(REPORT_ID, DataTypes.TIMEUUID)
-				.withColumn(MESSAGES_IDS, DataTypes.listOf(DataTypes.TEXT));
+				.withClusteringColumn(REPORT_ID, DataTypes.TIMEUUID)
+				.withClusteringColumn(MESSAGES_IDS, DataTypes.frozenListOf(DataTypes.TEXT));
 		
 		exec.executeQuery(create.asCql());
 	}
@@ -167,10 +166,9 @@ public class TablesCreator
 	public void createTestEventMessagesLinkTable() throws IOException
 	{
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getTestEventsMsgsLinkTableName()).ifNotExists()
-				.withPartitionKey(ID, DataTypes.UUID)
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withColumn(TEST_EVENT_ID, DataTypes.UUID)
-				.withColumn(MESSAGES_IDS, DataTypes.listOf(DataTypes.TEXT));
+				.withClusteringColumn(TEST_EVENT_ID, DataTypes.UUID)
+				.withClusteringColumn(MESSAGES_IDS, DataTypes.frozenListOf(DataTypes.TEXT));
 		
 		exec.executeQuery(create.asCql());
 	}

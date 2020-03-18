@@ -497,15 +497,15 @@ public class CassandraCradleStorage extends CradleStorage
 
 	
 	@Override
-	public List<String> storeReportMessagesLink(String reportId, Set<StoredMessageId> messagesIds) throws IOException
+	public void storeReportMessagesLink(String reportId, Set<StoredMessageId> messagesIds) throws IOException
 	{
-		return linkMessagesTo(messagesIds, settings.getReportMsgsLinkTableName(), REPORT_ID, reportId);
+		linkMessagesTo(messagesIds, settings.getReportMsgsLinkTableName(), REPORT_ID, reportId);
 	}
 	
 	@Override
-	public List<String> storeTestEventMessagesLink(String eventId, Set<StoredMessageId> messagesIds) throws IOException
+	public void storeTestEventMessagesLink(String eventId, Set<StoredMessageId> messagesIds) throws IOException
 	{
-		return linkMessagesTo(messagesIds, settings.getTestEventsMsgsLinkTableName(), TEST_EVENT_ID, eventId);
+		linkMessagesTo(messagesIds, settings.getTestEventsMsgsLinkTableName(), TEST_EVENT_ID, eventId);
 	}
 	
 	
@@ -737,27 +737,22 @@ public class CassandraCradleStorage extends CradleStorage
 		return storedMessages;
 	}
 	
-	private List<String> linkMessagesTo(Set<StoredMessageId> messagesIds, String linksTable, String linkColumn, String linkedId) throws IOException
+	private void linkMessagesTo(Set<StoredMessageId> messagesIds, String linksTable, String linkColumn, String linkedId) throws IOException
 	{
-		List<String> ids = new ArrayList<>();
 		List<String> messagesIdsAsStrings = messagesIds.stream().map(StoredMessageId::toString).collect(toList());
 		int msgsSize = messagesIdsAsStrings.size();
 		for (int left = 0; left < msgsSize; left++)
 		{
 			int right = min(left + REPORT_MSGS_LINK_MAX_MSGS, msgsSize);
 			List<String> curMsgsIds = messagesIdsAsStrings.subList(left, right);
-			UUID id = UUID.randomUUID();
 			Insert insert = insertInto(settings.getKeyspace(), linksTable)
-					.value(ID, literal(id))
 					.value(INSTANCE_ID, literal(UUID.fromString(getInstanceId())))
 					.value(linkColumn, literal(UUID.fromString(linkedId)))
 					.value(MESSAGES_IDS, literal(curMsgsIds))
 					.ifNotExists();
 			exec.executeQuery(insert.asCql());
-			ids.add(id.toString());
 			left = right - 1;
 		}
-		return ids;
 	}
 	
 

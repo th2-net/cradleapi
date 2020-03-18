@@ -97,24 +97,20 @@ public abstract class CradleStorage
 	
 	
 	/**
-	 * Writes links of given report and messages to storage, providing IDs to find these records in
-	 * future
+	 * Writes to storage links between given report and messages.
 	 * @param reportId ID of stored report
 	 * @param messagesIds list of stored message IDs
-	 * @return list of record IDs in storage to find written data
 	 * @throws IOException if data writing failed
 	 */
-	public abstract List<String> storeReportMessagesLink(String reportId, Set<StoredMessageId> messagesIds) throws IOException;
+	public abstract void storeReportMessagesLink(String reportId, Set<StoredMessageId> messagesIds) throws IOException;
 	
 	/**
-	 * Writes links of given test event and messages to storage, providing IDs to find these records in
-	 * future
+	 * Writes to storage links between given test event and messages.
 	 * @param eventId ID of stored test event
 	 * @param messagesIds list of stored message IDs
-	 * @return list of record IDs in storage to find written data
 	 * @throws IOException if data writing failed
 	 */
-	public abstract List<String> storeTestEventMessagesLink(String eventId, Set<StoredMessageId> messagesIds) throws IOException;
+	public abstract void storeTestEventMessagesLink(String eventId, Set<StoredMessageId> messagesIds) throws IOException;
 	
 	
 	/**

@@ -50,7 +50,7 @@ public class MessagesLinker
 				.column(linkColumn)
 				.whereColumn(INSTANCE_ID).isEqualTo(literal(instanceId))
 				.whereColumn(MESSAGES_IDS).contains(literal(messageId.toString()))
-				.allowFiltering();
+				.allowFiltering();  //This is required to use contains()
 		
 		Row resultRow = exec.executeQuery(selectFrom.asCql()).one();
 		if (resultRow == null)
@@ -68,8 +68,7 @@ public class MessagesLinker
 		Select selectFrom = selectFrom(keyspace, linksTable)
 				.column(MESSAGES_IDS)
 				.whereColumn(INSTANCE_ID).isEqualTo(literal(instanceId))
-				.whereColumn(linkColumn).isEqualTo(literal(UUID.fromString(linkedId)))
-				.allowFiltering();
+				.whereColumn(linkColumn).isEqualTo(literal(UUID.fromString(linkedId)));
 		
 		Iterator<Row> resultIterator = exec.executeQuery(selectFrom.asCql()).iterator();
 		List<StoredMessageId> ids = new ArrayList<>();
@@ -94,9 +93,8 @@ public class MessagesLinker
 		Select selectFrom = selectFrom(keyspace, linksTable)
 				.column(MESSAGES_IDS)
 				.whereColumn(INSTANCE_ID).isEqualTo(literal(instanceId))
-				.whereColumn(linksTable).isEqualTo(literal(UUID.fromString(linkedId)))
-				.limit(1)
-				.allowFiltering();
+				.whereColumn(linkColumn).isEqualTo(literal(UUID.fromString(linkedId)))
+				.limit(1);
 		
 		return exec.executeQuery(selectFrom.asCql()).one() != null;
 	}
