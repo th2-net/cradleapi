@@ -8,7 +8,7 @@
  * information which is the property of Exactpro Systems LLC or its licensors.
  ******************************************************************************/
 
-package com.exactpro.cradle.cassandra;
+package com.exactpro.cradle.cassandra.iterators;
 
 import java.util.Iterator;
 
@@ -20,13 +20,13 @@ import com.exactpro.cradle.StoredReport;
 import com.exactpro.cradle.cassandra.utils.ReportException;
 import com.exactpro.cradle.cassandra.utils.ReportUtils;
 
-public class CassandraReportsIterator implements Iterator<StoredReport>
+public class ReportsIterator implements Iterator<StoredReport>
 {
-	private static final Logger logger = LoggerFactory.getLogger(CassandraReportsIterator.class);
+	private static final Logger logger = LoggerFactory.getLogger(ReportsIterator.class);
 	
 	private final Iterator<Row> rows;
 	
-	public CassandraReportsIterator(Iterator<Row> rows)
+	public ReportsIterator(Iterator<Row> rows)
 	{
 		this.rows = rows;
 	}

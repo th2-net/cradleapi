@@ -21,11 +21,10 @@ public class StoredMessage implements Serializable
 	private static final long serialVersionUID = 200983136307497672L;
 	
 	private StoredMessageId id;
-	private byte[] message;
+	private byte[] content;
 	private Direction direction;
 	private String streamName;
 	private Instant timestamp;
-	private String reportId;
 	
 	public StoredMessage()
 	{
@@ -34,11 +33,10 @@ public class StoredMessage implements Serializable
 	public StoredMessage(StoredMessage copyFrom)
 	{
 		this.id = copyFrom.getId();
-		this.message = copyFrom.getMessage();
+		this.content = copyFrom.getContent();
 		this.direction = copyFrom.getDirection();
 		this.streamName = copyFrom.getStreamName();
 		this.timestamp = copyFrom.getTimestamp();
-		this.reportId = copyFrom.getReportId();
 	}
 	
 	
@@ -53,14 +51,14 @@ public class StoredMessage implements Serializable
 	}
 	
 	
-	public byte[] getMessage()
+	public byte[] getContent()
 	{
-		return message;
+		return content;
 	}
 	
-	public void setMessage(byte[] message)
+	public void setContent(byte[] message)
 	{
-		this.message = message;
+		this.content = message;
 	}
 	
 	
@@ -96,23 +94,13 @@ public class StoredMessage implements Serializable
 		this.timestamp = timestamp;
 	}
 
-	public String getReportId()
-	{
-		return reportId;
-	}
-
-	public void setReportId(String reportId)
-	{
-		this.reportId = reportId;
-	}
-
 	@Override
 	public String toString()
 	{
 		return new StringBuilder()
 				.append("StoredMessage{").append(CradleUtils.EOL)
 				.append("id=").append(id).append(",").append(CradleUtils.EOL)
-				.append("message=").append(Arrays.toString(message)).append(",").append(CradleUtils.EOL)
+				.append("content=").append(Arrays.toString(content)).append(",").append(CradleUtils.EOL)
 				.append("streamName='").append(streamName).append("',").append(CradleUtils.EOL)
 				.append("direction='").append(direction.toString().toLowerCase()).append("',").append(CradleUtils.EOL)
 				.append("timestamp='").append(timestamp).append("',").append(CradleUtils.EOL)

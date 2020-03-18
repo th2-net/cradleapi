@@ -55,7 +55,7 @@ public abstract class CradleStorage
 	
 	
 	/**
-	 * Writes data about given message to storage, providing ID to find this record in future
+	 * Writes data about given message to storage, providing ID to find this record in future. Message is linked with corresponding stream
 	 * @param message data to write
 	 * @return ID of record in storage to find written data
 	 * @throws IOException if data writing failed
@@ -114,12 +114,12 @@ public abstract class CradleStorage
 	
 	
 	/**
-	 * Retrieves messages data stored under given ID
-	 * @param rowId ID of database row to retrieve messages data from
-	 * @return list of data of stored messages
-	 * @throws IOException if messages data retrieval failed
+	 * Retrieves message data stored under given ID
+	 * @param id of stored message to retrieve
+	 * @return data of stored messages
+	 * @throws IOException if message data retrieval failed
 	 */
-	public abstract Collection<StoredMessage> getMessages(String rowId) throws IOException;
+	public abstract StoredMessage getMessage(StoredMessageId id) throws IOException;
 
 	/**
 	 * Retrieves report data stored under given ID
@@ -139,6 +139,12 @@ public abstract class CradleStorage
 	
 	
 	/**
+	 * StreamsMessagesLinker is used to obtain messages by stream
+	 * @return new instance of StreamsMessagesLinker
+	 */
+	public abstract StreamsMessagesLinker getStreamsMessagesLinker();
+	
+	/**
 	 * ReportsMessagesLinker is used to obtain links between reports and messages
 	 * @return new instance of ReportsMessagesLinker
 	 */
@@ -152,6 +158,13 @@ public abstract class CradleStorage
 	
 	
 	/**
+	 * Allows to enumerate stored messages
+	 * @return iterable object to enumerate messages
+	 * @throws IOException if data retrieval failed
+	 */
+	public abstract Iterable<StoredMessage> getMessages() throws IOException;
+	
+	/**
 	 * Allows to enumerate stored reports
 	 * @return iterable object to enumerate reports
 	 * @throws IOException if data retrieval failed
@@ -160,7 +173,7 @@ public abstract class CradleStorage
 	
 	/**
 	 * Allows to enumerate stored test events linked to given report ID
-	 * @param reportId for test events to obtain
+	 * @param reportId of test events to obtain
 	 * @return iterable object to enumerate test events linked with given report ID
 	 * @throws IOException if data retrieval failed
 	 */

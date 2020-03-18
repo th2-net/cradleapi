@@ -20,10 +20,4 @@ public class DefaultCradleManager extends CradleManager
 	{
 		return null;
 	}
-	
-	@Override
-	public MessageNavigator getStorageMessageNavigator()
-	{
-		return null;
-	}
 }

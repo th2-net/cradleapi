@@ -8,7 +8,7 @@
  * information which is the property of Exactpro Systems LLC or its licensors.
  ******************************************************************************/
 
-package com.exactpro.cradle.cassandra;
+package com.exactpro.cradle.cassandra.iterators;
 
 import java.util.Iterator;
 
@@ -20,13 +20,13 @@ import com.exactpro.cradle.StoredTestEvent;
 import com.exactpro.cradle.cassandra.utils.TestEventException;
 import com.exactpro.cradle.cassandra.utils.TestEventUtils;
 
-public class CassandraTestEventsIterator implements Iterator<StoredTestEvent>
+public class TestEventsIterator implements Iterator<StoredTestEvent>
 {
-	private static final Logger logger = LoggerFactory.getLogger(CassandraTestEventsIterator.class);
+	private static final Logger logger = LoggerFactory.getLogger(TestEventsIterator.class);
 	
 	private final Iterator<Row> rows;
 	
-	public CassandraTestEventsIterator(Iterator<Row> rows)
+	public TestEventsIterator(Iterator<Row> rows)
 	{
 		this.rows = rows;
 	}
