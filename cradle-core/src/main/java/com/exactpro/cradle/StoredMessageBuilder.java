@@ -34,9 +34,9 @@ public class StoredMessageBuilder
 		return this;
 	}
 	
-	public StoredMessageBuilder message(byte[] message)
+	public StoredMessageBuilder content(byte[] message)
 	{
-		msg.setMessage(message);
+		msg.setContent(message);
 		return this;
 	}
 	

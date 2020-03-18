@@ -13,8 +13,10 @@ package com.exactpro.cradle.cassandra;
 import java.time.Instant;
 import java.util.*;
 
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.StoredMessage;
+import com.exactpro.cradle.StoredMessageId;
 
 public class MessageBatch
 {
@@ -22,19 +24,19 @@ public class MessageBatch
 	private int storedMessagesCount = 0;
 	private final StoredMessage[] messages;
 	private final int limit;
-	private Direction msgsDirections;
-	private Set<String> msgsStreamsNames;
+	private Direction messagesDirections;
+	private Map<String, Set<StoredMessageId>> streamsMessages;
 
 	public MessageBatch(int limit)
 	{
 		this.limit = limit;
 		this.messages = new StoredMessage[limit];
-		this.msgsStreamsNames = new HashSet<>();
+		this.streamsMessages = new HashMap<>();
 	}
 
 	public void init()
 	{
-		this.batchId = UUID.randomUUID();
+		this.batchId = Uuids.timeBased();
 		this.storedMessagesCount = 0;
 	}
 
@@ -65,7 +67,14 @@ public class MessageBatch
 	{
 		messages[storedMessagesCount++] = msg;
 		setDirection(msg);
-		msgsStreamsNames.add(msg.getStreamName());
+		
+		Set<StoredMessageId> sm = streamsMessages.get(msg.getStreamName());
+		if (sm == null)
+		{
+			sm = new HashSet<>();
+			streamsMessages.put(msg.getStreamName(), sm);
+		}
+		sm.add(msg.getId());
 	}
 
 	public Instant getTimestamp()
@@ -80,8 +89,8 @@ public class MessageBatch
 		batchId = null;
 		storedMessagesCount = 0;
 		Arrays.fill(messages, null);
-		msgsDirections = null;
-		msgsStreamsNames.clear();
+		messagesDirections = null;
+		streamsMessages.clear();
 	}
 
 	public boolean isEmpty()
@@ -96,23 +105,19 @@ public class MessageBatch
 
 	private void setDirection(StoredMessage message)
 	{
-		if (msgsDirections == null)
-		{
-			msgsDirections = message.getDirection();
-		}
-		else if (msgsDirections != Direction.BOTH && msgsDirections != message.getDirection())
-		{
-			msgsDirections = Direction.BOTH;
-		}
+		if (messagesDirections == null)
+			messagesDirections = message.getDirection();
+		else if (messagesDirections != Direction.BOTH && messagesDirections != message.getDirection())
+			messagesDirections = Direction.BOTH;
 	}
 
-	public Direction getMsgsDirections()
+	public Direction getMessagesDirections()
 	{
-		return msgsDirections;
+		return messagesDirections;
 	}
 
-	public Set<String> getMsgsStreamsNames()
+	public Map<String, Set<StoredMessageId>> getStreamsMessages()
 	{
-		return msgsStreamsNames;
+		return streamsMessages;
 	}
 }

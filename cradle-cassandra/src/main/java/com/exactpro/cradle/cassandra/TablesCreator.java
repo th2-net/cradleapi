@@ -41,8 +41,7 @@ public class TablesCreator
 		createInstancesTable();
 		createStreamsTable();
 		createMessagesTable();
-		createBatchDirMetadataTable();
-		createBatchStreamsMetadataTable();
+		createStreamMessagesLinkTable();
 		
 		createReportsTable();
 		createReportMessagesLinkTable();
@@ -65,59 +64,50 @@ public class TablesCreator
 	public void createInstancesTable() throws IOException
 	{
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), CassandraStorageSettings.INSTANCES_TABLE_DEFAULT_NAME).ifNotExists()
-				.withPartitionKey(ID, DataTypes.UUID)
-				.withColumn(NAME, DataTypes.TEXT);
+				.withPartitionKey(NAME, DataTypes.TEXT)  //Name is a key for faster ID obtaining by name
+				.withColumn(ID, DataTypes.UUID);
 		
 		exec.executeQuery(create.asCql());
 	}
 	
 	public void createStreamsTable() throws IOException
 	{
-		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), CassandraStorageSettings.STREAMS_TABLE_DEFAULT_NAME).ifNotExists()
-				.withPartitionKey(ID, DataTypes.UUID)
+		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), CassandraStorageSettings.STREAMS_TABLE_DEFAULT_NAME).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				.withClusteringColumn(ID, DataTypes.TIMEUUID)
 				.withColumn(NAME, DataTypes.TEXT)
-				.withColumn(STREAM_DATA, DataTypes.TEXT);
+				.withColumn(STREAM_DATA, DataTypes.TEXT)
+				.withClusteringOrder(ID, ClusteringOrder.ASC);
 		
 		exec.executeQuery(create.asCql());
 	}
 
 	public void createMessagesTable() throws IOException
 	{
-		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getMessagesTableName()).ifNotExists()
-				.withPartitionKey(ID, DataTypes.UUID)
+		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getMessagesTableName()).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				.withClusteringColumn(ID, DataTypes.TIMEUUID)
+				.withColumn(DIRECTION, DataTypes.TEXT)
 				.withColumn(TIMESTAMP, DataTypes.TIMESTAMP)
 				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
 				.withColumn(CONTENT, DataTypes.BLOB)
-				.withColumn(PREV_ID, DataTypes.UUID);
-		
-		exec.executeQuery(create.asCql());
-	}
-
-	public void createBatchDirMetadataTable() throws IOException
-	{
-		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getBatchDirMetadataTableName()).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(BATCH_ID, DataTypes.UUID)
-				.withColumn(DIRECTION, DataTypes.TEXT);
-		
-		exec.executeQuery(create.asCql());
-	}
-
-	public void createBatchStreamsMetadataTable() throws IOException
-	{
-		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(),
-				settings.getBatchStreamsMetadataTableName()).ifNotExists()
-				.withPartitionKey(ID, DataTypes.UUID)
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withColumn(BATCH_ID, DataTypes.UUID)
-				.withColumn(STREAM_ID, DataTypes.UUID);
+				.withClusteringOrder(ID, ClusteringOrder.ASC);
 		
 		exec.executeQuery(create.asCql());
 	}
 	
+	public void createStreamMessagesLinkTable() throws IOException
+	{
+		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getStreamMsgsLinkTableName()).ifNotExists()
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				//Not too many streams are expected and no requests to this table only by message ID, so can make stream ID the partition key
+				.withPartitionKey(STREAM_ID, DataTypes.TIMEUUID)
+				.withClusteringColumn(MESSAGES_IDS, DataTypes.frozenListOf(DataTypes.TEXT));
+		
+		exec.executeQuery(create.asCql());
+	}
 	
+
 	public void createReportsTable() throws IOException
 	{
 		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getReportsTableName()).ifNotExists()
@@ -165,7 +155,7 @@ public class TablesCreator
 	
 	public void createTestEventMessagesLinkTable() throws IOException
 	{
-		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getTestEventsMsgsLinkTableName()).ifNotExists()
+		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getTestEventMsgsLinkTableName()).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
 				.withClusteringColumn(TEST_EVENT_ID, DataTypes.UUID)
 				.withClusteringColumn(MESSAGES_IDS, DataTypes.frozenListOf(DataTypes.TEXT));

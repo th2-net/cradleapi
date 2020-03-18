@@ -88,7 +88,7 @@ public class JsonStoredMessage
 				.direction(Direction.valueOf(direction))
 				.streamName(streamName)
 				.timestamp(Instant.parse(timestamp))
-				.message(message.getBytes(StandardCharsets.UTF_8))
+				.content(message.getBytes(StandardCharsets.UTF_8))
 				.build();
 	}
 }

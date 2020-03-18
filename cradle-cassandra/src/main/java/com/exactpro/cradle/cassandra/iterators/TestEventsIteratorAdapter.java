@@ -8,7 +8,7 @@
  * information which is the property of Exactpro Systems LLC or its licensors.
  ******************************************************************************/
 
-package com.exactpro.cradle.cassandra;
+package com.exactpro.cradle.cassandra.iterators;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
@@ -23,11 +23,11 @@ import com.exactpro.cradle.StoredTestEvent;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.cassandra.utils.TestEventUtils;
 
-public class CassandraTestEventsIteratorAdapter implements Iterable<StoredTestEvent>
+public class TestEventsIteratorAdapter implements Iterable<StoredTestEvent>
 {
 	private final ResultSet rs;
 	
-	public CassandraTestEventsIteratorAdapter(UUID reportId, QueryExecutor exec, String keyspace, String testEventsTable, UUID instanceId) throws IOException
+	public TestEventsIteratorAdapter(UUID reportId, QueryExecutor exec, String keyspace, String testEventsTable, UUID instanceId) throws IOException
 	{
 		Select selectFrom = TestEventUtils.prepareSelect(keyspace, testEventsTable, instanceId)
 				.whereColumn(REPORT_ID).isEqualTo(literal(reportId));
@@ -38,6 +38,6 @@ public class CassandraTestEventsIteratorAdapter implements Iterable<StoredTestEv
 	@Override
 	public Iterator<StoredTestEvent> iterator()
 	{
-		return new CassandraTestEventsIterator(rs.iterator());
+		return new TestEventsIterator(rs.iterator());
 	}
 }

@@ -16,7 +16,9 @@ package com.exactpro.cradle;
  */
 public class StoredMessageId
 {
-	private final String id;
+	private String id;
+	
+	public StoredMessageId() {}
 
 	public StoredMessageId(String id)
 	{
@@ -26,6 +28,11 @@ public class StoredMessageId
 	public String getId()
 	{
 		return id;
+	}
+	
+	public void setId(String id)
+	{
+		this.id = id;
 	}
 
 	@Override

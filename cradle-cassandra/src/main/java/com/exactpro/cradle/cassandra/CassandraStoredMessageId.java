@@ -10,16 +10,22 @@
 
 package com.exactpro.cradle.cassandra;
 
+import java.io.Serializable;
+
 import com.exactpro.cradle.StoredMessageId;
 
 /**
  * Holder for data to find message stored in CassandraCradleStorage.
  */
-public class CassandraStoredMessageId extends StoredMessageId
+public class CassandraStoredMessageId extends StoredMessageId implements Serializable
 {
+	private static final long serialVersionUID = 6722783437389553280L;
 	public static final String DELIMITER = ":";
-	private final String batchId;
-	private final int messageIndex;
+	
+	private String batchId;
+	private int messageIndex;
+	
+	public CassandraStoredMessageId() {}
 	
 	/**
 	 * @param id batch ID
@@ -27,7 +33,6 @@ public class CassandraStoredMessageId extends StoredMessageId
 	 */
 	public CassandraStoredMessageId(String id, int messageIndex)
 	{
-		super(id);
 		this.batchId = id;
 		this.messageIndex = messageIndex;
 	}
@@ -47,14 +52,38 @@ public class CassandraStoredMessageId extends StoredMessageId
 	}
 	
 	@Override
-	public String toString()
+	public void setId(String id)
 	{
-		return getId()+DELIMITER+messageIndex;
+		this.batchId = id;
+	}
+	
+	
+	//These two methods are mostly needed for serialization/deserialization to work
+	public String getBatchId()
+	{
+		return batchId;
+	}
+	
+	public void setBatchId(String batchId)
+	{
+		this.batchId = batchId;
 	}
 	
 	
 	public int getMessageIndex()
 	{
 		return messageIndex;
+	}
+	
+	public void setMessageIndex(int messageIndex)
+	{
+		this.messageIndex = messageIndex;
+	}
+	
+	
+	@Override
+	public String toString()
+	{
+		return getId()+DELIMITER+messageIndex;
 	}
 }

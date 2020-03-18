@@ -29,11 +29,6 @@ public abstract class CradleManager
 	protected abstract CradleStorage createStorage();
 	
 	/**
-	 * @return instance of {@link MessageNavigator} to enumerate stored messages
-	 */
-	public abstract MessageNavigator getStorageMessageNavigator();
-	
-	/**
 	 * Initializes manager to get access to Cradle storage using given name of application instance
 	 * @param instanceName name of application instance
 	 * @throws CradleStorageException if access to Cradle storage cannot be established

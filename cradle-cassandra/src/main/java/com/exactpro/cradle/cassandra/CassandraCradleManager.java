@@ -30,10 +30,4 @@ public class CassandraCradleManager extends CradleManager
 	{
 		return new CassandraCradleStorage(connection, new CassandraStorageSettings());
 	}
-	
-	@Override
-	public MessageNavigator getStorageMessageNavigator()
-	{
-		return new CassandraMessageNavigator((CassandraCradleStorage)getStorage());
-	}
 }

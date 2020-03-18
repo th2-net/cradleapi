@@ -8,7 +8,7 @@
  * information which is the property of Exactpro Systems LLC or its licensors.
  ******************************************************************************/
 
-package com.exactpro.cradle.cassandra;
+package com.exactpro.cradle.cassandra.iterators;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -20,11 +20,11 @@ import com.exactpro.cradle.StoredReport;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.cassandra.utils.ReportUtils;
 
-public class CassandraReportsIteratorAdapter implements Iterable<StoredReport>
+public class ReportsIteratorAdapter implements Iterable<StoredReport>
 {
 	private final ResultSet rs;
 	
-	public CassandraReportsIteratorAdapter(QueryExecutor exec, String keyspace, String testEventsTable, UUID instanceId) throws IOException
+	public ReportsIteratorAdapter(QueryExecutor exec, String keyspace, String testEventsTable, UUID instanceId) throws IOException
 	{
 		Select selectFrom = ReportUtils.prepareSelect(keyspace, testEventsTable, instanceId);
 		
@@ -34,6 +34,6 @@ public class CassandraReportsIteratorAdapter implements Iterable<StoredReport>
 	@Override
 	public Iterator<StoredReport> iterator()
 	{
-		return new CassandraReportsIterator(rs.iterator());
+		return new ReportsIterator(rs.iterator());
 	}
 }

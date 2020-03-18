@@ -10,9 +10,6 @@
 
 package com.exactpro.cradle.cassandra;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class CassandraStorageSettings
 {
 	public static final int BATCH_SIZE_LIMIT_BYTES = 5000;
@@ -25,35 +22,32 @@ public class CassandraStorageSettings
 			MESSAGES_TABLE_DEFAULT_NAME = "messages",
 			REPORTS_TABLE_DEFAULT_NAME = "reports",
 			TEST_EVENTS_TABLE_DEFAULT_NAME = "test_events",
-			BATCH_DIRECTION_METADATA_TABLE_DEFAULT_NAME = "batch_dir_metadata",
-			BATCH_STREAMS_METADATA_TABLE_DEFAULT_NAME = "batch_streams_metadata",
-			REPORT_MSGS_LINK_TABLE_DEFAULT_NAME = "report_msgs_link",
-			TEST_EVENT_MSGS_LINK_TABLE_DEFAULT_NAME = "test_event_msgs_link";
+			STREAM_MSGS_LINK_TABLE_DEFAULT_NAME = "stream_messages_link",
+			REPORT_MSGS_LINK_TABLE_DEFAULT_NAME = "report_messages_link",
+			TEST_EVENT_MSGS_LINK_TABLE_DEFAULT_NAME = "test_event_messages_link";
 	private static final long DEFAULT_TIMEOUT = 5000;
 	private static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1;
-	protected static final int BATCH_MESSAGES_LIMIT = 10;
-	protected static final int REPORT_MSGS_LINK_MAX_MSGS = 10;
+	public static final int BATCH_MESSAGES_LIMIT = 10,
+			REPORT_MSGS_LINK_MAX_MSGS = 10;
 
 	private final String keyspace;
 	private String messagesTableName,
-			batchDirMetadataTableName,
-			batchStreamsMetadataTableName,
 			reportsTableName,
 			testEventsTableName,
+			streamMsgsLinkTableName,
 			reportMsgsLinkTableName,
-			testEventsMsgsLinkTableName;
+			testEventMsgsLinkTableName;
 	private final int keyspaceReplicationFactor;
 	private long timeout;
 
 	public CassandraStorageSettings(String keyspace, int keyspaceReplicationFactor, long timeout)
 	{
 		this.messagesTableName = MESSAGES_TABLE_DEFAULT_NAME;
-		this.batchDirMetadataTableName = BATCH_DIRECTION_METADATA_TABLE_DEFAULT_NAME;
-		this.batchStreamsMetadataTableName = BATCH_STREAMS_METADATA_TABLE_DEFAULT_NAME;
 		this.reportsTableName = REPORTS_TABLE_DEFAULT_NAME;
 		this.testEventsTableName = TEST_EVENTS_TABLE_DEFAULT_NAME;
+		this.streamMsgsLinkTableName = STREAM_MSGS_LINK_TABLE_DEFAULT_NAME;
 		this.reportMsgsLinkTableName = REPORT_MSGS_LINK_TABLE_DEFAULT_NAME;
-		this.testEventsMsgsLinkTableName = TEST_EVENT_MSGS_LINK_TABLE_DEFAULT_NAME;
+		this.testEventMsgsLinkTableName = TEST_EVENT_MSGS_LINK_TABLE_DEFAULT_NAME;
 		this.keyspace = keyspace;
 		this.keyspaceReplicationFactor = keyspaceReplicationFactor;
 		this.timeout = timeout;
@@ -91,28 +85,6 @@ public class CassandraStorageSettings
 	}
 
 	
-	public String getBatchDirMetadataTableName()
-	{
-		return batchDirMetadataTableName;
-	}
-
-	public void setBatchDirMetadataTableName(String batchDirMetadataTableName)
-	{
-		this.batchDirMetadataTableName = batchDirMetadataTableName;
-	}
-	
-	
-	public String getBatchStreamsMetadataTableName()
-	{
-		return batchStreamsMetadataTableName;
-	}
-
-	public void setBatchStreamsMetadataTableName(String batchStreamsMetadataTableName)
-	{
-		this.batchStreamsMetadataTableName = batchStreamsMetadataTableName;
-	}
-
-	
 	public String getReportsTableName()
 	{
 		return reportsTableName;
@@ -135,6 +107,17 @@ public class CassandraStorageSettings
 	}
 	
 	
+	public String getStreamMsgsLinkTableName()
+	{
+		return streamMsgsLinkTableName;
+	}
+	
+	public void setStreamMsgsLinkTableName(String streamMsgsLinkTableName)
+	{
+		this.streamMsgsLinkTableName = streamMsgsLinkTableName;
+	}
+	
+	
 	public String getReportMsgsLinkTableName()
 	{
 		return reportMsgsLinkTableName;
@@ -146,14 +129,14 @@ public class CassandraStorageSettings
 	}
 	
 	
-	public String getTestEventsMsgsLinkTableName()
+	public String getTestEventMsgsLinkTableName()
 	{
-		return testEventsMsgsLinkTableName;
+		return testEventMsgsLinkTableName;
 	}
 	
-	public void setTestEventsMsgsLinkTableName(String testEventsMsgsLinkTableName)
+	public void setTestEventMsgsLinkTableName(String testEventMsgsLinkTableName)
 	{
-		this.testEventsMsgsLinkTableName = testEventsMsgsLinkTableName;
+		this.testEventMsgsLinkTableName = testEventMsgsLinkTableName;
 	}
 	
 	

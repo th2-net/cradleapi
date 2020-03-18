@@ -59,7 +59,7 @@ public class CradleWriter
 	{
 		StoredMessageBuilder builder = new StoredMessageBuilder();
 		
-		return builder.message(message)
+		return builder.content(message)
 				.direction(direction)
 				.streamName(stream.getName())
 				.timestamp(Instant.now())
