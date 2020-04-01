@@ -229,20 +229,35 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	public StoredMessageId storeMessage(StoredMessage message) throws IOException
 	{
+		if (getStreamId(message.getStreamName()) == null)
+			throw new IOException("Message must be linked with know stream. Message refers to stream '"+message.getStreamName()+"', which is unknown");
+		
 		synchronized (messageWritingMonitor)
 		{
 			if (currentBatch.isFull()) //If error occurred during the last save
 				storeCurrentBatch();
 			
 			if (currentBatch.getBatchId() == null)
-				currentBatch.init();
+			{
+				if (message.getId() != null)
+					currentBatch.init(UUID.fromString(message.getId().toString()));
+				else
+					currentBatch.init();
+			}
 			
-			StoredMessageId id = new CassandraStoredMessageId(currentBatch.getBatchId().toString(), currentBatch.getStoredMessagesCount());
-			message.setId(id);
+			StoredMessageId id;
+			if (message.getId() == null)
+			{
+				id =new CassandraStoredMessageId(currentBatch.getBatchId().toString(), currentBatch.getStoredMessagesCount());
+				message.setId(id);
+			}
+			else
+				id = message.getId();
 			currentBatch.addMessage(message);
 			logger.debug("Message has been added to batch with ID {}", currentBatch.getBatchId());
 			
-			if (currentBatch.isFull())
+			//All batches will have 1-length this way. Need this because message IDs are generated externally, not by Cradle itself.
+			//if (currentBatch.isFull())
 				storeCurrentBatch();
 			
 			return id;
@@ -268,7 +283,7 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		
 			
-		UUID id = Uuids.timeBased();
+		UUID id = report.getId() != null ? UUID.fromString(report.getId()) : Uuids.timeBased();
 		Insert insert = insertInto(settings.getKeyspace(), settings.getReportsTableName())
 				.value(ID, literal(id))
 				.value(INSTANCE_ID, literal(instanceUuid))
@@ -332,7 +347,7 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		
 			
-		UUID id = Uuids.timeBased();
+		UUID id = testEvent.getId() != null ? UUID.fromString(testEvent.getId()) : Uuids.timeBased();
 		RegularInsert insert = insertInto(settings.getKeyspace(), settings.getTestEventsTableName())
 				.value(ID, literal(id))
 				.value(INSTANCE_ID, literal(instanceUuid))

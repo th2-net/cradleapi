@@ -10,16 +10,15 @@
 
 package com.exactpro.cradle.cassandra;
 
-import java.io.Serializable;
-
 import com.exactpro.cradle.StoredMessageId;
 
 /**
  * Holder for data to find message stored in CassandraCradleStorage.
  */
-public class CassandraStoredMessageId extends StoredMessageId implements Serializable
+public class CassandraStoredMessageId extends StoredMessageId
 {
 	private static final long serialVersionUID = 6722783437389553280L;
+	
 	public static final String DELIMITER = ":";
 	
 	private String batchId;

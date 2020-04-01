@@ -10,12 +10,16 @@
 
 package com.exactpro.cradle;
 
+import java.io.Serializable;
+
 /**
  * Holder for data to find message stored in CradleStorage.
  * Extend this class with additional fields/methods
  */
-public class StoredMessageId
+public class StoredMessageId implements Serializable
 {
+	private static final long serialVersionUID = 7369523107026579370L;
+	
 	private String id;
 	
 	public StoredMessageId() {}

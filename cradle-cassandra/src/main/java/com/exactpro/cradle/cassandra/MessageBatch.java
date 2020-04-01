@@ -39,6 +39,12 @@ public class MessageBatch
 		this.batchId = Uuids.timeBased();
 		this.storedMessagesCount = 0;
 	}
+	
+	public void init(UUID id)
+	{
+		this.batchId = id;
+		this.storedMessagesCount = 0;
+	}
 
 	public UUID getBatchId()
 	{
