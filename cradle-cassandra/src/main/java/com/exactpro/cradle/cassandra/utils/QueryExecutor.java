@@ -13,6 +13,7 @@ package com.exactpro.cradle.cassandra.utils;
 import java.io.IOException;
 import java.time.Duration;
 
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
@@ -44,6 +45,6 @@ public class QueryExecutor
 	
 	private SimpleStatement makeSimpleStatement(String query)
 	{
-		return SimpleStatement.newInstance(query).setTimeout(Duration.ofMillis(timeout));
+		return SimpleStatement.newInstance(query).setTimeout(Duration.ofMillis(timeout)).setConsistencyLevel(ConsistencyLevel.ALL);
 	}
 }

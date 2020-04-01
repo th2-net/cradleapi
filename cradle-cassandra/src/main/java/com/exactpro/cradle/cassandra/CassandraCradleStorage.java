@@ -496,7 +496,7 @@ public class CassandraCradleStorage extends CradleStorage
 				.column(ID)
 				.whereColumn(NAME).isEqualTo(literal(instanceName));
 		
-		Row resultRow = connection.getSession().execute(selectFrom.asCql()).one();
+		Row resultRow = exec.executeQuery(selectFrom.asCql()).one();
 		if (resultRow != null)
 			id = resultRow.get(ID, GenericType.UUID);
 		else

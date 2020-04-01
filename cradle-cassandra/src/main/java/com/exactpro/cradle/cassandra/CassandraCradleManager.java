@@ -28,6 +28,6 @@ public class CassandraCradleManager extends CradleManager
 	@Override
 	protected CradleStorage createStorage()
 	{
-		return new CassandraCradleStorage(connection, new CassandraStorageSettings());
+		return new CassandraCradleStorage(connection, new CassandraStorageSettings(connection.getSettings().getKeyspace()));
 	}
 }
