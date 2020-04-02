@@ -41,7 +41,7 @@ public class CassandraStoredMessageId extends StoredMessageId
 		super(messageId);
 		String[] parts = messageId.split(DELIMITER);
 		this.batchId = parts[0];
-		this.messageIndex = Integer.parseInt(parts[1]);
+		this.messageIndex = parts.length > 1 ? Integer.parseInt(parts[1]) : 0;
 	}
 	
 	@Override

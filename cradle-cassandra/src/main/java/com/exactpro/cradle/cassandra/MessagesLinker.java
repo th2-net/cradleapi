@@ -79,7 +79,7 @@ public class MessagesLinker
 			if (currentMessageIds != null)
 			{
 				for (String cid : currentMessageIds)
-					ids.add(new CassandraStoredMessageId(cid));
+					ids.add(new StoredMessageId(cid));
 			}
 		}
 		if (ids.isEmpty())

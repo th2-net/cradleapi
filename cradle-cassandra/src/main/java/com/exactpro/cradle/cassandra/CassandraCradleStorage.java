@@ -248,7 +248,7 @@ public class CassandraCradleStorage extends CradleStorage
 			StoredMessageId id;
 			if (message.getId() == null)
 			{
-				id =new CassandraStoredMessageId(currentBatch.getBatchId().toString(), currentBatch.getStoredMessagesCount());
+				id = new CassandraStoredMessageId(currentBatch.getBatchId().toString(), currentBatch.getStoredMessagesCount());
 				message.setId(id);
 			}
 			else
