@@ -422,7 +422,8 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	public StoredMessage getMessage(StoredMessageId id) throws IOException
 	{
-		Select selectFrom = MessageUtils.prepareSelect(settings.getKeyspace(), settings.getMessagesTableName(), instanceUuid);
+		Select selectFrom = MessageUtils.prepareSelect(settings.getKeyspace(), settings.getMessagesTableName(), instanceUuid)
+				.whereColumn(ID).isEqualTo(literal(UUID.fromString(id.getId())));
 		
 		Row resultRow = exec.executeQuery(selectFrom.asCql()).one();
 		if (resultRow == null)
