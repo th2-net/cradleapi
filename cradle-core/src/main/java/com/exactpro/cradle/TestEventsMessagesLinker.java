@@ -29,7 +29,7 @@ public interface TestEventsMessagesLinker
 	 * @return list of stored message IDs
 	 * @throws IOException if messages data retrieval failed
 	 */
-	List<StoredMessageId> getMessageIdsByReportId(String eventId) throws IOException;
+	List<StoredMessageId> getMessageIdsByEventId(String eventId) throws IOException;
 
 	/**
 	 * Checks if test event has messages linked to it
