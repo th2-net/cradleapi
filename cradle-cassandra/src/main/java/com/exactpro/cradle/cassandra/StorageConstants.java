@@ -18,6 +18,7 @@ public class StorageConstants
 			STREAM_DATA = "stream_data",
 			INSTANCE_ID = "instance_id",
 			DIRECTION = "direction",
+			STORED = "stored",
 			COMPRESSED = "compressed",
 			TIMESTAMP = "timestamp",
 			CONTENT = "content",

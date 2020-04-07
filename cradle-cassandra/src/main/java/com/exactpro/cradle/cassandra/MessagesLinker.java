@@ -56,7 +56,7 @@ public class MessagesLinker
 		if (resultRow == null)
 			return null;
 		
-		UUID id = resultRow.get(linkColumn, GenericType.UUID);
+		String id = resultRow.getString(linkColumn);
 		if (id == null)
 			return null;
 		
@@ -68,7 +68,7 @@ public class MessagesLinker
 		Select selectFrom = selectFrom(keyspace, linksTable)
 				.column(MESSAGES_IDS)
 				.whereColumn(INSTANCE_ID).isEqualTo(literal(instanceId))
-				.whereColumn(linkColumn).isEqualTo(literal(UUID.fromString(linkedId)));
+				.whereColumn(linkColumn).isEqualTo(literal(linkedId));
 		
 		Iterator<Row> resultIterator = exec.executeQuery(selectFrom.asCql()).iterator();
 		List<StoredMessageId> ids = new ArrayList<>();
@@ -93,7 +93,7 @@ public class MessagesLinker
 		Select selectFrom = selectFrom(keyspace, linksTable)
 				.column(MESSAGES_IDS)
 				.whereColumn(INSTANCE_ID).isEqualTo(literal(instanceId))
-				.whereColumn(linkColumn).isEqualTo(literal(UUID.fromString(linkedId)))
+				.whereColumn(linkColumn).isEqualTo(literal(linkedId))
 				.limit(1);
 		
 		return exec.executeQuery(selectFrom.asCql()).one() != null;

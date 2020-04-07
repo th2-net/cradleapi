@@ -20,7 +20,7 @@ import com.exactpro.cradle.StoredMessageId;
 
 public class MessageBatch
 {
-	private UUID batchId;
+	private String batchId;
 	private int storedMessagesCount = 0;
 	private final StoredMessage[] messages;
 	private final int limit;
@@ -36,17 +36,17 @@ public class MessageBatch
 
 	public void init()
 	{
-		this.batchId = Uuids.timeBased();
+		this.batchId = Uuids.timeBased().toString();
 		this.storedMessagesCount = 0;
 	}
 	
-	public void init(UUID id)
+	public void init(String id)
 	{
 		this.batchId = id;
 		this.storedMessagesCount = 0;
 	}
 
-	public UUID getBatchId()
+	public String getBatchId()
 	{
 		return batchId;
 	}

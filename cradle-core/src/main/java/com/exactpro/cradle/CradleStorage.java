@@ -130,12 +130,13 @@ public abstract class CradleStorage
 	public abstract StoredReport getReport(String id) throws IOException;
 	
 	/**
-	 * Retrieves test event data stored under given ID
+	 * Retrieves test event data stored under given ID and related to given report ID
+	 * @param reportId of stored report whose test event to retrieve
 	 * @param id of stored test event to retrieve
 	 * @return data of stored test event
 	 * @throws IOException if test event data retrieval failed
 	 */
-	public abstract StoredTestEvent getTestEvent(String id) throws IOException;
+	public abstract StoredTestEvent getTestEvent(String reportId, String id) throws IOException;
 	
 	
 	/**
