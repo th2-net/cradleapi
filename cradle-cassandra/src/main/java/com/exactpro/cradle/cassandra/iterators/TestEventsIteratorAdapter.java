@@ -27,7 +27,7 @@ public class TestEventsIteratorAdapter implements Iterable<StoredTestEvent>
 {
 	private final ResultSet rs;
 	
-	public TestEventsIteratorAdapter(UUID reportId, QueryExecutor exec, String keyspace, String testEventsTable, UUID instanceId) throws IOException
+	public TestEventsIteratorAdapter(String reportId, QueryExecutor exec, String keyspace, String testEventsTable, UUID instanceId) throws IOException
 	{
 		Select selectFrom = TestEventUtils.prepareSelect(keyspace, testEventsTable, instanceId)
 				.whereColumn(REPORT_ID).isEqualTo(literal(reportId));

@@ -36,10 +36,9 @@ public class TestEventUtils
 	
 	public static StoredTestEvent toTestEvent(Row row) throws TestEventException
 	{
-		String id = row.getUuid(ID).toString();
-		
-		UUID parentId = row.getUuid(PARENT_ID),
-				reportId = row.getUuid(REPORT_ID);
+		String id = row.getString(ID),
+				parentId = row.getString(PARENT_ID),
+				reportId = row.getString(REPORT_ID);
 		
 		StoredTestEventBuilder builder = new StoredTestEventBuilder().id(id)
 				.name(row.getString(NAME))
@@ -49,9 +48,9 @@ public class TestEventUtils
 				.success(row.getBoolean(SUCCESS));
 		
 		if (parentId != null)
-			builder = builder.parent(parentId.toString());
+			builder = builder.parent(parentId);
 		if (reportId != null)
-			builder = builder.report(reportId.toString());
+			builder = builder.report(reportId);
 		
 		ByteBuffer contentsBuffer = row.getByteBuffer(CONTENT);
 		byte[] content = contentsBuffer == null ? new byte[0] : contentsBuffer.array();

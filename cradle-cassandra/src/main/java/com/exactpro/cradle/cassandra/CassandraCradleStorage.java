@@ -147,7 +147,7 @@ public class CassandraCradleStorage extends CradleStorage
 			{
 				if (!currentBatch.isEmpty())
 				{
-					UUID batchId = currentBatch.getBatchId();
+					String batchId = currentBatch.getBatchId();
 					storeCurrentBatch();
 					logger.debug("Batch with ID {} has been saved in storage", batchId);
 				}
@@ -240,7 +240,7 @@ public class CassandraCradleStorage extends CradleStorage
 			if (currentBatch.getBatchId() == null)
 			{
 				if (message.getId() != null)
-					currentBatch.init(UUID.fromString(message.getId().toString()));
+					currentBatch.init(message.getId().getId());
 				else
 					currentBatch.init();
 			}
@@ -283,10 +283,11 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		
 			
-		UUID id = report.getId() != null ? UUID.fromString(report.getId()) : Uuids.timeBased();
+		String id = report.getId() != null ? report.getId() : Uuids.timeBased().toString();
 		Insert insert = insertInto(settings.getKeyspace(), settings.getReportsTableName())
 				.value(ID, literal(id))
 				.value(INSTANCE_ID, literal(instanceUuid))
+				.value(STORED, literal(Instant.now()))
 				.value(NAME, literal(report.getName()))
 				.value(TIMESTAMP, literal(report.getTimestamp()))
 				.value(SUCCESS, literal(report.isSuccess()))
@@ -316,7 +317,7 @@ public class CassandraCradleStorage extends CradleStorage
 			}
 		}
 		
-		UUID id = UUID.fromString(report.getId());
+		String id = report.getId();
 		Update update = update(settings.getKeyspace(), settings.getReportsTableName())
 				.setColumn(NAME, literal(report.getName()))
 				.setColumn(TIMESTAMP, literal(report.getTimestamp()))
@@ -347,10 +348,11 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		
 			
-		UUID id = testEvent.getId() != null ? UUID.fromString(testEvent.getId()) : Uuids.timeBased();
+		String id = testEvent.getId() != null ? testEvent.getId() : Uuids.timeBased().toString();
 		RegularInsert insert = insertInto(settings.getKeyspace(), settings.getTestEventsTableName())
 				.value(ID, literal(id))
 				.value(INSTANCE_ID, literal(instanceUuid))
+				.value(STORED, literal(Instant.now()))
 				.value(NAME, literal(testEvent.getName()))
 				.value(TYPE, literal(testEvent.getType()))
 				.value(START_TIMESTAMP, literal(testEvent.getStartTimestamp()))
@@ -358,9 +360,9 @@ public class CassandraCradleStorage extends CradleStorage
 				.value(SUCCESS, literal(testEvent.isSuccess()))
 				.value(COMPRESSED, literal(toCompress))
 				.value(CONTENT, literal(ByteBuffer.wrap(content)))
-				.value(REPORT_ID, literal(UUID.fromString(testEvent.getReportId())));
+				.value(REPORT_ID, literal(testEvent.getReportId()));
 		if (!StringUtils.isEmpty(testEvent.getParentId()))
-			insert = insert.value(PARENT_ID, literal(UUID.fromString(testEvent.getParentId())));
+			insert = insert.value(PARENT_ID, literal(testEvent.getParentId()));
 		exec.executeQuery(insert.ifNotExists().asCql());
 		
 		return id.toString();
@@ -393,10 +395,10 @@ public class CassandraCradleStorage extends CradleStorage
 				.setColumn(COMPRESSED, literal(toCompress))
 				.setColumn(CONTENT, literal(ByteBuffer.wrap(content)));
 		if (!StringUtils.isEmpty(testEvent.getParentId()))
-			updateColumns = updateColumns.setColumn(PARENT_ID, literal(UUID.fromString(testEvent.getParentId())));
+			updateColumns = updateColumns.setColumn(PARENT_ID, literal(testEvent.getParentId()));
 		
-		UUID id = UUID.fromString(testEvent.getId()),
-				reportId = UUID.fromString(testEvent.getReportId());
+		String id = testEvent.getId(),
+				reportId = testEvent.getReportId();
 		Update update = updateColumns
 				.whereColumn(ID).isEqualTo(literal(id))
 				.whereColumn(INSTANCE_ID).isEqualTo(literal(instanceUuid))
@@ -423,7 +425,7 @@ public class CassandraCradleStorage extends CradleStorage
 	public StoredMessage getMessage(StoredMessageId id) throws IOException
 	{
 		Select selectFrom = MessageUtils.prepareSelect(settings.getKeyspace(), settings.getMessagesTableName(), instanceUuid)
-				.whereColumn(ID).isEqualTo(literal(UUID.fromString(id.getId())));
+				.whereColumn(ID).isEqualTo(literal(id.getId()));
 		
 		Row resultRow = exec.executeQuery(selectFrom.asCql()).one();
 		if (resultRow == null)
@@ -437,7 +439,7 @@ public class CassandraCradleStorage extends CradleStorage
 	public StoredReport getReport(String id) throws IOException
 	{
 		Select selectFrom = ReportUtils.prepareSelect(settings.getKeyspace(), settings.getReportsTableName(), instanceUuid)
-				.whereColumn(ID).isEqualTo(literal(UUID.fromString(id)));
+				.whereColumn(ID).isEqualTo(literal(id));
 		
 		Row resultRow = exec.executeQuery(selectFrom.asCql()).one();
 		if (resultRow == null)
@@ -447,10 +449,11 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	public StoredTestEvent getTestEvent(String id) throws IOException
+	public StoredTestEvent getTestEvent(String reportId, String id) throws IOException
 	{
 		Select selectFrom = TestEventUtils.prepareSelect(settings.getKeyspace(), settings.getTestEventsTableName(), instanceUuid)
-				.whereColumn(ID).isEqualTo(literal(UUID.fromString(id)));
+				.whereColumn(REPORT_ID).isEqualTo(literal(reportId))
+				.whereColumn(ID).isEqualTo(literal(id));
 		
 		Row resultRow = exec.executeQuery(selectFrom.asCql()).one();
 		if (resultRow == null)
@@ -494,7 +497,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	public Iterable<StoredTestEvent> getReportTestEvents(String reportId) throws IOException
 	{
-		return new TestEventsIteratorAdapter(UUID.fromString(reportId), 
+		return new TestEventsIteratorAdapter(reportId, 
 				exec, settings.getKeyspace(), settings.getTestEventsTableName(), instanceUuid);
 	}
 	
@@ -544,7 +547,7 @@ public class CassandraCradleStorage extends CradleStorage
 			
 			lastBatchFlush = Instant.now();
 			
-			UUID batchId = currentBatch.getBatchId();
+			String batchId = currentBatch.getBatchId();
 			logger.debug("Batch with ID {} has been saved in storage", batchId);
 		}
 		finally
@@ -577,6 +580,7 @@ public class CassandraCradleStorage extends CradleStorage
 		Insert insert = insertInto(settings.getKeyspace(), settings.getMessagesTableName())
 				.value(ID, literal(currentBatch.getBatchId()))
 				.value(INSTANCE_ID, literal(instanceUuid))
+				.value(STORED, literal(Instant.now()))
 				.value(DIRECTION, literal(currentBatch.getMessagesDirections().getLabel()))
 				.value(TIMESTAMP, literal(batchStartTimestamp))
 				.value(COMPRESSED, literal(toCompress))
@@ -615,14 +619,13 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		List<String> messagesIdsAsStrings = messagesIds.stream().map(StoredMessageId::toString).collect(toList());
 		int msgsSize = messagesIdsAsStrings.size();
-		UUID linkedUuid = UUID.fromString(linkedId);
 		for (int left = 0; left < msgsSize; left++)
 		{
 			int right = min(left + REPORT_MSGS_LINK_MAX_MSGS, msgsSize);
 			List<String> curMsgsIds = messagesIdsAsStrings.subList(left, right);
 			Insert insert = insertInto(settings.getKeyspace(), linksTable)
 					.value(INSTANCE_ID, literal(instanceUuid))
-					.value(linkColumn, literal(linkedUuid))
+					.value(linkColumn, literal(linkedId))
 					.value(MESSAGES_IDS, literal(curMsgsIds))
 					.ifNotExists();
 			exec.executeQuery(insert.asCql());

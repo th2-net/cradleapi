@@ -36,7 +36,7 @@ public class ReportUtils
 	
 	public static StoredReport toReport(Row row) throws ReportException
 	{
-		String id = row.getUuid(ID).toString();
+		String id = row.getString(ID);
 		
 		StoredReportBuilder builder = new StoredReportBuilder().id(id)
 				.name(row.getString(NAME))

@@ -86,7 +86,8 @@ public class TablesCreator
 	{
 		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getMessagesTableName()).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withClusteringColumn(ID, DataTypes.TIMEUUID)
+				.withClusteringColumn(ID, DataTypes.TEXT)
+				.withColumn(STORED, DataTypes.TIMESTAMP)
 				.withColumn(DIRECTION, DataTypes.TEXT)
 				.withColumn(TIMESTAMP, DataTypes.TIMESTAMP)
 				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
@@ -112,7 +113,8 @@ public class TablesCreator
 	{
 		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getReportsTableName()).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withClusteringColumn(ID, DataTypes.TIMEUUID)
+				.withClusteringColumn(ID, DataTypes.TEXT)
+				.withColumn(STORED, DataTypes.TIMESTAMP)
 				.withColumn(NAME, DataTypes.TEXT)
 				.withColumn(TIMESTAMP, DataTypes.TIMESTAMP)
 				.withColumn(SUCCESS, DataTypes.BOOLEAN)
@@ -127,7 +129,7 @@ public class TablesCreator
 	{
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getReportMsgsLinkTableName()).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withClusteringColumn(REPORT_ID, DataTypes.TIMEUUID)
+				.withClusteringColumn(REPORT_ID, DataTypes.TEXT)
 				.withClusteringColumn(MESSAGES_IDS, DataTypes.frozenListOf(DataTypes.TEXT));
 		
 		exec.executeQuery(create.asCql());
@@ -138,8 +140,9 @@ public class TablesCreator
 	{
 		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getTestEventsTableName()).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(REPORT_ID, DataTypes.TIMEUUID)
-				.withClusteringColumn(ID, DataTypes.TIMEUUID)
+				.withPartitionKey(REPORT_ID, DataTypes.TEXT)
+				.withClusteringColumn(ID, DataTypes.TEXT)
+				.withColumn(STORED, DataTypes.TIMESTAMP)
 				.withColumn(NAME, DataTypes.TEXT)
 				.withColumn(TYPE, DataTypes.TEXT)
 				.withColumn(START_TIMESTAMP, DataTypes.TIMESTAMP)
@@ -147,7 +150,7 @@ public class TablesCreator
 				.withColumn(SUCCESS, DataTypes.BOOLEAN)
 				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
 				.withColumn(CONTENT, DataTypes.BLOB)
-				.withColumn(PARENT_ID, DataTypes.TIMEUUID)
+				.withColumn(PARENT_ID, DataTypes.TEXT)
 				.withClusteringOrder(ID, ClusteringOrder.ASC);
 		
 		exec.executeQuery(create.asCql());
@@ -157,7 +160,7 @@ public class TablesCreator
 	{
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getTestEventMsgsLinkTableName()).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withClusteringColumn(TEST_EVENT_ID, DataTypes.UUID)
+				.withClusteringColumn(TEST_EVENT_ID, DataTypes.TEXT)
 				.withClusteringColumn(MESSAGES_IDS, DataTypes.frozenListOf(DataTypes.TEXT));
 		
 		exec.executeQuery(create.asCql());
