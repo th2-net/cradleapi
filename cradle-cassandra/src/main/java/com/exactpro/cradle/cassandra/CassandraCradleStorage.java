@@ -19,7 +19,6 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.update.Update;
 import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
 import com.exactpro.cradle.CradleStorage;
-import com.exactpro.cradle.CradleStream;
 import com.exactpro.cradle.ReportsMessagesLinker;
 import com.exactpro.cradle.StoredMessage;
 import com.exactpro.cradle.StoredMessageId;
@@ -38,7 +37,6 @@ import com.exactpro.cradle.cassandra.utils.ReportUtils;
 import com.exactpro.cradle.cassandra.utils.TestEventUtils;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.CradleUtils;
-import com.exactpro.cradle.utils.JsonMarshaller;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -76,8 +74,6 @@ public class CassandraCradleStorage extends CradleStorage
 	private QueryExecutor exec;
 	private final ScheduledExecutorService batchFlusher;
 
-	private JsonMarshaller<String> streamMarshaller = new JsonMarshaller<>();
-	
 	private StreamsMessagesLinker streamsMessagesLinker;
 	private ReportsMessagesLinker reportsMessagesLinker;
 	private TestEventsMessagesLinker testEventsMessagesLinker;
@@ -118,8 +114,7 @@ public class CassandraCradleStorage extends CradleStorage
 			batchFlusher.scheduleWithFixedDelay(new BatchIdleFlusher(BATCH_IDLE_LIMIT), BATCH_IDLE_LIMIT, BATCH_IDLE_LIMIT, TimeUnit.MILLISECONDS);
 			instanceUuid = getInstanceId(instanceName);
 			
-			streamsMessagesLinker = new CassandraStreamsMessagesLinker(exec, settings.getKeyspace(), settings.getStreamMsgsLinkTableName(), STREAM_ID, instanceUuid,
-					this);
+			streamsMessagesLinker = new CassandraStreamsMessagesLinker(exec, settings.getKeyspace(), settings.getStreamMsgsLinkTableName(), STREAM_NAME, instanceUuid);
 			reportsMessagesLinker = new CassandraReportsMessagesLinker(exec, 
 					settings.getKeyspace(), settings.getReportMsgsLinkTableName(), REPORT_ID, instanceUuid);
 			testEventsMessagesLinker = new CassandraTestEventsMessagesLinker(exec, 
@@ -175,63 +170,8 @@ public class CassandraCradleStorage extends CradleStorage
 
 
 	@Override
-	protected String queryStreamId(String streamName) throws IOException
-	{
-		Select select = selectFrom(settings.getKeyspace(), STREAMS_TABLE_DEFAULT_NAME)
-				.column(ID)
-				.whereColumn(INSTANCE_ID).isEqualTo(literal(instanceUuid))
-				.whereColumn(NAME).isEqualTo(literal(streamName))
-				.allowFiltering();  //Name is not part of the key as stream can be renamed. To query by name need to allow filtering
-		Row resultRow = exec.executeQuery(select.asCql()).one();
-		if (resultRow != null)
-			return resultRow.get(ID, GenericType.UUID).toString();
-		return null;
-	}
-	
-	@Override
-	protected String doStoreStream(CradleStream stream) throws IOException
-	{
-		UUID id = Uuids.timeBased();
-		Insert insert = insertInto(settings.getKeyspace(), STREAMS_TABLE_DEFAULT_NAME)
-				.value(ID, literal(id))
-				.value(INSTANCE_ID, literal(instanceUuid))
-				.value(NAME, literal(stream.getName()))
-				.value(STREAM_DATA, literal(streamMarshaller.marshal(stream.getStreamData())))
-				.ifNotExists();
-		exec.executeQuery(insert.asCql());
-		return id.toString();
-	}
-	
-	@Override
-	protected void doModifyStream(String id, CradleStream newStream) throws IOException
-	{
-		UUID uuid = UUID.fromString(id);
-		Update update = update(settings.getKeyspace(), STREAMS_TABLE_DEFAULT_NAME)
-				.setColumn(NAME, literal(newStream.getName()))
-				.setColumn(STREAM_DATA, literal(streamMarshaller.marshal(newStream.getStreamData())))
-				.whereColumn(ID).isEqualTo(literal(uuid))
-				.whereColumn(INSTANCE_ID).isEqualTo(literal(instanceUuid));
-		exec.executeQuery(update.asCql());
-	}
-	
-	@Override
-	protected void doModifyStreamName(String id, String newName) throws IOException
-	{
-		UUID uuid = UUID.fromString(id);
-		Update update = update(settings.getKeyspace(), STREAMS_TABLE_DEFAULT_NAME)
-				.setColumn(NAME, literal(newName))
-				.whereColumn(ID).isEqualTo(literal(uuid))
-				.whereColumn(INSTANCE_ID).isEqualTo(literal(instanceUuid));
-		exec.executeQuery(update.asCql());
-	}
-	
-	
-	@Override
 	public StoredMessageId storeMessage(StoredMessage message) throws IOException
 	{
-		if (getStreamId(message.getStreamName()) == null)
-			throw new IOException("Message must be linked with know stream. Message refers to stream '"+message.getStreamName()+"', which is unknown");
-		
 		synchronized (messageWritingMonitor)
 		{
 			if (currentBatch.isFull()) //If error occurred during the last save
@@ -592,10 +532,7 @@ public class CassandraCradleStorage extends CradleStorage
 	private void storeCurrentBatchMetadata() throws IOException
 	{
 		for (Entry<String, Set<StoredMessageId>> streamMessages : currentBatch.getStreamsMessages().entrySet())
-		{
-			String streamId = getStreamId(streamMessages.getKey());
-			linkMessagesTo(streamMessages.getValue(), settings.getStreamMsgsLinkTableName(), STREAM_ID, streamId);
-		}
+			linkMessagesTo(streamMessages.getValue(), settings.getStreamMsgsLinkTableName(), STREAM_NAME, streamMessages.getKey());
 	}
 	
 	

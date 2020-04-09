@@ -12,9 +12,6 @@ package com.exactpro.cradle;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,13 +26,7 @@ public abstract class CradleStorage
 	private static final Logger logger = LoggerFactory.getLogger(CradleStorage.class);
 	
 	private String instanceId;
-	private Map<String, String> streamsById,
-			streamsByName;
 	
-	private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
-	private final Lock getStreamLock = rwLock.readLock();
-	private final Lock modifyStreamLock = rwLock.writeLock();
-
 	private volatile boolean workingState = false;
 	
 	/**
@@ -182,39 +173,6 @@ public abstract class CradleStorage
 	
 	
 	/**
-	 * Makes query to storage to obtain ID of stream with given name
-	 * @param streamName name of stream to get ID for
-	 * @return ID of stream as recorded in storage or null if that stream is not recorded in storage
-	 * @throws IOException if data retrieval failed
-	 */
-	protected abstract String queryStreamId(String streamName) throws IOException;
-	
-	/**
-	 * Stores data about given stream
-	 * @param stream data to store
-	 * @return ID of record in storage to find written data
-	 * @throws IOException if data writing failed
-	 */
-	protected abstract String doStoreStream(CradleStream  stream) throws IOException;
-	
-	/**
-	 * Updates stream data stored under given ID with new stream data
-	 * @param id of stream data to update
-	 * @param newStream data to update with
-	 * @throws IOException if data writing failed
-	 */
-	protected abstract void doModifyStream(String id, CradleStream  newStream) throws IOException;
-	
-	/**
-	 * Updates stream name stored under given ID with new name
-	 * @param id of stream to update
-	 * @param newName to update with
-	 * @throws IOException if data writing failed
-	 */
-	protected abstract void doModifyStreamName(String id, String newName) throws IOException;
-	
-	
-	/**
 	 * Initializes storage, i.e. creates needed streams and gets ready to write data marked with given instance name
 	 * @param instanceName name of current application instance. Will be used to mark written data
 	 * @throws CradleStorageException if storage initialization failed
@@ -225,15 +183,10 @@ public abstract class CradleStorage
 			throw new CradleStorageException("Already initialized");
 		
 		instanceId = doInit(instanceName);
-		streamsById = new HashMap<>();
-		streamsByName = new HashMap<>();
 	}
 	
 	/**
 	 * Switches storage from its initial state to working state. This affects storage operations.
-	 * For example, in initial state {@link #storeStream(CradleStream stream) storeStream} checks if stream was already stored.
-	 * This is useful while initializing streams on application startup.
-	 * In working state new stream is simply added to storage, i.e. is considered as new one.
 	 */
 	public void initFinish()
 	{
@@ -246,171 +199,5 @@ public abstract class CradleStorage
 	public String getInstanceId()
 	{
 		return instanceId;
-	}
-	
-	/**
-	 * Stores data about given stream
-	 * @param stream data to store
-	 * @return ID of record in storage to find written data
-	 * @throws IOException if data writing failed
-	 */
-	public String storeStream(CradleStream stream) throws IOException
-	{
-		if (!workingState)
-		{
-			String id = queryStreamId(stream.getName());  //Stream known to application, but unknown to storage
-			if (id == null)
-				return actuallyStoreStream(stream);
-			
-			addStreamData(id, stream);
-			return id;
-		}
-		
-		String name = stream.getName(),
-				id = getStreamId(name);
-		if (id != null)
-		{
-			logger.warn("Refused to store stream with already existing name '"+name+"'");
-			return null;
-		}
-		
-		return actuallyStoreStream(stream);
-	}
-	
-	/**
-	 * Updates stream data recorded in storage with new stream data
-	 * @param oldStream stream data to update
-	 * @param newStream data to update with
-	 * @throws IOException if data writing failed
-	 */
-	public void modifyStream(CradleStream oldStream, CradleStream newStream) throws IOException
-	{
-		String name = oldStream.getName(),
-				id = getStreamId(name);
-		if (id == null)
-		{
-			logger.warn("Refused to modify unknown stream '"+name+"'");
-			return;
-		}
-		
-		modifyStreamLock.lock();
-		try
-		{
-			String newName = newStream.getName();
-			if (!name.equals(newName))
-				changeStreamName(id, name, newName);
-			doModifyStream(id, newStream);
-		}
-		finally
-		{
-			modifyStreamLock.unlock();
-		}
-	}
-	
-	/**
-	 * Updates stream name recorded in storage with new name
-	 * @param oldName of stream to update
-	 * @param newName to update with
-	 * @throws IOException if data writing failed
-	 */
-	public void renameStream(String oldName, String newName) throws IOException
-	{
-		if (oldName.equals(newName))
-			return;
-		
-		String id = getStreamId(oldName);
-		if (id == null)
-		{
-			logger.warn("Refused to rename unknown stream '"+oldName+"'");
-			return;
-		}
-		
-		modifyStreamLock.lock();
-		try
-		{
-			changeStreamName(id, oldName, newName);
-			doModifyStreamName(id, newName);
-		}
-		finally
-		{
-			modifyStreamLock.unlock();
-		}
-	}
-	
-	/**
-	 * Returns name of stream stored under given ID
-	 * @param id of stream
-	 * @return name of stream
-	 */
-	public String getStreamName(String id)
-	{
-		getStreamLock.lock();
-		try
-		{
-			return streamsById.get(id);
-		}
-		finally
-		{
-			getStreamLock.unlock();
-		}
-	}
-	
-	/**
-	 * Returns ID of stream with given name as recorded in storage
-	 * @param name of stream
-	 * @return ID of stream
-	 */
-	public String getStreamId(String name)
-	{
-		getStreamLock.lock();
-		try
-		{
-			return streamsByName.get(name);
-		}
-		finally
-		{
-			getStreamLock.unlock();
-		}
-	}
-	
-	
-	private void changeStreamName(String id, String oldName, String newName)
-	{
-		//modifyStreamLock is switched on outside of this method
-		streamsById.put(id, newName);
-		streamsByName.remove(oldName);
-		streamsByName.put(newName, id);
-	}
-	
-	private String actuallyStoreStream(CradleStream stream) throws IOException
-	{
-		modifyStreamLock.lock();
-		try
-		{
-			String id = doStoreStream(stream),
-					name = stream.getName();
-			streamsById.put(id, name);
-			streamsByName.put(name, id);
-			return id;
-		}
-		finally
-		{
-			modifyStreamLock.unlock();
-		}
-	}
-	
-	private void addStreamData(String id, CradleStream stream)
-	{
-		modifyStreamLock.lock();
-		try
-		{
-			String name = stream.getName();
-			streamsById.put(id, name);
-			streamsByName.put(name, id);
-		}
-		finally
-		{
-			modifyStreamLock.unlock();
-		}
 	}
 }

@@ -30,13 +30,13 @@ public class CradleWriter
 	 * Stores data about sent message
 	 * @param message to store
 	 * @param metadata additional message data to store, if supported by storage implementation
-	 * @param sender object that have sent this message. Data about sender will be linked with stored message
+	 * @param senderName name of the stream that has sent this message. Data about sender will be linked with stored message
 	 * @return ID of record in storage to find written data
 	 * @throws IOException if data writing failed
 	 */
-	public StoredMessageId storeSentMessage(byte[] message, Map<String, Object> metadata, CradleStream sender) throws IOException
+	public StoredMessageId storeSentMessage(byte[] message, Map<String, Object> metadata, String senderName) throws IOException
 	{
-		StoredMessage sm = createStoredMessage(message, metadata, sender, Direction.SENT);
+		StoredMessage sm = createStoredMessage(message, metadata, senderName, Direction.SENT);
 		return storage.storeMessage(sm);
 	}
 	
@@ -44,24 +44,24 @@ public class CradleWriter
 	 * Stores data about received message
 	 * @param message to store
 	 * @param metadata additional message data to store, if supported by storage implementation
-	 * @param receiver stream that have received this message. Data about receiver will be linked with stored message
+	 * @param receiverName name of the stream that has received this message. Data about receiver will be linked with stored message
 	 * @return ID of record in storage to find written data
 	 * @throws IOException if data writing failed
 	 */
-	public StoredMessageId storeReceivedMessage(byte[] message, Map<String, Object> metadata, CradleStream receiver) throws IOException
+	public StoredMessageId storeReceivedMessage(byte[] message, Map<String, Object> metadata, String receiverName) throws IOException
 	{
-		StoredMessage sm = createStoredMessage(message, metadata, receiver, Direction.RECEIVED);
+		StoredMessage sm = createStoredMessage(message, metadata, receiverName, Direction.RECEIVED);
 		return storage.storeMessage(sm);
 	}
 	
 	
-	protected StoredMessage createStoredMessage(byte[] message, Map<String, Object> metadata, CradleStream stream, Direction direction)
+	protected StoredMessage createStoredMessage(byte[] message, Map<String, Object> metadata, String streamName, Direction direction)
 	{
 		StoredMessageBuilder builder = new StoredMessageBuilder();
 		
 		return builder.content(message)
 				.direction(direction)
-				.streamName(stream.getName())
+				.streamName(streamName)
 				.timestamp(Instant.now())
 				.build();
 	}

@@ -25,7 +25,6 @@ import com.exactpro.cradle.cassandra.CassandraCradleManager;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
 import com.exactpro.cradle.feeder.messages.MessagesFeeder;
-import com.exactpro.cradle.feeder.streams.StreamsFeeder;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -74,17 +73,6 @@ public class CassandraFeeder implements AutoCloseable
 	{
 		try
 		{
-			new JsonProcessor("streams", new StreamsFeeder(jsonMapper, storage)).process(streamsFile);
-		}
-		catch (Exception e)
-		{
-			throw new IOException("Error while feeding streams", e);
-		}
-		
-		manager.initFinish();
-		
-		try
-		{
 			new JsonProcessor("messages", new MessagesFeeder(jsonMapper, storage)).process(messagesFile);
 		}
 		catch (Exception e)
@@ -103,10 +91,9 @@ public class CassandraFeeder implements AutoCloseable
 				cfg.getKeyspace());
 		settings.setUsername(cfg.getUsername());
 		settings.setPassword(cfg.getPassword());
+		
 		CradleManager result = new CassandraCradleManager(new CassandraConnection(settings));
-		//This is to avoid creation of stream duplications: storeStream() will check if given stream already exists before adding it.
-		//After feeding streams data will finish initialization
-		result.initStart(cfg.getInstanceName());
+		result.init(cfg.getInstanceName());
 		return result;
 	}
 	
