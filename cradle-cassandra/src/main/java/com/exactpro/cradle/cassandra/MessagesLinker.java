@@ -44,7 +44,7 @@ public class MessagesLinker
 		this.instanceId = instanceId;
 	}
 	
-	protected String getLinkedIdByMessageId(StoredMessageId messageId) throws IOException
+	protected String getLinkedByMessageId(StoredMessageId messageId) throws IOException
 	{
 		Select selectFrom = selectFrom(keyspace, linksTable)
 				.column(linkColumn)
@@ -63,7 +63,7 @@ public class MessagesLinker
 		return id.toString();
 	}
 
-	protected List<StoredMessageId> getMessageIdsByLinkedId(String linkedId) throws IOException
+	protected List<StoredMessageId> getLinkedMessageIds(String linkedId) throws IOException
 	{
 		Select selectFrom = selectFrom(keyspace, linksTable)
 				.column(MESSAGES_IDS)

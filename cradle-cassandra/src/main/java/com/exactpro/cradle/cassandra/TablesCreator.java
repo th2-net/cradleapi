@@ -39,7 +39,6 @@ public class TablesCreator
 	{
 		createKeyspace();
 		createInstancesTable();
-		createStreamsTable();
 		createMessagesTable();
 		createStreamMessagesLinkTable();
 		
@@ -70,18 +69,6 @@ public class TablesCreator
 		exec.executeQuery(create.asCql());
 	}
 	
-	public void createStreamsTable() throws IOException
-	{
-		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), CassandraStorageSettings.STREAMS_TABLE_DEFAULT_NAME).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withClusteringColumn(ID, DataTypes.TIMEUUID)
-				.withColumn(NAME, DataTypes.TEXT)
-				.withColumn(STREAM_DATA, DataTypes.TEXT)
-				.withClusteringOrder(ID, ClusteringOrder.ASC);
-		
-		exec.executeQuery(create.asCql());
-	}
-
 	public void createMessagesTable() throws IOException
 	{
 		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getMessagesTableName()).ifNotExists()
@@ -101,8 +88,8 @@ public class TablesCreator
 	{
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getStreamMsgsLinkTableName()).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				//Not too many streams are expected and no requests to this table only by message ID, so can make stream ID the partition key
-				.withPartitionKey(STREAM_ID, DataTypes.TIMEUUID)
+				//Not too many streams are expected and no requests to this table only by message ID, so can make stream name the partition key
+				.withPartitionKey(STREAM_NAME, DataTypes.TEXT)
 				.withClusteringColumn(MESSAGES_IDS, DataTypes.frozenListOf(DataTypes.TEXT));
 		
 		exec.executeQuery(create.asCql());

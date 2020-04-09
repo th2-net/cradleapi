@@ -58,8 +58,6 @@ public class MessageUtils
 				if (msg == null)  //For case of not full batch
 					break;
 				StoredMessage copy = new StoredMessage(msg);
-				//Replacing stream name with stream ID to be aware of possible stream rename in future
-				copy.setStreamName(storage.getStreamId(copy.getStreamName()));
 				
 				byte[] serializedMsg = SerializationUtils.serialize(copy);
 				dos.writeInt(serializedMsg.length);
@@ -128,11 +126,7 @@ public class MessageUtils
 	
 	private static StoredMessage deserializeMessage(byte[] bytes, CradleStorage storage)
 	{
-		StoredMessage result = (StoredMessage) SerializationUtils.deserialize(bytes);
-		
-		//result.streamName contains stream ID. Replacing it with corresponding stream name
-		result.setStreamName(storage.getStreamName(result.getStreamName()));
-		return result;
+		return (StoredMessage)SerializationUtils.deserialize(bytes);
 	}
 	
 	private static byte[] getMessageContentBytes(Row row) throws IOException

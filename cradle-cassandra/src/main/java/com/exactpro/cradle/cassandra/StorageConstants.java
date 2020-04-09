@@ -14,8 +14,7 @@ public class StorageConstants
 {
 	public static final String ID = "id",
 			NAME = "name",
-			STREAM_ID = "stream_id",
-			STREAM_DATA = "stream_data",
+			STREAM_NAME = "stream_name",
 			INSTANCE_ID = "instance_id",
 			DIRECTION = "direction",
 			STORED = "stored",

@@ -29,13 +29,13 @@ public class CassandraTestEventsMessagesLinker extends MessagesLinker implements
 	@Override
 	public String getTestEventIdByMessageId(StoredMessageId messageId) throws IOException
 	{
-		return getLinkedIdByMessageId(messageId);
+		return getLinkedByMessageId(messageId);
 	}
 
 	@Override
 	public List<StoredMessageId> getMessageIdsByEventId(String eventId) throws IOException
 	{
-		return getMessageIdsByLinkedId(eventId);
+		return getLinkedMessageIds(eventId);
 	}
 
 	@Override

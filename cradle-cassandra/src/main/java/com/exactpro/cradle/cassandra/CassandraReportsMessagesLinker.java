@@ -29,13 +29,13 @@ public class CassandraReportsMessagesLinker extends MessagesLinker implements Re
 	@Override
 	public String getReportIdByMessageId(StoredMessageId messageId) throws IOException
 	{
-		return getLinkedIdByMessageId(messageId);
+		return getLinkedByMessageId(messageId);
 	}
 
 	@Override
 	public List<StoredMessageId> getMessageIdsByReportId(String reportId) throws IOException
 	{
-		return getMessageIdsByLinkedId(reportId);
+		return getLinkedMessageIds(reportId);
 	}
 
 	@Override
