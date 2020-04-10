@@ -12,12 +12,12 @@ package com.exactpro.cradle;
 
 import java.time.Instant;
 
-public class StorageReportFilter
+public class StoredReportFilter
 {
 	protected Instant periodFrom;
 	protected Instant periodTo;
 
-	public void copy(StorageMessageFilter otherFilter)
+	public void copy(StoredMessageFilter otherFilter)
 	{
 		periodFrom = otherFilter.periodFrom;
 		periodTo = otherFilter.periodTo;

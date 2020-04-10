@@ -23,7 +23,7 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.StoredTestEvent;
 import com.exactpro.cradle.StoredTestEventBuilder;
-import com.exactpro.cradle.utils.CradleUtils;
+import com.exactpro.cradle.utils.CompressionUtils;
 
 public class TestEventUtils
 {
@@ -58,7 +58,7 @@ public class TestEventUtils
 		{
 			try
 			{
-				content = CradleUtils.decompressData(content);
+				content = CompressionUtils.decompressData(content);
 			}
 			catch (IOException | DataFormatException e)
 			{

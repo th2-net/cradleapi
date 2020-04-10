@@ -12,9 +12,13 @@ package com.exactpro.cradle.feeder.messages;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
 import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.feeder.JsonFeeder;
+import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.messages.StoredMessageBatchId;
+import com.exactpro.cradle.utils.CradleStorageException;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,10 +31,12 @@ public class MessagesFeeder extends JsonFeeder
 	}
 
 	@Override
-	public String feed(String text) throws JsonParseException, JsonMappingException, IOException
+	public String feed(String text) throws JsonParseException, JsonMappingException, IOException, CradleStorageException
 	{
 		JsonStoredMessage jsonMsg = jsonMapper.readValue(text.getBytes(StandardCharsets.UTF_8), JsonStoredMessage.class);
-		return storage.storeMessage(jsonMsg.toStoredMessage()).toString();
+		
+		StoredMessageBatch batch = new StoredMessageBatch(new StoredMessageBatchId(UUID.randomUUID().toString()));
+		batch.addMessage(jsonMsg.toStoredMessage());
+		return batch.getId().toString();
 	}
-
 }

@@ -23,7 +23,7 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.StoredReport;
 import com.exactpro.cradle.StoredReportBuilder;
-import com.exactpro.cradle.utils.CradleUtils;
+import com.exactpro.cradle.utils.CompressionUtils;
 
 public class ReportUtils
 {
@@ -49,7 +49,7 @@ public class ReportUtils
 		{
 			try
 			{
-				content = CradleUtils.decompressData(content);
+				content = CompressionUtils.decompressData(content);
 			}
 			catch (IOException | DataFormatException e)
 			{

@@ -24,7 +24,8 @@ import java.util.UUID;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.exactpro.cradle.StoredMessageId;
+import com.exactpro.cradle.messages.StoredMessageBatchId;
+import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 
 public class MessagesLinker
@@ -79,7 +80,10 @@ public class MessagesLinker
 			if (currentMessageIds != null)
 			{
 				for (String cid : currentMessageIds)
-					ids.add(new StoredMessageId(cid));
+				{
+					StoredMessageId parsedId = parseMessageId(cid);
+					ids.add(parsedId);
+				}
 			}
 		}
 		if (ids.isEmpty())
@@ -97,5 +101,24 @@ public class MessagesLinker
 				.limit(1);
 		
 		return exec.executeQuery(selectFrom.asCql()).one() != null;
+	}
+	
+	private StoredMessageId parseMessageId(String id) throws IOException
+	{
+		String[] parts = id.split(StoredMessageId.IDS_DELIMITER);
+		if (parts.length < 2)
+			throw new IOException("Message ID ("+id+") should contain batch ID and message index delimited with '"+StoredMessageId.IDS_DELIMITER+"'");
+		
+		int index;
+		try
+		{
+			index = Integer.parseInt(parts[1]);
+		}
+		catch (NumberFormatException e)
+		{
+			throw new IOException("Invalid message index ("+parts[1]+") in message ID '"+id+"'");
+		}
+		
+		return new StoredMessageId(new StoredMessageBatchId(parts[0]), index);
 	}
 }

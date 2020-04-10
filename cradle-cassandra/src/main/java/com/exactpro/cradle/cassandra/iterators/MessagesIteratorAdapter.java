@@ -9,34 +9,31 @@
  ******************************************************************************/
 
 package com.exactpro.cradle.cassandra.iterators;
+
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.UUID;
 
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.exactpro.cradle.CradleStorage;
-import com.exactpro.cradle.StoredMessage;
-import com.exactpro.cradle.cassandra.utils.MessageUtils;
+import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
+import com.exactpro.cradle.messages.StoredMessage;
 
 public class MessagesIteratorAdapter implements Iterable<StoredMessage>
 {
 	private final ResultSet rs;
-	private final CradleStorage storage;
 	
-	public MessagesIteratorAdapter(QueryExecutor exec, String keyspace, String messagesTable, UUID instanceId,
-			CradleStorage storage) throws IOException
+	public MessagesIteratorAdapter(QueryExecutor exec, String keyspace, String messagesTable, UUID instanceId) throws IOException
 	{
-		Select selectFrom = MessageUtils.prepareSelect(keyspace, messagesTable, instanceId);
+		Select selectFrom = CassandraMessageUtils.prepareSelect(keyspace, messagesTable, instanceId);
 		
 		this.rs = exec.executeQuery(selectFrom.asCql());
-		this.storage = storage;
 	}
 	
 	@Override
 	public Iterator<StoredMessage> iterator()
 	{
-		return new MessagesIterator(rs.iterator(), storage);
+		return new MessagesIterator(rs.iterator());
 	}
 }

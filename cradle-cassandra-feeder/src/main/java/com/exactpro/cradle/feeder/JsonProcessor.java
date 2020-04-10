@@ -18,6 +18,7 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.exactpro.cradle.utils.CradleStorageException;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
@@ -36,7 +37,7 @@ public class JsonProcessor
 		this.feeder = feeder;
 	}
 	
-	public void process(File file) throws IOException
+	public void process(File file) throws IOException, CradleStorageException
 	{
 		counter = 0;
 		logger.info("Storing "+entityName+"...");
@@ -65,7 +66,7 @@ public class JsonProcessor
 	}
 	
 	
-	private void processString(String text) throws JsonParseException, JsonMappingException, IOException
+	private void processString(String text) throws JsonParseException, JsonMappingException, IOException, CradleStorageException
 	{
 		String id = feeder.feed(text);
 		if (++counter % 1000 == 0)
