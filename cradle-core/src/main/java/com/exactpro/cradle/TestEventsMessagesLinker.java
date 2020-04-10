@@ -13,6 +13,8 @@ package com.exactpro.cradle;
 import java.io.IOException;
 import java.util.List;
 
+import com.exactpro.cradle.messages.StoredMessageId;
+
 public interface TestEventsMessagesLinker
 {
 	/**

@@ -13,6 +13,7 @@ package com.exactpro.cradle.feeder;
 import java.io.IOException;
 
 import com.exactpro.cradle.CradleStorage;
+import com.exactpro.cradle.utils.CradleStorageException;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,5 +29,5 @@ public abstract class JsonFeeder
 		this.storage = storage;
 	}
 	
-	public abstract String feed(String text) throws JsonParseException, JsonMappingException, IOException;
+	public abstract String feed(String text) throws JsonParseException, JsonMappingException, IOException, CradleStorageException;
 }

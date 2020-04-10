@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.exactpro.cradle.ReportsMessagesLinker;
-import com.exactpro.cradle.StoredMessageId;
+import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 
 public class CassandraReportsMessagesLinker extends MessagesLinker implements ReportsMessagesLinker

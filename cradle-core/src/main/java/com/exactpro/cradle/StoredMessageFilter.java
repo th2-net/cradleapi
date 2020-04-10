@@ -14,7 +14,9 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
-public class StorageMessageFilter
+import com.exactpro.cradle.messages.StoredMessage;
+
+public class StoredMessageFilter
 {
 	public enum DirectionFilter {
 		Any(null),
@@ -43,7 +45,7 @@ public class StorageMessageFilter
 	protected Set<String> streams;
 	protected DirectionFilter directionFilter;
 
-	public StorageMessageFilter() {
+	public StoredMessageFilter() {
 		directionFilter = DirectionFilter.Any;
 	}
 
@@ -51,7 +53,7 @@ public class StorageMessageFilter
 		return periodFrom == null && periodTo == null && directionFilter == null && (streams == null || streams.isEmpty());
 	}
 
-	public void copy(StorageMessageFilter otherFilter)
+	public void copy(StoredMessageFilter otherFilter)
 	{
 		periodFrom = otherFilter.periodFrom;
 		periodTo = otherFilter.periodTo;

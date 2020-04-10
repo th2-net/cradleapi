@@ -8,9 +8,11 @@
  * information which is the property of Exactpro Systems LLC or its licensors.
  ******************************************************************************/
 
-package com.exactpro.cradle;
+package com.exactpro.cradle.messages;
 
 import java.time.Instant;
+
+import com.exactpro.cradle.Direction;
 
 public class StoredMessageBuilder
 {
@@ -27,53 +29,67 @@ public class StoredMessageBuilder
 		return new StoredMessage();
 	}
 	
+	private void initIfNeeded()
+	{
+		if (msg == null)
+			msg = createStoredMessage();
+	}
+	
 	
 	public StoredMessageBuilder id(StoredMessageId id)
 	{
+		initIfNeeded();
 		msg.setId(id);
 		return this;
 	}
 	
 	public StoredMessageBuilder content(byte[] message)
 	{
+		initIfNeeded();
 		msg.setContent(message);
 		return this;
 	}
 	
 	public StoredMessageBuilder sent()
 	{
+		initIfNeeded();
 		msg.setDirection(Direction.SENT);
 		return this;
 	}
 	
 	public StoredMessageBuilder received()
 	{
+		initIfNeeded();
 		msg.setDirection(Direction.RECEIVED);
 		return this;
 	}
 	
 	public StoredMessageBuilder direction(Direction d)
 	{
+		initIfNeeded();
 		msg.setDirection(d);
 		return this;
 	}
 	
 	public StoredMessageBuilder timestamp(Instant timestamp)
 	{
+		initIfNeeded();
 		msg.setTimestamp(timestamp);
 		return this;
 	}
 	
 	public StoredMessageBuilder streamName(String streamName)
 	{
+		initIfNeeded();
 		msg.setStreamName(streamName);
 		return this;
 	}
 	
 	public StoredMessage build()
 	{
+		initIfNeeded();
 		StoredMessage result = msg;
-		msg = createStoredMessage();
+		msg = null;
 		return result;
 	}
 }

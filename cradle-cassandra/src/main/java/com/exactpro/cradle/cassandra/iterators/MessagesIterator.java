@@ -9,6 +9,7 @@
  ******************************************************************************/
 
 package com.exactpro.cradle.cassandra.iterators;
+
 import java.io.IOException;
 import java.util.Iterator;
 
@@ -16,22 +17,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.datastax.oss.driver.api.core.cql.Row;
-import com.exactpro.cradle.CradleStorage;
-import com.exactpro.cradle.StoredMessage;
-import com.exactpro.cradle.cassandra.utils.MessageUtils;
+import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
+import com.exactpro.cradle.messages.StoredMessage;
 
 public class MessagesIterator implements Iterator<StoredMessage>
 {
 	private static final Logger logger = LoggerFactory.getLogger(MessagesIterator.class);
 	
 	private final Iterator<Row> rows;
-	private final CradleStorage storage;
 	private Iterator<StoredMessage> batchIterator;
 	
-	public MessagesIterator(Iterator<Row> rows, CradleStorage storage)
+	public MessagesIterator(Iterator<Row> rows)
 	{
 		this.rows = rows;
-		this.storage = storage;
 	}
 	
 	@Override
@@ -55,7 +53,7 @@ public class MessagesIterator implements Iterator<StoredMessage>
 		Row r = rows.next();
 		try
 		{
-			batchIterator = MessageUtils.toMessages(r, storage).iterator();
+			batchIterator = CassandraMessageUtils.toMessages(r).iterator();
 			if (batchIterator.hasNext())
 				return batchIterator.next();
 			batchIterator = null;

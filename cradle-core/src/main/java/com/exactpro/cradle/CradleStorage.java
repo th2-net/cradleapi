@@ -16,6 +16,9 @@ import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.exactpro.cradle.messages.StoredMessage;
+import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
@@ -46,12 +49,11 @@ public abstract class CradleStorage
 	
 	
 	/**
-	 * Writes data about given message to storage, providing ID to find this record in future. Message is linked with corresponding stream
-	 * @param message data to write
-	 * @return ID of record in storage to find written data
+	 * Writes data about given message batch to storage. Messages from batch are linked with corresponding streams
+	 * @param batch data to write
 	 * @throws IOException if data writing failed
 	 */
-	public abstract StoredMessageId storeMessage(StoredMessage message) throws IOException;
+	public abstract void storeMessageBatch(StoredMessageBatch batch) throws IOException;
 	
 	
 	/**

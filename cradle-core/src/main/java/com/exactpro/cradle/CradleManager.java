@@ -72,16 +72,6 @@ public abstract class CradleManager
 	
 	
 	/**
-	 * Creates {@link CradleWriter} instance bound to storage if storage is available for CradleManager
-	 * @return new {@link CradleWriter} object
-	 * @throws CradleStorageException if storage cannot be accessed
-	 */
-	public CradleWriter getWriter() throws CradleStorageException
-	{
-		return storage != null ? new CradleWriter(storage) : null;
-	}
-	
-	/**
 	 * @return {@link CradleStorage} object to read/write data
 	 */
 	public CradleStorage getStorage()

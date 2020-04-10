@@ -14,8 +14,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 
 import com.exactpro.cradle.Direction;
-import com.exactpro.cradle.StoredMessage;
-import com.exactpro.cradle.StoredMessageBuilder;
+import com.exactpro.cradle.messages.StoredMessage;
+import com.exactpro.cradle.messages.StoredMessageBuilder;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)

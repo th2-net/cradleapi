@@ -20,8 +20,6 @@ import com.datastax.oss.driver.api.querybuilder.update.Update;
 import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
 import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.ReportsMessagesLinker;
-import com.exactpro.cradle.StoredMessage;
-import com.exactpro.cradle.StoredMessageId;
 import com.exactpro.cradle.StoredReport;
 import com.exactpro.cradle.StoredTestEvent;
 import com.exactpro.cradle.StreamsMessagesLinker;
@@ -30,13 +28,16 @@ import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.iterators.MessagesIteratorAdapter;
 import com.exactpro.cradle.cassandra.iterators.ReportsIteratorAdapter;
 import com.exactpro.cradle.cassandra.iterators.TestEventsIteratorAdapter;
-import com.exactpro.cradle.cassandra.utils.BatchStorageException;
-import com.exactpro.cradle.cassandra.utils.MessageUtils;
+import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.cassandra.utils.ReportUtils;
 import com.exactpro.cradle.cassandra.utils.TestEventUtils;
+import com.exactpro.cradle.messages.StoredMessage;
+import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.utils.CompressionUtils;
 import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.CradleUtils;
+import com.exactpro.cradle.utils.MessageUtils;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -47,13 +48,9 @@ import static java.util.stream.Collectors.toList;
 
 import java.io.*;
 import java.nio.ByteBuffer;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
 import static com.exactpro.cradle.cassandra.CassandraStorageSettings.*;
@@ -68,12 +65,8 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	private UUID instanceUuid;
 
-	private final Object messageWritingMonitor = new Object();
-	private MessageBatch currentBatch;
-	private Instant lastBatchFlush;
 	private QueryExecutor exec;
-	private final ScheduledExecutorService batchFlusher;
-
+	
 	private StreamsMessagesLinker streamsMessagesLinker;
 	private ReportsMessagesLinker reportsMessagesLinker;
 	private TestEventsMessagesLinker testEventsMessagesLinker;
@@ -82,7 +75,6 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		this.connection = connection;
 		this.settings = settings;
-		this.batchFlusher = Executors.newScheduledThreadPool(1, r -> new Thread(r, "BatchFlusher"));
 	}
 	
 	
@@ -110,8 +102,6 @@ public class CassandraCradleStorage extends CradleStorage
 			
 			new TablesCreator(exec, settings).createAll();
 			
-			currentBatch = new MessageBatch(BATCH_MESSAGES_LIMIT);
-			batchFlusher.scheduleWithFixedDelay(new BatchIdleFlusher(BATCH_IDLE_LIMIT), BATCH_IDLE_LIMIT, BATCH_IDLE_LIMIT, TimeUnit.MILLISECONDS);
 			instanceUuid = getInstanceId(instanceName);
 			
 			streamsMessagesLinker = new CassandraStreamsMessagesLinker(exec, settings.getKeyspace(), settings.getStreamMsgsLinkTableName(), STREAM_NAME, instanceUuid);
@@ -128,80 +118,25 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 	}
 	
-	/**
-	 * Disposes resources occupied by storage which means closing of opened connections, flushing all buffers, etc.
-	 * @throws BatchStorageException if there was error while flushing message buffer. Exception contains all messages from the buffer.
-	 */
 	@Override
-	public void dispose() throws BatchStorageException
+	public void dispose() throws CradleStorageException
 	{
 		try
 		{
-			batchFlusher.shutdown();
-			synchronized (messageWritingMonitor)
-			{
-				if (!currentBatch.isEmpty())
-				{
-					String batchId = currentBatch.getBatchId();
-					storeCurrentBatch();
-					logger.debug("Batch with ID {} has been saved in storage", batchId);
-				}
-			}
+			connection.stop();
 		}
 		catch (Exception e)
 		{
-			synchronized (messageWritingMonitor)
-			{
-				throw new BatchStorageException("Error while storing current messages batch", e, currentBatch.getMessagesList());
-			}
-		}
-		finally
-		{
-			try
-			{
-				connection.stop();
-			}
-			catch (Exception e)
-			{
-				logger.error("Error while closing Cassandra connection", e);
-			}
+			logger.error("Error while closing Cassandra connection", e);
 		}
 	}
 
 
 	@Override
-	public StoredMessageId storeMessage(StoredMessage message) throws IOException
+	public void storeMessageBatch(StoredMessageBatch batch) throws IOException
 	{
-		synchronized (messageWritingMonitor)
-		{
-			if (currentBatch.isFull()) //If error occurred during the last save
-				storeCurrentBatch();
-			
-			if (currentBatch.getBatchId() == null)
-			{
-				if (message.getId() != null)
-					currentBatch.init(message.getId().getId());
-				else
-					currentBatch.init();
-			}
-			
-			StoredMessageId id;
-			if (message.getId() == null)
-			{
-				id = new CassandraStoredMessageId(currentBatch.getBatchId().toString(), currentBatch.getStoredMessagesCount());
-				message.setId(id);
-			}
-			else
-				id = message.getId();
-			currentBatch.addMessage(message);
-			logger.debug("Message has been added to batch with ID {}", currentBatch.getBatchId());
-			
-			//All batches will have 1-length this way. Need this because message IDs are generated externally, not by Cradle itself.
-			//if (currentBatch.isFull())
-				storeCurrentBatch();
-			
-			return id;
-		}
+		storeMessageBatchData(batch);
+		storeMessageBatchMetadata(batch);
 	}
 	
 	@Override
@@ -213,7 +148,7 @@ public class CassandraCradleStorage extends CradleStorage
 		{
 			try
 			{
-				reportContent = CradleUtils.compressData(reportContent);
+				reportContent = CompressionUtils.compressData(reportContent);
 			}
 			catch (IOException e)
 			{
@@ -248,7 +183,7 @@ public class CassandraCradleStorage extends CradleStorage
 		{
 			try
 			{
-				content = CradleUtils.compressData(content);
+				content = CompressionUtils.compressData(content);
 			}
 			catch (IOException e)
 			{
@@ -278,7 +213,7 @@ public class CassandraCradleStorage extends CradleStorage
 		{
 			try
 			{
-				content = CradleUtils.compressData(content);
+				content = CompressionUtils.compressData(content);
 			}
 			catch (IOException e)
 			{
@@ -317,7 +252,7 @@ public class CassandraCradleStorage extends CradleStorage
 		{
 			try
 			{
-				content = CradleUtils.compressData(content);
+				content = CompressionUtils.compressData(content);
 			}
 			catch (IOException e)
 			{
@@ -364,15 +299,14 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	public StoredMessage getMessage(StoredMessageId id) throws IOException
 	{
-		Select selectFrom = MessageUtils.prepareSelect(settings.getKeyspace(), settings.getMessagesTableName(), instanceUuid)
-				.whereColumn(ID).isEqualTo(literal(id.getId()));
+		Select selectFrom = CassandraMessageUtils.prepareSelect(settings.getKeyspace(), settings.getMessagesTableName(), instanceUuid)
+				.whereColumn(ID).isEqualTo(literal(id.getBatchId().toString()));
 		
 		Row resultRow = exec.executeQuery(selectFrom.asCql()).one();
 		if (resultRow == null)
 			return null;
 		
-		int index = id instanceof CassandraStoredMessageId ? ((CassandraStoredMessageId)id).getMessageIndex() : 0;
-		return MessageUtils.toMessage(resultRow, index, this);
+		return CassandraMessageUtils.toMessage(resultRow, id.getIndex());
 	}
 	
 	@Override
@@ -425,7 +359,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	public Iterable<StoredMessage> getMessages() throws IOException
 	{
-		return new MessagesIteratorAdapter(exec, settings.getKeyspace(), settings.getMessagesTableName(), instanceUuid, this);
+		return new MessagesIteratorAdapter(exec, settings.getKeyspace(), settings.getMessagesTableName(), instanceUuid);
 	}
 
 	@Override
@@ -472,56 +406,31 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	
-	private void storeCurrentBatch() throws IOException
+	private void storeMessageBatchData(StoredMessageBatch batch) throws IOException
 	{
-		if (currentBatch.isEmpty())
-		{
-			logger.warn("No messages to store");
-			return;
-		}
+		byte[] batchContent = MessageUtils.serializeMessages(batch.getMessages());
 		
-		try
-		{
-			storeCurrentBatchData();
-			storeCurrentBatchMetadata();
-			
-			lastBatchFlush = Instant.now();
-			
-			String batchId = currentBatch.getBatchId();
-			logger.debug("Batch with ID {} has been saved in storage", batchId);
-		}
-		finally
-		{
-			currentBatch.clear();  //This prevents batch ID duplication in case of any error in this method
-		}
-	}
-
-	private void storeCurrentBatchData() throws IOException
-	{
-		byte[] batchContent = MessageUtils.serializeMessages(currentBatch.getMessages(), this);
+		Instant batchStartTimestamp = batch.getTimestamp();
 		
-		Instant batchStartTimestamp = currentBatch.getTimestamp();
-		
-		boolean toCompress = isNeedCompressBatchContent(batchContent);
+		boolean toCompress = isNeedToCompressBatchContent(batchContent);
 		if (toCompress)
 		{
 			try
 			{
-				batchContent = CradleUtils.compressData(batchContent);
+				batchContent = CompressionUtils.compressData(batchContent);
 			}
 			catch (IOException e)
 			{
-				throw new IOException(String.format("Could not compress batch contents (batch ID: '%s'" +
-								", timestamp: '%s') to save in storage",
-						currentBatch.getBatchId(), batchStartTimestamp), e);
+				throw new IOException(String.format("Could not compress batch contents (ID: '%s') to save in storage",
+						batch.getId()), e);
 			}
 		}
 		
 		Insert insert = insertInto(settings.getKeyspace(), settings.getMessagesTableName())
-				.value(ID, literal(currentBatch.getBatchId()))
+				.value(ID, literal(batch.getId().toString()))
 				.value(INSTANCE_ID, literal(instanceUuid))
 				.value(STORED, literal(Instant.now()))
-				.value(DIRECTION, literal(currentBatch.getMessagesDirections().getLabel()))
+				.value(DIRECTION, literal(batch.getMessagesDirections().getLabel()))
 				.value(TIMESTAMP, literal(batchStartTimestamp))
 				.value(COMPRESSED, literal(toCompress))
 				.value(CONTENT, literal(ByteBuffer.wrap(batchContent)))
@@ -529,14 +438,14 @@ public class CassandraCradleStorage extends CradleStorage
 		exec.executeQuery(insert.asCql());
 	}
 
-	private void storeCurrentBatchMetadata() throws IOException
+	private void storeMessageBatchMetadata(StoredMessageBatch batch) throws IOException
 	{
-		for (Entry<String, Set<StoredMessageId>> streamMessages : currentBatch.getStreamsMessages().entrySet())
+		for (Entry<String, Set<StoredMessageId>> streamMessages : batch.getStreamsMessages().entrySet())
 			linkMessagesTo(streamMessages.getValue(), settings.getStreamMsgsLinkTableName(), STREAM_NAME, streamMessages.getKey());
 	}
 	
 	
-	private boolean isNeedCompressBatchContent(byte[] batchContentBytes)
+	private boolean isNeedToCompressBatchContent(byte[] batchContentBytes)
 	{
 		return batchContentBytes.length > BATCH_SIZE_LIMIT_BYTES;
 	}
@@ -567,37 +476,6 @@ public class CassandraCradleStorage extends CradleStorage
 					.ifNotExists();
 			exec.executeQuery(insert.asCql());
 			left = right - 1;
-		}
-	}
-	
-
-	private class BatchIdleFlusher implements Runnable
-	{
-		private final long maxAgeMillis;
-		
-		public BatchIdleFlusher(long maxAgeMillis)
-		{
-			this.maxAgeMillis = maxAgeMillis;
-		}
-		
-		@Override
-		public void run()
-		{
-			synchronized (messageWritingMonitor)
-			{
-				if (currentBatch.isEmpty() || (lastBatchFlush != null && Duration.between(lastBatchFlush, Instant.now()).abs().toMillis() < maxAgeMillis))
-					return;
-				
-				try
-				{
-					logger.debug("Writing messages batch while idle");
-					storeCurrentBatch();
-				}
-				catch (Exception e)
-				{
-					logger.error("Could not write messages batch while idle", e);
-				}
-			}
 		}
 	}
 }

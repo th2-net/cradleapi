@@ -16,7 +16,7 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-public class CradleUtils
+public class CompressionUtils
 {
 	public static String EOL = "\r\n";
 	

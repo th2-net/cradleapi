@@ -8,14 +8,18 @@
  * information which is the property of Exactpro Systems LLC or its licensors.
  ******************************************************************************/
 
-package com.exactpro.cradle;
+package com.exactpro.cradle.messages;
 
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.Arrays;
 
-import com.exactpro.cradle.utils.CradleUtils;
+import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.utils.CompressionUtils;
 
+/**
+ * Holds information about one message stored in Cradle.
+ */
 public class StoredMessage implements Serializable
 {
 	private static final long serialVersionUID = 200983136307497672L;
@@ -98,12 +102,12 @@ public class StoredMessage implements Serializable
 	public String toString()
 	{
 		return new StringBuilder()
-				.append("StoredMessage{").append(CradleUtils.EOL)
-				.append("id=").append(id).append(",").append(CradleUtils.EOL)
-				.append("content=").append(Arrays.toString(content)).append(",").append(CradleUtils.EOL)
-				.append("streamName='").append(streamName).append("',").append(CradleUtils.EOL)
-				.append("direction='").append(direction.toString().toLowerCase()).append("',").append(CradleUtils.EOL)
-				.append("timestamp='").append(timestamp).append("',").append(CradleUtils.EOL)
+				.append("StoredMessage{").append(CompressionUtils.EOL)
+				.append("id=").append(id).append(",").append(CompressionUtils.EOL)
+				.append("content=").append(Arrays.toString(content)).append(",").append(CompressionUtils.EOL)
+				.append("streamName='").append(streamName).append("',").append(CompressionUtils.EOL)
+				.append("direction='").append(direction.toString().toLowerCase()).append("',").append(CompressionUtils.EOL)
+				.append("timestamp='").append(timestamp).append("',").append(CompressionUtils.EOL)
 				.append("}").toString();
 	}
 }
