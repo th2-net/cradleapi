@@ -27,6 +27,8 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.messages.StoredMessage;
+import com.exactpro.cradle.messages.StoredMessageBatchId;
+import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CompressionUtils;
 import com.exactpro.cradle.utils.MessageUtils;
 
@@ -39,16 +41,16 @@ public class CassandraMessageUtils
 				.whereColumn(INSTANCE_ID).isEqualTo(literal(instanceId));
 	}
 	
-	public static StoredMessage toMessage(Row row, int index) throws IOException
+	public static StoredMessage toMessage(Row row, StoredMessageId id) throws IOException
 	{
 		byte[] contentBytes = getMessageContentBytes(row);
-		return MessageUtils.deserializeMessage(contentBytes, index);
+		return MessageUtils.deserializeOneMessage(contentBytes, id);
 	}
 	
 	public static Collection<StoredMessage> toMessages(Row row) throws IOException
 	{
 		byte[] contentBytes = getMessageContentBytes(row);
-		return MessageUtils.deserializeMessages(contentBytes);
+		return MessageUtils.deserializeMessages(contentBytes, new StoredMessageBatchId(row.getString(ID)));
 	}
 	
 	
