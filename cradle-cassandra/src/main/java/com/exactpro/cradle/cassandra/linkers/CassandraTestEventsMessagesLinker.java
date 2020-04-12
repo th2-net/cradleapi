@@ -8,14 +8,15 @@
  * information which is the property of Exactpro Systems LLC or its licensors.
  ******************************************************************************/
 
-package com.exactpro.cradle.cassandra;
+package com.exactpro.cradle.cassandra.linkers;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
 import com.exactpro.cradle.messages.StoredMessageId;
-import com.exactpro.cradle.TestEventsMessagesLinker;
+import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 
 public class CassandraTestEventsMessagesLinker extends MessagesLinker implements TestEventsMessagesLinker
@@ -27,20 +28,21 @@ public class CassandraTestEventsMessagesLinker extends MessagesLinker implements
 	}
 
 	@Override
-	public String getTestEventIdByMessageId(StoredMessageId messageId) throws IOException
+	public StoredTestEventId getTestEventIdByMessageId(StoredMessageId messageId) throws IOException
 	{
-		return getLinkedByMessageId(messageId);
+		String result = getLinkedByMessageId(messageId);
+		return result != null ? new StoredTestEventId(result) : null;
 	}
 
 	@Override
-	public List<StoredMessageId> getMessageIdsByEventId(String eventId) throws IOException
+	public List<StoredMessageId> getMessageIdsByEventId(StoredTestEventId eventId) throws IOException
 	{
-		return getLinkedMessageIds(eventId);
+		return getLinkedMessageIds(eventId.toString());
 	}
 
 	@Override
-	public boolean isTestEventLinkedToMessages(String eventId) throws IOException
+	public boolean isTestEventLinkedToMessages(StoredTestEventId eventId) throws IOException
 	{
-		return isLinkedToMessages(eventId);
+		return isLinkedToMessages(eventId.toString());
 	}
 }

@@ -21,8 +21,10 @@ import java.util.zip.DataFormatException;
 
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.exactpro.cradle.StoredTestEvent;
-import com.exactpro.cradle.StoredTestEventBuilder;
+import com.exactpro.cradle.reports.StoredReportId;
+import com.exactpro.cradle.testevents.StoredTestEvent;
+import com.exactpro.cradle.testevents.StoredTestEventBuilder;
+import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.utils.CompressionUtils;
 
 public class TestEventUtils
@@ -36,8 +38,8 @@ public class TestEventUtils
 	
 	public static StoredTestEvent toTestEvent(Row row) throws TestEventException
 	{
-		String id = row.getString(ID),
-				parentId = row.getString(PARENT_ID),
+		StoredTestEventId id = new StoredTestEventId(row.getString(ID));
+		String parentId = row.getString(PARENT_ID),
 				reportId = row.getString(REPORT_ID);
 		
 		StoredTestEventBuilder builder = new StoredTestEventBuilder().id(id)
@@ -48,9 +50,9 @@ public class TestEventUtils
 				.success(row.getBoolean(SUCCESS));
 		
 		if (parentId != null)
-			builder = builder.parent(parentId);
+			builder = builder.parent(new StoredTestEventId(parentId));
 		if (reportId != null)
-			builder = builder.report(reportId);
+			builder = builder.report(new StoredReportId(reportId));
 		
 		ByteBuffer contentsBuffer = row.getByteBuffer(CONTENT);
 		byte[] content = contentsBuffer == null ? new byte[0] : contentsBuffer.array();

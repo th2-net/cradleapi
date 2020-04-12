@@ -8,20 +8,20 @@
  * information which is the property of Exactpro Systems LLC or its licensors.
  ******************************************************************************/
 
-package com.exactpro.cradle.messages;
+package com.exactpro.cradle.reports;
 
 import java.io.Serializable;
 
 /**
- * Holds ID of message batch. It will be used in StoredMessageId of messages stored in corresponding batch
+ * Holds ID of a report stored in Cradle
  */
-public class StoredMessageBatchId implements Serializable
+public class StoredReportId implements Serializable
 {
-	private static final long serialVersionUID = 3345202917184581650L;
+	private static final long serialVersionUID = 5273290999519261075L;
 	
 	private final String id;
 	
-	public StoredMessageBatchId(String id)
+	public StoredReportId(String id)
 	{
 		this.id = id;
 	}
@@ -38,7 +38,7 @@ public class StoredMessageBatchId implements Serializable
 	{
 		return id;
 	}
-
+	
 	@Override
 	public int hashCode()
 	{
@@ -47,7 +47,7 @@ public class StoredMessageBatchId implements Serializable
 		result = prime * result + ((id == null) ? 0 : id.hashCode());
 		return result;
 	}
-
+	
 	@Override
 	public boolean equals(Object obj)
 	{
@@ -57,7 +57,7 @@ public class StoredMessageBatchId implements Serializable
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		StoredMessageBatchId other = (StoredMessageBatchId) obj;
+		StoredReportId other = (StoredReportId) obj;
 		if (id == null) {
 			if (other.id != null)
 				return false;

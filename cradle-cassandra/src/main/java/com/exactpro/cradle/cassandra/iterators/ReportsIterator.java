@@ -16,9 +16,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.datastax.oss.driver.api.core.cql.Row;
-import com.exactpro.cradle.StoredReport;
 import com.exactpro.cradle.cassandra.utils.ReportException;
 import com.exactpro.cradle.cassandra.utils.ReportUtils;
+import com.exactpro.cradle.reports.StoredReport;
 
 public class ReportsIterator implements Iterator<StoredReport>
 {

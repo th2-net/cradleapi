@@ -8,7 +8,7 @@
  * information which is the property of Exactpro Systems LLC or its licensors.
  ******************************************************************************/
 
-package com.exactpro.cradle.cassandra;
+package com.exactpro.cradle.cassandra.linkers;
 
 import java.io.IOException;
 import java.util.List;

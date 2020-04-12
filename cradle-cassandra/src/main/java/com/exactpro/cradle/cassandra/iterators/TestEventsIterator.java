@@ -16,9 +16,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.datastax.oss.driver.api.core.cql.Row;
-import com.exactpro.cradle.StoredTestEvent;
 import com.exactpro.cradle.cassandra.utils.TestEventException;
 import com.exactpro.cradle.cassandra.utils.TestEventUtils;
+import com.exactpro.cradle.testevents.StoredTestEvent;
 
 public class TestEventsIterator implements Iterator<StoredTestEvent>
 {

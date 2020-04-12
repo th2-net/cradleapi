@@ -8,9 +8,11 @@
  * information which is the property of Exactpro Systems LLC or its licensors.
  ******************************************************************************/
 
-package com.exactpro.cradle;
+package com.exactpro.cradle.reports;
 
 import java.time.Instant;
+
+import com.exactpro.cradle.messages.StoredMessageFilter;
 
 public class StoredReportFilter
 {
@@ -19,11 +21,12 @@ public class StoredReportFilter
 
 	public void copy(StoredMessageFilter otherFilter)
 	{
-		periodFrom = otherFilter.periodFrom;
-		periodTo = otherFilter.periodTo;
+		periodFrom = otherFilter.getPeriodFrom();
+		periodTo = otherFilter.getPeriodTo();
 	}
 
-	public boolean isEmpty() {
+	public boolean isEmpty()
+	{
 		return periodFrom == null && periodTo == null;
 	}
 

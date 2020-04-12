@@ -8,13 +8,13 @@
  * information which is the property of Exactpro Systems LLC or its licensors.
  ******************************************************************************/
 
-package com.exactpro.cradle;
+package com.exactpro.cradle.reports;
 
 import java.time.Instant;
 
 public class StoredReport
 {
-	private String id;
+	private StoredReportId id;
 	private String name;
 	private Instant timestamp;
 	private boolean success;
@@ -33,12 +33,12 @@ public class StoredReport
 		this.content = copyFrom.getContent();
 	}
 
-	public String getId()
+	public StoredReportId getId()
 	{
 		return id;
 	}
 	
-	public void setId(String id)
+	public void setId(StoredReportId id)
 	{
 		this.id = id;
 	}

@@ -8,7 +8,7 @@
  * information which is the property of Exactpro Systems LLC or its licensors.
  ******************************************************************************/
 
-package com.exactpro.cradle.cassandra;
+package com.exactpro.cradle.cassandra.linkers;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
@@ -61,7 +61,7 @@ public class MessagesLinker
 		if (id == null)
 			return null;
 		
-		return id.toString();
+		return id;
 	}
 
 	protected List<StoredMessageId> getLinkedMessageIds(String linkedId) throws IOException

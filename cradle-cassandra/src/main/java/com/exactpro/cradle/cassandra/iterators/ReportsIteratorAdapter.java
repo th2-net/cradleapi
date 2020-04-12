@@ -16,9 +16,9 @@ import java.util.UUID;
 
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.exactpro.cradle.StoredReport;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.cassandra.utils.ReportUtils;
+import com.exactpro.cradle.reports.StoredReport;
 
 public class ReportsIteratorAdapter implements Iterable<StoredReport>
 {

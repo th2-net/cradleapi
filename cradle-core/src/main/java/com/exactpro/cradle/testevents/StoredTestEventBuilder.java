@@ -8,9 +8,11 @@
  * information which is the property of Exactpro Systems LLC or its licensors.
  ******************************************************************************/
 
-package com.exactpro.cradle;
+package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
+
+import com.exactpro.cradle.reports.StoredReportId;
 
 public class StoredTestEventBuilder
 {
@@ -27,69 +29,86 @@ public class StoredTestEventBuilder
 		return new StoredTestEvent();
 	}
 	
-	
-	public StoredTestEventBuilder id(String id)
+	private void initIfNeeded()
 	{
+		if (event == null)
+			event = createStoredTestEvent();
+	}
+	
+	
+	public StoredTestEventBuilder id(StoredTestEventId id)
+	{
+		initIfNeeded();
 		event.setId(id);
 		return this;
 	}
 	
 	public StoredTestEventBuilder name(String name)
 	{
+		initIfNeeded();
 		event.setName(name);
 		return this;
 	}
 	
 	public StoredTestEventBuilder type(String type)
 	{
+		initIfNeeded();
 		event.setType(type);
 		return this;
 	}
 	
 	public StoredTestEventBuilder startTimestamp(Instant timestamp)
 	{
+		initIfNeeded();
 		event.setStartTimestamp(timestamp);
 		return this;
 	}
 	
 	public StoredTestEventBuilder endTimestamp(Instant timestamp)
 	{
+		initIfNeeded();
 		event.setEndTimestamp(timestamp);
 		return this;
 	}
 	
 	public StoredTestEventBuilder success(boolean success)
 	{
+		initIfNeeded();
 		event.setSuccess(success);
 		return this;
 	}
 	
 	public StoredTestEventBuilder successful()
 	{
+		initIfNeeded();
 		event.setSuccess(true);
 		return this;
 	}
 	
 	public StoredTestEventBuilder failed()
 	{
+		initIfNeeded();
 		event.setSuccess(false);
 		return this;
 	}
 	
 	public StoredTestEventBuilder content(byte[] content)
 	{
+		initIfNeeded();
 		event.setContent(content);
 		return this;
 	}
 	
-	public StoredTestEventBuilder parent(String id)
+	public StoredTestEventBuilder parent(StoredTestEventId id)
 	{
+		initIfNeeded();
 		event.setParentId(id);
 		return this;
 	}
 	
-	public StoredTestEventBuilder report(String id)
+	public StoredTestEventBuilder report(StoredReportId id)
 	{
+		initIfNeeded();
 		event.setReportId(id);
 		return this;
 	}
@@ -97,8 +116,9 @@ public class StoredTestEventBuilder
 	
 	public StoredTestEvent build()
 	{
+		initIfNeeded();
 		StoredTestEvent result = event;
-		event = createStoredTestEvent();
+		event = null;
 		return result;
 	}
 }
