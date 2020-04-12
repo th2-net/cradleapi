@@ -304,7 +304,7 @@ public class CassandraCradleStorage extends CradleStorage
 		if (resultRow == null)
 			return null;
 		
-		return CassandraMessageUtils.toMessage(resultRow, id.getIndex());
+		return CassandraMessageUtils.toMessage(resultRow, id);
 	}
 	
 	@Override

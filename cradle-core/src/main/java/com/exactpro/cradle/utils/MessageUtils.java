@@ -12,6 +12,8 @@ import java.util.List;
 import org.apache.commons.lang3.SerializationUtils;
 
 import com.exactpro.cradle.messages.StoredMessage;
+import com.exactpro.cradle.messages.StoredMessageBatchId;
+import com.exactpro.cradle.messages.StoredMessageId;
 
 public class MessageUtils
 {
@@ -36,7 +38,7 @@ public class MessageUtils
 		return batchContent;
 	}
 	
-	public static StoredMessage deserializeMessage(byte[] contentBytes, int messageIndex) throws IOException
+	public static StoredMessage deserializeOneMessage(byte[] contentBytes, StoredMessageId id) throws IOException
 	{
 		try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(contentBytes)))
 		{
@@ -45,25 +47,27 @@ public class MessageUtils
 			{
 				index++;
 				byte[] messageBytes = readNextMessageBytes(dis);
-				if (messageIndex != index)
+				if (id.getIndex() != index)
 					continue;
 				
-				return deserializeMessage(messageBytes);
+				return deserializeMessage(messageBytes, id);
 			}
 		}
 		
 		return null;
 	}
 
-	public static Collection<StoredMessage> deserializeMessages(byte[] contentBytes) throws IOException
+	public static Collection<StoredMessage> deserializeMessages(byte[] contentBytes, StoredMessageBatchId batchId) throws IOException
 	{
 		List<StoredMessage> storedMessages = new ArrayList<>();
 		try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(contentBytes)))
 		{
+			int index = -1;
 			while (dis.available() != 0)
 			{
+				index++;
 				byte[] messageBytes = readNextMessageBytes(dis);
-				StoredMessage tempMessage = deserializeMessage(messageBytes);
+				StoredMessage tempMessage = deserializeMessage(messageBytes, new StoredMessageId(batchId, index));
 				storedMessages.add(tempMessage);
 			}
 		}
@@ -79,8 +83,10 @@ public class MessageUtils
 		return result;
 	}
 	
-	private static StoredMessage deserializeMessage(byte[] bytes)
+	private static StoredMessage deserializeMessage(byte[] bytes, StoredMessageId id)
 	{
-		return (StoredMessage)SerializationUtils.deserialize(bytes);
+		StoredMessage result = (StoredMessage)SerializationUtils.deserialize(bytes);
+		result.setId(id);
+		return result;
 	}
 }

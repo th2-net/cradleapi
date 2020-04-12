@@ -24,7 +24,8 @@ public class StoredMessage implements Serializable
 {
 	private static final long serialVersionUID = 200983136307497672L;
 	
-	private StoredMessageId id;
+	//ID is not stored when a message is serialized as the message is always part of a batch thus its ID can be restored from batchId+message_index
+	private transient StoredMessageId id;
 	private byte[] content;
 	private Direction direction;
 	private String streamName;
