@@ -12,7 +12,7 @@ package com.exactpro.cradle.cassandra.utils;
 
 import java.io.IOException;
 
-import com.exactpro.cradle.StoredTestEvent;
+import com.exactpro.cradle.testevents.StoredTestEvent;
 
 public class TestEventException extends IOException
 {

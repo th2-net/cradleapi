@@ -19,6 +19,12 @@ import org.slf4j.LoggerFactory;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.reports.ReportsMessagesLinker;
+import com.exactpro.cradle.reports.StoredReport;
+import com.exactpro.cradle.reports.StoredReportId;
+import com.exactpro.cradle.testevents.StoredTestEvent;
+import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
@@ -57,13 +63,11 @@ public abstract class CradleStorage
 	
 	
 	/**
-	 * Writes contents of given report to storage, providing ID to find this record in future.
-	 * Calls to {@link #storeTestEvent(StoredTestEvent event) storeTestEvent} require result of this method to be used as reportId
+	 * Writes contents of given report to storage
 	 * @param report to store
-	 * @return ID of record in storage to find written data
 	 * @throws IOException if data writing failed
 	 */
-	public abstract String storeReport(StoredReport report) throws IOException;
+	public abstract void storeReport(StoredReport report) throws IOException;
 	
 	/**
 	 * Updates report in storage using report ID to find report to update.
@@ -76,10 +80,9 @@ public abstract class CradleStorage
 	/**
 	 * Writes contents of given test event to storage, providing ID to find this record in future.
 	 * @param testEvent to store. Event is bound to existing report by report ID. Additionally, event can be bound to another event by parentId
-	 * @return ID of record in storage to find written data
 	 * @throws IOException if data writing failed
 	 */
-	public abstract String storeTestEvent(StoredTestEvent testEvent) throws IOException;
+	public abstract void storeTestEvent(StoredTestEvent testEvent) throws IOException;
 	
 	/**
 	 * Updates test event in storage using event ID to find event to update.
@@ -95,7 +98,7 @@ public abstract class CradleStorage
 	 * @param messagesIds list of stored message IDs
 	 * @throws IOException if data writing failed
 	 */
-	public abstract void storeReportMessagesLink(String reportId, Set<StoredMessageId> messagesIds) throws IOException;
+	public abstract void storeReportMessagesLink(StoredReportId reportId, Set<StoredMessageId> messagesIds) throws IOException;
 	
 	/**
 	 * Writes to storage links between given test event and messages.
@@ -103,7 +106,7 @@ public abstract class CradleStorage
 	 * @param messagesIds list of stored message IDs
 	 * @throws IOException if data writing failed
 	 */
-	public abstract void storeTestEventMessagesLink(String eventId, Set<StoredMessageId> messagesIds) throws IOException;
+	public abstract void storeTestEventMessagesLink(StoredTestEventId eventId, Set<StoredMessageId> messagesIds) throws IOException;
 	
 	
 	/**
@@ -120,7 +123,7 @@ public abstract class CradleStorage
 	 * @return data of stored report
 	 * @throws IOException if report data retrieval failed
 	 */
-	public abstract StoredReport getReport(String id) throws IOException;
+	public abstract StoredReport getReport(StoredReportId id) throws IOException;
 	
 	/**
 	 * Retrieves test event data stored under given ID and related to given report ID
@@ -129,7 +132,7 @@ public abstract class CradleStorage
 	 * @return data of stored test event
 	 * @throws IOException if test event data retrieval failed
 	 */
-	public abstract StoredTestEvent getTestEvent(String reportId, String id) throws IOException;
+	public abstract StoredTestEvent getTestEvent(StoredReportId reportId, StoredTestEventId id) throws IOException;
 	
 	
 	/**
@@ -171,7 +174,7 @@ public abstract class CradleStorage
 	 * @return iterable object to enumerate test events linked with given report ID
 	 * @throws IOException if data retrieval failed
 	 */
-	public abstract Iterable<StoredTestEvent> getReportTestEvents(String reportId) throws IOException;
+	public abstract Iterable<StoredTestEvent> getReportTestEvents(StoredReportId reportId) throws IOException;
 	
 	
 	/**

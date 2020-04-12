@@ -8,14 +8,15 @@
  * information which is the property of Exactpro Systems LLC or its licensors.
  ******************************************************************************/
 
-package com.exactpro.cradle.cassandra;
+package com.exactpro.cradle.cassandra.linkers;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
-import com.exactpro.cradle.ReportsMessagesLinker;
 import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.reports.ReportsMessagesLinker;
+import com.exactpro.cradle.reports.StoredReportId;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 
 public class CassandraReportsMessagesLinker extends MessagesLinker implements ReportsMessagesLinker
@@ -27,20 +28,21 @@ public class CassandraReportsMessagesLinker extends MessagesLinker implements Re
 	}
 
 	@Override
-	public String getReportIdByMessageId(StoredMessageId messageId) throws IOException
+	public StoredReportId getReportIdByMessageId(StoredMessageId messageId) throws IOException
 	{
-		return getLinkedByMessageId(messageId);
+		String result = getLinkedByMessageId(messageId);
+		return result != null ? new StoredReportId(result) : null;
 	}
 
 	@Override
-	public List<StoredMessageId> getMessageIdsByReportId(String reportId) throws IOException
+	public List<StoredMessageId> getMessageIdsByReportId(StoredReportId reportId) throws IOException
 	{
-		return getLinkedMessageIds(reportId);
+		return getLinkedMessageIds(reportId.toString());
 	}
 
 	@Override
-	public boolean isReportLinkedToMessages(String reportId) throws IOException
+	public boolean isReportLinkedToMessages(StoredReportId reportId) throws IOException
 	{
-		return isLinkedToMessages(reportId);
+		return isLinkedToMessages(reportId.toString());
 	}
 }

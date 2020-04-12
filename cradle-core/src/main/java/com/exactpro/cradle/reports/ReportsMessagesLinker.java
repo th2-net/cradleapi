@@ -8,36 +8,36 @@
  * information which is the property of Exactpro Systems LLC or its licensors.
  ******************************************************************************/
 
-package com.exactpro.cradle;
+package com.exactpro.cradle.reports;
 
 import java.io.IOException;
 import java.util.List;
 
 import com.exactpro.cradle.messages.StoredMessageId;
 
-public interface TestEventsMessagesLinker
+public interface ReportsMessagesLinker
 {
 	/**
-	 * Retrieves ID of stored test event by linked message ID
+	 * Retrieves ID of stored report by linked message ID
 	 * @param messageId ID of stored message
-	 * @return ID of stored test event 
-	 * @throws IOException if test event data retrieval failed
+	 * @return ID of stored report
+	 * @throws IOException if report data retrieval failed
 	 */
-	String getTestEventIdByMessageId(StoredMessageId messageId) throws IOException;
+	StoredReportId getReportIdByMessageId(StoredMessageId messageId) throws IOException;
 
 	/**
-	 * Retrieves IDs of stored messages by linked test event ID
-	 * @param eventId ID of stored test event
+	 * Retrieves IDs of stored messages by linked report ID
+	 * @param reportId ID of stored report
 	 * @return list of stored message IDs
 	 * @throws IOException if messages data retrieval failed
 	 */
-	List<StoredMessageId> getMessageIdsByEventId(String eventId) throws IOException;
+	List<StoredMessageId> getMessageIdsByReportId(StoredReportId reportId) throws IOException;
 
 	/**
-	 * Checks if test event has messages linked to it
-	 * @param eventId ID of stored test event
-	 * @return true if test event has linked messages, false otherwise
+	 * Checks if report has messages linked to it
+	 * @param reportId ID of stored report
+	 * @return true if report has linked messages, false otherwise
 	 * @throws IOException if messages data retrieval failed
 	 */
-	boolean isTestEventLinkedToMessages(String eventId) throws IOException;
+	boolean isReportLinkedToMessages(StoredReportId reportId) throws IOException;
 }

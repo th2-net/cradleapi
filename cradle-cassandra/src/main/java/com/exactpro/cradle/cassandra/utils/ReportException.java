@@ -12,7 +12,7 @@ package com.exactpro.cradle.cassandra.utils;
 
 import java.io.IOException;
 
-import com.exactpro.cradle.StoredReport;
+import com.exactpro.cradle.reports.StoredReport;
 
 public class ReportException extends IOException
 {

@@ -19,15 +19,14 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.update.Update;
 import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
 import com.exactpro.cradle.CradleStorage;
-import com.exactpro.cradle.ReportsMessagesLinker;
-import com.exactpro.cradle.StoredReport;
-import com.exactpro.cradle.StoredTestEvent;
 import com.exactpro.cradle.StreamsMessagesLinker;
-import com.exactpro.cradle.TestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.iterators.MessagesIteratorAdapter;
 import com.exactpro.cradle.cassandra.iterators.ReportsIteratorAdapter;
 import com.exactpro.cradle.cassandra.iterators.TestEventsIteratorAdapter;
+import com.exactpro.cradle.cassandra.linkers.CassandraReportsMessagesLinker;
+import com.exactpro.cradle.cassandra.linkers.CassandraStreamsMessagesLinker;
+import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.cassandra.utils.ReportUtils;
@@ -35,6 +34,12 @@ import com.exactpro.cradle.cassandra.utils.TestEventUtils;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.reports.ReportsMessagesLinker;
+import com.exactpro.cradle.reports.StoredReport;
+import com.exactpro.cradle.reports.StoredReportId;
+import com.exactpro.cradle.testevents.StoredTestEvent;
+import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
 import com.exactpro.cradle.utils.CompressionUtils;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.MessageUtils;
@@ -140,7 +145,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	public String storeReport(StoredReport report) throws IOException
+	public void storeReport(StoredReport report) throws IOException
 	{
 		byte[] reportContent = report.getContent();
 		boolean toCompress = isNeedCompressReport(reportContent);
@@ -157,10 +162,8 @@ public class CassandraCradleStorage extends CradleStorage
 			}
 		}
 		
-			
-		String id = report.getId() != null ? report.getId() : Uuids.timeBased().toString();
 		Insert insert = insertInto(settings.getKeyspace(), settings.getReportsTableName())
-				.value(ID, literal(id))
+				.value(ID, literal(report.getId().toString()))
 				.value(INSTANCE_ID, literal(instanceUuid))
 				.value(STORED, literal(Instant.now()))
 				.value(NAME, literal(report.getName()))
@@ -170,8 +173,6 @@ public class CassandraCradleStorage extends CradleStorage
 				.value(CONTENT, literal(ByteBuffer.wrap(reportContent)))
 				.ifNotExists();
 		exec.executeQuery(insert.asCql());
-		
-		return id.toString();
 	}
 	
 	@Override
@@ -188,25 +189,27 @@ public class CassandraCradleStorage extends CradleStorage
 			catch (IOException e)
 			{
 				throw new IOException(String.format("Could not compress updated contents of report '%s' "
-						+ " to save in global storage", report.getId()), e);
+						+ " to save in global storage", report.getId().toString()), e);
 			}
 		}
 		
-		String id = report.getId();
 		Update update = update(settings.getKeyspace(), settings.getReportsTableName())
 				.setColumn(NAME, literal(report.getName()))
 				.setColumn(TIMESTAMP, literal(report.getTimestamp()))
 				.setColumn(SUCCESS, literal(report.isSuccess()))
 				.setColumn(COMPRESSED, literal(toCompress))
 				.setColumn(CONTENT, literal(ByteBuffer.wrap(content)))
-				.whereColumn(ID).isEqualTo(literal(id))
+				.whereColumn(ID).isEqualTo(literal(report.getId().toString()))
 				.whereColumn(INSTANCE_ID).isEqualTo(literal(instanceUuid));
 		exec.executeQuery(update.asCql());
 	}
 	
 	@Override
-	public String storeTestEvent(StoredTestEvent testEvent) throws IOException
+	public void storeTestEvent(StoredTestEvent testEvent) throws IOException
 	{
+		if (testEvent.getReportId() == null)
+			throw new IOException("Test event must be bound to report by reportID");
+		
 		byte[] content = testEvent.getContent();
 		boolean toCompress = isNeedCompressTestEvent(content);
 		if (toCompress)
@@ -223,9 +226,8 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		
 			
-		String id = testEvent.getId() != null ? testEvent.getId() : Uuids.timeBased().toString();
 		RegularInsert insert = insertInto(settings.getKeyspace(), settings.getTestEventsTableName())
-				.value(ID, literal(id))
+				.value(ID, literal(testEvent.getId().toString()))
 				.value(INSTANCE_ID, literal(instanceUuid))
 				.value(STORED, literal(Instant.now()))
 				.value(NAME, literal(testEvent.getName()))
@@ -235,12 +237,10 @@ public class CassandraCradleStorage extends CradleStorage
 				.value(SUCCESS, literal(testEvent.isSuccess()))
 				.value(COMPRESSED, literal(toCompress))
 				.value(CONTENT, literal(ByteBuffer.wrap(content)))
-				.value(REPORT_ID, literal(testEvent.getReportId()));
-		if (!StringUtils.isEmpty(testEvent.getParentId()))
-			insert = insert.value(PARENT_ID, literal(testEvent.getParentId()));
+				.value(REPORT_ID, literal(testEvent.getReportId().toString()));
+		if (testEvent.getParentId() != null)
+			insert = insert.value(PARENT_ID, literal(testEvent.getParentId().toString()));
 		exec.executeQuery(insert.ifNotExists().asCql());
-		
-		return id.toString();
 	}
 	
 	@Override
@@ -257,7 +257,7 @@ public class CassandraCradleStorage extends CradleStorage
 			catch (IOException e)
 			{
 				throw new IOException(String.format("Could not compress updated contents of test event '%s' "
-						+ " to save in global storage", testEvent.getId()), e);
+						+ " to save in global storage", testEvent.getId().toString()), e);
 			}
 		}
 		
@@ -269,30 +269,28 @@ public class CassandraCradleStorage extends CradleStorage
 				.setColumn(SUCCESS, literal(testEvent.isSuccess()))
 				.setColumn(COMPRESSED, literal(toCompress))
 				.setColumn(CONTENT, literal(ByteBuffer.wrap(content)));
-		if (!StringUtils.isEmpty(testEvent.getParentId()))
-			updateColumns = updateColumns.setColumn(PARENT_ID, literal(testEvent.getParentId()));
+		if (testEvent.getParentId() != null)
+			updateColumns = updateColumns.setColumn(PARENT_ID, literal(testEvent.getParentId().toString()));
 		
-		String id = testEvent.getId(),
-				reportId = testEvent.getReportId();
 		Update update = updateColumns
-				.whereColumn(ID).isEqualTo(literal(id))
+				.whereColumn(ID).isEqualTo(literal(testEvent.getId().toString()))
 				.whereColumn(INSTANCE_ID).isEqualTo(literal(instanceUuid))
-				.whereColumn(REPORT_ID).isEqualTo(literal(reportId));
+				.whereColumn(REPORT_ID).isEqualTo(literal(testEvent.getReportId().toString()));
 		
 		exec.executeQuery(update.asCql());
 	}
 
 	
 	@Override
-	public void storeReportMessagesLink(String reportId, Set<StoredMessageId> messagesIds) throws IOException
+	public void storeReportMessagesLink(StoredReportId reportId, Set<StoredMessageId> messagesIds) throws IOException
 	{
-		linkMessagesTo(messagesIds, settings.getReportMsgsLinkTableName(), REPORT_ID, reportId);
+		linkMessagesTo(messagesIds, settings.getReportMsgsLinkTableName(), REPORT_ID, reportId.toString());
 	}
 	
 	@Override
-	public void storeTestEventMessagesLink(String eventId, Set<StoredMessageId> messagesIds) throws IOException
+	public void storeTestEventMessagesLink(StoredTestEventId eventId, Set<StoredMessageId> messagesIds) throws IOException
 	{
-		linkMessagesTo(messagesIds, settings.getTestEventMsgsLinkTableName(), TEST_EVENT_ID, eventId);
+		linkMessagesTo(messagesIds, settings.getTestEventMsgsLinkTableName(), TEST_EVENT_ID, eventId.toString());
 	}
 	
 	
@@ -310,10 +308,10 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	public StoredReport getReport(String id) throws IOException
+	public StoredReport getReport(StoredReportId id) throws IOException
 	{
 		Select selectFrom = ReportUtils.prepareSelect(settings.getKeyspace(), settings.getReportsTableName(), instanceUuid)
-				.whereColumn(ID).isEqualTo(literal(id));
+				.whereColumn(ID).isEqualTo(literal(id.toString()));
 		
 		Row resultRow = exec.executeQuery(selectFrom.asCql()).one();
 		if (resultRow == null)
@@ -323,11 +321,11 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	public StoredTestEvent getTestEvent(String reportId, String id) throws IOException
+	public StoredTestEvent getTestEvent(StoredReportId reportId, StoredTestEventId id) throws IOException
 	{
 		Select selectFrom = TestEventUtils.prepareSelect(settings.getKeyspace(), settings.getTestEventsTableName(), instanceUuid)
-				.whereColumn(REPORT_ID).isEqualTo(literal(reportId))
-				.whereColumn(ID).isEqualTo(literal(id));
+				.whereColumn(REPORT_ID).isEqualTo(literal(reportId.toString()))
+				.whereColumn(ID).isEqualTo(literal(id.toString()));
 		
 		Row resultRow = exec.executeQuery(selectFrom.asCql()).one();
 		if (resultRow == null)
@@ -369,7 +367,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	public Iterable<StoredTestEvent> getReportTestEvents(String reportId) throws IOException
+	public Iterable<StoredTestEvent> getReportTestEvents(StoredReportId reportId) throws IOException
 	{
 		return new TestEventsIteratorAdapter(reportId, 
 				exec, settings.getKeyspace(), settings.getTestEventsTableName(), instanceUuid);
@@ -422,7 +420,7 @@ public class CassandraCradleStorage extends CradleStorage
 			catch (IOException e)
 			{
 				throw new IOException(String.format("Could not compress batch contents (ID: '%s') to save in storage",
-						batch.getId()), e);
+						batch.getId().toString()), e);
 			}
 		}
 		

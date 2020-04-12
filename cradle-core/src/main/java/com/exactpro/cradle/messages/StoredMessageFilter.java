@@ -8,13 +8,13 @@
  * information which is the property of Exactpro Systems LLC or its licensors.
  ******************************************************************************/
 
-package com.exactpro.cradle;
+package com.exactpro.cradle.messages;
 
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.exactpro.cradle.messages.StoredMessage;
+import com.exactpro.cradle.Direction;
 
 public class StoredMessageFilter
 {

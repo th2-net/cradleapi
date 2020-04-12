@@ -19,18 +19,19 @@ import java.util.UUID;
 
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.exactpro.cradle.StoredTestEvent;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.cassandra.utils.TestEventUtils;
+import com.exactpro.cradle.reports.StoredReportId;
+import com.exactpro.cradle.testevents.StoredTestEvent;
 
 public class TestEventsIteratorAdapter implements Iterable<StoredTestEvent>
 {
 	private final ResultSet rs;
 	
-	public TestEventsIteratorAdapter(String reportId, QueryExecutor exec, String keyspace, String testEventsTable, UUID instanceId) throws IOException
+	public TestEventsIteratorAdapter(StoredReportId reportId, QueryExecutor exec, String keyspace, String testEventsTable, UUID instanceId) throws IOException
 	{
 		Select selectFrom = TestEventUtils.prepareSelect(keyspace, testEventsTable, instanceId)
-				.whereColumn(REPORT_ID).isEqualTo(literal(reportId));
+				.whereColumn(REPORT_ID).isEqualTo(literal(reportId.toString()));
 		
 		this.rs = exec.executeQuery(selectFrom.asCql());
 	}

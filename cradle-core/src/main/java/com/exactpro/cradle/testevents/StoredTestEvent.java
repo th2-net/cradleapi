@@ -8,21 +8,23 @@
  * information which is the property of Exactpro Systems LLC or its licensors.
  ******************************************************************************/
 
-package com.exactpro.cradle;
+package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
 
+import com.exactpro.cradle.reports.StoredReportId;
+
 public class StoredTestEvent
 {
-	private String id;
+	private StoredTestEventId id;
 	private String name,
 			type;
 	private Instant startTimestamp,
 		endTimestamp;
 	private boolean success;
 	private byte[] content;
-	private String parentId,
-		reportId;
+	private StoredTestEventId parentId;
+	private StoredReportId reportId;
 	
 	public StoredTestEvent()
 	{
@@ -41,12 +43,12 @@ public class StoredTestEvent
 		this.reportId = copyFrom.getReportId();
 	}
 	
-	public String getId()
+	public StoredTestEventId getId()
 	{
 		return id;
 	}
 	
-	public void setId(String id)
+	public void setId(StoredTestEventId id)
 	{
 		this.id = id;
 	}
@@ -118,23 +120,23 @@ public class StoredTestEvent
 	}
 	
 	
-	public String getParentId()
+	public StoredTestEventId getParentId()
 	{
 		return parentId;
 	}
 	
-	public void setParentId(String parentId)
+	public void setParentId(StoredTestEventId parentId)
 	{
 		this.parentId = parentId;
 	}
 	
 	
-	public String getReportId()
+	public StoredReportId getReportId()
 	{
 		return reportId;
 	}
 	
-	public void setReportId(String reportId)
+	public void setReportId(StoredReportId reportId)
 	{
 		this.reportId = reportId;
 	}

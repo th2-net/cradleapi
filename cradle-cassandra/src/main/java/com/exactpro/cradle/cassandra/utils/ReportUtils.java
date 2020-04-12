@@ -21,8 +21,9 @@ import java.util.zip.DataFormatException;
 
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.exactpro.cradle.StoredReport;
-import com.exactpro.cradle.StoredReportBuilder;
+import com.exactpro.cradle.reports.StoredReport;
+import com.exactpro.cradle.reports.StoredReportBuilder;
+import com.exactpro.cradle.reports.StoredReportId;
 import com.exactpro.cradle.utils.CompressionUtils;
 
 public class ReportUtils
@@ -36,7 +37,7 @@ public class ReportUtils
 	
 	public static StoredReport toReport(Row row) throws ReportException
 	{
-		String id = row.getString(ID);
+		StoredReportId id = new StoredReportId(row.getString(ID));
 		
 		StoredReportBuilder builder = new StoredReportBuilder().id(id)
 				.name(row.getString(NAME))
