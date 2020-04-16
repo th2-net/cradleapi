@@ -19,7 +19,7 @@ import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 
-public class CassandraTestEventsMessagesLinker extends MessagesLinker implements TestEventsMessagesLinker
+public class CassandraTestEventsMessagesLinker extends MessagesLinker<StoredTestEventId> implements TestEventsMessagesLinker
 {
 	public CassandraTestEventsMessagesLinker(QueryExecutor exec, String keyspace, String linksTable, String linkColumn,
 			UUID instanceId)
@@ -28,21 +28,27 @@ public class CassandraTestEventsMessagesLinker extends MessagesLinker implements
 	}
 
 	@Override
-	public StoredTestEventId getTestEventIdByMessageId(StoredMessageId messageId) throws IOException
+	public List<StoredTestEventId> getTestEventIdsByMessageId(StoredMessageId messageId) throws IOException
 	{
-		String result = getLinkedByMessageId(messageId);
-		return result != null ? new StoredTestEventId(result) : null;
+		return getManyLinkedsByMessageId(messageId);
 	}
 
 	@Override
-	public List<StoredMessageId> getMessageIdsByEventId(StoredTestEventId eventId) throws IOException
+	public List<StoredMessageId> getMessageIdsByTestEventId(StoredTestEventId eventId) throws IOException
 	{
-		return getLinkedMessageIds(eventId.toString());
+		return getLinkedMessageIds(eventId);
 	}
 
 	@Override
 	public boolean isTestEventLinkedToMessages(StoredTestEventId eventId) throws IOException
 	{
-		return isLinkedToMessages(eventId.toString());
+		return isLinkedToMessages(eventId);
+	}
+	
+	
+	@Override
+	protected StoredTestEventId createLinkedId(String id)
+	{
+		return new StoredTestEventId(id);
 	}
 }

@@ -25,7 +25,7 @@ public class JsonStoredMessage
 			direction,
 			streamName,
 			timestamp,
-			reportId;
+			eventId;
 
 	public String getMessage()
 	{
@@ -71,14 +71,14 @@ public class JsonStoredMessage
 	}
 	
 	
-	public String getReportId()
+	public String getEventId()
 	{
-		return reportId;
+		return eventId;
 	}
 	
-	public void setReportId(String reportId)
+	public void setEventId(String eventId)
 	{
-		this.reportId = reportId;
+		this.eventId = eventId;
 	}
 	
 	

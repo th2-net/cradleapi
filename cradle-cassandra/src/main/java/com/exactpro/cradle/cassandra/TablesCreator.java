@@ -42,10 +42,8 @@ public class TablesCreator
 		createMessagesTable();
 		createStreamMessagesLinkTable();
 		
-		createReportsTable();
-		createReportMessagesLinkTable();
-		
 		createTestEventsTable();
+		createTestEventsParentsLinkTable();
 		createTestEventMessagesLinkTable();
 	}
 	
@@ -96,38 +94,11 @@ public class TablesCreator
 	}
 	
 
-	public void createReportsTable() throws IOException
-	{
-		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getReportsTableName()).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withClusteringColumn(ID, DataTypes.TEXT)
-				.withColumn(STORED, DataTypes.TIMESTAMP)
-				.withColumn(NAME, DataTypes.TEXT)
-				.withColumn(TIMESTAMP, DataTypes.TIMESTAMP)
-				.withColumn(SUCCESS, DataTypes.BOOLEAN)
-				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
-				.withColumn(CONTENT, DataTypes.BLOB)
-				.withClusteringOrder(ID, ClusteringOrder.ASC);
-		
-		exec.executeQuery(create.asCql());
-	}
-	
-	public void createReportMessagesLinkTable() throws IOException
-	{
-		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getReportMsgsLinkTableName()).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withClusteringColumn(REPORT_ID, DataTypes.TEXT)
-				.withClusteringColumn(MESSAGES_IDS, DataTypes.frozenListOf(DataTypes.TEXT));
-		
-		exec.executeQuery(create.asCql());
-	}
-	
-	
 	public void createTestEventsTable() throws IOException
 	{
 		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getTestEventsTableName()).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(REPORT_ID, DataTypes.TEXT)
+				.withPartitionKey(IS_ROOT, DataTypes.BOOLEAN)
 				.withClusteringColumn(ID, DataTypes.TEXT)
 				.withColumn(STORED, DataTypes.TIMESTAMP)
 				.withColumn(NAME, DataTypes.TEXT)
@@ -143,6 +114,20 @@ public class TablesCreator
 		exec.executeQuery(create.asCql());
 	}
 	
+	//This table is needed to link test events with their parents. This allows to get IDs of test events bound to particular parent ID.
+	//Making parent ID the part of a primary key in test events table would prevent from getting test event data only by event ID
+	//One-to-many
+	public void createTestEventsParentsLinkTable() throws IOException
+	{
+		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getTestEventsParentsLinkTableName()).ifNotExists()
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				.withPartitionKey(PARENT_ID, DataTypes.TEXT)
+				.withClusteringColumn(TEST_EVENT_ID, DataTypes.TEXT);
+		
+		exec.executeQuery(create.asCql());
+	}
+	
+	//Many-to-many
 	public void createTestEventMessagesLinkTable() throws IOException
 	{
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getTestEventMsgsLinkTableName()).ifNotExists()

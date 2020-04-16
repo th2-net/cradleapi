@@ -12,8 +12,6 @@ package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
 
-import com.exactpro.cradle.reports.StoredReportId;
-
 public class StoredTestEventBuilder
 {
 	private StoredTestEvent event;
@@ -103,13 +101,6 @@ public class StoredTestEventBuilder
 	{
 		initIfNeeded();
 		event.setParentId(id);
-		return this;
-	}
-	
-	public StoredTestEventBuilder report(StoredReportId id)
-	{
-		initIfNeeded();
-		event.setReportId(id);
 		return this;
 	}
 	

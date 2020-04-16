@@ -21,7 +21,6 @@ import java.util.zip.DataFormatException;
 
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.exactpro.cradle.reports.StoredReportId;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventBuilder;
 import com.exactpro.cradle.testevents.StoredTestEventId;
@@ -29,18 +28,22 @@ import com.exactpro.cradle.utils.CompressionUtils;
 
 public class TestEventUtils
 {
-	public static Select prepareSelect(String keyspace, String tableName, UUID instanceId)
+	public static Select prepareSelect(String keyspace, String tableName, UUID instanceId, boolean onlyRootEvents)
 	{
-		return selectFrom(keyspace, tableName)
+		Select select = selectFrom(keyspace, tableName)
 				.all()
 				.whereColumn(INSTANCE_ID).isEqualTo(literal(instanceId));
+		if (onlyRootEvents)
+			select = select.whereColumn(IS_ROOT).isEqualTo(literal(true));
+		else
+			select = select.whereColumn(IS_ROOT).in(literal(true), literal(false));
+		return select;
 	}
 	
 	public static StoredTestEvent toTestEvent(Row row) throws TestEventException
 	{
 		StoredTestEventId id = new StoredTestEventId(row.getString(ID));
-		String parentId = row.getString(PARENT_ID),
-				reportId = row.getString(REPORT_ID);
+		String parentId = row.getString(PARENT_ID);
 		
 		StoredTestEventBuilder builder = new StoredTestEventBuilder().id(id)
 				.name(row.getString(NAME))
@@ -51,8 +54,6 @@ public class TestEventUtils
 		
 		if (parentId != null)
 			builder = builder.parent(new StoredTestEventId(parentId));
-		if (reportId != null)
-			builder = builder.report(new StoredReportId(reportId));
 		
 		ByteBuffer contentsBuffer = row.getByteBuffer(CONTENT);
 		byte[] content = contentsBuffer == null ? new byte[0] : contentsBuffer.array();
