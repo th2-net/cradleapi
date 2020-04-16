@@ -12,8 +12,6 @@ package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
 
-import com.exactpro.cradle.reports.StoredReportId;
-
 public class StoredTestEvent
 {
 	private StoredTestEventId id;
@@ -24,7 +22,6 @@ public class StoredTestEvent
 	private boolean success;
 	private byte[] content;
 	private StoredTestEventId parentId;
-	private StoredReportId reportId;
 	
 	public StoredTestEvent()
 	{
@@ -40,7 +37,6 @@ public class StoredTestEvent
 		this.success = copyFrom.isSuccess();
 		this.content = copyFrom.getContent();
 		this.parentId = copyFrom.getParentId();
-		this.reportId = copyFrom.getReportId();
 	}
 	
 	public StoredTestEventId getId()
@@ -128,16 +124,5 @@ public class StoredTestEvent
 	public void setParentId(StoredTestEventId parentId)
 	{
 		this.parentId = parentId;
-	}
-	
-	
-	public StoredReportId getReportId()
-	{
-		return reportId;
-	}
-	
-	public void setReportId(StoredReportId reportId)
-	{
-		this.reportId = reportId;
 	}
 }

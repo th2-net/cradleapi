@@ -13,18 +13,13 @@ package com.exactpro.cradle;
 import java.io.IOException;
 import java.util.*;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageId;
-import com.exactpro.cradle.reports.ReportsMessagesLinker;
-import com.exactpro.cradle.reports.StoredReport;
-import com.exactpro.cradle.reports.StoredReportId;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
+import com.exactpro.cradle.testevents.TestEventsParentsLinker;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
@@ -32,8 +27,6 @@ import com.exactpro.cradle.utils.CradleStorageException;
  */
 public abstract class CradleStorage
 {
-	private static final Logger logger = LoggerFactory.getLogger(CradleStorage.class);
-	
 	private String instanceId;
 	
 	private volatile boolean workingState = false;
@@ -63,45 +56,15 @@ public abstract class CradleStorage
 	
 	
 	/**
-	 * Writes contents of given report to storage
-	 * @param report to store
-	 * @throws IOException if data writing failed
-	 */
-	public abstract void storeReport(StoredReport report) throws IOException;
-	
-	/**
-	 * Updates report in storage using report ID to find report to update.
-	 * @param report to replace existing report. Report ID is used to find existing report
-	 * @throws IOException if data writing failed
-	 */
-	public abstract void modifyReport(StoredReport report) throws IOException;
-	
-	
-	/**
 	 * Writes contents of given test event to storage, providing ID to find this record in future.
-	 * @param testEvent to store. Event is bound to existing report by report ID. Additionally, event can be bound to another event by parentId
+	 * @param testEvent to store. The event can be bound to another event by parentId
 	 * @throws IOException if data writing failed
 	 */
 	public abstract void storeTestEvent(StoredTestEvent testEvent) throws IOException;
 	
-	/**
-	 * Updates test event in storage using event ID to find event to update.
-	 * @param testEvent to replace existing event. Event ID is used to find existing event
-	 * @throws IOException if data writing failed
-	 */
-	public abstract void modifyTestEvent(StoredTestEvent testEvent) throws IOException;
-	
 	
 	/**
-	 * Writes to storage links between given report and messages.
-	 * @param reportId ID of stored report
-	 * @param messagesIds list of stored message IDs
-	 * @throws IOException if data writing failed
-	 */
-	public abstract void storeReportMessagesLink(StoredReportId reportId, Set<StoredMessageId> messagesIds) throws IOException;
-	
-	/**
-	 * Writes to storage links between given test event and messages.
+	 * Writes to storage the links between given test event and messages.
 	 * @param eventId ID of stored test event
 	 * @param messagesIds list of stored message IDs
 	 * @throws IOException if data writing failed
@@ -118,40 +81,31 @@ public abstract class CradleStorage
 	public abstract StoredMessage getMessage(StoredMessageId id) throws IOException;
 
 	/**
-	 * Retrieves report data stored under given ID
-	 * @param id of stored report to retrieve
-	 * @return data of stored report
-	 * @throws IOException if report data retrieval failed
-	 */
-	public abstract StoredReport getReport(StoredReportId id) throws IOException;
-	
-	/**
-	 * Retrieves test event data stored under given ID and related to given report ID
-	 * @param reportId of stored report whose test event to retrieve
+	 * Retrieves test event data stored under given ID
 	 * @param id of stored test event to retrieve
 	 * @return data of stored test event
 	 * @throws IOException if test event data retrieval failed
 	 */
-	public abstract StoredTestEvent getTestEvent(StoredReportId reportId, StoredTestEventId id) throws IOException;
+	public abstract StoredTestEvent getTestEvent(StoredTestEventId id) throws IOException;
 	
 	
 	/**
 	 * StreamsMessagesLinker is used to obtain messages by stream
-	 * @return new instance of StreamsMessagesLinker
+	 * @return instance of StreamsMessagesLinker
 	 */
 	public abstract StreamsMessagesLinker getStreamsMessagesLinker();
 	
 	/**
-	 * ReportsMessagesLinker is used to obtain links between reports and messages
-	 * @return new instance of ReportsMessagesLinker
-	 */
-	public abstract ReportsMessagesLinker getReportsMessagesLinker();
-	
-	/**
 	 * TestEventsMessagesLinker is used to obtain links between test events and messages
-	 * @return new instance of TestEventsMessagesLinker
+	 * @return instance of TestEventsMessagesLinker
 	 */
 	public abstract TestEventsMessagesLinker getTestEventsMessagesLinker();
+	
+	/**
+	 * TestEventsParentsLinker is used to obtain test events by their parent
+	 * @return instance of TestEventsParentsLinker
+	 */
+	public abstract TestEventsParentsLinker getTestEventsParentsLinker();
 	
 	
 	/**
@@ -162,19 +116,12 @@ public abstract class CradleStorage
 	public abstract Iterable<StoredMessage> getMessages() throws IOException;
 	
 	/**
-	 * Allows to enumerate stored reports
-	 * @return iterable object to enumerate reports
+	 * Allows to enumerate test events
+	 * @param onlyRootEvents set to true if you need to obtain only root test events, i.e. events with no parent 
+	 * @return iterable object to enumerate test events
 	 * @throws IOException if data retrieval failed
 	 */
-	public abstract Iterable<StoredReport> getReports() throws IOException;
-	
-	/**
-	 * Allows to enumerate stored test events linked to given report ID
-	 * @param reportId of test events to obtain
-	 * @return iterable object to enumerate test events linked with given report ID
-	 * @throws IOException if data retrieval failed
-	 */
-	public abstract Iterable<StoredTestEvent> getReportTestEvents(StoredReportId reportId) throws IOException;
+	public abstract Iterable<StoredTestEvent> getTestEvents(boolean onlyRootEvents) throws IOException;
 	
 	
 	/**

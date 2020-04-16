@@ -14,28 +14,25 @@ public class CassandraStorageSettings
 {
 	public static final int BATCH_SIZE_LIMIT_BYTES = 5000;
 	public static final long BATCH_IDLE_LIMIT = 100;
-	public static final int REPORT_SIZE_LIMIT_BYTES = 5000,
-			TEST_EVENT_SIZE_LIMIT_BYTES = 5000;
+	public static final int TEST_EVENT_SIZE_LIMIT_BYTES = 5000;
 	public static final String DEFAULT_KEYSPACE = "cradle",
 			INSTANCES_TABLE_DEFAULT_NAME = "instances",
 			STREAMS_TABLE_DEFAULT_NAME = "streams",
 			MESSAGES_TABLE_DEFAULT_NAME = "messages",
-			REPORTS_TABLE_DEFAULT_NAME = "reports",
 			TEST_EVENTS_TABLE_DEFAULT_NAME = "test_events",
 			STREAM_MSGS_LINK_TABLE_DEFAULT_NAME = "stream_messages_link",
-			REPORT_MSGS_LINK_TABLE_DEFAULT_NAME = "report_messages_link",
+			TEST_EVENTS_PARENTS_LINK_TABLE_DEFAULT_NAME = "test_events_parents_link",
 			TEST_EVENT_MSGS_LINK_TABLE_DEFAULT_NAME = "test_event_messages_link";
 	private static final long DEFAULT_TIMEOUT = 5000;
 	private static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1;
 	public static final int BATCH_MESSAGES_LIMIT = 10,
-			REPORT_MSGS_LINK_MAX_MSGS = 10;
+			TEST_EVENTS_MSGS_LINK_MAX_MSGS = 10;
 
 	private final String keyspace;
 	private String messagesTableName,
-			reportsTableName,
 			testEventsTableName,
 			streamMsgsLinkTableName,
-			reportMsgsLinkTableName,
+			testEventsParentsLinkTableName,
 			testEventMsgsLinkTableName;
 	private final int keyspaceReplicationFactor;
 	private long timeout;
@@ -43,10 +40,9 @@ public class CassandraStorageSettings
 	public CassandraStorageSettings(String keyspace, int keyspaceReplicationFactor, long timeout)
 	{
 		this.messagesTableName = MESSAGES_TABLE_DEFAULT_NAME;
-		this.reportsTableName = REPORTS_TABLE_DEFAULT_NAME;
 		this.testEventsTableName = TEST_EVENTS_TABLE_DEFAULT_NAME;
 		this.streamMsgsLinkTableName = STREAM_MSGS_LINK_TABLE_DEFAULT_NAME;
-		this.reportMsgsLinkTableName = REPORT_MSGS_LINK_TABLE_DEFAULT_NAME;
+		this.testEventsParentsLinkTableName = TEST_EVENTS_PARENTS_LINK_TABLE_DEFAULT_NAME;
 		this.testEventMsgsLinkTableName = TEST_EVENT_MSGS_LINK_TABLE_DEFAULT_NAME;
 		this.keyspace = keyspace;
 		this.keyspaceReplicationFactor = keyspaceReplicationFactor;
@@ -85,17 +81,6 @@ public class CassandraStorageSettings
 	}
 
 	
-	public String getReportsTableName()
-	{
-		return reportsTableName;
-	}
-	
-	public void setReportsTableName(String reportsTableName)
-	{
-		this.reportsTableName = reportsTableName;
-	}
-	
-	
 	public String getTestEventsTableName()
 	{
 		return testEventsTableName;
@@ -118,14 +103,14 @@ public class CassandraStorageSettings
 	}
 	
 	
-	public String getReportMsgsLinkTableName()
+	public String getTestEventsParentsLinkTableName()
 	{
-		return reportMsgsLinkTableName;
+		return testEventsParentsLinkTableName;
 	}
 	
-	public void setReportMsgsLinkTableName(String reportMsgsLinkTableName)
+	public void setTestEventsParentsLinkTableName(String testEventsParentsLinkTableName)
 	{
-		this.reportMsgsLinkTableName = reportMsgsLinkTableName;
+		this.testEventsParentsLinkTableName = testEventsParentsLinkTableName;
 	}
 	
 	

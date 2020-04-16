@@ -18,7 +18,7 @@ import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.StreamsMessagesLinker;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 
-public class CassandraStreamsMessagesLinker extends MessagesLinker implements StreamsMessagesLinker
+public class CassandraStreamsMessagesLinker extends MessagesLinker<String> implements StreamsMessagesLinker
 {
 	public CassandraStreamsMessagesLinker(QueryExecutor exec, String keyspace, String linksTable, String linkColumn,
 			UUID instanceId)
@@ -36,5 +36,12 @@ public class CassandraStreamsMessagesLinker extends MessagesLinker implements St
 	public boolean isStreamLinkedToMessages(String streamName) throws IOException
 	{
 		return isLinkedToMessages(streamName);
+	}
+	
+	
+	@Override
+	protected String createLinkedId(String id)
+	{
+		return id;
 	}
 }

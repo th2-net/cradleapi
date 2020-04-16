@@ -26,9 +26,9 @@ public class StorageConstants
 			PREV_ID = "prev_id",
 			START_TIMESTAMP = "start_timestamp",
 			END_TIMESTAMP = "end_timestamp",
-			REPORT_ID = "report_id",
 			BATCH_ID = "batch_id",
 			MESSAGES_IDS = "messages_ids",
 			TEST_EVENT_ID = "test_event_id",
+			IS_ROOT = "is_root",
 			PARENT_ID = "parent_id";
 }
