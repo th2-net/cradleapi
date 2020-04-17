@@ -27,6 +27,7 @@ public class StorageConstants
 			START_TIMESTAMP = "start_timestamp",
 			END_TIMESTAMP = "end_timestamp",
 			BATCH_ID = "batch_id",
+			BATCH_SIZE = "batch_size",
 			MESSAGES_IDS = "messages_ids",
 			TEST_EVENT_ID = "test_event_id",
 			IS_ROOT = "is_root",

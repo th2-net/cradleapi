@@ -17,6 +17,7 @@ import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEvent;
+import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
 import com.exactpro.cradle.testevents.TestEventsParentsLinker;
@@ -56,11 +57,11 @@ public abstract class CradleStorage
 	
 	
 	/**
-	 * Writes contents of given test event to storage, providing ID to find this record in future.
-	 * @param testEvent to store. The event can be bound to another event by parentId
+	 * Writes data about given test event batch to storage.
+	 * @param batch data to write.
 	 * @throws IOException if data writing failed
 	 */
-	public abstract void storeTestEvent(StoredTestEvent testEvent) throws IOException;
+	public abstract void storeTestEventBatch(StoredTestEventBatch batch) throws IOException;
 	
 	
 	/**

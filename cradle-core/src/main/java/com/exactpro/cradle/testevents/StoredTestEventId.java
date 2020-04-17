@@ -12,31 +12,63 @@ package com.exactpro.cradle.testevents;
 
 import java.io.Serializable;
 
+import com.exactpro.cradle.utils.CradleIdException;
+
 /**
  * Holds ID of a test event stored in Cradle
+ * All test events are supposed to be stored in batches, so test event ID contains ID of batch the event is stored in
  */
 public class StoredTestEventId implements Serializable
 {
-	private static final long serialVersionUID = -8190660410349087101L;
+	private static final long serialVersionUID = -2617119276298695631L;
+
+	public static final String IDS_DELIMITER = ":";
 	
-	private final String id;
+	private final StoredTestEventBatchId batchId;
+	private final int index;
 	
-	public StoredTestEventId(String id)
+	public StoredTestEventId(StoredTestEventBatchId batchId, int index)
 	{
-		this.id = id;
+		this.batchId = batchId;
+		this.index = index;
 	}
 	
 	
-	public String getId()
+	public static StoredTestEventId fromString(String id) throws CradleIdException
 	{
-		return id;
+		String[] parts = id.split(IDS_DELIMITER);
+		if (parts.length < 2)
+			throw new CradleIdException("Test event ID ("+id+") should contain batch ID and test event index delimited with '"+IDS_DELIMITER+"'");
+		
+		int index;
+		try
+		{
+			index = Integer.parseInt(parts[1]);
+		}
+		catch (NumberFormatException e)
+		{
+			throw new CradleIdException("Invalid test event index ("+parts[1]+") in test event ID '"+id+"'");
+		}
+		
+		return new StoredTestEventId(new StoredTestEventBatchId(parts[0]), index);
+	}
+	
+	
+	public StoredTestEventBatchId getBatchId()
+	{
+		return batchId;
+	}
+	
+	public int getIndex()
+	{
+		return index;
 	}
 	
 	
 	@Override
 	public String toString()
 	{
-		return id;
+		return batchId.toString()+IDS_DELIMITER+index;
 	}
 	
 	@Override
@@ -44,7 +76,8 @@ public class StoredTestEventId implements Serializable
 	{
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		result = prime * result + ((batchId == null) ? 0 : batchId.hashCode());
+		result = prime * result + index;
 		return result;
 	}
 	
@@ -58,10 +91,12 @@ public class StoredTestEventId implements Serializable
 		if (getClass() != obj.getClass())
 			return false;
 		StoredTestEventId other = (StoredTestEventId) obj;
-		if (id == null) {
-			if (other.id != null)
+		if (batchId == null) {
+			if (other.batchId != null)
 				return false;
-		} else if (!id.equals(other.id))
+		} else if (!batchId.equals(other.batchId))
+			return false;
+		if (index != other.index)
 			return false;
 		return true;
 	}

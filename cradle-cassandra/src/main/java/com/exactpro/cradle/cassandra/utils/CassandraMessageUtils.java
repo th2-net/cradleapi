@@ -70,8 +70,7 @@ public class CassandraMessageUtils
 		catch (IOException | DataFormatException e)
 		{
 			String id = row.getString(ID);
-			throw new IOException(String.format("Could not decompress batch contents (ID: '%s') from global " +
-					"storage",	id), e);
+			throw new IOException(String.format("Could not decompress message batch contents (ID: '%s') from Cradle", id), e);
 		}
 	}
 }

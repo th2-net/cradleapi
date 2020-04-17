@@ -10,18 +10,22 @@
 
 package com.exactpro.cradle.testevents;
 
+import java.io.Serializable;
 import java.time.Instant;
 
-public class StoredTestEvent
+public class StoredTestEvent implements Serializable
 {
-	private StoredTestEventId id;
+	private static final long serialVersionUID = 7780434719175879122L;
+	
+	//Fields marked with "transient" can be restored from batch data 
+	private transient StoredTestEventId id;
 	private String name,
 			type;
 	private Instant startTimestamp,
 		endTimestamp;
 	private boolean success;
 	private byte[] content;
-	private StoredTestEventId parentId;
+	private transient StoredTestEventId parentId;
 	
 	public StoredTestEvent()
 	{

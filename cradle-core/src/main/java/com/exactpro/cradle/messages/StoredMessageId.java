@@ -12,6 +12,8 @@ package com.exactpro.cradle.messages;
 
 import java.io.Serializable;
 
+import com.exactpro.cradle.utils.CradleIdException;
+
 /**
  * Holds ID of a message stored in Cradle.
  * All messages are supposed to be stored in batches, so message ID contains ID of batch the message is stored in
@@ -31,6 +33,26 @@ public class StoredMessageId implements Serializable
 	}
 	
 	
+	public static StoredMessageId fromString(String id) throws CradleIdException
+	{
+		String[] parts = id.split(IDS_DELIMITER);
+		if (parts.length < 2)
+			throw new CradleIdException("Message ID ("+id+") should contain batch ID and message index delimited with '"+IDS_DELIMITER+"'");
+		
+		int index;
+		try
+		{
+			index = Integer.parseInt(parts[1]);
+		}
+		catch (NumberFormatException e)
+		{
+			throw new CradleIdException("Invalid message index ("+parts[1]+") in message ID '"+id+"'");
+		}
+		
+		return new StoredMessageId(new StoredMessageBatchId(parts[0]), index);
+	}
+	
+	
 	public StoredMessageBatchId getBatchId()
 	{
 		return batchId;
@@ -45,7 +67,7 @@ public class StoredMessageId implements Serializable
 	@Override
 	public String toString()
 	{
-		return batchId.toString()+":"+index;
+		return batchId.toString()+IDS_DELIMITER+index;
 	}
 	
 	@Override

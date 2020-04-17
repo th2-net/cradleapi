@@ -17,6 +17,7 @@ import java.util.UUID;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
+import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 
 public class CassandraTestEventsMessagesLinker extends MessagesLinker<StoredTestEventId> implements TestEventsMessagesLinker
@@ -47,8 +48,8 @@ public class CassandraTestEventsMessagesLinker extends MessagesLinker<StoredTest
 	
 	
 	@Override
-	protected StoredTestEventId createLinkedId(String id)
+	protected StoredTestEventId createLinkedId(String id) throws CradleIdException
 	{
-		return new StoredTestEventId(id);
+		return StoredTestEventId.fromString(id);
 	}
 }
