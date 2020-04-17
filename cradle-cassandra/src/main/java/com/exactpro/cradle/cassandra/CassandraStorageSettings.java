@@ -12,9 +12,8 @@ package com.exactpro.cradle.cassandra;
 
 public class CassandraStorageSettings
 {
-	public static final int BATCH_SIZE_LIMIT_BYTES = 5000;
-	public static final long BATCH_IDLE_LIMIT = 100;
-	public static final int TEST_EVENT_SIZE_LIMIT_BYTES = 5000;
+	public static final int MESSAGE_BATCH_SIZE_LIMIT_BYTES = 5000,
+			TEST_EVENT_BATCH_SIZE_LIMIT_BYTES = 5000;
 	public static final String DEFAULT_KEYSPACE = "cradle",
 			INSTANCES_TABLE_DEFAULT_NAME = "instances",
 			STREAMS_TABLE_DEFAULT_NAME = "streams",

@@ -77,6 +77,7 @@ public class TablesCreator
 				.withColumn(TIMESTAMP, DataTypes.TIMESTAMP)
 				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
 				.withColumn(CONTENT, DataTypes.BLOB)
+				.withColumn(BATCH_SIZE, DataTypes.INT)
 				.withClusteringOrder(ID, ClusteringOrder.ASC);
 		
 		exec.executeQuery(create.asCql());
@@ -101,13 +102,9 @@ public class TablesCreator
 				.withPartitionKey(IS_ROOT, DataTypes.BOOLEAN)
 				.withClusteringColumn(ID, DataTypes.TEXT)
 				.withColumn(STORED, DataTypes.TIMESTAMP)
-				.withColumn(NAME, DataTypes.TEXT)
-				.withColumn(TYPE, DataTypes.TEXT)
-				.withColumn(START_TIMESTAMP, DataTypes.TIMESTAMP)
-				.withColumn(END_TIMESTAMP, DataTypes.TIMESTAMP)
-				.withColumn(SUCCESS, DataTypes.BOOLEAN)
 				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
 				.withColumn(CONTENT, DataTypes.BLOB)
+				.withColumn(BATCH_SIZE, DataTypes.INT)
 				.withColumn(PARENT_ID, DataTypes.TEXT)
 				.withClusteringOrder(ID, ClusteringOrder.ASC);
 		
@@ -122,7 +119,8 @@ public class TablesCreator
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getTestEventsParentsLinkTableName()).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
 				.withPartitionKey(PARENT_ID, DataTypes.TEXT)
-				.withClusteringColumn(TEST_EVENT_ID, DataTypes.TEXT);
+				.withClusteringColumn(BATCH_ID, DataTypes.TEXT)
+				.withColumn(BATCH_SIZE, DataTypes.INT);
 		
 		exec.executeQuery(create.asCql());
 	}

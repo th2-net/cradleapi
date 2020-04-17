@@ -25,17 +25,19 @@ import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsParentsLinker;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
-import com.exactpro.cradle.cassandra.utils.TestEventUtils;
+import com.exactpro.cradle.cassandra.utils.CassandraTestEventUtils;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEvent;
+import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
 import com.exactpro.cradle.testevents.TestEventsParentsLinker;
 import com.exactpro.cradle.utils.CompressionUtils;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.MessageUtils;
+import com.exactpro.cradle.utils.TestEventUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,10 +138,10 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	public void storeTestEvent(StoredTestEvent testEvent) throws IOException
+	public void storeTestEventBatch(StoredTestEventBatch batch) throws IOException
 	{
-		storeTestEventData(testEvent);
-		storeTestEventMetaData(testEvent);
+		storeTestEventBatchData(batch);
+		storeTestEventBatchMetadata(batch);
 	}
 	
 	
@@ -166,14 +168,14 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	public StoredTestEvent getTestEvent(StoredTestEventId id) throws IOException
 	{
-		Select selectFrom = TestEventUtils.prepareSelect(settings.getKeyspace(), settings.getTestEventsTableName(), instanceUuid, false)
-				.whereColumn(ID).isEqualTo(literal(id.toString()));
+		Select selectFrom = CassandraTestEventUtils.prepareSelect(settings.getKeyspace(), settings.getTestEventsTableName(), instanceUuid, false)
+				.whereColumn(ID).isEqualTo(literal(id.getBatchId().toString()));
 		
 		Row resultRow = exec.executeQuery(selectFrom.asCql()).one();
 		if (resultRow == null)
 			return null;
 		
-		return TestEventUtils.toTestEvent(resultRow);
+		return CassandraTestEventUtils.toTestEvent(resultRow, id);
 	}
 	
 	
@@ -245,7 +247,7 @@ public class CassandraCradleStorage extends CradleStorage
 		
 		Instant batchStartTimestamp = batch.getTimestamp();
 		
-		boolean toCompress = isNeedToCompressBatchContent(batchContent);
+		boolean toCompress = isNeedToCompressMessageBatch(batchContent);
 		if (toCompress)
 		{
 			try
@@ -254,7 +256,7 @@ public class CassandraCradleStorage extends CradleStorage
 			}
 			catch (IOException e)
 			{
-				throw new IOException(String.format("Could not compress batch contents (ID: '%s') to save in storage",
+				throw new IOException(String.format("Could not compress message batch contents (ID: '%s') to save in Cradle",
 						batch.getId().toString()), e);
 			}
 		}
@@ -267,6 +269,7 @@ public class CassandraCradleStorage extends CradleStorage
 				.value(TIMESTAMP, literal(batchStartTimestamp))
 				.value(COMPRESSED, literal(toCompress))
 				.value(CONTENT, literal(ByteBuffer.wrap(batchContent)))
+				.value(BATCH_SIZE, literal(batch.getMessageCount()))
 				.ifNotExists();
 		exec.executeQuery(insert.asCql());
 	}
@@ -278,62 +281,60 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	
-	private void storeTestEventData(StoredTestEvent testEvent) throws IOException
+	private void storeTestEventBatchData(StoredTestEventBatch batch) throws IOException
 	{
-		byte[] content = testEvent.getContent();
-		boolean toCompress = isNeedCompressTestEvent(content);
+		byte[] batchContent = TestEventUtils.serializeTestEvents(batch.getTestEvents());
+		boolean toCompress = isNeedCompressTestEventBatch(batchContent);
 		if (toCompress)
 		{
 			try
 			{
-				content = CompressionUtils.compressData(content);
+				batchContent = CompressionUtils.compressData(batchContent);
 			}
 			catch (IOException e)
 			{
-				throw new IOException(String.format("Could not compress contents of test event '%s' "
-						+ " to save in Cradle", testEvent.getName()), e);
+				throw new IOException(String.format("Could not compress test event batch contents (ID: '%s') to save in Cradle", 
+						batch.getId().toString()), e);
 			}
 		}
 		
-		StoredTestEventId parentId = testEvent.getParentId();
+		StoredTestEventId parentId = batch.getParentId();
 		RegularInsert insert = insertInto(settings.getKeyspace(), settings.getTestEventsTableName())
-				.value(ID, literal(testEvent.getId().toString()))
+				.value(ID, literal(batch.getId().toString()))
 				.value(IS_ROOT, literal(parentId == null))
 				.value(INSTANCE_ID, literal(instanceUuid))
 				.value(STORED, literal(Instant.now()))
-				.value(NAME, literal(testEvent.getName()))
-				.value(TYPE, literal(testEvent.getType()))
-				.value(START_TIMESTAMP, literal(testEvent.getStartTimestamp()))
-				.value(END_TIMESTAMP, literal(testEvent.getEndTimestamp()))
-				.value(SUCCESS, literal(testEvent.isSuccess()))
 				.value(COMPRESSED, literal(toCompress))
-				.value(CONTENT, literal(ByteBuffer.wrap(content)));
+				.value(CONTENT, literal(ByteBuffer.wrap(batchContent)))
+				.value(BATCH_SIZE, literal(batch.getTestEventsCount()));
 		if (parentId != null)
 			insert = insert.value(PARENT_ID, literal(parentId.toString()));
+		
 		exec.executeQuery(insert.ifNotExists().asCql());
 	}
 	
-	private void storeTestEventMetaData(StoredTestEvent testEvent) throws IOException
+	private void storeTestEventBatchMetadata(StoredTestEventBatch batch) throws IOException
 	{
-		if (testEvent.getParentId() == null)
+		if (batch.getParentId() == null)
 			return;
 		
 		Insert insert = insertInto(settings.getKeyspace(), settings.getTestEventsParentsLinkTableName())
 				.value(INSTANCE_ID, literal(instanceUuid))
-				.value(PARENT_ID, literal(testEvent.getParentId().toString()))
-				.value(TEST_EVENT_ID, literal(testEvent.getId().toString()));
+				.value(PARENT_ID, literal(batch.getParentId().toString()))
+				.value(BATCH_ID, literal(batch.getId().toString()))
+				.value(BATCH_SIZE, literal(batch.getTestEventsCount()));
 		exec.executeQuery(insert.ifNotExists().asCql());
 	}
 	
 	
-	private boolean isNeedToCompressBatchContent(byte[] batchContentBytes)
+	private boolean isNeedToCompressMessageBatch(byte[] batchContentBytes)
 	{
-		return batchContentBytes.length > BATCH_SIZE_LIMIT_BYTES;
+		return batchContentBytes.length > MESSAGE_BATCH_SIZE_LIMIT_BYTES;
 	}
 	
-	private boolean isNeedCompressTestEvent(byte[] testEventBytes)
+	private boolean isNeedCompressTestEventBatch(byte[] batchContentBytes)
 	{
-		return testEventBytes.length > TEST_EVENT_SIZE_LIMIT_BYTES;
+		return batchContentBytes.length > TEST_EVENT_BATCH_SIZE_LIMIT_BYTES;
 	}
 	
 

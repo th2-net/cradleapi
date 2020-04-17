@@ -10,46 +10,25 @@
 
 package com.exactpro.cradle.cassandra.iterators;
 
+import java.io.IOException;
+import java.util.Collection;
 import java.util.Iterator;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.datastax.oss.driver.api.core.cql.Row;
-import com.exactpro.cradle.cassandra.utils.TestEventException;
-import com.exactpro.cradle.cassandra.utils.TestEventUtils;
+import com.exactpro.cradle.cassandra.utils.CassandraTestEventUtils;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 
-public class TestEventsIterator implements Iterator<StoredTestEvent>
+public class TestEventsIterator extends EntityIterator<StoredTestEvent>
 {
-	private static final Logger logger = LoggerFactory.getLogger(TestEventsIterator.class);
-	
-	private final Iterator<Row> rows;
-	
 	public TestEventsIterator(Iterator<Row> rows)
 	{
-		this.rows = rows;
+		super(rows, "test event");
 	}
 	
-	@Override
-	public boolean hasNext()
-	{
-		return rows.hasNext();
-	}
 	
 	@Override
-	public StoredTestEvent next()
+	protected Collection<StoredTestEvent> rowToCollection(Row row) throws IOException
 	{
-		Row r = rows.next();
-		try
-		{
-			return TestEventUtils.toTestEvent(r);
-		}
-		catch (TestEventException e)
-		{
-			StoredTestEvent result = e.getTestEvent();
-			logger.warn("Error while getting test event '"+result.getId()+"'. Returned data may be corrupted", e);
-			return result;
-		}
+		return CassandraTestEventUtils.toTestEvents(row);
 	}
 }

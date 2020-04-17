@@ -17,7 +17,7 @@ import java.util.UUID;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
-import com.exactpro.cradle.cassandra.utils.TestEventUtils;
+import com.exactpro.cradle.cassandra.utils.CassandraTestEventUtils;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 
 public class TestEventsIteratorAdapter implements Iterable<StoredTestEvent>
@@ -26,7 +26,8 @@ public class TestEventsIteratorAdapter implements Iterable<StoredTestEvent>
 	
 	public TestEventsIteratorAdapter(QueryExecutor exec, String keyspace, String testEventsTable, UUID instanceId, boolean onlyRootEvents) throws IOException
 	{
-		Select selectFrom = TestEventUtils.prepareSelect(keyspace, testEventsTable, instanceId, onlyRootEvents);
+		Select selectFrom = CassandraTestEventUtils.prepareSelect(keyspace, testEventsTable, instanceId, onlyRootEvents);
+		
 		this.rs = exec.executeQuery(selectFrom.asCql());
 	}
 	

@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 
+import com.exactpro.cradle.testevents.StoredTestEventBatchId;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventsParentsLinker;
 import com.datastax.oss.driver.api.core.cql.Row;
@@ -51,7 +52,10 @@ public class CassandraTestEventsParentsLinker implements TestEventsParentsLinker
 		while (it.hasNext())
 		{
 			Row r = it.next();
-			result.add(new StoredTestEventId(r.getString(TEST_EVENT_ID)));
+			StoredTestEventBatchId batchId = new StoredTestEventBatchId(r.getString(BATCH_ID));
+			int size = r.getInt(BATCH_SIZE);
+			for (int i = 0; i < size; i++)
+				result.add(new StoredTestEventId(batchId, i));
 		}
 		return result;
 	}
@@ -69,7 +73,8 @@ public class CassandraTestEventsParentsLinker implements TestEventsParentsLinker
 	private Select prepareQuery(StoredTestEventId parentId)
 	{
 		return selectFrom(keyspace, linksTable)
-				.column(TEST_EVENT_ID)
+				.column(BATCH_ID)
+				.column(BATCH_SIZE)
 				.whereColumn(INSTANCE_ID).isEqualTo(literal(instanceId))
 				.whereColumn(PARENT_ID).isEqualTo(literal(parentId.toString()));
 	}

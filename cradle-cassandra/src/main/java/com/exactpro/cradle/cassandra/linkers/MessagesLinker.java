@@ -25,8 +25,8 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.exactpro.cradle.messages.StoredMessageBatchId;
 import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 
 public abstract class MessagesLinker<T>
@@ -47,7 +47,7 @@ public abstract class MessagesLinker<T>
 	}
 	
 	
-	protected abstract T createLinkedId(String id);
+	protected abstract T createLinkedId(String id) throws CradleIdException;
 	
 	
 	protected List<T> getManyLinkedsByMessageId(StoredMessageId messageId) throws IOException
@@ -59,7 +59,14 @@ public abstract class MessagesLinker<T>
 		while (it.hasNext())
 		{
 			Row r = it.next();
-			result.add(createLinkedId(r.getString(linkColumn)));
+			try
+			{
+				result.add(createLinkedId(r.getString(linkColumn)));
+			}
+			catch (CradleIdException e)
+			{
+				throw new IOException("Could not parse linked ID", e);
+			}
 		}
 		return result;
 	}
@@ -78,8 +85,15 @@ public abstract class MessagesLinker<T>
 			{
 				for (String cid : currentMessageIds)
 				{
-					StoredMessageId parsedId = parseMessageId(cid);
-					ids.add(parsedId);
+					try
+					{
+						StoredMessageId parsedId = StoredMessageId.fromString(cid);
+						ids.add(parsedId);
+					}
+					catch (CradleIdException e)
+					{
+						throw new IOException("Could not parse message ID", e);
+					}
 				}
 			}
 		}
@@ -105,26 +119,6 @@ public abstract class MessagesLinker<T>
 				.whereColumn(INSTANCE_ID).isEqualTo(literal(instanceId))
 				.whereColumn(linkColumn).isEqualTo(literal(linkedId));
 	}
-	
-	private StoredMessageId parseMessageId(String id) throws IOException
-	{
-		String[] parts = id.split(StoredMessageId.IDS_DELIMITER);
-		if (parts.length < 2)
-			throw new IOException("Message ID ("+id+") should contain batch ID and message index delimited with '"+StoredMessageId.IDS_DELIMITER+"'");
-		
-		int index;
-		try
-		{
-			index = Integer.parseInt(parts[1]);
-		}
-		catch (NumberFormatException e)
-		{
-			throw new IOException("Invalid message index ("+parts[1]+") in message ID '"+id+"'");
-		}
-		
-		return new StoredMessageId(new StoredMessageBatchId(parts[0]), index);
-	}
-	
 	private ResultSet getLinkedsByMessageIdResult(StoredMessageId messageId) throws IOException
 	{
 		Select selectFrom = selectFrom(keyspace, linksTable)

@@ -25,7 +25,7 @@ import com.exactpro.cradle.utils.CradleStorageException;
  */
 public class StoredMessageBatch
 {
-	public static int MAX_MESSAGE_NUMBER = 10;
+	public static int MAX_MESSAGES_NUMBER = 10;
 	
 	private final StoredMessageBatchId id;
 	private int storedMessagesCount = 0;
@@ -36,9 +36,18 @@ public class StoredMessageBatch
 	public StoredMessageBatch(StoredMessageBatchId id)
 	{
 		this.id = id;
-		this.messages = new StoredMessage[MAX_MESSAGE_NUMBER];
+		this.messages = new StoredMessage[MAX_MESSAGES_NUMBER];
 		this.streamsMessages = new HashMap<>();
 	}
+	
+	
+	public static StoredMessageBatch singleton(StoredMessage message) throws CradleStorageException
+	{
+		StoredMessageBatch result = new StoredMessageBatch(message.getId().getBatchId());
+		result.addMessage(message);
+		return result;
+	}
+	
 
 	public StoredMessageBatchId getId()
 	{
