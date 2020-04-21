@@ -86,11 +86,11 @@ public class StoredMessageBatch
 		
 		if (message.getId() != null)
 		{
-			StoredMessageId id = message.getId();
-			if (!id.getBatchId().equals(id))
-				throw new CradleStorageException("Batch ID in message ("+id.getBatchId()+") doesn't match with ID of batch it is being added to ("+id+")");
-			if (id.getIndex() != storedMessagesCount)
-				throw new CradleStorageException("Unexpected message index - "+id.getIndex()+". Expected "+storedMessagesCount);
+			StoredMessageId messageId = message.getId();
+			if (!messageId.getBatchId().equals(id))
+				throw new CradleStorageException("Batch ID in message ("+messageId.getBatchId()+") doesn't match with ID of batch it is being added to ("+id+")");
+			if (messageId.getIndex() != storedMessagesCount)
+				throw new CradleStorageException("Unexpected message index - "+messageId.getIndex()+". Expected "+storedMessagesCount);
 		}
 		else
 			message.setId(new StoredMessageId(id, storedMessagesCount));
