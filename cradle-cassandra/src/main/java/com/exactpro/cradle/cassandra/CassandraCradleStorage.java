@@ -269,8 +269,7 @@ public class CassandraCradleStorage extends CradleStorage
 				.value(TIMESTAMP, literal(batchStartTimestamp))
 				.value(COMPRESSED, literal(toCompress))
 				.value(CONTENT, literal(ByteBuffer.wrap(batchContent)))
-				.value(BATCH_SIZE, literal(batch.getMessageCount()))
-				.ifNotExists();
+				.value(BATCH_SIZE, literal(batch.getMessageCount()));
 		exec.executeQuery(insert.asCql());
 	}
 
@@ -310,7 +309,7 @@ public class CassandraCradleStorage extends CradleStorage
 		if (parentId != null)
 			insert = insert.value(PARENT_ID, literal(parentId.toString()));
 		
-		exec.executeQuery(insert.ifNotExists().asCql());
+		exec.executeQuery(insert.asCql());
 	}
 	
 	private void storeTestEventBatchMetadata(StoredTestEventBatch batch) throws IOException
@@ -323,7 +322,7 @@ public class CassandraCradleStorage extends CradleStorage
 				.value(PARENT_ID, literal(batch.getParentId().toString()))
 				.value(BATCH_ID, literal(batch.getId().toString()))
 				.value(BATCH_SIZE, literal(batch.getTestEventsCount()));
-		exec.executeQuery(insert.ifNotExists().asCql());
+		exec.executeQuery(insert.asCql());
 	}
 	
 	
@@ -349,8 +348,7 @@ public class CassandraCradleStorage extends CradleStorage
 			Insert insert = insertInto(settings.getKeyspace(), linksTable)
 					.value(INSTANCE_ID, literal(instanceUuid))
 					.value(linkColumn, literal(linkedId))
-					.value(MESSAGES_IDS, literal(curMsgsIds))
-					.ifNotExists();
+					.value(MESSAGES_IDS, literal(curMsgsIds));
 			exec.executeQuery(insert.asCql());
 			left = right - 1;
 		}
