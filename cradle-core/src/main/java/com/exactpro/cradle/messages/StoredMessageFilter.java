@@ -11,124 +11,45 @@
 package com.exactpro.cradle.messages;
 
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.Set;
 
-import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.filters.FilterByField;
 
 public class StoredMessageFilter
 {
-	public enum DirectionFilter {
-		Any(null),
-		Sent(Direction.SENT),
-		Received(Direction.RECEIVED);
-
-		final Direction value;
-
-		DirectionFilter(Direction value)
-		{
-			this.value = value;
-		}
-
-		public Direction getValue()
-		{
-			return value;
-		}
-
-		public boolean checkDirection(Direction direction) {
-			return value == null || value == direction;
-		}
-	}
-
-	protected Instant periodFrom;
-	protected Instant periodTo;
-	protected Set<String> streams;
-	protected DirectionFilter directionFilter;
-
-	public StoredMessageFilter() {
-		directionFilter = DirectionFilter.Any;
-	}
-
-	public boolean isEmpty() {
-		return periodFrom == null && periodTo == null && directionFilter == null && (streams == null || streams.isEmpty());
-	}
-
-	public void copy(StoredMessageFilter otherFilter)
+	private FilterByField<String> streamName;
+	private FilterByField<Instant> timestampFrom,
+			timestampTo;
+	
+	
+	public FilterByField<String> getStreamName()
 	{
-		periodFrom = otherFilter.periodFrom;
-		periodTo = otherFilter.periodTo;
-		streams = otherFilter.streams != null ? new HashSet<>(otherFilter.streams) : null;
-		directionFilter = otherFilter.directionFilter;
+		return streamName;
 	}
-
-	public Instant getPeriodFrom()
+	
+	public void setStreamName(FilterByField<String> streamName)
 	{
-		return periodFrom;
+		this.streamName = streamName;
 	}
-
-	public void setPeriodFrom(Instant periodFrom)
+	
+	
+	public FilterByField<Instant> getTimestampFrom()
 	{
-		this.periodFrom = periodFrom;
+		return timestampFrom;
 	}
-
-	public Instant getPeriodTo()
+	
+	public void setTimestampFrom(FilterByField<Instant> timestampFrom)
 	{
-		return periodTo;
+		this.timestampFrom = timestampFrom;
 	}
-
-	public void setPeriodTo(Instant periodTo)
+	
+	
+	public FilterByField<Instant> getTimestampTo()
 	{
-		this.periodTo = periodTo;
+		return timestampTo;
 	}
-
-	public Set<String> getStreams()
+	
+	public void setTimestampTo(FilterByField<Instant> timestampTo)
 	{
-		return streams;
-	}
-
-	public void setStreams(Set<String> streams)
-	{
-		this.streams = streams;
-	}
-
-	public DirectionFilter getDirectionFilter()
-	{
-		return directionFilter;
-	}
-
-	public void setDirectionFilter(DirectionFilter directionFilter)
-	{
-		this.directionFilter = directionFilter;
-	}
-
-	/**
-	 * Returns true if message passes the filter
-	 *
-	 * @param message Message to check
-	 * @return true, if all this filter's conditions are satisfied
-	 */
-	public boolean checkMessage(StoredMessage message)
-	{
-		if (directionFilter != null && !directionFilter.checkDirection(message.getDirection()))
-			return false;
-
-		if (periodFrom != null && message.getTimestamp().isBefore(periodFrom))
-			return false;
-
-		if (periodTo != null && message.getTimestamp().isAfter(periodTo))
-			return false;
-
-		if (streams != null && !streams.isEmpty() && !streams.contains(message.getStreamName()))
-			return false;
-
-		return true;
-	}
-
-	public void clear()
-	{
-		periodFrom = null;
-		periodTo = null;
-		streams = null;
-		directionFilter = DirectionFilter.Any;
+		this.timestampTo = timestampTo;
 	}
 }

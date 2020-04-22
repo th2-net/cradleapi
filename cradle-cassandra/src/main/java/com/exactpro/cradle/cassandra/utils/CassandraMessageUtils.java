@@ -12,10 +12,7 @@ package com.exactpro.cradle.cassandra.utils;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
-import static com.exactpro.cradle.cassandra.StorageConstants.COMPRESSED;
-import static com.exactpro.cradle.cassandra.StorageConstants.CONTENT;
-import static com.exactpro.cradle.cassandra.StorageConstants.ID;
-import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -28,17 +25,27 @@ import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatchId;
+import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CompressionUtils;
 import com.exactpro.cradle.utils.MessageUtils;
 
 public class CassandraMessageUtils
 {
-	public static Select prepareSelect(String keyspace, String tableName, UUID instanceId)
+	public static Select prepareSelect(String keyspace, String tableName, UUID instanceId, StoredMessageFilter filter)
 	{
-		return selectFrom(keyspace, tableName)
+		Select result = selectFrom(keyspace, tableName)
 				.all()
 				.whereColumn(INSTANCE_ID).isEqualTo(literal(instanceId));
+		if (filter == null)
+			return result;
+		
+		if (filter.getTimestampFrom() != null)
+			result = FilterUtils.filterToWhere(filter.getTimestampFrom(), result.whereColumn(TIMESTAMP));
+		if (filter.getTimestampTo() != null)
+			result = FilterUtils.filterToWhere(filter.getTimestampTo(), result.whereColumn(TIMESTAMP));
+		result = result.allowFiltering();
+		return result;
 	}
 	
 	public static StoredMessage toMessage(Row row, StoredMessageId id) throws IOException
