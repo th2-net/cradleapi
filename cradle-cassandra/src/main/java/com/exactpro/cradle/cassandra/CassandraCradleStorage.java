@@ -28,6 +28,7 @@ import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.cassandra.utils.CassandraTestEventUtils;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
@@ -155,7 +156,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	public StoredMessage getMessage(StoredMessageId id) throws IOException
 	{
-		Select selectFrom = CassandraMessageUtils.prepareSelect(settings.getKeyspace(), settings.getMessagesTableName(), instanceUuid)
+		Select selectFrom = CassandraMessageUtils.prepareSelect(settings.getKeyspace(), settings.getMessagesTableName(), instanceUuid, null)
 				.whereColumn(ID).isEqualTo(literal(id.getBatchId().toString()));
 		
 		Row resultRow = exec.executeQuery(selectFrom.asCql()).one();
@@ -199,9 +200,9 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	public Iterable<StoredMessage> getMessages() throws IOException
+	public Iterable<StoredMessage> getMessages(StoredMessageFilter filter) throws IOException
 	{
-		return new MessagesIteratorAdapter(exec, settings.getKeyspace(), settings.getMessagesTableName(), instanceUuid);
+		return new MessagesIteratorAdapter(filter, exec, settings.getKeyspace(), settings.getMessagesTableName(), settings.getStreamMsgsLinkTableName(), instanceUuid);
 	}
 
 	@Override

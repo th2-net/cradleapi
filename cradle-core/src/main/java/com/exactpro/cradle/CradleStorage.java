@@ -15,6 +15,7 @@ import java.util.*;
 
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
@@ -110,11 +111,12 @@ public abstract class CradleStorage
 	
 	
 	/**
-	 * Allows to enumerate stored messages
+	 * Allows to enumerate stored messages, optionally filtering them by given conditions
+	 * @param filter defines conditions to filter messages by. Use null is no filtering is needed
 	 * @return iterable object to enumerate messages
 	 * @throws IOException if data retrieval failed
 	 */
-	public abstract Iterable<StoredMessage> getMessages() throws IOException;
+	public abstract Iterable<StoredMessage> getMessages(StoredMessageFilter filter) throws IOException;
 	
 	/**
 	 * Allows to enumerate test events
