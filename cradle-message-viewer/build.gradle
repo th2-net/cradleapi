@@ -1,0 +1,43 @@
+apply plugin: 'java'
+apply plugin: 'application'
+
+repositories {
+	mavenLocal()
+	jcenter()
+}
+
+dependencies {
+	compile 'com.exactpro.cradle:cradle-core:1.2-SNAPSHOT'
+	compile 'com.exactpro.cradle:cradle-cassandra:1.2-SNAPSHOT'
+	compile 'commons-cli:commons-cli:1.4'
+}
+
+mainClassName = 'com.exactpro.cradle.viewer.MessageViewer'
+
+jar {
+	archivesBaseName = 'cradle-cassandra-feeder'
+	manifest {
+		attributes('Specification-Title': 'Cradle Message Viewer')
+		attributes('Main-Class': 'com.exactpro.cradle.viewer.MessageViewer')
+		attributes("Class-Path": configurations.compile.collect { "lib/" + it.getName() }.join(' '))
+	}
+}
+
+task release(type: Zip, dependsOn: jar) {
+	archiveName = "cradle-message-viewer"+getDate('yyyyMMdd.HHmmss')+".zip"
+	from(configurations.compile) {
+		into "lib"
+	}
+	from ("${projectDir}/message_viewer.cfg")
+	from ("${projectDir}/log.properties")
+	from jar
+}
+
+assemble.dependsOn.add(release)
+
+
+static def getDate(String format) {
+	def date = new Date()
+	def formattedDate = date.format(format)
+	return formattedDate
+}
