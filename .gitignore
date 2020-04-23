@@ -21,3 +21,10 @@
 /cradle-cassandra-feeder/build
 /cradle-cassandra-feeder/.classpath
 /cradle-cassandra-feeder/.project
+/cradle-message-viewer/.project
+/cradle-message-viewer/bin
+/cradle-message-viewer/build
+/cradle-message-viewer/logs
+/cradle-message-viewer/.classpath
+/cradle-message-viewer/.settings
+/cradle-message-viewer/.gradle
