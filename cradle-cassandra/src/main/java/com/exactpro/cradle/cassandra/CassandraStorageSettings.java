@@ -10,6 +10,8 @@
 
 package com.exactpro.cradle.cassandra;
 
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
+
 public class CassandraStorageSettings
 {
 	public static final int MESSAGE_BATCH_SIZE_LIMIT_BYTES = 5000,
@@ -22,8 +24,9 @@ public class CassandraStorageSettings
 			STREAM_MSGS_LINK_TABLE_DEFAULT_NAME = "stream_messages_link",
 			TEST_EVENTS_PARENTS_LINK_TABLE_DEFAULT_NAME = "test_events_parents_link",
 			TEST_EVENT_MSGS_LINK_TABLE_DEFAULT_NAME = "test_event_messages_link";
-	private static final long DEFAULT_TIMEOUT = 5000;
-	private static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1;
+	public static final long DEFAULT_TIMEOUT = 5000;
+	public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.QUORUM;
+	public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1;
 	public static final int BATCH_MESSAGES_LIMIT = 10,
 			TEST_EVENTS_MSGS_LINK_MAX_MSGS = 10;
 
@@ -35,8 +38,11 @@ public class CassandraStorageSettings
 			testEventMsgsLinkTableName;
 	private final int keyspaceReplicationFactor;
 	private long timeout;
+	private ConsistencyLevel writeConsistencyLevel,
+			readConsistencyLevel;
 
-	public CassandraStorageSettings(String keyspace, int keyspaceReplicationFactor, long timeout)
+	public CassandraStorageSettings(String keyspace, int keyspaceReplicationFactor, 
+			long timeout, ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel)
 	{
 		this.messagesTableName = MESSAGES_TABLE_DEFAULT_NAME;
 		this.testEventsTableName = TEST_EVENTS_TABLE_DEFAULT_NAME;
@@ -46,21 +52,23 @@ public class CassandraStorageSettings
 		this.keyspace = keyspace;
 		this.keyspaceReplicationFactor = keyspaceReplicationFactor;
 		this.timeout = timeout;
+		this.writeConsistencyLevel = writeConsistencyLevel;
+		this.readConsistencyLevel = readConsistencyLevel;
 	}
 
 	public CassandraStorageSettings(String keyspace, int keyspaceReplicationFactor)
 	{
-		this(keyspace, keyspaceReplicationFactor, DEFAULT_TIMEOUT);
+		this(keyspace, keyspaceReplicationFactor, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
 	}
 
 	public CassandraStorageSettings(String keyspace)
 	{
-		this(keyspace, DEFAULT_KEYSPACE_REPL_FACTOR, DEFAULT_TIMEOUT);
+		this(keyspace, DEFAULT_KEYSPACE_REPL_FACTOR, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
 	}
 
 	public CassandraStorageSettings()
 	{
-		this(DEFAULT_KEYSPACE, DEFAULT_KEYSPACE_REPL_FACTOR, DEFAULT_TIMEOUT);
+		this(DEFAULT_KEYSPACE, DEFAULT_KEYSPACE_REPL_FACTOR, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
 	}
 
 	public String getKeyspace()
@@ -128,14 +136,37 @@ public class CassandraStorageSettings
 	{
 		return keyspaceReplicationFactor;
 	}
-
+	
+	
 	public long getTimeout()
 	{
 		return timeout;
 	}
-
+	
 	public void setTimeout(long timeout)
 	{
 		this.timeout = timeout;
 	}
+	
+	
+	public ConsistencyLevel getWriteConsistencyLevel()
+	{
+		return writeConsistencyLevel;
+	}
+	
+	public void setWriteConsistencyLevel(ConsistencyLevel writeConsistencyLevel)
+	{
+		this.writeConsistencyLevel = writeConsistencyLevel;
+	}
+	
+	
+	public ConsistencyLevel getReadConsistencyLevel()
+	{
+		return readConsistencyLevel;
+	}
+	
+	public void setReadConsistencyLevel(ConsistencyLevel readConsistencyLevel)
+	{
+		this.readConsistencyLevel = readConsistencyLevel;
+	}	
 }

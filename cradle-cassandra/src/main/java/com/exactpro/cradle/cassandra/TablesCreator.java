@@ -64,7 +64,7 @@ public class TablesCreator
 				.withPartitionKey(NAME, DataTypes.TEXT)  //Name is a key for faster ID obtaining by name
 				.withColumn(ID, DataTypes.UUID);
 		
-		exec.executeQuery(create.asCql());
+		exec.executeQuery(create.asCql(), true);
 	}
 	
 	public void createMessagesTable() throws IOException
@@ -80,7 +80,7 @@ public class TablesCreator
 				.withColumn(BATCH_SIZE, DataTypes.INT)
 				.withClusteringOrder(ID, ClusteringOrder.ASC);
 		
-		exec.executeQuery(create.asCql());
+		exec.executeQuery(create.asCql(), true);
 	}
 	
 	public void createStreamMessagesLinkTable() throws IOException
@@ -91,7 +91,7 @@ public class TablesCreator
 				.withPartitionKey(STREAM_NAME, DataTypes.TEXT)
 				.withClusteringColumn(MESSAGES_IDS, DataTypes.frozenListOf(DataTypes.TEXT));
 		
-		exec.executeQuery(create.asCql());
+		exec.executeQuery(create.asCql(), true);
 	}
 	
 
@@ -108,7 +108,7 @@ public class TablesCreator
 				.withColumn(PARENT_ID, DataTypes.TEXT)
 				.withClusteringOrder(ID, ClusteringOrder.ASC);
 		
-		exec.executeQuery(create.asCql());
+		exec.executeQuery(create.asCql(), true);
 	}
 	
 	//This table is needed to link test events with their parents. This allows to get IDs of test events bound to particular parent ID.
@@ -122,7 +122,7 @@ public class TablesCreator
 				.withClusteringColumn(BATCH_ID, DataTypes.TEXT)
 				.withColumn(BATCH_SIZE, DataTypes.INT);
 		
-		exec.executeQuery(create.asCql());
+		exec.executeQuery(create.asCql(), true);
 	}
 	
 	//Many-to-many
@@ -133,6 +133,6 @@ public class TablesCreator
 				.withClusteringColumn(TEST_EVENT_ID, DataTypes.TEXT)
 				.withClusteringColumn(MESSAGES_IDS, DataTypes.frozenListOf(DataTypes.TEXT));
 		
-		exec.executeQuery(create.asCql());
+		exec.executeQuery(create.asCql(), true);
 	}
 }

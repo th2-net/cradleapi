@@ -22,16 +22,21 @@ public class QueryExecutor
 {
 	private final CqlSession session;
 	private final long timeout;
+	private final ConsistencyLevel writeConsistencyLevel,
+			readConsistencyLevel;
 	
-	public QueryExecutor(CqlSession session, long timeout)
+	public QueryExecutor(CqlSession session, long timeout, ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel)
 	{
 		this.session = session;
 		this.timeout = timeout;
+		this.writeConsistencyLevel = writeConsistencyLevel;
+		this.readConsistencyLevel = readConsistencyLevel;
 	}
 	
-	public ResultSet executeQuery(String cqlQuery) throws IOException
+	public ResultSet executeQuery(String cqlQuery, boolean writingQuery) throws IOException
 	{
-		ResultSet rs = session.execute(makeSimpleStatement(cqlQuery));
+		ResultSet rs = session.execute(makeSimpleStatement(cqlQuery, 
+				writingQuery ? writeConsistencyLevel : readConsistencyLevel));
 		if (!rs.wasApplied())
 			throw new IOException("Query was rejected by database. Probably, key fields are duplicated. Rejected query: "+cqlQuery);
 		return rs;
@@ -43,8 +48,10 @@ public class QueryExecutor
 	}
 	
 	
-	private SimpleStatement makeSimpleStatement(String query)
+	private SimpleStatement makeSimpleStatement(String query, ConsistencyLevel consistencyLevel)
 	{
-		return SimpleStatement.newInstance(query).setTimeout(Duration.ofMillis(timeout)).setConsistencyLevel(ConsistencyLevel.ALL);
+		return SimpleStatement.newInstance(query)
+				.setTimeout(Duration.ofMillis(timeout))
+				.setConsistencyLevel(consistencyLevel);
 	}
 }
