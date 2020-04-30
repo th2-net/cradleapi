@@ -46,7 +46,7 @@ public class CassandraTestEventsParentsLinker implements TestEventsParentsLinker
 	public List<StoredTestEventId> getChildrenIds(StoredTestEventId parentId) throws IOException
 	{
 		Select selectFrom = prepareQuery(parentId);
-		Iterator<Row> it = exec.executeQuery(selectFrom.asCql()).iterator();
+		Iterator<Row> it = exec.executeQuery(selectFrom.asCql(), false).iterator();
 		
 		List<StoredTestEventId> result = new ArrayList<>();
 		while (it.hasNext())
@@ -66,7 +66,7 @@ public class CassandraTestEventsParentsLinker implements TestEventsParentsLinker
 		Select selectFrom = prepareQuery(parentId)
 				.limit(1);
 		
-		return exec.executeQuery(selectFrom.asCql()).one() != null;
+		return exec.executeQuery(selectFrom.asCql(), false).one() != null;
 	}
 	
 	

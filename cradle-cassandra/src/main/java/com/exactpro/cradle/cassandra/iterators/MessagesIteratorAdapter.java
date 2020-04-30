@@ -50,7 +50,7 @@ public class MessagesIteratorAdapter implements Iterable<StoredMessage>
 			else
 				selectFrom = selectFrom.whereColumn(ID).isEqualTo(literal(""));
 		}
-		this.rs = exec.executeQuery(selectFrom.asCql());
+		this.rs = exec.executeQuery(selectFrom.asCql(), false);
 	}
 	
 	@Override
@@ -70,7 +70,7 @@ public class MessagesIteratorAdapter implements Iterable<StoredMessage>
 		selectMessageIds = selectMessageIds.allowFiltering();
 		
 		Set<Term> ids = new HashSet<>();
-		Iterator<Row> it = exec.executeQuery(selectMessageIds.asCql()).iterator();
+		Iterator<Row> it = exec.executeQuery(selectMessageIds.asCql(), false).iterator();
 		while (it.hasNext())
 		{
 			Row r = it.next();

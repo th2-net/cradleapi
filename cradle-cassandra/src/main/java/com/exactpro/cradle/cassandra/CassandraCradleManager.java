@@ -13,6 +13,7 @@ package com.exactpro.cradle.cassandra;
 import com.exactpro.cradle.CradleManager;
 import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
+import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
 
 public class CassandraCradleManager extends CradleManager
 {
@@ -27,6 +28,12 @@ public class CassandraCradleManager extends CradleManager
 	@Override
 	protected CradleStorage createStorage()
 	{
-		return new CassandraCradleStorage(connection, new CassandraStorageSettings(connection.getSettings().getKeyspace()));
+		CassandraConnectionSettings settings = connection.getSettings();
+		return new CassandraCradleStorage(connection, 
+				new CassandraStorageSettings(settings.getKeyspace(),
+						CassandraStorageSettings.DEFAULT_KEYSPACE_REPL_FACTOR,
+						settings.getTimeout() <= 0 ? CassandraStorageSettings.DEFAULT_TIMEOUT : settings.getTimeout(),
+						settings.getWriteConsistencyLevel() == null ? CassandraStorageSettings.DEFAULT_CONSISTENCY_LEVEL : settings.getWriteConsistencyLevel(),
+						settings.getReadConsistencyLevel() == null ? CassandraStorageSettings.DEFAULT_CONSISTENCY_LEVEL : settings.getReadConsistencyLevel()));
 	}
 }

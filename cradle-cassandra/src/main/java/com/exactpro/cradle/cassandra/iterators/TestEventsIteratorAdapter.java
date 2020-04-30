@@ -28,7 +28,7 @@ public class TestEventsIteratorAdapter implements Iterable<StoredTestEvent>
 	{
 		Select selectFrom = CassandraTestEventUtils.prepareSelect(keyspace, testEventsTable, instanceId, onlyRootEvents);
 		
-		this.rs = exec.executeQuery(selectFrom.asCql());
+		this.rs = exec.executeQuery(selectFrom.asCql(), false);
 	}
 	
 	@Override

@@ -75,7 +75,7 @@ public abstract class MessagesLinker<T>
 	{
 		Select selectFrom = prepareQuery(linkedId.toString());
 		
-		Iterator<Row> resultIterator = exec.executeQuery(selectFrom.asCql()).iterator();
+		Iterator<Row> resultIterator = exec.executeQuery(selectFrom.asCql(), false).iterator();
 		List<StoredMessageId> ids = new ArrayList<>();
 		while (resultIterator.hasNext())
 		{
@@ -108,7 +108,7 @@ public abstract class MessagesLinker<T>
 		Select selectFrom = prepareQuery(linkedId.toString())
 				.limit(1);
 		
-		return exec.executeQuery(selectFrom.asCql()).one() != null;
+		return exec.executeQuery(selectFrom.asCql(), false).one() != null;
 	}
 	
 	
@@ -126,6 +126,6 @@ public abstract class MessagesLinker<T>
 				.whereColumn(INSTANCE_ID).isEqualTo(literal(instanceId))
 				.whereColumn(MESSAGES_IDS).contains(literal(messageId.toString()))
 				.allowFiltering();  //This is required to use contains()
-		return exec.executeQuery(selectFrom.asCql());
+		return exec.executeQuery(selectFrom.asCql(), false);
 	}
 }

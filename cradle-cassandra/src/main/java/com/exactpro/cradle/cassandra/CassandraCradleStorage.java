@@ -98,7 +98,8 @@ public class CassandraCradleStorage extends CradleStorage
 		
 		try
 		{
-			exec = new QueryExecutor(connection.getSession(), settings.getTimeout());
+			exec = new QueryExecutor(connection.getSession(), 
+					settings.getTimeout(), settings.getWriteConsistencyLevel(), settings.getReadConsistencyLevel());
 			
 			new TablesCreator(exec, settings).createAll();
 			
@@ -159,7 +160,7 @@ public class CassandraCradleStorage extends CradleStorage
 		Select selectFrom = CassandraMessageUtils.prepareSelect(settings.getKeyspace(), settings.getMessagesTableName(), instanceUuid, null)
 				.whereColumn(ID).isEqualTo(literal(id.getBatchId().toString()));
 		
-		Row resultRow = exec.executeQuery(selectFrom.asCql()).one();
+		Row resultRow = exec.executeQuery(selectFrom.asCql(), false).one();
 		if (resultRow == null)
 			return null;
 		
@@ -172,7 +173,7 @@ public class CassandraCradleStorage extends CradleStorage
 		Select selectFrom = CassandraTestEventUtils.prepareSelect(settings.getKeyspace(), settings.getTestEventsTableName(), instanceUuid, false)
 				.whereColumn(ID).isEqualTo(literal(id.getBatchId().toString()));
 		
-		Row resultRow = exec.executeQuery(selectFrom.asCql()).one();
+		Row resultRow = exec.executeQuery(selectFrom.asCql(), false).one();
 		if (resultRow == null)
 			return null;
 		
@@ -225,7 +226,7 @@ public class CassandraCradleStorage extends CradleStorage
 				.column(ID)
 				.whereColumn(NAME).isEqualTo(literal(instanceName));
 		
-		Row resultRow = exec.executeQuery(selectFrom.asCql()).one();
+		Row resultRow = exec.executeQuery(selectFrom.asCql(), false).one();
 		if (resultRow != null)
 			id = resultRow.get(ID, GenericType.UUID);
 		else
@@ -235,7 +236,7 @@ public class CassandraCradleStorage extends CradleStorage
 					.value(ID, literal(id))
 					.value(NAME, literal(instanceName))
 					.ifNotExists();
-			exec.executeQuery(insert.asCql());
+			exec.executeQuery(insert.asCql(), true);
 		}
 		
 		return id;
@@ -271,7 +272,7 @@ public class CassandraCradleStorage extends CradleStorage
 				.value(COMPRESSED, literal(toCompress))
 				.value(CONTENT, literal(ByteBuffer.wrap(batchContent)))
 				.value(BATCH_SIZE, literal(batch.getMessageCount()));
-		exec.executeQuery(insert.asCql());
+		exec.executeQuery(insert.asCql(), true);
 	}
 
 	private void storeMessageBatchMetadata(StoredMessageBatch batch) throws IOException
@@ -310,7 +311,7 @@ public class CassandraCradleStorage extends CradleStorage
 		if (parentId != null)
 			insert = insert.value(PARENT_ID, literal(parentId.toString()));
 		
-		exec.executeQuery(insert.asCql());
+		exec.executeQuery(insert.asCql(), true);
 	}
 	
 	private void storeTestEventBatchMetadata(StoredTestEventBatch batch) throws IOException
@@ -323,7 +324,7 @@ public class CassandraCradleStorage extends CradleStorage
 				.value(PARENT_ID, literal(batch.getParentId().toString()))
 				.value(BATCH_ID, literal(batch.getId().toString()))
 				.value(BATCH_SIZE, literal(batch.getTestEventsCount()));
-		exec.executeQuery(insert.asCql());
+		exec.executeQuery(insert.asCql(), true);
 	}
 	
 	
@@ -350,7 +351,7 @@ public class CassandraCradleStorage extends CradleStorage
 					.value(INSTANCE_ID, literal(instanceUuid))
 					.value(linkColumn, literal(linkedId))
 					.value(MESSAGES_IDS, literal(curMsgsIds));
-			exec.executeQuery(insert.asCql());
+			exec.executeQuery(insert.asCql(), true);
 			left = right - 1;
 		}
 	}

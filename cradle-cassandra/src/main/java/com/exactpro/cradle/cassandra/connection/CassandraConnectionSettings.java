@@ -10,6 +10,8 @@
 
 package com.exactpro.cradle.cassandra.connection;
 
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
+
 public class CassandraConnectionSettings
 {
 	private String localDataCenter;
@@ -18,6 +20,9 @@ public class CassandraConnectionSettings
 	private String keyspace;
 	private String username,
 			password;
+	private long timeout;
+	private ConsistencyLevel writeConsistencyLevel,
+			readConsistencyLevel;
 
 	public CassandraConnectionSettings()
 	{
@@ -27,6 +32,9 @@ public class CassandraConnectionSettings
 		keyspace = "";
 		username = "";
 		password = "";
+		timeout = 0;
+		writeConsistencyLevel = null;
+		readConsistencyLevel = null;
 	}
 
 	public CassandraConnectionSettings(String localDataCenter, String host, int port, String keyspace)
@@ -47,6 +55,9 @@ public class CassandraConnectionSettings
 		this.keyspace = settings.keyspace;
 		this.username = settings.username;
 		this.password = settings.password;
+		this.timeout = timeout;
+		this.writeConsistencyLevel = writeConsistencyLevel;
+		this.readConsistencyLevel = readConsistencyLevel;
 	}
 
 	
@@ -113,5 +124,38 @@ public class CassandraConnectionSettings
 	public void setPassword(String password)
 	{
 		this.password = password;
+	}
+	
+	
+	public long getTimeout()
+	{
+		return timeout;
+	}
+	
+	public void setTimeout(long timeout)
+	{
+		this.timeout = timeout;
+	}
+	
+	
+	public ConsistencyLevel getWriteConsistencyLevel()
+	{
+		return writeConsistencyLevel;
+	}
+	
+	public void setWriteConsistencyLevel(ConsistencyLevel writeConsistencyLevel)
+	{
+		this.writeConsistencyLevel = writeConsistencyLevel;
+	}
+	
+	
+	public ConsistencyLevel getReadConsistencyLevel()
+	{
+		return readConsistencyLevel;
+	}
+	
+	public void setReadConsistencyLevel(ConsistencyLevel readConsistencyLevel)
+	{
+		this.readConsistencyLevel = readConsistencyLevel;
 	}
 }
