@@ -52,6 +52,8 @@ public abstract class EntityIterator<T> implements Iterator<T>
 	@Override
 	public T next()
 	{
+		logger.trace("Getting next {}", entityName);
+		
 		if (batchIterator != null)
 			return batchIterator.next();
 		

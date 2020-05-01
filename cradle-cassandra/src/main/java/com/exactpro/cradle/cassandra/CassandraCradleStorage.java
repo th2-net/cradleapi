@@ -87,6 +87,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected String doInit(String instanceName) throws CradleStorageException
 	{
+		logger.info("Connecting to Cassandra...");
 		try
 		{
 			connection.start();
@@ -101,6 +102,7 @@ public class CassandraCradleStorage extends CradleStorage
 			exec = new QueryExecutor(connection.getSession(), 
 					settings.getTimeout(), settings.getWriteConsistencyLevel(), settings.getReadConsistencyLevel());
 			
+			logger.info("Creating/updating schema...");
 			new TablesCreator(exec, settings).createAll();
 			
 			instanceUuid = getInstanceId(instanceName);
@@ -118,8 +120,9 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	public void dispose() throws CradleStorageException
+	protected void doDispose() throws CradleStorageException
 	{
+		logger.info("Disconnecting from Cassandra...");
 		try
 		{
 			connection.stop();
@@ -132,7 +135,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 
 	@Override
-	public void storeMessageBatch(StoredMessageBatch batch) throws IOException
+	protected void doStoreMessageBatch(StoredMessageBatch batch) throws IOException
 	{
 		storeMessageBatchData(batch);
 		storeMessageBatchMetadata(batch);
@@ -140,7 +143,7 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	public void storeTestEventBatch(StoredTestEventBatch batch) throws IOException
+	protected void doStoreTestEventBatch(StoredTestEventBatch batch) throws IOException
 	{
 		storeTestEventBatchData(batch);
 		storeTestEventBatchMetadata(batch);
@@ -148,14 +151,14 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	public void storeTestEventMessagesLink(StoredTestEventId eventId, Set<StoredMessageId> messagesIds) throws IOException
+	protected void doStoreTestEventMessagesLink(StoredTestEventId eventId, Set<StoredMessageId> messagesIds) throws IOException
 	{
 		linkMessagesTo(messagesIds, settings.getTestEventMsgsLinkTableName(), TEST_EVENT_ID, eventId.toString());
 	}
 	
 	
 	@Override
-	public StoredMessage getMessage(StoredMessageId id) throws IOException
+	protected StoredMessage doGetMessage(StoredMessageId id) throws IOException
 	{
 		Select selectFrom = CassandraMessageUtils.prepareSelect(settings.getKeyspace(), settings.getMessagesTableName(), instanceUuid, null)
 				.whereColumn(ID).isEqualTo(literal(id.getBatchId().toString()));
@@ -168,7 +171,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	public StoredTestEvent getTestEvent(StoredTestEventId id) throws IOException
+	protected StoredTestEvent doGetTestEvent(StoredTestEventId id) throws IOException
 	{
 		Select selectFrom = CassandraTestEventUtils.prepareSelect(settings.getKeyspace(), settings.getTestEventsTableName(), instanceUuid, false)
 				.whereColumn(ID).isEqualTo(literal(id.getBatchId().toString()));
@@ -201,13 +204,13 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	public Iterable<StoredMessage> getMessages(StoredMessageFilter filter) throws IOException
+	protected Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException
 	{
 		return new MessagesIteratorAdapter(filter, exec, settings.getKeyspace(), settings.getMessagesTableName(), settings.getStreamMsgsLinkTableName(), instanceUuid);
 	}
 
 	@Override
-	public Iterable<StoredTestEvent> getTestEvents(boolean onlyRootEvents) throws IOException
+	protected Iterable<StoredTestEvent> doGetTestEvents(boolean onlyRootEvents) throws IOException
 	{
 		return new TestEventsIteratorAdapter(exec, settings.getKeyspace(), settings.getTestEventsTableName(), instanceUuid, onlyRootEvents);
 	}
@@ -245,10 +248,10 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	private void storeMessageBatchData(StoredMessageBatch batch) throws IOException
 	{
+		logger.debug("Storing data of messages batch {}", batch.getId());
+		
 		byte[] batchContent = MessageUtils.serializeMessages(batch.getMessages());
-		
 		Instant batchStartTimestamp = batch.getTimestamp();
-		
 		boolean toCompress = isNeedToCompressMessageBatch(batchContent);
 		if (toCompress)
 		{
@@ -277,6 +280,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 	private void storeMessageBatchMetadata(StoredMessageBatch batch) throws IOException
 	{
+		logger.debug("Storing metadata of messages batch {}", batch.getId());
 		for (Entry<String, Set<StoredMessageId>> streamMessages : batch.getStreamsMessages().entrySet())
 			linkMessagesTo(streamMessages.getValue(), settings.getStreamMsgsLinkTableName(), STREAM_NAME, streamMessages.getKey());
 	}
@@ -284,6 +288,8 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	private void storeTestEventBatchData(StoredTestEventBatch batch) throws IOException
 	{
+		logger.debug("Storing data of test events batch {}", batch.getId());
+		
 		byte[] batchContent = TestEventUtils.serializeTestEvents(batch.getTestEvents());
 		boolean toCompress = isNeedCompressTestEventBatch(batchContent);
 		if (toCompress)
@@ -319,6 +325,7 @@ public class CassandraCradleStorage extends CradleStorage
 		if (batch.getParentId() == null)
 			return;
 		
+		logger.debug("Storing metadata of test events batch {}", batch.getId());
 		Insert insert = insertInto(settings.getKeyspace(), settings.getTestEventsParentsLinkTableName())
 				.value(INSTANCE_ID, literal(instanceUuid))
 				.value(PARENT_ID, literal(batch.getParentId().toString()))
