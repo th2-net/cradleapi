@@ -52,8 +52,9 @@ public class TablesCreator
 		Optional<KeyspaceMetadata> keyspaceExist = exec.getSession().getMetadata().getKeyspace(settings.getKeyspace());
 		if(!keyspaceExist.isPresent())
 		{
-			CreateKeyspace createKs =
-					SchemaBuilder.createKeyspace(settings.getKeyspace()).withSimpleStrategy(settings.getKeyspaceReplicationFactor());
+			CreateKeyspace createKs = settings.getNetworkTopologyStrategy() != null 
+					? SchemaBuilder.createKeyspace(settings.getKeyspace()).withNetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap()) 
+					: SchemaBuilder.createKeyspace(settings.getKeyspace()).withSimpleStrategy(settings.getKeyspaceReplicationFactor());
 			exec.getSession().execute(createKs.build());
 		}
 	}
