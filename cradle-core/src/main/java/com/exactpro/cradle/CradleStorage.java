@@ -13,6 +13,9 @@ package com.exactpro.cradle;
 import java.io.IOException;
 import java.util.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageFilter;
@@ -29,6 +32,8 @@ import com.exactpro.cradle.utils.CradleStorageException;
  */
 public abstract class CradleStorage
 {
+	private static final Logger logger = LoggerFactory.getLogger(CradleStorage.class);
+	
 	private String instanceId;
 	
 	private volatile boolean workingState = false;
@@ -41,54 +46,14 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if storage initialization failed
 	 */
 	protected abstract String doInit(String instanceName) throws CradleStorageException;
-	
-	/**
-	 * Disposes resources occupied by storage which means closing of opened connections, flushing all buffers, etc.
-	 * @throws CradleStorageException if there was error during storage disposal, which may mean issue with data flushing, unexpected connection break, etc.
-	 */
-	public abstract void dispose() throws CradleStorageException;
+	protected abstract void doDispose() throws CradleStorageException;
 	
 	
-	/**
-	 * Writes data about given message batch to storage. Messages from batch are linked with corresponding streams
-	 * @param batch data to write
-	 * @throws IOException if data writing failed
-	 */
-	public abstract void storeMessageBatch(StoredMessageBatch batch) throws IOException;
-	
-	
-	/**
-	 * Writes data about given test event batch to storage.
-	 * @param batch data to write.
-	 * @throws IOException if data writing failed
-	 */
-	public abstract void storeTestEventBatch(StoredTestEventBatch batch) throws IOException;
-	
-	
-	/**
-	 * Writes to storage the links between given test event and messages.
-	 * @param eventId ID of stored test event
-	 * @param messagesIds list of stored message IDs
-	 * @throws IOException if data writing failed
-	 */
-	public abstract void storeTestEventMessagesLink(StoredTestEventId eventId, Set<StoredMessageId> messagesIds) throws IOException;
-	
-	
-	/**
-	 * Retrieves message data stored under given ID
-	 * @param id of stored message to retrieve
-	 * @return data of stored messages
-	 * @throws IOException if message data retrieval failed
-	 */
-	public abstract StoredMessage getMessage(StoredMessageId id) throws IOException;
-
-	/**
-	 * Retrieves test event data stored under given ID
-	 * @param id of stored test event to retrieve
-	 * @return data of stored test event
-	 * @throws IOException if test event data retrieval failed
-	 */
-	public abstract StoredTestEvent getTestEvent(StoredTestEventId id) throws IOException;
+	protected abstract void doStoreMessageBatch(StoredMessageBatch batch) throws IOException;
+	protected abstract void doStoreTestEventBatch(StoredTestEventBatch batch) throws IOException;
+	protected abstract void doStoreTestEventMessagesLink(StoredTestEventId eventId, Set<StoredMessageId> messagesIds) throws IOException;
+	protected abstract StoredMessage doGetMessage(StoredMessageId id) throws IOException;
+	protected abstract StoredTestEvent doGetTestEvent(StoredTestEventId id) throws IOException;
 	
 	
 	/**
@@ -110,21 +75,8 @@ public abstract class CradleStorage
 	public abstract TestEventsParentsLinker getTestEventsParentsLinker();
 	
 	
-	/**
-	 * Allows to enumerate stored messages, optionally filtering them by given conditions
-	 * @param filter defines conditions to filter messages by. Use null is no filtering is needed
-	 * @return iterable object to enumerate messages
-	 * @throws IOException if data retrieval failed
-	 */
-	public abstract Iterable<StoredMessage> getMessages(StoredMessageFilter filter) throws IOException;
-	
-	/**
-	 * Allows to enumerate test events
-	 * @param onlyRootEvents set to true if you need to obtain only root test events, i.e. events with no parent 
-	 * @return iterable object to enumerate test events
-	 * @throws IOException if data retrieval failed
-	 */
-	public abstract Iterable<StoredTestEvent> getTestEvents(boolean onlyRootEvents) throws IOException;
+	protected abstract Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException;
+	protected abstract Iterable<StoredTestEvent> doGetTestEvents(boolean onlyRootEvents) throws IOException;
 	
 	
 	/**
@@ -132,20 +84,22 @@ public abstract class CradleStorage
 	 * @param instanceName name of current application instance. Will be used to mark written data
 	 * @throws CradleStorageException if storage initialization failed
 	 */
-	public void init(String instanceName) throws CradleStorageException
+	public final void init(String instanceName) throws CradleStorageException
 	{
 		if (workingState)
 			throw new CradleStorageException("Already initialized");
 		
+		logger.info("Storage initialization started");
 		instanceId = doInit(instanceName);
 	}
 	
 	/**
 	 * Switches storage from its initial state to working state. This affects storage operations.
 	 */
-	public void initFinish()
+	public final void initFinish()
 	{
 		workingState = true;
+		logger.info("Storage initialization finished");
 	}
 	
 	/**
@@ -154,5 +108,113 @@ public abstract class CradleStorage
 	public String getInstanceId()
 	{
 		return instanceId;
+	}
+	
+	
+	/**
+	 * Disposes resources occupied by storage which means closing of opened connections, flushing all buffers, etc.
+	 * @throws CradleStorageException if there was error during storage disposal, which may mean issue with data flushing, unexpected connection break, etc.
+	 */
+	public final void dispose() throws CradleStorageException
+	{
+		doDispose();
+		logger.info("Storage disposed");
+	}
+	
+	
+	/**
+	 * Writes data about given message batch to storage. Messages from batch are linked with corresponding streams
+	 * @param batch data to write
+	 * @throws IOException if data writing failed
+	 */
+	public final void storeMessageBatch(StoredMessageBatch batch) throws IOException
+	{
+		logger.debug("Storing message batch {}", batch.getId());
+		doStoreMessageBatch(batch);
+		logger.debug("Message batch {} has been stored", batch.getId());
+	}
+	
+	/**
+	 * Writes data about given test event batch to storage.
+	 * @param batch data to write.
+	 * @throws IOException if data writing failed
+	 */
+	public final void storeTestEventBatch(StoredTestEventBatch batch) throws IOException
+	{
+		logger.debug("Storing test event batch {}", batch.getId());
+		doStoreTestEventBatch(batch);
+		logger.debug("Test event batch {} has been stored", batch.getId());
+	}
+	
+	/**
+	 * Writes to storage the links between given test event and messages.
+	 * @param eventId ID of stored test event
+	 * @param messagesIds list of stored message IDs
+	 * @throws IOException if data writing failed
+	 */
+	public final void storeTestEventMessagesLink(StoredTestEventId eventId, Set<StoredMessageId> messagesIds) throws IOException
+	{
+		logger.debug("Storing link between test event {} and {} message(s)", eventId, messagesIds.size());
+		doStoreTestEventMessagesLink(eventId, messagesIds);
+		logger.debug("Link between test event {} and {} message(s) has been stored", eventId, messagesIds.size());
+	}
+	
+	
+	/**
+	 * Retrieves message data stored under given ID
+	 * @param id of stored message to retrieve
+	 * @return data of stored messages
+	 * @throws IOException if message data retrieval failed
+	 */
+	public final StoredMessage getMessage(StoredMessageId id) throws IOException
+	{
+		logger.debug("Getting message {}", id);
+		StoredMessage result = doGetMessage(id);
+		logger.debug("Message {} got", id);
+		return result;
+	}
+	
+	/**
+	 * Retrieves test event data stored under given ID
+	 * @param id of stored test event to retrieve
+	 * @return data of stored test event
+	 * @throws IOException if test event data retrieval failed
+	 */
+	public final StoredTestEvent getTestEvent(StoredTestEventId id) throws IOException
+	{
+		logger.debug("Getting test event {}", id);
+		StoredTestEvent result = doGetTestEvent(id);
+		logger.debug("Test event {} got", id);
+		return result;
+	}
+	
+	
+	/**
+	 * Allows to enumerate stored messages, optionally filtering them by given conditions
+	 * @param filter defines conditions to filter messages by. Use null is no filtering is needed
+	 * @return iterable object to enumerate messages
+	 * @throws IOException if data retrieval failed
+	 */
+	public final Iterable<StoredMessage> getMessages(StoredMessageFilter filter) throws IOException
+	{
+		logger.debug("Filtering messages by {}", filter);
+		Iterable<StoredMessage> result = doGetMessages(filter);
+		logger.debug("Prepared iterator for messages filtered by {}", filter);
+		return result;
+	}
+	
+	/**
+	 * Allows to enumerate test events
+	 * @param onlyRootEvents set to true if you need to obtain only root test events, i.e. events with no parent 
+	 * @return iterable object to enumerate test events
+	 * @throws IOException if data retrieval failed
+	 */
+	public final Iterable<StoredTestEvent> getTestEvents(boolean onlyRootEvents) throws IOException
+	{
+		String events = onlyRootEvents ? "root" : "all";
+		logger.debug("Getting {} test events ", events);
+		Iterable<StoredTestEvent> result = doGetTestEvents(onlyRootEvents);
+		logger.debug("Prepared iterator for {} test events", events);
+		return result;
 	}
 }
