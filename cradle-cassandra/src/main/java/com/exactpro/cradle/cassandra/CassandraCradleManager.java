@@ -29,11 +29,12 @@ public class CassandraCradleManager extends CradleManager
 	protected CradleStorage createStorage()
 	{
 		CassandraConnectionSettings settings = connection.getSettings();
-		return new CassandraCradleStorage(connection, 
-				new CassandraStorageSettings(settings.getKeyspace(),
-						CassandraStorageSettings.DEFAULT_KEYSPACE_REPL_FACTOR,
-						settings.getTimeout() <= 0 ? CassandraStorageSettings.DEFAULT_TIMEOUT : settings.getTimeout(),
-						settings.getWriteConsistencyLevel() == null ? CassandraStorageSettings.DEFAULT_CONSISTENCY_LEVEL : settings.getWriteConsistencyLevel(),
-						settings.getReadConsistencyLevel() == null ? CassandraStorageSettings.DEFAULT_CONSISTENCY_LEVEL : settings.getReadConsistencyLevel()));
+		CassandraStorageSettings storageSettings = new CassandraStorageSettings(settings.getKeyspace(),
+				settings.getNetworkTopologyStrategy(),
+				settings.getTimeout() <= 0 ? CassandraStorageSettings.DEFAULT_TIMEOUT : settings.getTimeout(),
+				settings.getWriteConsistencyLevel() == null ? CassandraStorageSettings.DEFAULT_CONSISTENCY_LEVEL : settings.getWriteConsistencyLevel(),
+				settings.getReadConsistencyLevel() == null ? CassandraStorageSettings.DEFAULT_CONSISTENCY_LEVEL : settings.getReadConsistencyLevel());
+		
+		return new CassandraCradleStorage(connection, storageSettings);
 	}
 }

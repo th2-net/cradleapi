@@ -23,6 +23,7 @@ public class CassandraConnectionSettings
 	private long timeout;
 	private ConsistencyLevel writeConsistencyLevel,
 			readConsistencyLevel;
+	private NetworkTopologyStrategy networkTopologyStrategy;
 
 	public CassandraConnectionSettings()
 	{
@@ -35,6 +36,7 @@ public class CassandraConnectionSettings
 		timeout = 0;
 		writeConsistencyLevel = null;
 		readConsistencyLevel = null;
+		networkTopologyStrategy = null;
 	}
 
 	public CassandraConnectionSettings(String localDataCenter, String host, int port, String keyspace)
@@ -55,9 +57,9 @@ public class CassandraConnectionSettings
 		this.keyspace = settings.keyspace;
 		this.username = settings.username;
 		this.password = settings.password;
-		this.timeout = timeout;
-		this.writeConsistencyLevel = writeConsistencyLevel;
-		this.readConsistencyLevel = readConsistencyLevel;
+		this.timeout = settings.timeout;
+		this.writeConsistencyLevel = settings.writeConsistencyLevel;
+		this.readConsistencyLevel = settings.readConsistencyLevel;
 	}
 
 	
@@ -157,5 +159,16 @@ public class CassandraConnectionSettings
 	public void setReadConsistencyLevel(ConsistencyLevel readConsistencyLevel)
 	{
 		this.readConsistencyLevel = readConsistencyLevel;
+	}
+	
+	
+	public NetworkTopologyStrategy getNetworkTopologyStrategy()
+	{
+		return networkTopologyStrategy;
+	}
+	
+	public void setNetworkTopologyStrategy(NetworkTopologyStrategy networkTopologyStrategy)
+	{
+		this.networkTopologyStrategy = networkTopologyStrategy;
 	}
 }

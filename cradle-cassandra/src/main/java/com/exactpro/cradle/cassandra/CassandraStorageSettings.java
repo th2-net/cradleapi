@@ -11,6 +11,7 @@
 package com.exactpro.cradle.cassandra;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.exactpro.cradle.cassandra.connection.NetworkTopologyStrategy;
 
 public class CassandraStorageSettings
 {
@@ -36,12 +37,13 @@ public class CassandraStorageSettings
 			streamMsgsLinkTableName,
 			testEventsParentsLinkTableName,
 			testEventMsgsLinkTableName;
-	private final int keyspaceReplicationFactor;
+	private final NetworkTopologyStrategy networkTopologyStrategy;
 	private long timeout;
 	private ConsistencyLevel writeConsistencyLevel,
 			readConsistencyLevel;
+	private int keyspaceReplicationFactor;
 
-	public CassandraStorageSettings(String keyspace, int keyspaceReplicationFactor, 
+	public CassandraStorageSettings(String keyspace, NetworkTopologyStrategy networkTopologyStrategy, 
 			long timeout, ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel)
 	{
 		this.messagesTableName = MESSAGES_TABLE_DEFAULT_NAME;
@@ -50,32 +52,38 @@ public class CassandraStorageSettings
 		this.testEventsParentsLinkTableName = TEST_EVENTS_PARENTS_LINK_TABLE_DEFAULT_NAME;
 		this.testEventMsgsLinkTableName = TEST_EVENT_MSGS_LINK_TABLE_DEFAULT_NAME;
 		this.keyspace = keyspace;
-		this.keyspaceReplicationFactor = keyspaceReplicationFactor;
+		this.networkTopologyStrategy = networkTopologyStrategy;
 		this.timeout = timeout;
 		this.writeConsistencyLevel = writeConsistencyLevel;
 		this.readConsistencyLevel = readConsistencyLevel;
+		this.keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
 	}
 
-	public CassandraStorageSettings(String keyspace, int keyspaceReplicationFactor)
+	public CassandraStorageSettings(String keyspace, NetworkTopologyStrategy networkTopology)
 	{
-		this(keyspace, keyspaceReplicationFactor, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
+		this(keyspace, networkTopology, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
 	}
 
 	public CassandraStorageSettings(String keyspace)
 	{
-		this(keyspace, DEFAULT_KEYSPACE_REPL_FACTOR, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
+		this(keyspace, null, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
 	}
 
 	public CassandraStorageSettings()
 	{
-		this(DEFAULT_KEYSPACE, DEFAULT_KEYSPACE_REPL_FACTOR, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
+		this(DEFAULT_KEYSPACE, null, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
 	}
 
 	public String getKeyspace()
 	{
 		return keyspace;
 	}
-
+	
+	public NetworkTopologyStrategy getNetworkTopologyStrategy()
+	{
+		return networkTopologyStrategy;
+	}
+	
 	
 	public String getMessagesTableName()
 	{
@@ -137,6 +145,11 @@ public class CassandraStorageSettings
 		return keyspaceReplicationFactor;
 	}
 	
+	public void setKeyspaceReplicationFactor(int keyspaceReplicationFactor)
+	{
+		this.keyspaceReplicationFactor = keyspaceReplicationFactor;
+	}
+	
 	
 	public long getTimeout()
 	{
@@ -168,5 +181,5 @@ public class CassandraStorageSettings
 	public void setReadConsistencyLevel(ConsistencyLevel readConsistencyLevel)
 	{
 		this.readConsistencyLevel = readConsistencyLevel;
-	}	
+	}
 }
