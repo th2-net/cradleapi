@@ -257,6 +257,7 @@ public class CassandraCradleStorage extends CradleStorage
 		{
 			try
 			{
+				logger.trace("Compressing message batch");
 				batchContent = CompressionUtils.compressData(batchContent);
 			}
 			catch (IOException e)
@@ -266,6 +267,7 @@ public class CassandraCradleStorage extends CradleStorage
 			}
 		}
 		
+		logger.trace("Executing message batch storing query");
 		Insert insert = insertInto(settings.getKeyspace(), settings.getMessagesTableName())
 				.value(ID, literal(batch.getId().toString()))
 				.value(INSTANCE_ID, literal(instanceUuid))
@@ -296,6 +298,7 @@ public class CassandraCradleStorage extends CradleStorage
 		{
 			try
 			{
+				logger.trace("Compressing test events batch");
 				batchContent = CompressionUtils.compressData(batchContent);
 			}
 			catch (IOException e)
@@ -305,6 +308,7 @@ public class CassandraCradleStorage extends CradleStorage
 			}
 		}
 		
+		logger.trace("Executing test events batch storing query");
 		StoredTestEventId parentId = batch.getParentId();
 		RegularInsert insert = insertInto(settings.getKeyspace(), settings.getTestEventsTableName())
 				.value(ID, literal(batch.getId().toString()))
@@ -354,6 +358,7 @@ public class CassandraCradleStorage extends CradleStorage
 		{
 			int right = min(left + TEST_EVENTS_MSGS_LINK_MAX_MSGS, msgsSize);
 			List<String> curMsgsIds = messagesIdsAsStrings.subList(left, right);
+			logger.trace("Executing query to link messages to {} {}", linkColumn, linkedId);
 			Insert insert = insertInto(settings.getKeyspace(), linksTable)
 					.value(INSTANCE_ID, literal(instanceUuid))
 					.value(linkColumn, literal(linkedId))
