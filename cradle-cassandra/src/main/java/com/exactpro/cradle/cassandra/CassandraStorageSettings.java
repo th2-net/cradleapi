@@ -26,7 +26,7 @@ public class CassandraStorageSettings
 			TEST_EVENTS_PARENTS_LINK_TABLE_DEFAULT_NAME = "test_events_parents_link",
 			TEST_EVENT_MSGS_LINK_TABLE_DEFAULT_NAME = "test_event_messages_link";
 	public static final long DEFAULT_TIMEOUT = 5000;
-	public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.QUORUM;
+	public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
 	public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1;
 	public static final int BATCH_MESSAGES_LIMIT = 10,
 			TEST_EVENTS_MSGS_LINK_MAX_MSGS = 10;
