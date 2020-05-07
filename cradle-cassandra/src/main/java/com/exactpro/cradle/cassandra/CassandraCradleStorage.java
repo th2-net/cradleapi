@@ -48,7 +48,8 @@ import static java.util.stream.Collectors.toList;
 
 import java.io.*;
 import java.nio.ByteBuffer;
-import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -59,6 +60,7 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 public class CassandraCradleStorage extends CradleStorage
 {
 	private Logger logger = LoggerFactory.getLogger(CassandraCradleStorage.class);
+	public static final ZoneId TIMEZONE = ZoneId.of("Z");
 
 	private final CassandraConnection connection;
 	private final CassandraStorageSettings settings;
@@ -251,7 +253,6 @@ public class CassandraCradleStorage extends CradleStorage
 		logger.debug("Storing data of messages batch {}", batch.getId());
 		
 		byte[] batchContent = MessageUtils.serializeMessages(batch.getMessages());
-		Instant batchStartTimestamp = batch.getTimestamp();
 		boolean toCompress = isNeedToCompressMessageBatch(batchContent);
 		if (toCompress)
 		{
@@ -267,13 +268,21 @@ public class CassandraCradleStorage extends CradleStorage
 			}
 		}
 		
+		LocalDateTime storedTimestamp = LocalDateTime.now(TIMEZONE),
+				firstTimestamp = LocalDateTime.ofInstant(batch.getFirstTimestamp(), TIMEZONE),
+				lastTimestamp = LocalDateTime.ofInstant(batch.getLastTimestamp(), TIMEZONE);
+		
 		logger.trace("Executing message batch storing query");
 		Insert insert = insertInto(settings.getKeyspace(), settings.getMessagesTableName())
 				.value(ID, literal(batch.getId().toString()))
 				.value(INSTANCE_ID, literal(instanceUuid))
-				.value(STORED, literal(Instant.now()))
+				.value(STORED_DATE, literal(storedTimestamp.toLocalDate()))
+				.value(STORED_TIME, literal(storedTimestamp.toLocalTime()))
 				.value(DIRECTION, literal(batch.getMessagesDirections().getLabel()))
-				.value(TIMESTAMP, literal(batchStartTimestamp))
+				.value(FIRST_MESSAGE_DATE, literal(firstTimestamp.toLocalDate()))
+				.value(FIRST_MESSAGE_TIME, literal(firstTimestamp.toLocalTime()))
+				.value(LAST_MESSAGE_DATE, literal(lastTimestamp.toLocalDate()))
+				.value(LAST_MESSAGE_TIME, literal(lastTimestamp.toLocalTime()))
 				.value(COMPRESSED, literal(toCompress))
 				.value(CONTENT, literal(ByteBuffer.wrap(batchContent)))
 				.value(BATCH_SIZE, literal(batch.getMessageCount()));
@@ -308,16 +317,26 @@ public class CassandraCradleStorage extends CradleStorage
 			}
 		}
 		
+		LocalDateTime storedTimestamp = LocalDateTime.now(TIMEZONE),
+				firstTimestamp = LocalDateTime.ofInstant(batch.getFirstStartTimestamp(), TIMEZONE),
+				lastTimestamp = LocalDateTime.ofInstant(batch.getLastStartTimestamp(), TIMEZONE);
+		
 		logger.trace("Executing test events batch storing query");
 		StoredTestEventId parentId = batch.getParentId();
 		RegularInsert insert = insertInto(settings.getKeyspace(), settings.getTestEventsTableName())
 				.value(ID, literal(batch.getId().toString()))
 				.value(IS_ROOT, literal(parentId == null))
 				.value(INSTANCE_ID, literal(instanceUuid))
-				.value(STORED, literal(Instant.now()))
+				.value(STORED_DATE, literal(storedTimestamp.toLocalDate()))
+				.value(STORED_TIME, literal(storedTimestamp.toLocalTime()))
+				.value(FIRST_EVENT_DATE, literal(firstTimestamp.toLocalDate()))
+				.value(FIRST_EVENT_TIME, literal(firstTimestamp.toLocalTime()))
+				.value(LAST_EVENT_DATE, literal(lastTimestamp.toLocalDate()))
+				.value(LAST_EVENT_TIME, literal(lastTimestamp.toLocalTime()))
 				.value(COMPRESSED, literal(toCompress))
 				.value(CONTENT, literal(ByteBuffer.wrap(batchContent)))
 				.value(BATCH_SIZE, literal(batch.getTestEventsCount()));
+		
 		if (parentId != null)
 			insert = insert.value(PARENT_ID, literal(parentId.toString()));
 		

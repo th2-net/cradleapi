@@ -17,9 +17,20 @@ public class StorageConstants
 			STREAM_NAME = "stream_name",
 			INSTANCE_ID = "instance_id",
 			DIRECTION = "direction",
-			STORED = "stored",
+			STORED_DATE = "stored_date",
+			STORED_TIME = "stored_time",
 			COMPRESSED = "compressed",
-			TIMESTAMP = "timestamp",
+			
+			FIRST_MESSAGE_DATE = "first_message_date",
+			FIRST_MESSAGE_TIME = "first_message_time",
+			LAST_MESSAGE_DATE = "last_message_date",
+			LAST_MESSAGE_TIME = "last_message_time",
+			
+			FIRST_EVENT_DATE = "first_event_date",
+			FIRST_EVENT_TIME = "first_event_time",
+			LAST_EVENT_DATE = "last_event_date",
+			LAST_EVENT_TIME = "last_event_time",
+			
 			CONTENT = "content",
 			SUCCESS = "success",
 			TYPE = "type",

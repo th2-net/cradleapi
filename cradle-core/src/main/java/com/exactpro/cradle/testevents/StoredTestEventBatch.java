@@ -10,6 +10,7 @@
 
 package com.exactpro.cradle.testevents;
 
+import java.time.Instant;
 import java.util.*;
 
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -106,6 +107,26 @@ public class StoredTestEventBatch
 		testEvents[storedTestEventsCount++] = testEvent;
 		
 		return testEvent.getId();
+	}
+	
+	/**
+	 * @return timestamp of start of first event within the batch
+	 */
+	public Instant getFirstStartTimestamp()
+	{
+		if (storedTestEventsCount > 0)
+			return testEvents[0].getStartTimestamp();
+		return null;
+	}
+	
+	/**
+	 * @return timestamp of start of last event within the batch
+	 */
+	public Instant getLastStartTimestamp()
+	{
+		if (storedTestEventsCount > 0)
+			return testEvents[storedTestEventsCount-1].getStartTimestamp();
+		return null;
 	}
 	
 	/**
