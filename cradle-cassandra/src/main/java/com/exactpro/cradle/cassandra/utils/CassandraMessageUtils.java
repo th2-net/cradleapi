@@ -41,9 +41,17 @@ public class CassandraMessageUtils
 			return result;
 		
 		if (filter.getTimestampFrom() != null)
-			result = FilterUtils.filterToWhere(filter.getTimestampFrom(), result.whereColumn(TIMESTAMP));
+		{
+			result = FilterUtils.timestampFilterToWhere(filter.getTimestampFrom(), 
+					result.whereColumn(FIRST_MESSAGE_DATE),
+					result.whereColumn(FIRST_MESSAGE_TIME));
+		}
 		if (filter.getTimestampTo() != null)
-			result = FilterUtils.filterToWhere(filter.getTimestampTo(), result.whereColumn(TIMESTAMP));
+		{
+			result = FilterUtils.timestampFilterToWhere(filter.getTimestampTo(), 
+					result.whereColumn(LAST_MESSAGE_DATE),
+					result.whereColumn(LAST_MESSAGE_TIME));
+		}
 		result = result.allowFiltering();
 		return result;
 	}

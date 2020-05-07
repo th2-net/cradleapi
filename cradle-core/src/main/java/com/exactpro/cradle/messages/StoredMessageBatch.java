@@ -105,10 +105,20 @@ public class StoredMessageBatch
 	/**
 	 * @return timestamp of first message within the batch
 	 */
-	public Instant getTimestamp()
+	public Instant getFirstTimestamp()
 	{
 		if (storedMessagesCount > 0)
 			return messages[0].getTimestamp();
+		return null;
+	}
+	
+	/**
+	 * @return timestamp of last message within the batch
+	 */
+	public Instant getLastTimestamp()
+	{
+		if (storedMessagesCount > 0)
+			return messages[storedMessagesCount-1].getTimestamp();
 		return null;
 	}
 	
