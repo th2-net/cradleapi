@@ -14,78 +14,63 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Collection;
 import java.util.UUID;
-import java.util.zip.DataFormatException;
 
-import com.datastax.oss.driver.api.core.cql.Row;
-import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.exactpro.cradle.messages.StoredMessage;
-import com.exactpro.cradle.messages.StoredMessageBatchId;
+import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.filters.FilterByField;
 import com.exactpro.cradle.messages.StoredMessageFilter;
-import com.exactpro.cradle.messages.StoredMessageId;
-import com.exactpro.cradle.utils.CompressionUtils;
-import com.exactpro.cradle.utils.MessageUtils;
 
 public class CassandraMessageUtils
 {
-	public static Select prepareSelect(String keyspace, String tableName, UUID instanceId, StoredMessageFilter filter)
+	public static Select prepareSelect(String keyspace, String tableName, UUID instanceId)
 	{
-		Select result = selectFrom(keyspace, tableName)
+		return selectFrom(keyspace, tableName)
 				.all()
 				.whereColumn(INSTANCE_ID).isEqualTo(literal(instanceId));
-		if (filter == null)
-			return result;
+	}
+	
+	public static Select applyFilter(Select select, StoredMessageFilter filter)
+	{
+		if (filter.getStreamName() != null)
+			select = FilterUtils.filterToWhere(filter.getStreamName(), select.whereColumn(STREAM_NAME));
+		
+		if (filter.getDirection() != null)
+		{
+			FilterByField<Direction> df = filter.getDirection();
+			select = FilterUtils.filterToWhere(df.getValue().getLabel(), df.getOperation(), select.whereColumn(DIRECTION));
+		}
+		
+		if (filter.getIndex() != null)
+		{
+			//TODO: not implemented. Probably, this should be not here because first of all we need to find a batch with messages to start filtering by index
+		}
 		
 		if (filter.getTimestampFrom() != null)
 		{
-			result = FilterUtils.timestampFilterToWhere(filter.getTimestampFrom(), 
-					result.whereColumn(FIRST_MESSAGE_DATE),
-					result.whereColumn(FIRST_MESSAGE_TIME));
+			select = FilterUtils.timestampFilterToWhere(filter.getTimestampFrom(), 
+					select.whereColumn(FIRST_MESSAGE_DATE),
+					select.whereColumn(FIRST_MESSAGE_TIME));
 		}
 		if (filter.getTimestampTo() != null)
 		{
-			result = FilterUtils.timestampFilterToWhere(filter.getTimestampTo(), 
-					result.whereColumn(LAST_MESSAGE_DATE),
-					result.whereColumn(LAST_MESSAGE_TIME));
+			select = FilterUtils.timestampFilterToWhere(filter.getTimestampTo(), 
+					select.whereColumn(LAST_MESSAGE_DATE),
+					select.whereColumn(LAST_MESSAGE_TIME));
 		}
-		result = result.allowFiltering();
-		return result;
-	}
-	
-	public static StoredMessage toMessage(Row row, StoredMessageId id) throws IOException
-	{
-		byte[] contentBytes = getMessageContentBytes(row);
-		return MessageUtils.deserializeOneMessage(contentBytes, id);
-	}
-	
-	public static Collection<StoredMessage> toMessages(Row row) throws IOException
-	{
-		byte[] contentBytes = getMessageContentBytes(row);
-		return MessageUtils.deserializeMessages(contentBytes, new StoredMessageBatchId(row.getString(ID)));
-	}
-	
-	
-	private static byte[] getMessageContentBytes(Row row) throws IOException
-	{
-		Boolean compressed = row.get(COMPRESSED, GenericType.BOOLEAN);
 		
-		ByteBuffer contentByteBuffer = row.get(CONTENT, GenericType.BYTE_BUFFER);
-		byte[] contentBytes = contentByteBuffer.array();
-		if (!Boolean.TRUE.equals(compressed))
-			return contentBytes;
+		if (filter.getLimit() > 0)
+			select = select.limit(filter.getLimit());
+		select = select.allowFiltering();
+		return select;
+	}
+	
+	public static Select prepareSelect(String keyspace, String tableName, UUID instanceId, StoredMessageFilter filter)
+	{
+		Select result = prepareSelect(keyspace, tableName, instanceId);
+		if (filter == null)
+			return result;
 		
-		try
-		{
-			return CompressionUtils.decompressData(contentBytes);
-		}
-		catch (IOException | DataFormatException e)
-		{
-			String id = row.getString(ID);
-			throw new IOException(String.format("Could not decompress message batch contents (ID: '%s') from Cradle", id), e);
-		}
+		return applyFilter(result, filter);
 	}
 }

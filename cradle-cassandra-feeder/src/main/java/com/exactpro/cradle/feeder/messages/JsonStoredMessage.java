@@ -14,8 +14,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 
 import com.exactpro.cradle.Direction;
-import com.exactpro.cradle.messages.StoredMessage;
-import com.exactpro.cradle.messages.StoredMessageBuilder;
+import com.exactpro.cradle.messages.MessageToStore;
+import com.exactpro.cradle.messages.MessageToStoreBuilder;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -82,11 +82,12 @@ public class JsonStoredMessage
 	}
 	
 	
-	public StoredMessage toStoredMessage()
+	public MessageToStore toMessage(long index)
 	{
-		return new StoredMessageBuilder()
-				.direction(Direction.valueOf(direction))
+		return new MessageToStoreBuilder()
 				.streamName(streamName)
+				.direction(Direction.byLabel(direction))
+				.index(index)
 				.timestamp(Instant.parse(timestamp))
 				.content(message.getBytes(StandardCharsets.UTF_8))
 				.build();

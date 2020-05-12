@@ -21,10 +21,13 @@ public class StorageConstants
 			STORED_TIME = "stored_time",
 			COMPRESSED = "compressed",
 			
+			MESSAGE_INDEX = "message_index",
+			LAST_MESSAGE_INDEX = "last_message_index",
 			FIRST_MESSAGE_DATE = "first_message_date",
 			FIRST_MESSAGE_TIME = "first_message_time",
 			LAST_MESSAGE_DATE = "last_message_date",
 			LAST_MESSAGE_TIME = "last_message_time",
+			MESSAGE_COUNT = "message_count",
 			
 			FIRST_EVENT_DATE = "first_event_date",
 			FIRST_EVENT_TIME = "first_event_time",

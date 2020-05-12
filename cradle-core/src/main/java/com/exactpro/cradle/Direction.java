@@ -12,9 +12,8 @@ package com.exactpro.cradle;
 
 public enum Direction
 {
-	SENT("sent"),
-	RECEIVED("received"),
-	BOTH("both");
+	FIRST("first"),
+	SECOND("second");
 	
 	private final String label;
 
@@ -26,5 +25,15 @@ public enum Direction
 	public String getLabel()
 	{
 		return label;
+	}
+	
+	public static Direction byLabel(String label)
+	{
+		for (Direction d : values())
+		{
+			if (d.getLabel().equals(label))
+				return d;
+		}
+		return null;
 	}
 }

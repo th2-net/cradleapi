@@ -15,20 +15,25 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import com.datastax.oss.driver.api.core.cql.Row;
-import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
+import com.exactpro.cradle.cassandra.dao.MessageBatchConverter;
+import com.exactpro.cradle.cassandra.dao.MessageBatchEntity;
 import com.exactpro.cradle.messages.StoredMessage;
 
 public class MessagesIterator extends EntityIterator<StoredMessage>
 {
-	public MessagesIterator(Iterator<Row> rows)
+	private final MessageBatchConverter converter;
+	
+	public MessagesIterator(Iterator<Row> rows, MessageBatchConverter converter)
 	{
 		super(rows, "message");
+		this.converter = converter;
 	}
 	
 	
 	@Override
 	protected Collection<StoredMessage> rowToCollection(Row row) throws IOException
 	{
-		return CassandraMessageUtils.toMessages(row);
+		MessageBatchEntity entity = converter.asMessageBatchEntity(row);
+		return entity.toStoredMessages();
 	}
 }

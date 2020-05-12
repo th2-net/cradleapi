@@ -40,7 +40,6 @@ public class TablesCreator
 		createKeyspace();
 		createInstancesTable();
 		createMessagesTable();
-		createStreamMessagesLinkTable();
 		
 		createTestEventsTable();
 		createTestEventsParentsLinkTable();
@@ -72,29 +71,21 @@ public class TablesCreator
 	{
 		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getMessagesTableName()).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withClusteringColumn(ID, DataTypes.TEXT)
+				.withPartitionKey(STREAM_NAME, DataTypes.TEXT)
+				.withClusteringColumn(DIRECTION, DataTypes.TEXT)
+				.withClusteringColumn(MESSAGE_INDEX, DataTypes.BIGINT)
 				.withColumn(STORED_DATE, DataTypes.DATE)
 				.withColumn(STORED_TIME, DataTypes.TIME)
-				.withColumn(DIRECTION, DataTypes.TEXT)
 				.withColumn(FIRST_MESSAGE_DATE, DataTypes.DATE)
 				.withColumn(FIRST_MESSAGE_TIME, DataTypes.TIME)
 				.withColumn(LAST_MESSAGE_DATE, DataTypes.DATE)
 				.withColumn(LAST_MESSAGE_TIME, DataTypes.TIME)
 				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
 				.withColumn(CONTENT, DataTypes.BLOB)
-				.withColumn(BATCH_SIZE, DataTypes.INT)
-				.withClusteringOrder(ID, ClusteringOrder.ASC);
-		
-		exec.executeQuery(create.asCql(), true);
-	}
-	
-	public void createStreamMessagesLinkTable() throws IOException
-	{
-		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getStreamMsgsLinkTableName()).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				//Not too many streams are expected and no requests to this table only by message ID, so can make stream name the partition key
-				.withPartitionKey(STREAM_NAME, DataTypes.TEXT)
-				.withClusteringColumn(MESSAGES_IDS, DataTypes.frozenListOf(DataTypes.TEXT));
+				.withColumn(MESSAGE_COUNT, DataTypes.INT)
+				.withColumn(LAST_MESSAGE_INDEX, DataTypes.BIGINT)
+				.withClusteringOrder(DIRECTION, ClusteringOrder.ASC)
+				.withClusteringOrder(MESSAGE_INDEX, ClusteringOrder.ASC);
 		
 		exec.executeQuery(create.asCql(), true);
 	}

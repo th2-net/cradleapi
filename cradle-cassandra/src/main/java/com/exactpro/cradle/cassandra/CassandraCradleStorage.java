@@ -10,24 +10,29 @@
 
 package com.exactpro.cradle.cassandra;
 
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.datastax.oss.driver.api.querybuilder.insert.Insert;
 import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.CradleStorage;
-import com.exactpro.cradle.StreamsMessagesLinker;
+import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
+import com.exactpro.cradle.cassandra.dao.DetailedMessageBatchEntity;
+import com.exactpro.cradle.cassandra.dao.MessageBatchEntity;
+import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
+import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.iterators.MessagesIteratorAdapter;
 import com.exactpro.cradle.cassandra.iterators.TestEventsIteratorAdapter;
-import com.exactpro.cradle.cassandra.linkers.CassandraStreamsMessagesLinker;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsParentsLinker;
-import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.cassandra.utils.CassandraTestEventUtils;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.messages.StoredMessageBatchId;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEvent;
@@ -49,9 +54,9 @@ import static java.util.stream.Collectors.toList;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.*;
-import java.util.Map.Entry;
+import java.util.function.Function;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
 import static com.exactpro.cradle.cassandra.CassandraStorageSettings.*;
@@ -60,16 +65,19 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 public class CassandraCradleStorage extends CradleStorage
 {
 	private Logger logger = LoggerFactory.getLogger(CassandraCradleStorage.class);
-	public static final ZoneId TIMEZONE = ZoneId.of("Z");
+	public static final ZoneOffset TIMEZONE_OFFSET = ZoneOffset.UTC;
 
 	private final CassandraConnection connection;
 	private final CassandraStorageSettings settings;
 	
 	private UUID instanceUuid;
+	private CassandraDataMapper dataMapper;
+	private Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
+			readAttrs,
+			strictReadAttrs;
 
 	private QueryExecutor exec;
 	
-	private StreamsMessagesLinker streamsMessagesLinker;
 	private TestEventsMessagesLinker testEventsMessagesLinker;
 	private TestEventsParentsLinker testEventsParentsLinker;
 	
@@ -108,7 +116,11 @@ public class CassandraCradleStorage extends CradleStorage
 			new TablesCreator(exec, settings).createAll();
 			
 			instanceUuid = getInstanceId(instanceName);
-			streamsMessagesLinker = new CassandraStreamsMessagesLinker(exec, settings.getKeyspace(), settings.getStreamMsgsLinkTableName(), STREAM_NAME, instanceUuid);
+			dataMapper = new CassandraDataMapperBuilder(connection.getSession()).build();
+			writeAttrs = builder -> builder.setConsistencyLevel(settings.getWriteConsistencyLevel());
+			readAttrs = builder -> builder.setConsistencyLevel(settings.getReadConsistencyLevel());
+			strictReadAttrs = builder -> builder.setConsistencyLevel(ConsistencyLevel.ALL);
+			
 			testEventsMessagesLinker = new CassandraTestEventsMessagesLinker(exec, 
 					settings.getKeyspace(), settings.getTestEventMsgsLinkTableName(), TEST_EVENT_ID, instanceUuid);
 			testEventsParentsLinker = new CassandraTestEventsParentsLinker(exec, settings.getKeyspace(), settings.getTestEventsParentsLinkTableName(), instanceUuid);
@@ -139,8 +151,12 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected void doStoreMessageBatch(StoredMessageBatch batch) throws IOException
 	{
-		storeMessageBatchData(batch);
-		storeMessageBatchMetadata(batch);
+		logger.debug("Storing data of messages batch {}", batch.getId());
+		
+		DetailedMessageBatchEntity entity = new DetailedMessageBatchEntity(batch, instanceUuid);
+		logger.trace("Executing message batch storing query");
+		dataMapper.messageBatchOperator(settings.getKeyspace(), settings.getMessagesTableName())
+				.write(entity, writeAttrs);
 	}
 	
 	
@@ -162,14 +178,23 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected StoredMessage doGetMessage(StoredMessageId id) throws IOException
 	{
-		Select selectFrom = CassandraMessageUtils.prepareSelect(settings.getKeyspace(), settings.getMessagesTableName(), instanceUuid, null)
-				.whereColumn(ID).isEqualTo(literal(id.getBatchId().toString()));
+		StoredMessageBatchId batchId = id.getBatchId();
+		MessageBatchEntity entity = dataMapper.messageBatchOperator(settings.getKeyspace(), settings.getMessagesTableName())
+				.get(instanceUuid, 
+						batchId.getStreamName(), 
+						batchId.getDirection().getLabel(), 
+						batchId.getIndex(),
+						readAttrs);
 		
-		Row resultRow = exec.executeQuery(selectFrom.asCql(), false).one();
-		if (resultRow == null)
-			return null;
-		
-		return CassandraMessageUtils.toMessage(resultRow, id);
+		return MessageUtils.bytesToOneMessage(entity.getContent(), entity.isCompressed(), id);
+	}
+	
+	@Override
+	protected long doGetLastMessageIndex(String streamName, Direction direction) throws IOException
+	{
+		//Need to query all nodes in all datacenters to get index that is the latest for sure. so using strictReadAttrs
+		return dataMapper.messageBatchOperator(settings.getKeyspace(), settings.getMessagesTableName())
+				.getLastIndex(streamName, direction.getLabel(), strictReadAttrs);
 	}
 	
 	@Override
@@ -187,12 +212,6 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	public StreamsMessagesLinker getStreamsMessagesLinker()
-	{
-		return streamsMessagesLinker;
-	}
-	
-	@Override
 	public TestEventsMessagesLinker getTestEventsMessagesLinker()
 	{
 		return testEventsMessagesLinker;
@@ -208,7 +227,8 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException
 	{
-		return new MessagesIteratorAdapter(filter, exec, settings.getKeyspace(), settings.getMessagesTableName(), settings.getStreamMsgsLinkTableName(), instanceUuid);
+		return new MessagesIteratorAdapter(filter, settings.getKeyspace(), settings.getMessagesTableName(), 
+				exec, instanceUuid, dataMapper.messageBatchConverter());
 	}
 
 	@Override
@@ -248,55 +268,6 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	
-	private void storeMessageBatchData(StoredMessageBatch batch) throws IOException
-	{
-		logger.debug("Storing data of messages batch {}", batch.getId());
-		
-		byte[] batchContent = MessageUtils.serializeMessages(batch.getMessages());
-		boolean toCompress = isNeedToCompressMessageBatch(batchContent);
-		if (toCompress)
-		{
-			try
-			{
-				logger.trace("Compressing message batch");
-				batchContent = CompressionUtils.compressData(batchContent);
-			}
-			catch (IOException e)
-			{
-				throw new IOException(String.format("Could not compress message batch contents (ID: '%s') to save in Cradle",
-						batch.getId().toString()), e);
-			}
-		}
-		
-		LocalDateTime storedTimestamp = LocalDateTime.now(TIMEZONE),
-				firstTimestamp = LocalDateTime.ofInstant(batch.getFirstTimestamp(), TIMEZONE),
-				lastTimestamp = LocalDateTime.ofInstant(batch.getLastTimestamp(), TIMEZONE);
-		
-		logger.trace("Executing message batch storing query");
-		Insert insert = insertInto(settings.getKeyspace(), settings.getMessagesTableName())
-				.value(ID, literal(batch.getId().toString()))
-				.value(INSTANCE_ID, literal(instanceUuid))
-				.value(STORED_DATE, literal(storedTimestamp.toLocalDate()))
-				.value(STORED_TIME, literal(storedTimestamp.toLocalTime()))
-				.value(DIRECTION, literal(batch.getMessagesDirections().getLabel()))
-				.value(FIRST_MESSAGE_DATE, literal(firstTimestamp.toLocalDate()))
-				.value(FIRST_MESSAGE_TIME, literal(firstTimestamp.toLocalTime()))
-				.value(LAST_MESSAGE_DATE, literal(lastTimestamp.toLocalDate()))
-				.value(LAST_MESSAGE_TIME, literal(lastTimestamp.toLocalTime()))
-				.value(COMPRESSED, literal(toCompress))
-				.value(CONTENT, literal(ByteBuffer.wrap(batchContent)))
-				.value(BATCH_SIZE, literal(batch.getMessageCount()));
-		exec.executeQuery(insert.asCql(), true);
-	}
-
-	private void storeMessageBatchMetadata(StoredMessageBatch batch) throws IOException
-	{
-		logger.debug("Storing metadata of messages batch {}", batch.getId());
-		for (Entry<String, Set<StoredMessageId>> streamMessages : batch.getStreamsMessages().entrySet())
-			linkMessagesTo(streamMessages.getValue(), settings.getStreamMsgsLinkTableName(), STREAM_NAME, streamMessages.getKey());
-	}
-	
-	
 	private void storeTestEventBatchData(StoredTestEventBatch batch) throws IOException
 	{
 		logger.debug("Storing data of test events batch {}", batch.getId());
@@ -317,9 +288,9 @@ public class CassandraCradleStorage extends CradleStorage
 			}
 		}
 		
-		LocalDateTime storedTimestamp = LocalDateTime.now(TIMEZONE),
-				firstTimestamp = LocalDateTime.ofInstant(batch.getFirstStartTimestamp(), TIMEZONE),
-				lastTimestamp = LocalDateTime.ofInstant(batch.getLastStartTimestamp(), TIMEZONE);
+		LocalDateTime storedTimestamp = LocalDateTime.now(TIMEZONE_OFFSET),
+				firstTimestamp = LocalDateTime.ofInstant(batch.getFirstStartTimestamp(), TIMEZONE_OFFSET),
+				lastTimestamp = LocalDateTime.ofInstant(batch.getLastStartTimestamp(), TIMEZONE_OFFSET);
 		
 		logger.trace("Executing test events batch storing query");
 		StoredTestEventId parentId = batch.getParentId();
@@ -357,11 +328,6 @@ public class CassandraCradleStorage extends CradleStorage
 		exec.executeQuery(insert.asCql(), true);
 	}
 	
-	
-	private boolean isNeedToCompressMessageBatch(byte[] batchContentBytes)
-	{
-		return batchContentBytes.length > MESSAGE_BATCH_SIZE_LIMIT_BYTES;
-	}
 	
 	private boolean isNeedCompressTestEventBatch(byte[] batchContentBytes)
 	{
