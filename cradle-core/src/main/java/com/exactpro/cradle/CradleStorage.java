@@ -53,14 +53,9 @@ public abstract class CradleStorage
 	protected abstract void doStoreTestEventBatch(StoredTestEventBatch batch) throws IOException;
 	protected abstract void doStoreTestEventMessagesLink(StoredTestEventId eventId, Set<StoredMessageId> messagesIds) throws IOException;
 	protected abstract StoredMessage doGetMessage(StoredMessageId id) throws IOException;
+	protected abstract long doGetLastMessageIndex(String streamName, Direction direction) throws IOException;
 	protected abstract StoredTestEvent doGetTestEvent(StoredTestEventId id) throws IOException;
 	
-	
-	/**
-	 * StreamsMessagesLinker is used to obtain messages by stream
-	 * @return instance of StreamsMessagesLinker
-	 */
-	public abstract StreamsMessagesLinker getStreamsMessagesLinker();
 	
 	/**
 	 * TestEventsMessagesLinker is used to obtain links between test events and messages
@@ -173,6 +168,23 @@ public abstract class CradleStorage
 		logger.debug("Message {} got", id);
 		return result;
 	}
+	
+	/**
+	 * Retrieves last stored message index for given stream and direction. Use result of this method to continue sequence of message indices.
+	 * Indices are scoped by stream and direction, so both arguments are required 
+	 * @param streamName to get message index for 
+	 * @param direction to get message index for
+	 * @return last stored message index for given arguments
+	 * @throws IOException if index retrieval failed
+	 */
+	public final long getLastMessageIndex(String streamName, Direction direction) throws IOException
+	{
+		logger.debug("Getting last stored message index for stream '{}' and direction '{}'", streamName, direction.getLabel());
+		long result = doGetLastMessageIndex(streamName, direction);
+		logger.debug("Message index {} got", result);
+		return result;
+	}
+	
 	
 	/**
 	 * Retrieves test event data stored under given ID

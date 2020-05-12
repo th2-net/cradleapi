@@ -14,81 +14,71 @@ import java.time.Instant;
 
 import com.exactpro.cradle.Direction;
 
-public class StoredMessageBuilder
+/**
+ * Builder for MessageToStore object. After calling {@link #build()} method, the builder can be reused to build new message
+ */
+public class MessageToStoreBuilder
 {
-	private StoredMessage msg;
+	private MessageToStore msg;
 	
-	public StoredMessageBuilder()
+	public MessageToStoreBuilder()
 	{
-		msg = createStoredMessage();
+		msg = createMessageToStore();
 	}
 	
 	
-	protected StoredMessage createStoredMessage()
+	protected MessageToStore createMessageToStore()
 	{
-		return new StoredMessage();
+		return new MessageToStore();
 	}
 	
 	private void initIfNeeded()
 	{
 		if (msg == null)
-			msg = createStoredMessage();
+			msg = createMessageToStore();
 	}
 	
 	
-	public StoredMessageBuilder id(StoredMessageId id)
-	{
-		initIfNeeded();
-		msg.setId(id);
-		return this;
-	}
-	
-	public StoredMessageBuilder content(byte[] message)
-	{
-		initIfNeeded();
-		msg.setContent(message);
-		return this;
-	}
-	
-	public StoredMessageBuilder sent()
-	{
-		initIfNeeded();
-		msg.setDirection(Direction.SENT);
-		return this;
-	}
-	
-	public StoredMessageBuilder received()
-	{
-		initIfNeeded();
-		msg.setDirection(Direction.RECEIVED);
-		return this;
-	}
-	
-	public StoredMessageBuilder direction(Direction d)
-	{
-		initIfNeeded();
-		msg.setDirection(d);
-		return this;
-	}
-	
-	public StoredMessageBuilder timestamp(Instant timestamp)
-	{
-		initIfNeeded();
-		msg.setTimestamp(timestamp);
-		return this;
-	}
-	
-	public StoredMessageBuilder streamName(String streamName)
+	public MessageToStoreBuilder streamName(String streamName)
 	{
 		initIfNeeded();
 		msg.setStreamName(streamName);
 		return this;
 	}
 	
-	public StoredMessage build()
+	public MessageToStoreBuilder direction(Direction d)
 	{
 		initIfNeeded();
-		StoredMessage result = msg;
+		msg.setDirection(d);
+		return this;
+	}
+	
+	public MessageToStoreBuilder index(long index)
+	{
+		initIfNeeded();
+		msg.setIndex(index);
+		return this;
+	}
+	
+	public MessageToStoreBuilder timestamp(Instant timestamp)
+	{
+		initIfNeeded();
+		msg.setTimestamp(timestamp);
+		return this;
+	}
+	
+	public MessageToStoreBuilder content(byte[] content)
+	{
+		initIfNeeded();
+		msg.setContent(content);
+		return this;
+	}
+	
+	
+	public MessageToStore build()
+	{
+		initIfNeeded();
+		MessageToStore result = msg;
 		msg = null;
 		return result;
 	}

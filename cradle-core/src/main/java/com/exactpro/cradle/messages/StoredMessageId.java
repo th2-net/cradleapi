@@ -16,17 +16,17 @@ import com.exactpro.cradle.utils.CradleIdException;
 
 /**
  * Holds ID of a message stored in Cradle.
- * All messages are supposed to be stored in batches, so message ID contains ID of batch the message is stored in
+ * All messages have sequenced index, scoped by direction and stream related to the message.
+ * Message index in conjunction with ID of batch the message is stored in, form the message ID
  */
 public class StoredMessageId implements Serializable
 {
-	private static final long serialVersionUID = 7369523107026579370L;
-	public static final String IDS_DELIMITER = ":";
+	private static final long serialVersionUID = -6856521491563727644L;
 	
 	private final StoredMessageBatchId batchId;
-	private final int index;
+	private final long index;
 	
-	public StoredMessageId(StoredMessageBatchId batchId, int index)
+	public StoredMessageId(StoredMessageBatchId batchId, long index)
 	{
 		this.batchId = batchId;
 		this.index = index;
@@ -35,21 +35,20 @@ public class StoredMessageId implements Serializable
 	
 	public static StoredMessageId fromString(String id) throws CradleIdException
 	{
-		String[] parts = id.split(IDS_DELIMITER);
-		if (parts.length < 2)
-			throw new CradleIdException("Message ID ("+id+") should contain batch ID and message index delimited with '"+IDS_DELIMITER+"'");
+		StoredMessageBatchId batchId = StoredMessageBatchId.fromString(id);
 		
+		String indexPart = id.substring(batchId.toString().length()+StoredMessageBatchId.IDS_DELIMITER.length());
 		int index;
 		try
 		{
-			index = Integer.parseInt(parts[1]);
+			index = Integer.parseInt(indexPart);
 		}
 		catch (NumberFormatException e)
 		{
-			throw new CradleIdException("Invalid message index ("+parts[1]+") in message ID '"+id+"'");
+			throw new CradleIdException("Invalid message index ("+indexPart+") in message ID '"+id+"'");
 		}
 		
-		return new StoredMessageId(new StoredMessageBatchId(parts[0]), index);
+		return new StoredMessageId(batchId, index);
 	}
 	
 	
@@ -58,7 +57,7 @@ public class StoredMessageId implements Serializable
 		return batchId;
 	}
 	
-	public int getIndex()
+	public long getIndex()
 	{
 		return index;
 	}
@@ -67,7 +66,7 @@ public class StoredMessageId implements Serializable
 	@Override
 	public String toString()
 	{
-		return batchId.toString()+IDS_DELIMITER+index;
+		return batchId.toString()+StoredMessageBatchId.IDS_DELIMITER+index;
 	}
 	
 	@Override
@@ -76,7 +75,7 @@ public class StoredMessageId implements Serializable
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((batchId == null) ? 0 : batchId.hashCode());
-		result = prime * result + index;
+		result = prime * result + (int) (index ^ (index >>> 32));
 		return result;
 	}
 	
@@ -90,7 +89,8 @@ public class StoredMessageId implements Serializable
 		if (getClass() != obj.getClass())
 			return false;
 		StoredMessageId other = (StoredMessageId) obj;
-		if (batchId == null) {
+		if (batchId == null)
+		{
 			if (other.batchId != null)
 				return false;
 		} else if (!batchId.equals(other.batchId))

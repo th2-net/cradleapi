@@ -24,91 +24,90 @@ public class StoredMessage implements Serializable
 {
 	private static final long serialVersionUID = 200983136307497672L;
 	
-	//ID is not stored when a message is serialized as the message is always part of a batch thus its ID can be restored from batchId+message_index
-	private transient StoredMessageId id;
-	private byte[] content;
-	private Direction direction;
-	private String streamName;
-	private Instant timestamp;
+	private final transient StoredMessageId id;
+	private final Instant timestamp;
+	private final byte[] content;
 	
-	public StoredMessage()
+	public StoredMessage(MessageToStore message, StoredMessageId id)
 	{
+		this.id = id;
+		this.timestamp = message.getTimestamp();
+		this.content = message.getContent();
+	}
+	
+	public StoredMessage(StoredMessage copyFrom, StoredMessageId id)
+	{
+		this.id = id;
+		this.timestamp = copyFrom.getTimestamp();
+		this.content = copyFrom.getContent();
 	}
 	
 	public StoredMessage(StoredMessage copyFrom)
 	{
-		this.id = copyFrom.getId();
-		this.content = copyFrom.getContent();
-		this.direction = copyFrom.getDirection();
-		this.streamName = copyFrom.getStreamName();
-		this.timestamp = copyFrom.getTimestamp();
+		this(copyFrom, copyFrom.getId());
 	}
 	
 	
+	/**
+	 * @return unique message ID as stored in Cradle.
+	 * Result of this method should be used for referencing stored messages to obtain them from Cradle
+	 */
 	public StoredMessageId getId()
 	{
 		return id;
 	}
 	
-	public void setId(StoredMessageId id)
-	{
-		this.id = id;
-	}
-	
-	
-	public byte[] getContent()
-	{
-		return content;
-	}
-	
-	public void setContent(byte[] message)
-	{
-		this.content = message;
-	}
-	
-	
-	public Direction getDirection()
-	{
-		return direction;
-	}
-	
-	public void setDirection(Direction direction)
-	{
-		this.direction = direction;
-	}
-	
-	
+	/**
+	 * @return name of stream the message is related to
+	 */
 	public String getStreamName()
 	{
-		return streamName;
+		return id.getBatchId().getStreamName();
 	}
 	
-	public void setStreamName(String streamName)
+	/**
+	 * @return direction in which the message went through the stream
+	 */
+	public Direction getDirection()
 	{
-		this.streamName = streamName;
+		return id.getBatchId().getDirection();
 	}
 	
+	/**
+	 * @return index the message has for its stream and direction
+	 */
+	public long getIndex()
+	{
+		return id.getIndex();
+	}
 	
+	/**
+	 * @return timestamp of message creation
+	 */
 	public Instant getTimestamp()
 	{
 		return timestamp;
 	}
 	
-	public void setTimestamp(Instant timestamp)
+	/**
+	 * @return message content
+	 */
+	public byte[] getContent()
 	{
-		this.timestamp = timestamp;
+		return content;
 	}
-
+	
 	@Override
 	public String toString()
 	{
 		return new StringBuilder()
 				.append("StoredMessage{").append(CompressionUtils.EOL)
-				.append("id=").append(id).append(",").append(CompressionUtils.EOL)
-				.append("content=").append(Arrays.toString(content)).append(",").append(CompressionUtils.EOL)
-				.append("streamName='").append(streamName).append("',").append(CompressionUtils.EOL)
-				.append("direction='").append(direction.toString().toLowerCase()).append("',").append(CompressionUtils.EOL)
-				.append("timestamp='").append(timestamp).append("',").append(CompressionUtils.EOL)
+				.append("ID=").append(id).append(",").append(CompressionUtils.EOL)
+				.append("streamName=").append(getStreamName()).append(",").append(CompressionUtils.EOL)
+				.append("direction=").append(getDirection()).append(",").append(CompressionUtils.EOL)
+				.append("index=").append(getIndex()).append(",").append(CompressionUtils.EOL)
+				.append("timestamp=").append(getTimestamp()).append(",").append(CompressionUtils.EOL)
+				.append("content=").append(Arrays.toString(getContent())).append(CompressionUtils.EOL)
 				.append("}").toString();
 	}
 }

@@ -19,10 +19,8 @@ public class CassandraStorageSettings
 			TEST_EVENT_BATCH_SIZE_LIMIT_BYTES = 5000;
 	public static final String DEFAULT_KEYSPACE = "cradle",
 			INSTANCES_TABLE_DEFAULT_NAME = "instances",
-			STREAMS_TABLE_DEFAULT_NAME = "streams",
 			MESSAGES_TABLE_DEFAULT_NAME = "messages",
 			TEST_EVENTS_TABLE_DEFAULT_NAME = "test_events",
-			STREAM_MSGS_LINK_TABLE_DEFAULT_NAME = "stream_messages_link",
 			TEST_EVENTS_PARENTS_LINK_TABLE_DEFAULT_NAME = "test_events_parents_link",
 			TEST_EVENT_MSGS_LINK_TABLE_DEFAULT_NAME = "test_event_messages_link";
 	public static final long DEFAULT_TIMEOUT = 5000;
@@ -34,7 +32,6 @@ public class CassandraStorageSettings
 	private final String keyspace;
 	private String messagesTableName,
 			testEventsTableName,
-			streamMsgsLinkTableName,
 			testEventsParentsLinkTableName,
 			testEventMsgsLinkTableName;
 	private final NetworkTopologyStrategy networkTopologyStrategy;
@@ -48,7 +45,6 @@ public class CassandraStorageSettings
 	{
 		this.messagesTableName = MESSAGES_TABLE_DEFAULT_NAME;
 		this.testEventsTableName = TEST_EVENTS_TABLE_DEFAULT_NAME;
-		this.streamMsgsLinkTableName = STREAM_MSGS_LINK_TABLE_DEFAULT_NAME;
 		this.testEventsParentsLinkTableName = TEST_EVENTS_PARENTS_LINK_TABLE_DEFAULT_NAME;
 		this.testEventMsgsLinkTableName = TEST_EVENT_MSGS_LINK_TABLE_DEFAULT_NAME;
 		this.keyspace = keyspace;
@@ -104,17 +100,6 @@ public class CassandraStorageSettings
 	public void setTestEventsTableName(String testEventsTableName)
 	{
 		this.testEventsTableName = testEventsTableName;
-	}
-	
-	
-	public String getStreamMsgsLinkTableName()
-	{
-		return streamMsgsLinkTableName;
-	}
-	
-	public void setStreamMsgsLinkTableName(String streamMsgsLinkTableName)
-	{
-		this.streamMsgsLinkTableName = streamMsgsLinkTableName;
 	}
 	
 	

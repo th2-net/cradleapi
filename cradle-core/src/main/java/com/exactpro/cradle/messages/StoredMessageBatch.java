@@ -13,6 +13,8 @@ package com.exactpro.cradle.messages;
 import java.time.Instant;
 import java.util.*;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageId;
@@ -20,106 +22,54 @@ import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
  * Holds information about batch of messages stored in Cradle.
- * All messages stored in the batch are linked to its ID
+ * All messages stored in the batch should be from one sequence and should be related to the same batch, heving the same direction.
+ * ID of first message is treated as batch ID.
  * Batch has limited capacity. If batch is full, messages can't be added to it and the batch must be flushed to Cradle
  */
 public class StoredMessageBatch
 {
 	public static int MAX_MESSAGES_NUMBER = 10;
 	
-	private final StoredMessageBatchId id;
+	private StoredMessageBatchId id;
 	private int storedMessagesCount = 0;
 	private final StoredMessage[] messages;
-	private Direction messagesDirections;
-	private final Map<String, Set<StoredMessageId>> streamsMessages;
-
-	public StoredMessageBatch(StoredMessageBatchId id)
+	
+	public StoredMessageBatch()
 	{
-		this.id = id;
 		this.messages = new StoredMessage[MAX_MESSAGES_NUMBER];
-		this.streamsMessages = new HashMap<>();
 	}
 	
 	
-	public static StoredMessageBatch singleton(StoredMessage message) throws CradleStorageException
+	public static StoredMessageBatch singleton(MessageToStore message) throws CradleStorageException
 	{
-		StoredMessageBatch result = new StoredMessageBatch(message.getId().getBatchId());
+		StoredMessageBatch result = new StoredMessageBatch();
 		result.addMessage(message);
 		return result;
 	}
 	
-
+	
+	/**
+	 * @return batch ID. It is based on first message in the batch
+	 */
 	public StoredMessageBatchId getId()
 	{
 		return id;
 	}
-
-	public int getStoredMessagesCount()
-	{
-		return storedMessagesCount;
-	}
-
-	public StoredMessage[] getMessages()
-	{
-		return messages;
-	}
 	
-	public List<StoredMessage> getMessagesList()
-	{
-		List<StoredMessage> result = new ArrayList<>();
-		for (int i = 0; i < storedMessagesCount; i++)
-			result.add(messages[i]);
-		return result;
-	}
-
 	/**
-	 * Adds message to the batch. If message ID is not specified, batch will add correct ID by itself, else message ID will be verified to match batch conditions.
-	 * Messages can be added to batch until {@link #isFull()} returns true. 
-	 * @param message to add to batch
-	 * @return ID assigned to added message or ID specified in message, if present
-	 * @throws CradleStorageException if message cannot be added to batch due to ID verification failure or if batch limit is reached
+	 * @return directions of messages in the batch
 	 */
-	public StoredMessageId addMessage(StoredMessage message) throws CradleStorageException
+	public Direction getDirection()
 	{
-		if (isFull())
-			throw new CradleStorageException("Batch is full");
-		
-		if (message.getId() != null)
-		{
-			StoredMessageId messageId = message.getId();
-			if (!messageId.getBatchId().equals(id))
-				throw new CradleStorageException("Batch ID in message ("+messageId.getBatchId()+") doesn't match with ID of batch it is being added to ("+id+")");
-			if (messageId.getIndex() != storedMessagesCount)
-				throw new CradleStorageException("Unexpected message index - "+messageId.getIndex()+". Expected "+storedMessagesCount);
-		}
-		else
-			message.setId(new StoredMessageId(id, storedMessagesCount));
-		
-		messages[storedMessagesCount++] = message;
-		setDirection(message);
-		mapToStream(message);
-		
-		return message.getId();
+		return id != null ? id.getDirection() : null;
 	}
 	
 	/**
-	 * @return timestamp of first message within the batch
+	 * @return name of stream all messages in the batch are related to
 	 */
-	public Instant getFirstTimestamp()
+	public String getStreamName()
 	{
-		if (storedMessagesCount > 0)
-			return messages[0].getTimestamp();
-		return null;
-	}
-	
-	/**
-	 * @return timestamp of last message within the batch
-	 */
-	public Instant getLastTimestamp()
-	{
-		if (storedMessagesCount > 0)
-			return messages[storedMessagesCount-1].getTimestamp();
-		return null;
+		return id != null ? id.getStreamName() : null;
 	}
 	
 	/**
@@ -131,6 +81,97 @@ public class StoredMessageBatch
 	}
 	
 	/**
+	 * @return list of messages stored in the batch
+	 */
+	public Collection<StoredMessage> getMessages()
+	{
+		List<StoredMessage> result = new ArrayList<>();
+		for (int i = 0; i < storedMessagesCount; i++)
+			result.add(messages[i]);
+		return result;
+	}
+
+	/**
+	 * Adds message to the batch. Batch will add correct message ID by itself, verifying message to match batch conditions.
+	 * Messages can be added to batch until {@link #isFull()} returns true.
+	 * Result of this method should be used for all further operations on the message
+	 * @param message to add to the batch
+	 * @return immutable message object with assigned ID
+	 * @throws CradleStorageException if message cannot be added to the batch due to verification failure or if batch limit is reached
+	 */
+	public StoredMessage addMessage(MessageToStore message) throws CradleStorageException
+	{
+		if (isFull())
+			throw new CradleStorageException("Batch is full");
+		
+		long messageIndex;
+		if (id == null)
+		{
+			String sm = message.getStreamName();
+			Direction d = message.getDirection();
+			long i = message.getIndex();
+			if (StringUtils.isEmpty(sm))
+				throw new CradleStorageException("Stream name for first message in batch cannot be empty");
+			if (d == null)
+				throw new CradleStorageException("Message direction for first message in batch must be set");
+			if (i < 0)
+				throw new CradleStorageException("Message index for first message in batch cannot be negative");
+			
+			id = new StoredMessageBatchId(sm, d, i);
+			messageIndex = message.getIndex();
+		}
+		else
+		{
+			if (!id.getStreamName().equals(message.getStreamName()))
+				throw new CradleStorageException("Batch contains messages of stream with name '"+id.getStreamName()+"', but in your message it is '"+message.getStreamName()+"'");
+			if (id.getDirection() != message.getDirection())
+				throw new CradleStorageException("Batch contains messages with direction "+id.getDirection()+", but in your message it is "+message.getDirection());
+			
+			long nextIndex = id.getIndex()+1;
+			if (message.getIndex() > 0)  //I.e. message index is set
+			{
+				if (nextIndex != message.getIndex())
+					throw new CradleStorageException("Message index should be "+nextIndex+" for the batch to contain sequenced messages, but in your message it is "+message.getIndex());
+			}
+			messageIndex = nextIndex;
+		}
+		
+		StoredMessage msg = new StoredMessage(message, new StoredMessageId(id, messageIndex));
+		messages[storedMessagesCount++] = msg;
+		return msg;
+	}
+	
+	
+	
+	public StoredMessage getFirstMessage()
+	{
+		return storedMessagesCount > 0 ? messages[0] : null;
+	}
+	
+	public StoredMessage getLastMessage()
+	{
+		return storedMessagesCount > 0 ? messages[storedMessagesCount-1] : null;
+	}
+	
+	/**
+	 * @return timestamp of first message within the batch
+	 */
+	public Instant getFirstTimestamp()
+	{
+		StoredMessage m = getFirstMessage();
+		return m != null ? m.getTimestamp() : null;
+	}
+	
+	/**
+	 * @return timestamp of last message within the batch
+	 */
+	public Instant getLastTimestamp()
+	{
+		StoredMessage m = getLastMessage();
+		return m != null ? m.getTimestamp() : null;
+	}
+	
+	/**
 	 * @return true if no messages were added to batch yet
 	 */
 	public boolean isEmpty()
@@ -139,47 +180,11 @@ public class StoredMessageBatch
 	}
 	
 	/**
-	 * Indicates if the batch can hold more messages
-	 * @return true is batch capacity is not reached yet, else the batch cannot be used to store more messages and must be flushed to Cradle
+	 * Indicates if the batch cannot hold more messages
+	 * @return true if batch capacity is reached and the batch must be flushed to Cradle
 	 */
 	public boolean isFull()
 	{
 		return storedMessagesCount >= messages.length;
-	}
-	
-	/**
-	 * @return summary of messages direction stored in the batch
-	 */
-	public Direction getMessagesDirections()
-	{
-		return messagesDirections;
-	}
-	
-	/**
-	 * @return mapping between streams and messages stored in the batch
-	 */
-	public Map<String, Set<StoredMessageId>> getStreamsMessages()
-	{
-		return Collections.unmodifiableMap(streamsMessages);
-	}
-	
-	
-	private void setDirection(StoredMessage message)
-	{
-		if (messagesDirections == null)
-			messagesDirections = message.getDirection();
-		else if (messagesDirections != Direction.BOTH && messagesDirections != message.getDirection())
-			messagesDirections = Direction.BOTH;
-	}
-	
-	private void mapToStream(StoredMessage message)
-	{
-		Set<StoredMessageId> sm = streamsMessages.get(message.getStreamName());
-		if (sm == null)
-		{
-			sm = new HashSet<>();
-			streamsMessages.put(message.getStreamName(), sm);
-		}
-		sm.add(message.getId());
 	}
 }

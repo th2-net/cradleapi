@@ -11,9 +11,12 @@
 package com.exactpro.cradle.filters;
 
 /**
- * Builds filter value and returns object for next operations. Usable to build chanis of filters
+ * Builds filter value and returns object for next operations. Usable to build chains of filters.
+ * For example, class {@code MultiFilterBuilder} contains set of filters, i.e. {@code Set<FilterByField<String>>}.
+ * To define each filter, use {@code new FilterByFieldBuilder<String, MultiFilterBuilder>} where {@code String} is type of filter value.
+ * {@code FilterByFieldBuilder} will return {@code MultiFilterBuilder}, allowing to define next filter.
  * @param <V> class of value to filter by
- * @param <R> class of objec for next operations
+ * @param <R> class of object for next operations
  */
 public class FilterByFieldBuilder<V, R>
 {

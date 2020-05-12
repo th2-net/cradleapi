@@ -47,7 +47,6 @@ public class CassandraConnection
 			sessionBuilder = sessionBuilder.addContactPoint(new InetSocketAddress(settings.getHost(), settings.getPort()));
 		if (!StringUtils.isEmpty(settings.getUsername()))
 			sessionBuilder = sessionBuilder.withAuthCredentials(settings.getUsername(), settings.getPassword());
-		
 		session = sessionBuilder.build();
 		started = new Date();
 	}

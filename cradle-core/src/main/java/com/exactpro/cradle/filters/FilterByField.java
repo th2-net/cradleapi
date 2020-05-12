@@ -15,6 +15,16 @@ public class FilterByField<V>
 	private ComparisonOperation operation;
 	private V value;
 	
+	public FilterByField()
+	{
+	}
+	
+	public FilterByField(V value, ComparisonOperation operation)
+	{
+		this.value = value;
+		this.operation = operation;
+	}
+	
 	
 	public ComparisonOperation getOperation()
 	{

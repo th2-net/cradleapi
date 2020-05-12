@@ -12,13 +12,32 @@ package com.exactpro.cradle.messages;
 
 import java.time.Instant;
 
+import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.filters.FilterByField;
 
 public class StoredMessageFilter
 {
 	private FilterByField<String> streamName;
+	private FilterByField<Direction> direction;
+	private FilterByField<Long> index;
 	private FilterByField<Instant> timestampFrom,
 			timestampTo;
+	private int limit;
+	
+	
+	public StoredMessageFilter()
+	{
+	}
+	
+	public StoredMessageFilter(StoredMessageFilter copyFrom)
+	{
+		this.streamName = copyFrom.getStreamName();
+		this.direction = copyFrom.getDirection();
+		this.index = copyFrom.getIndex();
+		this.timestampFrom = copyFrom.getTimestampFrom();
+		this.timestampTo = copyFrom.getTimestampTo();
+		this.limit = copyFrom.getLimit();
+	}
 	
 	
 	public FilterByField<String> getStreamName()
@@ -29,6 +48,28 @@ public class StoredMessageFilter
 	public void setStreamName(FilterByField<String> streamName)
 	{
 		this.streamName = streamName;
+	}
+	
+	
+	public FilterByField<Direction> getDirection()
+	{
+		return direction;
+	}
+	
+	public void setDirection(FilterByField<Direction> direction)
+	{
+		this.direction = direction;
+	}
+	
+	
+	public FilterByField<Long> getIndex()
+	{
+		return index;
+	}
+	
+	public void setIndex(FilterByField<Long> index)
+	{
+		this.index = index;
 	}
 	
 	
@@ -51,5 +92,16 @@ public class StoredMessageFilter
 	public void setTimestampTo(FilterByField<Instant> timestampTo)
 	{
 		this.timestampTo = timestampTo;
+	}
+	
+	
+	public int getLimit()
+	{
+		return limit;
+	}
+	
+	public void setLimit(int limit)
+	{
+		this.limit = limit;
 	}
 }
