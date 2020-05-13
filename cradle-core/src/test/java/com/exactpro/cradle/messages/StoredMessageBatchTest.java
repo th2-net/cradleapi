@@ -11,6 +11,8 @@
 package com.exactpro.cradle.messages;
 
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
 
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
@@ -35,7 +37,7 @@ public class StoredMessageBatchTest
 	}
 	
 	@DataProvider(name = "first message")
-	public Object[][] firtMessage()
+	public Object[][] firstMessage()
 	{
 		return new Object[][]
 				{
@@ -49,12 +51,16 @@ public class StoredMessageBatchTest
 	public Object[][] multipleMessages()
 	{
 		Direction d = Direction.FIRST;
-		long index = 1;
+		long index = 10;
 		return new Object[][]
 				{
-					{streamName, d, index, streamName+"X", d, index+1},
-					{streamName, d, index, streamName, Direction.SECOND, index+1},
-					{streamName, d, index, streamName, d, 1}
+					{Arrays.asList(new IdData(streamName, d, index), 
+							new IdData(streamName+"X", d, index+1))},             //Different streams
+					{Arrays.asList(new IdData(streamName, d, index), 
+							new IdData(streamName, Direction.SECOND, index+1))},  //Different directions
+					{Arrays.asList(new IdData(streamName, d, index), 
+							new IdData(streamName, d, index),                     //Index is not incremented
+							new IdData(streamName, d, index-1))}                  //Index is less than previous
 				};
 	}
 	
@@ -74,7 +80,7 @@ public class StoredMessageBatchTest
 					.build());
 	}
 	
-	public void batchisFull() throws CradleStorageException
+	public void batchIsFull() throws CradleStorageException
 	{
 		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
 				.streamName(streamName)
@@ -87,7 +93,7 @@ public class StoredMessageBatchTest
 					.direction(direction)
 					.build());
 		
-		Assert.assertEquals(batch.isFull(), true);
+		Assert.assertEquals(batch.isFull(), true, "Batch indicates it is full");
 	}
 	
 	@Test(dataProvider = "first message",
@@ -95,7 +101,7 @@ public class StoredMessageBatchTest
 			expectedExceptionsMessageRegExp = ".* for first message in batch .*")
 	public void batchChecksFirstMessage(String streamName, Direction direction, long index) throws CradleStorageException
 	{
-		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
+		StoredMessageBatch.singleton(builder
 				.streamName(streamName)
 				.direction(direction)
 				.index(index)
@@ -105,20 +111,17 @@ public class StoredMessageBatchTest
 	@Test(dataProvider = "multiple messages",
 			expectedExceptions = {CradleStorageException.class},
 			expectedExceptionsMessageRegExp = ".*, but in your message it is .*")
-	public void batchConsistency(String streamName, Direction direction, long index, 
-			String streamName2, Direction direction2, long index2) throws CradleStorageException
+	public void batchConsistency(List<IdData> ids) throws CradleStorageException
 	{
-		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
-				.streamName(streamName)
-				.direction(direction)
-				.index(index)
-				.build());
-		
-		batch.addMessage(builder
-				.streamName(streamName2)
-				.direction(direction2)
-				.index(index2)
-				.build());
+		StoredMessageBatch batch = new StoredMessageBatch();
+		for (IdData id : ids)
+		{
+			batch.addMessage(builder
+					.streamName(id.streamName)
+					.direction(id.direction)
+					.index(id.index)
+					.build());
+		}
 	}
 	
 	@Test
@@ -131,12 +134,35 @@ public class StoredMessageBatchTest
 				.index(index)
 				.build());
 		
-		StoredMessage msg = batch.addMessage(builder
+		StoredMessage msg1 = batch.addMessage(builder
 				.streamName(streamName)
 				.direction(direction)
 				.build());
 		
-		Assert.assertEquals(msg.getIndex(), index+1);
+		StoredMessage msg2 = batch.addMessage(builder
+				.streamName(streamName)
+				.direction(direction)
+				.build());
+		
+		Assert.assertEquals(msg1.getIndex(), index+1, "1st and 2nd messages should have sequenced indices");
+		Assert.assertEquals(msg2.getIndex(), msg1.getIndex()+1, "2nd and 3rd messages should have sequenced indices");
+	}
+	
+	@Test
+	public void indexGapsAllowed() throws CradleStorageException
+	{
+		long index = 10;
+		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
+				.streamName(streamName)
+				.direction(direction)
+				.index(index)
+				.build());
+		
+		batch.addMessage(builder
+				.streamName(streamName)
+				.direction(direction)
+				.index(index+10)
+				.build());
 	}
 	
 	@Test
@@ -164,6 +190,27 @@ public class StoredMessageBatchTest
 				.timestamp(timestamp.plusSeconds(20))
 				.build());
 		
-		Assert.assertNotEquals(batch.getLastTimestamp(), lastTimestamp);
+		Assert.assertNotEquals(batch.getLastTimestamp(), lastTimestamp, "Last timestamp is from last added message");
+	}
+	
+	
+	class IdData
+	{
+		String streamName;
+		Direction direction;
+		long index;
+		
+		public IdData(String streamName, Direction direction, long index)
+		{
+			this.streamName = streamName;
+			this.direction = direction;
+			this.index = index;
+		}
+		
+		@Override
+		public String toString()
+		{
+			return streamName+StoredMessageBatchId.IDS_DELIMITER+direction.getLabel()+StoredMessageBatchId.IDS_DELIMITER+index;
+		}
 	}
 }
