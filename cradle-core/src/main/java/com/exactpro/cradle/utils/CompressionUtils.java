@@ -19,6 +19,7 @@ import java.util.zip.Inflater;
 public class CompressionUtils
 {
 	public static String EOL = "\r\n";
+	public static int BUFFER_SIZE = 4096;
 	
 	public static byte[] compressData(byte[] data) throws IOException
 	{
@@ -27,7 +28,7 @@ public class CompressionUtils
 			Deflater deflater = new Deflater();
 			deflater.setInput(data);
 			deflater.finish();
-			byte[] buffer = new byte[1024];
+			byte[] buffer = new byte[BUFFER_SIZE];
 			while (!deflater.finished()) {
 				int count = deflater.deflate(buffer);
 				outputStream.write(buffer, 0, count);
@@ -43,7 +44,7 @@ public class CompressionUtils
 		{
 			Inflater inflater = new Inflater();
 			inflater.setInput(data);
-			byte[] buffer = new byte[1024];
+			byte[] buffer = new byte[BUFFER_SIZE];
 			while (!inflater.finished())
 			{
 				int count = inflater.inflate(buffer);
