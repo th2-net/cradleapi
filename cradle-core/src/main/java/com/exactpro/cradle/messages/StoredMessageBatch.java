@@ -14,6 +14,8 @@ import java.time.Instant;
 import java.util.*;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.messages.StoredMessage;
@@ -28,6 +30,8 @@ import com.exactpro.cradle.utils.CradleStorageException;
  */
 public class StoredMessageBatch
 {
+	private static final Logger logger = LoggerFactory.getLogger(StoredMessageBatch.class);
+	
 	public static int MAX_MESSAGES_NUMBER = 10;
 	
 	private StoredMessageBatchId id;
@@ -127,13 +131,17 @@ public class StoredMessageBatch
 			if (id.getDirection() != message.getDirection())
 				throw new CradleStorageException("Batch contains messages with direction "+id.getDirection()+", but in your message it is "+message.getDirection());
 			
-			long nextIndex = id.getIndex()+1;
+			StoredMessage lastMsg = getLastMessage();
 			if (message.getIndex() > 0)  //I.e. message index is set
 			{
-				if (nextIndex != message.getIndex())
-					throw new CradleStorageException("Message index should be "+nextIndex+" for the batch to contain sequenced messages, but in your message it is "+message.getIndex());
+				messageIndex = message.getIndex();
+				if (messageIndex <= lastMsg.getIndex())
+					throw new CradleStorageException("Message index should be greater than "+lastMsg.getIndex()+" for the batch to contain sequenced messages, but in your message it is "+messageIndex);
+				if (messageIndex != lastMsg.getIndex()+1)
+					logger.warn("Message index should be "+(lastMsg.getIndex()+1)+" for the batch to contain strictly sequenced messages, but in your message it is "+messageIndex);
 			}
-			messageIndex = nextIndex;
+			else
+				messageIndex = lastMsg.getIndex()+1;
 		}
 		
 		StoredMessage msg = new StoredMessage(message, new StoredMessageId(id, messageIndex));
