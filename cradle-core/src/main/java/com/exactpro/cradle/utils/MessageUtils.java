@@ -47,50 +47,42 @@ public class MessageUtils
 	}
 	
 	/**
-	 * Deserializes given array of bytes till message with needed index is found
+	 * Deserializes messages from given array of bytes till message with needed ID is found
 	 * @param contentBytes to deserialize needed message from
-	 * @param id of message to find. Message is found if index from ID matches index of read message 
-	 * @return deserialized message with ID assigned, if found, null otherwise
+	 * @param id of message to find 
+	 * @return deserialized message, if found, null otherwise
 	 * @throws IOException if deserialization failed
 	 */
 	public static StoredMessage deserializeOneMessage(byte[] contentBytes, StoredMessageId id) throws IOException
 	{
 		try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(contentBytes)))
 		{
-			long index = id.getBatchId().getIndex()-1;
 			while (dis.available() != 0)
 			{
-				index++;
 				byte[] messageBytes = readNextMessageBytes(dis);
-				if (id.getIndex() != index)
-					continue;
-				
-				return deserializeMessage(messageBytes, id);
+				StoredMessage msg = deserializeMessage(messageBytes);
+				if (id.equals(msg.getId()))
+					return msg;
 			}
 		}
-		
 		return null;
 	}
 	
 	/**
-	 * Deserializes all messages, assigning them proper IDs based on given batchId
+	 * Deserializes all messages
 	 * @param contentBytes to deserialize messages from
-	 * @param batchId to use to build message IDs
 	 * @return collection of deserialized messages
 	 * @throws IOException if deserialization failed
 	 */
-	public static Collection<StoredMessage> deserializeMessages(byte[] contentBytes, StoredMessageBatchId batchId) throws IOException
+	public static Collection<StoredMessage> deserializeMessages(byte[] contentBytes) throws IOException
 	{
 		List<StoredMessage> storedMessages = new ArrayList<>();
 		try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(contentBytes)))
 		{
-			long index = batchId.getIndex()-1;
 			while (dis.available() != 0)
 			{
-				index++;
 				byte[] messageBytes = readNextMessageBytes(dis);
-				StoredMessage tempMessage = deserializeMessage(messageBytes, 
-						new StoredMessageId(batchId, index));
+				StoredMessage tempMessage = deserializeMessage(messageBytes);
 				storedMessages.add(tempMessage);
 			}
 		}
@@ -98,11 +90,11 @@ public class MessageUtils
 	}
 	
 	/**
-	 * Decompresses given ByteBuffer and deserializes messages till message with needed index is found
+	 * Decompresses given ByteBuffer and deserializes messages till message with needed ID is found
 	 * @param content to deserialize needed message from
 	 * @param compressed flag that indicates if content needs to be decompressed first
-	 * @param id of message to find. Message is found if index from ID matches index of read message
-	 * @return deserialized message with ID assigned, if found, null otherwise
+	 * @param id of message to find
+	 * @return deserialized message, if found, null otherwise
 	 * @throws IOException if deserialization failed
 	 */
 	public static StoredMessage bytesToOneMessage(ByteBuffer content, boolean compressed, StoredMessageId id) throws IOException
@@ -112,17 +104,16 @@ public class MessageUtils
 	}
 	
 	/**
-	 * Decompresses given ByteBuffer and deserializes all messages, assigning them proper IDs based on given batchId
+	 * Decompresses given ByteBuffer and deserializes all messages
 	 * @param content to deserialize messages from
 	 * @param compressed flag that indicates if content needs to be decompressed first
-	 * @param batchId to use to build message IDs
 	 * @return collection of deserialized messages
 	 * @throws IOException if deserialization failed
 	 */
-	public static Collection<StoredMessage> bytesToMessages(ByteBuffer content, boolean compressed, StoredMessageBatchId batchId) throws IOException
+	public static Collection<StoredMessage> bytesToMessages(ByteBuffer content, boolean compressed) throws IOException
 	{
-		byte[] contentBytes = getMessageContentBytes(content, compressed, batchId);
-		return deserializeMessages(contentBytes, batchId);
+		byte[] contentBytes = getMessageContentBytes(content, compressed, null);
+		return deserializeMessages(contentBytes);
 	}
 	
 	
@@ -134,10 +125,9 @@ public class MessageUtils
 		return result;
 	}
 	
-	private static StoredMessage deserializeMessage(byte[] bytes, StoredMessageId id)
+	private static StoredMessage deserializeMessage(byte[] bytes)
 	{
-		StoredMessage result = (StoredMessage)SerializationUtils.deserialize(bytes);
-		return new StoredMessage(result, id);
+		return (StoredMessage)SerializationUtils.deserialize(bytes);
 	}
 	
 	private static byte[] getMessageContentBytes(ByteBuffer content, boolean compressed, StoredMessageBatchId batchId) throws IOException

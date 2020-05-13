@@ -24,7 +24,7 @@ public class StoredMessage implements Serializable
 {
 	private static final long serialVersionUID = 200983136307497672L;
 	
-	private final transient StoredMessageId id;
+	private final StoredMessageId id;
 	private final Instant timestamp;
 	private final byte[] content;
 	

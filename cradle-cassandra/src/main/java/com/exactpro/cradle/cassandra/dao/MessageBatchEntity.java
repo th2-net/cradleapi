@@ -174,14 +174,12 @@ public class MessageBatchEntity
 	
 	public Collection<StoredMessage> toStoredMessages() throws IOException
 	{
-		return MessageUtils.bytesToMessages(content, compressed, 
-				createBatchId());
+		return MessageUtils.bytesToMessages(content, compressed);
 	}
 	
-	public StoredMessage toStoredMessage(long index) throws IOException
+	public StoredMessage toStoredMessage(StoredMessageId id) throws IOException
 	{
-		return MessageUtils.bytesToOneMessage(content, compressed, 
-				new StoredMessageId(createBatchId(), index));
+		return MessageUtils.bytesToOneMessage(content, compressed, id);
 	}
 	
 	public StoredMessageBatchId createBatchId()
