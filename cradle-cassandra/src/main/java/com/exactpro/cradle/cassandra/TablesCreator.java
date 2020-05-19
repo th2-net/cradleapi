@@ -42,7 +42,6 @@ public class TablesCreator
 		createMessagesTable();
 		
 		createTestEventsTable();
-		createTestEventsParentsLinkTable();
 		createTestEventMessagesLinkTable();
 	}
 	
@@ -95,33 +94,23 @@ public class TablesCreator
 	{
 		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getTestEventsTableName()).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(IS_ROOT, DataTypes.BOOLEAN)
+				.withPartitionKey(ROOT, DataTypes.BOOLEAN)
 				.withClusteringColumn(ID, DataTypes.TEXT)
+				.withColumn(NAME, DataTypes.TEXT)
+				.withColumn(TYPE, DataTypes.TEXT)
+				.withColumn(PARENT_ID, DataTypes.TEXT)
+				.withColumn(EVENT_BATCH, DataTypes.BOOLEAN)
 				.withColumn(STORED_DATE, DataTypes.DATE)
 				.withColumn(STORED_TIME, DataTypes.TIME)
-				.withColumn(FIRST_EVENT_DATE, DataTypes.DATE)
-				.withColumn(FIRST_EVENT_TIME, DataTypes.TIME)
-				.withColumn(LAST_EVENT_DATE, DataTypes.DATE)
-				.withColumn(LAST_EVENT_TIME, DataTypes.TIME)
+				.withColumn(START_DATE, DataTypes.DATE)
+				.withColumn(START_TIME, DataTypes.TIME)
+				.withColumn(END_DATE, DataTypes.DATE)
+				.withColumn(END_TIME, DataTypes.TIME)
+				.withColumn(SUCCESS, DataTypes.BOOLEAN)
 				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
 				.withColumn(CONTENT, DataTypes.BLOB)
-				.withColumn(BATCH_SIZE, DataTypes.INT)
-				.withColumn(PARENT_ID, DataTypes.TEXT)
+				.withColumn(EVENT_COUNT, DataTypes.INT)
 				.withClusteringOrder(ID, ClusteringOrder.ASC);
-		
-		exec.executeQuery(create.asCql(), true);
-	}
-	
-	//This table is needed to link test events with their parents. This allows to get IDs of test events bound to particular parent ID.
-	//Making parent ID the part of a primary key in test events table would prevent from getting test event data only by event ID
-	//One-to-many
-	public void createTestEventsParentsLinkTable() throws IOException
-	{
-		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getTestEventsParentsLinkTableName()).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(PARENT_ID, DataTypes.TEXT)
-				.withClusteringColumn(BATCH_ID, DataTypes.TEXT)
-				.withColumn(BATCH_SIZE, DataTypes.INT);
 		
 		exec.executeQuery(create.asCql(), true);
 	}
@@ -132,7 +121,8 @@ public class TablesCreator
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getTestEventMsgsLinkTableName()).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
 				.withClusteringColumn(TEST_EVENT_ID, DataTypes.TEXT)
-				.withClusteringColumn(MESSAGES_IDS, DataTypes.frozenListOf(DataTypes.TEXT));
+				.withClusteringColumn(MESSAGES_IDS, DataTypes.frozenSetOf(DataTypes.TEXT))
+				.withColumn(BATCH_ID, DataTypes.TEXT);
 		
 		exec.executeQuery(create.asCql(), true);
 	}

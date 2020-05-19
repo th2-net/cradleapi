@@ -11,7 +11,7 @@
 package com.exactpro.cradle.cassandra.linkers;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Collection;
 import java.util.UUID;
 
 import com.exactpro.cradle.messages.StoredMessageId;
@@ -29,13 +29,13 @@ public class CassandraTestEventsMessagesLinker extends MessagesLinker<StoredTest
 	}
 
 	@Override
-	public List<StoredTestEventId> getTestEventIdsByMessageId(StoredMessageId messageId) throws IOException
+	public Collection<StoredTestEventId> getTestEventIdsByMessageId(StoredMessageId messageId) throws IOException
 	{
 		return getManyLinkedsByMessageId(messageId);
 	}
 
 	@Override
-	public List<StoredMessageId> getMessageIdsByTestEventId(StoredTestEventId eventId) throws IOException
+	public Collection<StoredMessageId> getMessageIdsByTestEventId(StoredTestEventId eventId) throws IOException
 	{
 		return getLinkedMessageIds(eventId);
 	}
@@ -50,6 +50,6 @@ public class CassandraTestEventsMessagesLinker extends MessagesLinker<StoredTest
 	@Override
 	protected StoredTestEventId createLinkedId(String id) throws CradleIdException
 	{
-		return StoredTestEventId.fromString(id);
+		return new StoredTestEventId(id);
 	}
 }

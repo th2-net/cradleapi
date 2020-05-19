@@ -142,7 +142,7 @@ public class MessageUtils
 		}
 		catch (IOException | DataFormatException e)
 		{
-			throw new IOException(String.format("Could not decompress contents of batch (ID: '%s') from Cradle", batchId), e);
+			throw new IOException(String.format("Could not decompress content of message batch (ID: '%s') from Cradle", batchId), e);
 		}
 	}
 }

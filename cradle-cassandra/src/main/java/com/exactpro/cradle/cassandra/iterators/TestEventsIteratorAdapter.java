@@ -12,28 +12,23 @@ package com.exactpro.cradle.cassandra.iterators;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.UUID;
 
-import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.exactpro.cradle.cassandra.utils.QueryExecutor;
-import com.exactpro.cradle.cassandra.utils.CassandraTestEventUtils;
-import com.exactpro.cradle.testevents.StoredTestEvent;
+import com.datastax.oss.driver.api.core.PagingIterable;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
+import com.exactpro.cradle.testevents.StoredTestEventWrapper;
 
-public class TestEventsIteratorAdapter implements Iterable<StoredTestEvent>
+public class TestEventsIteratorAdapter implements Iterable<StoredTestEventWrapper>
 {
-	private final ResultSet rs;
+	private final PagingIterable<TestEventEntity> rows;
 	
-	public TestEventsIteratorAdapter(QueryExecutor exec, String keyspace, String testEventsTable, UUID instanceId, boolean onlyRootEvents) throws IOException
+	public TestEventsIteratorAdapter(PagingIterable<TestEventEntity> rows) throws IOException
 	{
-		Select selectFrom = CassandraTestEventUtils.prepareSelect(keyspace, testEventsTable, instanceId, onlyRootEvents);
-		
-		this.rs = exec.executeQuery(selectFrom.asCql(), false);
+		this.rows = rows;
 	}
 	
 	@Override
-	public Iterator<StoredTestEvent> iterator()
+	public Iterator<StoredTestEventWrapper> iterator()
 	{
-		return new TestEventsIterator(rs.iterator());
+		return new TestEventsIterator(rows.iterator());
 	}
 }

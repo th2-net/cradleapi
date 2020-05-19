@@ -8,7 +8,7 @@
  * information which is the property of Exactpro Systems LLC or its licensors.
  ******************************************************************************/
 
-package com.exactpro.cradle.cassandra.dao;
+package com.exactpro.cradle.cassandra.dao.messages;
 
 import static com.exactpro.cradle.cassandra.CassandraStorageSettings.MESSAGE_BATCH_SIZE_LIMIT_BYTES;
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
@@ -34,7 +34,7 @@ import com.exactpro.cradle.utils.CompressionUtils;
 import com.exactpro.cradle.utils.MessageUtils;
 
 /**
- * Contains minimum set of data to obtain from Cassandra to build {@link StoredMessageBatch}
+ * Contains minimal set of data to obtain from Cassandra to build {@link StoredMessageBatch}
  * This class provides basic set of fields and is parent for classes that write {@link StoredMessageBatch} to Cassandra
  */
 @Entity
@@ -85,7 +85,7 @@ public class MessageBatchEntity
 		{
 			try
 			{
-				logger.trace("Compressing message batch");
+				logger.trace("Compressing content of message batch {}", id);
 				batchContent = CompressionUtils.compressData(batchContent);
 			}
 			catch (IOException e)

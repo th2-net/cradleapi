@@ -16,9 +16,10 @@ import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
 import static com.exactpro.cradle.cassandra.StorageConstants.MESSAGES_IDS;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import com.datastax.oss.driver.api.core.cql.ResultSet;
@@ -50,12 +51,12 @@ public abstract class MessagesLinker<T>
 	protected abstract T createLinkedId(String id) throws CradleIdException;
 	
 	
-	protected List<T> getManyLinkedsByMessageId(StoredMessageId messageId) throws IOException
+	protected Collection<T> getManyLinkedsByMessageId(StoredMessageId messageId) throws IOException
 	{
 		ResultSet rs = getLinkedsByMessageIdResult(messageId);
 		Iterator<Row> it = rs.iterator();
 		
-		List<T> result = new ArrayList<>();
+		Set<T> result = new HashSet<>();
 		while (it.hasNext())
 		{
 			Row r = it.next();
@@ -71,16 +72,16 @@ public abstract class MessagesLinker<T>
 		return result;
 	}
 	
-	protected List<StoredMessageId> getLinkedMessageIds(T linkedId) throws IOException
+	protected Collection<StoredMessageId> getLinkedMessageIds(T linkedId) throws IOException
 	{
 		Select selectFrom = prepareQuery(linkedId.toString());
 		
 		Iterator<Row> resultIterator = exec.executeQuery(selectFrom.asCql(), false).iterator();
-		List<StoredMessageId> ids = new ArrayList<>();
+		Set<StoredMessageId> ids = new HashSet<>();
 		while (resultIterator.hasNext())
 		{
-			List<String> currentMessageIds = resultIterator.next().get(MESSAGES_IDS,
-					GenericType.listOf(GenericType.STRING));
+			Set<String> currentMessageIds = resultIterator.next().get(MESSAGES_IDS,
+					GenericType.setOf(GenericType.STRING));
 			if (currentMessageIds != null)
 			{
 				for (String cid : currentMessageIds)

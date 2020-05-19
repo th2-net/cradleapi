@@ -85,7 +85,7 @@ public class StoredMessageBatch
 	}
 	
 	/**
-	 * @return list of messages stored in the batch
+	 * @return collection of messages stored in the batch
 	 */
 	public Collection<StoredMessage> getMessages()
 	{

@@ -5,29 +5,44 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.List;
+import java.util.zip.DataFormatException;
 
 import org.apache.commons.lang3.SerializationUtils;
 
-import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.StoredTestEventBatchId;
+import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
+import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.StoredTestEventWithContent;
 
 public class TestEventUtils
 {
-	public static byte[] serializeTestEvents(StoredTestEvent[] testEvents) throws IOException
+	/**
+	 * Checks that test event has all necessary fields set
+	 * @param event to validate
+	 * @throws CradleStorageException if validation failed
+	 */
+	public static void validateTestEvent(StoredTestEventWithContent event) throws CradleStorageException
+	{
+		if (event.getId() == null)
+			throw new CradleStorageException("Event must have ID");
+	}
+	
+	/**
+	 * Serializes test events, skipping non-meaningful or calculatable fields
+	 * @param testEvents to serialize
+	 * @return array of bytes, containing serialized events
+	 * @throws IOException if serialization failed
+	 */
+	public static byte[] serializeTestEvents(Collection<BatchedStoredTestEvent> testEvents) throws IOException
 	{
 		byte[] batchContent;
 		try (ByteArrayOutputStream out = new ByteArrayOutputStream();
 				DataOutputStream dos = new DataOutputStream(out))
 		{
-			for (StoredTestEvent te : testEvents)
+			for (BatchedStoredTestEvent te : testEvents)
 			{
-				if (te == null)  //For case of not full batch
-					break;
-				
 				byte[] serializedTe = SerializationUtils.serialize(te);
 				dos.writeInt(serializedTe.length);
 				dos.write(serializedTe);
@@ -38,40 +53,57 @@ public class TestEventUtils
 		return batchContent;
 	}
 	
-	public static StoredTestEvent deserializeOneTestEvent(byte[] contentBytes, StoredTestEventId id, StoredTestEventId parentId) throws IOException
+	/**
+	 * Deserializes all test events, adding them to given batch
+	 * @param contentBytes to deserialize events from
+	 * @param batch to add events to
+	 * @throws IOException if deserialization failed
+	 * @throws CradleStorageException if deserialized event doesn't match batch conditions
+	 */
+	public static void deserializeTestEvents(byte[] contentBytes, StoredTestEventBatch batch) 
+			throws IOException, CradleStorageException
 	{
 		try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(contentBytes)))
 		{
-			int index = -1;
 			while (dis.available() != 0)
 			{
-				index++;
 				byte[] teBytes = readNextTestEventBytes(dis);
-				if (id.getIndex() != index)
-					continue;
-				
-				return deserializeTestEvent(teBytes, id, parentId);
+				BatchedStoredTestEvent tempTe = deserializeTestEvent(teBytes);
+				StoredTestEventBatch.addTestEvent(tempTe, batch);
 			}
 		}
-		
-		return null;
 	}
-
-	public static Collection<StoredTestEvent> deserializeTestEvents(byte[] contentBytes, StoredTestEventBatchId batchId, StoredTestEventId parentId) throws IOException
+	
+	
+	/**
+	 * Decompresses given ByteBuffer and deserializes all test events, adding them to given batch
+	 * @param content to deserialize events from
+	 * @param compressed flag that indicates if content needs to be decompressed first
+	 * @param batch to add events to
+	 * @throws IOException if deserialization failed
+	 * @throws CradleStorageException if deserialized event doesn't match batch conditions
+	 */
+	public static void bytesToTestEvents(ByteBuffer content, boolean compressed, StoredTestEventBatch batch) 
+			throws IOException, CradleStorageException
 	{
-		List<StoredTestEvent> result = new ArrayList<>();
-		try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(contentBytes)))
+		byte[] contentBytes = getTestEventContentBytes(content, compressed, batch.getId());
+		deserializeTestEvents(contentBytes, batch);
+	}
+	
+	public static byte[] getTestEventContentBytes(ByteBuffer content, boolean compressed, StoredTestEventId eventId) throws IOException
+	{
+		byte[] contentBytes = content.array();
+		if (!compressed)
+			return contentBytes;
+		
+		try
 		{
-			int index = -1;
-			while (dis.available() != 0)
-			{
-				index++;
-				byte[] teBytes = readNextTestEventBytes(dis);
-				StoredTestEvent tempTe = deserializeTestEvent(teBytes, new StoredTestEventId(batchId, index), parentId);
-				result.add(tempTe);
-			}
+			return CompressionUtils.decompressData(contentBytes);
 		}
-		return result;
+		catch (IOException | DataFormatException e)
+		{
+			throw new IOException(String.format("Could not decompress content of test event (ID: '%s') from Cradle", eventId), e);
+		}
 	}
 	
 	
@@ -83,11 +115,8 @@ public class TestEventUtils
 		return result;
 	}
 	
-	private static StoredTestEvent deserializeTestEvent(byte[] bytes, StoredTestEventId id, StoredTestEventId parentId)
+	private static BatchedStoredTestEvent deserializeTestEvent(byte[] bytes)
 	{
-		StoredTestEvent result = (StoredTestEvent)SerializationUtils.deserialize(bytes);
-		result.setId(id);
-		result.setParentId(parentId);
-		return result;
+		return (BatchedStoredTestEvent)SerializationUtils.deserialize(bytes);
 	}
 }

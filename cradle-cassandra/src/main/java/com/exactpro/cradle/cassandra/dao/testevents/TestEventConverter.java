@@ -8,15 +8,15 @@
  * information which is the property of Exactpro Systems LLC or its licensors.
  ******************************************************************************/
 
-package com.exactpro.cradle.cassandra.dao;
+package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.GetEntity;
 
 @Dao
-public interface MessageBatchConverter
+public interface TestEventConverter
 {
 	@GetEntity
-	MessageBatchEntity asMessageBatchEntity(Row row);
+	TestEventEntity asTestEventEntity(Row row);
 }

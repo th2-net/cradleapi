@@ -11,24 +11,44 @@
 package com.exactpro.cradle.cassandra.iterators;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Iterator;
 
-import com.datastax.oss.driver.api.core.cql.Row;
-import com.exactpro.cradle.cassandra.utils.CassandraTestEventUtils;
-import com.exactpro.cradle.testevents.StoredTestEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class TestEventsIterator extends EntityIterator<StoredTestEvent>
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
+import com.exactpro.cradle.testevents.StoredTestEventWrapper;
+
+public class TestEventsIterator implements Iterator<StoredTestEventWrapper>
 {
-	public TestEventsIterator(Iterator<Row> rows)
+	private final Logger logger = LoggerFactory.getLogger(TestEventsIterator.class);
+	
+	private final Iterator<TestEventEntity> rows;
+	
+	public TestEventsIterator(Iterator<TestEventEntity> rows)
 	{
-		super(rows, "test event");
+		this.rows = rows;
 	}
 	
+	@Override
+	public boolean hasNext()
+	{
+		return rows.hasNext();
+	}
 	
 	@Override
-	protected Collection<StoredTestEvent> rowToCollection(Row row) throws IOException
+	public StoredTestEventWrapper next()
 	{
-		return CassandraTestEventUtils.toTestEvents(row);
+		logger.trace("Getting next test event");
+		
+		TestEventEntity r = rows.next();
+		try
+		{
+			return r.toStoredTestEventWrapper();
+		}
+		catch (IOException e)
+		{
+			throw new RuntimeException("Error while getting next test event", e);
+		}
 	}
 }

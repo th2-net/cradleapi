@@ -12,22 +12,22 @@ package com.exactpro.cradle.cassandra.utils;
 
 import java.io.IOException;
 
-import com.exactpro.cradle.testevents.StoredTestEvent;
+import com.exactpro.cradle.testevents.StoredTestEventWrapper;
 
 public class TestEventException extends IOException
 {
 	private static final long serialVersionUID = 171332444673041240L;
 	
-	private final StoredTestEvent testEvent;
+	private final StoredTestEventWrapper testEvent;
 	
-	public TestEventException(String message, Throwable cause, StoredTestEvent testEvent)
+	public TestEventException(String message, Throwable cause, StoredTestEventWrapper testEvent)
 	{
 		super(message, cause);
 		this.testEvent = testEvent;
 	}
 	
 	
-	public StoredTestEvent getTestEvent()
+	public StoredTestEventWrapper getTestEvent()
 	{
 		return testEvent;
 	}

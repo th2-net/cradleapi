@@ -20,30 +20,27 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
-import com.exactpro.cradle.cassandra.dao.DetailedMessageBatchEntity;
-import com.exactpro.cradle.cassandra.dao.MessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
+import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.DetailedTestEventEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
 import com.exactpro.cradle.cassandra.iterators.MessagesIteratorAdapter;
 import com.exactpro.cradle.cassandra.iterators.TestEventsIteratorAdapter;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
-import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsParentsLinker;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
-import com.exactpro.cradle.cassandra.utils.CassandraTestEventUtils;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageBatchId;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.testevents.StoredTestEventWrapper;
 import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
-import com.exactpro.cradle.testevents.TestEventsParentsLinker;
-import com.exactpro.cradle.utils.CompressionUtils;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.MessageUtils;
-import com.exactpro.cradle.utils.TestEventUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,8 +49,6 @@ import static java.lang.Math.min;
 import static java.util.stream.Collectors.toList;
 
 import java.io.*;
-import java.nio.ByteBuffer;
-import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.function.Function;
@@ -79,7 +74,6 @@ public class CassandraCradleStorage extends CradleStorage
 	private QueryExecutor exec;
 	
 	private TestEventsMessagesLinker testEventsMessagesLinker;
-	private TestEventsParentsLinker testEventsParentsLinker;
 	
 	public CassandraCradleStorage(CassandraConnection connection, CassandraStorageSettings settings)
 	{
@@ -123,7 +117,6 @@ public class CassandraCradleStorage extends CradleStorage
 			
 			testEventsMessagesLinker = new CassandraTestEventsMessagesLinker(exec, 
 					settings.getKeyspace(), settings.getTestEventMsgsLinkTableName(), TEST_EVENT_ID, instanceUuid);
-			testEventsParentsLinker = new CassandraTestEventsParentsLinker(exec, settings.getKeyspace(), settings.getTestEventsParentsLinkTableName(), instanceUuid);
 			
 			return instanceUuid.toString();
 		}
@@ -161,17 +154,38 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	protected void doStoreTestEventBatch(StoredTestEventBatch batch) throws IOException
+	protected void doStoreTestEvent(StoredTestEvent event) throws IOException
 	{
-		storeTestEventBatchData(batch);
-		storeTestEventBatchMetadata(batch);
+		logger.debug("Storing data of test event {}", event.getId());
+		
+		DetailedTestEventEntity entity = new DetailedTestEventEntity(event, instanceUuid);
+		logger.trace("Executing test event storing query");
+		dataMapper.testEventOperator(settings.getKeyspace(), settings.getTestEventsTableName())
+				.write(entity, writeAttrs);
 	}
 	
 	
 	@Override
-	protected void doStoreTestEventMessagesLink(StoredTestEventId eventId, Set<StoredMessageId> messagesIds) throws IOException
+	protected void doStoreTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messagesIds) throws IOException
 	{
-		linkMessagesTo(messagesIds, settings.getTestEventMsgsLinkTableName(), TEST_EVENT_ID, eventId.toString());
+		List<String> messagesIdsAsStrings = messagesIds.stream().map(StoredMessageId::toString).collect(toList());
+		String eventIdString = eventId.toString(),
+				batchIdString = batchId != null ? batchId.toString() : null;
+		int msgsSize = messagesIdsAsStrings.size();
+		for (int left = 0; left < msgsSize; left++)
+		{
+			int right = min(left + TEST_EVENTS_MSGS_LINK_MAX_MSGS, msgsSize);
+			Set<String> curMsgsIds = new HashSet<>(messagesIdsAsStrings.subList(left, right));
+			logger.trace("Executing query to link messages to {} {}", TEST_EVENT_ID, eventIdString);
+			RegularInsert insert = insertInto(settings.getKeyspace(), settings.getTestEventMsgsLinkTableName())
+					.value(INSTANCE_ID, literal(instanceUuid))
+					.value(TEST_EVENT_ID, literal(eventIdString))
+					.value(MESSAGES_IDS, literal(curMsgsIds));
+			if (batchIdString != null)
+				insert = insert.value(BATCH_ID, literal(batchIdString));
+			exec.executeQuery(insert.asCql(), true);
+			left = right - 1;
+		}
 	}
 	
 	
@@ -198,16 +212,12 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected StoredTestEvent doGetTestEvent(StoredTestEventId id) throws IOException
+	protected StoredTestEventWrapper doGetTestEvent(StoredTestEventId id) throws IOException
 	{
-		Select selectFrom = CassandraTestEventUtils.prepareSelect(settings.getKeyspace(), settings.getTestEventsTableName(), instanceUuid, false)
-				.whereColumn(ID).isEqualTo(literal(id.getBatchId().toString()));
+		TestEventEntity entity = dataMapper.testEventOperator(settings.getKeyspace(), settings.getTestEventsTableName())
+				.get(instanceUuid, id.toString(), readAttrs);
 		
-		Row resultRow = exec.executeQuery(selectFrom.asCql(), false).one();
-		if (resultRow == null)
-			return null;
-		
-		return CassandraTestEventUtils.toTestEvent(resultRow, id);
+		return entity.toStoredTestEventWrapper();
 	}
 	
 	
@@ -215,12 +225,6 @@ public class CassandraCradleStorage extends CradleStorage
 	public TestEventsMessagesLinker getTestEventsMessagesLinker()
 	{
 		return testEventsMessagesLinker;
-	}
-	
-	@Override
-	public TestEventsParentsLinker getTestEventsParentsLinker()
-	{
-		return testEventsParentsLinker;
 	}
 	
 	
@@ -232,9 +236,17 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Iterable<StoredTestEvent> doGetTestEvents(boolean onlyRootEvents) throws IOException
+	protected Iterable<StoredTestEventWrapper> doGetRootTestEvents() throws IOException
 	{
-		return new TestEventsIteratorAdapter(exec, settings.getKeyspace(), settings.getTestEventsTableName(), instanceUuid, onlyRootEvents);
+		return new TestEventsIteratorAdapter(dataMapper.testEventOperator(settings.getKeyspace(), settings.getTestEventsTableName())
+				.getRootEvents(instanceUuid, readAttrs));
+	}
+	
+	@Override
+	protected Iterable<StoredTestEventWrapper> doGetTestEvents(StoredTestEventId parentId) throws IOException
+	{
+		return new TestEventsIteratorAdapter(dataMapper.testEventOperator(settings.getKeyspace(), settings.getTestEventsTableName())
+				.getChildren(instanceUuid, parentId.toString(), readAttrs));
 	}
 	
 	
@@ -265,91 +277,5 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		
 		return id;
-	}
-	
-	
-	private void storeTestEventBatchData(StoredTestEventBatch batch) throws IOException
-	{
-		logger.debug("Storing data of test events batch {}", batch.getId());
-		
-		byte[] batchContent = TestEventUtils.serializeTestEvents(batch.getTestEvents());
-		boolean toCompress = isNeedCompressTestEventBatch(batchContent);
-		if (toCompress)
-		{
-			try
-			{
-				logger.trace("Compressing test events batch");
-				batchContent = CompressionUtils.compressData(batchContent);
-			}
-			catch (IOException e)
-			{
-				throw new IOException(String.format("Could not compress test event batch contents (ID: '%s') to save in Cradle", 
-						batch.getId().toString()), e);
-			}
-		}
-		
-		LocalDateTime storedTimestamp = LocalDateTime.now(TIMEZONE_OFFSET),
-				firstTimestamp = LocalDateTime.ofInstant(batch.getFirstStartTimestamp(), TIMEZONE_OFFSET),
-				lastTimestamp = LocalDateTime.ofInstant(batch.getLastStartTimestamp(), TIMEZONE_OFFSET);
-		
-		logger.trace("Executing test events batch storing query");
-		StoredTestEventId parentId = batch.getParentId();
-		RegularInsert insert = insertInto(settings.getKeyspace(), settings.getTestEventsTableName())
-				.value(ID, literal(batch.getId().toString()))
-				.value(IS_ROOT, literal(parentId == null))
-				.value(INSTANCE_ID, literal(instanceUuid))
-				.value(STORED_DATE, literal(storedTimestamp.toLocalDate()))
-				.value(STORED_TIME, literal(storedTimestamp.toLocalTime()))
-				.value(FIRST_EVENT_DATE, literal(firstTimestamp.toLocalDate()))
-				.value(FIRST_EVENT_TIME, literal(firstTimestamp.toLocalTime()))
-				.value(LAST_EVENT_DATE, literal(lastTimestamp.toLocalDate()))
-				.value(LAST_EVENT_TIME, literal(lastTimestamp.toLocalTime()))
-				.value(COMPRESSED, literal(toCompress))
-				.value(CONTENT, literal(ByteBuffer.wrap(batchContent)))
-				.value(BATCH_SIZE, literal(batch.getTestEventsCount()));
-		
-		if (parentId != null)
-			insert = insert.value(PARENT_ID, literal(parentId.toString()));
-		
-		exec.executeQuery(insert.asCql(), true);
-	}
-	
-	private void storeTestEventBatchMetadata(StoredTestEventBatch batch) throws IOException
-	{
-		if (batch.getParentId() == null)
-			return;
-		
-		logger.debug("Storing metadata of test events batch {}", batch.getId());
-		Insert insert = insertInto(settings.getKeyspace(), settings.getTestEventsParentsLinkTableName())
-				.value(INSTANCE_ID, literal(instanceUuid))
-				.value(PARENT_ID, literal(batch.getParentId().toString()))
-				.value(BATCH_ID, literal(batch.getId().toString()))
-				.value(BATCH_SIZE, literal(batch.getTestEventsCount()));
-		exec.executeQuery(insert.asCql(), true);
-	}
-	
-	
-	private boolean isNeedCompressTestEventBatch(byte[] batchContentBytes)
-	{
-		return batchContentBytes.length > TEST_EVENT_BATCH_SIZE_LIMIT_BYTES;
-	}
-	
-
-	private void linkMessagesTo(Set<StoredMessageId> messagesIds, String linksTable, String linkColumn, String linkedId) throws IOException
-	{
-		List<String> messagesIdsAsStrings = messagesIds.stream().map(StoredMessageId::toString).collect(toList());
-		int msgsSize = messagesIdsAsStrings.size();
-		for (int left = 0; left < msgsSize; left++)
-		{
-			int right = min(left + TEST_EVENTS_MSGS_LINK_MAX_MSGS, msgsSize);
-			List<String> curMsgsIds = messagesIdsAsStrings.subList(left, right);
-			logger.trace("Executing query to link messages to {} {}", linkColumn, linkedId);
-			Insert insert = insertInto(settings.getKeyspace(), linksTable)
-					.value(INSTANCE_ID, literal(instanceUuid))
-					.value(linkColumn, literal(linkedId))
-					.value(MESSAGES_IDS, literal(curMsgsIds));
-			exec.executeQuery(insert.asCql(), true);
-			left = right - 1;
-		}
 	}
 }

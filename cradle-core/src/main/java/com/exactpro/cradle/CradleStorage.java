@@ -20,11 +20,10 @@ import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.testevents.StoredTestEventWrapper;
 import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
-import com.exactpro.cradle.testevents.TestEventsParentsLinker;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
@@ -50,11 +49,11 @@ public abstract class CradleStorage
 	
 	
 	protected abstract void doStoreMessageBatch(StoredMessageBatch batch) throws IOException;
-	protected abstract void doStoreTestEventBatch(StoredTestEventBatch batch) throws IOException;
-	protected abstract void doStoreTestEventMessagesLink(StoredTestEventId eventId, Set<StoredMessageId> messagesIds) throws IOException;
+	protected abstract void doStoreTestEvent(StoredTestEvent event) throws IOException;
+	protected abstract void doStoreTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messagesIds) throws IOException;
 	protected abstract StoredMessage doGetMessage(StoredMessageId id) throws IOException;
 	protected abstract long doGetLastMessageIndex(String streamName, Direction direction) throws IOException;
-	protected abstract StoredTestEvent doGetTestEvent(StoredTestEventId id) throws IOException;
+	protected abstract StoredTestEventWrapper doGetTestEvent(StoredTestEventId id) throws IOException;
 	
 	
 	/**
@@ -63,15 +62,9 @@ public abstract class CradleStorage
 	 */
 	public abstract TestEventsMessagesLinker getTestEventsMessagesLinker();
 	
-	/**
-	 * TestEventsParentsLinker is used to obtain test events by their parent
-	 * @return instance of TestEventsParentsLinker
-	 */
-	public abstract TestEventsParentsLinker getTestEventsParentsLinker();
-	
-	
 	protected abstract Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException;
-	protected abstract Iterable<StoredTestEvent> doGetTestEvents(boolean onlyRootEvents) throws IOException;
+	protected abstract Iterable<StoredTestEventWrapper> doGetRootTestEvents() throws IOException;
+	protected abstract Iterable<StoredTestEventWrapper> doGetTestEvents(StoredTestEventId parentId) throws IOException;
 	
 	
 	/**
@@ -130,27 +123,28 @@ public abstract class CradleStorage
 	}
 	
 	/**
-	 * Writes data about given test event batch to storage.
-	 * @param batch data to write.
+	 * Writes data about given test event to storage.
+	 * @param event data to write.
 	 * @throws IOException if data writing failed
 	 */
-	public final void storeTestEventBatch(StoredTestEventBatch batch) throws IOException
+	public final void storeTestEvent(StoredTestEvent event) throws IOException
 	{
-		logger.debug("Storing test event batch {}", batch.getId());
-		doStoreTestEventBatch(batch);
-		logger.debug("Test event batch {} has been stored", batch.getId());
+		logger.debug("Storing test event {}", event.getId());
+		doStoreTestEvent(event);
+		logger.debug("Test event {} has been stored", event.getId());
 	}
 	
 	/**
 	 * Writes to storage the links between given test event and messages.
 	 * @param eventId ID of stored test event
-	 * @param messagesIds list of stored message IDs
+	 * @param batchId ID of batch where event is stored, if applicable
+	 * @param messagesIds collection of stored message IDs
 	 * @throws IOException if data writing failed
 	 */
-	public final void storeTestEventMessagesLink(StoredTestEventId eventId, Set<StoredMessageId> messagesIds) throws IOException
+	public final void storeTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messagesIds) throws IOException
 	{
 		logger.debug("Storing link between test event {} and {} message(s)", eventId, messagesIds.size());
-		doStoreTestEventMessagesLink(eventId, messagesIds);
+		doStoreTestEventMessagesLink(eventId, batchId, messagesIds);
 		logger.debug("Link between test event {} and {} message(s) has been stored", eventId, messagesIds.size());
 	}
 	
@@ -192,10 +186,10 @@ public abstract class CradleStorage
 	 * @return data of stored test event
 	 * @throws IOException if test event data retrieval failed
 	 */
-	public final StoredTestEvent getTestEvent(StoredTestEventId id) throws IOException
+	public final StoredTestEventWrapper getTestEvent(StoredTestEventId id) throws IOException
 	{
 		logger.debug("Getting test event {}", id);
-		StoredTestEvent result = doGetTestEvent(id);
+		StoredTestEventWrapper result = doGetTestEvent(id);
 		logger.debug("Test event {} got", id);
 		return result;
 	}
@@ -216,17 +210,29 @@ public abstract class CradleStorage
 	}
 	
 	/**
-	 * Allows to enumerate test events
-	 * @param onlyRootEvents set to true if you need to obtain only root test events, i.e. events with no parent 
+	 * Allows to enumerate root test events
+	 * @return iterable object to enumerate root test events
+	 * @throws IOException if data retrieval failed
+	 */
+	public final Iterable<StoredTestEventWrapper> getRootTestEvents() throws IOException
+	{
+		logger.debug("Getting root test events");
+		Iterable<StoredTestEventWrapper> result = doGetRootTestEvents();
+		logger.debug("Prepared iterator for root test events");
+		return result;
+	}
+	
+	/**
+	 * Allows to enumerate children of test event with given ID
+	 * @param parentId ID of parent test event
 	 * @return iterable object to enumerate test events
 	 * @throws IOException if data retrieval failed
 	 */
-	public final Iterable<StoredTestEvent> getTestEvents(boolean onlyRootEvents) throws IOException
+	public final Iterable<StoredTestEventWrapper> getTestEvents(StoredTestEventId parentId) throws IOException
 	{
-		String events = onlyRootEvents ? "root" : "all";
-		logger.debug("Getting {} test events ", events);
-		Iterable<StoredTestEvent> result = doGetTestEvents(onlyRootEvents);
-		logger.debug("Prepared iterator for {} test events", events);
+		logger.debug("Getting children test events of {}", parentId);
+		Iterable<StoredTestEventWrapper> result = doGetTestEvents(parentId);
+		logger.debug("Prepared iterator for children test events of {}", parentId);
 		return result;
 	}
 }

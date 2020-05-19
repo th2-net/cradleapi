@@ -15,8 +15,8 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import com.datastax.oss.driver.api.core.cql.Row;
-import com.exactpro.cradle.cassandra.dao.MessageBatchConverter;
-import com.exactpro.cradle.cassandra.dao.MessageBatchEntity;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchConverter;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
 import com.exactpro.cradle.messages.StoredMessage;
 
 public class MessagesIterator extends EntityIterator<StoredMessage>

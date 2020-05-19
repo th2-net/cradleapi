@@ -38,10 +38,10 @@ public class StoredMessageId implements Serializable
 		StoredMessageBatchId batchId = StoredMessageBatchId.fromString(id);
 		
 		String indexPart = id.substring(batchId.toString().length()+StoredMessageBatchId.IDS_DELIMITER.length());
-		int index;
+		long index;
 		try
 		{
-			index = Integer.parseInt(indexPart);
+			index = Long.parseLong(indexPart);
 		}
 		catch (NumberFormatException e)
 		{

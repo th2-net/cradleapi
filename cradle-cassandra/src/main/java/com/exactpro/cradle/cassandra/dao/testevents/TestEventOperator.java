@@ -8,7 +8,7 @@
  * information which is the property of Exactpro Systems LLC or its licensors.
  ******************************************************************************/
 
-package com.exactpro.cradle.cassandra.dao;
+package com.exactpro.cradle.cassandra.dao.testevents;
 
 import java.util.UUID;
 import java.util.function.Function;
@@ -18,31 +18,24 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
-import com.datastax.oss.driver.api.mapper.annotations.Select;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 @Dao
-public interface MessageBatchOperator
+public interface TestEventOperator
 {
-	@Select
-	PagingIterable<MessageBatchEntity> get(UUID instanceId, String streamName, 
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+ROOT+" IN (true, false) and "+ID+"=:id")
+	TestEventEntity get(UUID instanceId, String id, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Select
-	PagingIterable<MessageBatchEntity> get(UUID instanceId, String streamName, String direction, 
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+ROOT+"=true")
+	PagingIterable<TestEventEntity> getRootEvents(UUID instanceId, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Select
-	MessageBatchEntity get(UUID instanceId, String streamName, String direction, long messageIndex, 
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+ROOT+" IN (true, false) and "+PARENT_ID+"=:parentId ALLOW FILTERING")
+	PagingIterable<TestEventEntity> getChildren(UUID instanceId, String parentId, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
-	@Select
-	PagingIterable<MessageBatchEntity> getAll(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
-	@Query("SELECT MAX("+LAST_MESSAGE_INDEX+") FROM ${qualifiedTableId} WHERE "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction ALLOW FILTERING")
-	long getLastIndex(String streamName, String direction, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
-	DetailedMessageBatchEntity write(DetailedMessageBatchEntity message, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	DetailedTestEventEntity write(DetailedTestEventEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }
