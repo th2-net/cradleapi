@@ -17,7 +17,7 @@ import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.utils.CompressionUtils;
 
 /**
- * Object to hold information about one message prepared to store in Cradle
+ * Object to hold information about one message prepared to be stored in Cradle
  */
 public class MessageToStore
 {

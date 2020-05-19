@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright (c) 2009-2020, Exactpro Systems LLC
  * www.exactpro.com
- * Build Software to Test Software
+ *	 Build Software to Test Software
  *
  * All rights reserved.
  * This is unpublished, licensed software, confidential and proprietary 
@@ -10,123 +10,25 @@
 
 package com.exactpro.cradle.testevents;
 
-import java.io.Serializable;
 import java.time.Instant;
 
-public class StoredTestEvent implements Serializable
+/**
+ * interface for all stored test events. Provides access only to event meta-data. Event content is specific to event
+ */
+public interface StoredTestEvent extends MinimalTestEventFields
 {
-	private static final long serialVersionUID = 7780434719175879122L;
+	Instant getStartTimestamp();
+	Instant getEndTimestamp();
+	boolean isSuccess();
 	
-	//Fields marked with "transient" can be restored from batch data 
-	private transient StoredTestEventId id;
-	private String name,
-			type;
-	private Instant startTimestamp,
-		endTimestamp;
-	private boolean success;
-	private byte[] content;
-	private transient StoredTestEventId parentId;
 	
-	public StoredTestEvent()
+	public static StoredTestEventSingle newStoredTestEventSingle(TestEventToStore event)
 	{
+		return new StoredTestEventSingle(event);
 	}
 	
-	public StoredTestEvent(StoredTestEvent copyFrom)
+	public static StoredTestEventBatch newStoredTestEventBatch(MinimalTestEventToStore batchData)
 	{
-		this.id = copyFrom.getId();
-		this.name = copyFrom.getName();
-		this.type = copyFrom.getType();
-		this.startTimestamp = copyFrom.getStartTimestamp();
-		this.endTimestamp = copyFrom.endTimestamp;
-		this.success = copyFrom.isSuccess();
-		this.content = copyFrom.getContent();
-		this.parentId = copyFrom.getParentId();
-	}
-	
-	public StoredTestEventId getId()
-	{
-		return id;
-	}
-	
-	public void setId(StoredTestEventId id)
-	{
-		this.id = id;
-	}
-	
-	
-	public String getName()
-	{
-		return name;
-	}
-	
-	public void setName(String name)
-	{
-		this.name = name;
-	}
-	
-	
-	public String getType()
-	{
-		return type;
-	}
-	
-	public void setType(String type)
-	{
-		this.type = type;
-	}
-	
-	
-	public Instant getStartTimestamp()
-	{
-		return startTimestamp;
-	}
-	
-	public void setStartTimestamp(Instant startTimestamp)
-	{
-		this.startTimestamp = startTimestamp;
-	}
-	
-	
-	public Instant getEndTimestamp()
-	{
-		return endTimestamp;
-	}
-	
-	public void setEndTimestamp(Instant endTimestamp)
-	{
-		this.endTimestamp = endTimestamp;
-	}
-		
-	
-	public boolean isSuccess()
-	{
-		return success;
-	}
-	
-	public void setSuccess(boolean success)
-	{
-		this.success = success;
-	}
-	
-	
-	public byte[] getContent()
-	{
-		return content;
-	}
-	
-	public void setContent(byte[] content)
-	{
-		this.content = content;
-	}
-	
-	
-	public StoredTestEventId getParentId()
-	{
-		return parentId;
-	}
-	
-	public void setParentId(StoredTestEventId parentId)
-	{
-		this.parentId = parentId;
+		return new StoredTestEventBatch(batchData);
 	}
 }

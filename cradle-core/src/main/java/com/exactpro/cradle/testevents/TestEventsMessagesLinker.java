@@ -11,7 +11,7 @@
 package com.exactpro.cradle.testevents;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Collection;
 
 import com.exactpro.cradle.messages.StoredMessageId;
 
@@ -20,18 +20,18 @@ public interface TestEventsMessagesLinker
 	/**
 	 * Retrieves IDs of stored test events by linked message ID
 	 * @param messageId ID of stored message
-	 * @return list of stored test event IDs
+	 * @return collection of stored test event IDs
 	 * @throws IOException if test event data retrieval failed
 	 */
-	List<StoredTestEventId> getTestEventIdsByMessageId(StoredMessageId messageId) throws IOException;
+	Collection<StoredTestEventId> getTestEventIdsByMessageId(StoredMessageId messageId) throws IOException;
 
 	/**
 	 * Retrieves IDs of stored messages by linked test event ID
 	 * @param eventId ID of stored test event
-	 * @return list of stored message IDs
+	 * @return collection of stored message IDs
 	 * @throws IOException if messages data retrieval failed
 	 */
-	List<StoredMessageId> getMessageIdsByTestEventId(StoredTestEventId eventId) throws IOException;
+	Collection<StoredMessageId> getMessageIdsByTestEventId(StoredTestEventId eventId) throws IOException;
 
 	/**
 	 * Checks if test event has messages linked to it

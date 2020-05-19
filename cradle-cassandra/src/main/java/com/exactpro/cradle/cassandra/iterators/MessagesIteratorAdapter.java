@@ -16,7 +16,7 @@ import java.util.UUID;
 
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.exactpro.cradle.cassandra.dao.MessageBatchConverter;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchConverter;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.messages.StoredMessage;

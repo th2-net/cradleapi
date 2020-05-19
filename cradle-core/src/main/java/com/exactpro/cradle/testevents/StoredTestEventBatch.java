@@ -11,146 +11,188 @@
 package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.TestEventUtils;
 
 /**
  * Holds information about batch of test events stored in Cradle.
- * All events stored in the batch are linked to its ID
+ * Events stored in the batch can refer to each other to form a hierarchy. No references to these events are possible outside of the batch and vice versa.
  * Batch has limited capacity. If batch is full, events can't be added to it and the batch must be flushed to Cradle
  */
-public class StoredTestEventBatch
+public class StoredTestEventBatch extends MinimalStoredTestEvent implements StoredTestEvent
 {
 	public static int MAX_EVENTS_NUMBER = 10;
 	
-	private final StoredTestEventBatchId id;
-	private int storedTestEventsCount = 0;
-	private final StoredTestEvent[] testEvents;
-	private StoredTestEventId parentId = null;
+	private final Map<StoredTestEventId, BatchedStoredTestEvent> events = new LinkedHashMap<>();
+	private final Collection<BatchedStoredTestEvent> rootEvents = new ArrayList<>();
+	private final Map<StoredTestEventId, Collection<BatchedStoredTestEvent>> children = new HashMap<>();
+	private Instant startTimestamp,
+			endTimestamp;
+	private boolean success;
 	
-	public StoredTestEventBatch(StoredTestEventBatchId id)
+	public StoredTestEventBatch(MinimalTestEventFields batchData)
 	{
-		this.id = id;
-		this.testEvents = new StoredTestEvent[MAX_EVENTS_NUMBER];
+		super(batchData);
 	}
 	
 	
-	public static StoredTestEventBatch singleton(StoredTestEvent testEvent) throws CradleStorageException
+	public static BatchedStoredTestEvent bindTestEvent(BatchedStoredTestEvent event, StoredTestEventBatch batch)
 	{
-		StoredTestEventBatch result = new StoredTestEventBatch(testEvent.getId().getBatchId());
-		result.addTestEvent(testEvent);
-		return result;
+		return new BatchedStoredTestEvent(event, batch);
 	}
 	
-
-	public StoredTestEventBatchId getId()
+	public static BatchedStoredTestEvent addTestEvent(StoredTestEventWithContent event, StoredTestEventBatch batch) throws CradleStorageException
 	{
-		return id;
+		return batch.addStoredTestEvent(event);
 	}
 
-	public int getStoredTestEventCount()
+	
+	@Override
+	public Instant getStartTimestamp()
 	{
-		return storedTestEventsCount;
+		return startTimestamp;
 	}
 
-	public StoredTestEvent[] getTestEvents()
+	@Override
+	public Instant getEndTimestamp()
 	{
-		return testEvents;
+		return endTimestamp;
+	}
+
+	@Override
+	public boolean isSuccess()
+	{
+		return success;
 	}
 	
-	public List<StoredTestEvent> getTestEventsList()
-	{
-		List<StoredTestEvent> result = new ArrayList<>();
-		for (int i = 0; i < storedTestEventsCount; i++)
-			result.add(testEvents[i]);
-		return result;
-	}
-	
-	public StoredTestEventId getParentId()
-	{
-		return parentId;
-	}
-	
-	/**
-	 * Adds test event to the batch. If test event ID is not specified, batch will add correct ID by itself, else test event ID will be verified to match batch conditions.
-	 * Batch contains test events with the same parent ID.
-	 * Test events can be added to batch until {@link #isFull()} returns true. 
-	 * @param testEvent to add to batch
-	 * @return ID assigned to added test event or ID specified in test event, if present
-	 * @throws CradleStorageException if test event cannot be added to batch due to ID verification failure or if batch limit is reached
-	 */
-	public StoredTestEventId addTestEvent(StoredTestEvent testEvent) throws CradleStorageException
-	{
-		if (isFull())
-			throw new CradleStorageException("Batch is full");
-		
-		if (storedTestEventsCount > 0)
-		{
-			if (!Objects.equals(parentId, testEvent.getParentId()))  //parentId can be null and this is valid
-				throw new CradleStorageException("Parent ID in test event ("+testEvent.getParentId()+") doesn't match with parent ID of other test events in this batch ("+parentId+")");
-		}
-		else
-			parentId = testEvent.getParentId();
-		
-		if (testEvent.getId() != null)
-		{
-			StoredTestEventId eventId = testEvent.getId();
-			if (!eventId.getBatchId().equals(id))
-				throw new CradleStorageException("Batch ID in test event ("+eventId.getBatchId()+") doesn't match with ID of this batch ("+id+")");
-			if (eventId.getIndex() != storedTestEventsCount)
-				throw new CradleStorageException("Unexpected test event index - "+eventId.getIndex()+". Expected "+storedTestEventsCount);
-		}
-		else
-			testEvent.setId(new StoredTestEventId(id, storedTestEventsCount));
-		
-		testEvents[storedTestEventsCount++] = testEvent;
-		
-		return testEvent.getId();
-	}
-	
-	/**
-	 * @return timestamp of start of first event within the batch
-	 */
-	public Instant getFirstStartTimestamp()
-	{
-		if (storedTestEventsCount > 0)
-			return testEvents[0].getStartTimestamp();
-		return null;
-	}
-	
-	/**
-	 * @return timestamp of start of last event within the batch
-	 */
-	public Instant getLastStartTimestamp()
-	{
-		if (storedTestEventsCount > 0)
-			return testEvents[storedTestEventsCount-1].getStartTimestamp();
-		return null;
-	}
 	
 	/**
 	 * @return number of test events currently stored in the batch
 	 */
 	public int getTestEventsCount()
 	{
-		return storedTestEventsCount;
+		return events.size();
 	}
 	
 	/**
-	 * @return true if no test events were added to the batch yet
+	 * Returns test event stored in the batch by ID
+	 * @param id of test event to get from batch
+	 * @return test event for given ID, if it is present in the batch, null otherwise
+	 */
+	public BatchedStoredTestEvent getTestEvent(StoredTestEventId id)
+	{
+		return events.get(id);
+	}
+	
+	/**
+	 * @return collection of test events stored in the batch
+	 */
+	public Collection<BatchedStoredTestEvent> getTestEvents()
+	{
+		return Collections.unmodifiableCollection(events.values());
+	}
+	
+	/**
+	 * @return collection of root test events stored in the batch
+	 */
+	public Collection<BatchedStoredTestEvent> getRootTestEvents()
+	{
+		return Collections.unmodifiableCollection(rootEvents);
+	}
+	
+	/**
+	 * @return true if no test events were added to batch yet
 	 */
 	public boolean isEmpty()
 	{
-		return storedTestEventsCount == 0;
+		return events.isEmpty();
 	}
 	
 	/**
-	 * Indicates if the batch can hold more test events
-	 * @return true is batch capacity is not reached yet, else the batch cannot be used to store more test events and must be flushed to Cradle
+	 * Indicates if the batch cannot hold more test events
+	 * @return true if batch capacity is reached and the batch must be flushed to Cradle
 	 */
 	public boolean isFull()
 	{
-		return storedTestEventsCount >= testEvents.length;
+		return events.size() >= MAX_EVENTS_NUMBER;
+	}
+	
+	
+	boolean hasChildren(StoredTestEventId parentId)
+	{
+		return children.containsKey(parentId);
+	}
+	
+	Collection<BatchedStoredTestEvent> getChildren(StoredTestEventId parentId)
+	{
+		Collection<BatchedStoredTestEvent> result = children.get(parentId);
+		return result != null ? Collections.unmodifiableCollection(result) : Collections.emptyList();
+	}
+	
+	/**
+	 * Adds test event to the batch. Batch will verify the event to match batch conditions.
+	 * Events can be added to batch until {@link #isFull()} returns true.
+	 * Result of this method should be used for all further operations on the event
+	 * @param event to add to the batch
+	 * @return immutable test event object
+	 * @throws CradleStorageException if test event cannot be added to the batch due to verification failure or if batch limit is reached
+	 */
+	//This method is public and shows that only TestEventToStore can be added directly added to batch
+	public BatchedStoredTestEvent addTestEvent(TestEventToStore event) throws CradleStorageException
+	{
+		return addStoredTestEvent(event);
+	}
+	
+	
+	private BatchedStoredTestEvent addStoredTestEvent(StoredTestEventWithContent event) throws CradleStorageException
+	{
+		if (isFull())
+			throw new CradleStorageException("Batch is full");
+		
+		TestEventUtils.validateTestEvent(event);
+		
+		StoredTestEventId parentId = event.getParentId();
+		if (parentId != null)
+		{
+			if (!events.containsKey(parentId))
+				throw new CradleStorageException("Event with ID '"+parentId+"' should be stored in this batch to be referenced as a parent");
+		}
+		
+		updateBatchData(event);
+		
+		BatchedStoredTestEvent result = new BatchedStoredTestEvent(event, this);
+		events.put(result.getId(), result);
+		if (parentId != null)
+			children.computeIfAbsent(parentId, k -> new ArrayList<>()).add(result);
+		else
+			rootEvents.add(result);
+		return result;
+	}
+	
+	private void updateBatchData(StoredTestEventWithContent event)
+	{
+		Instant eventStart = event.getStartTimestamp();
+		if (eventStart != null)
+		{
+			if (startTimestamp == null || startTimestamp.isAfter(eventStart))
+				startTimestamp = eventStart;
+		}
+		
+		Instant eventEnd = event.getEndTimestamp();
+		if (eventEnd != null)
+		{
+			if (endTimestamp == null || endTimestamp.isBefore(eventEnd))
+				endTimestamp = eventEnd;
+		}
+		
+		if (!event.isSuccess())
+			success = false;
 	}
 }

@@ -29,21 +29,22 @@ public class StorageConstants
 			LAST_MESSAGE_TIME = "last_message_time",
 			MESSAGE_COUNT = "message_count",
 			
-			FIRST_EVENT_DATE = "first_event_date",
-			FIRST_EVENT_TIME = "first_event_time",
-			LAST_EVENT_DATE = "last_event_date",
-			LAST_EVENT_TIME = "last_event_time",
+			START_DATE = "start_date",
+			START_TIME = "start_time",
+			END_DATE = "end_date",
+			END_TIME = "end_time",
+			EVENT_COUNT = "event_count",
+			EVENT_BATCH = "event_batch",
 			
-			CONTENT = "content",
+			CONTENT = "z_content",  //To make this column the last one in columns list and thus faster read meta-data
 			SUCCESS = "success",
 			TYPE = "type",
-			PREV_ID = "prev_id",
 			START_TIMESTAMP = "start_timestamp",
 			END_TIMESTAMP = "end_timestamp",
 			BATCH_ID = "batch_id",
 			BATCH_SIZE = "batch_size",
 			MESSAGES_IDS = "messages_ids",
 			TEST_EVENT_ID = "test_event_id",
-			IS_ROOT = "is_root",
+			ROOT = "root",
 			PARENT_ID = "parent_id";
 }

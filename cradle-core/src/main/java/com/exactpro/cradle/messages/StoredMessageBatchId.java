@@ -43,10 +43,10 @@ public class StoredMessageBatchId implements Serializable
 		if (parts.length < 3)
 			throw new CradleIdException("Batch ID ("+id+") should contain stream name, direction and message index delimited with '"+IDS_DELIMITER+"'");
 		
-		int index;
+		long index;
 		try
 		{
-			index = Integer.parseInt(parts[2]);
+			index = Long.parseLong(parts[2]);
 		}
 		catch (NumberFormatException e)
 		{

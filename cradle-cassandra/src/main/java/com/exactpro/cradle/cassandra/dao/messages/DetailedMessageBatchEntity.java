@@ -8,7 +8,7 @@
  * information which is the property of Exactpro Systems LLC or its licensors.
  ******************************************************************************/
 
-package com.exactpro.cradle.cassandra.dao;
+package com.exactpro.cradle.cassandra.dao.messages;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
@@ -35,6 +35,7 @@ import com.exactpro.cradle.messages.StoredMessageBatch;
 public class DetailedMessageBatchEntity extends MessageBatchEntity
 {
 	private static final Logger logger = LoggerFactory.getLogger(DetailedMessageBatchEntity.class);
+	
 	@CqlName(STORED_DATE)
 	private LocalDate storedDate;
 	@CqlName(STORED_TIME)

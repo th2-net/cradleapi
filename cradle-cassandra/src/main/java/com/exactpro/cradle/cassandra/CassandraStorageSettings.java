@@ -21,8 +21,7 @@ public class CassandraStorageSettings
 			INSTANCES_TABLE_DEFAULT_NAME = "instances",
 			MESSAGES_TABLE_DEFAULT_NAME = "messages",
 			TEST_EVENTS_TABLE_DEFAULT_NAME = "test_events",
-			TEST_EVENTS_PARENTS_LINK_TABLE_DEFAULT_NAME = "test_events_parents_link",
-			TEST_EVENT_MSGS_LINK_TABLE_DEFAULT_NAME = "test_event_messages_link";
+			TEST_EVENTS_MSGS_LINK_TABLE_DEFAULT_NAME = "test_events_messages_link";
 	public static final long DEFAULT_TIMEOUT = 5000;
 	public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
 	public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1;
@@ -32,7 +31,6 @@ public class CassandraStorageSettings
 	private final String keyspace;
 	private String messagesTableName,
 			testEventsTableName,
-			testEventsParentsLinkTableName,
 			testEventMsgsLinkTableName;
 	private final NetworkTopologyStrategy networkTopologyStrategy;
 	private long timeout;
@@ -45,8 +43,7 @@ public class CassandraStorageSettings
 	{
 		this.messagesTableName = MESSAGES_TABLE_DEFAULT_NAME;
 		this.testEventsTableName = TEST_EVENTS_TABLE_DEFAULT_NAME;
-		this.testEventsParentsLinkTableName = TEST_EVENTS_PARENTS_LINK_TABLE_DEFAULT_NAME;
-		this.testEventMsgsLinkTableName = TEST_EVENT_MSGS_LINK_TABLE_DEFAULT_NAME;
+		this.testEventMsgsLinkTableName = TEST_EVENTS_MSGS_LINK_TABLE_DEFAULT_NAME;
 		this.keyspace = keyspace;
 		this.networkTopologyStrategy = networkTopologyStrategy;
 		this.timeout = timeout;
@@ -100,17 +97,6 @@ public class CassandraStorageSettings
 	public void setTestEventsTableName(String testEventsTableName)
 	{
 		this.testEventsTableName = testEventsTableName;
-	}
-	
-	
-	public String getTestEventsParentsLinkTableName()
-	{
-		return testEventsParentsLinkTableName;
-	}
-	
-	public void setTestEventsParentsLinkTableName(String testEventsParentsLinkTableName)
-	{
-		this.testEventsParentsLinkTableName = testEventsParentsLinkTableName;
 	}
 	
 	
