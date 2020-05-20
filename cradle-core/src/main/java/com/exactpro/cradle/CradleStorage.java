@@ -49,9 +49,11 @@ public abstract class CradleStorage
 	
 	
 	protected abstract void doStoreMessageBatch(StoredMessageBatch batch) throws IOException;
+	protected abstract void doStoreProcessedMessageBatch(StoredMessageBatch batch) throws IOException;
 	protected abstract void doStoreTestEvent(StoredTestEvent event) throws IOException;
 	protected abstract void doStoreTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messagesIds) throws IOException;
 	protected abstract StoredMessage doGetMessage(StoredMessageId id) throws IOException;
+	protected abstract StoredMessage doGetProcessedMessage(StoredMessageId id) throws IOException;
 	protected abstract long doGetLastMessageIndex(String streamName, Direction direction) throws IOException;
 	protected abstract StoredTestEventWrapper doGetTestEvent(StoredTestEventId id) throws IOException;
 	
@@ -123,6 +125,18 @@ public abstract class CradleStorage
 	}
 	
 	/**
+	 * Writes data about given processed message batch to storage. Messages from batch are linked with corresponding streams
+	 * @param batch data to write
+	 * @throws IOException if data writing failed
+	 */
+	public final void storeProcessedMessageBatch(StoredMessageBatch batch) throws IOException
+	{
+		logger.debug("Storing processed message batch {}", batch.getId());
+		doStoreProcessedMessageBatch(batch);
+		logger.debug("Processed message batch {} has been stored", batch.getId());
+	}
+	
+	/**
 	 * Writes data about given test event to storage.
 	 * @param event data to write.
 	 * @throws IOException if data writing failed
@@ -152,7 +166,7 @@ public abstract class CradleStorage
 	/**
 	 * Retrieves message data stored under given ID
 	 * @param id of stored message to retrieve
-	 * @return data of stored messages
+	 * @return data of stored message
 	 * @throws IOException if message data retrieval failed
 	 */
 	public final StoredMessage getMessage(StoredMessageId id) throws IOException
@@ -160,6 +174,20 @@ public abstract class CradleStorage
 		logger.debug("Getting message {}", id);
 		StoredMessage result = doGetMessage(id);
 		logger.debug("Message {} got", id);
+		return result;
+	}
+	
+	/**
+	 * Retrieves processed message data stored under given ID
+	 * @param id of stored processed message to retrieve
+	 * @return data of stored processed message
+	 * @throws IOException if message data retrieval failed
+	 */
+	public final StoredMessage getProcessedMessage(StoredMessageId id) throws IOException
+	{
+		logger.debug("Getting processed message {}", id);
+		StoredMessage result = doGetProcessedMessage(id);
+		logger.debug("Processed message {} got", id);
 		return result;
 	}
 	

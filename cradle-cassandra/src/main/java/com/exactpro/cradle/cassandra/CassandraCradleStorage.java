@@ -146,10 +146,15 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		logger.debug("Storing data of messages batch {}", batch.getId());
 		
-		DetailedMessageBatchEntity entity = new DetailedMessageBatchEntity(batch, instanceUuid);
-		logger.trace("Executing message batch storing query");
-		dataMapper.messageBatchOperator(settings.getKeyspace(), settings.getMessagesTableName())
-				.write(entity, writeAttrs);
+		writeMessage(batch, settings.getMessagesTableName());
+	}
+	
+	@Override
+	protected void doStoreProcessedMessageBatch(StoredMessageBatch batch) throws IOException
+	{
+		logger.debug("Storing data of processed messages batch {}", batch.getId());
+		
+		writeMessage(batch, settings.getProcessedMessagesTableName());
 	}
 	
 	
@@ -192,15 +197,13 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected StoredMessage doGetMessage(StoredMessageId id) throws IOException
 	{
-		StoredMessageBatchId batchId = id.getBatchId();
-		MessageBatchEntity entity = dataMapper.messageBatchOperator(settings.getKeyspace(), settings.getMessagesTableName())
-				.get(instanceUuid, 
-						batchId.getStreamName(), 
-						batchId.getDirection().getLabel(), 
-						batchId.getIndex(),
-						readAttrs);
-		
-		return MessageUtils.bytesToOneMessage(entity.getContent(), entity.isCompressed(), id);
+		return readMessage(id, settings.getMessagesTableName());
+	}
+	
+	@Override
+	protected StoredMessage doGetProcessedMessage(StoredMessageId id) throws IOException
+	{
+		return readMessage(id, settings.getProcessedMessagesTableName());
 	}
 	
 	@Override
@@ -277,5 +280,26 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		
 		return id;
+	}
+	
+	private void writeMessage(StoredMessageBatch batch, String tableName) throws IOException
+	{
+		DetailedMessageBatchEntity entity = new DetailedMessageBatchEntity(batch, instanceUuid);
+		logger.trace("Executing message batch storing query");
+		dataMapper.messageBatchOperator(settings.getKeyspace(), tableName)
+				.write(entity, writeAttrs);
+	}
+	
+	private StoredMessage readMessage(StoredMessageId id, String tableName) throws IOException
+	{
+		StoredMessageBatchId batchId = id.getBatchId();
+		MessageBatchEntity entity = dataMapper.messageBatchOperator(settings.getKeyspace(), tableName)
+				.get(instanceUuid, 
+						batchId.getStreamName(), 
+						batchId.getDirection().getLabel(), 
+						batchId.getIndex(),
+						readAttrs);
+		
+		return MessageUtils.bytesToOneMessage(entity.getContent(), entity.isCompressed(), id);
 	}
 }
