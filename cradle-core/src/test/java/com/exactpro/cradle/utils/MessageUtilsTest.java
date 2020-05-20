@@ -11,6 +11,7 @@
 package com.exactpro.cradle.utils;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -37,6 +38,7 @@ public class MessageUtilsTest
 		MessageToStoreBuilder builder = new MessageToStoreBuilder();
 		String streamName = "Stream1";
 		Direction direction = Direction.FIRST;
+		Instant timestamp = Instant.now();
 		
 		long index = 10;
 		batch = new StoredMessageBatch();
@@ -44,12 +46,14 @@ public class MessageUtilsTest
 				.streamName(streamName)
 				.direction(direction)
 				.index(10)
+				.timestamp(timestamp)
 				.build());
 		
 		msg2 = batch.addMessage(builder
 				.streamName(streamName)
 				.direction(direction)
 				.index(index+10)  //Need to have a gap between indices to verify that messages are written/read correctly
+				.timestamp(timestamp)
 				.build());
 	}
 	

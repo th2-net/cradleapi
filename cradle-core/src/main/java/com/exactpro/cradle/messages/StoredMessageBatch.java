@@ -21,6 +21,7 @@ import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.MessageUtils;
 
 /**
  * Holds information about batch of messages stored in Cradle.
@@ -32,15 +33,17 @@ public class StoredMessageBatch
 {
 	private static final Logger logger = LoggerFactory.getLogger(StoredMessageBatch.class);
 	
-	public static int MAX_MESSAGES_NUMBER = 10;
+	public static int MAX_MESSAGES_COUNT = 100,
+			MAX_MESSAGES_SIZE = 1024*1024;  //1 Mb
 	
 	private StoredMessageBatchId id;
 	private int storedMessagesCount = 0;
+	private long storedMessagesSize = 0;
 	private final StoredMessage[] messages;
 	
 	public StoredMessageBatch()
 	{
-		this.messages = new StoredMessage[MAX_MESSAGES_NUMBER];
+		this.messages = new StoredMessage[MAX_MESSAGES_COUNT];
 	}
 	
 	
@@ -85,6 +88,14 @@ public class StoredMessageBatch
 	}
 	
 	/**
+	 * @return size of messages content currently stored in the batch
+	 */
+	public long getMessagesSize()
+	{
+		return storedMessagesSize;
+	}
+	
+	/**
 	 * @return collection of messages stored in the batch
 	 */
 	public Collection<StoredMessage> getMessages()
@@ -107,6 +118,8 @@ public class StoredMessageBatch
 	{
 		if (isFull())
 			throw new CradleStorageException("Batch is full");
+		
+		MessageUtils.validateMessage(message);
 		
 		long messageIndex;
 		if (id == null)
@@ -146,6 +159,8 @@ public class StoredMessageBatch
 		
 		StoredMessage msg = new StoredMessage(message, new StoredMessageId(id, messageIndex));
 		messages[storedMessagesCount++] = msg;
+		if (msg.getContent() != null)
+			storedMessagesSize += msg.getContent().length;
 		return msg;
 	}
 	
@@ -193,6 +208,6 @@ public class StoredMessageBatch
 	 */
 	public boolean isFull()
 	{
-		return storedMessagesCount >= messages.length;
+		return storedMessagesCount >= messages.length || storedMessagesSize >= MAX_MESSAGES_SIZE;
 	}
 }

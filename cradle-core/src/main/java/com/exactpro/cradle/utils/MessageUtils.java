@@ -13,12 +13,28 @@ import java.util.zip.DataFormatException;
 
 import org.apache.commons.lang3.SerializationUtils;
 
+import com.exactpro.cradle.messages.MessageToStore;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatchId;
 import com.exactpro.cradle.messages.StoredMessageId;
 
 public class MessageUtils
 {
+	/**
+	 * Checks that message has all necessary fields set
+	 * @param message to validate
+	 * @throws CradleStorageException if validation failed
+	 */
+	public static void validateMessage(MessageToStore message) throws CradleStorageException
+	{
+		if (message.getStreamName() == null)
+			throw new CradleStorageException("Message must have stream name");
+		if (message.getDirection() == null)
+			throw new CradleStorageException("Message must have direction");
+		if (message.getTimestamp() == null)
+			throw new CradleStorageException("Message must have timestamp");
+	}
+	
 	/**
 	 * Serializes messages, skipping non-meaningful or calculatable fields
 	 * @param messages to serialize
