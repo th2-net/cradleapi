@@ -20,6 +20,7 @@ public class CassandraStorageSettings
 	public static final String DEFAULT_KEYSPACE = "cradle",
 			INSTANCES_TABLE_DEFAULT_NAME = "instances",
 			MESSAGES_TABLE_DEFAULT_NAME = "messages",
+			PROCESSED_MESSAGES_TABLE_DEFAULT_NAME = "processed_messages",
 			TEST_EVENTS_TABLE_DEFAULT_NAME = "test_events",
 			TEST_EVENTS_MSGS_LINK_TABLE_DEFAULT_NAME = "test_events_messages_link";
 	public static final long DEFAULT_TIMEOUT = 5000;
@@ -30,6 +31,7 @@ public class CassandraStorageSettings
 
 	private final String keyspace;
 	private String messagesTableName,
+			processedMessagesTableName,
 			testEventsTableName,
 			testEventMsgsLinkTableName;
 	private final NetworkTopologyStrategy networkTopologyStrategy;
@@ -42,6 +44,7 @@ public class CassandraStorageSettings
 			long timeout, ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel)
 	{
 		this.messagesTableName = MESSAGES_TABLE_DEFAULT_NAME;
+		this.processedMessagesTableName = PROCESSED_MESSAGES_TABLE_DEFAULT_NAME;
 		this.testEventsTableName = TEST_EVENTS_TABLE_DEFAULT_NAME;
 		this.testEventMsgsLinkTableName = TEST_EVENTS_MSGS_LINK_TABLE_DEFAULT_NAME;
 		this.keyspace = keyspace;
@@ -87,7 +90,18 @@ public class CassandraStorageSettings
 	{
 		this.messagesTableName = messagesTableName;
 	}
-
+	
+	
+	public String getProcessedMessagesTableName()
+	{
+		return processedMessagesTableName;
+	}
+	
+	public void setProcessedMessagesTableName(String processedMessagesTableName)
+	{
+		this.processedMessagesTableName = processedMessagesTableName;
+	}
+	
 	
 	public String getTestEventsTableName()
 	{

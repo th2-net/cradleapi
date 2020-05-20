@@ -40,6 +40,7 @@ public class TablesCreator
 		createKeyspace();
 		createInstancesTable();
 		createMessagesTable();
+		createProcessedMessagesTable();
 		
 		createTestEventsTable();
 		createTestEventMessagesLinkTable();
@@ -68,25 +69,12 @@ public class TablesCreator
 	
 	public void createMessagesTable() throws IOException
 	{
-		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getMessagesTableName()).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(STREAM_NAME, DataTypes.TEXT)
-				.withClusteringColumn(DIRECTION, DataTypes.TEXT)
-				.withClusteringColumn(MESSAGE_INDEX, DataTypes.BIGINT)
-				.withColumn(STORED_DATE, DataTypes.DATE)
-				.withColumn(STORED_TIME, DataTypes.TIME)
-				.withColumn(FIRST_MESSAGE_DATE, DataTypes.DATE)
-				.withColumn(FIRST_MESSAGE_TIME, DataTypes.TIME)
-				.withColumn(LAST_MESSAGE_DATE, DataTypes.DATE)
-				.withColumn(LAST_MESSAGE_TIME, DataTypes.TIME)
-				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
-				.withColumn(CONTENT, DataTypes.BLOB)
-				.withColumn(MESSAGE_COUNT, DataTypes.INT)
-				.withColumn(LAST_MESSAGE_INDEX, DataTypes.BIGINT)
-				.withClusteringOrder(DIRECTION, ClusteringOrder.ASC)
-				.withClusteringOrder(MESSAGE_INDEX, ClusteringOrder.ASC);
-		
-		exec.executeQuery(create.asCql(), true);
+		createMessagesTable(settings.getMessagesTableName());
+	}
+	
+	public void createProcessedMessagesTable() throws IOException
+	{
+		createMessagesTable(settings.getProcessedMessagesTableName());
 	}
 	
 
@@ -123,6 +111,29 @@ public class TablesCreator
 				.withClusteringColumn(TEST_EVENT_ID, DataTypes.TEXT)
 				.withClusteringColumn(MESSAGES_IDS, DataTypes.frozenSetOf(DataTypes.TEXT))
 				.withColumn(BATCH_ID, DataTypes.TEXT);
+		
+		exec.executeQuery(create.asCql(), true);
+	}
+	
+	public void createMessagesTable(String name) throws IOException
+	{
+		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), name).ifNotExists()
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				.withPartitionKey(STREAM_NAME, DataTypes.TEXT)
+				.withClusteringColumn(DIRECTION, DataTypes.TEXT)
+				.withClusteringColumn(MESSAGE_INDEX, DataTypes.BIGINT)
+				.withColumn(STORED_DATE, DataTypes.DATE)
+				.withColumn(STORED_TIME, DataTypes.TIME)
+				.withColumn(FIRST_MESSAGE_DATE, DataTypes.DATE)
+				.withColumn(FIRST_MESSAGE_TIME, DataTypes.TIME)
+				.withColumn(LAST_MESSAGE_DATE, DataTypes.DATE)
+				.withColumn(LAST_MESSAGE_TIME, DataTypes.TIME)
+				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
+				.withColumn(CONTENT, DataTypes.BLOB)
+				.withColumn(MESSAGE_COUNT, DataTypes.INT)
+				.withColumn(LAST_MESSAGE_INDEX, DataTypes.BIGINT)
+				.withClusteringOrder(DIRECTION, ClusteringOrder.ASC)
+				.withClusteringOrder(MESSAGE_INDEX, ClusteringOrder.ASC);
 		
 		exec.executeQuery(create.asCql(), true);
 	}
