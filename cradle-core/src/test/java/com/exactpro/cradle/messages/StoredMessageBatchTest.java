@@ -27,6 +27,7 @@ public class StoredMessageBatchTest
 	private MessageToStoreBuilder builder;
 	private String streamName;
 	private Direction direction;
+	private Instant timestamp;
 	
 	@BeforeClass
 	public void prepare()
@@ -34,6 +35,7 @@ public class StoredMessageBatchTest
 		builder = new MessageToStoreBuilder();
 		streamName = "Stream1";
 		direction = Direction.FIRST;
+		timestamp = Instant.now();
 	}
 	
 	@DataProvider(name = "first message")
@@ -41,8 +43,8 @@ public class StoredMessageBatchTest
 	{
 		return new Object[][]
 				{
-					{null, direction, 0},
-					{streamName, null, 0},
+					{"", direction, 0},
+					//{streamName, null, 0},  - this is invalid message, so skipping it
 					{streamName, direction, -1}
 				};
 	}
@@ -64,6 +66,17 @@ public class StoredMessageBatchTest
 				};
 	}
 	
+	@DataProvider(name = "invalid messages")
+	public Object[][] invalidMessages()
+	{
+		return new Object[][]
+				{
+					{builder.build()},                                                             //Empty message
+					{builder.streamName(streamName).direction(null).timestamp(null).build()},      //Only stream is set
+					{builder.streamName(streamName).direction(direction).timestamp(null).build()}  //Only stream and direction are set
+				};
+	}
+	
 	
 	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Batch is full")
 	public void batchIsLimited() throws CradleStorageException
@@ -72,11 +85,33 @@ public class StoredMessageBatchTest
 				.streamName(streamName)
 				.direction(direction)
 				.index(1)
+				.timestamp(timestamp)
 				.build());
-		for (int i = 0; i <= StoredMessageBatch.MAX_MESSAGES_NUMBER; i++)
+		for (int i = 0; i <= StoredMessageBatch.MAX_MESSAGES_COUNT; i++)
 			batch.addMessage(builder
 					.streamName(streamName)
 					.direction(direction)
+					.timestamp(timestamp)
+					.build());
+	}
+	
+	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Batch is full")
+	public void batchContentIsLimited() throws CradleStorageException
+	{
+		byte[] content = new byte[5000];
+		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
+				.streamName(streamName)
+				.direction(direction)
+				.index(1)
+				.timestamp(timestamp)
+				.content(content)
+				.build());
+		for (int i = 0; i <= (StoredMessageBatch.MAX_MESSAGES_SIZE/content.length)+1; i++)
+			batch.addMessage(builder
+					.streamName(streamName)
+					.direction(direction)
+					.timestamp(timestamp)
+					.content(content)
 					.build());
 	}
 	
@@ -86,11 +121,13 @@ public class StoredMessageBatchTest
 				.streamName(streamName)
 				.direction(direction)
 				.index(1)
+				.timestamp(timestamp)
 				.build());
-		for (int i = 0; i < StoredMessageBatch.MAX_MESSAGES_NUMBER; i++)
+		for (int i = 0; i < StoredMessageBatch.MAX_MESSAGES_COUNT; i++)
 			batch.addMessage(builder
 					.streamName(streamName)
 					.direction(direction)
+					.timestamp(timestamp)
 					.build());
 		
 		Assert.assertEquals(batch.isFull(), true, "Batch indicates it is full");
@@ -105,6 +142,7 @@ public class StoredMessageBatchTest
 				.streamName(streamName)
 				.direction(direction)
 				.index(index)
+				.timestamp(timestamp)
 				.build());
 	}
 	
@@ -120,8 +158,18 @@ public class StoredMessageBatchTest
 					.streamName(id.streamName)
 					.direction(id.direction)
 					.index(id.index)
+					.timestamp(timestamp)
 					.build());
 		}
+	}
+	
+	@Test(dataProvider = "invalid messages",
+			expectedExceptions = {CradleStorageException.class},
+			expectedExceptionsMessageRegExp = "Message must .*")
+	public void batchValidatesMessages(MessageToStore msg) throws CradleStorageException
+	{
+		StoredMessageBatch batch = new StoredMessageBatch();
+		batch.addMessage(msg);
 	}
 	
 	@Test
@@ -132,16 +180,19 @@ public class StoredMessageBatchTest
 				.streamName(streamName)
 				.direction(direction)
 				.index(index)
+				.timestamp(timestamp)
 				.build());
 		
 		StoredMessage msg1 = batch.addMessage(builder
 				.streamName(streamName)
 				.direction(direction)
+				.timestamp(timestamp)
 				.build());
 		
 		StoredMessage msg2 = batch.addMessage(builder
 				.streamName(streamName)
 				.direction(direction)
+				.timestamp(timestamp)
 				.build());
 		
 		Assert.assertEquals(msg1.getIndex(), index+1, "1st and 2nd messages should have sequenced indices");
@@ -156,12 +207,14 @@ public class StoredMessageBatchTest
 				.streamName(streamName)
 				.direction(direction)
 				.index(index)
+				.timestamp(timestamp)
 				.build());
 		
 		batch.addMessage(builder
 				.streamName(streamName)
 				.direction(direction)
 				.index(index+10)
+				.timestamp(timestamp)
 				.build());
 	}
 	
