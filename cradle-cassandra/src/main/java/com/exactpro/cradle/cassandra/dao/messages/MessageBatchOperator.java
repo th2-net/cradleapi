@@ -37,11 +37,18 @@ public interface MessageBatchOperator
 	MessageBatchEntity get(UUID instanceId, String streamName, String direction, long messageIndex, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
+			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction AND "
+			+MESSAGE_INDEX+">=:fromIndex AND "+MESSAGE_INDEX+"<=:toIndex")
+	PagingIterable<MessageBatchMetadataEntity> getMetadata(UUID instanceId, String streamName, String direction, long fromIndex, long toIndex, 
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
 	@Select
 	PagingIterable<MessageBatchEntity> getAll(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Query("SELECT MAX("+LAST_MESSAGE_INDEX+") FROM ${qualifiedTableId} WHERE "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction ALLOW FILTERING")
-	long getLastIndex(String streamName, String direction, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	@Query("SELECT MAX("+LAST_MESSAGE_INDEX+") FROM ${qualifiedTableId} WHERE "
+			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction ALLOW FILTERING")
+	long getLastIndex(UUID instanceId, String streamName, String direction, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
 	DetailedMessageBatchEntity write(DetailedMessageBatchEntity message, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);

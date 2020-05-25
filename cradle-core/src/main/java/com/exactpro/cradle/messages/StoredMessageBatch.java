@@ -157,7 +157,7 @@ public class StoredMessageBatch
 				messageIndex = lastMsg.getIndex()+1;
 		}
 		
-		StoredMessage msg = new StoredMessage(message, new StoredMessageId(id, messageIndex));
+		StoredMessage msg = new StoredMessage(message, new StoredMessageId(message.getStreamName(), message.getDirection(), messageIndex));
 		messages[storedMessagesCount++] = msg;
 		if (msg.getContent() != null)
 			storedMessagesSize += msg.getContent().length;

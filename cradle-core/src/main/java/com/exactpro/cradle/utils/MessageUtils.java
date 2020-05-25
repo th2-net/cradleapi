@@ -15,7 +15,6 @@ import org.apache.commons.lang3.SerializationUtils;
 
 import com.exactpro.cradle.messages.MessageToStore;
 import com.exactpro.cradle.messages.StoredMessage;
-import com.exactpro.cradle.messages.StoredMessageBatchId;
 import com.exactpro.cradle.messages.StoredMessageId;
 
 public class MessageUtils
@@ -115,7 +114,7 @@ public class MessageUtils
 	 */
 	public static StoredMessage bytesToOneMessage(ByteBuffer content, boolean compressed, StoredMessageId id) throws IOException
 	{
-		byte[] contentBytes = getMessageContentBytes(content, compressed, id.getBatchId());
+		byte[] contentBytes = getMessageContentBytes(content, compressed, id);
 		return deserializeOneMessage(contentBytes, id);
 	}
 	
@@ -146,7 +145,7 @@ public class MessageUtils
 		return (StoredMessage)SerializationUtils.deserialize(bytes);
 	}
 	
-	private static byte[] getMessageContentBytes(ByteBuffer content, boolean compressed, StoredMessageBatchId batchId) throws IOException
+	private static byte[] getMessageContentBytes(ByteBuffer content, boolean compressed, StoredMessageId id) throws IOException
 	{
 		byte[] contentBytes = content.array();
 		if (!compressed)
@@ -158,7 +157,7 @@ public class MessageUtils
 		}
 		catch (IOException | DataFormatException e)
 		{
-			throw new IOException(String.format("Could not decompress content of message batch (ID: '%s') from Cradle", batchId), e);
+			throw new IOException(String.format("Could not decompress content of message (ID: '%s') from Cradle", id), e);
 		}
 	}
 }
