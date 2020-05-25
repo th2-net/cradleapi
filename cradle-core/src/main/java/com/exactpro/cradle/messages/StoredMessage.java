@@ -62,7 +62,7 @@ public class StoredMessage implements Serializable
 	 */
 	public String getStreamName()
 	{
-		return id.getBatchId().getStreamName();
+		return id.getStreamName();
 	}
 	
 	/**
@@ -70,7 +70,7 @@ public class StoredMessage implements Serializable
 	 */
 	public Direction getDirection()
 	{
-		return id.getBatchId().getDirection();
+		return id.getDirection();
 	}
 	
 	/**

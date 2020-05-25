@@ -35,7 +35,7 @@ public class StoredMessageIdTest
 		direction = Direction.FIRST;
 		index = 100;
 		messageIndex = index+3;
-		stringId = streamName+IDS_DELIMITER+direction.getLabel()+IDS_DELIMITER+index+IDS_DELIMITER+messageIndex;
+		stringId = streamName+IDS_DELIMITER+direction.getLabel()+IDS_DELIMITER+messageIndex;
 	}
 	
 	@DataProvider(name = "ids")
@@ -44,8 +44,15 @@ public class StoredMessageIdTest
 		return new Object[][]
 				{
 					{""},
+					{streamName},
+					{streamName+IDS_DELIMITER},
+					{streamName+IDS_DELIMITER+"XXX"},
+					{streamName+IDS_DELIMITER+"XXX"+IDS_DELIMITER},
+					{streamName+IDS_DELIMITER+"XXX"+IDS_DELIMITER+"NNN"},
 					{streamName+IDS_DELIMITER+"XXX"+IDS_DELIMITER+index},
-					{streamName+IDS_DELIMITER+direction.getLabel()+IDS_DELIMITER+index+IDS_DELIMITER+"NNN"}
+					{streamName+IDS_DELIMITER+direction.getLabel()},
+					{streamName+IDS_DELIMITER+direction.getLabel()+IDS_DELIMITER},
+					{streamName+IDS_DELIMITER+direction.getLabel()+IDS_DELIMITER+"NNN"}
 				};
 	}
 	
@@ -53,14 +60,14 @@ public class StoredMessageIdTest
 	@Test
 	public void idToString()
 	{
-		StoredMessageId id = new StoredMessageId(new StoredMessageBatchId(streamName, direction, index), messageIndex);
+		StoredMessageId id = new StoredMessageId(streamName, direction, messageIndex);
 		Assert.assertEquals(id.toString(), stringId);
 	}
 	
 	@Test
 	public void idFromString() throws CradleIdException
 	{
-		StoredMessageId id = new StoredMessageId(new StoredMessageBatchId(streamName, direction, index), messageIndex),
+		StoredMessageId id = new StoredMessageId(streamName, direction, messageIndex),
 				fromString = StoredMessageId.fromString(stringId);
 		Assert.assertEquals(fromString, id);
 	}

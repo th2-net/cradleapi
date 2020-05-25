@@ -11,6 +11,7 @@
 package com.exactpro.cradle.cassandra;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
@@ -24,6 +25,8 @@ import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchMetadataEntity;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.DetailedTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
 import com.exactpro.cradle.cassandra.iterators.MessagesIteratorAdapter;
@@ -32,7 +35,6 @@ import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
-import com.exactpro.cradle.messages.StoredMessageBatchId;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEventWrapper;
@@ -211,7 +213,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		//Need to query all nodes in all datacenters to get index that is the latest for sure. so using strictReadAttrs
 		return dataMapper.messageBatchOperator(settings.getKeyspace(), settings.getMessagesTableName())
-				.getLastIndex(streamName, direction.getLabel(), strictReadAttrs);
+				.getLastIndex(instanceUuid, streamName, direction.getLabel(), strictReadAttrs);
 	}
 	
 	@Override
@@ -292,14 +294,26 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	private StoredMessage readMessage(StoredMessageId id, String tableName) throws IOException
 	{
-		StoredMessageBatchId batchId = id.getBatchId();
-		MessageBatchEntity entity = dataMapper.messageBatchOperator(settings.getKeyspace(), tableName)
-				.get(instanceUuid, 
-						batchId.getStreamName(), 
-						batchId.getDirection().getLabel(), 
-						batchId.getIndex(),
+		MessageBatchOperator op = dataMapper.messageBatchOperator(settings.getKeyspace(), tableName);
+		PagingIterable<MessageBatchMetadataEntity> batches = op.getMetadata(instanceUuid, 
+						id.getStreamName(), 
+						id.getDirection().getLabel(),
+						id.getIndex()-StoredMessageBatch.MAX_MESSAGES_COUNT,
+						id.getIndex(),
 						readAttrs);
+		if (batches == null)
+			return null;
 		
-		return MessageUtils.bytesToOneMessage(entity.getContent(), entity.isCompressed(), id);
+		MessageBatchMetadataEntity md = null;
+		for (Iterator<MessageBatchMetadataEntity> it = batches.iterator(); it.hasNext(); )  //Getting last entity
+			md = it.next();
+		if (md == null)
+			return null;
+		
+		MessageBatchEntity entity = op.get(instanceUuid, md.getStreamName(), md.getDirection(), md.getMessageIndex(), readAttrs);
+		if (entity == null)
+			return null;
+		
+		return MessageUtils.bytesToOneMessage(entity.getContent(), md.isCompressed(), id);
 	}
 }

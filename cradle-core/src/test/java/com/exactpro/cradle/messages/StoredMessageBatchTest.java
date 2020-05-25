@@ -219,6 +219,24 @@ public class StoredMessageBatchTest
 	}
 	
 	@Test
+	public void correctMessageId() throws CradleStorageException
+	{
+		long index = 10;
+		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
+				.streamName(streamName)
+				.direction(direction)
+				.index(index)
+				.timestamp(timestamp)
+				.build());
+		StoredMessage msg = batch.addMessage(builder
+				.streamName(streamName)
+				.direction(direction)
+				.timestamp(timestamp)
+				.build());
+		Assert.assertEquals(msg.getId(), new StoredMessageId(streamName, direction, index+1));
+	}
+	
+	@Test
 	public void batchShowsLastTimestamp() throws CradleStorageException
 	{
 		Instant timestamp = Instant.ofEpochSecond(1000);
