@@ -12,6 +12,8 @@ package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
 
+import com.exactpro.cradle.utils.CradleStorageException;
+
 /**
  * Holds information about single (individual) test event stored in Cradle
  */
@@ -22,7 +24,7 @@ public class StoredTestEventSingle extends MinimalStoredTestEvent implements Sto
 	private final boolean success;
 	private final byte[] content;
 	
-	public StoredTestEventSingle(StoredTestEventWithContent event)
+	public StoredTestEventSingle(StoredTestEventWithContent event) throws CradleStorageException
 	{
 		super(event);
 		this.startTimestamp = event.getStartTimestamp();

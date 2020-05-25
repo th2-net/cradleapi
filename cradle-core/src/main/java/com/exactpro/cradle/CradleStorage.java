@@ -25,6 +25,7 @@ import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
 import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.TestEventUtils;
 
 /**
  * Storage which holds information about all data sent or verified and generated reports.
@@ -144,6 +145,14 @@ public abstract class CradleStorage
 	public final void storeTestEvent(StoredTestEvent event) throws IOException
 	{
 		logger.debug("Storing test event {}", event.getId());
+		try
+		{
+			TestEventUtils.validateTestEvent(event);
+		}
+		catch (CradleStorageException e)
+		{
+			throw new IOException("Invalid test event", e);
+		}
 		doStoreTestEvent(event);
 		logger.debug("Test event {} has been stored", event.getId());
 	}

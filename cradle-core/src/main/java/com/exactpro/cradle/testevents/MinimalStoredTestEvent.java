@@ -10,6 +10,8 @@
 
 package com.exactpro.cradle.testevents;
 
+import com.exactpro.cradle.utils.CradleStorageException;
+
 public class MinimalStoredTestEvent implements MinimalTestEventFields
 {
 	private final StoredTestEventId id;
@@ -17,12 +19,17 @@ public class MinimalStoredTestEvent implements MinimalTestEventFields
 			type;
 	private final StoredTestEventId parentId;
 	
-	public MinimalStoredTestEvent(MinimalTestEventFields event)
+	public MinimalStoredTestEvent(MinimalTestEventFields event) throws CradleStorageException
 	{
 		this.id = event.getId();
 		this.name = event.getName();
 		this.type = event.getType();
 		this.parentId = event.getParentId();
+		
+		if (this.id == null)
+			throw new CradleStorageException("Test event ID cannot be null");
+		if (this.id.equals(parentId))
+			throw new CradleStorageException("Test event cannot reference itself");
 	}
 	
 	
