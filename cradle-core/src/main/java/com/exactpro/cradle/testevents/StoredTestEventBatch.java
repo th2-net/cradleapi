@@ -28,7 +28,8 @@ import com.exactpro.cradle.utils.TestEventUtils;
  */
 public class StoredTestEventBatch extends MinimalStoredTestEvent implements StoredTestEvent
 {
-	public static int MAX_EVENTS_NUMBER = 10;
+	public static int MAX_EVENTS_NUMBER = 100,
+			MAX_EVENTS_SIZE = 1024*1024;  //1 Mb
 	
 	private final Map<StoredTestEventId, BatchedStoredTestEvent> events = new LinkedHashMap<>();
 	private final Collection<BatchedStoredTestEvent> rootEvents = new ArrayList<>();
@@ -36,8 +37,9 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 	private Instant startTimestamp,
 			endTimestamp;
 	private boolean success;
+	private long storedEventsSize = 0;
 	
-	public StoredTestEventBatch(MinimalTestEventFields batchData)
+	public StoredTestEventBatch(MinimalTestEventFields batchData) throws CradleStorageException
 	{
 		super(batchData);
 	}
@@ -82,6 +84,14 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 	}
 	
 	/**
+	 * @return size of events content currently stored in the batch
+	 */
+	public long getTestEventsSize()
+	{
+		return storedEventsSize;
+	}
+	
+	/**
 	 * Returns test event stored in the batch by ID
 	 * @param id of test event to get from batch
 	 * @return test event for given ID, if it is present in the batch, null otherwise
@@ -121,7 +131,7 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 	 */
 	public boolean isFull()
 	{
-		return events.size() >= MAX_EVENTS_NUMBER;
+		return events.size() >= MAX_EVENTS_NUMBER || storedEventsSize >= MAX_EVENTS_SIZE;
 	}
 	
 	
@@ -144,7 +154,7 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 	 * @return immutable test event object
 	 * @throws CradleStorageException if test event cannot be added to the batch due to verification failure or if batch limit is reached
 	 */
-	//This method is public and shows that only TestEventToStore can be added directly added to batch
+	//This method is public and shows that only TestEventToStore can be directly added to batch
 	public BatchedStoredTestEvent addTestEvent(TestEventToStore event) throws CradleStorageException
 	{
 		return addStoredTestEvent(event);
@@ -158,11 +168,14 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 		
 		TestEventUtils.validateTestEvent(event);
 		
+		if (events.containsKey(event.getId()))
+			throw new CradleStorageException("Test event with ID '"+event.getId()+"' is already present in batch");
+		
 		StoredTestEventId parentId = event.getParentId();
 		if (parentId != null)
 		{
 			if (!events.containsKey(parentId))
-				throw new CradleStorageException("Event with ID '"+parentId+"' should be stored in this batch to be referenced as a parent");
+				throw new CradleStorageException("Test event with ID '"+parentId+"' should be stored in this batch to be referenced as a parent");
 		}
 		
 		updateBatchData(event);
@@ -173,6 +186,9 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 			children.computeIfAbsent(parentId, k -> new ArrayList<>()).add(result);
 		else
 			rootEvents.add(result);
+		
+		if (event.getContent() != null)
+			storedEventsSize += event.getContent().length;
 		return result;
 	}
 	

@@ -12,9 +12,9 @@ import java.util.zip.DataFormatException;
 import org.apache.commons.lang3.SerializationUtils;
 
 import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
+import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
-import com.exactpro.cradle.testevents.StoredTestEventWithContent;
 
 public class TestEventUtils
 {
@@ -23,10 +23,12 @@ public class TestEventUtils
 	 * @param event to validate
 	 * @throws CradleStorageException if validation failed
 	 */
-	public static void validateTestEvent(StoredTestEventWithContent event) throws CradleStorageException
+	public static void validateTestEvent(StoredTestEvent event) throws CradleStorageException
 	{
 		if (event.getId() == null)
-			throw new CradleStorageException("Event must have ID");
+			throw new CradleStorageException("Test event ID cannot be null");
+		if (event.getId().equals(event.getParentId()))
+			throw new CradleStorageException("Test event cannot reference itself");
 	}
 	
 	/**

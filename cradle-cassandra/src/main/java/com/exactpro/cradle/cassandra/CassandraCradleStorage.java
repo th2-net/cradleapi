@@ -221,8 +221,17 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		TestEventEntity entity = dataMapper.testEventOperator(settings.getKeyspace(), settings.getTestEventsTableName())
 				.get(instanceUuid, id.toString(), readAttrs);
+		if (entity == null)
+			return null;
 		
-		return entity.toStoredTestEventWrapper();
+		try
+		{
+			return entity.toStoredTestEventWrapper();
+		}
+		catch (CradleStorageException e)
+		{
+			throw new IOException("Could not get test event", e);
+		}
 	}
 	
 	

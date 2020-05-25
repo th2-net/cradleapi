@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
 import com.exactpro.cradle.testevents.StoredTestEventWrapper;
+import com.exactpro.cradle.utils.CradleStorageException;
 
 public class TestEventsIterator implements Iterator<StoredTestEventWrapper>
 {
@@ -46,7 +47,7 @@ public class TestEventsIterator implements Iterator<StoredTestEventWrapper>
 		{
 			return r.toStoredTestEventWrapper();
 		}
-		catch (IOException e)
+		catch (IOException | CradleStorageException e)
 		{
 			throw new RuntimeException("Error while getting next test event", e);
 		}

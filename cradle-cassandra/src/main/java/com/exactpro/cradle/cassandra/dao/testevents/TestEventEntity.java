@@ -334,7 +334,7 @@ public class TestEventEntity
 	
 	
 	
-	public StoredTestEventSingle toStoredTestEventSingle() throws IOException
+	public StoredTestEventSingle toStoredTestEventSingle() throws IOException, CradleStorageException
 	{
 		if (isEventBatch())
 			return null;
@@ -352,7 +352,7 @@ public class TestEventEntity
 				.build());
 	}
 	
-	public StoredTestEventBatch toStoredTestEventBatch() throws IOException
+	public StoredTestEventBatch toStoredTestEventBatch() throws IOException, CradleStorageException
 	{
 		if (!isEventBatch())
 			return null;
@@ -375,12 +375,12 @@ public class TestEventEntity
 		return result;
 	}
 	
-	public StoredTestEvent toStoredTestEvent() throws IOException
+	public StoredTestEvent toStoredTestEvent() throws IOException, CradleStorageException
 	{
 		return isEventBatch() ? toStoredTestEventBatch() : toStoredTestEventSingle();
 	}
 	
-	public StoredTestEventWrapper toStoredTestEventWrapper() throws IOException
+	public StoredTestEventWrapper toStoredTestEventWrapper() throws IOException, CradleStorageException
 	{
 		return new StoredTestEventWrapper(toStoredTestEvent());
 	}

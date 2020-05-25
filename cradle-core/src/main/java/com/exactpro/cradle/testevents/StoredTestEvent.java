@@ -12,8 +12,10 @@ package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
 
+import com.exactpro.cradle.utils.CradleStorageException;
+
 /**
- * interface for all stored test events. Provides access only to event meta-data. Event content is specific to event
+ * Interface for all stored test events. Provides access only to event meta-data. Event content is specific to event
  */
 public interface StoredTestEvent extends MinimalTestEventFields
 {
@@ -22,12 +24,12 @@ public interface StoredTestEvent extends MinimalTestEventFields
 	boolean isSuccess();
 	
 	
-	public static StoredTestEventSingle newStoredTestEventSingle(TestEventToStore event)
+	public static StoredTestEventSingle newStoredTestEventSingle(TestEventToStore event) throws CradleStorageException
 	{
 		return new StoredTestEventSingle(event);
 	}
 	
-	public static StoredTestEventBatch newStoredTestEventBatch(MinimalTestEventToStore batchData)
+	public static StoredTestEventBatch newStoredTestEventBatch(MinimalTestEventToStore batchData) throws CradleStorageException
 	{
 		return new StoredTestEventBatch(batchData);
 	}
