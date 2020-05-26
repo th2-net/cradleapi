@@ -13,6 +13,7 @@ package com.exactpro.cradle.messages;
 import java.time.Instant;
 
 import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.filters.FilterByField;
 import com.exactpro.cradle.filters.FilterByFieldBuilder;
 
@@ -62,6 +63,26 @@ public class StoredMessageFilterBuilder
 		FilterByField<Instant> f = new FilterByField<>();
 		msgFilter.setTimestampTo(f);
 		return new FilterByFieldBuilder<Instant, StoredMessageFilterBuilder>(f, this);
+	}
+	
+	public StoredMessageFilterBuilder next(StoredMessageId fromId, int count)
+	{
+		initIfNeeded();
+		msgFilter.setStreamName(new FilterByField<String>(fromId.getStreamName(), ComparisonOperation.EQUALS));
+		msgFilter.setDirection(new FilterByField<Direction>(fromId.getDirection(), ComparisonOperation.EQUALS));
+		msgFilter.setIndex(new FilterByField<Long>(fromId.getIndex(), ComparisonOperation.GREATER));
+		msgFilter.setLimit(count);
+		return this;
+	}
+	
+	public StoredMessageFilterBuilder previous(StoredMessageId fromId, int count)
+	{
+		initIfNeeded();
+		msgFilter.setStreamName(new FilterByField<String>(fromId.getStreamName(), ComparisonOperation.EQUALS));
+		msgFilter.setDirection(new FilterByField<Direction>(fromId.getDirection(), ComparisonOperation.EQUALS));
+		msgFilter.setIndex(new FilterByField<Long>(fromId.getIndex(), ComparisonOperation.LESS));
+		msgFilter.setLimit(count);
+		return this;
 	}
 	
 	/**

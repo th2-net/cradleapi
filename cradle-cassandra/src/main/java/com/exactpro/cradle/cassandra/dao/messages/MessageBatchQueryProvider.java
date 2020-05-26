@@ -68,6 +68,10 @@ public class MessageBatchQueryProvider
 		if (filter.getIndex() != null)
 		{
 			ComparisonOperation operation = filter.getIndex().getOperation();
+			//This is for case when need to return "previous X messages, i.e. X messages whose index is less than Y"
+			if (filter.getLimit() > 0 && (operation == ComparisonOperation.LESS || operation == ComparisonOperation.LESS_OR_EQUALS))
+				select = FilterUtils.filterToWhere(ComparisonOperation.GREATER, select.whereColumn(LAST_MESSAGE_INDEX));
+			
 			//Overriding operation to include message's batch while selecting by query
 			//While iterating through query results original operation will be used
 			if (operation == ComparisonOperation.GREATER)
@@ -136,6 +140,9 @@ public class MessageBatchQueryProvider
 		
 		if (filter.getIndex() != null)
 		{
+			ComparisonOperation op = filter.getIndex().getOperation();
+			if (filter.getLimit() > 0 && (op == ComparisonOperation.LESS || op == ComparisonOperation.LESS_OR_EQUALS))
+				builder = builder.setLong(LAST_MESSAGE_INDEX, filter.getIndex().getValue()-filter.getLimit());
 			MessageBatchEntity batch = getMessageBatch(filter, operator, instanceId, attributes);
 			builder = builder.setLong(MESSAGE_INDEX, batch != null ? batch.getMessageIndex() : filter.getIndex().getValue());
 		}
