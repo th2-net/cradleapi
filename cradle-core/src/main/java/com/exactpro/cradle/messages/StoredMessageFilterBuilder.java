@@ -40,6 +40,14 @@ public class StoredMessageFilterBuilder
 		return new FilterByFieldBuilder<Direction, StoredMessageFilterBuilder>(f, this);
 	}
 	
+	public FilterByFieldBuilder<Long, StoredMessageFilterBuilder> index()
+	{
+		initIfNeeded();
+		FilterByField<Long> f = new FilterByField<>();
+		msgFilter.setIndex(f);
+		return new FilterByFieldBuilder<Long, StoredMessageFilterBuilder>(f, this);
+	}
+	
 	public FilterByFieldBuilder<Instant, StoredMessageFilterBuilder> timestampFrom()
 	{
 		initIfNeeded();

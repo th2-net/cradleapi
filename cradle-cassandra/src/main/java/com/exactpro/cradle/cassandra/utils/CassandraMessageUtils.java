@@ -14,12 +14,17 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
+import java.util.Iterator;
 import java.util.UUID;
+import java.util.function.Function;
 
+import com.datastax.oss.driver.api.core.PagingIterable;
+import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.exactpro.cradle.Direction;
-import com.exactpro.cradle.filters.FilterByField;
-import com.exactpro.cradle.messages.StoredMessageFilter;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
+import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.messages.StoredMessageId;
 
 public class CassandraMessageUtils
 {
@@ -30,47 +35,21 @@ public class CassandraMessageUtils
 				.whereColumn(INSTANCE_ID).isEqualTo(literal(instanceId));
 	}
 	
-	public static Select applyFilter(Select select, StoredMessageFilter filter)
+	public static MessageBatchEntity getMessageBatch(StoredMessageId id, MessageBatchOperator op, UUID instanceId,
+			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
 	{
-		if (filter.getStreamName() != null)
-			select = FilterUtils.filterToWhere(filter.getStreamName(), select.whereColumn(STREAM_NAME));
+		PagingIterable<MessageBatchEntity> batches = op.getMessageBatches(instanceId, 
+						id.getStreamName(), 
+						id.getDirection().getLabel(),
+						id.getIndex()-StoredMessageBatch.MAX_MESSAGES_COUNT,
+						id.getIndex(),
+						readAttrs);
+		if (batches == null)
+			return null;
 		
-		if (filter.getDirection() != null)
-		{
-			FilterByField<Direction> df = filter.getDirection();
-			select = FilterUtils.filterToWhere(df.getValue().getLabel(), df.getOperation(), select.whereColumn(DIRECTION));
-		}
-		
-		if (filter.getIndex() != null)
-		{
-			//TODO: not implemented. Probably, this should be not here because first of all we need to find a batch with messages to start filtering by index
-		}
-		
-		if (filter.getTimestampFrom() != null)
-		{
-			select = FilterUtils.timestampFilterToWhere(filter.getTimestampFrom(), 
-					select.whereColumn(FIRST_MESSAGE_DATE),
-					select.whereColumn(FIRST_MESSAGE_TIME));
-		}
-		if (filter.getTimestampTo() != null)
-		{
-			select = FilterUtils.timestampFilterToWhere(filter.getTimestampTo(), 
-					select.whereColumn(LAST_MESSAGE_DATE),
-					select.whereColumn(LAST_MESSAGE_TIME));
-		}
-		
-		if (filter.getLimit() > 0)
-			select = select.limit(filter.getLimit());
-		select = select.allowFiltering();
-		return select;
-	}
-	
-	public static Select prepareSelect(String keyspace, String tableName, UUID instanceId, StoredMessageFilter filter)
-	{
-		Select result = prepareSelect(keyspace, tableName, instanceId);
-		if (filter == null)
-			return result;
-		
-		return applyFilter(result, filter);
+		MessageBatchEntity result = null;
+		for (Iterator<MessageBatchEntity> it = batches.iterator(); it.hasNext(); )  //Getting last entity
+			result = it.next();
+		return result;
 	}
 }

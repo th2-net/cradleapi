@@ -12,41 +12,31 @@ package com.exactpro.cradle.cassandra.iterators;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.UUID;
 
-import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.exactpro.cradle.cassandra.dao.messages.MessageBatchConverter;
-import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
-import com.exactpro.cradle.cassandra.utils.QueryExecutor;
+import com.datastax.oss.driver.api.core.PagingIterable;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 
+/**
+ * Wrapper for {@link PagingIterable}. 
+ * Converts {@link MessageBatchEntity} into {@link StoredMessage} while iterating.
+ * Also applies given filter to exclude unnecessary results for iterator.
+ */
 public class MessagesIteratorAdapter implements Iterable<StoredMessage>
 {
-	private final ResultSet rs;
-	private final MessageBatchConverter converter;
+	private final StoredMessageFilter filter;
+	private final PagingIterable<MessageBatchEntity> entities;
 	
-	public MessagesIteratorAdapter(StoredMessageFilter filter, String keyspace, String messagesTable, 
-			QueryExecutor exec, UUID instanceId, MessageBatchConverter converter) throws IOException
+	public MessagesIteratorAdapter(StoredMessageFilter filter, PagingIterable<MessageBatchEntity> entities) throws IOException
 	{
-		Select select = CassandraMessageUtils.prepareSelect(keyspace, messagesTable, instanceId);
-		this.rs = selectByFilter(select, filter, exec);
-		this.converter = converter;
+		this.filter = filter;
+		this.entities = entities;
 	}
 	
 	@Override
 	public Iterator<StoredMessage> iterator()
 	{
-		return new MessagesIterator(rs.iterator(), converter);
-	}
-	
-	
-	private ResultSet selectByFilter(Select select, StoredMessageFilter filter, QueryExecutor exec) throws IOException
-	{
-		if (filter != null)
-			select = CassandraMessageUtils.applyFilter(select, filter);
-		select = select.allowFiltering();
-		return exec.executeQuery(select.asCql(), false);
+		return new MessagesIterator(entities.iterator(), filter);
 	}
 }
