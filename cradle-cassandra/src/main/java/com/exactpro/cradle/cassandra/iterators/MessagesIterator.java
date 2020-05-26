@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
+import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 
@@ -27,6 +28,7 @@ public class MessagesIterator implements Iterator<StoredMessage>
 	private final Iterator<MessageBatchEntity> entitiesIterator;
 	private final StoredMessageFilter filter;
 	private Iterator<StoredMessage> batchIterator;
+	private final long leftBoundIndex;
 	private long returnedMessages;
 	private StoredMessage nextMessage;
 	
@@ -34,6 +36,16 @@ public class MessagesIterator implements Iterator<StoredMessage>
 	{
 		this.entitiesIterator = entitiesIterator;
 		this.filter = filter;
+		
+		long leftBound = -1;
+		if (filter.getLimit() > 0 && filter.getIndex() != null)
+		{
+			ComparisonOperation op = filter.getIndex().getOperation();
+			//Calculating left bound for case when need to return "previous X messages, i.e. X messages whose index is less than Y"
+			if (op == ComparisonOperation.LESS || op == ComparisonOperation.LESS_OR_EQUALS)
+				leftBound = filter.getIndex().getValue()-filter.getLimit();
+		}
+		leftBoundIndex = leftBound;
 	}
 	
 	
@@ -94,6 +106,9 @@ public class MessagesIterator implements Iterator<StoredMessage>
 	
 	private boolean checkFilter(StoredMessage message)
 	{
+		if (leftBoundIndex > -1 && message.getIndex() < leftBoundIndex)
+			return false;
+		
 		if (filter.getIndex() != null && !filter.getIndex().check(message.getIndex()))
 			return false;
 		if (filter.getTimestampFrom() != null && !filter.getTimestampFrom().check(message.getTimestamp()))
