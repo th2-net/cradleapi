@@ -11,29 +11,95 @@
 package com.exactpro.cradle.cassandra.iterators;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Iterator;
 
-import com.datastax.oss.driver.api.core.cql.Row;
-import com.exactpro.cradle.cassandra.dao.messages.MessageBatchConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
 import com.exactpro.cradle.messages.StoredMessage;
+import com.exactpro.cradle.messages.StoredMessageFilter;
 
-public class MessagesIterator extends EntityIterator<StoredMessage>
+public class MessagesIterator implements Iterator<StoredMessage>
 {
-	private final MessageBatchConverter converter;
+	private static final Logger logger = LoggerFactory.getLogger(MessagesIterator.class);
 	
-	public MessagesIterator(Iterator<Row> rows, MessageBatchConverter converter)
+	private final Iterator<MessageBatchEntity> entitiesIterator;
+	private final StoredMessageFilter filter;
+	private Iterator<StoredMessage> batchIterator;
+	private long returnedMessages;
+	private StoredMessage nextMessage;
+	
+	public MessagesIterator(Iterator<MessageBatchEntity> entitiesIterator, StoredMessageFilter filter)
 	{
-		super(rows, "message");
-		this.converter = converter;
+		this.entitiesIterator = entitiesIterator;
+		this.filter = filter;
 	}
 	
 	
 	@Override
-	protected Collection<StoredMessage> rowToCollection(Row row) throws IOException
+	public boolean hasNext()
 	{
-		MessageBatchEntity entity = converter.asMessageBatchEntity(row);
-		return entity.toStoredMessages();
+		if (filter.getLimit() > 0 && returnedMessages >= filter.getLimit())
+			return false;
+		
+		if (batchIterator != null)
+		{
+			if ((nextMessage = checkNext()) != null)
+				return true;
+			batchIterator = null;
+		}
+		
+		if (!entitiesIterator.hasNext())
+			return false;
+		
+		try
+		{
+			logger.trace("Getting messages from next batch");
+			batchIterator = entitiesIterator.next().toStoredMessages().iterator();
+		}
+		catch (IOException e)
+		{
+			throw new RuntimeException("Error while getting messages from next batch", e);
+		}
+		return hasNext();
+	}
+	
+	@Override
+	public StoredMessage next()
+	{
+		if (nextMessage == null)  //Maybe, hasNext() wasn't called
+		{
+			if (!hasNext())
+				return null;
+		}
+		
+		StoredMessage result = nextMessage;
+		nextMessage = null;
+		returnedMessages++;
+		return result;
+	}
+	
+	
+	private StoredMessage checkNext()
+	{
+		while (batchIterator.hasNext())
+		{
+			StoredMessage msg = batchIterator.next();
+			if (checkFilter(msg))
+				return msg;
+		}
+		return null;
+	}
+	
+	private boolean checkFilter(StoredMessage message)
+	{
+		if (filter.getIndex() != null && !filter.getIndex().check(message.getIndex()))
+			return false;
+		if (filter.getTimestampFrom() != null && !filter.getTimestampFrom().check(message.getTimestamp()))
+			return false;
+		if (filter.getTimestampTo() != null && !filter.getTimestampTo().check(message.getTimestamp()))
+			return false;
+		return true;
 	}
 }

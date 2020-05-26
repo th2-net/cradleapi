@@ -25,13 +25,13 @@ import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
-import com.exactpro.cradle.cassandra.dao.messages.MessageBatchMetadataEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.DetailedTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
 import com.exactpro.cradle.cassandra.iterators.MessagesIteratorAdapter;
 import com.exactpro.cradle.cassandra.iterators.TestEventsIteratorAdapter;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
+import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
@@ -245,8 +245,16 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException
 	{
-		return new MessagesIteratorAdapter(filter, settings.getKeyspace(), settings.getMessagesTableName(), 
-				exec, instanceUuid, dataMapper.messageBatchConverter());
+		MessageBatchOperator op = dataMapper.messageBatchOperator(settings.getKeyspace(), settings.getMessagesTableName());
+		try
+		{
+			PagingIterable<MessageBatchEntity> entities = op.filterMessages(instanceUuid, filter, op, readAttrs);
+			return new MessagesIteratorAdapter(filter, entities);
+		}
+		catch (CradleStorageException e)
+		{
+			throw new IOException("Error while filtering messages", e);
+		}
 	}
 
 	@Override
@@ -304,25 +312,10 @@ public class CassandraCradleStorage extends CradleStorage
 	private StoredMessage readMessage(StoredMessageId id, String tableName) throws IOException
 	{
 		MessageBatchOperator op = dataMapper.messageBatchOperator(settings.getKeyspace(), tableName);
-		PagingIterable<MessageBatchMetadataEntity> batches = op.getMetadata(instanceUuid, 
-						id.getStreamName(), 
-						id.getDirection().getLabel(),
-						id.getIndex()-StoredMessageBatch.MAX_MESSAGES_COUNT,
-						id.getIndex(),
-						readAttrs);
-		if (batches == null)
-			return null;
-		
-		MessageBatchMetadataEntity md = null;
-		for (Iterator<MessageBatchMetadataEntity> it = batches.iterator(); it.hasNext(); )  //Getting last entity
-			md = it.next();
-		if (md == null)
-			return null;
-		
-		MessageBatchEntity entity = op.get(instanceUuid, md.getStreamName(), md.getDirection(), md.getMessageIndex(), readAttrs);
+		MessageBatchEntity entity = CassandraMessageUtils.getMessageBatch(id, op, instanceUuid, readAttrs);
 		if (entity == null)
 			return null;
 		
-		return MessageUtils.bytesToOneMessage(entity.getContent(), md.isCompressed(), id);
+		return MessageUtils.bytesToOneMessage(entity.getContent(), entity.isCompressed(), id);
 	}
 }

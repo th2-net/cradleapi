@@ -18,7 +18,7 @@ package com.exactpro.cradle.filters;
  * @param <V> class of value to filter by
  * @param <R> class of object for next operations
  */
-public class FilterByFieldBuilder<V, R>
+public class FilterByFieldBuilder<V extends Comparable<V>, R>
 {
 	private final R toReturn;
 	private FilterByField<V> filter;
