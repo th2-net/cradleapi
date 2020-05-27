@@ -10,7 +10,6 @@
 
 package com.exactpro.cradle.cassandra.dao.messages;
 
-import java.io.IOException;
 import java.util.UUID;
 import java.util.function.Function;
 

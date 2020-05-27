@@ -38,7 +38,7 @@ public class MessagesIterator implements Iterator<StoredMessage>
 		this.filter = filter;
 		
 		long leftBound = -1;
-		if (filter.getLimit() > 0 && filter.getIndex() != null)
+		if (filter != null && filter.getLimit() > 0 && filter.getIndex() != null)
 		{
 			ComparisonOperation op = filter.getIndex().getOperation();
 			//Calculating left bound for case when need to return "previous X messages, i.e. X messages whose index is less than Y"
@@ -52,7 +52,7 @@ public class MessagesIterator implements Iterator<StoredMessage>
 	@Override
 	public boolean hasNext()
 	{
-		if (filter.getLimit() > 0 && returnedMessages >= filter.getLimit())
+		if (filter != null && filter.getLimit() > 0 && returnedMessages >= filter.getLimit())
 			return false;
 		
 		if (batchIterator != null)
@@ -106,6 +106,9 @@ public class MessagesIterator implements Iterator<StoredMessage>
 	
 	private boolean checkFilter(StoredMessage message)
 	{
+		if (filter == null)
+			return true;
+		
 		if (leftBoundIndex > -1 && message.getIndex() < leftBoundIndex)
 			return false;
 		
