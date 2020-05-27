@@ -13,15 +13,18 @@ package com.exactpro.cradle.messages;
 import java.time.Instant;
 
 import com.exactpro.cradle.Direction;
-import com.exactpro.cradle.filters.FilterByField;
+import com.exactpro.cradle.filters.FilterForAny;
+import com.exactpro.cradle.filters.FilterForEquals;
+import com.exactpro.cradle.filters.FilterForGreater;
+import com.exactpro.cradle.filters.FilterForLess;
 
 public class StoredMessageFilter
 {
-	private FilterByField<String> streamName;
-	private FilterByField<Direction> direction;
-	private FilterByField<Long> index;
-	private FilterByField<Instant> timestampFrom,
-			timestampTo;
+	private FilterForEquals<String> streamName;
+	private FilterForEquals<Direction> direction;
+	private FilterForAny<Long> index;
+	private FilterForGreater<Instant> timestampFrom;
+	private FilterForLess<Instant> timestampTo;
 	private int limit;
 	
 	
@@ -40,56 +43,56 @@ public class StoredMessageFilter
 	}
 	
 	
-	public FilterByField<String> getStreamName()
+	public FilterForEquals<String> getStreamName()
 	{
 		return streamName;
 	}
 	
-	public void setStreamName(FilterByField<String> streamName)
+	public void setStreamName(FilterForEquals<String> streamName)
 	{
 		this.streamName = streamName;
 	}
 	
 	
-	public FilterByField<Direction> getDirection()
+	public FilterForEquals<Direction> getDirection()
 	{
 		return direction;
 	}
 	
-	public void setDirection(FilterByField<Direction> direction)
+	public void setDirection(FilterForEquals<Direction> direction)
 	{
 		this.direction = direction;
 	}
 	
 	
-	public FilterByField<Long> getIndex()
+	public FilterForAny<Long> getIndex()
 	{
 		return index;
 	}
 	
-	public void setIndex(FilterByField<Long> index)
+	public void setIndex(FilterForAny<Long> index)
 	{
 		this.index = index;
 	}
 	
 	
-	public FilterByField<Instant> getTimestampFrom()
+	public FilterForGreater<Instant> getTimestampFrom()
 	{
 		return timestampFrom;
 	}
 	
-	public void setTimestampFrom(FilterByField<Instant> timestampFrom)
+	public void setTimestampFrom(FilterForGreater<Instant> timestampFrom)
 	{
 		this.timestampFrom = timestampFrom;
 	}
 	
 	
-	public FilterByField<Instant> getTimestampTo()
+	public FilterForLess<Instant> getTimestampTo()
 	{
 		return timestampTo;
 	}
 	
-	public void setTimestampTo(FilterByField<Instant> timestampTo)
+	public void setTimestampTo(FilterForLess<Instant> timestampTo)
 	{
 		this.timestampTo = timestampTo;
 	}

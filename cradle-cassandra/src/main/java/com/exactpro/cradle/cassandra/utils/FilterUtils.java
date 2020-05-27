@@ -53,7 +53,6 @@ public class FilterUtils
 		case LESS_OR_EQUALS : return column.isLessThanOrEqualTo(bm);
 		case GREATER : return column.isGreaterThan(bm);
 		case GREATER_OR_EQUALS : return column.isGreaterThanOrEqualTo(bm);
-		case NOT_EQUALS : return column.isNotEqualTo(bm);
 		default : return column.isEqualTo(bm);
 		}
 	}
@@ -74,7 +73,6 @@ public class FilterUtils
 		case LESS_OR_EQUALS : return column.isLessThanOrEqualTo(v);
 		case GREATER : return column.isGreaterThan(v);
 		case GREATER_OR_EQUALS : return column.isGreaterThanOrEqualTo(v);
-		case NOT_EQUALS : return column.isNotEqualTo(v);
 		default : return column.isEqualTo(v);
 		}
 	}

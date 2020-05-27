@@ -10,6 +10,8 @@
 
 package com.exactpro.cradle.cassandra.dao.messages;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -81,17 +83,25 @@ public class MessageBatchQueryProvider
 			select = FilterUtils.filterToWhere(operation, select.whereColumn(MESSAGE_INDEX));
 		}
 		
+		//For both timestamp comparisons overriding operation with GreaterOrEquals/LessOrEquals for date portion to not skip date of timestamp 
+		//when Greater/Less (not GreaterOrEquals/LessOrEquals) is defined for condition timestamp
+		//E.g. in batch first_message_date=2020-05-26, first_message_time=20:23:00
+		//condition timestampFrom>2020-05-26 15:00:00
+		//condition to use will be first_message_date>2020-05-26, first_message_time>15:00:00
+		//Without override of operation for date portion this batch will be skipped
+		//So, override makes the condition the following:
+		//first_message_date>=2020-05-26, first_message_time>15:00:00
 		if (filter.getTimestampFrom() != null)
 		{
 			ComparisonOperation op = filter.getTimestampFrom().getOperation();
-			select = FilterUtils.filterToWhere(op, select.whereColumn(FIRST_MESSAGE_DATE));
+			select = FilterUtils.filterToWhere(ComparisonOperation.GREATER_OR_EQUALS, select.whereColumn(FIRST_MESSAGE_DATE));
 			select = FilterUtils.filterToWhere(op, select.whereColumn(FIRST_MESSAGE_TIME));
 		}
 		
 		if (filter.getTimestampTo() != null)
 		{
 			ComparisonOperation op = filter.getTimestampTo().getOperation();
-			select = FilterUtils.filterToWhere(op, select.whereColumn(LAST_MESSAGE_DATE));
+			select = FilterUtils.filterToWhere(ComparisonOperation.LESS_OR_EQUALS, select.whereColumn(LAST_MESSAGE_DATE));
 			select = FilterUtils.filterToWhere(op, select.whereColumn(LAST_MESSAGE_TIME));
 		}
 		
@@ -147,11 +157,23 @@ public class MessageBatchQueryProvider
 			builder = builder.setLong(MESSAGE_INDEX, batch != null ? batch.getMessageIndex() : filter.getIndex().getValue());
 		}
 		
+		//Both filters for timestamp are adjusted to get more batches than we will get in case of strict comparison.
+		//This is to cover the case when messages that meet condition timestamp are in the middle of the batch and the batch is long in terms of time.
+		//E.g. in batch first_message_time=15:00:00, last_message_time=15:05:00, 
+		//condition timestampFrom>15:01:00
+		//Without condition adjustment we'll skip such batch thus not showing messages that actually met the condition
+		//FIXME: This doesn't guarantee that batches longer than 10 minutes will be not skipped! Anyway, such batches are bad.
 		if (filter.getTimestampFrom() != null)
-			builder = FilterUtils.bindTimestamp(filter.getTimestampFrom().getValue(), builder, FIRST_MESSAGE_DATE, FIRST_MESSAGE_TIME);
+		{
+			Instant ts = filter.getTimestampFrom().getValue();
+			builder = FilterUtils.bindTimestamp(ts.minus(10, ChronoUnit.MINUTES), builder, FIRST_MESSAGE_DATE, FIRST_MESSAGE_TIME);
+		}
 		
 		if (filter.getTimestampTo() != null)
-			builder = FilterUtils.bindTimestamp(filter.getTimestampTo().getValue(), builder, LAST_MESSAGE_DATE, LAST_MESSAGE_TIME);
+		{
+			Instant ts = filter.getTimestampTo().getValue();
+			builder = FilterUtils.bindTimestamp(ts.plus(10, ChronoUnit.MINUTES), builder, LAST_MESSAGE_DATE, LAST_MESSAGE_TIME);
+		}
 		
 		return builder;
 	}

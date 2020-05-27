@@ -10,11 +10,23 @@
 
 package com.exactpro.cradle.filters;
 
-public enum ComparisonOperation
+public class FilterForLessBuilder<V extends Comparable<V>, R> extends FilterByFieldBuilder<V, R>
 {
-	LESS,
-	GREATER,
-	LESS_OR_EQUALS,
-	GREATER_OR_EQUALS,
-	EQUALS;
+	public FilterForLessBuilder(FilterByField<V> filter, R toReturn)
+	{
+		super(filter, toReturn);
+	}
+	
+	
+	public R isLessThan(V value)
+	{
+		setFilter(ComparisonOperation.LESS, value);
+		return toReturn;
+	}
+	
+	public R isLessThanOrEqualTo(V value)
+	{
+		setFilter(ComparisonOperation.LESS_OR_EQUALS, value);
+		return toReturn;
+	}
 }

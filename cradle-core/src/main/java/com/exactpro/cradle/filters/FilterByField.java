@@ -10,20 +10,10 @@
 
 package com.exactpro.cradle.filters;
 
-public class FilterByField<V extends Comparable<V>>
+public abstract class FilterByField<V extends Comparable<V>>
 {
 	private ComparisonOperation operation;
 	private V value;
-	
-	public FilterByField()
-	{
-	}
-	
-	public FilterByField(V value, ComparisonOperation operation)
-	{
-		this.value = value;
-		this.operation = operation;
-	}
 	
 	
 	public ComparisonOperation getOperation()
@@ -31,7 +21,7 @@ public class FilterByField<V extends Comparable<V>>
 		return operation;
 	}
 	
-	public void setOperation(ComparisonOperation operation)
+	protected void setOperation(ComparisonOperation operation)
 	{
 		this.operation = operation;
 	}
@@ -59,7 +49,6 @@ public class FilterByField<V extends Comparable<V>>
 		case LESS_OR_EQUALS : return toCheck.compareTo(value) <= 0;
 		case GREATER : return toCheck.compareTo(value) > 0;
 		case GREATER_OR_EQUALS : return toCheck.compareTo(value) >= 0;
-		case NOT_EQUALS : return !toCheck.equals(value);
 		default : return toCheck.equals(value);
 		}
 	}
