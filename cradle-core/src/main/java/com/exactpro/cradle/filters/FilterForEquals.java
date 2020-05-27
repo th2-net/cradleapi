@@ -10,11 +10,16 @@
 
 package com.exactpro.cradle.filters;
 
-public enum ComparisonOperation
+public class FilterForEquals<V extends Comparable<V>> extends FilterByField<V>
 {
-	LESS,
-	GREATER,
-	LESS_OR_EQUALS,
-	GREATER_OR_EQUALS,
-	EQUALS;
+	public FilterForEquals()
+	{
+		setOperation(ComparisonOperation.EQUALS);
+	}
+	
+	public FilterForEquals(V value)
+	{
+		this();
+		setValue(value);
+	}
 }

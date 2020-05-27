@@ -14,8 +14,15 @@ import java.time.Instant;
 
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.filters.ComparisonOperation;
-import com.exactpro.cradle.filters.FilterByField;
 import com.exactpro.cradle.filters.FilterByFieldBuilder;
+import com.exactpro.cradle.filters.FilterForAny;
+import com.exactpro.cradle.filters.FilterForAnyBuilder;
+import com.exactpro.cradle.filters.FilterForEquals;
+import com.exactpro.cradle.filters.FilterForEqualsBuilder;
+import com.exactpro.cradle.filters.FilterForGreater;
+import com.exactpro.cradle.filters.FilterForGreaterBuilder;
+import com.exactpro.cradle.filters.FilterForLess;
+import com.exactpro.cradle.filters.FilterForLessBuilder;
 
 /**
  * Builder of filter for stored messages.
@@ -25,52 +32,52 @@ public class StoredMessageFilterBuilder
 {
 	private StoredMessageFilter msgFilter;
 	
-	public FilterByFieldBuilder<String, StoredMessageFilterBuilder> streamName()
+	public FilterForEqualsBuilder<String, StoredMessageFilterBuilder> streamName()
 	{
 		initIfNeeded();
-		FilterByField<String> f = new FilterByField<>();
+		FilterForEquals<String> f = new FilterForEquals<>();
 		msgFilter.setStreamName(f);
-		return new FilterByFieldBuilder<String, StoredMessageFilterBuilder>(f, this);
+		return new FilterForEqualsBuilder<String, StoredMessageFilterBuilder>(f, this);
 	}
 	
-	public FilterByFieldBuilder<Direction, StoredMessageFilterBuilder> direction()
+	public FilterForEqualsBuilder<Direction, StoredMessageFilterBuilder> direction()
 	{
 		initIfNeeded();
-		FilterByField<Direction> f = new FilterByField<>();
+		FilterForEquals<Direction> f = new FilterForEquals<>();
 		msgFilter.setDirection(f);
-		return new FilterByFieldBuilder<Direction, StoredMessageFilterBuilder>(f, this);
+		return new FilterForEqualsBuilder<Direction, StoredMessageFilterBuilder>(f, this);
 	}
 	
-	public FilterByFieldBuilder<Long, StoredMessageFilterBuilder> index()
+	public FilterForAnyBuilder<Long, StoredMessageFilterBuilder> index()
 	{
 		initIfNeeded();
-		FilterByField<Long> f = new FilterByField<>();
+		FilterForAny<Long> f = new FilterForAny<>();
 		msgFilter.setIndex(f);
-		return new FilterByFieldBuilder<Long, StoredMessageFilterBuilder>(f, this);
+		return new FilterForAnyBuilder<Long, StoredMessageFilterBuilder>(f, this);
 	}
 	
-	public FilterByFieldBuilder<Instant, StoredMessageFilterBuilder> timestampFrom()
+	public FilterForGreaterBuilder<Instant, StoredMessageFilterBuilder> timestampFrom()
 	{
 		initIfNeeded();
-		FilterByField<Instant> f = new FilterByField<>();
+		FilterForGreater<Instant> f = new FilterForGreater<>();
 		msgFilter.setTimestampFrom(f);
-		return new FilterByFieldBuilder<Instant, StoredMessageFilterBuilder>(f, this);
+		return new FilterForGreaterBuilder<Instant, StoredMessageFilterBuilder>(f, this);
 	}
 	
-	public FilterByFieldBuilder<Instant, StoredMessageFilterBuilder> timestampTo()
+	public FilterForLessBuilder<Instant, StoredMessageFilterBuilder> timestampTo()
 	{
 		initIfNeeded();
-		FilterByField<Instant> f = new FilterByField<>();
+		FilterForLess<Instant> f = new FilterForLess<>();
 		msgFilter.setTimestampTo(f);
-		return new FilterByFieldBuilder<Instant, StoredMessageFilterBuilder>(f, this);
+		return new FilterForLessBuilder<Instant, StoredMessageFilterBuilder>(f, this);
 	}
 	
 	public StoredMessageFilterBuilder next(StoredMessageId fromId, int count)
 	{
 		initIfNeeded();
-		msgFilter.setStreamName(new FilterByField<String>(fromId.getStreamName(), ComparisonOperation.EQUALS));
-		msgFilter.setDirection(new FilterByField<Direction>(fromId.getDirection(), ComparisonOperation.EQUALS));
-		msgFilter.setIndex(new FilterByField<Long>(fromId.getIndex(), ComparisonOperation.GREATER));
+		msgFilter.setStreamName(new FilterForEquals<String>(fromId.getStreamName()));
+		msgFilter.setDirection(new FilterForEquals<Direction>(fromId.getDirection()));
+		msgFilter.setIndex(new FilterForAny<Long>(fromId.getIndex(), ComparisonOperation.GREATER));
 		msgFilter.setLimit(count);
 		return this;
 	}
@@ -78,9 +85,9 @@ public class StoredMessageFilterBuilder
 	public StoredMessageFilterBuilder previous(StoredMessageId fromId, int count)
 	{
 		initIfNeeded();
-		msgFilter.setStreamName(new FilterByField<String>(fromId.getStreamName(), ComparisonOperation.EQUALS));
-		msgFilter.setDirection(new FilterByField<Direction>(fromId.getDirection(), ComparisonOperation.EQUALS));
-		msgFilter.setIndex(new FilterByField<Long>(fromId.getIndex(), ComparisonOperation.LESS));
+		msgFilter.setStreamName(new FilterForEquals<String>(fromId.getStreamName()));
+		msgFilter.setDirection(new FilterForEquals<Direction>(fromId.getDirection()));
+		msgFilter.setIndex(new FilterForAny<Long>(fromId.getIndex(), ComparisonOperation.LESS));
 		msgFilter.setLimit(count);
 		return this;
 	}
