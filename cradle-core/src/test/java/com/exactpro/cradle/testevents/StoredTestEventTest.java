@@ -103,6 +103,18 @@ public class StoredTestEventTest
 		batch.addTestEvent(eventBuilder.id(new StoredTestEventId("4")).parentId(new StoredTestEventId("XXX")).build());
 	}
 	
+	@Test
+	public void referenceToBatch() throws CradleIdException, CradleStorageException
+	{
+		StoredTestEventId parentId = new StoredTestEventId("1");
+		batch.addTestEvent(eventBuilder.id(parentId).build());
+		//Events 2 and 3 are actually children of the batch: 
+		//2 is root event, so it is presumed to be child of the batch
+		//3 references the batch, so it is presumed to be root event
+		batch.addTestEvent(eventBuilder.id(new StoredTestEventId("2")).build());
+		batch.addTestEvent(eventBuilder.id(new StoredTestEventId("3")).parentId(batch.getId()).build());
+	}
+	
 	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Test event cannot reference itself")
 	public void selfReferenceInBatch() throws CradleIdException, CradleStorageException
 	{
@@ -132,6 +144,16 @@ public class StoredTestEventTest
 				.parentId(null)
 				.build());
 		Assert.assertEquals(batch.getRootTestEvents().contains(parentEvent), true, "Root event is listed in roots");
+	}
+	
+	@Test
+	public void referenceToBatchIsRoot() throws CradleStorageException
+	{
+		BatchedStoredTestEvent parentEvent = batch.addTestEvent(eventBuilder
+				.id(new StoredTestEventId("1"))
+				.parentId(batch.getId())
+				.build());
+		Assert.assertEquals(batch.getRootTestEvents().contains(parentEvent), true, "Event that referenced the batch is listed in roots");
 	}
 	
 	@Test
