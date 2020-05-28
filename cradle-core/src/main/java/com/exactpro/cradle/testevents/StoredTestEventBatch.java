@@ -174,7 +174,9 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 		StoredTestEventId parentId = event.getParentId();
 		if (parentId != null)
 		{
-			if (!events.containsKey(parentId))
+			if (parentId.equals(getId()))  //Event references the batch as a parent, so event is actually the root one
+				parentId = null;
+			else if (!events.containsKey(parentId))
 				throw new CradleStorageException("Test event with ID '"+parentId+"' should be stored in this batch to be referenced as a parent");
 		}
 		
