@@ -51,6 +51,7 @@ import static java.lang.Math.min;
 import static java.util.stream.Collectors.toList;
 
 import java.io.*;
+import java.time.Duration;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.function.Function;
@@ -113,9 +114,13 @@ public class CassandraCradleStorage extends CradleStorage
 			
 			instanceUuid = getInstanceId(instanceName);
 			dataMapper = new CassandraDataMapperBuilder(connection.getSession()).build();
-			writeAttrs = builder -> builder.setConsistencyLevel(settings.getWriteConsistencyLevel());
-			readAttrs = builder -> builder.setConsistencyLevel(settings.getReadConsistencyLevel());
-			strictReadAttrs = builder -> builder.setConsistencyLevel(ConsistencyLevel.ALL);
+			Duration timeout = Duration.ofMillis(settings.getTimeout());
+			writeAttrs = builder -> builder.setConsistencyLevel(settings.getWriteConsistencyLevel())
+					.setTimeout(timeout);
+			readAttrs = builder -> builder.setConsistencyLevel(settings.getReadConsistencyLevel())
+					.setTimeout(timeout);
+			strictReadAttrs = builder -> builder.setConsistencyLevel(ConsistencyLevel.ALL)
+					.setTimeout(timeout);
 			
 			testEventsMessagesLinker = new CassandraTestEventsMessagesLinker(exec, 
 					settings.getKeyspace(), settings.getTestEventMsgsLinkTableName(), TEST_EVENT_ID, instanceUuid);
