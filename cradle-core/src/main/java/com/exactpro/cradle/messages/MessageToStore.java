@@ -25,6 +25,7 @@ public class MessageToStore
 	private Direction direction;
 	private long index;
 	private Instant timestamp;
+	private MessageMetadata metadata = null;
 	private byte[] content;
 	
 	public MessageToStore()
@@ -38,6 +39,7 @@ public class MessageToStore
 		this.direction = copyFrom.getDirection();
 		this.index = copyFrom.getIndex();
 		this.timestamp = copyFrom.getTimestamp();
+		this.metadata = copyFrom.getMetadata() != null ? new MessageMetadata(copyFrom.getMetadata()) : null;
 		this.content = copyFrom.getContent();
 	}
 	
@@ -98,6 +100,24 @@ public class MessageToStore
 	}
 	
 	
+	public MessageMetadata getMetadata()
+	{
+		return metadata;
+	}
+	
+	public void setMetadata(MessageMetadata metadata)
+	{
+		this.metadata = metadata;
+	}
+	
+	public void addMetadata(String key, String value)
+	{
+		if (metadata == null)
+			metadata = new MessageMetadata();
+		metadata.add(key, value);
+	}
+	
+	
 	/**
 	 * @return message content
 	 */
@@ -121,6 +141,7 @@ public class MessageToStore
 				.append("direction=").append(direction).append(",").append(CompressionUtils.EOL)
 				.append("index=").append(index).append(",").append(CompressionUtils.EOL)
 				.append("timestamp=").append(timestamp).append(",").append(CompressionUtils.EOL)
+				.append("metadata=").append(metadata).append(",").append(CompressionUtils.EOL)
 				.append("content=").append(Arrays.toString(content)).append(CompressionUtils.EOL)
 				.append("}").toString();
 	}

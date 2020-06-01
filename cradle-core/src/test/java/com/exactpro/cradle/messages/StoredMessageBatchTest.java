@@ -10,6 +10,8 @@
 
 package com.exactpro.cradle.messages;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -21,6 +23,7 @@ import org.testng.annotations.Test;
 
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.MessageUtils;
 
 public class StoredMessageBatchTest
 {
@@ -262,6 +265,23 @@ public class StoredMessageBatchTest
 				.build());
 		
 		Assert.assertNotEquals(batch.getLastTimestamp(), lastTimestamp, "Last timestamp is from last added message");
+	}
+	
+	@Test
+	public void batchSerialization() throws CradleStorageException, IOException
+	{
+		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
+				.streamName(streamName)
+				.direction(direction)
+				.index(0)
+				.timestamp(timestamp)
+				.metadata("md", "some value")
+				.content("Message text".getBytes(StandardCharsets.UTF_8))
+				.build());
+		StoredMessage storedMsg = batch.getFirstMessage();
+		byte[] bytes = MessageUtils.serializeMessages(batch.getMessages());
+		StoredMessage msg = MessageUtils.deserializeMessages(bytes).iterator().next();
+		Assert.assertEquals(msg, storedMsg, "Message should be completely serialized/deserialized");
 	}
 	
 	

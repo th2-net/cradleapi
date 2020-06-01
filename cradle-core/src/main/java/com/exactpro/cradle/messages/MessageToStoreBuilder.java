@@ -67,6 +67,13 @@ public class MessageToStoreBuilder
 		return this;
 	}
 	
+	public MessageToStoreBuilder metadata(String key, String value)
+	{
+		initIfNeeded();
+		msg.addMetadata(key, value);
+		return this;
+	}
+	
 	public MessageToStoreBuilder content(byte[] content)
 	{
 		initIfNeeded();
