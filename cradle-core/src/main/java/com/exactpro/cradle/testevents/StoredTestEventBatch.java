@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
@@ -24,6 +25,7 @@ import com.exactpro.cradle.utils.TestEventUtils;
 /**
  * Holds information about batch of test events stored in Cradle.
  * Events stored in the batch can refer to each other to form a hierarchy. No references to these events are possible outside of the batch and vice versa.
+ * Root events in the batch should reference batch's parent.
  * Batch has limited capacity. If batch is full, events can't be added to it and the batch must be flushed to Cradle
  */
 public class StoredTestEventBatch extends MinimalStoredTestEvent implements StoredTestEvent
@@ -39,9 +41,14 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 	private boolean success;
 	private long storedEventsSize = 0;
 	
-	public StoredTestEventBatch(MinimalTestEventFields batchData) throws CradleStorageException
+	public StoredTestEventBatch(TestEventBatchToStore batchData) throws CradleStorageException
 	{
-		super(batchData);
+		super(batchData.getId() != null ? batchData.getId() : new StoredTestEventId(UUID.randomUUID().toString()),
+				batchData.getName(),
+				batchData.getType(),
+				batchData.getParentId());
+		if (getParentId() == null)
+			throw new CradleStorageException("Batch must have a parent");
 	}
 	
 	
@@ -172,19 +179,26 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 			throw new CradleStorageException("Test event with ID '"+event.getId()+"' is already present in batch");
 		
 		StoredTestEventId parentId = event.getParentId();
-		if (parentId != null)
+		if (parentId == null)
+			throw new CradleStorageException("Event being added to batch must have a parent. "
+					+ "It can be parent of the batch itself or another event already stored in this batch");
+		
+		boolean isRoot;
+		if (parentId.equals(getParentId()))  //Event references batch's parent, so event is actually the root one among events stored in this batch
+			isRoot = true;
+		else if (!events.containsKey(parentId))
 		{
-			if (parentId.equals(getId()))  //Event references the batch as a parent, so event is actually the root one
-				parentId = null;
-			else if (!events.containsKey(parentId))
-				throw new CradleStorageException("Test event with ID '"+parentId+"' should be stored in this batch to be referenced as a parent");
+			throw new CradleStorageException("Test event with ID '"+parentId+"' should be parent of the batch itself or "
+					+ "should be stored in this batch to be referenced as a parent");
 		}
+		else
+			isRoot = false;
 		
 		updateBatchData(event);
 		
 		BatchedStoredTestEvent result = new BatchedStoredTestEvent(event, this);
 		events.put(result.getId(), result);
-		if (parentId != null)
+		if (!isRoot)
 			children.computeIfAbsent(parentId, k -> new ArrayList<>()).add(result);
 		else
 			rootEvents.add(result);

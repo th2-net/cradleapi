@@ -23,7 +23,7 @@ public class TestEventToStore extends MinimalTestEventToStore implements StoredT
 	private byte[] content;
 	
 	
-	public static TestEventToStoreBuilder newTestEventBuilder()
+	public static TestEventToStoreBuilder builder()
 	{
 		return new TestEventToStoreBuilder();
 	}

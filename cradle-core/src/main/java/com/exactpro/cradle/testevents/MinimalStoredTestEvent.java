@@ -19,17 +19,22 @@ public class MinimalStoredTestEvent implements MinimalTestEventFields
 			type;
 	private final StoredTestEventId parentId;
 	
-	public MinimalStoredTestEvent(MinimalTestEventFields event) throws CradleStorageException
+	public MinimalStoredTestEvent(StoredTestEventId id, String name, String type, StoredTestEventId parentId) throws CradleStorageException
 	{
-		this.id = event.getId();
-		this.name = event.getName();
-		this.type = event.getType();
-		this.parentId = event.getParentId();
+		this.id = id;
+		this.name = name;
+		this.type = type;
+		this.parentId = parentId;
 		
 		if (this.id == null)
 			throw new CradleStorageException("Test event ID cannot be null");
 		if (this.id.equals(parentId))
 			throw new CradleStorageException("Test event cannot reference itself");
+	}
+	
+	public MinimalStoredTestEvent(MinimalTestEventFields event) throws CradleStorageException
+	{
+		this(event.getId(), event.getName(), event.getType(), event.getParentId());
 	}
 	
 	

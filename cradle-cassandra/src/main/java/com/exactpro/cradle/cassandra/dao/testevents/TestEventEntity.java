@@ -30,7 +30,7 @@ import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.datastax.oss.driver.api.mapper.annotations.Transient;
 import com.exactpro.cradle.cassandra.CassandraCradleStorage;
-import com.exactpro.cradle.testevents.MinimalTestEventToStoreBuilder;
+import com.exactpro.cradle.testevents.TestEventBatchToStoreBuilder;
 import com.exactpro.cradle.testevents.StoredTestEventWrapper;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEvent;
@@ -253,12 +253,18 @@ public class TestEventEntity
 	@Transient
 	public Instant getStartTimestamp()
 	{
-		return LocalDateTime.of(getStartDate(), getStartTime()).toInstant(CassandraCradleStorage.TIMEZONE_OFFSET);
+		LocalDate sd = getStartDate();
+		LocalTime st = getStartTime();
+		if (sd == null || st == null)
+			return null;
+		return LocalDateTime.of(sd, st).toInstant(CassandraCradleStorage.TIMEZONE_OFFSET);
 	}
 	
 	@Transient
 	public void setStartTimestamp(Instant timestamp)
 	{
+		if (timestamp == null)
+			return;
 		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, CassandraCradleStorage.TIMEZONE_OFFSET);
 		setStartDate(ldt.toLocalDate());
 		setStartTime(ldt.toLocalTime());
@@ -288,12 +294,18 @@ public class TestEventEntity
 	@Transient
 	public Instant getEndTimestamp()
 	{
-		return LocalDateTime.of(getEndDate(), getEndTime()).toInstant(CassandraCradleStorage.TIMEZONE_OFFSET);
+		LocalDate ed = getEndDate();
+		LocalTime et = getEndTime();
+		if (ed == null || et == null)
+			return null;
+		return LocalDateTime.of(ed, et).toInstant(CassandraCradleStorage.TIMEZONE_OFFSET);
 	}
 	
 	@Transient
 	public void setEndTimestamp(Instant timestamp)
 	{
+		if (timestamp == null)
+			return;
 		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, CassandraCradleStorage.TIMEZONE_OFFSET);
 		setEndDate(ldt.toLocalDate());
 		setEndTime(ldt.toLocalTime());
@@ -358,7 +370,7 @@ public class TestEventEntity
 			return null;
 		
 		StoredTestEventId eventId = new StoredTestEventId(id);
-		StoredTestEventBatch result = new StoredTestEventBatch(new MinimalTestEventToStoreBuilder()
+		StoredTestEventBatch result = new StoredTestEventBatch(new TestEventBatchToStoreBuilder()
 				.id(eventId)
 				.name(name)
 				.type(type)
