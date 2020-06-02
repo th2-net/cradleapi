@@ -15,6 +15,7 @@ import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.TestEventToStore;
 
 public class TestEventUtils
 {
@@ -71,7 +72,22 @@ public class TestEventUtils
 			{
 				byte[] teBytes = readNextTestEventBytes(dis);
 				BatchedStoredTestEvent tempTe = deserializeTestEvent(teBytes);
-				StoredTestEventBatch.addTestEvent(tempTe, batch);
+				if (tempTe.getParentId() == null)  //Workaround to fix events stored before commit f71b224e6f4dc0c8c99512de6a8f2034a1c3badc. TODO: remove it in future
+				{
+					TestEventToStore te = TestEventToStore.builder()
+							.id(tempTe.getId())
+							.name(tempTe.getName())
+							.type(tempTe.getType())
+							.parentId(batch.getParentId())
+							.startTimestamp(tempTe.getStartTimestamp())
+							.endTimestamp(tempTe.getEndTimestamp())
+							.success(tempTe.isSuccess())
+							.content(tempTe.getContent())
+							.build();
+					StoredTestEventBatch.addTestEvent(te, batch);
+				}
+				else
+					StoredTestEventBatch.addTestEvent(tempTe, batch);
 			}
 		}
 	}
