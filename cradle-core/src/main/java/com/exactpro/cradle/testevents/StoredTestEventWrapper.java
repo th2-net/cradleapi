@@ -20,7 +20,7 @@ import java.time.Instant;
  */
 public class StoredTestEventWrapper
 {
-	//Wraps StoredTestEventData and not extends it to not add isSingle(), isBatch(), etc. to children of StoredTestEventData, e.g. SingleStoredTestEvent
+	//Wraps StoredTestEventData and not extends it to not add isSingle(), isBatch(), etc. to children of StoredTestEvent, e.g. StoredTestEventSingle
 	private final StoredTestEvent eventData;  
 	
 	public StoredTestEventWrapper(StoredTestEvent eventData)

@@ -21,12 +21,6 @@ public class MinimalTestEventToStore implements MinimalTestEventFields
 	private StoredTestEventId parentId;
 	
 	
-	public static MinimalTestEventToStoreBuilder newMinimalTestEventBuilder()
-	{
-		return new MinimalTestEventToStoreBuilder();
-	}
-	
-	
 	@Override
 	public StoredTestEventId getId()
 	{

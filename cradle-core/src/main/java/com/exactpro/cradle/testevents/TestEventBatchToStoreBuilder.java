@@ -10,22 +10,24 @@
 
 package com.exactpro.cradle.testevents;
 
+import java.util.UUID;
+
 /**
- * Builder for MinimalTestEventToStore object. After calling {@link #build()} method, the builder can be reused to build new test event
+ * Builder for {@link TestEventBatchToStore} object. After calling {@link #build()} method, the builder can be reused to build new test event
  */
-public class MinimalTestEventToStoreBuilder
+public class TestEventBatchToStoreBuilder
 {
-	private MinimalTestEventToStore event;
+	private TestEventBatchToStore event;
 	
-	public MinimalTestEventToStoreBuilder()
+	public TestEventBatchToStoreBuilder()
 	{
 		event = createTestEventToStore();
 	}
 	
 	
-	protected MinimalTestEventToStore createTestEventToStore()
+	protected TestEventBatchToStore createTestEventToStore()
 	{
-		return new MinimalTestEventToStore();
+		return new TestEventBatchToStore();
 	}
 	
 	private void initIfNeeded()
@@ -35,28 +37,35 @@ public class MinimalTestEventToStoreBuilder
 	}
 	
 	
-	public MinimalTestEventToStoreBuilder id(StoredTestEventId id)
+	public TestEventBatchToStoreBuilder id(StoredTestEventId id)
 	{
 		initIfNeeded();
 		event.setId(id);
 		return this;
 	}
 	
-	public MinimalTestEventToStoreBuilder name(String name)
+	public TestEventBatchToStoreBuilder idRandom()
+	{
+		initIfNeeded();
+		event.setId(new StoredTestEventId(UUID.randomUUID().toString()));
+		return this;
+	}
+	
+	public TestEventBatchToStoreBuilder name(String name)
 	{
 		initIfNeeded();
 		event.setName(name);
 		return this;
 	}
 	
-	public MinimalTestEventToStoreBuilder type(String type)
+	public TestEventBatchToStoreBuilder type(String type)
 	{
 		initIfNeeded();
 		event.setType(type);
 		return this;
 	}
 	
-	public MinimalTestEventToStoreBuilder parentId(StoredTestEventId parentId)
+	public TestEventBatchToStoreBuilder parentId(StoredTestEventId parentId)
 	{
 		initIfNeeded();
 		event.setParentId(parentId);
@@ -64,10 +73,10 @@ public class MinimalTestEventToStoreBuilder
 	}
 	
 	
-	public MinimalTestEventToStore build()
+	public TestEventBatchToStore build()
 	{
 		initIfNeeded();
-		MinimalTestEventToStore result = event;
+		TestEventBatchToStore result = event;
 		event = null;
 		return result;
 	}

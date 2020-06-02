@@ -13,7 +13,7 @@ package com.exactpro.cradle.testevents;
 import java.time.Instant;
 
 /**
- * Builder for TestEventToStore object. After calling {@link #build()} method, the builder can be reused to build new test event
+ * Builder for {@link TestEventToStore} object. After calling {@link #build()} method, the builder can be reused to build new test event
  */
 public class TestEventToStoreBuilder
 {

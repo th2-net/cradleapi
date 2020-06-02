@@ -29,7 +29,7 @@ public interface StoredTestEvent extends MinimalTestEventFields
 		return new StoredTestEventSingle(event);
 	}
 	
-	public static StoredTestEventBatch newStoredTestEventBatch(MinimalTestEventToStore batchData) throws CradleStorageException
+	public static StoredTestEventBatch newStoredTestEventBatch(TestEventBatchToStore batchData) throws CradleStorageException
 	{
 		return new StoredTestEventBatch(batchData);
 	}
