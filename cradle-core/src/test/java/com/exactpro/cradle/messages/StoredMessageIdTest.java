@@ -22,20 +22,24 @@ import static com.exactpro.cradle.messages.StoredMessageBatchId.*;
 
 public class StoredMessageIdTest
 {
-	private String streamName;
+	private String streamName,
+			streamNameWithColon;
 	private Direction direction;
 	private long index,
 			messageIndex;
-	private String stringId;
+	private String stringId,
+			stringIdWithColon;
 	
 	@BeforeClass
 	public void prepare()
 	{
 		streamName = "Stream1";
+		streamNameWithColon = "10.20.30.40:8080-10:20:30:42:9000";
 		direction = Direction.FIRST;
 		index = 100;
 		messageIndex = index+3;
 		stringId = streamName+IDS_DELIMITER+direction.getLabel()+IDS_DELIMITER+messageIndex;
+		stringIdWithColon = streamNameWithColon+IDS_DELIMITER+direction.getLabel()+IDS_DELIMITER+messageIndex;
 	}
 	
 	@DataProvider(name = "ids")
@@ -72,11 +76,26 @@ public class StoredMessageIdTest
 		Assert.assertEquals(fromString, id);
 	}
 	
+	@Test
+	public void idFromStringWithColon() throws CradleIdException
+	{
+		StoredMessageId id = new StoredMessageId(streamNameWithColon, direction, messageIndex),
+				fromString = StoredMessageId.fromString(stringIdWithColon);
+		Assert.assertEquals(fromString, id);
+	}
+	
 	@Test(dataProvider = "ids",	
 			expectedExceptions = {CradleIdException.class})
 	public void idFromStringChecks(String s) throws CradleIdException
 	{
 		StoredMessageId.fromString(s);
+	}
+	
+	@Test
+	public void correctStreamName() throws CradleIdException
+	{
+		StoredMessageId id = StoredMessageId.fromString(stringIdWithColon);
+		Assert.assertEquals(id.getStreamName(), streamNameWithColon);
 	}
 	
 	@Test
