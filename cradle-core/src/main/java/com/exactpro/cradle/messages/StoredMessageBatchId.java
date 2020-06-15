@@ -39,25 +39,14 @@ public class StoredMessageBatchId implements Serializable
 	
 	public static StoredMessageBatchId fromString(String id) throws CradleIdException
 	{
-		String[] parts = id.split(IDS_DELIMITER);
+		String[] parts = StoredMessageIdUtils.splitParts(id);
 		if (parts.length < 3)
 			throw new CradleIdException("Batch ID ("+id+") should contain stream name, direction and message index delimited with '"+IDS_DELIMITER+"'");
 		
-		long index;
-		try
-		{
-			index = Long.parseLong(parts[2]);
-		}
-		catch (NumberFormatException e)
-		{
-			throw new CradleIdException("Invalid message index ("+parts[2]+") in batch ID '"+id+"'");
-		}
-		
-		Direction direction = Direction.byLabel(parts[1]);
-		if (direction == null)
-			throw new CradleIdException("Invalid direction '"+parts[1]+"'");
-		
-		return new StoredMessageBatchId(parts[0], direction, index);
+		long index = StoredMessageIdUtils.getIndex(parts);
+		Direction direction = StoredMessageIdUtils.getDirection(parts);
+		String streamName = StoredMessageIdUtils.getStreamName(parts);
+		return new StoredMessageBatchId(streamName, direction, index);
 	}
 	
 	

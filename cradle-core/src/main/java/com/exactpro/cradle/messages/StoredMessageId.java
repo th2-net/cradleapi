@@ -38,25 +38,14 @@ public class StoredMessageId implements Serializable
 	
 	public static StoredMessageId fromString(String id) throws CradleIdException
 	{
-		String[] parts = id.split(StoredMessageBatchId.IDS_DELIMITER);
+		String[] parts = StoredMessageIdUtils.splitParts(id);
 		if (parts.length < 3)
 			throw new CradleIdException("Message ID ("+id+") should contain stream name, direction and message index delimited with '"+StoredMessageBatchId.IDS_DELIMITER+"'");
 		
-		long index;
-		try
-		{
-			index = Long.parseLong(parts[2]);
-		}
-		catch (NumberFormatException e)
-		{
-			throw new CradleIdException("Invalid message index ("+parts[2]+") in ID '"+id+"'");
-		}
-		
-		Direction direction = Direction.byLabel(parts[1]);
-		if (direction == null)
-			throw new CradleIdException("Invalid direction '"+parts[1]+"'");
-		
-		return new StoredMessageId(parts[0], direction, index);
+		long index = StoredMessageIdUtils.getIndex(parts);
+		Direction direction = StoredMessageIdUtils.getDirection(parts);
+		String streamName = StoredMessageIdUtils.getStreamName(parts);
+		return new StoredMessageId(streamName, direction, index);
 	}
 	
 	
