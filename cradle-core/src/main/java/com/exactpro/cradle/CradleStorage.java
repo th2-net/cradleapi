@@ -66,7 +66,6 @@ public abstract class CradleStorage
 	protected abstract StoredMessage doGetProcessedMessage(StoredMessageId id) throws IOException;
 	protected abstract long doGetLastMessageIndex(String streamName, Direction direction) throws IOException;
 	protected abstract StoredMessageId doGetFirstMessageId(Instant seconds, String streamName, Direction direction) throws IOException;
-	protected abstract Iterable<StoredMessageId> doGetFirstMessageIds(Instant seconds) throws IOException;
 	protected abstract StoredTestEventWrapper doGetTestEvent(StoredTestEventId id) throws IOException;
 	
 	
@@ -242,21 +241,6 @@ public abstract class CradleStorage
 		logger.debug("Getting ID of first message appeared on {} for stream '{}' and direction '{}'", seconds, streamName, direction.getLabel());
 		StoredMessageId result = doGetFirstMessageId(seconds, streamName, direction);
 		logger.debug("First message ID appeared on {} for stream '{}' and direction '{}' got", seconds, streamName, direction.getLabel());
-		return result;
-	}
-	
-	/**
-	 * Retrieves IDs of first messages (by stream and direction) appeared in given second as measured from Epoch start
-	 * @param seconds number of seconds passed since Epoch start
-	 * @return iterable object to enumerate IDs of first messages appeared in given second
-	 * @throws IOException if data retrieval failed
-	 */
-	public final Iterable<StoredMessageId> getFirstMessageIds(Instant seconds) throws IOException
-	{
-		seconds = Instant.ofEpochSecond(seconds.getEpochSecond());  //Cutting instant to have only seconds since Epoch
-		logger.debug("Getting IDs of first messages appeared on {}", seconds);
-		Iterable<StoredMessageId> result = doGetFirstMessageIds(seconds);
-		logger.debug("IDs of first messages appeared on {} got", seconds);
 		return result;
 	}
 	

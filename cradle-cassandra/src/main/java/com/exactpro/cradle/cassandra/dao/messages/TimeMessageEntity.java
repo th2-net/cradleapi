@@ -53,15 +53,15 @@ public class TimeMessageEntity
 	@CqlName(STORED_TIMESTAMP)
 	private Instant storedTimestamp;
 	
-	@ClusteringColumn(0)
+	@PartitionKey(2)
 	@CqlName(STREAM_NAME)
 	private String streamName;
 	
-	@ClusteringColumn(1)
+	@ClusteringColumn(0)
 	@CqlName(DIRECTION)
 	private String direction;
 	
-	@ClusteringColumn(2)
+	@ClusteringColumn(1)
 	@CqlName(MESSAGE_INDEX)
 	private long messageIndex;
 	

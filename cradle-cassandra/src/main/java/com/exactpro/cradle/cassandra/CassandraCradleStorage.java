@@ -38,7 +38,6 @@ import com.exactpro.cradle.cassandra.dao.testevents.DetailedTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
 import com.exactpro.cradle.cassandra.iterators.MessagesIteratorAdapter;
 import com.exactpro.cradle.cassandra.iterators.TestEventsIteratorAdapter;
-import com.exactpro.cradle.cassandra.iterators.TimeMessagesIteratorAdapter;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
@@ -247,14 +246,6 @@ public class CassandraCradleStorage extends CradleStorage
 		TimeMessageEntity result = getTimeMessageOperator()
 				.getFirstMessage(instanceUuid, seconds, streamName, direction.getLabel(), readAttrs);
 		return result != null ? result.createMessageId() : null;
-	}
-	
-	@Override
-	protected Iterable<StoredMessageId> doGetFirstMessageIds(Instant seconds) throws IOException
-	{
-		PagingIterable<TimeMessageEntity> entities = getTimeMessageOperator()
-				.getFirstMessages(instanceUuid, seconds, readAttrs);
-		return new TimeMessagesIteratorAdapter(entities);
 	}
 	
 	@Override
