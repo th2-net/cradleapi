@@ -32,6 +32,7 @@ import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
+import com.exactpro.cradle.cassandra.dao.messages.StreamEntity;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageEntity;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.DetailedTestEventEntity;
@@ -301,6 +302,20 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		return new TestEventsIteratorAdapter(dataMapper.testEventOperator(settings.getKeyspace(), settings.getTestEventsTableName())
 				.getChildren(instanceUuid, parentId.toString(), readAttrs));
+	}
+	
+	
+	@Override
+	protected Collection<String> doGetStreams() throws IOException
+	{
+		List<String> result = new ArrayList<>();
+		for (StreamEntity entity : getMessageBatchOperator().getStreams(readAttrs))
+		{
+			if (instanceUuid.equals(entity.getInstanceId()))
+				result.add(entity.getStreamName());
+		}
+		result.sort(null);
+		return result;
 	}
 	
 	

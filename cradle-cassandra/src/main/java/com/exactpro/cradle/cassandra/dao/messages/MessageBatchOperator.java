@@ -63,6 +63,9 @@ public interface MessageBatchOperator
 	PagingIterable<MessageBatchEntity> filterMessages(UUID instanceId, StoredMessageFilter filter, MessageBatchOperator operator,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes) throws CradleStorageException;
 	
+	@Query("SELECT DISTINCT "+INSTANCE_ID+", "+STREAM_NAME+" from ${qualifiedTableId}")
+	PagingIterable<StreamEntity> getStreams(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
 	@Insert
 	DetailedMessageBatchEntity writeMessageBatch(DetailedMessageBatchEntity message, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

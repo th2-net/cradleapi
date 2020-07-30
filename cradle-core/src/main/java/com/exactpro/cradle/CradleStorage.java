@@ -67,6 +67,7 @@ public abstract class CradleStorage
 	protected abstract long doGetLastMessageIndex(String streamName, Direction direction) throws IOException;
 	protected abstract StoredMessageId doGetFirstMessageId(Instant seconds, String streamName, Direction direction) throws IOException;
 	protected abstract StoredTestEventWrapper doGetTestEvent(StoredTestEventId id) throws IOException;
+	protected abstract Collection<String> doGetStreams() throws IOException;
 	
 	
 	/**
@@ -298,6 +299,20 @@ public abstract class CradleStorage
 		logger.debug("Getting children test events of {}", parentId);
 		Iterable<StoredTestEventWrapper> result = doGetTestEvents(parentId);
 		logger.debug("Prepared iterator for children test events of {}", parentId);
+		return result;
+	}
+	
+	
+	/**
+	 * Obtains list of streams whose messages are currently saved in storage
+	 * @return collection of stream names
+	 * @throws IOException if data retrieval failed
+	 */
+	public final Collection<String> getStreams() throws IOException
+	{
+		logger.debug("Getting list of streams");
+		Collection<String> result = doGetStreams();
+		logger.debug("List of streams got");
 		return result;
 	}
 	
