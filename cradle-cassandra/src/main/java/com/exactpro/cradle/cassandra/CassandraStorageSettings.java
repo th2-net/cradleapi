@@ -1,12 +1,18 @@
-/******************************************************************************
- * Copyright (c) 2009-2020, Exactpro Systems LLC
- * www.exactpro.com
- * Build Software to Test Software
+/*
+ * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
  *
- * All rights reserved.
- * This is unpublished, licensed software, confidential and proprietary 
- * information which is the property of Exactpro Systems LLC or its licensors.
- ******************************************************************************/
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package com.exactpro.cradle.cassandra;
 
@@ -21,6 +27,7 @@ public class CassandraStorageSettings
 			INSTANCES_TABLE_DEFAULT_NAME = "instances",
 			MESSAGES_TABLE_DEFAULT_NAME = "messages",
 			PROCESSED_MESSAGES_TABLE_DEFAULT_NAME = "processed_messages",
+			TIME_MESSAGES_TABLE_DEFAULT_NAME = "time_messages",
 			TEST_EVENTS_TABLE_DEFAULT_NAME = "test_events",
 			TEST_EVENTS_MSGS_LINK_TABLE_DEFAULT_NAME = "test_events_messages_link";
 	public static final long DEFAULT_TIMEOUT = 5000;
@@ -31,6 +38,7 @@ public class CassandraStorageSettings
 
 	private final String keyspace;
 	private String messagesTableName,
+			timeMessagesTableName,
 			processedMessagesTableName,
 			testEventsTableName,
 			testEventMsgsLinkTableName;
@@ -45,6 +53,7 @@ public class CassandraStorageSettings
 	{
 		this.messagesTableName = MESSAGES_TABLE_DEFAULT_NAME;
 		this.processedMessagesTableName = PROCESSED_MESSAGES_TABLE_DEFAULT_NAME;
+		this.timeMessagesTableName = TIME_MESSAGES_TABLE_DEFAULT_NAME;
 		this.testEventsTableName = TEST_EVENTS_TABLE_DEFAULT_NAME;
 		this.testEventMsgsLinkTableName = TEST_EVENTS_MSGS_LINK_TABLE_DEFAULT_NAME;
 		this.keyspace = keyspace;
@@ -100,6 +109,17 @@ public class CassandraStorageSettings
 	public void setProcessedMessagesTableName(String processedMessagesTableName)
 	{
 		this.processedMessagesTableName = processedMessagesTableName;
+	}
+	
+	
+	public String getTimeMessagesTableName()
+	{
+		return timeMessagesTableName;
+	}
+	
+	public void setTimeMessagesTableName(String timeMessagesTableName)
+	{
+		this.timeMessagesTableName = timeMessagesTableName;
 	}
 	
 	
