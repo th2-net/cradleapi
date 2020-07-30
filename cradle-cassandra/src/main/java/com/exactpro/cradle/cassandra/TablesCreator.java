@@ -95,10 +95,9 @@ public class TablesCreator
 		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getTimeMessagesTableName()).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
 				.withPartitionKey(STORED_TIMESTAMP, DataTypes.TIMESTAMP)
-				.withClusteringColumn(STREAM_NAME, DataTypes.TEXT)
+				.withPartitionKey(STREAM_NAME, DataTypes.TEXT)
 				.withClusteringColumn(DIRECTION, DataTypes.TEXT)
 				.withClusteringColumn(MESSAGE_INDEX, DataTypes.BIGINT)
-				.withClusteringOrder(STREAM_NAME, ClusteringOrder.ASC)
 				.withClusteringOrder(DIRECTION, ClusteringOrder.ASC)
 				.withClusteringOrder(MESSAGE_INDEX, ClusteringOrder.ASC);
 		

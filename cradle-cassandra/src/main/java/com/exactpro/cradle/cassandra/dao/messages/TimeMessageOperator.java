@@ -33,10 +33,6 @@ public interface TimeMessageOperator
 	TimeMessageEntity getFirstMessage(UUID instanceId, Instant storedTimestamp, String streamName, String direction, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Select
-	PagingIterable<TimeMessageEntity> getFirstMessages(UUID instanceId, Instant storedTimestamp,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
 	@Insert
 	TimeMessageEntity writeMessage(TimeMessageEntity timeMessage, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }
