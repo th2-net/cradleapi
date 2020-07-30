@@ -1,12 +1,18 @@
-/******************************************************************************
- * Copyright (c) 2009-2020, Exactpro Systems LLC
- * www.exactpro.com
- * Build Software to Test Software
+/*
+ * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
  *
- * All rights reserved.
- * This is unpublished, licensed software, confidential and proprietary 
- * information which is the property of Exactpro Systems LLC or its licensors.
- ******************************************************************************/
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package com.exactpro.cradle.cassandra;
 
@@ -26,10 +32,13 @@ import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
+import com.exactpro.cradle.cassandra.dao.messages.TimeMessageEntity;
+import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.DetailedTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
 import com.exactpro.cradle.cassandra.iterators.MessagesIteratorAdapter;
 import com.exactpro.cradle.cassandra.iterators.TestEventsIteratorAdapter;
+import com.exactpro.cradle.cassandra.iterators.TimeMessagesIteratorAdapter;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
@@ -52,6 +61,7 @@ import static java.util.stream.Collectors.toList;
 
 import java.io.*;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.function.Function;
@@ -157,6 +167,16 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
+	protected void doStoreTimeMessage(StoredMessage message) throws IOException
+	{
+		TimeMessageEntity timeEntity = new TimeMessageEntity(message, instanceUuid);
+		
+		TimeMessageOperator op = getTimeMessageOperator();
+		logger.trace("Executing time/message storing query");
+		op.writeMessage(timeEntity, writeAttrs);
+	}
+	
+	@Override
 	protected void doStoreProcessedMessageBatch(StoredMessageBatch batch) throws IOException
 	{
 		logger.debug("Storing data of processed messages batch {}", batch.getId());
@@ -217,8 +237,24 @@ public class CassandraCradleStorage extends CradleStorage
 	protected long doGetLastMessageIndex(String streamName, Direction direction) throws IOException
 	{
 		//Need to query all nodes in all datacenters to get index that is the latest for sure. so using strictReadAttrs
-		return dataMapper.messageBatchOperator(settings.getKeyspace(), settings.getMessagesTableName())
+		return getMessageBatchOperator()
 				.getLastIndex(instanceUuid, streamName, direction.getLabel(), strictReadAttrs);
+	}
+	
+	@Override
+	protected StoredMessageId doGetFirstMessageId(Instant seconds, String streamName, Direction direction) throws IOException
+	{
+		TimeMessageEntity result = getTimeMessageOperator()
+				.getFirstMessage(instanceUuid, seconds, streamName, direction.getLabel(), readAttrs);
+		return result != null ? result.createMessageId() : null;
+	}
+	
+	@Override
+	protected Iterable<StoredMessageId> doGetFirstMessageIds(Instant seconds) throws IOException
+	{
+		PagingIterable<TimeMessageEntity> entities = getTimeMessageOperator()
+				.getFirstMessages(instanceUuid, seconds, readAttrs);
+		return new TimeMessagesIteratorAdapter(entities);
 	}
 	
 	@Override
@@ -250,7 +286,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException
 	{
-		MessageBatchOperator op = dataMapper.messageBatchOperator(settings.getKeyspace(), settings.getMessagesTableName());
+		MessageBatchOperator op = getMessageBatchOperator();
 		try
 		{
 			PagingIterable<MessageBatchEntity> entities = op.filterMessages(instanceUuid, filter, op, readAttrs);
@@ -306,12 +342,23 @@ public class CassandraCradleStorage extends CradleStorage
 		return id;
 	}
 	
+	
+	private MessageBatchOperator getMessageBatchOperator()
+	{
+		return dataMapper.messageBatchOperator(settings.getKeyspace(), settings.getMessagesTableName());
+	}
+	
+	private TimeMessageOperator getTimeMessageOperator()
+	{
+		return dataMapper.timeMessageOperator(settings.getKeyspace(), settings.getTimeMessagesTableName());
+	}
+	
 	private void writeMessage(StoredMessageBatch batch, String tableName) throws IOException
 	{
 		DetailedMessageBatchEntity entity = new DetailedMessageBatchEntity(batch, instanceUuid);
 		logger.trace("Executing message batch storing query");
 		dataMapper.messageBatchOperator(settings.getKeyspace(), tableName)
-				.write(entity, writeAttrs);
+				.writeMessageBatch(entity, writeAttrs);
 	}
 	
 	private StoredMessage readMessage(StoredMessageId id, String tableName) throws IOException

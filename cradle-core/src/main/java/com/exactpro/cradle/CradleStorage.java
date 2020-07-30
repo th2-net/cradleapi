@@ -1,16 +1,23 @@
-/******************************************************************************
- * Copyright (c) 2009-2020, Exactpro Systems LLC
- * www.exactpro.com
- * Build Software to Test Software
+/*
+ * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
  *
- * All rights reserved.
- * This is unpublished, licensed software, confidential and proprietary 
- * information which is the property of Exactpro Systems LLC or its licensors.
- ******************************************************************************/
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package com.exactpro.cradle;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
 
 import org.slf4j.Logger;
@@ -26,6 +33,7 @@ import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
+import com.exactpro.cradle.utils.TimeUtils;
 
 /**
  * Storage which holds information about all data sent or verified and generated reports.
@@ -50,12 +58,15 @@ public abstract class CradleStorage
 	
 	
 	protected abstract void doStoreMessageBatch(StoredMessageBatch batch) throws IOException;
+	protected abstract void doStoreTimeMessage(StoredMessage message) throws IOException;
 	protected abstract void doStoreProcessedMessageBatch(StoredMessageBatch batch) throws IOException;
 	protected abstract void doStoreTestEvent(StoredTestEvent event) throws IOException;
 	protected abstract void doStoreTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messagesIds) throws IOException;
 	protected abstract StoredMessage doGetMessage(StoredMessageId id) throws IOException;
 	protected abstract StoredMessage doGetProcessedMessage(StoredMessageId id) throws IOException;
 	protected abstract long doGetLastMessageIndex(String streamName, Direction direction) throws IOException;
+	protected abstract StoredMessageId doGetFirstMessageId(Instant seconds, String streamName, Direction direction) throws IOException;
+	protected abstract Iterable<StoredMessageId> doGetFirstMessageIds(Instant seconds) throws IOException;
 	protected abstract StoredTestEventWrapper doGetTestEvent(StoredTestEventId id) throws IOException;
 	
 	
@@ -122,6 +133,7 @@ public abstract class CradleStorage
 	{
 		logger.debug("Storing message batch {}", batch.getId());
 		doStoreMessageBatch(batch);
+		storeTimeMessages(batch);
 		logger.debug("Message batch {} has been stored", batch.getId());
 	}
 	
@@ -216,6 +228,38 @@ public abstract class CradleStorage
 		return result;
 	}
 	
+	/**
+	 * Retrieves ID of first message appeared in given second as measured from Epoch start
+	 * @param seconds number of seconds passed since Epoch start
+	 * @param streamName to which the message should be related
+	 * @param direction of message
+	 * @return ID of first message stored in given second
+	 * @throws IOException if data retrieval failed
+	 */
+	public final StoredMessageId getFirstMessageId(Instant seconds, String streamName, Direction direction) throws IOException
+	{
+		seconds = Instant.ofEpochSecond(seconds.getEpochSecond());  //Cutting instant to have only seconds since Epoch
+		logger.debug("Getting ID of first message appeared on {} for stream '{}' and direction '{}'", seconds, streamName, direction.getLabel());
+		StoredMessageId result = doGetFirstMessageId(seconds, streamName, direction);
+		logger.debug("First message ID appeared on {} for stream '{}' and direction '{}' got", seconds, streamName, direction.getLabel());
+		return result;
+	}
+	
+	/**
+	 * Retrieves IDs of first messages (by stream and direction) appeared in given second as measured from Epoch start
+	 * @param seconds number of seconds passed since Epoch start
+	 * @return iterable object to enumerate IDs of first messages appeared in given second
+	 * @throws IOException if data retrieval failed
+	 */
+	public final Iterable<StoredMessageId> getFirstMessageIds(Instant seconds) throws IOException
+	{
+		seconds = Instant.ofEpochSecond(seconds.getEpochSecond());  //Cutting instant to have only seconds since Epoch
+		logger.debug("Getting IDs of first messages appeared on {}", seconds);
+		Iterable<StoredMessageId> result = doGetFirstMessageIds(seconds);
+		logger.debug("IDs of first messages appeared on {} got", seconds);
+		return result;
+	}
+	
 	
 	/**
 	 * Retrieves test event data stored under given ID
@@ -271,5 +315,20 @@ public abstract class CradleStorage
 		Iterable<StoredTestEventWrapper> result = doGetTestEvents(parentId);
 		logger.debug("Prepared iterator for children test events of {}", parentId);
 		return result;
+	}
+	
+	
+	protected void storeTimeMessages(StoredMessageBatch batch) throws IOException
+	{
+		Instant ts = null;
+		for (StoredMessage msg : batch.getMessages())
+		{
+			Instant msgSeconds = TimeUtils.cutNanos(msg.getTimestamp());
+			if (!msgSeconds.equals(ts))
+			{
+				ts = msgSeconds;
+				doStoreTimeMessage(msg);
+			}
+		}
 	}
 }

@@ -1,17 +1,26 @@
-/******************************************************************************
- * Copyright (c) 2009-2020, Exactpro Systems LLC
- * www.exactpro.com
- * Build Software to Test Software
+/*
+ * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
  *
- * All rights reserved.
- * This is unpublished, licensed software, confidential and proprietary 
- * information which is the property of Exactpro Systems LLC or its licensors.
- ******************************************************************************/
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package com.exactpro.cradle.cassandra;
 
 import java.io.IOException;
 import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
@@ -26,7 +35,9 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 public class TablesCreator
 {
-	private final QueryExecutor exec;;
+	private static final Logger logger = LoggerFactory.getLogger(TablesCreator.class);
+	
+	private final QueryExecutor exec;
 	private final CassandraStorageSettings settings;
 	
 	public TablesCreator(QueryExecutor exec, CassandraStorageSettings settings)
@@ -41,7 +52,7 @@ public class TablesCreator
 		createInstancesTable();
 		createMessagesTable();
 		createProcessedMessagesTable();
-		
+		createTimeMessagesTable();
 		createTestEventsTable();
 		createTestEventMessagesLinkTable();
 	}
@@ -55,6 +66,7 @@ public class TablesCreator
 					? SchemaBuilder.createKeyspace(settings.getKeyspace()).withNetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap()) 
 					: SchemaBuilder.createKeyspace(settings.getKeyspace()).withSimpleStrategy(settings.getKeyspaceReplicationFactor());
 			exec.getSession().execute(createKs.build());
+			logger.info("Keyspace '{}' created", settings.getKeyspace());
 		}
 	}
 
@@ -64,7 +76,8 @@ public class TablesCreator
 				.withPartitionKey(NAME, DataTypes.TEXT)  //Name is a key for faster ID obtaining by name
 				.withColumn(ID, DataTypes.UUID);
 		
-		exec.executeQuery(create.asCql(), true);
+		if (exec.executeQuery(create.asCql(), true).wasApplied())
+			logger.info("Table '{}' created", CassandraStorageSettings.INSTANCES_TABLE_DEFAULT_NAME);
 	}
 	
 	public void createMessagesTable() throws IOException
@@ -75,6 +88,22 @@ public class TablesCreator
 	public void createProcessedMessagesTable() throws IOException
 	{
 		createMessagesTable(settings.getProcessedMessagesTableName());
+	}
+	
+	public void createTimeMessagesTable() throws IOException
+	{
+		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getTimeMessagesTableName()).ifNotExists()
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				.withPartitionKey(STORED_TIMESTAMP, DataTypes.TIMESTAMP)
+				.withClusteringColumn(STREAM_NAME, DataTypes.TEXT)
+				.withClusteringColumn(DIRECTION, DataTypes.TEXT)
+				.withClusteringColumn(MESSAGE_INDEX, DataTypes.BIGINT)
+				.withClusteringOrder(STREAM_NAME, ClusteringOrder.ASC)
+				.withClusteringOrder(DIRECTION, ClusteringOrder.ASC)
+				.withClusteringOrder(MESSAGE_INDEX, ClusteringOrder.ASC);
+		
+		if (exec.executeQuery(create.asCql(), true).wasApplied())
+			logger.info("Table '{}' created", settings.getTimeMessagesTableName());
 	}
 	
 
@@ -100,7 +129,8 @@ public class TablesCreator
 				.withColumn(EVENT_COUNT, DataTypes.INT)
 				.withClusteringOrder(ID, ClusteringOrder.ASC);
 		
-		exec.executeQuery(create.asCql(), true);
+		if (exec.executeQuery(create.asCql(), true).wasApplied())
+			logger.info("Table '{}' created", settings.getTestEventsTableName());
 	}
 	
 	//Many-to-many
@@ -112,10 +142,11 @@ public class TablesCreator
 				.withClusteringColumn(MESSAGES_IDS, DataTypes.frozenSetOf(DataTypes.TEXT))
 				.withColumn(BATCH_ID, DataTypes.TEXT);
 		
-		exec.executeQuery(create.asCql(), true);
+		if (exec.executeQuery(create.asCql(), true).wasApplied())
+			logger.info("Table '{}' created", settings.getTestEventMsgsLinkTableName());
 	}
 	
-	public void createMessagesTable(String name) throws IOException
+	protected void createMessagesTable(String name) throws IOException
 	{
 		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), name).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
@@ -135,6 +166,7 @@ public class TablesCreator
 				.withClusteringOrder(DIRECTION, ClusteringOrder.ASC)
 				.withClusteringOrder(MESSAGE_INDEX, ClusteringOrder.ASC);
 		
-		exec.executeQuery(create.asCql(), true);
+		if (exec.executeQuery(create.asCql(), true).wasApplied())
+			logger.info("Table '{}' created", name);
 	}
 }
