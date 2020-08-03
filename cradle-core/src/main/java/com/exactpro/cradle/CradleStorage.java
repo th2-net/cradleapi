@@ -133,7 +133,7 @@ public abstract class CradleStorage
 	{
 		logger.debug("Storing message batch {}", batch.getId());
 		doStoreMessageBatch(batch);
-		storeTimeMessages(batch);
+		storeTimeMessages(batch.getMessages());
 		logger.debug("Message batch {} has been stored", batch.getId());
 	}
 	
@@ -317,10 +317,10 @@ public abstract class CradleStorage
 	}
 	
 	
-	protected void storeTimeMessages(StoredMessageBatch batch) throws IOException
+	protected void storeTimeMessages(Collection<StoredMessage> messages) throws IOException
 	{
 		Instant ts = null;
-		for (StoredMessage msg : batch.getMessages())
+		for (StoredMessage msg : messages)
 		{
 			Instant msgSeconds = TimeUtils.cutNanos(msg.getTimestamp());
 			if (!msgSeconds.equals(ts))
