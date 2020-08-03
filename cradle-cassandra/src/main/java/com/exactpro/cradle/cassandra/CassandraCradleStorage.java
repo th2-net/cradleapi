@@ -282,7 +282,7 @@ public class CassandraCradleStorage extends CradleStorage
 		MessageBatchOperator op = getMessageBatchOperator();
 		try
 		{
-			PagingIterable<MessageBatchEntity> entities = op.filterMessages(instanceUuid, filter, op, readAttrs);
+			PagingIterable<DetailedMessageBatchEntity> entities = op.filterMessages(instanceUuid, filter, op, readAttrs);
 			return new MessagesIteratorAdapter(filter, entities);
 		}
 		catch (CradleStorageException e)

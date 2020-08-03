@@ -1,12 +1,18 @@
-/******************************************************************************
- * Copyright (c) 2009-2020, Exactpro Systems LLC
- * www.exactpro.com
- * Build Software to Test Software
+/*
+ * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
  *
- * All rights reserved.
- * This is unpublished, licensed software, confidential and proprietary 
- * information which is the property of Exactpro Systems LLC or its licensors.
- ******************************************************************************/
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package com.exactpro.cradle.cassandra.dao.messages;
 
@@ -35,10 +41,10 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
 public class MessageBatchQueryProvider
 {
 	private final CqlSession session;
-	private final EntityHelper<MessageBatchEntity> helper;
+	private final EntityHelper<DetailedMessageBatchEntity> helper;
 	private final Select selectStart;
 	
-	public MessageBatchQueryProvider(MapperContext context, EntityHelper<MessageBatchEntity> helper)
+	public MessageBatchQueryProvider(MapperContext context, EntityHelper<DetailedMessageBatchEntity> helper)
 	{
 		this.session = context.getSession();
 		this.helper = helper;
@@ -47,7 +53,7 @@ public class MessageBatchQueryProvider
 				.allowFiltering();
 	}
 	
-	public PagingIterable<MessageBatchEntity> filterMessages(UUID instanceId, StoredMessageFilter filter, MessageBatchOperator operator,
+	public PagingIterable<DetailedMessageBatchEntity> filterMessages(UUID instanceId, StoredMessageFilter filter, MessageBatchOperator operator,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 	{
 		Select select = selectStart;
@@ -122,7 +128,7 @@ public class MessageBatchQueryProvider
 		return builder.build();
 	}
 	
-	private MessageBatchEntity getMessageBatch(StoredMessageFilter filter, MessageBatchOperator operator, UUID instanceId,
+	private DetailedMessageBatchEntity getMessageBatch(StoredMessageFilter filter, MessageBatchOperator operator, UUID instanceId,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 	{
 		if (filter.getStreamName() == null || filter.getDirection() == null)
@@ -153,7 +159,7 @@ public class MessageBatchQueryProvider
 			ComparisonOperation op = filter.getIndex().getOperation();
 			if (filter.getLimit() > 0 && (op == ComparisonOperation.LESS || op == ComparisonOperation.LESS_OR_EQUALS))
 				builder = builder.setLong(LAST_MESSAGE_INDEX, filter.getIndex().getValue()-filter.getLimit());
-			MessageBatchEntity batch = getMessageBatch(filter, operator, instanceId, attributes);
+			DetailedMessageBatchEntity batch = getMessageBatch(filter, operator, instanceId, attributes);
 			builder = builder.setLong(MESSAGE_INDEX, batch != null ? batch.getMessageIndex() : filter.getIndex().getValue());
 		}
 		

@@ -35,32 +35,32 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 public interface MessageBatchOperator
 {
 	@Select
-	PagingIterable<MessageBatchEntity> get(UUID instanceId, String streamName, 
+	PagingIterable<DetailedMessageBatchEntity> get(UUID instanceId, String streamName, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Select
-	PagingIterable<MessageBatchEntity> get(UUID instanceId, String streamName, String direction, 
+	PagingIterable<DetailedMessageBatchEntity> get(UUID instanceId, String streamName, String direction, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Select
-	MessageBatchEntity get(UUID instanceId, String streamName, String direction, long messageIndex, 
+	DetailedMessageBatchEntity get(UUID instanceId, String streamName, String direction, long messageIndex, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
 			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction AND "
 			+MESSAGE_INDEX+">=:fromIndex AND "+MESSAGE_INDEX+"<=:toIndex")
-	PagingIterable<MessageBatchEntity> getMessageBatches(UUID instanceId, String streamName, String direction, long fromIndex, long toIndex, 
+	PagingIterable<DetailedMessageBatchEntity> getMessageBatches(UUID instanceId, String streamName, String direction, long fromIndex, long toIndex, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Select
-	PagingIterable<MessageBatchEntity> getAll(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	PagingIterable<DetailedMessageBatchEntity> getAll(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("SELECT MAX("+LAST_MESSAGE_INDEX+") FROM ${qualifiedTableId} WHERE "
 			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction ALLOW FILTERING")
 	long getLastIndex(UUID instanceId, String streamName, String direction, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@QueryProvider(providerClass = MessageBatchQueryProvider.class, entityHelpers = MessageBatchEntity.class)
-	PagingIterable<MessageBatchEntity> filterMessages(UUID instanceId, StoredMessageFilter filter, MessageBatchOperator operator,
+	@QueryProvider(providerClass = MessageBatchQueryProvider.class, entityHelpers = DetailedMessageBatchEntity.class)
+	PagingIterable<DetailedMessageBatchEntity> filterMessages(UUID instanceId, StoredMessageFilter filter, MessageBatchOperator operator,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes) throws CradleStorageException;
 	
 	@Query("SELECT DISTINCT "+INSTANCE_ID+", "+STREAM_NAME+" from ${qualifiedTableId}")

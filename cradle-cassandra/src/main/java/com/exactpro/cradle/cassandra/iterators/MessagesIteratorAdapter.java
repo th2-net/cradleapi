@@ -1,12 +1,18 @@
-/******************************************************************************
- * Copyright (c) 2009-2020, Exactpro Systems LLC
- * www.exactpro.com
- * Build Software to Test Software
+/*
+ * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
  *
- * All rights reserved.
- * This is unpublished, licensed software, confidential and proprietary 
- * information which is the property of Exactpro Systems LLC or its licensors.
- ******************************************************************************/
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package com.exactpro.cradle.cassandra.iterators;
 
@@ -14,6 +20,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import com.datastax.oss.driver.api.core.PagingIterable;
+import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageFilter;
@@ -26,9 +33,9 @@ import com.exactpro.cradle.messages.StoredMessageFilter;
 public class MessagesIteratorAdapter implements Iterable<StoredMessage>
 {
 	private final StoredMessageFilter filter;
-	private final PagingIterable<MessageBatchEntity> entities;
+	private final PagingIterable<DetailedMessageBatchEntity> entities;
 	
-	public MessagesIteratorAdapter(StoredMessageFilter filter, PagingIterable<MessageBatchEntity> entities) throws IOException
+	public MessagesIteratorAdapter(StoredMessageFilter filter, PagingIterable<DetailedMessageBatchEntity> entities) throws IOException
 	{
 		this.filter = filter;
 		this.entities = entities;

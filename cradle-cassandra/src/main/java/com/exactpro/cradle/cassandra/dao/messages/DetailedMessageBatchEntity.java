@@ -1,12 +1,18 @@
-/******************************************************************************
- * Copyright (c) 2009-2020, Exactpro Systems LLC
- * www.exactpro.com
- * Build Software to Test Software
+/*
+ * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
  *
- * All rights reserved.
- * This is unpublished, licensed software, confidential and proprietary 
- * information which is the property of Exactpro Systems LLC or its licensors.
- ******************************************************************************/
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package com.exactpro.cradle.cassandra.dao.messages;
 
@@ -42,12 +48,12 @@ public class DetailedMessageBatchEntity extends MessageBatchEntity
 	private LocalTime storedTime;
 	
 	@CqlName(FIRST_MESSAGE_DATE)
-	private LocalDate firstMessagedDate;
+	private LocalDate firstMessageDate;
 	@CqlName(FIRST_MESSAGE_TIME)
 	private LocalTime firstMessageTime;
 	
 	@CqlName(LAST_MESSAGE_DATE)
-	private LocalDate lastMessagedDate;
+	private LocalDate lastMessageDate;
 	@CqlName(LAST_MESSAGE_TIME)
 	private LocalTime lastMessageTime;
 	
@@ -111,14 +117,14 @@ public class DetailedMessageBatchEntity extends MessageBatchEntity
 	}
 	
 	
-	public LocalDate getFirstMessagedDate()
+	public LocalDate getFirstMessageDate()
 	{
-		return firstMessagedDate;
+		return firstMessageDate;
 	}
 	
-	public void setFirstMessagedDate(LocalDate firstMessagedDate)
+	public void setFirstMessageDate(LocalDate firstMessageDate)
 	{
-		this.firstMessagedDate = firstMessagedDate;
+		this.firstMessageDate = firstMessageDate;
 	}
 	
 	public LocalTime getFirstMessageTime()
@@ -134,26 +140,26 @@ public class DetailedMessageBatchEntity extends MessageBatchEntity
 	@Transient
 	public Instant getFirstMessageTimestamp()
 	{
-		return LocalDateTime.of(getFirstMessagedDate(), getFirstMessageTime()).toInstant(CassandraCradleStorage.TIMEZONE_OFFSET);
+		return LocalDateTime.of(getFirstMessageDate(), getFirstMessageTime()).toInstant(CassandraCradleStorage.TIMEZONE_OFFSET);
 	}
 	
 	@Transient
 	public void setFirstMessageTimestamp(Instant timestamp)
 	{
 		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, CassandraCradleStorage.TIMEZONE_OFFSET);
-		setFirstMessagedDate(ldt.toLocalDate());
+		setFirstMessageDate(ldt.toLocalDate());
 		setFirstMessageTime(ldt.toLocalTime());
 	}
 	
 	
-	public LocalDate getLastMessagedDate()
+	public LocalDate getLastMessageDate()
 	{
-		return lastMessagedDate;
+		return lastMessageDate;
 	}
 	
-	public void setLastMessagedDate(LocalDate lastMessagedDate)
+	public void setLastMessageDate(LocalDate lastMessageDate)
 	{
-		this.lastMessagedDate = lastMessagedDate;
+		this.lastMessageDate = lastMessageDate;
 	}
 	
 	public LocalTime getLastMessageTime()
@@ -169,14 +175,14 @@ public class DetailedMessageBatchEntity extends MessageBatchEntity
 	@Transient
 	public Instant getLastMessageTimestamp()
 	{
-		return LocalDateTime.of(getLastMessagedDate(), getLastMessageTime()).toInstant(CassandraCradleStorage.TIMEZONE_OFFSET);
+		return LocalDateTime.of(getLastMessageDate(), getLastMessageTime()).toInstant(CassandraCradleStorage.TIMEZONE_OFFSET);
 	}
 	
 	@Transient
 	public void setLastMessageTimestamp(Instant timestamp)
 	{
 		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, CassandraCradleStorage.TIMEZONE_OFFSET);
-		setLastMessagedDate(ldt.toLocalDate());
+		setLastMessageDate(ldt.toLocalDate());
 		setLastMessageTime(ldt.toLocalTime());
 	}
 	
