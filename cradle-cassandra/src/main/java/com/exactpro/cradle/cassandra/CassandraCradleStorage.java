@@ -121,6 +121,7 @@ public class CassandraCradleStorage extends CradleStorage
 			
 			logger.info("Creating/updating schema...");
 			new TablesCreator(exec, settings).createAll();
+			logger.info("All needed tables created");
 			
 			instanceUuid = getInstanceId(instanceName);
 			dataMapper = new CassandraDataMapperBuilder(connection.getSession()).build();
@@ -324,6 +325,21 @@ public class CassandraCradleStorage extends CradleStorage
 		return settings;
 	}
 	
+	public Function<BoundStatementBuilder, BoundStatementBuilder> getWriteAttrs()
+	{
+		return writeAttrs;
+	}
+	
+	public Function<BoundStatementBuilder, BoundStatementBuilder> getReadAttrs()
+	{
+		return readAttrs;
+	}
+	
+	public Function<BoundStatementBuilder, BoundStatementBuilder> getStrictReadAttrs()
+	{
+		return strictReadAttrs;
+	}
+	
 	
 	protected UUID getInstanceId(String instanceName) throws IOException
 	{
@@ -349,12 +365,12 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	
-	private MessageBatchOperator getMessageBatchOperator()
+	protected MessageBatchOperator getMessageBatchOperator()
 	{
 		return dataMapper.messageBatchOperator(settings.getKeyspace(), settings.getMessagesTableName());
 	}
 	
-	private TimeMessageOperator getTimeMessageOperator()
+	protected TimeMessageOperator getTimeMessageOperator()
 	{
 		return dataMapper.timeMessageOperator(settings.getKeyspace(), settings.getTimeMessagesTableName());
 	}
