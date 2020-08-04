@@ -18,9 +18,9 @@ package com.exactpro.cradle.cassandra.dao.messages;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
@@ -35,4 +35,7 @@ public interface TimeMessageOperator
 	
 	@Insert
 	TimeMessageEntity writeMessage(TimeMessageEntity timeMessage, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
+	@Insert
+	CompletableFuture<TimeMessageEntity> writeMessageAsync(TimeMessageEntity timeMessage, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }
