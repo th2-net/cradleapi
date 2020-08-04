@@ -25,7 +25,6 @@ public class StorageConstants
 			DIRECTION = "direction",
 			STORED_DATE = "stored_date",
 			STORED_TIME = "stored_time",
-			STORED_TIMESTAMP = "stored_timestamp",
 			COMPRESSED = "compressed",
 			
 			MESSAGE_INDEX = "message_index",
@@ -35,6 +34,7 @@ public class StorageConstants
 			LAST_MESSAGE_DATE = "last_message_date",
 			LAST_MESSAGE_TIME = "last_message_time",
 			MESSAGE_COUNT = "message_count",
+			MESSAGE_TIMESTAMP = "message_timestamp",
 			
 			START_DATE = "start_date",
 			START_TIME = "start_time",

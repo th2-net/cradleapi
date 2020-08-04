@@ -19,7 +19,7 @@ package com.exactpro.cradle.cassandra.dao.messages;
 import static com.exactpro.cradle.cassandra.StorageConstants.DIRECTION;
 import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
 import static com.exactpro.cradle.cassandra.StorageConstants.MESSAGE_INDEX;
-import static com.exactpro.cradle.cassandra.StorageConstants.STORED_TIMESTAMP;
+import static com.exactpro.cradle.cassandra.StorageConstants.MESSAGE_TIMESTAMP;
 import static com.exactpro.cradle.cassandra.StorageConstants.STREAM_NAME;
 
 import java.time.Instant;
@@ -50,8 +50,8 @@ public class TimeMessageEntity
 	private UUID instanceId;
 	
 	@PartitionKey(1)
-	@CqlName(STORED_TIMESTAMP)
-	private Instant storedTimestamp;
+	@CqlName(MESSAGE_TIMESTAMP)
+	private Instant messageTimestamp;
 	
 	@PartitionKey(2)
 	@CqlName(STREAM_NAME)
@@ -74,7 +74,7 @@ public class TimeMessageEntity
 	{
 		logger.trace("Creating time-message data from message");
 		this.setInstanceId(instanceId);
-		this.setStoredTimestamp(message.getTimestamp());
+		this.setMessageTimestamp(message.getTimestamp());
 		
 		StoredMessageId id = message.getId();
 		this.setStreamName(id.getStreamName());
@@ -94,14 +94,14 @@ public class TimeMessageEntity
 	}
 	
 	
-	public Instant getStoredTimestamp()
+	public Instant getMessageTimestamp()
 	{
-		return storedTimestamp;
+		return messageTimestamp;
 	}
 	
-	public void setStoredTimestamp(Instant storedTimestamp)
+	public void setMessageTimestamp(Instant messageTimestamp)
 	{
-		this.storedTimestamp = TimeUtils.cutNanos(storedTimestamp);
+		this.messageTimestamp = TimeUtils.cutNanos(messageTimestamp);
 	}
 	
 	
