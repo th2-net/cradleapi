@@ -30,6 +30,7 @@ import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEventWrapper;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
@@ -61,7 +62,7 @@ public abstract class CradleStorage
 	protected abstract void doStoreTimeMessage(StoredMessage message) throws IOException;
 	protected abstract void doStoreProcessedMessageBatch(StoredMessageBatch batch) throws IOException;
 	protected abstract void doStoreTestEvent(StoredTestEvent event) throws IOException;
-	protected abstract void doStoreTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messagesIds) throws IOException;
+	protected abstract void doStoreTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messageIds) throws IOException;
 	protected abstract StoredMessage doGetMessage(StoredMessageId id) throws IOException;
 	protected abstract StoredMessage doGetProcessedMessage(StoredMessageId id) throws IOException;
 	protected abstract long doGetLastMessageIndex(String streamName, Direction direction) throws IOException;
@@ -78,7 +79,9 @@ public abstract class CradleStorage
 	
 	protected abstract Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException;
 	protected abstract Iterable<StoredTestEventWrapper> doGetRootTestEvents() throws IOException;
-	protected abstract Iterable<StoredTestEventWrapper> doGetTestEvents(StoredTestEventId parentId) throws IOException;
+	protected abstract Iterable<StoredTestEventMetadata> doGetTestEvents(StoredTestEventId parentId, Instant from, Instant to) 
+			throws CradleStorageException, IOException;
+	protected abstract Iterable<StoredTestEventMetadata> doGetTestEvents(Instant from, Instant to) throws CradleStorageException, IOException;
 	
 	
 	/**
@@ -133,6 +136,7 @@ public abstract class CradleStorage
 	{
 		logger.debug("Storing message batch {}", batch.getId());
 		doStoreMessageBatch(batch);
+		logger.debug("Storing time-message data for batch {}", batch.getId());
 		storeTimeMessages(batch.getMessages());
 		logger.debug("Message batch {} has been stored", batch.getId());
 	}
@@ -289,16 +293,44 @@ public abstract class CradleStorage
 	}
 	
 	/**
-	 * Allows to enumerate children of test event with given ID
+	 * Allows to enumerate children of test event with given ID that started in given range of timestamps.
+	 * Both boundaries (from and to) should be specified
 	 * @param parentId ID of parent test event
+	 * @param from left boundary of timestamps range
+	 * @param to right boundary of timestamps range
 	 * @return iterable object to enumerate test events
+	 * @throws CradleStorageException if given parameters are invalid
 	 * @throws IOException if data retrieval failed
 	 */
-	public final Iterable<StoredTestEventWrapper> getTestEvents(StoredTestEventId parentId) throws IOException
+	public final Iterable<StoredTestEventMetadata> getTestEvents(StoredTestEventId parentId, Instant from, Instant to) 
+			throws CradleStorageException, IOException
 	{
-		logger.debug("Getting children test events of {}", parentId);
-		Iterable<StoredTestEventWrapper> result = doGetTestEvents(parentId);
-		logger.debug("Prepared iterator for children test events of {}", parentId);
+		if (from == null || to == null)
+			throw new CradleStorageException("Both boundaries (from and to) should be specified");
+		
+		logger.debug("Getting children test events of {} from range {}..{}", parentId, from, to);
+		Iterable<StoredTestEventMetadata> result = doGetTestEvents(parentId, from, to);
+		logger.debug("Prepared iterator for children test events of {} from range {}..{}", parentId, from, to);
+		return result;
+	}
+	
+	/**
+	 * Allows to enumerate test events started in given range of timestamps. 
+	 * Both boundaries (from and to) should be specified
+	 * @param from left boundary of timestamps range
+	 * @param to right boundary of timestamps range
+	 * @return iterable object to enumerate test events
+	 * @throws CradleStorageException if given parameters are invalid
+	 * @throws IOException if data retrieval failed
+	 */
+	public final Iterable<StoredTestEventMetadata> getTestEvents(Instant from, Instant to) throws CradleStorageException, IOException
+	{
+		if (from == null || to == null)
+			throw new CradleStorageException("Both boundaries (from and to) should be specified");
+		
+		logger.debug("Getting test events from range {}..{}", from, to);
+		Iterable<StoredTestEventMetadata> result = doGetTestEvents(from, to);
+		logger.debug("Prepared iterator for test events from range {}..{}", from, to);
 		return result;
 	}
 	

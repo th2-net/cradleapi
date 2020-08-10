@@ -50,7 +50,8 @@ public class StorageConstants
 			END_TIMESTAMP = "end_timestamp",
 			BATCH_ID = "batch_id",
 			BATCH_SIZE = "batch_size",
-			MESSAGES_IDS = "messages_ids",
+			MESSAGE_IDS = "message_ids",
+			MESSAGE_ID = "message_id",
 			TEST_EVENT_ID = "test_event_id",
 			ROOT = "root",
 			PARENT_ID = "parent_id";
