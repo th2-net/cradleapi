@@ -16,10 +16,12 @@
 
 package com.exactpro.cradle.cassandra.dao.testevents;
 
+import static com.exactpro.cradle.cassandra.StorageConstants.ID;
 import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
 import static com.exactpro.cradle.cassandra.StorageConstants.PARENT_ID;
 import static com.exactpro.cradle.cassandra.StorageConstants.START_DATE;
 import static com.exactpro.cradle.cassandra.StorageConstants.START_TIME;
+import static com.exactpro.cradle.cassandra.StorageConstants.SUCCESS;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -28,7 +30,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.PagingIterable;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
@@ -38,7 +42,7 @@ public interface TestEventChildrenOperator
 {
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+PARENT_ID+"=:parentId AND "+
 			START_DATE+"=:startDate AND "+START_TIME+">=:timeFrom AND "+START_TIME+"<=:timeTo")
-	PagingIterable<TimeTestEventEntity> getTestEvents(UUID instanceId, String parentId, LocalDate startDate, LocalTime timeFrom, LocalTime timeTo, 
+	PagingIterable<TestEventChildEntity> getTestEvents(UUID instanceId, String parentId, LocalDate startDate, LocalTime timeFrom, LocalTime timeTo, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
@@ -46,4 +50,14 @@ public interface TestEventChildrenOperator
 	
 	@Insert
 	CompletableFuture<TestEventChildEntity> writeTestEventAsync(TestEventChildEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
+	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+INSTANCE_ID+"=:instanceId AND "+
+			PARENT_ID+"=:parentId AND "+START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:eventId")
+	ResultSet updateStatus(UUID instanceId, String parentId, LocalDate startDate, LocalTime startTime, String eventId, boolean success,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
+	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+INSTANCE_ID+"=:instanceId AND "+
+			PARENT_ID+"=:parentId AND "+START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:eventId")
+	CompletableFuture<AsyncResultSet> updateStatusAsync(UUID instanceId, String parentId, LocalDate startDate, LocalTime startTime, 
+			String eventId, boolean success, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

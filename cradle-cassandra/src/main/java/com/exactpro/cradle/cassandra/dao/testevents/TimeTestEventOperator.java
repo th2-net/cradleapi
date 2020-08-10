@@ -16,9 +16,11 @@
 
 package com.exactpro.cradle.cassandra.dao.testevents;
 
+import static com.exactpro.cradle.cassandra.StorageConstants.ID;
 import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
 import static com.exactpro.cradle.cassandra.StorageConstants.START_DATE;
 import static com.exactpro.cradle.cassandra.StorageConstants.START_TIME;
+import static com.exactpro.cradle.cassandra.StorageConstants.SUCCESS;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -27,7 +29,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.PagingIterable;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
@@ -44,4 +48,14 @@ public interface TimeTestEventOperator
 	
 	@Insert
 	CompletableFuture<TimeTestEventEntity> writeTestEventAsync(TimeTestEventEntity timeTestEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
+	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+INSTANCE_ID+"=:instanceId AND "+
+			START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:eventId")
+	ResultSet updateStatus(UUID instanceId, LocalDate startDate, LocalTime startTime, String eventId, boolean success, 
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
+	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+INSTANCE_ID+"=:instanceId AND "+
+			START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:eventId")
+	CompletableFuture<AsyncResultSet> updateStatusAsync(UUID instanceId, LocalDate startDate, LocalTime startTime, String eventId, boolean success, 
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);;
 }
