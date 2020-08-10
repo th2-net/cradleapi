@@ -21,8 +21,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.PagingIterable;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
@@ -48,10 +49,10 @@ public interface TestEventOperator
 	DetailedTestEventEntity write(DetailedTestEventEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+INSTANCE_ID+"=:instanceId AND "+ROOT+"=:isRoot and "+ID+"=:eventId")
-	Row updateStatus(UUID instanceId, String eventId, boolean isRoot, boolean success,
+	ResultSet updateStatus(UUID instanceId, String eventId, boolean isRoot, boolean success,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+INSTANCE_ID+"=:instanceId AND "+ROOT+"=:isRoot and "+ID+"=:eventId")
-	CompletableFuture<Row> updateStatusAsync(UUID instanceId, String eventId, boolean isRoot, boolean success,
+	CompletableFuture<AsyncResultSet> updateStatusAsync(UUID instanceId, String eventId, boolean isRoot, boolean success,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

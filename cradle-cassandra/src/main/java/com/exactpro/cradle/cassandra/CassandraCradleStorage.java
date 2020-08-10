@@ -218,7 +218,7 @@ public class CassandraCradleStorage extends CradleStorage
 		do
 		{
 			StoredTestEventWrapper parent = getTestEvent(wrapped.getParentId());
-			if (!parent.isSuccess())
+			if (parent == null || !parent.isSuccess())  //Invalid parent ID or parent is already failed, which means that its parents are already updated
 				return;
 			
 			wrapped = parent;
@@ -403,6 +403,11 @@ public class CassandraCradleStorage extends CradleStorage
 		return id;
 	}
 	
+	
+	protected QueryExecutor getQueryExecutor()
+	{
+		return exec;
+	}
 	
 	protected MessageBatchOperator getMessageBatchOperator()
 	{
