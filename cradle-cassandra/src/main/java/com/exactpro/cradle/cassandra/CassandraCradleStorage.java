@@ -43,8 +43,9 @@ import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventOperator;
 import com.exactpro.cradle.cassandra.iterators.MessagesIteratorAdapter;
+import com.exactpro.cradle.cassandra.iterators.TestEventChildrenMetadataIteratorAdapter;
 import com.exactpro.cradle.cassandra.iterators.TestEventsIteratorAdapter;
-import com.exactpro.cradle.cassandra.iterators.TestEventsMetadataIteratorAdapter;
+import com.exactpro.cradle.cassandra.iterators.TimeTestEventsMetadataIteratorAdapter;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
@@ -205,7 +206,25 @@ public class CassandraCradleStorage extends CradleStorage
 		storeTimeEvent(event);
 		if (event.getParentId() != null)
 			storeEventInParent(event);
+	}
+	
+	@Override
+	protected void doUpdateParentTestEvents(StoredTestEvent event) throws IOException
+	{
+		if (event.isSuccess())
+			return;
 		
+		StoredTestEventWrapper wrapped = new StoredTestEventWrapper(event);
+		do
+		{
+			StoredTestEventWrapper parent = getTestEvent(wrapped.getParentId());
+			if (!parent.isSuccess())
+				return;
+			
+			wrapped = parent;
+			updateEventStatus(wrapped, false);
+		}
+		while (wrapped.getParentId() != null);
 	}
 	
 	@Override
@@ -306,7 +325,7 @@ public class CassandraCradleStorage extends CradleStorage
 		
 		LocalTime fromTime = fromDateTime.toLocalTime(),
 				toTime = toDateTime.toLocalTime();
-		return new TestEventsMetadataIteratorAdapter(getTestEventChildrenOperator().getTestEvents(instanceUuid, parentId.toString(), 
+		return new TestEventChildrenMetadataIteratorAdapter(getTestEventChildrenOperator().getTestEvents(instanceUuid, parentId.toString(), 
 				fromDate, fromTime, toTime, readAttrs));
 	}
 	
@@ -322,7 +341,7 @@ public class CassandraCradleStorage extends CradleStorage
 		
 		LocalTime fromTime = fromDateTime.toLocalTime(),
 				toTime = toDateTime.toLocalTime();
-		return new TestEventsMetadataIteratorAdapter(getTimeTestEventOperator().getTestEvents(instanceUuid, fromDate, fromTime, toTime, readAttrs));
+		return new TimeTestEventsMetadataIteratorAdapter(getTimeTestEventOperator().getTestEvents(instanceUuid, fromDate, fromTime, toTime, readAttrs));
 	}
 	
 	
@@ -429,7 +448,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	
-	private void storeEvent(StoredTestEvent event) throws IOException
+	protected void storeEvent(StoredTestEvent event) throws IOException
 	{
 		DetailedTestEventEntity entity = new DetailedTestEventEntity(event, instanceUuid);
 		logger.trace("Executing test event storing query");
@@ -437,7 +456,7 @@ public class CassandraCradleStorage extends CradleStorage
 				.write(entity, writeAttrs);
 	}
 	
-	private void storeTimeEvent(StoredTestEvent event) throws IOException
+	protected void storeTimeEvent(StoredTestEvent event) throws IOException
 	{
 		TimeTestEventEntity timeEntity = new TimeTestEventEntity(event, instanceUuid);
 		
@@ -446,7 +465,7 @@ public class CassandraCradleStorage extends CradleStorage
 		op.writeTestEvent(timeEntity, writeAttrs);
 	}
 	
-	private void storeEventInParent(StoredTestEvent event) throws IOException
+	protected void storeEventInParent(StoredTestEvent event) throws IOException
 	{
 		TestEventChildEntity entity = new TestEventChildEntity(event, instanceUuid);
 		
@@ -456,7 +475,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	
-	private void storeMessagesOfTestEvent(String eventId, List<String> messageIds) throws IOException
+	protected void storeMessagesOfTestEvent(String eventId, List<String> messageIds) throws IOException
 	{
 		int msgsSize = messageIds.size();
 		for (int left = 0; left < msgsSize; left++)
@@ -473,7 +492,7 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 	}
 	
-	private void storeTestEventOfMessages(List<String> messageIds, String eventId, StoredTestEventId batchId) throws IOException
+	protected void storeTestEventOfMessages(List<String> messageIds, String eventId, StoredTestEventId batchId) throws IOException
 	{
 		String batchIdString = batchId != null ? batchId.toString() : null;
 		for (String id : messageIds)
@@ -487,5 +506,18 @@ public class CassandraCradleStorage extends CradleStorage
 				insert = insert.value(BATCH_ID, literal(batchIdString));
 			exec.executeQuery(insert.asCql(), true);
 		}
+	}
+	
+	protected void updateEventStatus(StoredTestEventWrapper event, boolean success)
+	{
+		String id = event.getId().toString(),
+				parentId = event.getParentId() != null ? event.getParentId().toString() : null;
+		LocalDateTime ldt = LocalDateTime.ofInstant(event.getStartTimestamp(), TIMEZONE_OFFSET);
+		LocalDate ld = ldt.toLocalDate();
+		LocalTime lt = ldt.toLocalTime();
+		getTestEventOperator().updateStatus(instanceUuid, id, parentId == null, success, writeAttrs);
+		getTimeTestEventOperator().updateStatus(instanceUuid, ld, lt, id, success, writeAttrs);
+		if (parentId != null)
+			getTestEventChildrenOperator().updateStatus(instanceUuid, parentId, ld, lt, id, success, writeAttrs);
 	}
 }

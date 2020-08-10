@@ -62,6 +62,7 @@ public abstract class CradleStorage
 	protected abstract void doStoreTimeMessage(StoredMessage message) throws IOException;
 	protected abstract void doStoreProcessedMessageBatch(StoredMessageBatch batch) throws IOException;
 	protected abstract void doStoreTestEvent(StoredTestEvent event) throws IOException;
+	protected abstract void doUpdateParentTestEvents(StoredTestEvent event) throws IOException;
 	protected abstract void doStoreTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messageIds) throws IOException;
 	protected abstract StoredMessage doGetMessage(StoredMessageId id) throws IOException;
 	protected abstract StoredMessage doGetProcessedMessage(StoredMessageId id) throws IOException;
@@ -171,6 +172,12 @@ public abstract class CradleStorage
 		}
 		doStoreTestEvent(event);
 		logger.debug("Test event {} has been stored", event.getId());
+		if (event.getParentId() != null)
+		{
+			logger.debug("Updating parents of test event {}", event.getId());
+			doUpdateParentTestEvents(event);
+			logger.debug("Parents of test event {} have been updated", event.getId());
+		}
 	}
 	
 	/**

@@ -16,27 +16,37 @@
 
 package com.exactpro.cradle.cassandra.iterators;
 
-import java.io.IOException;
 import java.util.Iterator;
 
-import com.datastax.oss.driver.api.core.PagingIterable;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventEntity;
 import com.exactpro.cradle.testevents.StoredTestEventMetadata;
-import com.exactpro.cradle.testevents.StoredTestEventWrapper;
 
-public class TestEventsMetadataIteratorAdapter implements Iterable<StoredTestEventMetadata>
+public class TimeTestEventsMetadataIterator implements Iterator<StoredTestEventMetadata>
 {
-	private final PagingIterable<TimeTestEventEntity> rows;
+	private final Logger logger = LoggerFactory.getLogger(TimeTestEventsMetadataIterator.class);
 	
-	public TestEventsMetadataIteratorAdapter(PagingIterable<TimeTestEventEntity> rows) throws IOException
+	private final Iterator<TimeTestEventEntity> rows;
+	
+	public TimeTestEventsMetadataIterator(Iterator<TimeTestEventEntity> rows)
 	{
 		this.rows = rows;
 	}
 	
 	@Override
-	public Iterator<StoredTestEventMetadata> iterator()
+	public boolean hasNext()
 	{
-		return new TestEventsMetadataIterator(rows.iterator());
+		return rows.hasNext();
+	}
+	
+	@Override
+	public StoredTestEventMetadata next()
+	{
+		logger.trace("Getting next test event metadata");
+		
+		TimeTestEventEntity r = rows.next();
+		return r.toStoredTestEventMetadata();
 	}
 }
