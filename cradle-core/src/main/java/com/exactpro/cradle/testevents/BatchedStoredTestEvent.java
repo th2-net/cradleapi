@@ -1,12 +1,18 @@
-/******************************************************************************
- * Copyright (c) 2009-2020, Exactpro Systems LLC
- * www.exactpro.com
- * Build Software to Test Software
+/*
+ * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
  *
- * All rights reserved.
- * This is unpublished, licensed software, confidential and proprietary 
- * information which is the property of Exactpro Systems LLC or its licensors.
- ******************************************************************************/
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package com.exactpro.cradle.testevents;
 
@@ -26,7 +32,7 @@ public class BatchedStoredTestEvent implements StoredTestEventWithContent, Seria
 			type;
 	private final StoredTestEventId parentId;
 	private final Instant startTimestamp,
-	endTimestamp;
+			endTimestamp;
 	private final boolean success;
 	private final byte[] content;
 	
