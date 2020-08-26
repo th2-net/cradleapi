@@ -18,8 +18,6 @@ package com.exactpro.cradle.cassandra.dao.testevents;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.ID;
 import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
-import static com.exactpro.cradle.cassandra.StorageConstants.ROOT;
-import static com.exactpro.cradle.cassandra.StorageConstants.PARENT_ID;
 import static com.exactpro.cradle.cassandra.StorageConstants.START_DATE;
 import static com.exactpro.cradle.cassandra.StorageConstants.START_TIME;
 
@@ -34,10 +32,10 @@ import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 
 /**
- * Contains test event metadata related to given time
+ * Contains root test event metadata
  */
 @Entity
-public class TimeTestEventEntity extends TestEventWithParentMetadataEntity
+public class RootTestEventEntity extends TestEventMetadataEntity
 {
 	@PartitionKey(0)
 	@CqlName(INSTANCE_ID)
@@ -55,18 +53,12 @@ public class TimeTestEventEntity extends TestEventWithParentMetadataEntity
 	@CqlName(ID)
 	private String id;
 	
-	@CqlName(ROOT)
-	private boolean root;
-	
-	@CqlName(PARENT_ID)
-	private String parentId;
-
-	
-	public TimeTestEventEntity()
+		
+	public RootTestEventEntity()
 	{
 	}
 	
-	public TimeTestEventEntity(StoredTestEvent event, UUID instanceId)
+	public RootTestEventEntity(StoredTestEvent event, UUID instanceId)
 	{
 		super(event, instanceId);
 	}
@@ -82,45 +74,6 @@ public class TimeTestEventEntity extends TestEventWithParentMetadataEntity
 	public void setInstanceId(UUID instanceId)
 	{
 		this.instanceId = instanceId;
-	}
-	
-	
-	@Override
-	public String getId()
-	{
-		return id;
-	}
-	
-	@Override
-	public void setId(String id)
-	{
-		this.id = id;
-	}
-	
-	
-	@Override
-	public boolean isRoot()
-	{
-		return root;
-	}
-	
-	@Override
-	public void setRoot(boolean root)
-	{
-		this.root = root;
-	}
-	
-	
-	@Override
-	public String getParentId()
-	{
-		return parentId;
-	}
-	
-	@Override
-	public void setParentId(String parentId)
-	{
-		this.parentId = parentId;
 	}
 	
 	
@@ -146,5 +99,18 @@ public class TimeTestEventEntity extends TestEventWithParentMetadataEntity
 	public void setStartTime(LocalTime startTime)
 	{
 		this.startTime = startTime;
+	}
+	
+	
+	@Override
+	public String getId()
+	{
+		return id;
+	}
+	
+	@Override
+	public void setId(String id)
+	{
+		this.id = id;
 	}
 }

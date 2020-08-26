@@ -39,15 +39,16 @@ public class TestEventUtils
 	/**
 	 * Checks that test event has all necessary fields set
 	 * @param event to validate
+	 * @param checkName indicates whether event name should be validated. For some events name is optional and thus shouldn't be checked
 	 * @throws CradleStorageException if validation failed
 	 */
-	public static void validateTestEvent(StoredTestEvent event) throws CradleStorageException
+	public static void validateTestEvent(StoredTestEvent event, boolean checkName) throws CradleStorageException
 	{
 		if (event.getId() == null)
 			throw new CradleStorageException("Test event ID cannot be null");
 		if (event.getId().equals(event.getParentId()))
 			throw new CradleStorageException("Test event cannot reference itself");
-		if (StringUtils.isEmpty(event.getName()))
+		if (checkName && StringUtils.isEmpty(event.getName()))
 			throw new CradleStorageException("Test event must have a name");
 		if (event.getStartTimestamp() == null)
 			throw new CradleStorageException("Test event must have a start timestamp");

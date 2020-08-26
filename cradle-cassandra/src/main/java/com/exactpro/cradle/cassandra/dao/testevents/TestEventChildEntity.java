@@ -19,6 +19,7 @@ package com.exactpro.cradle.cassandra.dao.testevents;
 import static com.exactpro.cradle.cassandra.StorageConstants.ID;
 import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
 import static com.exactpro.cradle.cassandra.StorageConstants.PARENT_ID;
+import static com.exactpro.cradle.cassandra.StorageConstants.ROOT;
 import static com.exactpro.cradle.cassandra.StorageConstants.START_DATE;
 import static com.exactpro.cradle.cassandra.StorageConstants.START_TIME;
 
@@ -36,7 +37,7 @@ import com.exactpro.cradle.testevents.StoredTestEvent;
  * Contains test event metadata related to given parent
  */
 @Entity
-public class TestEventChildEntity extends TestEventMetadataEntity
+public class TestEventChildEntity extends TestEventWithParentMetadataEntity
 {
 	@PartitionKey(0)
 	@CqlName(INSTANCE_ID)
@@ -57,6 +58,9 @@ public class TestEventChildEntity extends TestEventMetadataEntity
 	@ClusteringColumn(1)
 	@CqlName(ID)
 	private String id;
+	
+	@CqlName(ROOT)
+	private boolean root;
 	
 	
 	public TestEventChildEntity()
@@ -92,6 +96,19 @@ public class TestEventChildEntity extends TestEventMetadataEntity
 	public void setId(String id)
 	{
 		this.id = id;
+	}
+	
+	
+	@Override
+	public boolean isRoot()
+	{
+		return root;
+	}
+	
+	@Override
+	public void setRoot(boolean root)
+	{
+		this.root = root;
 	}
 	
 	

@@ -20,7 +20,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
@@ -33,26 +32,21 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 @Dao
 public interface TestEventOperator
 {
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+ROOT+" IN (true, false) and "+ID+"=:id")
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+ID+"=:id")
 	TestEventEntity get(UUID instanceId, String id, 
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+ROOT+"=true")
-	PagingIterable<TestEventEntity> getRootEvents(UUID instanceId, 
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+ROOT+" IN (true, false) and "+PARENT_ID+"=:parentId ALLOW FILTERING")
-	PagingIterable<TestEventEntity> getChildren(UUID instanceId, String parentId, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
 	DetailedTestEventEntity write(DetailedTestEventEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+INSTANCE_ID+"=:instanceId AND "+ROOT+"=:isRoot and "+ID+"=:eventId")
-	ResultSet updateStatus(UUID instanceId, String eventId, boolean isRoot, boolean success,
+	@Insert
+	CompletableFuture<DetailedTestEventEntity> writeAsync(DetailedTestEventEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
+	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+INSTANCE_ID+"=:instanceId AND "+ID+"=:id")
+	ResultSet updateStatus(UUID instanceId, String id, boolean success,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+INSTANCE_ID+"=:instanceId AND "+ROOT+"=:isRoot and "+ID+"=:eventId")
-	CompletableFuture<AsyncResultSet> updateStatusAsync(UUID instanceId, String eventId, boolean isRoot, boolean success,
+	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+INSTANCE_ID+"=:instanceId AND "+ID+"=:id")
+	CompletableFuture<AsyncResultSet> updateStatusAsync(UUID instanceId, String id, boolean success,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

@@ -29,6 +29,7 @@ import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEventWrapper;
 import com.exactpro.cradle.testevents.StoredTestEvent;
+import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
@@ -79,7 +80,8 @@ public abstract class CradleStorage
 	public abstract TestEventsMessagesLinker getTestEventsMessagesLinker();
 	
 	protected abstract Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException;
-	protected abstract Iterable<StoredTestEventWrapper> doGetRootTestEvents() throws IOException;
+	protected abstract Iterable<StoredTestEventMetadata> doGetRootTestEvents(Instant from, Instant to) 
+			throws CradleStorageException, IOException;
 	protected abstract Iterable<StoredTestEventMetadata> doGetTestEvents(StoredTestEventId parentId, Instant from, Instant to) 
 			throws CradleStorageException, IOException;
 	protected abstract Iterable<StoredTestEventMetadata> doGetTestEvents(Instant from, Instant to) throws CradleStorageException, IOException;
@@ -164,7 +166,7 @@ public abstract class CradleStorage
 		logger.debug("Storing test event {}", event.getId());
 		try
 		{
-			TestEventUtils.validateTestEvent(event);
+			TestEventUtils.validateTestEvent(event, !(event instanceof StoredTestEventBatch));
 		}
 		catch (CradleStorageException e)
 		{
@@ -287,15 +289,19 @@ public abstract class CradleStorage
 	}
 	
 	/**
-	 * Allows to enumerate root test events
+	 * Allows to enumerate root test events started in given range of timestamps. 
+	 * Both boundaries (from and to) should be specified
+	 * @param from left boundary of timestamps range
+	 * @param to right boundary of timestamps range
 	 * @return iterable object to enumerate root test events
+	 * @throws CradleStorageException if given parameters are invalid
 	 * @throws IOException if data retrieval failed
 	 */
-	public final Iterable<StoredTestEventWrapper> getRootTestEvents() throws IOException
+	public final Iterable<StoredTestEventMetadata> getRootTestEvents(Instant from, Instant to) throws CradleStorageException, IOException
 	{
-		logger.debug("Getting root test events");
-		Iterable<StoredTestEventWrapper> result = doGetRootTestEvents();
-		logger.debug("Prepared iterator for root test events");
+		logger.debug("Getting root test events from range {}..{}", from, to);
+		Iterable<StoredTestEventMetadata> result = doGetRootTestEvents(from, to);
+		logger.debug("Prepared iterator for root test events from range {}..{}", from, to);
 		return result;
 	}
 	

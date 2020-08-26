@@ -21,7 +21,6 @@ import static com.exactpro.cradle.cassandra.StorageConstants.END_TIME;
 import static com.exactpro.cradle.cassandra.StorageConstants.EVENT_BATCH;
 import static com.exactpro.cradle.cassandra.StorageConstants.EVENT_COUNT;
 import static com.exactpro.cradle.cassandra.StorageConstants.NAME;
-import static com.exactpro.cradle.cassandra.StorageConstants.ROOT;
 import static com.exactpro.cradle.cassandra.StorageConstants.SUCCESS;
 import static com.exactpro.cradle.cassandra.StorageConstants.TYPE;
 
@@ -48,9 +47,6 @@ import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 public abstract class TestEventMetadataEntity
 {
 	private static final Logger logger = LoggerFactory.getLogger(TestEventMetadataEntity.class);
-	
-	@CqlName(ROOT)
-	private boolean root;
 	
 	@CqlName(NAME)
 	private String name;
@@ -81,16 +77,12 @@ public abstract class TestEventMetadataEntity
 	{
 		logger.trace("Creating metadata from event");
 		
-		StoredTestEventId parentId = event.getParentId();
-		
 		this.setInstanceId(instanceId);
 		this.setStartTimestamp(event.getStartTimestamp());
 		this.setId(event.getId().toString());
 		
-		this.setRoot(parentId == null);
 		this.setName(event.getName());
 		this.setType(event.getType());
-		this.setParentId(parentId != null ? parentId.toString() : null);
 		
 		this.setEndTimestamp(event.getEndTimestamp());
 		this.setSuccess(event.isSuccess());
@@ -114,24 +106,10 @@ public abstract class TestEventMetadataEntity
 	public abstract String getId();
 	public abstract void setId(String id);
 	
-	public abstract String getParentId();
-	public abstract void setParentId(String parentId);
-	
 	public abstract LocalDate getStartDate();
 	public abstract void setStartDate(LocalDate startDate);
 	public abstract LocalTime getStartTime();
 	public abstract void setStartTime(LocalTime startTime);
-	
-	
-	public boolean isRoot()
-	{
-		return root;
-	}
-	
-	public void setRoot(boolean root)
-	{
-		this.root = root;
-	}
 	
 	
 	public String getName()
@@ -258,9 +236,6 @@ public abstract class TestEventMetadataEntity
 		result.setName(name);
 		result.setType(type);
 		
-		String parentId = getParentId();
-		if (parentId != null)
-			result.setParentId(new StoredTestEventId(parentId));
 		result.setStartTimestamp(getStartTimestamp());
 		result.setEndTimestamp(getEndTimestamp());
 		result.setSuccess(success);

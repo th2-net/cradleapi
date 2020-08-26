@@ -56,6 +56,7 @@ public class TablesCreator
 		createTimeMessagesTable();
 		createTestEventsTable();
 		createTimeTestEventsTable();
+		createRootTestEventsTable();
 		createTestEventsChildrenTable();
 		createTestEventsMessagesTable();
 		createMessagesTestEventsTable();
@@ -129,10 +130,10 @@ public class TablesCreator
 		
 		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(ROOT, DataTypes.BOOLEAN)
-				.withClusteringColumn(ID, DataTypes.TEXT)
+				.withPartitionKey(ID, DataTypes.TEXT)
 				.withColumn(NAME, DataTypes.TEXT)
 				.withColumn(TYPE, DataTypes.TEXT)
+				.withColumn(ROOT, DataTypes.BOOLEAN)
 				.withColumn(PARENT_ID, DataTypes.TEXT)
 				.withColumn(EVENT_BATCH, DataTypes.BOOLEAN)
 				.withColumn(STORED_DATE, DataTypes.DATE)
@@ -144,8 +145,7 @@ public class TablesCreator
 				.withColumn(SUCCESS, DataTypes.BOOLEAN)
 				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
 				.withColumn(CONTENT, DataTypes.BLOB)
-				.withColumn(EVENT_COUNT, DataTypes.INT)
-				.withClusteringOrder(ID, ClusteringOrder.ASC);
+				.withColumn(EVENT_COUNT, DataTypes.INT);
 		
 		exec.executeQuery(create.asCql(), true);
 		logger.info("Table '{}' has been created", tableName);
@@ -166,6 +166,31 @@ public class TablesCreator
 				.withColumn(NAME, DataTypes.TEXT)
 				.withColumn(TYPE, DataTypes.TEXT)
 				.withColumn(PARENT_ID, DataTypes.TEXT)
+				.withColumn(EVENT_BATCH, DataTypes.BOOLEAN)
+				.withColumn(END_DATE, DataTypes.DATE)
+				.withColumn(END_TIME, DataTypes.TIME)
+				.withColumn(SUCCESS, DataTypes.BOOLEAN)
+				.withColumn(EVENT_COUNT, DataTypes.INT)
+				.withClusteringOrder(START_TIME, ClusteringOrder.ASC)
+				.withClusteringOrder(ID, ClusteringOrder.ASC);
+		
+		exec.executeQuery(create.asCql(), true);
+		logger.info("Table '{}' has been created", tableName);
+	}
+	
+	public void createRootTestEventsTable() throws IOException
+	{
+		String tableName = settings.getRootTestEventsTableName();
+		if (isTableExists(tableName))
+			return;
+		
+		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				.withPartitionKey(START_DATE, DataTypes.DATE)
+				.withClusteringColumn(START_TIME, DataTypes.TIME)
+				.withClusteringColumn(ID, DataTypes.TEXT)
+				.withColumn(NAME, DataTypes.TEXT)
+				.withColumn(TYPE, DataTypes.TEXT)
 				.withColumn(EVENT_BATCH, DataTypes.BOOLEAN)
 				.withColumn(END_DATE, DataTypes.DATE)
 				.withColumn(END_TIME, DataTypes.TIME)
