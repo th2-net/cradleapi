@@ -36,6 +36,8 @@ import com.exactpro.cradle.cassandra.dao.messages.StreamEntity;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageEntity;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.DetailedTestEventEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
@@ -43,8 +45,8 @@ import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventOperator;
 import com.exactpro.cradle.cassandra.iterators.MessagesIteratorAdapter;
+import com.exactpro.cradle.cassandra.iterators.RootTestEventsMetadataIteratorAdapter;
 import com.exactpro.cradle.cassandra.iterators.TestEventChildrenMetadataIteratorAdapter;
-import com.exactpro.cradle.cassandra.iterators.TestEventsIteratorAdapter;
 import com.exactpro.cradle.cassandra.iterators.TimeTestEventsMetadataIteratorAdapter;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
@@ -206,6 +208,8 @@ public class CassandraCradleStorage extends CradleStorage
 		storeTimeEvent(event);
 		if (event.getParentId() != null)
 			storeEventInParent(event);
+		else
+			storeRootEvent(event);
 	}
 	
 	@Override
@@ -307,9 +311,16 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Iterable<StoredTestEventWrapper> doGetRootTestEvents() throws IOException
+	protected Iterable<StoredTestEventMetadata> doGetRootTestEvents(Instant from, Instant to) throws CradleStorageException, IOException
 	{
-		return new TestEventsIteratorAdapter(getTestEventOperator().getRootEvents(instanceUuid, readAttrs));
+		LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET),
+				toDateTime = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
+		checkTimeBoundaries(fromDateTime, toDateTime, from, to);
+		
+		LocalTime fromTime = fromDateTime.toLocalTime(),
+				toTime = toDateTime.toLocalTime();
+		return new RootTestEventsMetadataIteratorAdapter(getRootTestEventOperator().getTestEvents(instanceUuid, 
+				fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
 	}
 	
 	@Override
@@ -318,15 +329,12 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET),
 				toDateTime = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
-		LocalDate fromDate = fromDateTime.toLocalDate(),
-				toDate = toDateTime.toLocalDate();
-		if (!fromDate.equals(toDate))
-			throw new CradleStorageException("Left and right boundaries should be of the same date, but got '"+from+"' and '"+to+"'");
+		checkTimeBoundaries(fromDateTime, toDateTime, from, to);
 		
 		LocalTime fromTime = fromDateTime.toLocalTime(),
 				toTime = toDateTime.toLocalTime();
 		return new TestEventChildrenMetadataIteratorAdapter(getTestEventChildrenOperator().getTestEvents(instanceUuid, parentId.toString(), 
-				fromDate, fromTime, toTime, readAttrs));
+				fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
 	}
 	
 	@Override
@@ -334,14 +342,12 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET),
 				toDateTime = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
-		LocalDate fromDate = fromDateTime.toLocalDate(),
-				toDate = toDateTime.toLocalDate();
-		if (!fromDate.equals(toDate))
-			throw new CradleStorageException("Left and right boundaries should be of the same date, but got '"+from+"' and '"+to+"'");
+		checkTimeBoundaries(fromDateTime, toDateTime, from, to);
 		
 		LocalTime fromTime = fromDateTime.toLocalTime(),
 				toTime = toDateTime.toLocalTime();
-		return new TimeTestEventsMetadataIteratorAdapter(getTimeTestEventOperator().getTestEvents(instanceUuid, fromDate, fromTime, toTime, readAttrs));
+		return new TimeTestEventsMetadataIteratorAdapter(getTimeTestEventOperator().getTestEvents(instanceUuid, 
+				fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
 	}
 	
 	
@@ -429,6 +435,11 @@ public class CassandraCradleStorage extends CradleStorage
 		return dataMapper.timeTestEventOperator(settings.getKeyspace(), settings.getTimeTestEventsTableName());
 	}
 	
+	protected RootTestEventOperator getRootTestEventOperator()
+	{
+		return dataMapper.rootTestEventOperator(settings.getKeyspace(), settings.getRootTestEventsTableName());
+	}
+	
 	protected TestEventChildrenOperator getTestEventChildrenOperator()
 	{
 		return dataMapper.testEventChildrenOperator(settings.getKeyspace(), settings.getTestEventsChildrenTableName());
@@ -452,6 +463,15 @@ public class CassandraCradleStorage extends CradleStorage
 		return MessageUtils.bytesToOneMessage(entity.getContent(), entity.isCompressed(), id);
 	}
 	
+	private void checkTimeBoundaries(LocalDateTime fromDateTime, LocalDateTime toDateTime, Instant originalFrom, Instant originalTo) 
+			throws CradleStorageException
+	{
+		LocalDate fromDate = fromDateTime.toLocalDate(),
+				toDate = toDateTime.toLocalDate();
+		if (!fromDate.equals(toDate))
+			throw new CradleStorageException("Left and right boundaries should be of the same date, but got '"+originalFrom+"' and '"+originalTo+"'");
+	}
+	
 	
 	protected void storeEvent(StoredTestEvent event) throws IOException
 	{
@@ -468,6 +488,15 @@ public class CassandraCradleStorage extends CradleStorage
 		TimeTestEventOperator op = getTimeTestEventOperator();
 		logger.trace("Executing time/event storing query");
 		op.writeTestEvent(timeEntity, writeAttrs);
+	}
+	
+	protected void storeRootEvent(StoredTestEvent event) throws IOException
+	{
+		RootTestEventEntity entity = new RootTestEventEntity(event, instanceUuid);
+		
+		RootTestEventOperator op = getRootTestEventOperator();
+		logger.trace("Executing root event storing query");
+		op.writeTestEvent(entity, writeAttrs);
 	}
 	
 	protected void storeEventInParent(StoredTestEvent event) throws IOException
@@ -520,9 +549,11 @@ public class CassandraCradleStorage extends CradleStorage
 		LocalDateTime ldt = LocalDateTime.ofInstant(event.getStartTimestamp(), TIMEZONE_OFFSET);
 		LocalDate ld = ldt.toLocalDate();
 		LocalTime lt = ldt.toLocalTime();
-		getTestEventOperator().updateStatus(instanceUuid, id, parentId == null, success, writeAttrs);
+		getTestEventOperator().updateStatus(instanceUuid, id, success, writeAttrs);
 		getTimeTestEventOperator().updateStatus(instanceUuid, ld, lt, id, success, writeAttrs);
 		if (parentId != null)
 			getTestEventChildrenOperator().updateStatus(instanceUuid, parentId, ld, lt, id, success, writeAttrs);
+		else
+			getRootTestEventOperator().updateStatus(instanceUuid, ld, lt, id, success, writeAttrs);
 	}
 }

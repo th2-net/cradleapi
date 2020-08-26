@@ -30,6 +30,7 @@ public class CassandraStorageSettings
 			TIME_MESSAGES_TABLE_DEFAULT_NAME = "time_messages",
 			TEST_EVENTS_TABLE_DEFAULT_NAME = "test_events",
 			TIME_TEST_EVENTS_TABLE_DEFAULT_NAME = "time_test_events",
+			ROOT_TEST_EVENTS_TABLE_DEFAULT_NAME = "root_test_events",
 			TEST_EVENTS_CHILDREN_TABLE_DEFAULT_NAME = "test_events_children",
 			TEST_EVENTS_MESSAGES_TABLE_DEFAULT_NAME = "test_events_messages",
 			MESSAGES_TEST_EVENTS_TABLE_DEFAULT_NAME = "messages_test_events";
@@ -45,6 +46,7 @@ public class CassandraStorageSettings
 			processedMessagesTableName,
 			testEventsTableName,
 			timeTestEventsTableName,
+			rootTestEventsTableName,
 			testEventsChildrenTableName,
 			testEventsMessagesTableName,
 			messagesTestEventsTableName;
@@ -62,6 +64,7 @@ public class CassandraStorageSettings
 		this.timeMessagesTableName = TIME_MESSAGES_TABLE_DEFAULT_NAME;
 		this.testEventsTableName = TEST_EVENTS_TABLE_DEFAULT_NAME;
 		this.timeTestEventsTableName = TIME_TEST_EVENTS_TABLE_DEFAULT_NAME;
+		this.rootTestEventsTableName = ROOT_TEST_EVENTS_TABLE_DEFAULT_NAME;
 		this.testEventsChildrenTableName = TEST_EVENTS_CHILDREN_TABLE_DEFAULT_NAME;
 		this.testEventsMessagesTableName = TEST_EVENTS_MESSAGES_TABLE_DEFAULT_NAME;
 		this.messagesTestEventsTableName = MESSAGES_TEST_EVENTS_TABLE_DEFAULT_NAME;
@@ -151,6 +154,17 @@ public class CassandraStorageSettings
 	public void setTimeTestEventsTableName(String timeTestEventsTableName)
 	{
 		this.timeTestEventsTableName = timeTestEventsTableName;
+	}
+	
+	
+	public String getRootTestEventsTableName()
+	{
+		return rootTestEventsTableName;
+	}
+	
+	public void setRootTestEventsTableName(String rootTestEventsTableName)
+	{
+		this.rootTestEventsTableName = rootTestEventsTableName;
 	}
 	
 	

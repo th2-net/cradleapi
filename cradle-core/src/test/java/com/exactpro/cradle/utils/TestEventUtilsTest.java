@@ -22,7 +22,9 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.TestEventBatchToStore;
 import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.testevents.TestEventToStoreBuilder;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -58,19 +60,38 @@ public class TestEventUtilsTest
 	
 	@Test(dataProvider = "invalid events",
 			expectedExceptions = CradleStorageException.class)
-	public void eventValidationl(TestEventToStore event) throws CradleStorageException
+	public void eventValidation(TestEventToStore event) throws CradleStorageException
 	{
-		TestEventUtils.validateTestEvent(event);
+		TestEventUtils.validateTestEvent(event, true);
 	}
 	
 	@Test
 	public void validEvent() throws CradleStorageException
 	{
-		TestEventToStore event = eventBuilder.id(new StoredTestEventId("123"))
-				.name("TestEvent")
-				.startTimestamp(Instant.now())
+		TestEventToStore event = eventBuilder.id(DUMMY_ID)
+				.name(DUMMY_NAME)
+				.startTimestamp(DUMMY_START_TIMESTAMP)
 				.content("Test content".getBytes())
 				.build();
-		TestEventUtils.validateTestEvent(event);
+		TestEventUtils.validateTestEvent(event, true);
+	}
+	
+	@Test
+	public void validBatchEvent() throws CradleStorageException
+	{
+		StoredTestEventId parentId = new StoredTestEventId("ParentID");
+		TestEventToStore event = eventBuilder.id(DUMMY_ID)
+				.name(DUMMY_NAME)
+				.startTimestamp(DUMMY_START_TIMESTAMP)
+				.parentId(parentId)
+				.content("Test content".getBytes())
+				.build();
+		
+		TestEventBatchToStore batchToStore = new TestEventBatchToStore();
+		batchToStore.setParentId(parentId);
+		
+		StoredTestEventBatch batch = new StoredTestEventBatch(batchToStore);
+		batch.addTestEvent(event);
+		TestEventUtils.validateTestEvent(batch, false);
 	}
 }

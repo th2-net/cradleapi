@@ -37,18 +37,18 @@ import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
 
 @Dao
-public interface TimeTestEventOperator
+public interface RootTestEventOperator
 {
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+
 			START_DATE+"=:startDate AND "+START_TIME+">=:timeFrom AND "+START_TIME+"<=:timeTo")
-	PagingIterable<TimeTestEventEntity> getTestEvents(UUID instanceId, LocalDate startDate, LocalTime timeFrom, LocalTime timeTo, 
+	PagingIterable<RootTestEventEntity> getTestEvents(UUID instanceId, LocalDate startDate, LocalTime timeFrom, LocalTime timeTo, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
-	TimeTestEventEntity writeTestEvent(TimeTestEventEntity timeTestEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	RootTestEventEntity writeTestEvent(RootTestEventEntity rootTestEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
-	CompletableFuture<TimeTestEventEntity> writeTestEventAsync(TimeTestEventEntity timeTestEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<RootTestEventEntity> writeTestEventAsync(RootTestEventEntity rootTestEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+INSTANCE_ID+"=:instanceId AND "+
 			START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:eventId")
