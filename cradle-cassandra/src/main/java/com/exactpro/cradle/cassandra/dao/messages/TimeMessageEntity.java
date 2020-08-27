@@ -18,11 +18,15 @@ package com.exactpro.cradle.cassandra.dao.messages;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.DIRECTION;
 import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
+import static com.exactpro.cradle.cassandra.StorageConstants.MESSAGE_DATE;
 import static com.exactpro.cradle.cassandra.StorageConstants.MESSAGE_INDEX;
-import static com.exactpro.cradle.cassandra.StorageConstants.MESSAGE_TIMESTAMP;
+import static com.exactpro.cradle.cassandra.StorageConstants.MESSAGE_TIME;
 import static com.exactpro.cradle.cassandra.StorageConstants.STREAM_NAME;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -32,13 +36,14 @@ import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import com.datastax.oss.driver.api.mapper.annotations.Transient;
 import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.cassandra.CassandraCradleStorage;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageId;
-import com.exactpro.cradle.utils.TimeUtils;
 
 /**
- * Contains message data related to given time in seconds
+ * Contains message data related to given time
  */
 @Entity
 public class TimeMessageEntity
@@ -50,16 +55,20 @@ public class TimeMessageEntity
 	private UUID instanceId;
 	
 	@PartitionKey(1)
-	@CqlName(MESSAGE_TIMESTAMP)
-	private Instant messageTimestamp;
-	
-	@PartitionKey(2)
 	@CqlName(STREAM_NAME)
 	private String streamName;
 	
-	@ClusteringColumn(0)
+	@PartitionKey(2)
 	@CqlName(DIRECTION)
 	private String direction;
+	
+	@PartitionKey(3)
+	@CqlName(MESSAGE_DATE)
+	private LocalDate messageDate;
+	
+	@ClusteringColumn(0)
+	@CqlName(MESSAGE_TIME)
+	private LocalTime messageTime;
 	
 	@ClusteringColumn(1)
 	@CqlName(MESSAGE_INDEX)
@@ -94,17 +103,6 @@ public class TimeMessageEntity
 	}
 	
 	
-	public Instant getMessageTimestamp()
-	{
-		return messageTimestamp;
-	}
-	
-	public void setMessageTimestamp(Instant messageTimestamp)
-	{
-		this.messageTimestamp = TimeUtils.cutNanos(messageTimestamp);
-	}
-	
-	
 	public String getStreamName()
 	{
 		return streamName;
@@ -124,6 +122,41 @@ public class TimeMessageEntity
 	public void setDirection(String direction)
 	{
 		this.direction = direction;
+	}
+	
+	
+	public LocalDate getMessageDate()
+	{
+		return messageDate;
+	}
+	
+	public void setMessageDate(LocalDate messageDate)
+	{
+		this.messageDate = messageDate;
+	}	
+	
+	public LocalTime getMessageTime()
+	{
+		return messageTime;
+	}
+	
+	public void setMessageTime(LocalTime messageTime)
+	{
+		this.messageTime = messageTime;
+	}
+	
+	@Transient
+	public Instant getMessageTimestamp()
+	{
+		return LocalDateTime.of(getMessageDate(), getMessageTime()).toInstant(CassandraCradleStorage.TIMEZONE_OFFSET);
+	}
+	
+	@Transient
+	public void setMessageTimestamp(Instant timestamp)
+	{
+		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, CassandraCradleStorage.TIMEZONE_OFFSET);
+		setMessageDate(ldt.toLocalDate());
+		setMessageTime(ldt.toLocalTime());
 	}
 	
 	

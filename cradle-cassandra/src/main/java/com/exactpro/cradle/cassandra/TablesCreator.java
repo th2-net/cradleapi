@@ -110,11 +110,12 @@ public class TablesCreator
 		
 		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(MESSAGE_TIMESTAMP, DataTypes.TIMESTAMP)
 				.withPartitionKey(STREAM_NAME, DataTypes.TEXT)
-				.withClusteringColumn(DIRECTION, DataTypes.TEXT)
+				.withPartitionKey(DIRECTION, DataTypes.TEXT)
+				.withPartitionKey(MESSAGE_DATE, DataTypes.DATE)
+				.withClusteringColumn(MESSAGE_TIME, DataTypes.TIME)
 				.withClusteringColumn(MESSAGE_INDEX, DataTypes.BIGINT)
-				.withClusteringOrder(DIRECTION, ClusteringOrder.ASC)
+				.withClusteringOrder(MESSAGE_TIME, ClusteringOrder.ASC)
 				.withClusteringOrder(MESSAGE_INDEX, ClusteringOrder.ASC);
 		
 		exec.executeQuery(create.asCql(), true);

@@ -68,7 +68,7 @@ public abstract class CradleStorage
 	protected abstract StoredMessage doGetMessage(StoredMessageId id) throws IOException;
 	protected abstract StoredMessage doGetProcessedMessage(StoredMessageId id) throws IOException;
 	protected abstract long doGetLastMessageIndex(String streamName, Direction direction) throws IOException;
-	protected abstract StoredMessageId doGetFirstMessageId(Instant seconds, String streamName, Direction direction) throws IOException;
+	protected abstract StoredMessageId doGetNearestMessageId(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation) throws IOException;
 	protected abstract StoredTestEventWrapper doGetTestEvent(StoredTestEventId id) throws IOException;
 	protected abstract Collection<String> doGetStreams() throws IOException;
 	
@@ -242,19 +242,21 @@ public abstract class CradleStorage
 	}
 	
 	/**
-	 * Retrieves ID of first message appeared in given second as measured from Epoch start
-	 * @param seconds number of seconds passed since Epoch start
+	 * Retrieves ID of first message appeared in given timestamp or before/after it
 	 * @param streamName to which the message should be related
 	 * @param direction of message
-	 * @return ID of first message stored in given second
+	 * @param timestamp to search for messages
+	 * @param timeRelation defines if need to find message appeared before given timestamp or after it
+	 * @return ID of first message appeared in given timestamp or before/after it
 	 * @throws IOException if data retrieval failed
 	 */
-	public final StoredMessageId getFirstMessageId(Instant seconds, String streamName, Direction direction) throws IOException
+	public final StoredMessageId getNearestMessageId(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation) throws IOException
 	{
-		seconds = Instant.ofEpochSecond(seconds.getEpochSecond());  //Cutting instant to have only seconds since Epoch
-		logger.debug("Getting ID of first message appeared on {} for stream '{}' and direction '{}'", seconds, streamName, direction.getLabel());
-		StoredMessageId result = doGetFirstMessageId(seconds, streamName, direction);
-		logger.debug("First message ID appeared on {} for stream '{}' and direction '{}' got", seconds, streamName, direction.getLabel());
+		logger.debug("Getting ID of first message appeared on {} or {} for stream '{}' and direction '{}'", 
+				timestamp, timeRelation.getLabel(), streamName, direction.getLabel());
+		StoredMessageId result = doGetNearestMessageId(streamName, direction, timestamp, timeRelation);
+		logger.debug("First message ID appeared on {} or {} for stream '{}' and direction '{}' got", 
+				timestamp, timeRelation.getLabel(), streamName, direction.getLabel());
 		return result;
 	}
 	

@@ -26,6 +26,7 @@ import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.TimeRelation;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
@@ -262,10 +263,14 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected StoredMessageId doGetFirstMessageId(Instant seconds, String streamName, Direction direction) throws IOException
+	protected StoredMessageId doGetNearestMessageId(String streamName, Direction direction, Instant timestamp,
+			TimeRelation timeRelation) throws IOException
 	{
-		TimeMessageEntity result = getTimeMessageOperator()
-				.getFirstMessage(instanceUuid, seconds, streamName, direction.getLabel(), readAttrs);
+		LocalDateTime messageDateTime = LocalDateTime.ofInstant(timestamp, TIMEZONE_OFFSET);
+		TimeMessageOperator tmo = getTimeMessageOperator();
+		TimeMessageEntity result = timeRelation == TimeRelation.BEFORE ? 
+				tmo.getNearestMessageBefore(instanceUuid, streamName, messageDateTime.toLocalDate(), direction.getLabel(), messageDateTime.toLocalTime(), readAttrs) : 
+				tmo.getNearestMessageAfter(instanceUuid, streamName, messageDateTime.toLocalDate(), direction.getLabel(), messageDateTime.toLocalTime(), readAttrs);
 		return result != null ? result.createMessageId() : null;
 	}
 	
