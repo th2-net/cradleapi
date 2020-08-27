@@ -34,7 +34,8 @@ public class StorageConstants
 			LAST_MESSAGE_DATE = "last_message_date",
 			LAST_MESSAGE_TIME = "last_message_time",
 			MESSAGE_COUNT = "message_count",
-			MESSAGE_TIMESTAMP = "message_timestamp",
+			MESSAGE_DATE = "message_date",
+			MESSAGE_TIME = "message_time",
 			
 			START_DATE = "start_date",
 			START_TIME = "start_time",

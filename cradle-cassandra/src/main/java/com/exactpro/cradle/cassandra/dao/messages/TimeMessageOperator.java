@@ -16,7 +16,14 @@
 
 package com.exactpro.cradle.cassandra.dao.messages;
 
-import java.time.Instant;
+import static com.exactpro.cradle.cassandra.StorageConstants.DIRECTION;
+import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
+import static com.exactpro.cradle.cassandra.StorageConstants.MESSAGE_DATE;
+import static com.exactpro.cradle.cassandra.StorageConstants.MESSAGE_TIME;
+import static com.exactpro.cradle.cassandra.StorageConstants.STREAM_NAME;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -24,14 +31,22 @@ import java.util.function.Function;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
-import com.datastax.oss.driver.api.mapper.annotations.Select;
+import com.datastax.oss.driver.api.mapper.annotations.Query;
 
 @Dao
 public interface TimeMessageOperator
 {
-	@Select
-	TimeMessageEntity getFirstMessage(UUID instanceId, Instant storedTimestamp, String streamName, String direction, 
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
+			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction AND "+MESSAGE_DATE+"=:messageDate AND "
+			+MESSAGE_TIME+">=:messageTime ORDER BY "+MESSAGE_TIME+" ASC limit 1")
+	TimeMessageEntity getNearestMessageAfter(UUID instanceId, String streamName, LocalDate messageDate, String direction, 
+			LocalTime messageTime, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
+			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction AND "+MESSAGE_DATE+"=:messageDate AND "
+			+MESSAGE_TIME+"<=:messageTime ORDER BY "+MESSAGE_TIME+" DESC limit 1")
+	TimeMessageEntity getNearestMessageBefore(UUID instanceId, String streamName, LocalDate messageDate, String direction, 
+			LocalTime messageTime, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
 	TimeMessageEntity writeMessage(TimeMessageEntity timeMessage, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
