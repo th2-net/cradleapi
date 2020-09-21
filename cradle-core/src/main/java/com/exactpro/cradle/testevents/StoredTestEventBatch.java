@@ -44,7 +44,7 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 	private final Map<StoredTestEventId, Collection<BatchedStoredTestEvent>> children = new HashMap<>();
 	private Instant startTimestamp,
 			endTimestamp;
-	private boolean success;
+	private boolean success = true;
 	private long storedEventsSize = 0;
 	
 	public StoredTestEventBatch(TestEventBatchToStore batchData) throws CradleStorageException
@@ -230,7 +230,8 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 				endTimestamp = eventEnd;
 		}
 		
-		if (!event.isSuccess())
+		if (!event.isSuccess()) {
 			success = false;
+        }
 	}
 }
