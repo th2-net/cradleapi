@@ -1,12 +1,18 @@
-/******************************************************************************
- * Copyright (c) 2009-2020, Exactpro Systems LLC
- * www.exactpro.com
- * Build Software to Test Software
+/*
+ * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
  *
- * All rights reserved.
- * This is unpublished, licensed software, confidential and proprietary 
- * information which is the property of Exactpro Systems LLC or its licensors.
- ******************************************************************************/
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package com.exactpro.cradle.cassandra.dao.testevents;
 
@@ -24,7 +30,6 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
@@ -55,10 +60,6 @@ public class TestEventEntity
 	private UUID instanceId;
 	
 	@PartitionKey(1)
-	@CqlName(ROOT)
-	private boolean root;
-	
-	@ClusteringColumn(0)
 	@CqlName(ID)
 	private String id;
 	
@@ -67,6 +68,9 @@ public class TestEventEntity
 	
 	@CqlName(TYPE)
 	private String type;
+	
+	@CqlName(ROOT)
+	private boolean root;
 	
 	@CqlName(PARENT_ID)
 	private String parentId;
@@ -105,10 +109,10 @@ public class TestEventEntity
 		StoredTestEventId parentId = event.getParentId();
 		
 		this.setInstanceId(instanceId);
-		this.setRoot(parentId == null);
 		this.setId(event.getId().toString());
 		this.setName(event.getName());
 		this.setType(event.getType());
+		this.setRoot(parentId == null);
 		this.setParentId(parentId != null ? parentId.toString() : null);
 		
 		byte[] content;
@@ -164,17 +168,6 @@ public class TestEventEntity
 	}
 	
 	
-	public boolean isRoot()
-	{
-		return root;
-	}
-	
-	public void setRoot(boolean root)
-	{
-		this.root = root;
-	}
-	
-	
 	public String getId()
 	{
 		return id;
@@ -205,6 +198,17 @@ public class TestEventEntity
 	public void setType(String type)
 	{
 		this.type = type;
+	}
+	
+	
+	public boolean isRoot()
+	{
+		return root;
+	}
+	
+	public void setRoot(boolean root)
+	{
+		this.root = root;
 	}
 	
 	

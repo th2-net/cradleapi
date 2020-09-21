@@ -1,12 +1,18 @@
-/******************************************************************************
- * Copyright (c) 2009-2020, Exactpro Systems LLC
- * www.exactpro.com
- * Build Software to Test Software
+/*
+ * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
  *
- * All rights reserved.
- * This is unpublished, licensed software, confidential and proprietary 
- * information which is the property of Exactpro Systems LLC or its licensors.
- ******************************************************************************/
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package com.exactpro.cradle.cassandra.dao.messages;
 
@@ -29,34 +35,37 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 public interface MessageBatchOperator
 {
 	@Select
-	PagingIterable<MessageBatchEntity> get(UUID instanceId, String streamName, 
+	PagingIterable<DetailedMessageBatchEntity> get(UUID instanceId, String streamName, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Select
-	PagingIterable<MessageBatchEntity> get(UUID instanceId, String streamName, String direction, 
+	PagingIterable<DetailedMessageBatchEntity> get(UUID instanceId, String streamName, String direction, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Select
-	MessageBatchEntity get(UUID instanceId, String streamName, String direction, long messageIndex, 
+	DetailedMessageBatchEntity get(UUID instanceId, String streamName, String direction, long messageIndex, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
 			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction AND "
 			+MESSAGE_INDEX+">=:fromIndex AND "+MESSAGE_INDEX+"<=:toIndex")
-	PagingIterable<MessageBatchEntity> getMessageBatches(UUID instanceId, String streamName, String direction, long fromIndex, long toIndex, 
+	PagingIterable<DetailedMessageBatchEntity> getMessageBatches(UUID instanceId, String streamName, String direction, long fromIndex, long toIndex, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Select
-	PagingIterable<MessageBatchEntity> getAll(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	PagingIterable<DetailedMessageBatchEntity> getAll(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("SELECT MAX("+LAST_MESSAGE_INDEX+") FROM ${qualifiedTableId} WHERE "
 			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction ALLOW FILTERING")
 	long getLastIndex(UUID instanceId, String streamName, String direction, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@QueryProvider(providerClass = MessageBatchQueryProvider.class, entityHelpers = MessageBatchEntity.class)
-	PagingIterable<MessageBatchEntity> filterMessages(UUID instanceId, StoredMessageFilter filter, MessageBatchOperator operator,
+	@QueryProvider(providerClass = MessageBatchQueryProvider.class, entityHelpers = DetailedMessageBatchEntity.class)
+	PagingIterable<DetailedMessageBatchEntity> filterMessages(UUID instanceId, StoredMessageFilter filter, MessageBatchOperator operator,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes) throws CradleStorageException;
 	
+	@Query("SELECT DISTINCT "+INSTANCE_ID+", "+STREAM_NAME+" from ${qualifiedTableId}")
+	PagingIterable<StreamEntity> getStreams(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
 	@Insert
-	DetailedMessageBatchEntity write(DetailedMessageBatchEntity message, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	DetailedMessageBatchEntity writeMessageBatch(DetailedMessageBatchEntity message, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

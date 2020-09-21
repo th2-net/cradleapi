@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
@@ -178,7 +179,7 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 		if (isFull())
 			throw new CradleStorageException("Batch is full");
 		
-		TestEventUtils.validateTestEvent(event);
+		TestEventUtils.validateTestEvent(event, true);
 		
 		if (events.containsKey(event.getId()))
 			throw new CradleStorageException("Test event with ID '"+event.getId()+"' is already present in batch");
@@ -230,7 +231,7 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 		}
 		
 		if (!event.isSuccess()) {
-            success = false;
+			success = false;
         }
 	}
 }

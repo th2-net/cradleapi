@@ -1,12 +1,18 @@
-/******************************************************************************
- * Copyright (c) 2009-2020, Exactpro Systems LLC
- * www.exactpro.com
- * Build Software to Test Software
+/*
+ * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
  *
- * All rights reserved.
- * This is unpublished, licensed software, confidential and proprietary 
- * information which is the property of Exactpro Systems LLC or its licensors.
- ******************************************************************************/
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package com.exactpro.cradle.cassandra;
 
@@ -21,32 +27,47 @@ public class CassandraStorageSettings
 			INSTANCES_TABLE_DEFAULT_NAME = "instances",
 			MESSAGES_TABLE_DEFAULT_NAME = "messages",
 			PROCESSED_MESSAGES_TABLE_DEFAULT_NAME = "processed_messages",
+			TIME_MESSAGES_TABLE_DEFAULT_NAME = "time_messages",
 			TEST_EVENTS_TABLE_DEFAULT_NAME = "test_events",
-			TEST_EVENTS_MSGS_LINK_TABLE_DEFAULT_NAME = "test_events_messages_link";
+			TIME_TEST_EVENTS_TABLE_DEFAULT_NAME = "time_test_events",
+			ROOT_TEST_EVENTS_TABLE_DEFAULT_NAME = "root_test_events",
+			TEST_EVENTS_CHILDREN_TABLE_DEFAULT_NAME = "test_events_children",
+			TEST_EVENTS_MESSAGES_TABLE_DEFAULT_NAME = "test_events_messages",
+			MESSAGES_TEST_EVENTS_TABLE_DEFAULT_NAME = "messages_test_events";
 	public static final long DEFAULT_TIMEOUT = 5000;
 	public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
 	public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1;
 	public static final int BATCH_MESSAGES_LIMIT = 10,
 			TEST_EVENTS_MSGS_LINK_MAX_MSGS = 10;
-
+	
 	private final String keyspace;
 	private String messagesTableName,
+			timeMessagesTableName,
 			processedMessagesTableName,
 			testEventsTableName,
-			testEventMsgsLinkTableName;
+			timeTestEventsTableName,
+			rootTestEventsTableName,
+			testEventsChildrenTableName,
+			testEventsMessagesTableName,
+			messagesTestEventsTableName;
 	private final NetworkTopologyStrategy networkTopologyStrategy;
 	private long timeout;
 	private ConsistencyLevel writeConsistencyLevel,
 			readConsistencyLevel;
 	private int keyspaceReplicationFactor;
-
+	
 	public CassandraStorageSettings(String keyspace, NetworkTopologyStrategy networkTopologyStrategy, 
 			long timeout, ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel)
 	{
 		this.messagesTableName = MESSAGES_TABLE_DEFAULT_NAME;
 		this.processedMessagesTableName = PROCESSED_MESSAGES_TABLE_DEFAULT_NAME;
+		this.timeMessagesTableName = TIME_MESSAGES_TABLE_DEFAULT_NAME;
 		this.testEventsTableName = TEST_EVENTS_TABLE_DEFAULT_NAME;
-		this.testEventMsgsLinkTableName = TEST_EVENTS_MSGS_LINK_TABLE_DEFAULT_NAME;
+		this.timeTestEventsTableName = TIME_TEST_EVENTS_TABLE_DEFAULT_NAME;
+		this.rootTestEventsTableName = ROOT_TEST_EVENTS_TABLE_DEFAULT_NAME;
+		this.testEventsChildrenTableName = TEST_EVENTS_CHILDREN_TABLE_DEFAULT_NAME;
+		this.testEventsMessagesTableName = TEST_EVENTS_MESSAGES_TABLE_DEFAULT_NAME;
+		this.messagesTestEventsTableName = MESSAGES_TEST_EVENTS_TABLE_DEFAULT_NAME;
 		this.keyspace = keyspace;
 		this.networkTopologyStrategy = networkTopologyStrategy;
 		this.timeout = timeout;
@@ -103,6 +124,17 @@ public class CassandraStorageSettings
 	}
 	
 	
+	public String getTimeMessagesTableName()
+	{
+		return timeMessagesTableName;
+	}
+	
+	public void setTimeMessagesTableName(String timeMessagesTableName)
+	{
+		this.timeMessagesTableName = timeMessagesTableName;
+	}
+	
+	
 	public String getTestEventsTableName()
 	{
 		return testEventsTableName;
@@ -114,14 +146,58 @@ public class CassandraStorageSettings
 	}
 	
 	
-	public String getTestEventMsgsLinkTableName()
+	public String getTimeTestEventsTableName()
 	{
-		return testEventMsgsLinkTableName;
+		return timeTestEventsTableName;
 	}
 	
-	public void setTestEventMsgsLinkTableName(String testEventMsgsLinkTableName)
+	public void setTimeTestEventsTableName(String timeTestEventsTableName)
 	{
-		this.testEventMsgsLinkTableName = testEventMsgsLinkTableName;
+		this.timeTestEventsTableName = timeTestEventsTableName;
+	}
+	
+	
+	public String getRootTestEventsTableName()
+	{
+		return rootTestEventsTableName;
+	}
+	
+	public void setRootTestEventsTableName(String rootTestEventsTableName)
+	{
+		this.rootTestEventsTableName = rootTestEventsTableName;
+	}
+	
+	
+	public String getTestEventsChildrenTableName()
+	{
+		return testEventsChildrenTableName;
+	}
+	
+	public void setTestEventsChildrenTableName(String testEventsChildrenTableName)
+	{
+		this.testEventsChildrenTableName = testEventsChildrenTableName;
+	}
+	
+	
+	public String getTestEventsMessagesTableName()
+	{
+		return testEventsMessagesTableName;
+	}
+	
+	public void setTestEventsMessagesTableName(String testEventsMessagesTableName)
+	{
+		this.testEventsMessagesTableName = testEventsMessagesTableName;
+	}
+	
+	
+	public String getMessagesTestEventsTableName()
+	{
+		return messagesTestEventsTableName;
+	}
+	
+	public void setMessagesTestEventsTableName(String messagesTestEventsTableName)
+	{
+		this.messagesTestEventsTableName = messagesTestEventsTableName;
 	}
 	
 	

@@ -1,17 +1,26 @@
-/******************************************************************************
- * Copyright (c) 2009-2020, Exactpro Systems LLC
- * www.exactpro.com
- * Build Software to Test Software
+/*
+ * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
  *
- * All rights reserved.
- * This is unpublished, licensed software, confidential and proprietary 
- * information which is the property of Exactpro Systems LLC or its licensors.
- ******************************************************************************/
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package com.exactpro.cradle.cassandra;
 
 import java.io.IOException;
 import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
@@ -26,7 +35,10 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 public class TablesCreator
 {
-	private final QueryExecutor exec;;
+	private static final Logger logger = LoggerFactory.getLogger(TablesCreator.class);
+	
+	private final QueryExecutor exec;
+	private KeyspaceMetadata keyspaceMetadata;
 	private final CassandraStorageSettings settings;
 	
 	public TablesCreator(QueryExecutor exec, CassandraStorageSettings settings)
@@ -41,30 +53,43 @@ public class TablesCreator
 		createInstancesTable();
 		createMessagesTable();
 		createProcessedMessagesTable();
-		
+		createTimeMessagesTable();
 		createTestEventsTable();
-		createTestEventMessagesLinkTable();
+		createTimeTestEventsTable();
+		createRootTestEventsTable();
+		createTestEventsChildrenTable();
+		createTestEventsMessagesTable();
+		createMessagesTestEventsTable();
 	}
 	
 	public void createKeyspace()
 	{
-		Optional<KeyspaceMetadata> keyspaceExist = exec.getSession().getMetadata().getKeyspace(settings.getKeyspace());
-		if(!keyspaceExist.isPresent())
+		Optional<KeyspaceMetadata> keyspaceExists = getKeyspaceMetadata();
+		if (!keyspaceExists.isPresent())
 		{
 			CreateKeyspace createKs = settings.getNetworkTopologyStrategy() != null 
 					? SchemaBuilder.createKeyspace(settings.getKeyspace()).withNetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap()) 
 					: SchemaBuilder.createKeyspace(settings.getKeyspace()).withSimpleStrategy(settings.getKeyspaceReplicationFactor());
 			exec.getSession().execute(createKs.build());
+			logger.info("Keyspace '{}' has been created", settings.getKeyspace());
+			this.keyspaceMetadata = getKeyspaceMetadata().get();
 		}
+		else
+			this.keyspaceMetadata = keyspaceExists.get();
 	}
 
 	public void createInstancesTable() throws IOException
 	{
-		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), CassandraStorageSettings.INSTANCES_TABLE_DEFAULT_NAME).ifNotExists()
+		String tableName = CassandraStorageSettings.INSTANCES_TABLE_DEFAULT_NAME;
+		if (isTableExists(tableName))
+			return;
+		
+		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(NAME, DataTypes.TEXT)  //Name is a key for faster ID obtaining by name
 				.withColumn(ID, DataTypes.UUID);
 		
 		exec.executeQuery(create.asCql(), true);
+		logger.info("Table '{}' has been created", tableName);
 	}
 	
 	public void createMessagesTable() throws IOException
@@ -77,15 +102,39 @@ public class TablesCreator
 		createMessagesTable(settings.getProcessedMessagesTableName());
 	}
 	
+	public void createTimeMessagesTable() throws IOException
+	{
+		String tableName = settings.getTimeMessagesTableName();
+		if (isTableExists(tableName))
+			return;
+		
+		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				.withPartitionKey(STREAM_NAME, DataTypes.TEXT)
+				.withPartitionKey(DIRECTION, DataTypes.TEXT)
+				.withPartitionKey(MESSAGE_DATE, DataTypes.DATE)
+				.withClusteringColumn(MESSAGE_TIME, DataTypes.TIME)
+				.withClusteringColumn(MESSAGE_INDEX, DataTypes.BIGINT)
+				.withClusteringOrder(MESSAGE_TIME, ClusteringOrder.ASC)
+				.withClusteringOrder(MESSAGE_INDEX, ClusteringOrder.ASC);
+		
+		exec.executeQuery(create.asCql(), true);
+		logger.info("Table '{}' has been created", tableName);
+	}
+	
 
 	public void createTestEventsTable() throws IOException
 	{
-		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getTestEventsTableName()).ifNotExists()
+		String tableName = settings.getTestEventsTableName();
+		if (isTableExists(tableName))
+			return;
+		
+		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(ROOT, DataTypes.BOOLEAN)
-				.withClusteringColumn(ID, DataTypes.TEXT)
+				.withPartitionKey(ID, DataTypes.TEXT)
 				.withColumn(NAME, DataTypes.TEXT)
 				.withColumn(TYPE, DataTypes.TEXT)
+				.withColumn(ROOT, DataTypes.BOOLEAN)
 				.withColumn(PARENT_ID, DataTypes.TEXT)
 				.withColumn(EVENT_BATCH, DataTypes.BOOLEAN)
 				.withColumn(STORED_DATE, DataTypes.DATE)
@@ -97,26 +146,127 @@ public class TablesCreator
 				.withColumn(SUCCESS, DataTypes.BOOLEAN)
 				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
 				.withColumn(CONTENT, DataTypes.BLOB)
+				.withColumn(EVENT_COUNT, DataTypes.INT);
+		
+		exec.executeQuery(create.asCql(), true);
+		logger.info("Table '{}' has been created", tableName);
+	}
+	
+	public void createTimeTestEventsTable() throws IOException
+	{
+		String tableName = settings.getTimeTestEventsTableName();
+		if (isTableExists(tableName))
+			return;
+		
+		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				.withPartitionKey(START_DATE, DataTypes.DATE)
+				.withClusteringColumn(START_TIME, DataTypes.TIME)
+				.withClusteringColumn(ID, DataTypes.TEXT)
+				.withColumn(ROOT, DataTypes.BOOLEAN)
+				.withColumn(NAME, DataTypes.TEXT)
+				.withColumn(TYPE, DataTypes.TEXT)
+				.withColumn(PARENT_ID, DataTypes.TEXT)
+				.withColumn(EVENT_BATCH, DataTypes.BOOLEAN)
+				.withColumn(END_DATE, DataTypes.DATE)
+				.withColumn(END_TIME, DataTypes.TIME)
+				.withColumn(SUCCESS, DataTypes.BOOLEAN)
 				.withColumn(EVENT_COUNT, DataTypes.INT)
+				.withClusteringOrder(START_TIME, ClusteringOrder.ASC)
 				.withClusteringOrder(ID, ClusteringOrder.ASC);
 		
 		exec.executeQuery(create.asCql(), true);
+		logger.info("Table '{}' has been created", tableName);
 	}
 	
-	//Many-to-many
-	public void createTestEventMessagesLinkTable() throws IOException
+	public void createRootTestEventsTable() throws IOException
 	{
-		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), settings.getTestEventMsgsLinkTableName()).ifNotExists()
+		String tableName = settings.getRootTestEventsTableName();
+		if (isTableExists(tableName))
+			return;
+		
+		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				.withPartitionKey(START_DATE, DataTypes.DATE)
+				.withClusteringColumn(START_TIME, DataTypes.TIME)
+				.withClusteringColumn(ID, DataTypes.TEXT)
+				.withColumn(NAME, DataTypes.TEXT)
+				.withColumn(TYPE, DataTypes.TEXT)
+				.withColumn(EVENT_BATCH, DataTypes.BOOLEAN)
+				.withColumn(END_DATE, DataTypes.DATE)
+				.withColumn(END_TIME, DataTypes.TIME)
+				.withColumn(SUCCESS, DataTypes.BOOLEAN)
+				.withColumn(EVENT_COUNT, DataTypes.INT)
+				.withClusteringOrder(START_TIME, ClusteringOrder.ASC)
+				.withClusteringOrder(ID, ClusteringOrder.ASC);
+		
+		exec.executeQuery(create.asCql(), true);
+		logger.info("Table '{}' has been created", tableName);
+	}
+	
+	public void createTestEventsChildrenTable() throws IOException
+	{
+		String tableName = settings.getTestEventsChildrenTableName();
+		if (isTableExists(tableName))
+			return;
+		
+		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				.withPartitionKey(PARENT_ID, DataTypes.TEXT)
+				.withPartitionKey(START_DATE, DataTypes.DATE)
+				.withClusteringColumn(START_TIME, DataTypes.TIME)
+				.withClusteringColumn(ID, DataTypes.TEXT)
+				.withColumn(ROOT, DataTypes.BOOLEAN)
+				.withColumn(NAME, DataTypes.TEXT)
+				.withColumn(TYPE, DataTypes.TEXT)
+				.withColumn(EVENT_BATCH, DataTypes.BOOLEAN)
+				.withColumn(END_DATE, DataTypes.DATE)
+				.withColumn(END_TIME, DataTypes.TIME)
+				.withColumn(SUCCESS, DataTypes.BOOLEAN)
+				.withColumn(EVENT_COUNT, DataTypes.INT)
+				.withClusteringOrder(START_TIME, ClusteringOrder.ASC)
+				.withClusteringOrder(ID, ClusteringOrder.ASC);
+		
+		exec.executeQuery(create.asCql(), true);
+		logger.info("Table '{}' has been created", tableName);
+	}
+	
+	public void createTestEventsMessagesTable() throws IOException
+	{
+		String tableName = settings.getTestEventsMessagesTableName();
+		if (isTableExists(tableName))
+			return;
+		
+		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				.withPartitionKey(TEST_EVENT_ID, DataTypes.TEXT)
+				.withClusteringColumn(MESSAGE_IDS, DataTypes.frozenSetOf(DataTypes.TEXT));
+		
+		exec.executeQuery(create.asCql(), true);
+		logger.info("Table '{}' has been created", tableName);
+	}
+	
+	public void createMessagesTestEventsTable() throws IOException
+	{
+		String tableName = settings.getMessagesTestEventsTableName();
+		if (isTableExists(tableName))
+			return;
+		
+		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				.withPartitionKey(MESSAGE_ID, DataTypes.TEXT)
 				.withClusteringColumn(TEST_EVENT_ID, DataTypes.TEXT)
-				.withClusteringColumn(MESSAGES_IDS, DataTypes.frozenSetOf(DataTypes.TEXT))
 				.withColumn(BATCH_ID, DataTypes.TEXT);
 		
 		exec.executeQuery(create.asCql(), true);
+		logger.info("Table '{}' has been created", tableName);
 	}
 	
-	public void createMessagesTable(String name) throws IOException
+	protected void createMessagesTable(String name) throws IOException
 	{
+		if (isTableExists(name))
+			return;
+		
 		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), name).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
 				.withPartitionKey(STREAM_NAME, DataTypes.TEXT)
@@ -136,5 +286,17 @@ public class TablesCreator
 				.withClusteringOrder(MESSAGE_INDEX, ClusteringOrder.ASC);
 		
 		exec.executeQuery(create.asCql(), true);
+		logger.info("Table '{}' has been created", name);
+	}
+	
+	
+	private boolean isTableExists(String tableName)
+	{
+		return keyspaceMetadata.getTable(tableName).isPresent();
+	}
+	
+	private Optional<KeyspaceMetadata> getKeyspaceMetadata()
+	{
+		return exec.getSession().getMetadata().getKeyspace(settings.getKeyspace());
 	}
 }

@@ -1,12 +1,18 @@
-/******************************************************************************
- * Copyright (c) 2009-2020, Exactpro Systems LLC
- * www.exactpro.com
- * Build Software to Test Software
+/*
+ * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
  *
- * All rights reserved.
- * This is unpublished, licensed software, confidential and proprietary 
- * information which is the property of Exactpro Systems LLC or its licensors.
- ******************************************************************************/
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package com.exactpro.cradle.cassandra;
 
@@ -28,6 +34,8 @@ public class StorageConstants
 			LAST_MESSAGE_DATE = "last_message_date",
 			LAST_MESSAGE_TIME = "last_message_time",
 			MESSAGE_COUNT = "message_count",
+			MESSAGE_DATE = "message_date",
+			MESSAGE_TIME = "message_time",
 			
 			START_DATE = "start_date",
 			START_TIME = "start_time",
@@ -43,7 +51,8 @@ public class StorageConstants
 			END_TIMESTAMP = "end_timestamp",
 			BATCH_ID = "batch_id",
 			BATCH_SIZE = "batch_size",
-			MESSAGES_IDS = "messages_ids",
+			MESSAGE_IDS = "message_ids",
+			MESSAGE_ID = "message_id",
 			TEST_EVENT_ID = "test_event_id",
 			ROOT = "root",
 			PARENT_ID = "parent_id";
