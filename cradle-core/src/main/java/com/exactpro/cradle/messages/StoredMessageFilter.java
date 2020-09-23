@@ -33,6 +33,8 @@ public class StoredMessageFilter
 	private FilterForLess<Instant> timestampTo;
 	private int limit;
 	
+	private long leftBoundIndex = -1;
+	
 	
 	public StoredMessageFilter()
 	{
@@ -112,5 +114,24 @@ public class StoredMessageFilter
 	public void setLimit(int limit)
 	{
 		this.limit = limit;
+	}
+	
+	
+	/**
+	 * @return calculated left bound for message index while filtering by message index with "is less" or "is less or equals" condition and limit involved
+	 * This method is for internal use
+	 */
+	public long getLeftBoundIndex()
+	{
+		return leftBoundIndex;
+	}
+	
+	/**
+	 * Sets calculated left bound for message index. This method is for internal use
+	 * @param leftBoundIndex
+	 */
+	public void setLeftBoundIndex(long leftBoundIndex)
+	{
+		this.leftBoundIndex = leftBoundIndex;
 	}
 }
