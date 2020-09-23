@@ -17,16 +17,3 @@ jar {
 		attributes("Specification-Title": "Cradle Cassandra")
 	}
 }
-
-publishing {
-	publications {
-		core(MavenPublication) {
-			groupId = "${group}"
-			artifactId = 'cradle-cassandra'
-			version = "${version}"
-			
-			from components.java
-			artifact javadocJar
-		}
-	}
-}
