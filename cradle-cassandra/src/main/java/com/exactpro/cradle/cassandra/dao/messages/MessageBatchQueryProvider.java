@@ -16,10 +16,14 @@
 
 package com.exactpro.cradle.cassandra.dao.messages;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import java.util.function.Function;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.PagingIterable;
@@ -40,6 +44,10 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
 
 public class MessageBatchQueryProvider
 {
+	private static final Logger logger = LoggerFactory.getLogger(MessageBatchQueryProvider.class);
+	
+	private static final String LEFT_MESSAGE_INDEX = "left_"+MESSAGE_INDEX,
+			RIGHT_MESSAGE_INDEX = "right_"+MESSAGE_INDEX;
 	private final CqlSession session;
 	private final EntityHelper<DetailedMessageBatchEntity> helper;
 	private final Select selectStart;
@@ -68,17 +76,17 @@ public class MessageBatchQueryProvider
 	private Select addFilter(Select select, StoredMessageFilter filter)
 	{
 		if (filter.getStreamName() != null)
-			select = FilterUtils.filterToWhere(filter.getStreamName().getOperation(), select.whereColumn(STREAM_NAME));
+			select = FilterUtils.filterToWhere(filter.getStreamName().getOperation(), select.whereColumn(STREAM_NAME), null);
 		
 		if (filter.getDirection() != null)
-			select = FilterUtils.filterToWhere(filter.getDirection().getOperation(), select.whereColumn(DIRECTION));
+			select = FilterUtils.filterToWhere(filter.getDirection().getOperation(), select.whereColumn(DIRECTION), null);
 		
 		if (filter.getIndex() != null)
 		{
 			ComparisonOperation operation = filter.getIndex().getOperation();
 			//This is for case when need to return "previous X messages, i.e. X messages whose index is less than Y"
 			if (filter.getLimit() > 0 && (operation == ComparisonOperation.LESS || operation == ComparisonOperation.LESS_OR_EQUALS))
-				select = FilterUtils.filterToWhere(ComparisonOperation.GREATER, select.whereColumn(LAST_MESSAGE_INDEX));
+				select = FilterUtils.filterToWhere(ComparisonOperation.GREATER_OR_EQUALS, select.whereColumn(MESSAGE_INDEX), LEFT_MESSAGE_INDEX);
 			
 			//Overriding operation to include message's batch while selecting by query
 			//While iterating through query results original operation will be used
@@ -86,7 +94,7 @@ public class MessageBatchQueryProvider
 				operation = ComparisonOperation.GREATER_OR_EQUALS;
 			else if (operation == ComparisonOperation.LESS)
 				operation = ComparisonOperation.LESS_OR_EQUALS;
-			select = FilterUtils.filterToWhere(operation, select.whereColumn(MESSAGE_INDEX));
+			select = FilterUtils.filterToWhere(operation, select.whereColumn(MESSAGE_INDEX), RIGHT_MESSAGE_INDEX);
 		}
 		
 		//For both timestamp comparisons overriding operation with GreaterOrEquals/LessOrEquals for date portion to not skip date of timestamp 
@@ -100,15 +108,15 @@ public class MessageBatchQueryProvider
 		if (filter.getTimestampFrom() != null)
 		{
 			ComparisonOperation op = filter.getTimestampFrom().getOperation();
-			select = FilterUtils.filterToWhere(ComparisonOperation.GREATER_OR_EQUALS, select.whereColumn(FIRST_MESSAGE_DATE));
-			select = FilterUtils.filterToWhere(op, select.whereColumn(FIRST_MESSAGE_TIME));
+			select = FilterUtils.filterToWhere(ComparisonOperation.GREATER_OR_EQUALS, select.whereColumn(FIRST_MESSAGE_DATE), null);
+			select = FilterUtils.filterToWhere(op, select.whereColumn(FIRST_MESSAGE_TIME), null);
 		}
 		
 		if (filter.getTimestampTo() != null)
 		{
 			ComparisonOperation op = filter.getTimestampTo().getOperation();
-			select = FilterUtils.filterToWhere(ComparisonOperation.LESS_OR_EQUALS, select.whereColumn(LAST_MESSAGE_DATE));
-			select = FilterUtils.filterToWhere(op, select.whereColumn(LAST_MESSAGE_TIME));
+			select = FilterUtils.filterToWhere(ComparisonOperation.LESS_OR_EQUALS, select.whereColumn(LAST_MESSAGE_DATE), null);
+			select = FilterUtils.filterToWhere(op, select.whereColumn(LAST_MESSAGE_TIME), null);
 		}
 		
 		if (filter.getLimit() > 0)
@@ -156,11 +164,26 @@ public class MessageBatchQueryProvider
 		
 		if (filter.getIndex() != null)
 		{
+			DetailedMessageBatchEntity batch = getMessageBatch(filter, operator, instanceId, attributes);
+			
 			ComparisonOperation op = filter.getIndex().getOperation();
 			if (filter.getLimit() > 0 && (op == ComparisonOperation.LESS || op == ComparisonOperation.LESS_OR_EQUALS))
-				builder = builder.setLong(LAST_MESSAGE_INDEX, filter.getIndex().getValue()-filter.getLimit());
-			DetailedMessageBatchEntity batch = getMessageBatch(filter, operator, instanceId, attributes);
-			builder = builder.setLong(MESSAGE_INDEX, batch != null ? batch.getMessageIndex() : filter.getIndex().getValue());
+			{
+				long leftBatchIndex;
+				try
+				{
+  				//Finding left bound for filter (will use it in iterator) and batch index (will use it in query)
+					leftBatchIndex = CassandraMessageUtils.findLeftMessageIndex(batch, filter, instanceId, operator, attributes);
+				}
+				catch (IOException e)
+				{
+					logger.warn("Error while finding left batch index for stream "
+							+ "'"+batch.getStreamName()+"', direction '"+batch.getDirection()+"' and index "+batch.getMessageIndex(), e);
+					leftBatchIndex = batch.getMessageIndex();
+				}
+				builder = builder.setLong(LEFT_MESSAGE_INDEX, leftBatchIndex); 
+			}
+			builder = builder.setLong(RIGHT_MESSAGE_INDEX, batch != null ? batch.getMessageIndex() : filter.getIndex().getValue());
 		}
 		
 		//Both filters for timestamp are adjusted to get more batches than we will get in case of strict comparison.

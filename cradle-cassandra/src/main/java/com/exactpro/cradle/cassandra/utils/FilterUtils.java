@@ -48,11 +48,12 @@ public class FilterUtils
 	 * Adds WHERE condition to a SELECT query, putting a placeholder in place of condition value
 	 * @param operation for comparison to use while filtering
 	 * @param column to check with filter. Usually it is {@code select.whereColumn(XXX)}
+	 * @param bindMarkerName optional name for bind marker to bind parameter value in next calls
 	 * @return updated SELECT query with new WHERE condition and a placeholder in place of value. Query to update is got from {@code column} parameter
 	 */
-	public static Select filterToWhere(ComparisonOperation operation, ColumnRelationBuilder<Select> column)
+	public static Select filterToWhere(ComparisonOperation operation, ColumnRelationBuilder<Select> column, String bindMarkerName)
 	{
-		BindMarker bm = QueryBuilder.bindMarker();
+		BindMarker bm = bindMarkerName != null ? QueryBuilder.bindMarker(bindMarkerName) : QueryBuilder.bindMarker();
 		switch (operation)
 		{
 		case LESS : return column.isLessThan(bm);

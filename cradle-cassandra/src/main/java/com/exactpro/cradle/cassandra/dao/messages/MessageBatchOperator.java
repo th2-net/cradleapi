@@ -52,6 +52,12 @@ public interface MessageBatchOperator
 	PagingIterable<DetailedMessageBatchEntity> getMessageBatches(UUID instanceId, String streamName, String direction, long fromIndex, long toIndex, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
+			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction AND "
+			+MESSAGE_INDEX+"<=:toIndex ORDER BY "+DIRECTION+" DESC, "+MESSAGE_INDEX+" DESC")
+	PagingIterable<DetailedMessageBatchEntity> getMessageBatchesReversed(UUID instanceId, String streamName, String direction, long toIndex, 
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
 	@Select
 	PagingIterable<DetailedMessageBatchEntity> getAll(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
