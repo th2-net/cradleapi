@@ -1,2 +1,6 @@
 include 'cradle-core'
 include 'cradle-cassandra'
+
+// Defined names will be used for jar and artifact names
+project(':cradle-core').name = 'cradle-core'
+project(':cradle-cassandra').name = 'cradle-cassandra'

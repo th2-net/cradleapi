@@ -17,16 +17,3 @@ jar {
 		attributes("Specification-Title": "Cradle Core")
 	}
 }
-
-publishing {
-	publications {
-		core(MavenPublication) {
-			groupId = "${group}"
-			artifactId = 'cradle-core'
-			version = "${version}"
-			
-			from components.java
-			artifact javadocJar
-		}
-	}
-}

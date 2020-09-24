@@ -1,19 +1,12 @@
-ext {
-    version = file('version').text.trim()
-
-    slf4j_version = '1.7.26'
-    jackson_version = '2.9.7'
+plugins {
+    id "com.jfrog.artifactory" version '4.15.1' apply false
 }
 
-buildscript {
-	repositories {
-		maven {
-			url "https://plugins.gradle.org/m2/"
-		}
-	}
-	dependencies {
-		classpath "org.jfrog.buildinfo:build-info-extractor-gradle:2.2.5"
-	}
+ext {
+    slf4j_version = '1.7.26'
+    jackson_version = '2.9.7'
+
+    sharedDir = file("${project.rootDir}/shared")
 }
 
 subprojects {
@@ -31,27 +24,65 @@ subprojects {
 	sourceCompatibility = 1.8 //Java version compatibility to use when compiling Java source.
 	targetCompatibility = 1.8 //Java version to generate classes for.
 	compileJava.options.debugOptions.debugLevel = 'source,lines,vars' // Include debug information
-	
-	version	 = rootProject.ext.version
-	group	 = 'com.exactpro.cradle'
+
+    version = release_version
+	group   = 'com.exactpro.cradle'
 	
 	jar {
 		manifest {
-			attributes('Created-By': System.getProperty('java.version') + ' (' + System.getProperty('java.vendor') + ')')
-			attributes('Specification-Title': '')
-			attributes('Specification-Vendor': 'Exactpro Systems LLC')
-			attributes('Implementation-Title': "${project.name}")
-			attributes('Implementation-Vendor': 'Exactpro Systems LLC')
-			attributes('Implementation-Vendor-Id': 'com.exactpro')
-			attributes('Implementation-Version': "${version}")
-			attributes('Implementation-Version-Date': getDate())
+			attributes(
+					'Created-By':               "${System.getProperty('java.version')} (${System.getProperty('java.vendor')})",
+					'Specification-Title':      '',
+					'Specification-Vendor':     'Exactpro Systems LLC',
+					'Implementation-Title':     project.archivesBaseName,
+					'Implementation-Vendor':    'Exactpro Systems LLC',
+					'Implementation-Vendor-Id': 'com.exactpro',
+					'Implementation-Version':   project.version,
+					'Implementation-Version-Date': getDate()
+			)
 		}
 	}
-	
-	task javadocJar(type: Jar) {
-		from javadoc
-		classifier = 'javadoc'
-	}
+
+    java {
+        withJavadocJar()
+        withSourcesJar()
+    }
+
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                from components.java
+            }
+        }
+
+        repositories {
+            maven {
+                name = 'localRepo'
+                url = sharedDir
+            }
+        }
+    }
+
+    artifactory {
+        publish {
+            contextUrl = "${artifactory_url}"
+            repository {
+                repoKey = "${artifactory_deploy_repo_key}" // The Artifactory repository key to publish to
+                username = "${artifactory_user}" // The publisher user name
+                password = "${artifactory_password}" // The publisher password
+            }
+            defaults {
+                // Reference to Gradle publications defined in the build script.
+                // This is how we tell the Artifactory Plugin which artifacts should be
+                // published to Artifactory.
+                publications('mavenJava')
+                publishArtifacts = true
+                publishBuildInfo = true
+                // Properties to be attached to the published artifacts.
+                publishPom = true
+            }
+        }
+    }
 }
 
 static def getDate() {
