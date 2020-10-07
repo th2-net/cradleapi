@@ -24,6 +24,7 @@ import static com.exactpro.cradle.cassandra.StorageConstants.NAME;
 import static com.exactpro.cradle.cassandra.StorageConstants.SUCCESS;
 import static com.exactpro.cradle.cassandra.StorageConstants.TYPE;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -229,7 +230,7 @@ public abstract class TestEventMetadataEntity
 	}
 	
 	
-	public StoredTestEventMetadata toStoredTestEventMetadata()
+	public StoredTestEventMetadata toStoredTestEventMetadata() throws IOException
 	{
 		StoredTestEventMetadata result =  new StoredTestEventMetadata();
 		result.setId(new StoredTestEventId(getId()));

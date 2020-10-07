@@ -79,6 +79,7 @@ public abstract class TestEventWithParentMetadataEntity extends TestEventMetadat
 	}
 	
 	
+	@Override
 	public StoredTestEventMetadata toStoredTestEventMetadata() throws IOException
 	{
 		StoredTestEventMetadata result =  super.toStoredTestEventMetadata();
