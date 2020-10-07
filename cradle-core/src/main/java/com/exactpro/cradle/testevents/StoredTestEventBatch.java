@@ -130,6 +130,11 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 		return Collections.unmodifiableCollection(rootEvents);
 	}
 	
+	public StoredTestEventBatchMetadata getTestEventsMetadata()
+	{
+		return new StoredTestEventBatchMetadata(this);
+	}
+	
 	/**
 	 * @return true if no test events were added to batch yet
 	 */

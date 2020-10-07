@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle.cassandra.iterators;
 
+import java.io.IOException;
 import java.util.Iterator;
 
 import org.slf4j.Logger;
@@ -44,9 +45,16 @@ public class TimeTestEventsMetadataIterator implements Iterator<StoredTestEventM
 	@Override
 	public StoredTestEventMetadata next()
 	{
-		logger.trace("Getting next test event metadata");
+		logger.trace("Getting next time/test event metadata");
 		
 		TimeTestEventEntity r = rows.next();
-		return r.toStoredTestEventMetadata();
+		try
+		{
+			return r.toStoredTestEventMetadata();
+		}
+		catch (IOException e)
+		{
+			throw new RuntimeException("Error while getting next time/test event metadata", e);
+		}
 	}
 }

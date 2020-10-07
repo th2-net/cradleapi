@@ -43,6 +43,7 @@ public class StorageConstants
 			END_TIME = "end_time",
 			EVENT_COUNT = "event_count",
 			EVENT_BATCH = "event_batch",
+			EVENT_BATCH_METADATA = "event_batch_metadata",
 			
 			CONTENT = "z_content",  //To make this column the last one in columns list and thus faster read meta-data
 			SUCCESS = "success",

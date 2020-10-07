@@ -16,47 +16,48 @@
 
 package com.exactpro.cradle.cassandra.dao.testevents;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.END_DATE;
-import static com.exactpro.cradle.cassandra.StorageConstants.END_TIME;
-import static com.exactpro.cradle.cassandra.StorageConstants.EVENT_BATCH;
-import static com.exactpro.cradle.cassandra.StorageConstants.EVENT_COUNT;
-import static com.exactpro.cradle.cassandra.StorageConstants.NAME;
-import static com.exactpro.cradle.cassandra.StorageConstants.SUCCESS;
-import static com.exactpro.cradle.cassandra.StorageConstants.TYPE;
+import static com.exactpro.cradle.cassandra.StorageConstants.EVENT_BATCH_METADATA;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
-import com.datastax.oss.driver.api.mapper.annotations.Transient;
-import com.exactpro.cradle.cassandra.CassandraCradleStorage;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
+import com.exactpro.cradle.testevents.StoredTestEventBatchMetadata;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.StoredTestEventMetadata;
+import com.exactpro.cradle.utils.TestEventUtils;
 
 /**
  * Contains metadata of test event with parent to extend with partition and clustering fields
  */
 public abstract class TestEventWithParentMetadataEntity extends TestEventMetadataEntity
 {
+	@CqlName(EVENT_BATCH_METADATA)
+	private ByteBuffer eventBatchMetadata;
+	
 	public TestEventWithParentMetadataEntity()
 	{
 	}
 	
-	public TestEventWithParentMetadataEntity(StoredTestEvent event, UUID instanceId)
+	public TestEventWithParentMetadataEntity(StoredTestEvent event, UUID instanceId) throws IOException
 	{
 		super(event, instanceId);
 		
 		StoredTestEventId parentId = event.getParentId();
 		this.setRoot(parentId == null);
 		this.setParentId(parentId != null ? parentId.toString() : null);
+		
+		if (event instanceof StoredTestEventBatch)
+		{
+			StoredTestEventBatch batch = (StoredTestEventBatch)event;
+			byte[] metadata = TestEventUtils.serializeTestEventsMetadata(batch.getTestEventsMetadata().getTestEvents());
+			this.setEventBatchMetadata(ByteBuffer.wrap(metadata));
+		}
+		else
+			this.eventBatchMetadata = null;
 	}
 	
 	
@@ -67,12 +68,37 @@ public abstract class TestEventWithParentMetadataEntity extends TestEventMetadat
 	public abstract void setParentId(String parentId);
 	
 	
-	public StoredTestEventMetadata toStoredTestEventMetadata()
+	public ByteBuffer getEventBatchMetadata()
+	{
+		return eventBatchMetadata;
+	}
+	
+	public void setEventBatchMetadata(ByteBuffer eventBatchMetadata)
+	{
+		this.eventBatchMetadata = eventBatchMetadata;
+	}
+	
+	
+	public StoredTestEventMetadata toStoredTestEventMetadata() throws IOException
 	{
 		StoredTestEventMetadata result =  super.toStoredTestEventMetadata();
 		String parentId = getParentId();
 		if (parentId != null)
 			result.setParentId(new StoredTestEventId(parentId));
+		
+		if (eventBatchMetadata == null)
+			return result;
+		
+		try
+		{
+			StoredTestEventBatchMetadata metadata = new StoredTestEventBatchMetadata(result.getId(), result.getParentId());
+			result.setBatchMetadata(metadata);
+			TestEventUtils.deserializeTestEventsMetadata(eventBatchMetadata.array(), metadata);
+		}
+		catch (IOException e)
+		{
+			throw new IOException("Error while deserializing test events metadata", e);
+		}
 		return result;
 	}
 }
