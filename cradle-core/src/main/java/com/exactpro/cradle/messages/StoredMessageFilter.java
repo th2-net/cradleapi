@@ -128,7 +128,7 @@ public class StoredMessageFilter
 	
 	/**
 	 * Sets calculated left bound for message index. This method is for internal use
-	 * @param leftBoundIndex
+	 * @param leftBoundIndex calculated for filter
 	 */
 	public void setLeftBoundIndex(long leftBoundIndex)
 	{

@@ -23,6 +23,7 @@ import static com.exactpro.cradle.cassandra.StorageConstants.ROOT;
 import static com.exactpro.cradle.cassandra.StorageConstants.START_DATE;
 import static com.exactpro.cradle.cassandra.StorageConstants.START_TIME;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
@@ -67,7 +68,7 @@ public class TestEventChildEntity extends TestEventWithParentMetadataEntity
 	{
 	}
 	
-	public TestEventChildEntity(StoredTestEvent event, UUID instanceId)
+	public TestEventChildEntity(StoredTestEvent event, UUID instanceId) throws IOException
 	{
 		super(event, instanceId);
 	}

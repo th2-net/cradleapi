@@ -29,6 +29,7 @@ public class StoredTestEventMetadata implements StoredTestEvent
 	private boolean success,
 			batch;
 	private int eventCount;
+	private StoredTestEventBatchMetadata batchMetadata;
 	
 	public StoredTestEventMetadata()
 	{
@@ -46,13 +47,16 @@ public class StoredTestEventMetadata implements StoredTestEvent
 		
 		if (event instanceof StoredTestEventBatch)
 		{
+			StoredTestEventBatch eventBatch = (StoredTestEventBatch)event;
 			this.batch = true;
-			this.eventCount = ((StoredTestEventBatch)event).getTestEventsCount();
+			this.eventCount = eventBatch.getTestEventsCount();
+			this.batchMetadata = eventBatch.getTestEventsMetadata();
 		}
 		else
 		{
 			this.batch = false;
 			this.eventCount = 1;
+			this.batchMetadata = null;
 		}
 	}
 	
@@ -153,5 +157,16 @@ public class StoredTestEventMetadata implements StoredTestEvent
 	public void setEventCount(int eventCount)
 	{
 		this.eventCount = eventCount;
+	}
+	
+	
+	public StoredTestEventBatchMetadata getBatchMetadata()
+	{
+		return batchMetadata;
+	}
+	
+	public void setBatchMetadata(StoredTestEventBatchMetadata batchMetadata)
+	{
+		this.batchMetadata = batchMetadata;
 	}
 }
