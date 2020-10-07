@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.zip.DataFormatException;
@@ -29,8 +30,10 @@ import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
+import com.exactpro.cradle.testevents.BatchedStoredTestEventMetadata;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
+import com.exactpro.cradle.testevents.StoredTestEventBatchMetadata;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventToStore;
 
@@ -67,11 +70,27 @@ public class TestEventUtils
 				DataOutputStream dos = new DataOutputStream(out))
 		{
 			for (BatchedStoredTestEvent te : testEvents)
-			{
-				byte[] serializedTe = SerializationUtils.serialize(te);
-				dos.writeInt(serializedTe.length);
-				dos.write(serializedTe);
-			}
+				serialize(te, dos);
+			dos.flush();
+			batchContent = out.toByteArray();
+		}
+		return batchContent;
+	}
+	
+	/**
+	 * Serializes test events metadata, skipping non-meaningful or calculatable fields
+	 * @param testEventsMetadata to serialize
+	 * @return array of bytes, containing serialized metadata of events
+	 * @throws IOException if serialization failed
+	 */
+	public static byte[] serializeTestEventsMetadata(Collection<BatchedStoredTestEventMetadata> testEventsMetadata) throws IOException
+	{
+		byte[] batchContent;
+		try (ByteArrayOutputStream out = new ByteArrayOutputStream();
+				DataOutputStream dos = new DataOutputStream(out))
+		{
+			for (BatchedStoredTestEventMetadata te : testEventsMetadata)
+				serialize(te, dos);
 			dos.flush();
 			batchContent = out.toByteArray();
 		}
@@ -92,7 +111,7 @@ public class TestEventUtils
 		{
 			while (dis.available() != 0)
 			{
-				byte[] teBytes = readNextTestEventBytes(dis);
+				byte[] teBytes = readNextData(dis);
 				BatchedStoredTestEvent tempTe = deserializeTestEvent(teBytes);
 				if (tempTe.getParentId() == null)  //Workaround to fix events stored before commit f71b224e6f4dc0c8c99512de6a8f2034a1c3badc. TODO: remove it in future
 				{
@@ -110,6 +129,26 @@ public class TestEventUtils
 				}
 				else
 					StoredTestEventBatch.addTestEvent(tempTe, batch);
+			}
+		}
+	}
+	
+	/**
+	 * Deserializes all test events metadata, adding them to given batch for metadata
+	 * @param contentBytes to deserialize events metadata from
+	 * @param batch to add events to
+	 * @throws IOException if deserialization failed
+	 */
+	public static void deserializeTestEventsMetadata(byte[] contentBytes, StoredTestEventBatchMetadata batch) 
+			throws IOException
+	{
+		try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(contentBytes)))
+		{
+			while (dis.available() != 0)
+			{
+				byte[] teBytes = readNextData(dis);
+				BatchedStoredTestEventMetadata tempTe = deserializeTestEventMetadata(teBytes);
+				StoredTestEventBatchMetadata.addTestEventMetadata(tempTe, batch);
 			}
 		}
 	}
@@ -147,16 +186,28 @@ public class TestEventUtils
 	}
 	
 	
-	private static byte[] readNextTestEventBytes(DataInputStream dis) throws IOException
+	private static void serialize(Serializable data, DataOutputStream target) throws IOException
 	{
-		int teSize = dis.readInt();
-		byte[] result = new byte[teSize];
-		dis.read(result);
+		byte[] serializedData = SerializationUtils.serialize(data);
+		target.writeInt(serializedData.length);
+		target.write(serializedData);
+	}
+	
+	private static byte[] readNextData(DataInputStream source) throws IOException
+	{
+		int size = source.readInt();
+		byte[] result = new byte[size];
+		source.read(result);
 		return result;
 	}
 	
 	private static BatchedStoredTestEvent deserializeTestEvent(byte[] bytes)
 	{
 		return (BatchedStoredTestEvent)SerializationUtils.deserialize(bytes);
+	}
+	
+	private static BatchedStoredTestEventMetadata deserializeTestEventMetadata(byte[] bytes)
+	{
+		return (BatchedStoredTestEventMetadata)SerializationUtils.deserialize(bytes);
 	}
 }

@@ -172,6 +172,7 @@ public class TablesCreator
 				.withColumn(END_TIME, DataTypes.TIME)
 				.withColumn(SUCCESS, DataTypes.BOOLEAN)
 				.withColumn(EVENT_COUNT, DataTypes.INT)
+				.withColumn(EVENT_BATCH_METADATA, DataTypes.BLOB)
 				.withClusteringOrder(START_TIME, ClusteringOrder.ASC)
 				.withClusteringOrder(ID, ClusteringOrder.ASC);
 		
@@ -224,6 +225,7 @@ public class TablesCreator
 				.withColumn(END_TIME, DataTypes.TIME)
 				.withColumn(SUCCESS, DataTypes.BOOLEAN)
 				.withColumn(EVENT_COUNT, DataTypes.INT)
+				.withColumn(EVENT_BATCH_METADATA, DataTypes.BLOB)
 				.withClusteringOrder(START_TIME, ClusteringOrder.ASC)
 				.withClusteringOrder(ID, ClusteringOrder.ASC);
 		

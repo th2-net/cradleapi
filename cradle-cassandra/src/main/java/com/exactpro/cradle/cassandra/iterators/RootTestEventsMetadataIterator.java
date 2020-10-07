@@ -16,12 +16,14 @@
 
 package com.exactpro.cradle.cassandra.iterators;
 
+import java.io.IOException;
 import java.util.Iterator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildEntity;
 import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 
 public class RootTestEventsMetadataIterator implements Iterator<StoredTestEventMetadata>
@@ -44,9 +46,16 @@ public class RootTestEventsMetadataIterator implements Iterator<StoredTestEventM
 	@Override
 	public StoredTestEventMetadata next()
 	{
-		logger.trace("Getting next test event metadata");
+		logger.trace("Getting next root test event metadata");
 		
 		RootTestEventEntity r = rows.next();
-		return r.toStoredTestEventMetadata();
+		try
+		{
+			return r.toStoredTestEventMetadata();
+		}
+		catch (IOException e)
+		{
+			throw new RuntimeException("Error while getting next root test event metadata", e);
+		}
 	}
 }
