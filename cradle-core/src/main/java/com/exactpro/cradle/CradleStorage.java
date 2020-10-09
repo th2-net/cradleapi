@@ -66,6 +66,7 @@ public abstract class CradleStorage
 	protected abstract void doUpdateParentTestEvents(StoredTestEvent event) throws IOException;
 	protected abstract void doStoreTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messageIds) throws IOException;
 	protected abstract StoredMessage doGetMessage(StoredMessageId id) throws IOException;
+	protected abstract Collection<StoredMessage> doGetMessageBatch(StoredMessageId id) throws IOException;
 	protected abstract StoredMessage doGetProcessedMessage(StoredMessageId id) throws IOException;
 	protected abstract long doGetLastMessageIndex(String streamName, Direction direction) throws IOException;
 	protected abstract StoredMessageId doGetNearestMessageId(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation) throws IOException;
@@ -210,6 +211,20 @@ public abstract class CradleStorage
 		logger.debug("Getting message {}", id);
 		StoredMessage result = doGetMessage(id);
 		logger.debug("Message {} got", id);
+		return result;
+	}
+	
+	/**
+	 * Retrieves batch of messages where message with given ID is stored
+	 * @param id of stored message whose batch to retrieve
+	 * @return collection with messages stored in batch
+	 * @throws IOException if batch data retrieval failed
+	 */
+	public final Collection<StoredMessage> getMessageBatch(StoredMessageId id) throws IOException
+	{
+		logger.debug("Getting message batch by message ID {}", id);
+		Collection<StoredMessage> result = doGetMessageBatch(id);
+		logger.debug("Message batch by message ID {} got", id);
 		return result;
 	}
 	
