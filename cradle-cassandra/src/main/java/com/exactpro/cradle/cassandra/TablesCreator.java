@@ -26,6 +26,8 @@ import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
+import com.datastax.oss.driver.api.querybuilder.schema.AlterTableAddColumn;
+import com.datastax.oss.driver.api.querybuilder.schema.AlterTableAddColumnEnd;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
@@ -156,7 +158,15 @@ public class TablesCreator
 	{
 		String tableName = settings.getTimeTestEventsTableName();
 		if (isTableExists(tableName))
+		{
+			if (!isColumnExists(tableName, EVENT_BATCH_METADATA))
+			{
+				AlterTableAddColumnEnd alter = SchemaBuilder.alterTable(settings.getKeyspace(), tableName).addColumn(EVENT_BATCH_METADATA, DataTypes.BLOB);
+				exec.executeQuery(alter.asCql(), true);
+				logger.info("Table '{}' has been altered with column '{}'", tableName, EVENT_BATCH_METADATA);
+			}
 			return;
+		}
 		
 		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
@@ -209,7 +219,15 @@ public class TablesCreator
 	{
 		String tableName = settings.getTestEventsChildrenTableName();
 		if (isTableExists(tableName))
+		{
+			if (!isColumnExists(tableName, EVENT_BATCH_METADATA))
+			{
+				AlterTableAddColumnEnd alter = SchemaBuilder.alterTable(settings.getKeyspace(), tableName).addColumn(EVENT_BATCH_METADATA, DataTypes.BLOB);
+				exec.executeQuery(alter.asCql(), true);
+				logger.info("Table '{}' has been altered with column '{}'", tableName, EVENT_BATCH_METADATA);
+			}
 			return;
+		}
 		
 		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
@@ -300,5 +318,10 @@ public class TablesCreator
 	private Optional<KeyspaceMetadata> getKeyspaceMetadata()
 	{
 		return exec.getSession().getMetadata().getKeyspace(settings.getKeyspace());
+	}
+	
+	private boolean isColumnExists(String tableName, String columnName)
+	{
+		return keyspaceMetadata.getTable(tableName).get().getColumn(EVENT_BATCH_METADATA).isPresent();
 	}
 }
