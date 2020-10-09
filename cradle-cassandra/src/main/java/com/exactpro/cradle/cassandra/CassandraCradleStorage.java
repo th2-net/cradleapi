@@ -249,6 +249,13 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
+	protected Collection<StoredMessage> doGetMessageBatch(StoredMessageId id) throws IOException
+	{
+		MessageBatchEntity entity = readMessageBatchEntity(id, settings.getMessagesTableName());
+		return entity != null ? MessageUtils.bytesToMessages(entity.getContent(), entity.isCompressed()) : null;
+	}
+	
+	@Override
 	protected StoredMessage doGetProcessedMessage(StoredMessageId id) throws IOException
 	{
 		return readMessage(id, settings.getProcessedMessagesTableName());
@@ -458,10 +465,15 @@ public class CassandraCradleStorage extends CradleStorage
 				.writeMessageBatch(entity, writeAttrs);
 	}
 	
-	private StoredMessage readMessage(StoredMessageId id, String tableName) throws IOException
+	private MessageBatchEntity readMessageBatchEntity(StoredMessageId messageId, String tableName)
 	{
 		MessageBatchOperator op = dataMapper.messageBatchOperator(settings.getKeyspace(), tableName);
-		MessageBatchEntity entity = CassandraMessageUtils.getMessageBatch(id, op, instanceUuid, readAttrs);
+		return CassandraMessageUtils.getMessageBatch(messageId, op, instanceUuid, readAttrs);
+	}
+	
+	private StoredMessage readMessage(StoredMessageId id, String tableName) throws IOException
+	{
+		MessageBatchEntity entity = readMessageBatchEntity(id, tableName);
 		if (entity == null)
 			return null;
 		
