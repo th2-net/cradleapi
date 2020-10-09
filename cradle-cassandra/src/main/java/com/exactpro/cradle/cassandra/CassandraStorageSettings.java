@@ -32,6 +32,7 @@ public class CassandraStorageSettings
 			TIME_TEST_EVENTS_TABLE_DEFAULT_NAME = "time_test_events",
 			ROOT_TEST_EVENTS_TABLE_DEFAULT_NAME = "root_test_events",
 			TEST_EVENTS_CHILDREN_TABLE_DEFAULT_NAME = "test_events_children",
+			TEST_EVENTS_CHILDREN_DATES_TABLE_DEFAULT_NAME = "test_events_children_dates",
 			TEST_EVENTS_MESSAGES_TABLE_DEFAULT_NAME = "test_events_messages",
 			MESSAGES_TEST_EVENTS_TABLE_DEFAULT_NAME = "messages_test_events";
 	public static final long DEFAULT_TIMEOUT = 5000;
@@ -48,6 +49,7 @@ public class CassandraStorageSettings
 			timeTestEventsTableName,
 			rootTestEventsTableName,
 			testEventsChildrenTableName,
+			testEventsChildrenDatesTableName,
 			testEventsMessagesTableName,
 			messagesTestEventsTableName;
 	private final NetworkTopologyStrategy networkTopologyStrategy;
@@ -66,6 +68,7 @@ public class CassandraStorageSettings
 		this.timeTestEventsTableName = TIME_TEST_EVENTS_TABLE_DEFAULT_NAME;
 		this.rootTestEventsTableName = ROOT_TEST_EVENTS_TABLE_DEFAULT_NAME;
 		this.testEventsChildrenTableName = TEST_EVENTS_CHILDREN_TABLE_DEFAULT_NAME;
+		this.testEventsChildrenDatesTableName = TEST_EVENTS_CHILDREN_DATES_TABLE_DEFAULT_NAME;
 		this.testEventsMessagesTableName = TEST_EVENTS_MESSAGES_TABLE_DEFAULT_NAME;
 		this.messagesTestEventsTableName = MESSAGES_TEST_EVENTS_TABLE_DEFAULT_NAME;
 		this.keyspace = keyspace;
@@ -176,6 +179,17 @@ public class CassandraStorageSettings
 	public void setTestEventsChildrenTableName(String testEventsChildrenTableName)
 	{
 		this.testEventsChildrenTableName = testEventsChildrenTableName;
+	}
+	
+	
+	public String getTestEventsChildrenDatesTableName()
+	{
+		return testEventsChildrenDatesTableName;
+	}
+	
+	public void setTestEventsChildrenDatesTableName(String testEventsChildrenDatesTableName)
+	{
+		this.testEventsChildrenDatesTableName = testEventsChildrenDatesTableName;
 	}
 	
 	
