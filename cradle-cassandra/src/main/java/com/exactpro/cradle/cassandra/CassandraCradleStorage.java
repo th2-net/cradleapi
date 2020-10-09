@@ -37,9 +37,12 @@ import com.exactpro.cradle.cassandra.dao.messages.StreamEntity;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageEntity;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.DetailedTestEventEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventDateEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventOperator;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildDateEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenDatesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
@@ -208,7 +211,10 @@ public class CassandraCradleStorage extends CradleStorage
 		storeEvent(event);
 		storeTimeEvent(event);
 		if (event.getParentId() != null)
+		{
 			storeEventInParent(event);
+			storeEventDateInParent(event);
+		}
 		else
 			storeRootEvent(event);
 	}
@@ -369,6 +375,28 @@ public class CassandraCradleStorage extends CradleStorage
 		return result;
 	}
 	
+	@Override
+	protected Collection<Instant> doGetRootTestEventsDates() throws IOException
+	{
+		List<Instant> result = new ArrayList<>();
+		for (RootTestEventDateEntity entity : getRootTestEventOperator().getDates(readAttrs))
+		{
+			if (instanceUuid.equals(entity.getInstanceId()))
+				result.add(entity.getStartDate().atStartOfDay(TIMEZONE_OFFSET).toInstant());
+		}
+		result.sort(null);
+		return result;
+	}
+	
+	@Override
+	protected Collection<Instant> doGetTestEventsDates(StoredTestEventId parentId) throws IOException
+	{
+		Collection<Instant> result = new ArrayList<>();
+		for (TestEventChildDateEntity entity : getTestEventChildrenDatesOperator().get(instanceUuid, parentId.toString(), readAttrs))
+			result.add(entity.getStartDate().atStartOfDay(TIMEZONE_OFFSET).toInstant());
+		return result;
+	}
+	
 	
 	protected CassandraStorageSettings getSettings()
 	{
@@ -450,6 +478,12 @@ public class CassandraCradleStorage extends CradleStorage
 		return dataMapper.testEventChildrenOperator(settings.getKeyspace(), settings.getTestEventsChildrenTableName());
 	}
 	
+	protected TestEventChildrenDatesOperator getTestEventChildrenDatesOperator()
+	{
+		return dataMapper.testEventChildrenDatesOperator(settings.getKeyspace(), settings.getTestEventsChildrenDatesTableName());
+	}
+	
+	
 	private void writeMessage(StoredMessageBatch batch, String tableName) throws IOException
 	{
 		DetailedMessageBatchEntity entity = new DetailedMessageBatchEntity(batch, instanceUuid);
@@ -511,6 +545,15 @@ public class CassandraCradleStorage extends CradleStorage
 		TestEventChildrenOperator op = getTestEventChildrenOperator();
 		logger.trace("Executing parent/event storing query");
 		op.writeTestEvent(entity, writeAttrs);
+	}
+	
+	protected void storeEventDateInParent(StoredTestEvent event) throws IOException
+	{
+		TestEventChildDateEntity entity = new TestEventChildDateEntity(event, instanceUuid);
+		
+		TestEventChildrenDatesOperator op = getTestEventChildrenDatesOperator();
+		logger.trace("Executing parent/event date storing query");
+		op.writeTestEventDate(entity, writeAttrs);
 	}
 	
 	

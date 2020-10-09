@@ -71,6 +71,8 @@ public abstract class CradleStorage
 	protected abstract StoredMessageId doGetNearestMessageId(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation) throws IOException;
 	protected abstract StoredTestEventWrapper doGetTestEvent(StoredTestEventId id) throws IOException;
 	protected abstract Collection<String> doGetStreams() throws IOException;
+	protected abstract Collection<Instant> doGetRootTestEventsDates() throws IOException;
+	protected abstract Collection<Instant> doGetTestEventsDates(StoredTestEventId parentId) throws IOException;
 	
 	
 	/**
@@ -351,7 +353,7 @@ public abstract class CradleStorage
 	
 	
 	/**
-	 * Obtains list of streams whose messages are currently saved in storage
+	 * Obtains collection of streams whose messages are currently saved in storage
 	 * @return collection of stream names
 	 * @throws IOException if data retrieval failed
 	 */
@@ -360,6 +362,33 @@ public abstract class CradleStorage
 		logger.debug("Getting list of streams");
 		Collection<String> result = doGetStreams();
 		logger.debug("List of streams got");
+		return result;
+	}
+	
+	/**
+	 * Obtains collection of dates when root test events started
+	 * @return collection of start dates
+	 * @throws IOException if data retrieval failed
+	 */
+	public final Collection<Instant> getRootTestEventsDates() throws IOException
+	{
+		logger.debug("Getting list of dates of root test events");
+		Collection<Instant> result = doGetRootTestEventsDates();
+		logger.debug("List of dates of root test events got");
+		return result;
+	}
+	
+	/**
+	 * Obtains collection of dates when children of given test event started
+	 * @param parentId ID of parent test event
+	 * @return collection of start dates
+	 * @throws IOException if data retrieval failed
+	 */
+	public final Collection<Instant> getTestEventsDates(StoredTestEventId parentId) throws IOException
+	{
+		logger.debug("Getting list of dates of test event '{}' children", parentId);
+		Collection<Instant> result = doGetTestEventsDates(parentId);
+		logger.debug("List of dates of test event '{}' children got", parentId);
 		return result;
 	}
 	
