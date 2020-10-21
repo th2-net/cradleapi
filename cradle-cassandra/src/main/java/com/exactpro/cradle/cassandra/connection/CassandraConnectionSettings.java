@@ -30,6 +30,7 @@ public class CassandraConnectionSettings
 	private ConsistencyLevel writeConsistencyLevel,
 			readConsistencyLevel;
 	private NetworkTopologyStrategy networkTopologyStrategy;
+	private int maxParallelQueries;
 
 	public CassandraConnectionSettings()
 	{
@@ -43,11 +44,12 @@ public class CassandraConnectionSettings
 		writeConsistencyLevel = null;
 		readConsistencyLevel = null;
 		networkTopologyStrategy = null;
+		maxParallelQueries = 500;
 	}
 
 	public CassandraConnectionSettings(String localDataCenter, String host, int port, String keyspace)
 	{
-		super();
+		this();
 		this.localDataCenter = localDataCenter;
 		this.host = host;
 		this.port = port;
@@ -56,7 +58,7 @@ public class CassandraConnectionSettings
 
 	public CassandraConnectionSettings(CassandraConnectionSettings settings)
 	{
-		super();
+		this();
 		this.localDataCenter = settings.localDataCenter;
 		this.host = settings.host;
 		this.port = settings.port;
@@ -66,6 +68,8 @@ public class CassandraConnectionSettings
 		this.timeout = settings.timeout;
 		this.writeConsistencyLevel = settings.writeConsistencyLevel;
 		this.readConsistencyLevel = settings.readConsistencyLevel;
+		this.networkTopologyStrategy = settings.getNetworkTopologyStrategy() != null ? new NetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap()) : null;
+		this.maxParallelQueries = settings.maxParallelQueries;
 	}
 
 	
@@ -176,5 +180,16 @@ public class CassandraConnectionSettings
 	public void setNetworkTopologyStrategy(NetworkTopologyStrategy networkTopologyStrategy)
 	{
 		this.networkTopologyStrategy = networkTopologyStrategy;
+	}
+	
+	
+	public int getMaxParallelQueries()
+	{
+		return maxParallelQueries;
+	}
+	
+	public void setMaxParallelQueries(int maxParallelQueries)
+	{
+		this.maxParallelQueries = maxParallelQueries;
 	}
 }

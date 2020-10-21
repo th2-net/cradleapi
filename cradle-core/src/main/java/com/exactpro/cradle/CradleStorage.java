@@ -19,6 +19,7 @@ package com.exactpro.cradle;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,6 +72,7 @@ public abstract class CradleStorage
 	protected abstract long doGetLastMessageIndex(String streamName, Direction direction) throws IOException;
 	protected abstract StoredMessageId doGetNearestMessageId(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation) throws IOException;
 	protected abstract StoredTestEventWrapper doGetTestEvent(StoredTestEventId id) throws IOException;
+	protected abstract CompletableFuture<StoredTestEventWrapper> doGetTestEventAsync(StoredTestEventId id);
 	protected abstract Collection<String> doGetStreams() throws IOException;
 	protected abstract Collection<Instant> doGetRootTestEventsDates() throws IOException;
 	protected abstract Collection<Instant> doGetTestEventsDates(StoredTestEventId parentId) throws IOException;
@@ -85,9 +87,14 @@ public abstract class CradleStorage
 	protected abstract Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException;
 	protected abstract Iterable<StoredTestEventMetadata> doGetRootTestEvents(Instant from, Instant to) 
 			throws CradleStorageException, IOException;
+	protected abstract CompletableFuture<Iterable<StoredTestEventMetadata>> doGetRootTestEventsAsync(Instant from, Instant to) 
+			throws CradleStorageException;
 	protected abstract Iterable<StoredTestEventMetadata> doGetTestEvents(StoredTestEventId parentId, Instant from, Instant to) 
 			throws CradleStorageException, IOException;
+	protected abstract CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsAsync(StoredTestEventId parentId, Instant from, Instant to) 
+			throws CradleStorageException;
 	protected abstract Iterable<StoredTestEventMetadata> doGetTestEvents(Instant from, Instant to) throws CradleStorageException, IOException;
+	protected abstract CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsAsync(Instant from, Instant to) throws CradleStorageException;
 	
 	
 	/**
@@ -292,6 +299,19 @@ public abstract class CradleStorage
 		return result;
 	}
 	
+	/**
+	 * Asynchronously retrieves test event data stored under given ID
+	 * @param id of stored test event to retrieve
+	 * @return future to obtain data of stored test event
+	 */
+	public final CompletableFuture<StoredTestEventWrapper> getTestEventAsync(StoredTestEventId id)
+	{
+		logger.debug("Getting test event {} asynchronously", id);
+		CompletableFuture<StoredTestEventWrapper> result = doGetTestEventAsync(id);
+		logger.debug("Future for test event {} got", id);
+		return result;
+	}
+	
 	
 	/**
 	 * Allows to enumerate stored messages, optionally filtering them by given conditions
@@ -306,6 +326,7 @@ public abstract class CradleStorage
 		logger.debug("Prepared iterator for messages filtered by {}", filter);
 		return result;
 	}
+	
 	
 	/**
 	 * Allows to enumerate root test events started in given range of timestamps. 
@@ -325,6 +346,23 @@ public abstract class CradleStorage
 	}
 	
 	/**
+	 * Allows to asynchronously obtain iterable object to enumerate root test events started in given range of timestamps. 
+	 * Both boundaries (from and to) should be specified
+	 * @param from left boundary of timestamps range
+	 * @param to right boundary of timestamps range
+	 * @return future to obtain iterable object to enumerate root test events
+	 * @throws CradleStorageException if given parameters are invalid
+	 */
+	public final CompletableFuture<Iterable<StoredTestEventMetadata>> getRootTestEventsAsync(Instant from, Instant to) throws CradleStorageException
+	{
+		logger.debug("Getting root test events from range {}..{} asynchronously", from, to);
+		CompletableFuture<Iterable<StoredTestEventMetadata>> result = doGetRootTestEventsAsync(from, to);
+		logger.debug("Prepared future iterator for root test events from range {}..{}", from, to);
+		return result;
+	}
+	
+	
+	/**
 	 * Allows to enumerate children of test event with given ID that started in given range of timestamps.
 	 * Both boundaries (from and to) should be specified
 	 * @param parentId ID of parent test event
@@ -340,11 +378,33 @@ public abstract class CradleStorage
 		if (from == null || to == null)
 			throw new CradleStorageException("Both boundaries (from and to) should be specified");
 		
-		logger.debug("Getting children test events of {} from range {}..{}", parentId, from, to);
+		logger.debug("Getting child test events of {} from range {}..{}", parentId, from, to);
 		Iterable<StoredTestEventMetadata> result = doGetTestEvents(parentId, from, to);
-		logger.debug("Prepared iterator for children test events of {} from range {}..{}", parentId, from, to);
+		logger.debug("Prepared iterator for child test events of {} from range {}..{}", parentId, from, to);
 		return result;
 	}
+	
+	/**
+	 * Allows to asynchronously obtain iterable object to enumerate children of test event with given ID that started in given range of timestamps.
+	 * Both boundaries (from and to) should be specified
+	 * @param parentId ID of parent test event
+	 * @param from left boundary of timestamps range
+	 * @param to right boundary of timestamps range
+	 * @return future to obtain iterable object to enumerate test events
+	 * @throws CradleStorageException if given parameters are invalid
+	 */
+	public final CompletableFuture<Iterable<StoredTestEventMetadata>> getTestEventsAsync(StoredTestEventId parentId, 
+			Instant from, Instant to) throws CradleStorageException
+	{
+		if (from == null || to == null)
+			throw new CradleStorageException("Both boundaries (from and to) should be specified");
+		
+		logger.debug("Getting child test events of {} from range {}..{} asynchronously", parentId, from, to);
+		CompletableFuture<Iterable<StoredTestEventMetadata>> result = doGetTestEventsAsync(parentId, from, to);
+		logger.debug("Prepared future iterator for child test events of {} from range {}..{}", parentId, from, to);
+		return result;
+	}
+	
 	
 	/**
 	 * Allows to enumerate test events started in given range of timestamps. 
@@ -363,6 +423,25 @@ public abstract class CradleStorage
 		logger.debug("Getting test events from range {}..{}", from, to);
 		Iterable<StoredTestEventMetadata> result = doGetTestEvents(from, to);
 		logger.debug("Prepared iterator for test events from range {}..{}", from, to);
+		return result;
+	}
+	
+	/**
+	 * Allows to asynchronously obtain iterable object to enumerate test events started in given range of timestamps. 
+	 * Both boundaries (from and to) should be specified
+	 * @param from left boundary of timestamps range
+	 * @param to right boundary of timestamps range
+	 * @return future to obtain iterable object to enumerate test events
+	 * @throws CradleStorageException if given parameters are invalid
+	 */
+	public final CompletableFuture<Iterable<StoredTestEventMetadata>> getTestEventsAsync(Instant from, Instant to) throws CradleStorageException
+	{
+		if (from == null || to == null)
+			throw new CradleStorageException("Both boundaries (from and to) should be specified");
+		
+		logger.debug("Getting test events from range {}..{} asynchronously", from, to);
+		CompletableFuture<Iterable<StoredTestEventMetadata>> result = doGetTestEventsAsync(from, to);
+		logger.debug("Prepared future iterator for test events from range {}..{}", from, to);
 		return result;
 	}
 	
