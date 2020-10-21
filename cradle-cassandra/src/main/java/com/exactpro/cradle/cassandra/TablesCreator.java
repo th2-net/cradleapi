@@ -26,7 +26,6 @@ import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
-import com.datastax.oss.driver.api.querybuilder.schema.AlterTableAddColumn;
 import com.datastax.oss.driver.api.querybuilder.schema.AlterTableAddColumnEnd;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;

@@ -29,7 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import com.datastax.oss.driver.api.core.PagingIterable;
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
@@ -42,8 +42,8 @@ public interface TestEventChildrenOperator
 {
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+PARENT_ID+"=:parentId AND "+
 			START_DATE+"=:startDate AND "+START_TIME+">=:timeFrom AND "+START_TIME+"<=:timeTo")
-	PagingIterable<TestEventChildEntity> getTestEvents(UUID instanceId, String parentId, LocalDate startDate, LocalTime timeFrom, LocalTime timeTo, 
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<MappedAsyncPagingIterable<TestEventChildEntity>> getTestEvents(UUID instanceId, String parentId, 
+			LocalDate startDate, LocalTime timeFrom, LocalTime timeTo, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
 	TestEventChildEntity writeTestEvent(TestEventChildEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);

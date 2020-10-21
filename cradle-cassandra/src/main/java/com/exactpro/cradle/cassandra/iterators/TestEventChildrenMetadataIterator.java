@@ -18,10 +18,12 @@ package com.exactpro.cradle.cassandra.iterators;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.concurrent.ExecutionException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildEntity;
 import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 
@@ -29,17 +31,33 @@ public class TestEventChildrenMetadataIterator implements Iterator<StoredTestEve
 {
 	private final Logger logger = LoggerFactory.getLogger(TestEventChildrenMetadataIterator.class);
 	
-	private final Iterator<TestEventChildEntity> rows;
+	private MappedAsyncPagingIterable<TestEventChildEntity> rows;
+	private Iterator<TestEventChildEntity> rowsIterator;
 	
-	public TestEventChildrenMetadataIterator(Iterator<TestEventChildEntity> rows)
+	public TestEventChildrenMetadataIterator(MappedAsyncPagingIterable<TestEventChildEntity> rows)
 	{
 		this.rows = rows;
+		this.rowsIterator = rows.currentPage().iterator();
 	}
 	
 	@Override
 	public boolean hasNext()
 	{
-		return rows.hasNext();
+		if (!rowsIterator.hasNext())
+		{
+			try
+			{
+				rowsIterator = fetchNextIterator();
+			}
+			catch (Exception e)
+			{
+				throw new RuntimeException("Error while getting next page of result", e);
+			}
+			
+			if (rowsIterator == null || !rowsIterator.hasNext())
+				return false;
+		}
+		return true;
 	}
 	
 	@Override
@@ -47,7 +65,7 @@ public class TestEventChildrenMetadataIterator implements Iterator<StoredTestEve
 	{
 		logger.trace("Getting next child test event metadata");
 		
-		TestEventChildEntity r = rows.next();
+		TestEventChildEntity r = rowsIterator.next();
 		try
 		{
 			return r.toStoredTestEventMetadata();
@@ -56,5 +74,16 @@ public class TestEventChildrenMetadataIterator implements Iterator<StoredTestEve
 		{
 			throw new RuntimeException("Error while getting next child test event metadata", e);
 		}
+	}
+	
+	
+	private Iterator<TestEventChildEntity> fetchNextIterator() throws IllegalStateException, InterruptedException, ExecutionException
+	{
+		if (rows.hasMorePages())
+		{
+			rows = rows.fetchNextPage().toCompletableFuture().get();  //TODO: better to fetch next page in advance, not when current page ended
+			return rows.currentPage().iterator();
+		}
+		return null;
 	}
 }

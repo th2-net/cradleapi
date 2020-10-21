@@ -17,6 +17,7 @@
 package com.exactpro.cradle.cassandra;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
@@ -28,6 +29,7 @@ import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.TimeRelation;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
+import com.exactpro.cradle.cassandra.dao.AsyncOperator;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
@@ -81,6 +83,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
@@ -94,6 +99,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 	private final CassandraConnection connection;
 	private final CassandraStorageSettings settings;
+	private final CassandraSemaphore semaphore;
 	
 	private UUID instanceUuid;
 	private CassandraDataMapper dataMapper;
@@ -109,6 +115,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		this.connection = connection;
 		this.settings = settings;
+		this.semaphore = new CassandraSemaphore(connection.getSettings().getMaxParallelQueries());
 	}
 	
 	
@@ -290,19 +297,31 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected StoredTestEventWrapper doGetTestEvent(StoredTestEventId id) throws IOException
 	{
-		TestEventEntity entity = dataMapper.testEventOperator(settings.getKeyspace(), settings.getTestEventsTableName())
-				.get(instanceUuid, id.toString(), readAttrs);
-		if (entity == null)
-			return null;
-		
 		try
 		{
-			return entity.toStoredTestEventWrapper();
+			return doGetTestEventAsync(id).get();
 		}
-		catch (CradleStorageException e)
+		catch (Exception e)
 		{
 			throw new IOException("Could not get test event", e);
 		}
+	}
+	
+	@Override
+	protected CompletableFuture<StoredTestEventWrapper> doGetTestEventAsync(StoredTestEventId id)
+	{
+		CompletableFuture<TestEventEntity> future = new AsyncOperator<TestEventEntity>(semaphore)
+				.getFuture(() -> getTestEventOperator().get(instanceUuid, id.toString(), readAttrs));
+		return future.thenApply(e -> {
+				try
+				{
+					return e != null ? e.toStoredTestEventWrapper() : null;
+				}
+				catch (Exception error)
+				{
+					throw new CompletionException("Could not get test event", error);
+				}
+			});
 	}
 	
 	
@@ -327,9 +346,27 @@ public class CassandraCradleStorage extends CradleStorage
 			throw new IOException("Error while filtering messages", e);
 		}
 	}
-
+	
+	
 	@Override
 	protected Iterable<StoredTestEventMetadata> doGetRootTestEvents(Instant from, Instant to) throws CradleStorageException, IOException
+	{
+		try
+		{
+			return doGetRootTestEventsAsync(from, to).get();
+		}
+		catch (CradleStorageException e)
+		{
+			throw e;
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting root test events", e);
+		}
+	}
+	
+	@Override
+	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetRootTestEventsAsync(Instant from, Instant to) throws CradleStorageException
 	{
 		LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET),
 				toDateTime = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
@@ -337,26 +374,34 @@ public class CassandraCradleStorage extends CradleStorage
 		
 		LocalTime fromTime = fromDateTime.toLocalTime(),
 				toTime = toDateTime.toLocalTime();
-		return new RootTestEventsMetadataIteratorAdapter(getRootTestEventOperator().getTestEvents(instanceUuid, 
-				fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
+		
+		CompletableFuture<MappedAsyncPagingIterable<RootTestEventEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<RootTestEventEntity>>(semaphore)
+				.getFuture(() -> getRootTestEventOperator().getTestEvents(instanceUuid, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
+		return future.thenApply(it -> new RootTestEventsMetadataIteratorAdapter(it));
 	}
+	
 	
 	@Override
 	protected Iterable<StoredTestEventMetadata> doGetTestEvents(StoredTestEventId parentId, Instant from, Instant to) 
 			throws CradleStorageException, IOException
 	{
-		LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET),
-				toDateTime = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
-		checkTimeBoundaries(fromDateTime, toDateTime, from, to);
-		
-		LocalTime fromTime = fromDateTime.toLocalTime(),
-				toTime = toDateTime.toLocalTime();
-		return new TestEventChildrenMetadataIteratorAdapter(getTestEventChildrenOperator().getTestEvents(instanceUuid, parentId.toString(), 
-				fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
+		try
+		{
+			return doGetTestEventsAsync(parentId, from, to).get();
+		}
+		catch (CradleStorageException e)
+		{
+			throw e;
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting child test events", e);
+		}
 	}
 	
 	@Override
-	protected Iterable<StoredTestEventMetadata> doGetTestEvents(Instant from, Instant to) throws CradleStorageException, IOException
+	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsAsync(StoredTestEventId parentId,
+			Instant from, Instant to) throws CradleStorageException
 	{
 		LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET),
 				toDateTime = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
@@ -364,8 +409,46 @@ public class CassandraCradleStorage extends CradleStorage
 		
 		LocalTime fromTime = fromDateTime.toLocalTime(),
 				toTime = toDateTime.toLocalTime();
-		return new TimeTestEventsMetadataIteratorAdapter(getTimeTestEventOperator().getTestEvents(instanceUuid, 
-				fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
+		
+		CompletableFuture<MappedAsyncPagingIterable<TestEventChildEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<TestEventChildEntity>>(semaphore)
+				.getFuture(() -> getTestEventChildrenOperator().getTestEvents(instanceUuid, parentId.toString(), 
+						fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
+		return future.thenApply(it -> new TestEventChildrenMetadataIteratorAdapter(it));
+	}
+	
+	
+	@Override
+	protected Iterable<StoredTestEventMetadata> doGetTestEvents(Instant from, Instant to) throws CradleStorageException, IOException
+	{
+		try
+		{
+			return doGetTestEventsAsync(from, to).get();
+		}
+		catch (CradleStorageException e)
+		{
+			throw e;
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting test events", e);
+		}
+	}
+	
+	@Override
+	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsAsync(Instant from, Instant to)
+			throws CradleStorageException
+	{
+		LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET),
+				toDateTime = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
+		checkTimeBoundaries(fromDateTime, toDateTime, from, to);
+		
+		LocalTime fromTime = fromDateTime.toLocalTime(),
+				toTime = toDateTime.toLocalTime();
+		
+		CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<TimeTestEventEntity>>(semaphore)
+				.getFuture(() -> getTimeTestEventOperator().getTestEvents(instanceUuid, 
+						fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
+		return future.thenApply(it -> new TimeTestEventsMetadataIteratorAdapter(it));
 	}
 	
 	
@@ -488,6 +571,11 @@ public class CassandraCradleStorage extends CradleStorage
 	protected TestEventChildrenDatesOperator getTestEventChildrenDatesOperator()
 	{
 		return dataMapper.testEventChildrenDatesOperator(settings.getKeyspace(), settings.getTestEventsChildrenDatesTableName());
+	}
+	
+	protected CassandraSemaphore getSemaphore()
+	{
+		return semaphore;
 	}
 	
 	

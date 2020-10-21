@@ -16,18 +16,17 @@
 
 package com.exactpro.cradle.cassandra.iterators;
 
-import java.io.IOException;
 import java.util.Iterator;
 
-import com.datastax.oss.driver.api.core.PagingIterable;
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventEntity;
 import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 
 public class RootTestEventsMetadataIteratorAdapter implements Iterable<StoredTestEventMetadata>
 {
-	private final PagingIterable<RootTestEventEntity> rows;
+	private final MappedAsyncPagingIterable<RootTestEventEntity> rows;
 	
-	public RootTestEventsMetadataIteratorAdapter(PagingIterable<RootTestEventEntity> rows) throws IOException
+	public RootTestEventsMetadataIteratorAdapter(MappedAsyncPagingIterable<RootTestEventEntity> rows)
 	{
 		this.rows = rows;
 	}
@@ -35,6 +34,6 @@ public class RootTestEventsMetadataIteratorAdapter implements Iterable<StoredTes
 	@Override
 	public Iterator<StoredTestEventMetadata> iterator()
 	{
-		return new RootTestEventsMetadataIterator(rows.iterator());
+		return new RootTestEventsMetadataIterator(rows);
 	}
 }

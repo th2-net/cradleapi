@@ -33,7 +33,7 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 public interface TestEventOperator
 {
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+ID+"=:id")
-	TestEventEntity get(UUID instanceId, String id, 
+	CompletableFuture<TestEventEntity> get(UUID instanceId, String id, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
