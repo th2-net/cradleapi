@@ -46,12 +46,6 @@ public class AsyncOperator<T>
 				.whenComplete((t, error) -> {
 						if (error == null || !(error.getCause() instanceof InterruptedException))  //I.e. if semaphore was acquired
 							semaphore.releaseSemaphore(); 
-						if (error != null)
-						{
-							if (error instanceof CompletionException)
-								throw (CompletionException)error;
-							throw new CompletionException(error);
-						}
 					});
 	}
 }

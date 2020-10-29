@@ -17,6 +17,7 @@
 package com.exactpro.cradle.cassandra.dao.messages;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.PagingIterable;
@@ -73,5 +74,6 @@ public interface MessageBatchOperator
 	PagingIterable<StreamEntity> getStreams(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
-	DetailedMessageBatchEntity writeMessageBatch(DetailedMessageBatchEntity message, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<DetailedMessageBatchEntity> writeMessageBatch(DetailedMessageBatchEntity message, 
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

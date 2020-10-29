@@ -186,27 +186,66 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected void doStoreMessageBatch(StoredMessageBatch batch) throws IOException
 	{
-		logger.debug("Storing data of message batch {}", batch.getId());
-		
-		writeMessage(batch, settings.getMessagesTableName());
+		try
+		{
+			doStoreMessageBatchAsync(batch).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while storing message batch "+batch.getId(), e);
+		}
+	}
+	
+	@Override
+	protected CompletableFuture<Void> doStoreMessageBatchAsync(StoredMessageBatch batch)
+	{
+		return writeMessage(batch, settings.getMessagesTableName());
 	}
 	
 	@Override
 	protected void doStoreTimeMessage(StoredMessage message) throws IOException
 	{
-		TimeMessageEntity timeEntity = new TimeMessageEntity(message, instanceUuid);
-		
-		TimeMessageOperator op = getTimeMessageOperator();
-		logger.trace("Executing time/message storing query");
-		op.writeMessage(timeEntity, writeAttrs);
+		try
+		{
+			doStoreTimeMessageAsync(message).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while storing time/message data for message "+message.getId(), e);
+		}
+	}
+	
+	@Override
+	protected CompletableFuture<Void> doStoreTimeMessageAsync(StoredMessage message)
+	{
+		CompletableFuture<TimeMessageEntity > future = new AsyncOperator<TimeMessageEntity>(semaphore)
+				.getFuture(() -> {
+					TimeMessageEntity timeEntity = new TimeMessageEntity(message, instanceUuid);
+					
+					TimeMessageOperator op = getTimeMessageOperator();
+					logger.trace("Executing time/message storing query for message {}", message.getId());
+					return op.writeMessage(timeEntity, writeAttrs);
+				});
+		return future.thenAccept(e -> {});
 	}
 	
 	@Override
 	protected void doStoreProcessedMessageBatch(StoredMessageBatch batch) throws IOException
 	{
-		logger.debug("Storing data of processed messages batch {}", batch.getId());
-		
-		writeMessage(batch, settings.getProcessedMessagesTableName());
+		try
+		{
+			doStoreProcessedMessageBatchAsync(batch).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while storing processed message batch "+batch.getId(), e);
+		}
+	}
+	
+	@Override
+	protected CompletableFuture<Void> doStoreProcessedMessageBatchAsync(StoredMessageBatch batch)
+	{
+		return writeMessage(batch, settings.getProcessedMessagesTableName());
 	}
 	
 	
@@ -579,12 +618,25 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	
-	private void writeMessage(StoredMessageBatch batch, String tableName) throws IOException
+	private CompletableFuture<Void> writeMessage(StoredMessageBatch batch, String tableName)
 	{
-		DetailedMessageBatchEntity entity = new DetailedMessageBatchEntity(batch, instanceUuid);
-		logger.trace("Executing message batch storing query");
-		dataMapper.messageBatchOperator(settings.getKeyspace(), tableName)
-				.writeMessageBatch(entity, writeAttrs);
+		CompletableFuture<DetailedMessageBatchEntity> future = new AsyncOperator<DetailedMessageBatchEntity>(semaphore)
+				.getFuture(() -> {
+					DetailedMessageBatchEntity entity;
+					try
+					{
+						entity = new DetailedMessageBatchEntity(batch, instanceUuid);
+					}
+					catch (IOException e)
+					{
+						throw new CompletionException("Could not convert message batch "+batch.getId()+" into entity", e);
+					}
+					
+					logger.trace("Executing message batch storing query");
+					return dataMapper.messageBatchOperator(settings.getKeyspace(), tableName)
+							.writeMessageBatch(entity, writeAttrs);
+				});
+		return future.thenAccept(e -> {});
 	}
 	
 	private MessageBatchEntity readMessageBatchEntity(StoredMessageId messageId, String tableName)
