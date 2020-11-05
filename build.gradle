@@ -1,12 +1,12 @@
 plugins {
-    id "com.jfrog.artifactory" version '4.15.1' apply false
+	id "com.jfrog.artifactory" version '4.15.1' apply false
 }
 
 ext {
-    slf4j_version = '1.7.26'
-    jackson_version = '2.9.7'
+	slf4j_version = '1.7.26'
+	jackson_version = '2.9.7'
 
-    sharedDir = file("${project.rootDir}/shared")
+	sharedDir = file("${project.rootDir}/shared")
 }
 
 subprojects {
@@ -25,8 +25,8 @@ subprojects {
 	targetCompatibility = 1.8 //Java version to generate classes for.
 	compileJava.options.debugOptions.debugLevel = 'source,lines,vars' // Include debug information
 
-    version = release_version
-	group   = 'com.exactpro.cradle'
+	version = release_version
+	group   = 'com.exactpro.th2'
 	
 	jar {
 		manifest {
@@ -43,46 +43,46 @@ subprojects {
 		}
 	}
 
-    java {
-        withJavadocJar()
-        withSourcesJar()
-    }
+	java {
+		withJavadocJar()
+		withSourcesJar()
+	}
 
-    publishing {
-        publications {
-            mavenJava(MavenPublication) {
-                from components.java
-            }
-        }
+	publishing {
+		publications {
+			mavenJava(MavenPublication) {
+				from components.java
+			}
+		}
 
-        repositories {
-            maven {
-                name = 'localRepo'
-                url = sharedDir
-            }
-        }
-    }
+		repositories {
+			maven {
+				name = 'localRepo'
+				url = sharedDir
+			}
+		}
+	}
 
-    artifactory {
-        publish {
-            contextUrl = "${artifactory_url}"
-            repository {
-                repoKey = "${artifactory_deploy_repo_key}" // The Artifactory repository key to publish to
-                username = "${artifactory_user}" // The publisher user name
-                password = "${artifactory_password}" // The publisher password
-            }
-            defaults {
-                // Reference to Gradle publications defined in the build script.
-                // This is how we tell the Artifactory Plugin which artifacts should be
-                // published to Artifactory.
-                publications('mavenJava')
-                publishArtifacts = true
-                publishBuildInfo = true
-                // Properties to be attached to the published artifacts.
-                publishPom = true
-            }
-        }
-    }
+	artifactory {
+		publish {
+			contextUrl = "${artifactory_url}"
+			repository {
+				repoKey = "${artifactory_deploy_repo_key}" // The Artifactory repository key to publish to
+				username = "${artifactory_user}" // The publisher user name
+				password = "${artifactory_password}" // The publisher password
+			}
+			defaults {
+				// Reference to Gradle publications defined in the build script.
+				// This is how we tell the Artifactory Plugin which artifacts should be
+				// published to Artifactory.
+				publications('mavenJava')
+				publishArtifacts = true
+				publishBuildInfo = true
+				// Properties to be attached to the published artifacts.
+				publishPom = true
+			}
+		}
+	}
 }
 
 static def getDate() {
