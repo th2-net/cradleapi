@@ -24,8 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.exactpro.cradle.Direction;
-import com.exactpro.cradle.messages.StoredMessage;
-import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.MessageUtils;
 
@@ -216,4 +214,54 @@ public class StoredMessageBatch
 	{
 		return storedMessagesCount >= messages.length || storedMessagesSize >= MAX_MESSAGES_SIZE;
 	}
+
+    /**
+     *
+     * @param batch the batch to add to the current one.
+     *              The batch to add must contains message with same stream name and direction as the current one.
+     *              The index of the first message in the [batch] should be greater
+     *              than the last message index in the current batch.
+     * @return true if the result batch meets the restriction for message count and batch size
+     * @throws CradleStorageException if the batch doesn't meet the requirements regarding inner content
+     */
+    public boolean addBatch(StoredMessageBatch batch) throws CradleStorageException {
+        if (batch.isEmpty()) {
+            // we don't need to actually add empty batch
+            return true;
+        }
+        if (isEmpty()) {
+            this.id = batch.id;
+            this.storedMessagesCount = batch.storedMessagesCount;
+            this.storedMessagesSize = batch.storedMessagesSize;
+            System.arraycopy(batch.messages, 0, this.messages, 0, batch.storedMessagesCount);
+            return true;
+        }
+        if (isFull() || batch.isFull()) {
+            return false;
+        }
+        int resultCount = storedMessagesCount + batch.storedMessagesCount;
+        long resultSize = storedMessagesSize + batch.storedMessagesSize;
+        if (resultCount > MAX_MESSAGES_COUNT || resultSize > MAX_MESSAGES_SIZE) {
+            // cannot add because of size or count limit
+            return false;
+        }
+        verifyBatch(batch);
+        System.arraycopy(batch.messages, 0, messages, storedMessagesCount, batch.storedMessagesCount);
+        this.storedMessagesCount = resultCount;
+        this.storedMessagesSize = resultSize;
+        return true;
+    }
+
+    private void verifyBatch(StoredMessageBatch otherBatch) throws CradleStorageException {
+        StoredMessageBatchId otherId = otherBatch.id;
+        if (!Objects.equals(id.getStreamName(), otherId.getStreamName())
+                || id.getDirection() != otherId.getDirection()) {
+            throw new CradleStorageException(String.format("IDs are not compatible. Current id: %s, Other id: %s", id, otherId));
+        }
+        long currentLastIndex = getLastMessage().getIndex();
+        long otherFirstIndex = otherBatch.getFirstMessage().getIndex();
+        if (currentLastIndex >= otherFirstIndex) {
+            throw new CradleStorageException(String.format("Batches are not ordered. Current last index: %d; Other first index: %d", currentLastIndex, otherFirstIndex));
+        }
+    }
 }
