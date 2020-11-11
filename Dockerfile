@@ -1,4 +1,12 @@
 FROM gradle:6.6-jdk8 AS build
-ARG app_version=0.0.0
+ARG release_version
+ARG bintray_user
+ARG bintray_key
+ARG vcs_url
+
 COPY ./ .
-RUN gradle build -Prelease_version=${app_version}
+RUN gradle --no-daemon clean build bintrayUpload \
+    -Prelease_version=${release_version} \
+    -Pbintray_user=${bintray_user} \
+    -Pbintray_key=${bintray_key} \
+    -Pvcs_url=${vcs_url}
