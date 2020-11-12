@@ -17,6 +17,7 @@ subprojects {
 	apply plugin: 'java-library'
 	apply plugin: 'maven'
 	apply plugin: 'maven-publish'
+	apply plugin: 'com.jfrog.bintray'
 	
 	defaultTasks 'build'
 	
@@ -55,11 +56,11 @@ subprojects {
 			bintrayPublication(MavenPublication) {
 				from components.java
 				groupId group
-				artifactId rootProject.name
+				artifactId project.name
 				version project.version
 				pom.withXml {
 					def root = asNode()
-					root.appendNode('name', rootProject.name)
+					root.appendNode('name', project.name)
 					root.appendNode('url', project.vcs_url)
 				}
 			}
@@ -79,7 +80,7 @@ subprojects {
 		publications = ['bintrayPublication']
 		pkg {
 			repo = 'th2'
-			name = rootProject.name
+			name = project.name
 			userOrg = 'exactpro'
 			licenses = ['Apache-2.0']
 			vcsUrl = project.vcs_url
