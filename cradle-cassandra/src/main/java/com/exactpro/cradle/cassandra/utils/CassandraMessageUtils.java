@@ -33,6 +33,7 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
+import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageFilter;
@@ -70,6 +71,7 @@ public class CassandraMessageUtils
 	{
 		List<StoredMessage> batchMessages = new ArrayList<>(batch.toStoredMessages());
 		int count = filter.getLimit();
+		boolean inclusive = filter.getIndex().getOperation() == ComparisonOperation.LESS_OR_EQUALS;
 		
 		//Need to find out how many messages are on the left of current one in given batch.
 		//Number of messages to iterate in other batches should be reduced  by this number
@@ -82,6 +84,8 @@ public class CassandraMessageUtils
 			{
 				if (m.getIndex() == index)
 				{
+					if (inclusive)
+						count--;
 					found = true;
 					continue;
 				}
