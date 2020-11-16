@@ -17,6 +17,8 @@
 package com.exactpro.cradle.messages;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.filters.FilterForAny;
@@ -133,5 +135,25 @@ public class StoredMessageFilter
 	public void setLeftBoundIndex(long leftBoundIndex)
 	{
 		this.leftBoundIndex = leftBoundIndex;
+	}
+	
+	
+	@Override
+	public String toString()
+	{
+		List<String> result = new ArrayList<>();
+		if (streamName != null)
+			result.add("stream name"+streamName.toString());
+		if (direction != null)
+			result.add("direction"+direction.toString());
+		if (index != null)
+			result.add("index"+index.toString());
+		if (timestampFrom != null)
+			result.add("timestamp"+timestampFrom.toString());
+		if (timestampTo != null)
+			result.add("timestamp"+timestampTo.toString());
+		if (limit > 0)
+			result.add("limit="+limit);
+		return String.join(", ", result);
 	}
 }

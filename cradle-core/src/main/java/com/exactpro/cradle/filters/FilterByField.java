@@ -16,10 +16,19 @@
 
 package com.exactpro.cradle.filters;
 
+import java.util.Objects;
+
 public abstract class FilterByField<V extends Comparable<V>>
 {
 	private ComparisonOperation operation;
 	private V value;
+	
+	
+	@Override
+	public String toString()
+	{
+		return Objects.toString(operation)+Objects.toString(value);
+	}
 	
 	
 	public ComparisonOperation getOperation()
