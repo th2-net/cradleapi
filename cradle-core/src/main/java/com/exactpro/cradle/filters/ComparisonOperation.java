@@ -18,9 +18,27 @@ package com.exactpro.cradle.filters;
 
 public enum ComparisonOperation
 {
-	LESS,
-	GREATER,
-	LESS_OR_EQUALS,
-	GREATER_OR_EQUALS,
-	EQUALS;
+	LESS("<"),
+	GREATER(">"),
+	LESS_OR_EQUALS("<="),
+	GREATER_OR_EQUALS(">="),
+	EQUALS("=");
+	
+	private final String label;
+	
+	private ComparisonOperation(String label)
+	{
+		this.label = label;
+	}
+	
+	@Override
+	public String toString()
+	{
+		return label;
+	}
+	
+	public String getLabel()
+	{
+		return label;
+	}
 }
