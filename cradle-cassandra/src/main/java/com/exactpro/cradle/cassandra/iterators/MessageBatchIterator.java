@@ -17,21 +17,22 @@
 package com.exactpro.cradle.cassandra.iterators;
 
 import java.io.IOException;
+import java.util.Collection;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildEntity;
-import com.exactpro.cradle.testevents.StoredTestEventMetadata;
+import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
+import com.exactpro.cradle.messages.StoredMessage;
 
-public class TestEventChildrenMetadataIterator extends PagedIterator<StoredTestEventMetadata, TestEventChildEntity>
+public class MessageBatchIterator extends PagedIterator<Collection<StoredMessage>, DetailedMessageBatchEntity>
 {
-	public TestEventChildrenMetadataIterator(MappedAsyncPagingIterable<TestEventChildEntity> rows)
+	public MessageBatchIterator(MappedAsyncPagingIterable<DetailedMessageBatchEntity> rows)
 	{
 		super(rows);
 	}
 	
 	@Override
-	protected StoredTestEventMetadata convertEntity(TestEventChildEntity entity) throws IOException
+	protected Collection<StoredMessage> convertEntity(DetailedMessageBatchEntity entity) throws IOException
 	{
-		return entity.toStoredTestEventMetadata();
+		return entity.toStoredMessages();
 	}
 }

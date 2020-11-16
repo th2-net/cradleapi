@@ -17,73 +17,21 @@
 package com.exactpro.cradle.cassandra.iterators;
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.concurrent.ExecutionException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventEntity;
 import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 
-public class TimeTestEventsMetadataIterator implements Iterator<StoredTestEventMetadata>
+public class TimeTestEventsMetadataIterator extends PagedIterator<StoredTestEventMetadata, TimeTestEventEntity>
 {
-	private final Logger logger = LoggerFactory.getLogger(TimeTestEventsMetadataIterator.class);
-	
-	private MappedAsyncPagingIterable<TimeTestEventEntity> rows;
-	private Iterator<TimeTestEventEntity> rowsIterator;
-	
 	public TimeTestEventsMetadataIterator(MappedAsyncPagingIterable<TimeTestEventEntity> rows)
 	{
-		this.rows = rows;
-		this.rowsIterator = rows.currentPage().iterator();
+		super(rows);
 	}
 	
 	@Override
-	public boolean hasNext()
+	protected StoredTestEventMetadata convertEntity(TimeTestEventEntity entity) throws IOException
 	{
-		if (!rowsIterator.hasNext())
-		{
-			try
-			{
-				rowsIterator = fetchNextIterator();
-			}
-			catch (Exception e)
-			{
-				throw new RuntimeException("Error while getting next page of result", e);
-			}
-			
-			if (rowsIterator == null || !rowsIterator.hasNext())
-				return false;
-		}
-		return true;
-	}
-	
-	@Override
-	public StoredTestEventMetadata next()
-	{
-		logger.trace("Getting next time/test event metadata");
-		
-		TimeTestEventEntity r = rowsIterator.next();
-		try
-		{
-			return r.toStoredTestEventMetadata();
-		}
-		catch (IOException e)
-		{
-			throw new RuntimeException("Error while getting next time/test event metadata", e);
-		}
-	}
-	
-	
-	private Iterator<TimeTestEventEntity> fetchNextIterator() throws IllegalStateException, InterruptedException, ExecutionException
-	{
-		if (rows.hasMorePages())
-		{
-			rows = rows.fetchNextPage().toCompletableFuture().get();  //TODO: better to fetch next page in advance, not when current page ended
-			return rows.currentPage().iterator();
-		}
-		return null;
+		return entity.toStoredTestEventMetadata();
 	}
 }

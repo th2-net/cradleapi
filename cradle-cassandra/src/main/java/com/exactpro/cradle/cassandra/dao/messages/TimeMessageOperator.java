@@ -49,8 +49,5 @@ public interface TimeMessageOperator
 			LocalTime messageTime, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
-	TimeMessageEntity writeMessage(TimeMessageEntity timeMessage, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
-	@Insert
-	CompletableFuture<TimeMessageEntity> writeMessageAsync(TimeMessageEntity timeMessage, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<TimeMessageEntity> writeMessage(TimeMessageEntity timeMessage, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

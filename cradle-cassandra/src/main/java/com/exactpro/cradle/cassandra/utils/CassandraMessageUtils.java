@@ -26,11 +26,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
+import com.exactpro.cradle.cassandra.CassandraSemaphore;
+import com.exactpro.cradle.cassandra.dao.AsyncOperator;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.filters.ComparisonOperation;
@@ -48,22 +52,28 @@ public class CassandraMessageUtils
 				.whereColumn(INSTANCE_ID).isEqualTo(literal(instanceId));
 	}
 	
-	public static DetailedMessageBatchEntity getMessageBatch(StoredMessageId id, MessageBatchOperator op, UUID instanceId,
-			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
+	public static CompletableFuture<DetailedMessageBatchEntity> getMessageBatch(StoredMessageId id, MessageBatchOperator op, CassandraSemaphore semaphore,
+			UUID instanceId, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
 	{
-		PagingIterable<DetailedMessageBatchEntity> batches = op.getMessageBatches(instanceId, 
-						id.getStreamName(), 
-						id.getDirection().getLabel(),
-						id.getIndex()-StoredMessageBatch.MAX_MESSAGES_COUNT,
-						id.getIndex(),
-						readAttrs);
-		if (batches == null)
-			return null;
-		
-		DetailedMessageBatchEntity result = null;
-		for (Iterator<DetailedMessageBatchEntity> it = batches.iterator(); it.hasNext(); )  //Getting last entity
-			result = it.next();
-		return result;
+		return new AsyncOperator<DetailedMessageBatchEntity>(semaphore)
+				.getFuture(() -> {
+					CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> batches = op.getMessageBatches(instanceId, 
+							id.getStreamName(), 
+							id.getDirection().getLabel(),
+							id.getIndex()-StoredMessageBatch.MAX_MESSAGES_COUNT,
+							id.getIndex(),
+							readAttrs);
+					
+					return batches.thenCompose((b) -> {
+						if (b == null)
+							return CompletableFuture.completedFuture(null);
+						
+						DetailedMessageBatchEntity result = null;
+						for (Iterator<DetailedMessageBatchEntity> it = b.currentPage().iterator(); it.hasNext(); )  //Getting last entity
+							result = it.next();
+						return CompletableFuture.completedFuture(result);
+					});
+				});
 	}
 	
 	public static long findLeftMessageIndex(DetailedMessageBatchEntity batch, StoredMessageFilter filter, UUID instanceId, 

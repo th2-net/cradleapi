@@ -17,7 +17,6 @@
 package com.exactpro.cradle.cassandra.dao;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.function.Supplier;
 
 import com.exactpro.cradle.cassandra.CassandraSemaphore;
@@ -33,25 +32,18 @@ public class AsyncOperator<T>
 	
 	public CompletableFuture<T> getFuture(Supplier<CompletableFuture<T>> worker)
 	{
-		return CompletableFuture.runAsync(() -> {
-				try
-				{
-					semaphore.acquireSemaphore();
-				}
-				catch (InterruptedException e)
-				{
-					throw new CompletionException("Could not acquire semaphore permit", e);
-				}
-			}).thenCompose((v) -> worker.get())
-				.whenComplete((t, error) -> {
-						if (error == null || !(error.getCause() instanceof InterruptedException))  //I.e. if semaphore was acquired
-							semaphore.releaseSemaphore(); 
-						if (error != null)
-						{
-							if (error instanceof CompletionException)
-								throw (CompletionException)error;
-							throw new CompletionException(error);
-						}
-					});
+		try
+		{
+			semaphore.acquireSemaphore();
+		}
+		catch (InterruptedException e)
+		{
+			CompletableFuture<T> error = new CompletableFuture<>();
+			error.completeExceptionally(e);
+			return error;
+		}
+		
+		return worker.get()
+				.whenComplete((t, error) -> semaphore.releaseSemaphore());
 	}
 }
