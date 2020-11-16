@@ -70,8 +70,11 @@ public abstract class CradleStorage
 	protected abstract void doUpdateParentTestEvents(StoredTestEvent event) throws IOException;
 	protected abstract void doStoreTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messageIds) throws IOException;
 	protected abstract StoredMessage doGetMessage(StoredMessageId id) throws IOException;
+	protected abstract CompletableFuture<StoredMessage> doGetMessageAsync(StoredMessageId id);
 	protected abstract Collection<StoredMessage> doGetMessageBatch(StoredMessageId id) throws IOException;
+	protected abstract CompletableFuture<Collection<StoredMessage>> doGetMessageBatchAsync(StoredMessageId id);
 	protected abstract StoredMessage doGetProcessedMessage(StoredMessageId id) throws IOException;
+	protected abstract CompletableFuture<StoredMessage> doGetProcessedMessageAsync(StoredMessageId id);
 	protected abstract long doGetLastMessageIndex(String streamName, Direction direction) throws IOException;
 	protected abstract StoredMessageId doGetNearestMessageId(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation) throws IOException;
 	protected abstract StoredTestEventWrapper doGetTestEvent(StoredTestEventId id) throws IOException;
@@ -88,6 +91,7 @@ public abstract class CradleStorage
 	public abstract TestEventsMessagesLinker getTestEventsMessagesLinker();
 	
 	protected abstract Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException;
+	protected abstract CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter);
 	protected abstract Iterable<StoredTestEventMetadata> doGetRootTestEvents(Instant from, Instant to) 
 			throws CradleStorageException, IOException;
 	protected abstract CompletableFuture<Iterable<StoredTestEventMetadata>> doGetRootTestEventsAsync(Instant from, Instant to) 
@@ -209,8 +213,8 @@ public abstract class CradleStorage
 	
 	
 	/**
-	 * Writes data about given test event to storage.
-	 * @param event data to write.
+	 * Writes data about given test event to storage
+	 * @param event data to write
 	 * @throws IOException if data writing failed
 	 */
 	public final void storeTestEvent(StoredTestEvent event) throws IOException
@@ -264,6 +268,23 @@ public abstract class CradleStorage
 	}
 	
 	/**
+	 * Asynchronously retrieves message data stored under given ID
+	 * @param id of stored message to retrieve
+	 * @return future to obtain data of stored message
+	 */
+	public final CompletableFuture<StoredMessage> getMessageAsync(StoredMessageId id)
+	{
+		logger.debug("Getting message {} asynchronously", id);
+		return doGetMessageAsync(id)
+				.whenComplete((r, error) -> {
+					if (error != null)
+						logger.error("Error while getting message "+id+" asynchronously", error);
+					else
+						logger.debug("Message {} got asynchronously", id);
+				});
+	}
+	
+	/**
 	 * Retrieves batch of messages where message with given ID is stored
 	 * @param id of stored message whose batch to retrieve
 	 * @return collection with messages stored in batch
@@ -278,6 +299,23 @@ public abstract class CradleStorage
 	}
 	
 	/**
+	 * Asynchronously retrieves batch of messages where message with given ID is stored
+	 * @param id of stored message whose batch to retrieve
+	 * @return future to obtain collection with messages stored in batch
+	 */
+	public final CompletableFuture<Collection<StoredMessage>> getMessageBatchAsync(StoredMessageId id)
+	{
+		logger.debug("Getting message batch by message ID {} asynchronously", id);
+		return doGetMessageBatchAsync(id)
+				.whenComplete((r, error) -> {
+					if (error != null)
+						logger.error("Error while getting message batch by message ID "+id+" asynchronously", error);
+					else
+						logger.debug("Message batch by message ID {} got asynchronously", id);
+				});
+	}
+	
+	/**
 	 * Retrieves processed message data stored under given ID
 	 * @param id of stored processed message to retrieve
 	 * @return data of stored processed message
@@ -289,6 +327,23 @@ public abstract class CradleStorage
 		StoredMessage result = doGetProcessedMessage(id);
 		logger.debug("Processed message {} got", id);
 		return result;
+	}
+	
+	/**
+	 * Asynchronously retrieves processed message data stored under given ID
+	 * @param id of stored processed message to retrieve
+	 * @return future to obtain data of stored processed message
+	 */
+	public final CompletableFuture<StoredMessage> getProcessedMessageAsync(StoredMessageId id)
+	{
+		logger.debug("Getting processed message {} asynchronously", id);
+		return doGetProcessedMessageAsync(id)
+				.whenComplete((r, error) -> {
+					if (error != null)
+						logger.error("Error while getting processed message "+id+" asynchronously", error);
+					else
+						logger.debug("Processed message {} got asynchronously", id);
+				});
 	}
 	
 	/**
@@ -372,6 +427,24 @@ public abstract class CradleStorage
 		logger.debug("Filtering messages by {}", filter);
 		Iterable<StoredMessage> result = doGetMessages(filter);
 		logger.debug("Prepared iterator for messages filtered by {}", filter);
+		return result;
+	}
+	
+	/**
+	 * Allows to asynchronously obtain iterable object to enumerate stored messages, optionally filtering them by given conditions
+	 * @param filter defines conditions to filter messages by. Use null is no filtering is needed
+	 * @return future to obtain iterable object to enumerate messages
+	 */
+	public final CompletableFuture<Iterable<StoredMessage>> getMessagesAsync(StoredMessageFilter filter)
+	{
+		logger.debug("Asynchronously getting messages filtered by {}", filter);
+		CompletableFuture<Iterable<StoredMessage>> result = doGetMessagesAsync(filter)
+				.whenComplete((r, error) -> {
+					if (error != null)
+						logger.error("Error while getting messages filtered by "+filter+" asynchronously", error);
+					else
+						logger.debug("Iterator for messages filtered by {} got asynchronously", filter);
+				});
 		return result;
 	}
 	

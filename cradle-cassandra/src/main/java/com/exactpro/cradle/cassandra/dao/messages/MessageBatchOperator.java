@@ -20,6 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
@@ -27,6 +28,7 @@ import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
 import com.datastax.oss.driver.api.mapper.annotations.QueryProvider;
 import com.datastax.oss.driver.api.mapper.annotations.Select;
+import com.exactpro.cradle.cassandra.CassandraSemaphore;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.utils.CradleStorageException;
 
@@ -50,8 +52,8 @@ public interface MessageBatchOperator
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
 			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction AND "
 			+MESSAGE_INDEX+">=:fromIndex AND "+MESSAGE_INDEX+"<=:toIndex")
-	PagingIterable<DetailedMessageBatchEntity> getMessageBatches(UUID instanceId, String streamName, String direction, long fromIndex, long toIndex, 
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> getMessageBatches(UUID instanceId, String streamName, String direction, 
+			long fromIndex, long toIndex, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
 			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction AND "
@@ -67,8 +69,9 @@ public interface MessageBatchOperator
 	long getLastIndex(UUID instanceId, String streamName, String direction, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@QueryProvider(providerClass = MessageBatchQueryProvider.class, entityHelpers = DetailedMessageBatchEntity.class)
-	PagingIterable<DetailedMessageBatchEntity> filterMessages(UUID instanceId, StoredMessageFilter filter, MessageBatchOperator operator,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes) throws CradleStorageException;
+	CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> filterMessages(UUID instanceId, StoredMessageFilter filter, 
+			CassandraSemaphore semaphore, MessageBatchOperator operator,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("SELECT DISTINCT "+INSTANCE_ID+", "+STREAM_NAME+" from ${qualifiedTableId}")
 	PagingIterable<StreamEntity> getStreams(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);

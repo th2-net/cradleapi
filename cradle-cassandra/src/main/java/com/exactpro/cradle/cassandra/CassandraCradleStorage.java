@@ -297,18 +297,70 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected StoredMessage doGetMessage(StoredMessageId id) throws IOException
 	{
+		try
+		{
+			return doGetMessageAsync(id).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting message "+id, e);
+		}
+	}
+	
+	@Override
+	protected CompletableFuture<StoredMessage> doGetMessageAsync(StoredMessageId id)
+	{
 		return readMessage(id, settings.getMessagesTableName());
 	}
 	
 	@Override
 	protected Collection<StoredMessage> doGetMessageBatch(StoredMessageId id) throws IOException
 	{
-		MessageBatchEntity entity = readMessageBatchEntity(id, settings.getMessagesTableName());
-		return entity != null ? MessageUtils.bytesToMessages(entity.getContent(), entity.isCompressed()) : null;
+		try
+		{
+			return doGetMessageBatchAsync(id).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting message batch "+id, e);
+		}
+	}
+	
+	@Override
+	protected CompletableFuture<Collection<StoredMessage>> doGetMessageBatchAsync(StoredMessageId id)
+	{
+		CompletableFuture<DetailedMessageBatchEntity> entityFuture = readMessageBatchEntity(id, settings.getMessagesTableName());
+		return entityFuture.thenCompose((entity) -> {
+			if (entity == null)
+				return CompletableFuture.completedFuture(null);
+			Collection<StoredMessage> msgs;
+			try
+			{
+				msgs = MessageUtils.bytesToMessages(entity.getContent(), entity.isCompressed());
+			}
+			catch (IOException e)
+			{
+				throw new CompletionException("Error while reading message batch", e);
+			}
+			return CompletableFuture.completedFuture(msgs);
+		});
 	}
 	
 	@Override
 	protected StoredMessage doGetProcessedMessage(StoredMessageId id) throws IOException
+	{
+		try
+		{
+			return doGetProcessedMessageAsync(id).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting processed message "+id, e);
+		}
+	}
+	
+	@Override
+	protected CompletableFuture<StoredMessage> doGetProcessedMessageAsync(StoredMessageId id)
 	{
 		return readMessage(id, settings.getProcessedMessagesTableName());
 	}
@@ -374,16 +426,23 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException
 	{
-		MessageBatchOperator op = getMessageBatchOperator();
 		try
 		{
-			PagingIterable<DetailedMessageBatchEntity> entities = op.filterMessages(instanceUuid, filter, op, readAttrs);
-			return new MessagesIteratorAdapter(filter, entities);
+			return doGetMessagesAsync(filter).get();
 		}
-		catch (CradleStorageException e)
+		catch (Exception e)
 		{
-			throw new IOException("Error while filtering messages", e);
+			throw new IOException("Error while getting messages filtered by "+filter, e);
 		}
+	}
+	
+	@Override
+	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter)
+	{
+		MessageBatchOperator op = getMessageBatchOperator();
+		CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<DetailedMessageBatchEntity>>(semaphore)
+				.getFuture(() -> op.filterMessages(instanceUuid, filter, getSemaphore(), op, readAttrs));
+		return future.thenApply(it -> new MessagesIteratorAdapter(filter, it));
 	}
 	
 	
@@ -629,7 +688,9 @@ public class CassandraCradleStorage extends CradleStorage
 					}
 					catch (IOException e)
 					{
-						throw new CompletionException("Could not convert message batch "+batch.getId()+" into entity", e);
+						CompletableFuture<DetailedMessageBatchEntity> error = new CompletableFuture<>();
+						error.completeExceptionally(e);
+						return error;
 					}
 					
 					logger.trace("Executing message batch storing query");
@@ -639,19 +700,29 @@ public class CassandraCradleStorage extends CradleStorage
 		return future.thenAccept(e -> {});
 	}
 	
-	private MessageBatchEntity readMessageBatchEntity(StoredMessageId messageId, String tableName)
+	private CompletableFuture<DetailedMessageBatchEntity> readMessageBatchEntity(StoredMessageId messageId, String tableName)
 	{
 		MessageBatchOperator op = dataMapper.messageBatchOperator(settings.getKeyspace(), tableName);
-		return CassandraMessageUtils.getMessageBatch(messageId, op, instanceUuid, readAttrs);
+		return CassandraMessageUtils.getMessageBatch(messageId, op, semaphore, instanceUuid, readAttrs);
 	}
 	
-	private StoredMessage readMessage(StoredMessageId id, String tableName) throws IOException
+	private CompletableFuture<StoredMessage> readMessage(StoredMessageId id, String tableName)
 	{
-		MessageBatchEntity entity = readMessageBatchEntity(id, tableName);
-		if (entity == null)
-			return null;
-		
-		return MessageUtils.bytesToOneMessage(entity.getContent(), entity.isCompressed(), id);
+		CompletableFuture<DetailedMessageBatchEntity> entityFuture = readMessageBatchEntity(id, tableName);
+		return entityFuture.thenCompose((entity) -> {
+				if (entity == null)
+					return CompletableFuture.completedFuture(null);
+				StoredMessage msg;
+				try
+				{
+					msg = MessageUtils.bytesToOneMessage(entity.getContent(), entity.isCompressed(), id);
+				}
+				catch (IOException e)
+				{
+					throw new CompletionException("Error while reading message", e);
+				}
+				return CompletableFuture.completedFuture(msg);
+			});
 	}
 	
 	private void checkTimeBoundaries(LocalDateTime fromDateTime, LocalDateTime toDateTime, Instant originalFrom, Instant originalTo) 

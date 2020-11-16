@@ -20,24 +20,28 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.PagingIterable;
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.mapper.MapperContext;
 import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
+import com.exactpro.cradle.cassandra.CassandraSemaphore;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
 import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.utils.CradleStorageException;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
@@ -61,7 +65,8 @@ public class MessageBatchQueryProvider
 				.allowFiltering();
 	}
 	
-	public PagingIterable<DetailedMessageBatchEntity> filterMessages(UUID instanceId, StoredMessageFilter filter, MessageBatchOperator operator,
+	public CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> filterMessages(UUID instanceId, StoredMessageFilter filter, 
+			CassandraSemaphore semaphore, MessageBatchOperator operator,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 	{
 		Select select = selectStart;
@@ -69,8 +74,18 @@ public class MessageBatchQueryProvider
 			select = addFilter(select, filter);
 		
 		PreparedStatement ps = session.prepare(select.build());
-		BoundStatement bs = bindParameters(ps, instanceId, filter, operator, attributes);
-		return session.execute(bs).map(helper::get);
+		BoundStatement bs;
+		try
+		{
+			bs = bindParameters(ps, instanceId, filter, semaphore, operator, attributes);
+		}
+		catch (CradleStorageException e)
+		{
+			CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> error = new CompletableFuture<>();
+			error.completeExceptionally(e);
+			return error;
+		}
+		return session.executeAsync(bs).thenApply((r) -> r.map(helper::get)).toCompletableFuture();
 	}
 	
 	private Select addFilter(Select select, StoredMessageFilter filter)
@@ -125,19 +140,21 @@ public class MessageBatchQueryProvider
 		return select;
 	}
 	
-	private BoundStatement bindParameters(PreparedStatement ps, UUID instanceId, StoredMessageFilter filter, MessageBatchOperator operator,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
+	private BoundStatement bindParameters(PreparedStatement ps, UUID instanceId, StoredMessageFilter filter, 
+			CassandraSemaphore semaphore, MessageBatchOperator operator,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes) throws CradleStorageException
 	{
 		BoundStatementBuilder builder = ps.boundStatementBuilder()
 				.setUuid(INSTANCE_ID, instanceId);
 		builder = attributes.apply(builder);
 		if (filter != null)
-			builder = bindFilterParameters(builder, filter, instanceId, operator, attributes);
+			builder = bindFilterParameters(builder, instanceId, filter, semaphore, operator, attributes);
 		return builder.build();
 	}
 	
-	private DetailedMessageBatchEntity getMessageBatch(StoredMessageFilter filter, MessageBatchOperator operator, UUID instanceId,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
+	private DetailedMessageBatchEntity getMessageBatch(UUID instanceId, StoredMessageFilter filter, 
+			CassandraSemaphore semaphore, MessageBatchOperator operator, 
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes) throws CradleStorageException
 	{
 		if (filter.getStreamName() == null || filter.getDirection() == null)
 		{
@@ -145,16 +162,23 @@ public class MessageBatchQueryProvider
 			//throw new CradleStorageException("Both streamName and direction are required when filtering by message index");
 			return null;
 		}
-			
-		return CassandraMessageUtils.getMessageBatch(new StoredMessageId(filter.getStreamName().getValue(), 
-						filter.getDirection().getValue(), 
-						filter.getIndex().getValue()),
-				operator, instanceId, attributes);
+		
+		StoredMessageId id = new StoredMessageId(filter.getStreamName().getValue(), 
+				filter.getDirection().getValue(), 
+				filter.getIndex().getValue());
+		try
+		{
+			return CassandraMessageUtils.getMessageBatch(id,
+					operator, semaphore, instanceId, attributes).get();
+		} catch (InterruptedException | ExecutionException e)
+		{
+			throw new CradleStorageException("Error while getting message batch for ID "+id, e);
+		}
 	}
 	
-	private BoundStatementBuilder bindFilterParameters(BoundStatementBuilder builder, StoredMessageFilter filter, 
-			UUID instanceId, MessageBatchOperator operator,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
+	private BoundStatementBuilder bindFilterParameters(BoundStatementBuilder builder, UUID instanceId, StoredMessageFilter filter, 
+			CassandraSemaphore semaphore, MessageBatchOperator operator,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes) throws CradleStorageException
 	{
 		if (filter.getStreamName() != null)
 			builder = builder.setString(STREAM_NAME, filter.getStreamName().getValue());
@@ -164,7 +188,7 @@ public class MessageBatchQueryProvider
 		
 		if (filter.getIndex() != null)
 		{
-			DetailedMessageBatchEntity batch = getMessageBatch(filter, operator, instanceId, attributes);
+			DetailedMessageBatchEntity batch = getMessageBatch(instanceId, filter, semaphore, operator, attributes);
 			
 			ComparisonOperation op = filter.getIndex().getOperation();
 			if (filter.getLimit() > 0 && (op == ComparisonOperation.LESS || op == ComparisonOperation.LESS_OR_EQUALS))

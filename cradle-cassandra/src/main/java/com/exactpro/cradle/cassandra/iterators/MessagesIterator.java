@@ -16,12 +16,12 @@
 
 package com.exactpro.cradle.cassandra.iterators;
 
-import java.io.IOException;
 import java.util.Iterator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageFilter;
@@ -30,15 +30,15 @@ public class MessagesIterator implements Iterator<StoredMessage>
 {
 	private static final Logger logger = LoggerFactory.getLogger(MessagesIterator.class);
 	
-	private final Iterator<DetailedMessageBatchEntity> entitiesIterator;
+	private final MessageBatchIterator entitiesIterator;
 	private final StoredMessageFilter filter;
 	private Iterator<StoredMessage> batchIterator;
 	private long returnedMessages;
 	private StoredMessage nextMessage;
 	
-	public MessagesIterator(Iterator<DetailedMessageBatchEntity> entitiesIterator, StoredMessageFilter filter)
+	public MessagesIterator(MappedAsyncPagingIterable<DetailedMessageBatchEntity> rows, StoredMessageFilter filter)
 	{
-		this.entitiesIterator = entitiesIterator;
+		this.entitiesIterator = new MessageBatchIterator(rows);
 		this.filter = filter;
 	}
 	
@@ -59,15 +59,8 @@ public class MessagesIterator implements Iterator<StoredMessage>
 		if (!entitiesIterator.hasNext())
 			return false;
 		
-		try
-		{
-			logger.trace("Getting messages from next batch");
-			batchIterator = entitiesIterator.next().toStoredMessages().iterator();
-		}
-		catch (IOException e)
-		{
-			throw new RuntimeException("Error while getting messages from next batch", e);
-		}
+		logger.trace("Getting messages from next batch");
+		batchIterator = entitiesIterator.next().iterator();
 		return hasNext();
 	}
 	

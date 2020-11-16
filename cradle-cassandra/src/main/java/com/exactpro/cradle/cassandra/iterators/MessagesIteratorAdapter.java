@@ -16,9 +16,9 @@
 
 package com.exactpro.cradle.cassandra.iterators;
 
-import java.io.IOException;
 import java.util.Iterator;
 
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
@@ -33,9 +33,9 @@ import com.exactpro.cradle.messages.StoredMessageFilter;
 public class MessagesIteratorAdapter implements Iterable<StoredMessage>
 {
 	private final StoredMessageFilter filter;
-	private final PagingIterable<DetailedMessageBatchEntity> entities;
+	private final MappedAsyncPagingIterable<DetailedMessageBatchEntity> entities;
 	
-	public MessagesIteratorAdapter(StoredMessageFilter filter, PagingIterable<DetailedMessageBatchEntity> entities) throws IOException
+	public MessagesIteratorAdapter(StoredMessageFilter filter, MappedAsyncPagingIterable<DetailedMessageBatchEntity> entities)
 	{
 		this.filter = filter;
 		this.entities = entities;
@@ -44,6 +44,6 @@ public class MessagesIteratorAdapter implements Iterable<StoredMessage>
 	@Override
 	public Iterator<StoredMessage> iterator()
 	{
-		return new MessagesIterator(entities.iterator(), filter);
+		return new MessagesIterator(entities, filter);
 	}
 }
