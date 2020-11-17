@@ -1,3 +1,0 @@
-MIT
-BSD
-"Apache 2.0"

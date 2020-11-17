@@ -14,10 +14,12 @@ jobs:
       run: gem install license_finder
     - name: LicenseFinder report
       run: license_finder report
-    - name: apply approved licenses
+    - name: approve all licenses
       run: |
-        cat .github/workflows/approved-licenses.txt | xargs -L1 license_finder  permitted_licenses add > /dev/null
+        license_finder report -q --format=json | jq -r '.dependencies[] | .licenses[]' | sort | uniq | sed -e "s/.*/'&'/" | xargs -L1 license_finder permitted_licenses add > /dev/null
         license_finder permitted_licenses list
+    - name: read restricted lisences from file
+      run: <restrictedLicenses.txt xargs -L1 license_finder restricted_licenses add
     - name: Run LicenseFinder compliance checking
       run: license_finder
 
