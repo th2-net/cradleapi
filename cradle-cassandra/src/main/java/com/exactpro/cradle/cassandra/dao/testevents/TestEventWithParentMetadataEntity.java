@@ -90,16 +90,7 @@ public abstract class TestEventWithParentMetadataEntity extends TestEventMetadat
 		if (eventBatchMetadata == null)
 			return result;
 		
-		try
-		{
-			StoredTestEventBatchMetadata metadata = new StoredTestEventBatchMetadata(result.getId(), result.getParentId());
-			result.setBatchMetadata(metadata);
-			TestEventUtils.deserializeTestEventsMetadata(eventBatchMetadata.array(), metadata);
-		}
-		catch (IOException e)
-		{
-			throw new IOException("Error while deserializing test events metadata", e);
-		}
+		result.setBatchMetadataBytes(eventBatchMetadata.array());
 		return result;
 	}
 }

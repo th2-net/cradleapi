@@ -16,7 +16,10 @@
 
 package com.exactpro.cradle.testevents;
 
+import java.io.IOException;
 import java.time.Instant;
+
+import com.exactpro.cradle.utils.TestEventUtils;
 
 public class StoredTestEventMetadata implements StoredTestEvent
 {
@@ -29,6 +32,7 @@ public class StoredTestEventMetadata implements StoredTestEvent
 	private boolean success,
 			batch;
 	private int eventCount;
+	private byte[] batchMetadataBytes;
 	private StoredTestEventBatchMetadata batchMetadata;
 	
 	public StoredTestEventMetadata()
@@ -160,13 +164,35 @@ public class StoredTestEventMetadata implements StoredTestEvent
 	}
 	
 	
-	public StoredTestEventBatchMetadata getBatchMetadata()
+	public StoredTestEventBatchMetadata getBatchMetadata() throws IOException
 	{
+		if (batchMetadata != null || batchMetadataBytes == null)
+			return batchMetadata;
+		
+		synchronized (this)
+		{
+			try
+			{
+				StoredTestEventBatchMetadata metadata = new StoredTestEventBatchMetadata(getId(), getParentId());
+				batchMetadata = metadata;
+				TestEventUtils.deserializeTestEventsMetadata(batchMetadataBytes, metadata);
+				batchMetadataBytes = null;
+			}
+			catch (IOException e)
+			{
+				throw new IOException("Error while deserializing test events metadata", e);
+			}
+		}
 		return batchMetadata;
 	}
 	
-	public void setBatchMetadata(StoredTestEventBatchMetadata batchMetadata)
+	public void setBatchMetadata(StoredTestEventBatchMetadata m)
 	{
-		this.batchMetadata = batchMetadata;
+		this.batchMetadata = m;
+	}
+	
+	public void setBatchMetadataBytes(byte[] batchMetadataBytes)
+	{
+		this.batchMetadataBytes = batchMetadataBytes;
 	}
 }
