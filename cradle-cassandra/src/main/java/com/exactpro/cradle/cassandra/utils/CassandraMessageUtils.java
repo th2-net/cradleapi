@@ -97,8 +97,8 @@ public class CassandraMessageUtils
 					if (inclusive)
 						count--;
 					found = true;
-					continue;
 				}
+				continue;
 			}
 			
 			count--;
