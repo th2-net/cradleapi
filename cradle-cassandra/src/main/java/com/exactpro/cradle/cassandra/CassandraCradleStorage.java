@@ -368,9 +368,13 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected long doGetLastMessageIndex(String streamName, Direction direction) throws IOException
 	{
-		//Need to query all nodes in all datacenters to get index that is the latest for sure. so using strictReadAttrs
-		return getMessageBatchOperator()
-				.getLastIndex(instanceUuid, streamName, direction.getLabel(), strictReadAttrs);
+		return getLastIndex(getMessageBatchOperator(), streamName, direction);
+	}
+	
+	@Override
+	protected long doGetLastProcessedMessageIndex(String streamName, Direction direction) throws IOException
+	{
+		return getLastIndex(getProcessedMessageBatchOperator(), streamName, direction);
 	}
 	
 	@Override
@@ -641,6 +645,11 @@ public class CassandraCradleStorage extends CradleStorage
 		return dataMapper.messageBatchOperator(settings.getKeyspace(), settings.getMessagesTableName());
 	}
 	
+	protected MessageBatchOperator getProcessedMessageBatchOperator()
+	{
+		return dataMapper.messageBatchOperator(settings.getKeyspace(), settings.getProcessedMessagesTableName());
+	}
+	
 	protected TimeMessageOperator getTimeMessageOperator()
 	{
 		return dataMapper.timeMessageOperator(settings.getKeyspace(), settings.getTimeMessagesTableName());
@@ -732,6 +741,12 @@ public class CassandraCradleStorage extends CradleStorage
 				toDate = toDateTime.toLocalDate();
 		if (!fromDate.equals(toDate))
 			throw new CradleStorageException("Left and right boundaries should be of the same date, but got '"+originalFrom+"' and '"+originalTo+"'");
+	}
+	
+	private long getLastIndex(MessageBatchOperator op, String streamName, Direction direction)
+	{
+		DetailedMessageBatchEntity result = op.getLastIndex(instanceUuid, streamName, direction.getLabel(), readAttrs);
+		return result != null ? result.getLastMessageIndex() : -1;
 	}
 	
 	

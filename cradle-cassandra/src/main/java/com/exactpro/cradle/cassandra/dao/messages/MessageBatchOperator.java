@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle.cassandra.dao.messages;
 
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -64,9 +65,10 @@ public interface MessageBatchOperator
 	@Select
 	PagingIterable<DetailedMessageBatchEntity> getAll(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Query("SELECT MAX("+LAST_MESSAGE_INDEX+") FROM ${qualifiedTableId} WHERE "
-			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction ALLOW FILTERING")
-	long getLastIndex(UUID instanceId, String streamName, String direction, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
+			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction "
+			+ "ORDER BY "+DIRECTION+" DESC, "+MESSAGE_INDEX+" DESC LIMIT 1")
+	DetailedMessageBatchEntity getLastIndex(UUID instanceId, String streamName, String direction, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@QueryProvider(providerClass = MessageBatchQueryProvider.class, entityHelpers = DetailedMessageBatchEntity.class)
 	CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> filterMessages(UUID instanceId, StoredMessageFilter filter, 

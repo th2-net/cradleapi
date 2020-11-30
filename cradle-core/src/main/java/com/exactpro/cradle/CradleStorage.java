@@ -76,6 +76,7 @@ public abstract class CradleStorage
 	protected abstract StoredMessage doGetProcessedMessage(StoredMessageId id) throws IOException;
 	protected abstract CompletableFuture<StoredMessage> doGetProcessedMessageAsync(StoredMessageId id);
 	protected abstract long doGetLastMessageIndex(String streamName, Direction direction) throws IOException;
+	protected abstract long doGetLastProcessedMessageIndex(String streamName, Direction direction) throws IOException;
 	protected abstract StoredMessageId doGetNearestMessageId(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation) throws IOException;
 	protected abstract StoredTestEventWrapper doGetTestEvent(StoredTestEventId id) throws IOException;
 	protected abstract CompletableFuture<StoredTestEventWrapper> doGetTestEventAsync(StoredTestEventId id);
@@ -351,7 +352,7 @@ public abstract class CradleStorage
 	 * Indices are scoped by stream and direction, so both arguments are required 
 	 * @param streamName to get message index for 
 	 * @param direction to get message index for
-	 * @return last stored message index for given arguments
+	 * @return last stored message index for given arguments, if it is present, -1 otherwise
 	 * @throws IOException if index retrieval failed
 	 */
 	public final long getLastMessageIndex(String streamName, Direction direction) throws IOException
@@ -359,6 +360,22 @@ public abstract class CradleStorage
 		logger.debug("Getting last stored message index for stream '{}' and direction '{}'", streamName, direction.getLabel());
 		long result = doGetLastMessageIndex(streamName, direction);
 		logger.debug("Message index {} got", result);
+		return result;
+	}
+	
+	/**
+	 * Retrieves last processed message index for given stream and direction. Use result of this method to continue sequence of message indices.
+	 * Indices are scoped by stream and direction, so both arguments are required 
+	 * @param streamName to get message index for 
+	 * @param direction to get message index for
+	 * @return last processed message index for given arguments, if it is present, -1 otherwise
+	 * @throws IOException if index retrieval failed
+	 */
+	public final long getLastProcessedMessageIndex(String streamName, Direction direction) throws IOException
+	{
+		logger.debug("Getting last processed message index for stream '{}' and direction '{}'", streamName, direction.getLabel());
+		long result = doGetLastProcessedMessageIndex(streamName, direction);
+		logger.debug("Processed message index {} got", result);
 		return result;
 	}
 	
