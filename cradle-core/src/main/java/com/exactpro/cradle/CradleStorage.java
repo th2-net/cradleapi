@@ -50,13 +50,14 @@ public abstract class CradleStorage
 	private volatile boolean workingState = false;
 	
 	/**
-	 * Initializes internal objects of storage, i.e. creates needed connections, tables and obtains ID of application instance with given name.
-	 * If no ID of instance with that name is stored, makes new record in storage, returning ID of that instance
-	 * @param instanceName name of current application instance. Will be used to mark written data
-	 * @return ID of application instance as recorded in storage
+	 * Initializes internal objects of storage, i.e. creates needed connections and facilities and obtains ID of data instance with given name.
+	 * If data instance with that name doesn't exist, makes in storage the new record with given name, returning ID of that record
+	 * @param instanceName name of data instance. Will be used to mark written data
+	 * @param prepareStorage flag that indicates if underlying storage on disk can be created or its structure can be updated, if needed
+	 * @return ID of data instance as recorded in storage
 	 * @throws CradleStorageException if storage initialization failed
 	 */
-	protected abstract String doInit(String instanceName) throws CradleStorageException;
+	protected abstract String doInit(String instanceName, boolean prepareStorage) throws CradleStorageException;
 	protected abstract void doDispose() throws CradleStorageException;
 	
 	
@@ -106,17 +107,19 @@ public abstract class CradleStorage
 	
 	
 	/**
-	 * Initializes storage, i.e. creates needed streams and gets ready to write data marked with given instance name
-	 * @param instanceName name of current application instance. Will be used to mark written data
+	 * Initializes storage, i.e. creates needed connections and gets ready to write data marked with given instance name. 
+	 * Storage on disk is created/updated if this is allowed with prepareStorage flag
+	 * @param instanceName name of current data instance. Will be used to mark written data
+	 * @param prepareStorage flag that indicates if underlying storage on disk can be created or its structure can be updated, if needed
 	 * @throws CradleStorageException if storage initialization failed
 	 */
-	public final void init(String instanceName) throws CradleStorageException
+	public final void init(String instanceName, boolean prepareStorage) throws CradleStorageException
 	{
 		if (workingState)
 			throw new CradleStorageException("Already initialized");
 		
 		logger.info("Storage initialization started");
-		instanceId = doInit(instanceName);
+		instanceId = doInit(instanceName, prepareStorage);
 	}
 	
 	/**

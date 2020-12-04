@@ -126,7 +126,7 @@ public class CassandraCradleStorage extends CradleStorage
 	
 
 	@Override
-	protected String doInit(String instanceName) throws CradleStorageException
+	protected String doInit(String instanceName, boolean prepareStorage) throws CradleStorageException
 	{
 		logger.info("Connecting to Cassandra...");
 		try
@@ -143,9 +143,14 @@ public class CassandraCradleStorage extends CradleStorage
 			exec = new QueryExecutor(connection.getSession(), 
 					settings.getTimeout(), settings.getWriteConsistencyLevel(), settings.getReadConsistencyLevel());
 			
-			logger.info("Creating/updating schema...");
-			new TablesCreator(exec, settings).createAll();
-			logger.info("All needed tables created");
+			if (prepareStorage)
+			{
+				logger.info("Creating/updating schema...");
+				new TablesCreator(exec, settings).createAll();
+				logger.info("All needed tables created");
+			}
+			else
+				logger.info("Schema creation/update skipped");
 			
 			instanceUuid = getInstanceId(instanceName);
 			dataMapper = new CassandraDataMapperBuilder(connection.getSession()).build();
