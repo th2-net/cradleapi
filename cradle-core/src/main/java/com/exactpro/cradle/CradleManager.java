@@ -35,13 +35,28 @@ public abstract class CradleManager
 	protected abstract CradleStorage createStorage();
 	
 	/**
-	 * Initializes manager to get access to Cradle storage using given name of application instance
-	 * @param instanceName name of application instance
+	 * Initializes manager to get access to Cradle storage using given name of data instance
+	 * @param instanceName name of data instance
+	 * @param prepareStorage flag that indicates if underlying storage on disk can be created or its structure can be updated, if needed
 	 * @throws CradleStorageException if access to Cradle storage cannot be established
 	 */
+	
+	public void init(String instanceName, boolean prepareStorage) throws CradleStorageException
+	{
+		initStart(instanceName, prepareStorage);
+		initFinish();
+	}
+	
+	/**
+	 * Initializes manager to get access to Cradle storage using given name of data instance.
+	 * Storage on disk won't be created, if absent, and its structure won't be updated, even if needed
+	 * @param instanceName name of data instance
+	 * @throws CradleStorageException if access to Cradle storage cannot be established
+	 */
+	
 	public void init(String instanceName) throws CradleStorageException
 	{
-		initStart(instanceName);
+		initStart(instanceName, false);
 		initFinish();
 	}
 	
@@ -56,15 +71,16 @@ public abstract class CradleManager
 	}
 	
 	/**
-	 * Starts initialization to get access to Cradle storage using given name of application instance
-	 * @param instanceName name of application instance
+	 * Starts initialization to get access to Cradle storage using given name of data instance
+	 * @param instanceName name of data instance
+	 * @param prepareStorage flag that indicates if underlying storage on disk can be created or its structure can be updated, if needed
 	 * @throws CradleStorageException if access to Cradle storage cannot be established
 	 */
-	public void initStart(String instanceName) throws CradleStorageException
+	public void initStart(String instanceName, boolean prepareStorage) throws CradleStorageException
 	{
 		storage = createStorage();
 		if (storage != null)
-			storage.init(instanceName);
+			storage.init(instanceName, prepareStorage);
 	}
 	
 	/**
