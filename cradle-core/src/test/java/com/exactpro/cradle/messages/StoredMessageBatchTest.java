@@ -17,7 +17,6 @@
 package com.exactpro.cradle.messages;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -37,6 +36,7 @@ public class StoredMessageBatchTest
 	private String streamName;
 	private Direction direction;
 	private Instant timestamp;
+	private byte[] messageContent;
 	
 	@BeforeClass
 	public void prepare()
@@ -45,6 +45,7 @@ public class StoredMessageBatchTest
 		streamName = "Stream1";
 		direction = Direction.FIRST;
 		timestamp = Instant.now();
+		messageContent = "Message text".getBytes();
 	}
 	
 	@DataProvider(name = "first message")
@@ -80,31 +81,15 @@ public class StoredMessageBatchTest
 	{
 		return new Object[][]
 				{
-					{builder.build()},                                                             //Empty message
-					{builder.streamName(streamName).direction(null).timestamp(null).build()},      //Only stream is set
-					{builder.streamName(streamName).direction(direction).timestamp(null).build()}  //Only stream and direction are set
+					{builder.build()},                                                                      //Empty message
+					{builder.streamName(streamName).direction(null).timestamp(null).build()},               //Only stream is set
+					{builder.streamName(streamName).direction(direction).timestamp(null).build()},          //Only stream and direction are set
+					{builder.streamName(streamName).direction(direction).timestamp(Instant.now()).build()}  //Content is not set
 				};
 	}
 	
 	
-	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Batch is full")
-	public void batchIsLimited() throws CradleStorageException
-	{
-		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
-				.streamName(streamName)
-				.direction(direction)
-				.index(1)
-				.timestamp(timestamp)
-				.build());
-		for (int i = 0; i <= StoredMessageBatch.MAX_MESSAGES_COUNT; i++)
-			batch.addMessage(builder
-					.streamName(streamName)
-					.direction(direction)
-					.timestamp(timestamp)
-					.build());
-	}
-	
-	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Batch is full")
+	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Batch has not enough space to hold given message")
 	public void batchContentIsLimited() throws CradleStorageException
 	{
 		byte[] content = new byte[5000];
@@ -115,7 +100,7 @@ public class StoredMessageBatchTest
 				.timestamp(timestamp)
 				.content(content)
 				.build());
-		for (int i = 0; i <= (StoredMessageBatch.MAX_MESSAGES_SIZE/content.length)+1; i++)
+		for (int i = 0; i <= (StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE/content.length)+1; i++)
 			batch.addMessage(builder
 					.streamName(streamName)
 					.direction(direction)
@@ -124,22 +109,61 @@ public class StoredMessageBatchTest
 					.build());
 	}
 	
+	@Test
 	public void batchIsFull() throws CradleStorageException
 	{
+		byte[] content = new byte[StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE/2];
 		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
 				.streamName(streamName)
 				.direction(direction)
 				.index(1)
 				.timestamp(timestamp)
+				.content(content)
 				.build());
-		for (int i = 0; i < StoredMessageBatch.MAX_MESSAGES_COUNT; i++)
-			batch.addMessage(builder
-					.streamName(streamName)
-					.direction(direction)
-					.timestamp(timestamp)
-					.build());
+		batch.addMessage(builder
+				.streamName(streamName)
+				.direction(direction)
+				.timestamp(timestamp)
+				.content(content)
+				.build());
 		
 		Assert.assertEquals(batch.isFull(), true, "Batch indicates it is full");
+	}
+	
+	@Test
+	public void batchCountsSpaceLeft() throws CradleStorageException
+	{
+		byte[] content = new byte[StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE-1];
+		StoredMessageBatch batch = new StoredMessageBatch();
+		long left = batch.getSpaceLeft();
+		
+		batch.addMessage(builder
+				.streamName(streamName)
+				.direction(direction)
+				.index(1)
+				.timestamp(timestamp)
+				.content(content)
+				.build());
+		
+		Assert.assertEquals(batch.getSpaceLeft(), left-content.length, "Batch counts space left");
+	}
+	
+	@Test
+	public void batchChecksSpaceLeft() throws CradleStorageException
+	{
+		byte[] content = new byte[StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE-1];
+		StoredMessageBatch batch = new StoredMessageBatch();
+		
+		MessageToStore msg = builder
+				.streamName(streamName)
+				.direction(direction)
+				.index(1)
+				.timestamp(timestamp)
+				.content(content)
+				.build();
+		batch.addMessage(msg);
+		
+		Assert.assertEquals(batch.hasSpace(msg), false, "Batch shows if it has space to hold given message");
 	}
 	
 	@Test(dataProvider = "first message",
@@ -152,6 +176,7 @@ public class StoredMessageBatchTest
 				.direction(direction)
 				.index(index)
 				.timestamp(timestamp)
+				.content(messageContent)
 				.build());
 	}
 	
@@ -168,6 +193,7 @@ public class StoredMessageBatchTest
 					.direction(id.direction)
 					.index(id.index)
 					.timestamp(timestamp)
+					.content(messageContent)
 					.build());
 		}
 	}
@@ -190,18 +216,21 @@ public class StoredMessageBatchTest
 				.direction(direction)
 				.index(index)
 				.timestamp(timestamp)
+				.content(messageContent)
 				.build());
 		
 		StoredMessage msg1 = batch.addMessage(builder
 				.streamName(streamName)
 				.direction(direction)
 				.timestamp(timestamp)
+				.content(messageContent)
 				.build());
 		
 		StoredMessage msg2 = batch.addMessage(builder
 				.streamName(streamName)
 				.direction(direction)
 				.timestamp(timestamp)
+				.content(messageContent)
 				.build());
 		
 		Assert.assertEquals(msg1.getIndex(), index+1, "1st and 2nd messages should have sequenced indices");
@@ -217,6 +246,7 @@ public class StoredMessageBatchTest
 				.direction(direction)
 				.index(index)
 				.timestamp(timestamp)
+				.content(messageContent)
 				.build());
 		
 		batch.addMessage(builder
@@ -224,6 +254,7 @@ public class StoredMessageBatchTest
 				.direction(direction)
 				.index(index+10)
 				.timestamp(timestamp)
+				.content(messageContent)
 				.build());
 	}
 	
@@ -236,11 +267,13 @@ public class StoredMessageBatchTest
 				.direction(direction)
 				.index(index)
 				.timestamp(timestamp)
+				.content(messageContent)
 				.build());
 		StoredMessage msg = batch.addMessage(builder
 				.streamName(streamName)
 				.direction(direction)
 				.timestamp(timestamp)
+				.content(messageContent)
 				.build());
 		Assert.assertEquals(msg.getId(), new StoredMessageId(streamName, direction, index+1));
 	}
@@ -254,12 +287,14 @@ public class StoredMessageBatchTest
 				.direction(direction)
 				.index(1)
 				.timestamp(timestamp)
+				.content(messageContent)
 				.build());
 		
 		batch.addMessage(builder
 				.streamName(streamName)
 				.direction(direction)
 				.timestamp(timestamp.plusSeconds(10))
+				.content(messageContent)
 				.build());
 		
 		Instant lastTimestamp = batch.getLastTimestamp();
@@ -268,6 +303,7 @@ public class StoredMessageBatchTest
 				.streamName(streamName)
 				.direction(direction)
 				.timestamp(timestamp.plusSeconds(20))
+				.content(messageContent)
 				.build());
 		
 		Assert.assertNotEquals(batch.getLastTimestamp(), lastTimestamp, "Last timestamp is from last added message");
@@ -282,7 +318,7 @@ public class StoredMessageBatchTest
 				.index(0)
 				.timestamp(timestamp)
 				.metadata("md", "some value")
-				.content("Message text".getBytes(StandardCharsets.UTF_8))
+				.content(messageContent)
 				.build());
 		StoredMessage storedMsg = batch.getFirstMessage();
 		byte[] bytes = MessageUtils.serializeMessages(batch.getMessages());

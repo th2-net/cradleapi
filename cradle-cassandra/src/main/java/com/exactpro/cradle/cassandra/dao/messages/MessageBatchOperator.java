@@ -16,7 +16,6 @@
 
 package com.exactpro.cradle.cassandra.dao.messages;
 
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -31,7 +30,6 @@ import com.datastax.oss.driver.api.mapper.annotations.QueryProvider;
 import com.datastax.oss.driver.api.mapper.annotations.Select;
 import com.exactpro.cradle.cassandra.CassandraSemaphore;
 import com.exactpro.cradle.messages.StoredMessageFilter;
-import com.exactpro.cradle.utils.CradleStorageException;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
@@ -55,11 +53,17 @@ public interface MessageBatchOperator
 			+MESSAGE_INDEX+">=:fromIndex AND "+MESSAGE_INDEX+"<=:toIndex")
 	CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> getMessageBatches(UUID instanceId, String streamName, String direction, 
 			long fromIndex, long toIndex, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
+
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
 			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction AND "
 			+MESSAGE_INDEX+"<=:toIndex ORDER BY "+DIRECTION+" DESC, "+MESSAGE_INDEX+" DESC")
 	PagingIterable<DetailedMessageBatchEntity> getMessageBatchesReversed(UUID instanceId, String streamName, String direction, long toIndex, 
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
+			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction AND "
+			+MESSAGE_INDEX+"<=:messageIndex ORDER BY "+DIRECTION+" DESC, "+MESSAGE_INDEX+" DESC LIMIT 1")
+	CompletableFuture<DetailedMessageBatchEntity> getMessageBatch(UUID instanceId, String streamName, String direction, long messageIndex, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Select

@@ -85,6 +85,8 @@ public abstract class CradleStorage
 	protected abstract Collection<Instant> doGetRootTestEventsDates() throws IOException;
 	protected abstract Collection<Instant> doGetTestEventsDates(StoredTestEventId parentId) throws IOException;
 	
+	public abstract CradleObjectsFactory getObjectsFactory();
+	
 	
 	/**
 	 * TestEventsMessagesLinker is used to obtain links between test events and messages
