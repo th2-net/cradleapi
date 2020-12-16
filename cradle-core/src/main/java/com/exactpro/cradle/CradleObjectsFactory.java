@@ -17,25 +17,32 @@
 package com.exactpro.cradle;
 
 import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.testevents.StoredTestEventBatch;
+import com.exactpro.cradle.testevents.StoredTestEventSingle;
+import com.exactpro.cradle.testevents.StoredTestEventWithContent;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
 import com.exactpro.cradle.testevents.TestEventBatchToStoreBuilder;
 import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.testevents.TestEventToStoreBuilder;
+import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
  * Factory to create objects to be used with {@link CradleStorage}. Created objects will conform with particular CradleStorage settings.
  */
 public class CradleObjectsFactory
 {
-	private final long maxMessageBatchSize;
+	private final long maxMessageBatchSize,
+			maxTestEventBatchSize;
 	
 	/**
 	 * Creates new factory for objects to be used with {@link CradleStorage}
 	 * @param maxMessageBatchSize maximum size of messages (in bytes) that {@link StoredMessageBatch} can hold
+	 * @param maxTestEventBatchSize maximum size of test events (in bytes) that {@link StoredTestEventBatch} can hold
 	 */
-	public CradleObjectsFactory(long maxMessageBatchSize)
+	public CradleObjectsFactory(long maxMessageBatchSize, long maxTestEventBatchSize)
 	{
 		this.maxMessageBatchSize = maxMessageBatchSize;
+		this.maxTestEventBatchSize = maxTestEventBatchSize;
 	}
 	
 	
@@ -44,25 +51,13 @@ public class CradleObjectsFactory
 		return new StoredMessageBatch(maxMessageBatchSize);
 	}
 	
-	
-	public TestEventToStore createTestEvent()
+	public StoredTestEventSingle createTestEvent(StoredTestEventWithContent eventData) throws CradleStorageException
 	{
-		return new TestEventToStore();
+		return new StoredTestEventSingle(eventData);
 	}
 	
-	public TestEventToStoreBuilder createTestEventBuilder()
+	public StoredTestEventBatch createTestEventBatch(TestEventBatchToStore batchData) throws CradleStorageException
 	{
-		return new TestEventToStoreBuilder();
-	}
-	
-	
-	public TestEventBatchToStore createTestEventBatch()
-	{
-		return new TestEventBatchToStore();
-	}
-	
-	public TestEventBatchToStoreBuilder createTestEventBatchBuilder()
-	{
-		return new TestEventBatchToStoreBuilder();
+		return new StoredTestEventBatch(batchData, maxTestEventBatchSize);
 	}
 }

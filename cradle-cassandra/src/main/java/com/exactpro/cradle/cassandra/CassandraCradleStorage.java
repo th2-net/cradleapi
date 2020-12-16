@@ -118,7 +118,7 @@ public class CassandraCradleStorage extends CradleStorage
 		this.connection = connection;
 		this.settings = settings;
 		this.semaphore = new CassandraSemaphore(connection.getSettings().getMaxParallelQueries());
-		this.objectsFactory = new CradleObjectsFactory(settings.getMaxMessageBatchSize());
+		this.objectsFactory = new CradleObjectsFactory(settings.getMaxMessageBatchSize(), settings.getMaxTestEventBatchSize());
 	}
 	
 	
