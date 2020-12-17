@@ -167,20 +167,37 @@ public class CassandraCradleStorage extends CradleStorage
 		else
 			logger.info("Already disconnected from Cassandra");
 	}
-	
+
+	@Override
+	protected BookInfo loadBook (String bookName) throws IOException {
+		try {
+			BookEntity entity = ops.getCradleBookOperator().get(bookName, readAttrs);
+			return processBookEntity(entity);
+		} catch (Exception e) {
+			throw new IOException("Error while loading book", e);
+		}
+	}
+
+	private BookInfo processBookEntity (BookEntity entity) throws IOException {
+		try {
+			BookId bookId = new BookId(entity.getName());
+			ops.addOperators(bookId, entity.getKeyspaceName());
+			Collection<PageInfo> pages = loadPageInfo(bookId);
+
+			return entity.toBookInfo(pages);
+		} catch (Exception e) {
+			throw new IOException("Error while loading book", e);
+		}
+	}
+
 	@Override
 	protected Collection<BookInfo> loadBooks() throws IOException
 	{
 		Collection<BookInfo> result = new ArrayList<>();
 		try
 		{
-			for (BookEntity bookEntity : ops.getCradleBookOperator().getAll(readAttrs))
-			{
-				BookId bookId = new BookId(bookEntity.getName());
-				ops.addOperators(bookId, bookEntity.getKeyspaceName());
-				Collection<PageInfo> pages = loadPageInfo(bookId);
-				
-				result.add(bookEntity.toBookInfo(pages));
+			for (BookEntity bookEntity : ops.getCradleBookOperator().getAll(readAttrs)) {
+				result.add(processBookEntity(bookEntity));
 			}
 		}
 		catch (Exception e)

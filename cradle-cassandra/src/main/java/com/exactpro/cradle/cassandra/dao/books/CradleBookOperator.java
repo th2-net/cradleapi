@@ -30,7 +30,10 @@ public interface CradleBookOperator
 {
 	@Select
 	PagingIterable<BookEntity> getAll(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
+
+	@Select
+	BookEntity get (String name, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
 	@Insert(ifNotExists = true)
 	ResultSet write(BookEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

@@ -59,6 +59,11 @@ public class DummyCradleStorage extends CradleStorage
 	}
 
 	@Override
+	protected BookInfo loadBook(String bookName) throws IOException {
+		return null;
+	}
+
+	@Override
 	protected void doAddBook(BookToAdd newBook, BookId bookId)
 	{
 	}

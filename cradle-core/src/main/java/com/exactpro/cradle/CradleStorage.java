@@ -87,8 +87,9 @@ public abstract class CradleStorage
 	
 	protected abstract void doInit(boolean prepareStorage) throws CradleStorageException;
 	protected abstract void doDispose() throws CradleStorageException;
-	
+
 	protected abstract Collection<BookInfo> loadBooks() throws IOException;
+	protected abstract BookInfo loadBook(String bookName) throws IOException;
 	protected abstract void doAddBook(BookToAdd newBook, BookId bookId) throws IOException;
 	protected abstract void doAddPages(BookId bookId, List<PageInfo> pages, PageInfo lastPage) throws CradleStorageException, IOException;
 	protected abstract Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException, IOException;
@@ -326,6 +327,25 @@ public abstract class CradleStorage
 		if (loaded != null)
 			loaded.forEach(bookInfo -> books.putIfAbsent(bookInfo.getId(), bookInfo));
 		return loaded;
+	}
+
+	/**
+	 * Getting information about specific book from storage and put it in internal cache
+	 * @param name of book to load
+	 * @return loaded book
+	 * @throws IOException if books data reading failed
+	 */
+	public BookInfo refreshBook (String name) throws IOException {
+		logger.info("Refreshing book {} from storage", name);
+
+		BookInfo bookInfo = loadBook(name);
+
+		if (bookInfo != null) {
+			books.put(bookInfo.getId(), bookInfo);
+
+		}
+
+		return bookInfo;
 	}
 	
 	/**
