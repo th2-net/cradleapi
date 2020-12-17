@@ -25,6 +25,7 @@ import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.datastax.oss.driver.api.querybuilder.insert.Insert;
 import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
+import com.exactpro.cradle.CradleObjectsFactory;
 import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.TimeRelation;
@@ -100,6 +101,7 @@ public class CassandraCradleStorage extends CradleStorage
 	private final CassandraConnection connection;
 	private final CassandraStorageSettings settings;
 	private final CassandraSemaphore semaphore;
+	private final CradleObjectsFactory objectsFactory;
 	
 	private UUID instanceUuid;
 	private CassandraDataMapper dataMapper;
@@ -116,6 +118,7 @@ public class CassandraCradleStorage extends CradleStorage
 		this.connection = connection;
 		this.settings = settings;
 		this.semaphore = new CassandraSemaphore(connection.getSettings().getMaxParallelQueries());
+		this.objectsFactory = new CradleObjectsFactory(settings.getMaxMessageBatchSize(), settings.getMaxTestEventBatchSize());
 	}
 	
 	
@@ -592,6 +595,12 @@ public class CassandraCradleStorage extends CradleStorage
 		for (TestEventChildDateEntity entity : getTestEventChildrenDatesOperator().get(instanceUuid, parentId.toString(), readAttrs))
 			result.add(entity.getStartDate().atStartOfDay(TIMEZONE_OFFSET).toInstant());
 		return result;
+	}
+	
+	@Override
+	public CradleObjectsFactory getObjectsFactory()
+	{
+		return objectsFactory;
 	}
 	
 	

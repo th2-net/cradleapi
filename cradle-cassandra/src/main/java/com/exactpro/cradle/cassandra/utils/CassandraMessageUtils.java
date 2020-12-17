@@ -29,7 +29,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
@@ -39,7 +38,6 @@ import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.messages.StoredMessage;
-import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
 
@@ -56,24 +54,11 @@ public class CassandraMessageUtils
 			UUID instanceId, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
 	{
 		return new AsyncOperator<DetailedMessageBatchEntity>(semaphore)
-				.getFuture(() -> {
-					CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> batches = op.getMessageBatches(instanceId, 
+				.getFuture(() -> op.getMessageBatch(instanceId,
 							id.getStreamName(), 
 							id.getDirection().getLabel(),
-							id.getIndex()-StoredMessageBatch.MAX_MESSAGES_COUNT,
 							id.getIndex(),
-							readAttrs);
-					
-					return batches.thenCompose((b) -> {
-						if (b == null)
-							return CompletableFuture.completedFuture(null);
-						
-						DetailedMessageBatchEntity result = null;
-						for (Iterator<DetailedMessageBatchEntity> it = b.currentPage().iterator(); it.hasNext(); )  //Getting last entity
-							result = it.next();
-						return CompletableFuture.completedFuture(result);
-					});
-				});
+							readAttrs));
 	}
 	
 	public static long findLeftMessageIndex(DetailedMessageBatchEntity batch, StoredMessageFilter filter, UUID instanceId, 
@@ -110,7 +95,7 @@ public class CassandraMessageUtils
 			}
 		}
 		
-		//...else searching in previous batches, iterating through their messages from the end to find message index which in the left bound
+		//...else searching in previous batches, iterating through their messages from the end to find message index which is the left bound
 		PagingIterable<DetailedMessageBatchEntity> otherBatches = op.getMessageBatchesReversed(instanceId, 
 				batch.getStreamName(), 
 				batch.getDirection(), 
@@ -124,7 +109,7 @@ public class CassandraMessageUtils
 			if (ob.getMessageCount() <= count)  //Is needed message outside of this batch?
 			{
 				count -= ob.getMessageCount();
-				if (count <= 0)  //If needed message is in the begginning of the batch
+				if (count <= 0)  //If needed message is in the beginning of the batch
 					return ob.getMessageIndex();
 				continue;
 			}

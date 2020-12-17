@@ -111,23 +111,11 @@ public class StoredTestEventTest
 				.build());
 	}
 	
-	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Batch is full")
-	public void batchIsLimited() throws CradleIdException, CradleStorageException
-	{
-		for (int i = 0; i <= StoredTestEventBatch.MAX_EVENTS_NUMBER+1; i++)
-			batch.addTestEvent(eventBuilder
-					.id(new StoredTestEventId(Integer.toString(i)))
-					.name(DUMMY_NAME)
-					.startTimestamp(DUMMY_START_TIMESTAMP)
-					.parentId(batch.getParentId())
-					.build());
-	}
-	
-	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Batch is full")
+	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Batch has not enough space to hold given test event")
 	public void batchContentIsLimited() throws CradleIdException, CradleStorageException
 	{
 		byte[] content = new byte[5000];
-		for (int i = 0; i <= (StoredTestEventBatch.MAX_EVENTS_SIZE/content.length)+1; i++)
+		for (int i = 0; i <= (StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE/content.length)+1; i++)
 			batch.addTestEvent(eventBuilder
 					.id(new StoredTestEventId(Integer.toString(i)))
 					.name(DUMMY_NAME)
@@ -135,6 +123,39 @@ public class StoredTestEventTest
 					.parentId(batch.getParentId())
 					.content(content)
 					.build());
+	}
+	
+	@Test
+	public void batchCountsSpaceLeft() throws CradleStorageException
+	{
+		byte[] content = new byte[StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE-1];
+		long left = batch.getSpaceLeft();
+		
+		batch.addTestEvent(eventBuilder
+				.id(new StoredTestEventId(Integer.toString(1)))
+				.name(DUMMY_NAME)
+				.startTimestamp(DUMMY_START_TIMESTAMP)
+				.parentId(batch.getParentId())
+				.content(content)
+				.build());
+		
+		Assert.assertEquals(batch.getSpaceLeft(), left-content.length, "Batch counts space left");
+	}
+	
+	@Test
+	public void batchChecksSpaceLeft() throws CradleStorageException
+	{
+		byte[] content = new byte[StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE-1];
+		
+		TestEventToStore event = eventBuilder
+				.id(new StoredTestEventId(Integer.toString(1)))
+				.name(DUMMY_NAME)
+				.startTimestamp(DUMMY_START_TIMESTAMP)
+				.parentId(batch.getParentId())
+				.content(content)
+				.build();
+		batch.addTestEvent(event);
+		Assert.assertEquals(batch.hasSpace(event), false, "Batch shows if it has space to hold given test event");
 	}
 	
 	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Test event with ID .* is already present in batch")

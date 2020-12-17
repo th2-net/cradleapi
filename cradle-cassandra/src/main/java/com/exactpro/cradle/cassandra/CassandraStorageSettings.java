@@ -18,6 +18,8 @@ package com.exactpro.cradle.cassandra;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.exactpro.cradle.cassandra.connection.NetworkTopologyStrategy;
+import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.testevents.StoredTestEventBatch;
 
 public class CassandraStorageSettings
 {
@@ -35,7 +37,9 @@ public class CassandraStorageSettings
 			TEST_EVENTS_CHILDREN_DATES_TABLE_DEFAULT_NAME = "test_events_children_dates",
 			TEST_EVENTS_MESSAGES_TABLE_DEFAULT_NAME = "test_events_messages",
 			MESSAGES_TEST_EVENTS_TABLE_DEFAULT_NAME = "messages_test_events";
-	public static final long DEFAULT_TIMEOUT = 5000;
+	public static final long DEFAULT_TIMEOUT = 5000,
+			DEFAULT_MAX_MESSAGE_BATCH_SIZE = StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE,
+			DEFAULT_MAX_EVENT_BATCH_SIZE = StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE;
 	public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
 	public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1;
 	public static final int BATCH_MESSAGES_LIMIT = 10,
@@ -57,6 +61,8 @@ public class CassandraStorageSettings
 	private ConsistencyLevel writeConsistencyLevel,
 			readConsistencyLevel;
 	private int keyspaceReplicationFactor;
+	private long maxMessageBatchSize,
+			maxTestEventBatchSize;
 	
 	public CassandraStorageSettings(String keyspace, NetworkTopologyStrategy networkTopologyStrategy, 
 			long timeout, ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel)
@@ -77,6 +83,8 @@ public class CassandraStorageSettings
 		this.writeConsistencyLevel = writeConsistencyLevel;
 		this.readConsistencyLevel = readConsistencyLevel;
 		this.keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
+		this.maxMessageBatchSize = DEFAULT_MAX_MESSAGE_BATCH_SIZE;
+		this.maxTestEventBatchSize = DEFAULT_MAX_EVENT_BATCH_SIZE;
 	}
 
 	public CassandraStorageSettings(String keyspace, NetworkTopologyStrategy networkTopology)
@@ -256,5 +264,27 @@ public class CassandraStorageSettings
 	public void setReadConsistencyLevel(ConsistencyLevel readConsistencyLevel)
 	{
 		this.readConsistencyLevel = readConsistencyLevel;
+	}
+	
+	
+	public long getMaxMessageBatchSize()
+	{
+		return maxMessageBatchSize;
+	}
+	
+	public void setMaxMessageBatchSize(long maxMessageBatchSize)
+	{
+		this.maxMessageBatchSize = maxMessageBatchSize;
+	}
+	
+	
+	public long getMaxTestEventBatchSize()
+	{
+		return maxTestEventBatchSize;
+	}
+	
+	public void setMaxTestEventBatchSize(long maxTestEventBatchSize)
+	{
+		this.maxTestEventBatchSize = maxTestEventBatchSize;
 	}
 }
