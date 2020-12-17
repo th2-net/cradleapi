@@ -16,6 +16,8 @@
 
 package com.exactpro.cradle;
 
+import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
@@ -30,20 +32,25 @@ public abstract class CradleManager
 	}
 	
 	/**
+	 * Creates {@link CradleStorage} object to work with Cradle
+	 * @param maxMessageBatchSize maximum size of {@link StoredMessageBatch} (in bytes) allowed for {@link CradleStorage} while writing data
+	 * @param maxTestEventBatchSize maximum size of {@link StoredTestEventBatch} (in bytes) allowed for {@link CradleStorage} while writing data
 	 * @return instance of CradleStorage to read/write data
 	 */
-	protected abstract CradleStorage createStorage();
+	protected abstract CradleStorage createStorage(long maxMessageBatchSize, long maxTestEventBatchSize);
 	
 	/**
 	 * Initializes manager to get access to Cradle storage using given name of data instance
 	 * @param instanceName name of data instance
 	 * @param prepareStorage flag that indicates if underlying storage on disk can be created or its structure can be updated, if needed
+	 * @param maxMessageBatchSize maximum size of {@link StoredMessageBatch} (in bytes) allowed for {@link CradleStorage} while writing data
+	 * @param maxTestEventBatchSize maximum size of {@link StoredTestEventBatch} (in bytes) allowed for {@link CradleStorage} while writing data
 	 * @throws CradleStorageException if access to Cradle storage cannot be established
 	 */
 	
-	public void init(String instanceName, boolean prepareStorage) throws CradleStorageException
+	public void init(String instanceName, boolean prepareStorage, long maxMessageBatchSize, long maxTestEventBatchSize) throws CradleStorageException
 	{
-		initStart(instanceName, prepareStorage);
+		initStart(instanceName, prepareStorage, maxMessageBatchSize, maxTestEventBatchSize);
 		initFinish();
 	}
 	
@@ -56,7 +63,7 @@ public abstract class CradleManager
 	
 	public void init(String instanceName) throws CradleStorageException
 	{
-		initStart(instanceName, false);
+		initStart(instanceName, false, 0, 0);
 		initFinish();
 	}
 	
@@ -74,11 +81,13 @@ public abstract class CradleManager
 	 * Starts initialization to get access to Cradle storage using given name of data instance
 	 * @param instanceName name of data instance
 	 * @param prepareStorage flag that indicates if underlying storage on disk can be created or its structure can be updated, if needed
+	 * @param maxMessageBatchSize maximum size of {@link StoredMessageBatch} (in bytes) allowed for {@link CradleStorage} while writing data
+	 * @param maxTestEventBatchSize maximum size of {@link StoredTestEventBatch} (in bytes) allowed for {@link CradleStorage} while writing data
 	 * @throws CradleStorageException if access to Cradle storage cannot be established
 	 */
-	public void initStart(String instanceName, boolean prepareStorage) throws CradleStorageException
+	public void initStart(String instanceName, boolean prepareStorage, long maxMessageBatchSize, long maxTestEventBatchSize) throws CradleStorageException
 	{
-		storage = createStorage();
+		storage = createStorage(maxMessageBatchSize, maxTestEventBatchSize);
 		if (storage != null)
 			storage.init(instanceName, prepareStorage);
 	}

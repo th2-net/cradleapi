@@ -42,8 +42,7 @@ public class CassandraStorageSettings
 			DEFAULT_MAX_EVENT_BATCH_SIZE = StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE;
 	public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
 	public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1;
-	public static final int BATCH_MESSAGES_LIMIT = 10,
-			TEST_EVENTS_MSGS_LINK_MAX_MSGS = 10;
+	public static final int TEST_EVENTS_MSGS_LINK_MAX_MSGS = 10;
 	
 	private final String keyspace;
 	private String messagesTableName,
