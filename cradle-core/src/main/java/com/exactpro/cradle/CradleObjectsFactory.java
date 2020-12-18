@@ -21,9 +21,6 @@ import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventSingle;
 import com.exactpro.cradle.testevents.StoredTestEventWithContent;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
-import com.exactpro.cradle.testevents.TestEventBatchToStoreBuilder;
-import com.exactpro.cradle.testevents.TestEventToStore;
-import com.exactpro.cradle.testevents.TestEventToStoreBuilder;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 /**

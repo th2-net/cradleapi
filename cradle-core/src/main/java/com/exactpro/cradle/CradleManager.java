@@ -55,6 +55,19 @@ public abstract class CradleManager
 	}
 	
 	/**
+	 * Initializes manager to get access to Cradle storage using given name of data instance
+	 * @param instanceName name of data instance
+	 * @param prepareStorage flag that indicates if underlying storage on disk can be created or its structure can be updated, if needed
+	 * @throws CradleStorageException if access to Cradle storage cannot be established
+	 */
+	
+	public void init(String instanceName, boolean prepareStorage) throws CradleStorageException
+	{
+		initStart(instanceName, prepareStorage, StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE, StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE);
+		initFinish();
+	}
+	
+	/**
 	 * Initializes manager to get access to Cradle storage using given name of data instance.
 	 * Storage on disk won't be created, if absent, and its structure won't be updated, even if needed
 	 * @param instanceName name of data instance
@@ -63,7 +76,7 @@ public abstract class CradleManager
 	
 	public void init(String instanceName) throws CradleStorageException
 	{
-		initStart(instanceName, false, 0, 0);
+		initStart(instanceName, false, StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE, StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE);
 		initFinish();
 	}
 	
