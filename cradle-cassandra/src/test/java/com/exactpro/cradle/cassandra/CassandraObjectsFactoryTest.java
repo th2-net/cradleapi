@@ -18,24 +18,17 @@ package com.exactpro.cradle.cassandra;
 
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import com.exactpro.cradle.CradleStorage;
-import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.messages.StoredMessageBatch;
-import com.exactpro.cradle.messages.StoredMessageBatchId;
-import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
-import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
 
-import static com.exactpro.cradle.messages.StoredMessageBatchId.*;
-
-public class CassasndraObjectsFactoryTest
+public class CassandraObjectsFactoryTest
 {
 	private final long maxMessageBatchSize = 999,
 			maxEventBatchSize = 888;
