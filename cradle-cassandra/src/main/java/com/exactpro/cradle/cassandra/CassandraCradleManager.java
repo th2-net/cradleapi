@@ -24,7 +24,7 @@ import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
 public class CassandraCradleManager extends CradleManager
 {
 	private final CassandraConnection connection;
-
+	
 	public CassandraCradleManager(CassandraConnection connection)
 	{
 		super();
@@ -32,15 +32,25 @@ public class CassandraCradleManager extends CradleManager
 	}
 
 	@Override
-	protected CradleStorage createStorage()
+	protected CradleStorage createStorage(long maxMessageBatchSize, long maxTestEventBatchSize)
 	{
 		CassandraConnectionSettings settings = connection.getSettings();
-		CassandraStorageSettings storageSettings = new CassandraStorageSettings(settings.getKeyspace(),
-				settings.getNetworkTopologyStrategy(),
-				settings.getTimeout() <= 0 ? CassandraStorageSettings.DEFAULT_TIMEOUT : settings.getTimeout(),
-				settings.getWriteConsistencyLevel() == null ? CassandraStorageSettings.DEFAULT_CONSISTENCY_LEVEL : settings.getWriteConsistencyLevel(),
-				settings.getReadConsistencyLevel() == null ? CassandraStorageSettings.DEFAULT_CONSISTENCY_LEVEL : settings.getReadConsistencyLevel());
+		CassandraStorageSettings storageSettings = createStorageSettings(settings, maxMessageBatchSize, maxTestEventBatchSize);
 		
 		return new CassandraCradleStorage(connection, storageSettings);
+	}
+	
+	protected CassandraStorageSettings createStorageSettings(CassandraConnectionSettings connectionSettings, long maxMessageBatchSize, long maxTestEventBatchSize)
+	{
+		CassandraStorageSettings result = new CassandraStorageSettings(connectionSettings.getKeyspace(),
+				connectionSettings.getNetworkTopologyStrategy(),
+				connectionSettings.getTimeout() <= 0 ? CassandraStorageSettings.DEFAULT_TIMEOUT : connectionSettings.getTimeout(),
+				connectionSettings.getWriteConsistencyLevel() == null ? CassandraStorageSettings.DEFAULT_CONSISTENCY_LEVEL : connectionSettings.getWriteConsistencyLevel(),
+				connectionSettings.getReadConsistencyLevel() == null ? CassandraStorageSettings.DEFAULT_CONSISTENCY_LEVEL : connectionSettings.getReadConsistencyLevel());
+		if (maxMessageBatchSize > 0)
+			result.setMaxMessageBatchSize(maxMessageBatchSize);
+		if (maxTestEventBatchSize > 0)
+			result.setMaxTestEventBatchSize(maxTestEventBatchSize);
+		return result;
 	}
 }
