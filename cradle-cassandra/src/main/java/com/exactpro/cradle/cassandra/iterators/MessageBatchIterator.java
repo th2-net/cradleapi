@@ -23,7 +23,7 @@ import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.messages.StoredMessage;
 
-public class MessageBatchIterator extends PagedIterator<Collection<StoredMessage>, DetailedMessageBatchEntity>
+public class MessageBatchIterator extends ConvertingPagedIterator<Collection<StoredMessage>, DetailedMessageBatchEntity>
 {
 	public MessageBatchIterator(MappedAsyncPagingIterable<DetailedMessageBatchEntity> rows)
 	{

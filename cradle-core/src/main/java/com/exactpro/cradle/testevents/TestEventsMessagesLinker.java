@@ -18,6 +18,7 @@ package com.exactpro.cradle.testevents;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.concurrent.CompletableFuture;
 
 import com.exactpro.cradle.messages.StoredMessageId;
 
@@ -30,6 +31,13 @@ public interface TestEventsMessagesLinker
 	 * @throws IOException if test event data retrieval failed
 	 */
 	Collection<StoredTestEventId> getTestEventIdsByMessageId(StoredMessageId messageId) throws IOException;
+	
+	/**
+	 * Asynchronously retrieves IDs of stored test events by linked message ID
+	 * @param messageId ID of stored message
+	 * @return future to obtain collection of stored test event IDs
+	 */
+	CompletableFuture<Collection<StoredTestEventId>> getTestEventIdsByMessageIdAsync(StoredMessageId messageId);
 
 	/**
 	 * Retrieves IDs of stored messages by linked test event ID
@@ -38,6 +46,13 @@ public interface TestEventsMessagesLinker
 	 * @throws IOException if messages data retrieval failed
 	 */
 	Collection<StoredMessageId> getMessageIdsByTestEventId(StoredTestEventId eventId) throws IOException;
+	
+	/**
+	 * Asynchronously retrieves IDs of stored messages by linked test event ID
+	 * @param eventId ID of stored test event
+	 * @return future to obtain collection of stored message IDs
+	 */
+	CompletableFuture<Collection<StoredMessageId>> getMessageIdsByTestEventIdAsync(StoredTestEventId eventId);
 
 	/**
 	 * Checks if test event has messages linked to it
@@ -48,10 +63,24 @@ public interface TestEventsMessagesLinker
 	boolean isTestEventLinkedToMessages(StoredTestEventId eventId) throws IOException;
 	
 	/**
+	 * Asynchronously checks if test event has messages linked to it
+	 * @param eventId ID of stored test event
+	 * @return future to get if test event has linked messages
+	 */
+	CompletableFuture<Boolean> isTestEventLinkedToMessagesAsync(StoredTestEventId eventId);
+	
+	/**
 	 * Checks if message has test events linked to it
 	 * @param messageId ID of stored message
 	 * @return true if message has linked test events, false otherwise
 	 * @throws IOException if test events data retrieval failed
 	 */
 	boolean isMessageLinkedToTestEvents(StoredMessageId messageId) throws IOException;
+	
+	/**
+	 * Asynchronously checks if message has test events linked to it
+	 * @param messageId ID of stored message
+	 * @return future to get if message has linked test events
+	 */
+	CompletableFuture<Boolean> isMessageLinkedToTestEventsAsync(StoredMessageId messageId);
 }

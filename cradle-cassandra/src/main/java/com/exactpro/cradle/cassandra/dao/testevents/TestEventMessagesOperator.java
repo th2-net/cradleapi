@@ -16,29 +16,26 @@
 
 package com.exactpro.cradle.cassandra.dao.testevents;
 
+import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
+import static com.exactpro.cradle.cassandra.StorageConstants.TEST_EVENT_ID;
+
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
-
 @Dao
-public interface TestEventOperator
+public interface TestEventMessagesOperator
 {
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+ID+"=:id")
-	CompletableFuture<TestEventEntity> get(UUID instanceId, String id, 
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+TEST_EVENT_ID+"=:eventId")
+	CompletableFuture<MappedAsyncPagingIterable<TestEventMessagesEntity>> getMessages(UUID instanceId, String eventId, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
-	CompletableFuture<DetailedTestEventEntity> write(DetailedTestEventEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
-	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+INSTANCE_ID+"=:instanceId AND "+ID+"=:id")
-	CompletableFuture<AsyncResultSet> updateStatus(UUID instanceId, String id, boolean success,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<TestEventMessagesEntity> writeMessages(TestEventMessagesEntity eventMessages, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }
