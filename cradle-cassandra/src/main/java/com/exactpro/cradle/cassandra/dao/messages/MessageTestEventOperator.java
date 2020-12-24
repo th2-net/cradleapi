@@ -14,31 +14,28 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.cassandra.dao.testevents;
+package com.exactpro.cradle.cassandra.dao.messages;
+
+import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
+import static com.exactpro.cradle.cassandra.StorageConstants.MESSAGE_ID;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
-
 @Dao
-public interface TestEventOperator
+public interface MessageTestEventOperator
 {
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+ID+"=:id")
-	CompletableFuture<TestEventEntity> get(UUID instanceId, String id, 
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+MESSAGE_ID+"=:messageId")
+	CompletableFuture<MappedAsyncPagingIterable<MessageTestEventEntity>> getTestEvents(UUID instanceId, String messageId, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
-	CompletableFuture<DetailedTestEventEntity> write(DetailedTestEventEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
-	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+INSTANCE_ID+"=:instanceId AND "+ID+"=:id")
-	CompletableFuture<AsyncResultSet> updateStatus(UUID instanceId, String id, boolean success,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<MessageTestEventEntity> writeTestEvent(MessageTestEventEntity messageEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

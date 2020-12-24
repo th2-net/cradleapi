@@ -32,7 +32,6 @@ import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
@@ -46,19 +45,11 @@ public interface RootTestEventOperator
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
-	RootTestEventEntity writeTestEvent(RootTestEventEntity rootTestEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
-	@Insert
-	CompletableFuture<RootTestEventEntity> writeTestEventAsync(RootTestEventEntity rootTestEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<RootTestEventEntity> writeTestEvent(RootTestEventEntity rootTestEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+INSTANCE_ID+"=:instanceId AND "+
 			START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:eventId")
-	ResultSet updateStatus(UUID instanceId, LocalDate startDate, LocalTime startTime, String eventId, boolean success, 
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
-	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+INSTANCE_ID+"=:instanceId AND "+
-			START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:eventId")
-	CompletableFuture<AsyncResultSet> updateStatusAsync(UUID instanceId, LocalDate startDate, LocalTime startTime, String eventId, boolean success, 
+	CompletableFuture<AsyncResultSet> updateStatus(UUID instanceId, LocalDate startDate, LocalTime startTime, String eventId, boolean success, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("SELECT DISTINCT "+INSTANCE_ID+", "+START_DATE+" from ${qualifiedTableId}")

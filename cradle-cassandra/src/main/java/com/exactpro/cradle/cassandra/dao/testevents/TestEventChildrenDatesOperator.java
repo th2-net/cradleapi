@@ -30,10 +30,7 @@ import com.datastax.oss.driver.api.mapper.annotations.Select;
 public interface TestEventChildrenDatesOperator
 {
 	@Insert
-	TestEventChildDateEntity writeTestEventDate(TestEventChildDateEntity testEventDate, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
-	@Insert
-	CompletableFuture<TestEventChildDateEntity> writeTestEventDateAsync(TestEventChildDateEntity testEventDate, 
+	CompletableFuture<TestEventChildDateEntity> writeTestEventDate(TestEventChildDateEntity testEventDate, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Select
