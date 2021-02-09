@@ -30,7 +30,8 @@ public class CassandraConnectionSettings
 	private ConsistencyLevel writeConsistencyLevel,
 			readConsistencyLevel;
 	private NetworkTopologyStrategy networkTopologyStrategy;
-	private int maxParallelQueries;
+	private int maxParallelQueries,
+			resultPageSize;
 
 	public CassandraConnectionSettings()
 	{
@@ -45,6 +46,7 @@ public class CassandraConnectionSettings
 		readConsistencyLevel = null;
 		networkTopologyStrategy = null;
 		maxParallelQueries = 500;
+		resultPageSize = 0;  //In this case default page size will be used
 	}
 
 	public CassandraConnectionSettings(String localDataCenter, String host, int port, String keyspace)
@@ -70,6 +72,7 @@ public class CassandraConnectionSettings
 		this.readConsistencyLevel = settings.readConsistencyLevel;
 		this.networkTopologyStrategy = settings.getNetworkTopologyStrategy() != null ? new NetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap()) : null;
 		this.maxParallelQueries = settings.maxParallelQueries;
+		this.resultPageSize = settings.resultPageSize;
 	}
 
 	
@@ -191,5 +194,16 @@ public class CassandraConnectionSettings
 	public void setMaxParallelQueries(int maxParallelQueries)
 	{
 		this.maxParallelQueries = maxParallelQueries;
+	}
+	
+	
+	public int getResultPageSize()
+	{
+		return resultPageSize;
+	}
+	
+	public void setResultPageSize(int resultPageSize)
+	{
+		this.resultPageSize = resultPageSize;
 	}
 }

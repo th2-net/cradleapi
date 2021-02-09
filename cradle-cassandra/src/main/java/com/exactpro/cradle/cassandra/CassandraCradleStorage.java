@@ -116,6 +116,7 @@ public class CassandraCradleStorage extends CradleStorage
 	private Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
 			readAttrs,
 			strictReadAttrs;
+	private int resultPageSize;
 
 	private QueryExecutor exec;
 	
@@ -127,6 +128,7 @@ public class CassandraCradleStorage extends CradleStorage
 		this.settings = settings;
 		this.semaphore = new CassandraSemaphore(connection.getSettings().getMaxParallelQueries());
 		this.objectsFactory = new CradleObjectsFactory(settings.getMaxMessageBatchSize(), settings.getMaxTestEventBatchSize());
+		this.resultPageSize = connection.getSettings().getResultPageSize();
 	}
 	
 	
@@ -170,9 +172,11 @@ public class CassandraCradleStorage extends CradleStorage
 			writeAttrs = builder -> builder.setConsistencyLevel(settings.getWriteConsistencyLevel())
 					.setTimeout(timeout);
 			readAttrs = builder -> builder.setConsistencyLevel(settings.getReadConsistencyLevel())
-					.setTimeout(timeout);
+					.setTimeout(timeout)
+					.setPageSize(resultPageSize);
 			strictReadAttrs = builder -> builder.setConsistencyLevel(ConsistencyLevel.ALL)
-					.setTimeout(timeout);
+					.setTimeout(timeout)
+					.setPageSize(resultPageSize);
 			
 			testEventsMessagesLinker = new CassandraTestEventsMessagesLinker(ops.getTestEventMessagesOperator(), ops.getMessageTestEventOperator(),
 					instanceUuid, readAttrs, semaphore);
