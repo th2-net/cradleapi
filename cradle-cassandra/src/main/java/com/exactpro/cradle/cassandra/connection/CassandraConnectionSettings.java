@@ -20,6 +20,9 @@ import com.datastax.oss.driver.api.core.ConsistencyLevel;
 
 public class CassandraConnectionSettings
 {
+	public static final String DEFAULT_CERTIFICATE_TYPE = "X.509";
+	public static final String DEFAULT_SSL_PROTOCOL = "TLS";
+	
 	private String localDataCenter;
 	private String host;
 	private int port;
@@ -32,6 +35,11 @@ public class CassandraConnectionSettings
 	private NetworkTopologyStrategy networkTopologyStrategy;
 	private int maxParallelQueries,
 			resultPageSize;
+	//Use to SSL connection
+	private String certificatePath;
+	private String certificateType = DEFAULT_CERTIFICATE_TYPE;
+	private String certificatePassword;
+	private String sslProtocol = DEFAULT_SSL_PROTOCOL;
 
 	public CassandraConnectionSettings()
 	{
@@ -205,5 +213,45 @@ public class CassandraConnectionSettings
 	public void setResultPageSize(int resultPageSize)
 	{
 		this.resultPageSize = resultPageSize;
+	}
+
+	public String getCertificatePath()
+	{
+		return certificatePath;
+	}
+
+	public void setCertificatePath(String certificatePath)
+	{
+		this.certificatePath = certificatePath;
+	}
+
+	public String getCertificateType()
+	{
+		return certificateType;
+	}
+
+	public void setCertificateType(String certificateType)
+	{
+		this.certificateType = certificateType;
+	}
+
+	public String getCertificatePassword()
+	{
+		return certificatePassword;
+	}
+
+	public void setCertificatePassword(String certificatePassword)
+	{
+		this.certificatePassword = certificatePassword;
+	}
+
+	public String getSslProtocol()
+	{
+		return sslProtocol;
+	}
+
+	public void setSslProtocol(String sslProtocol)
+	{
+		this.sslProtocol = sslProtocol;
 	}
 }

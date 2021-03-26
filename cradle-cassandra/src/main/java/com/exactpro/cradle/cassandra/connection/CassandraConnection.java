@@ -19,10 +19,21 @@ package com.exactpro.cradle.cassandra.connection;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.security.*;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.util.Date;
 
 import org.apache.commons.lang3.StringUtils;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 
 public class CassandraConnection
 {
@@ -33,13 +44,11 @@ public class CassandraConnection
 
 	public CassandraConnection()
 	{
-		super();
 		this.settings = createSettings();
 	}
 
 	public CassandraConnection(CassandraConnectionSettings settings)
 	{
-		super();
 		this.settings = settings;
 	}
 
@@ -48,13 +57,46 @@ public class CassandraConnection
 	{
 		CqlSessionBuilder sessionBuilder = CqlSession.builder();
 		if (!StringUtils.isEmpty(settings.getLocalDataCenter()))
-			sessionBuilder = sessionBuilder.withLocalDatacenter(settings.getLocalDataCenter());
+			sessionBuilder.withLocalDatacenter(settings.getLocalDataCenter());
 		if (settings.getPort() > -1)
-			sessionBuilder = sessionBuilder.addContactPoint(new InetSocketAddress(settings.getHost(), settings.getPort()));
+			sessionBuilder.addContactPoint(new InetSocketAddress(settings.getHost(), settings.getPort()));
 		if (!StringUtils.isEmpty(settings.getUsername()))
-			sessionBuilder = sessionBuilder.withAuthCredentials(settings.getUsername(), settings.getPassword());
+			sessionBuilder.withAuthCredentials(settings.getUsername(), settings.getPassword());
+		if (!StringUtils.isEmpty(settings.getCertificatePath()))
+			sessionBuilder.withSslContext(createSslContext());
+			
 		session = sessionBuilder.build();
 		started = new Date();
+	}
+
+	private SSLContext createSslContext()
+			throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException,
+				   UnrecoverableKeyException, KeyManagementException
+	{
+		//Init keystore
+		KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
+		ks.load(null);
+		ks.setCertificateEntry(settings.getCertificatePath(), createCertificate());
+
+		//Init key manager
+		KeyManagerFactory kmFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+		kmFactory.init(ks, settings.getCertificatePassword() == null ? null : settings.getCertificatePassword().toCharArray());
+
+		//Init ssl context
+		SSLContext sslContext = SSLContext.getInstance(settings.getSslProtocol());
+		sslContext.init(kmFactory.getKeyManagers(), null, null);
+		
+		return sslContext;
+	}
+
+	private Certificate createCertificate() throws IOException, CertificateException
+	{
+		String certPath = settings.getCertificatePath();
+		try (BufferedInputStream bis = new BufferedInputStream(Files.newInputStream(Paths.get(certPath).toAbsolutePath())))
+		{
+			CertificateFactory cf = CertificateFactory.getInstance(settings.getCertificateType());
+			return cf.generateCertificate(bis);
+		}
 	}
 
 	public void stop() throws Exception
