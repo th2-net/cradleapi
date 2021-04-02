@@ -33,10 +33,12 @@ public class CassandraStorageSettings
 			TEST_EVENTS_TABLE_DEFAULT_NAME = "test_events",
 			TIME_TEST_EVENTS_TABLE_DEFAULT_NAME = "time_test_events",
 			ROOT_TEST_EVENTS_TABLE_DEFAULT_NAME = "root_test_events",
+			ROOT_TEST_EVENTS_DATES_TABLE_DEFAULT_NAME = "root_test_events_dates",
 			TEST_EVENTS_CHILDREN_TABLE_DEFAULT_NAME = "test_events_children",
 			TEST_EVENTS_CHILDREN_DATES_TABLE_DEFAULT_NAME = "test_events_children_dates",
 			TEST_EVENTS_MESSAGES_TABLE_DEFAULT_NAME = "test_events_messages",
-			MESSAGES_TEST_EVENTS_TABLE_DEFAULT_NAME = "messages_test_events";
+			MESSAGES_TEST_EVENTS_TABLE_DEFAULT_NAME = "messages_test_events",
+			STREAMS_TABLE_DEFAULT_NAME = "streams";
 	public static final long DEFAULT_TIMEOUT = 5000,
 			DEFAULT_MAX_MESSAGE_BATCH_SIZE = StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE,
 			DEFAULT_MAX_EVENT_BATCH_SIZE = StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE;
@@ -51,10 +53,13 @@ public class CassandraStorageSettings
 			testEventsTableName,
 			timeTestEventsTableName,
 			rootTestEventsTableName,
+			rootTestEventsDatesTableName,
 			testEventsChildrenTableName,
 			testEventsChildrenDatesTableName,
 			testEventsMessagesTableName,
-			messagesTestEventsTableName;
+			messagesTestEventsTableName,
+			streamsTableName,
+			instanceTableName;
 	private final NetworkTopologyStrategy networkTopologyStrategy;
 	private long timeout;
 	private ConsistencyLevel writeConsistencyLevel,
@@ -66,16 +71,19 @@ public class CassandraStorageSettings
 	public CassandraStorageSettings(String keyspace, NetworkTopologyStrategy networkTopologyStrategy, 
 			long timeout, ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel)
 	{
+		this.instanceTableName = INSTANCES_TABLE_DEFAULT_NAME;
 		this.messagesTableName = MESSAGES_TABLE_DEFAULT_NAME;
 		this.processedMessagesTableName = PROCESSED_MESSAGES_TABLE_DEFAULT_NAME;
 		this.timeMessagesTableName = TIME_MESSAGES_TABLE_DEFAULT_NAME;
 		this.testEventsTableName = TEST_EVENTS_TABLE_DEFAULT_NAME;
 		this.timeTestEventsTableName = TIME_TEST_EVENTS_TABLE_DEFAULT_NAME;
 		this.rootTestEventsTableName = ROOT_TEST_EVENTS_TABLE_DEFAULT_NAME;
+		this.rootTestEventsDatesTableName = ROOT_TEST_EVENTS_DATES_TABLE_DEFAULT_NAME;
 		this.testEventsChildrenTableName = TEST_EVENTS_CHILDREN_TABLE_DEFAULT_NAME;
 		this.testEventsChildrenDatesTableName = TEST_EVENTS_CHILDREN_DATES_TABLE_DEFAULT_NAME;
 		this.testEventsMessagesTableName = TEST_EVENTS_MESSAGES_TABLE_DEFAULT_NAME;
 		this.messagesTestEventsTableName = MESSAGES_TEST_EVENTS_TABLE_DEFAULT_NAME;
+		this.streamsTableName = STREAMS_TABLE_DEFAULT_NAME;
 		this.keyspace = keyspace;
 		this.networkTopologyStrategy = networkTopologyStrategy;
 		this.timeout = timeout;
@@ -285,5 +293,36 @@ public class CassandraStorageSettings
 	public void setMaxTestEventBatchSize(long maxTestEventBatchSize)
 	{
 		this.maxTestEventBatchSize = maxTestEventBatchSize;
+	}
+
+
+	public String getStreamsTableName()
+	{
+		return streamsTableName;
+	}
+
+	public void setStreamsTableName(String streamsTableName)
+	{
+		this.streamsTableName = streamsTableName;
+	}
+
+	public String getInstanceTableName()
+	{
+		return instanceTableName;
+	}
+
+	public void setInstanceTableName(String instanceTableName)
+	{
+		this.instanceTableName = instanceTableName;
+	}
+
+	public String getRootTestEventsDatesTableName()
+	{
+		return rootTestEventsDatesTableName;
+	}
+
+	public void setRootTestEventsDatesTableName(String rootTestEventsDatesTableName)
+	{
+		this.rootTestEventsDatesTableName = rootTestEventsDatesTableName;
 	}
 }

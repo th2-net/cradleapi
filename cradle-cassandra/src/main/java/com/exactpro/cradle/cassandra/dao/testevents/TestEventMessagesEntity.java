@@ -24,13 +24,12 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.datastax.oss.driver.api.core.uuid.Uuids;
+import com.datastax.oss.driver.api.mapper.annotations.*;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
-import com.datastax.oss.driver.api.mapper.annotations.CqlName;
-import com.datastax.oss.driver.api.mapper.annotations.Entity;
-import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 
@@ -51,6 +50,9 @@ public class TestEventMessagesEntity
 	private String eventId;
 	
 	@ClusteringColumn(0)
+	@CqlName(ID)
+	private UUID id;
+	
 	@CqlName(MESSAGE_IDS)
 	private Set<String> messageIds;
 	
@@ -66,6 +68,7 @@ public class TestEventMessagesEntity
 		this.eventId = eventId.toString();
 		this.messageIds = messageIds.stream().map((id) -> id.toString()).collect(Collectors.toCollection(() -> new LinkedHashSet<>()));
 		this.instanceId = instanceId;
+		this.id = Uuids.timeBased();
 	}
 	
 	
@@ -99,5 +102,16 @@ public class TestEventMessagesEntity
 	public void setMessageIds(Set<String> messageIds)
 	{
 		this.messageIds = messageIds;
+	}
+
+
+	public UUID getId()
+	{
+		return id;
+	}
+
+	public void setId(UUID id)
+	{
+		this.id = id;
 	}
 }

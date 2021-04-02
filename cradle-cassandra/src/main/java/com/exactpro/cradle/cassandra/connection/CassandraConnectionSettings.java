@@ -17,6 +17,7 @@
 package com.exactpro.cradle.cassandra.connection;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.sun.tools.javac.util.StringUtils;
 
 public class CassandraConnectionSettings
 {
@@ -124,7 +125,7 @@ public class CassandraConnectionSettings
 	
 	public void setKeyspace(String keyspace)
 	{
-		this.keyspace = keyspace;
+		this.keyspace = StringUtils.toLowerCase(keyspace);
 	}
 	
 	

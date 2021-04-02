@@ -2,6 +2,7 @@ ext {
     driver_version = '4.2.0'
 }
 
+
 dependencies {
 	compile project(":cradle-core")
 	compile "com.datastax.oss:java-driver-core:${driver_version}"
@@ -12,6 +13,13 @@ dependencies {
 	annotationProcessor "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
 	
 	testCompile 'org.testng:testng:7.1.0'
+}
+
+def gen_dir = 'build/generated/sources/annotationProcessor/main'
+sourceSets.main.java.srcDirs += [gen_dir]
+
+compileJava {
+	options.annotationProcessorGeneratedSourcesDirectory = file("${projectDir}/${gen_dir}")
 }
 
 test {
