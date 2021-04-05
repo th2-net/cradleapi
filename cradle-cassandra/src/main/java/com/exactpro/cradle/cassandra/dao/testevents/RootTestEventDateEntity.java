@@ -44,8 +44,13 @@ public class RootTestEventDateEntity
 	public RootTestEventDateEntity()
 	{
 	}
-	
-	
+
+	public RootTestEventDateEntity(UUID instanceId, LocalDate startDate)
+	{
+		this.instanceId = instanceId;
+		this.startDate = startDate;
+	}
+
 	public UUID getInstanceId()
 	{
 		return instanceId;

@@ -19,8 +19,10 @@ package com.exactpro.cradle.cassandra.dao.messages;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
+import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
@@ -31,4 +33,8 @@ public interface StreamsOperator
 {
 	@Query("SELECT "+INSTANCE_ID+", "+STREAM_NAME+" from ${qualifiedTableId}")
 	PagingIterable<StreamEntity> getStreams(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+	@Insert
+	CompletableFuture<StreamEntity> writeStream(StreamEntity stream,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

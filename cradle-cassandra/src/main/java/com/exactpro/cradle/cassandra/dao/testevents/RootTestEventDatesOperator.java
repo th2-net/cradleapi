@@ -19,8 +19,10 @@ package com.exactpro.cradle.cassandra.dao.testevents;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
+import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
@@ -33,4 +35,7 @@ public interface RootTestEventDatesOperator
 	PagingIterable<RootTestEventDateEntity> getDates(
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
+	@Insert
+	CompletableFuture<RootTestEventDateEntity> writeTestEventDate(RootTestEventDateEntity rootTestEvent, 
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

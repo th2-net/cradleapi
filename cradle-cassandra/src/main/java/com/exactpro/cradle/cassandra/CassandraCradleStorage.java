@@ -33,12 +33,7 @@ import com.exactpro.cradle.cassandra.dao.AsyncOperator;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
-import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
-import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
-import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventEntity;
-import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
-import com.exactpro.cradle.cassandra.dao.messages.StreamEntity;
-import com.exactpro.cradle.cassandra.dao.messages.TimeMessageEntity;
+import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.testevents.DetailedTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventDateEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventEntity;
@@ -237,7 +232,38 @@ public class CassandraCradleStorage extends CradleStorage
 				});
 		return future.thenAccept(e -> {});
 	}
-	
+
+	@Override
+	protected void doStoreStream(String streamName) throws IOException
+	{
+		try
+		{
+			doStoreStreamAsync(streamName).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while storing message stream " + streamName, e);
+		}
+	}
+
+	@Override
+	protected CompletableFuture<Void> doStoreStreamAsync(String streamName)
+	{
+		return writeStream(streamName);
+	}
+
+	private CompletableFuture<Void> writeStream(String streamName)
+	{
+		CompletableFuture<StreamEntity> future = new AsyncOperator<StreamEntity>(semaphore)
+				.getFuture(() -> {
+					logger.trace("Executing stream storing query");
+					StreamsOperator op = ops.getStreamsOperator();
+					StreamEntity stream = new StreamEntity(instanceUuid, streamName);
+					return op.writeStream(stream, writeAttrs);
+				});
+		return future.thenAccept(e -> {});
+	}
+
 	@Override
 	protected void doStoreProcessedMessageBatch(StoredMessageBatch batch) throws IOException
 	{
@@ -283,7 +309,10 @@ public class CassandraCradleStorage extends CradleStorage
 			futures.add(storeEventDateInParent(event).thenAccept(r -> {}));
 		}
 		else
+		{
 			futures.add(storeRootEvent(event).thenAccept(r -> {}));
+			futures.add(storeRootEventDate(event.getStartTimestamp()).thenAccept(r -> {}));
+		}
 		
 		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 	}
@@ -816,6 +845,20 @@ public class CassandraCradleStorage extends CradleStorage
 				
 				logger.trace("Executing root event storing query");
 				return ops.getRootTestEventOperator().writeTestEvent(entity, writeAttrs);
+		});
+	}
+	
+	protected CompletableFuture<RootTestEventDateEntity> storeRootEventDate(Instant startTimestamp)
+	{
+		return new AsyncOperator<RootTestEventDateEntity>(semaphore).getFuture(() ->
+		{
+			LocalDate ldt = startTimestamp == null 
+					? null 
+					: LocalDateTime.ofInstant(startTimestamp, CassandraCradleStorage.TIMEZONE_OFFSET).toLocalDate();
+			RootTestEventDateEntity entity = new RootTestEventDateEntity(instanceUuid, ldt);
+
+			logger.trace("Executing root event date storing query");
+			return ops.getRootTestEventDatesOperator().writeTestEventDate(entity, writeAttrs);
 		});
 	}
 	
