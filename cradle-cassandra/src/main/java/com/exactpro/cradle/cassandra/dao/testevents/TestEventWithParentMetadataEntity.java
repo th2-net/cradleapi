@@ -25,7 +25,6 @@ import java.util.UUID;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
-import com.exactpro.cradle.testevents.StoredTestEventBatchMetadata;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 import com.exactpro.cradle.utils.TestEventUtils;

@@ -80,7 +80,7 @@ public class TestEventUtils
 	/**
 	 * Serializes test events metadata, skipping non-meaningful or calculatable fields
 	 * @param testEventsMetadata to serialize
-	 * @return array of bytes, containing serialized metadata of events
+	 * @return array of bytes, containing serialized and compressed metadata of events
 	 * @throws IOException if serialization failed
 	 */
 	public static byte[] serializeTestEventsMetadata(Collection<BatchedStoredTestEventMetadata> testEventsMetadata) throws IOException
@@ -92,7 +92,7 @@ public class TestEventUtils
 			for (BatchedStoredTestEventMetadata te : testEventsMetadata)
 				serialize(te, dos);
 			dos.flush();
-			batchContent = out.toByteArray();
+			batchContent = CompressionUtils.compressData(out.toByteArray());
 		}
 		return batchContent;
 	}
@@ -142,6 +142,19 @@ public class TestEventUtils
 	public static void deserializeTestEventsMetadata(byte[] contentBytes, StoredTestEventBatchMetadata batch) 
 			throws IOException
 	{
+		try
+		{
+			contentBytes = CompressionUtils.decompressData(contentBytes);
+		}
+		catch (IOException e)
+		{
+			throw new IOException("Could not decompress metadata of test events from batch with ID '"+batch.getId()+"'", e);
+		}
+		catch (DataFormatException e)
+		{
+			//Data seems to be not compressed, i.e written by Cradle API prior to 2.9.0, let's try to deserialize events from bytes as they are
+		}
+		
 		try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(contentBytes)))
 		{
 			while (dis.available() != 0)
