@@ -18,9 +18,7 @@ package com.exactpro.cradle.cassandra.amazon;
 
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
-import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
-import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.CassandraTablesCreator;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
@@ -31,8 +29,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
 public class AmazonTablesCreator extends CassandraTablesCreator
 {
@@ -48,29 +44,24 @@ public class AmazonTablesCreator extends CassandraTablesCreator
 	public static final String STATUS_COLUMN = "status";
 	public static final String ACTIVE_STATUS = "ACTIVE";
 	public static final int ATTEMPTS_TO_CHECK_AVAILABILITY = 10;
-	public static final int CHECK_AVABILITY_TIMEOUT_MS = 5000;
+	public static final int CHECK_AVAILABILITY_TIMEOUT_MS = 5000;
 
 	private String currentKeyspace;
 	
 	private final String keyspaceQuery = QueryBuilder.selectFrom(AMAZON_SYSTEM_KEYSPACE, KEYSPACES_TABLE)
 			.all()
-			.whereColumn(wrap(KEYSPACES_COLUMN)).isEqualTo(QueryBuilder.bindMarker())
+			.whereColumn(KEYSPACES_COLUMN).isEqualTo(QueryBuilder.bindMarker())
 			.limit(1)
 			.asCql();
 
 	private final String tableStatusQuery = QueryBuilder.selectFrom(AMAZON_SYSTEM_KEYSPACE, TABLES_TABLE)
 			.all()
-			.whereColumn(wrap(KEYSPACES_COLUMN)).isEqualTo(QueryBuilder.bindMarker())
-			.whereColumn(wrap(TABLE_NAME_COLUMN)).isEqualTo(QueryBuilder.bindMarker())
+			.whereColumn(KEYSPACES_COLUMN).isEqualTo(QueryBuilder.bindMarker())
+			.whereColumn(TABLE_NAME_COLUMN).isEqualTo(QueryBuilder.bindMarker())
 			.limit(1)
 			.asCql();
 
 
-	private static String wrap(String arg)
-	{
-		return StringUtils.wrap(arg, '"');
-	}
-	
 	public AmazonTablesCreator(QueryExecutor exec, CassandraStorageSettings settings)
 	{
 		super(exec, settings);
@@ -91,7 +82,7 @@ public class AmazonTablesCreator extends CassandraTablesCreator
 	@Override
 	protected void doAfterKeyspaceCreating(String keyspace)
 	{
-		currentKeyspace = keyspace;
+		currentKeyspace = StringUtils.lowerCase(keyspace);
 	}
 
 	protected String getTableStatus(String tableName) throws IOException
@@ -106,24 +97,22 @@ public class AmazonTablesCreator extends CassandraTablesCreator
 	public void createKeyspace() throws IOException
 	{
 		super.createKeyspace();
-		checkKeyspaceAvailability();
+		waitKeyspaceAvailability();
 	}
 
-	private void checkKeyspaceAvailability() throws IOException
+	private void waitKeyspaceAvailability() throws IOException
 	{
-		boolean currentStatus;
 		for (int i = 0; i < ATTEMPTS_TO_CHECK_AVAILABILITY; i++)
 		{
-			if (currentStatus = getKeyspaceStatus(currentKeyspace))
+			if (isKeyspaceAvailable(currentKeyspace))
 				return;
+			
 			if (i == ATTEMPTS_TO_CHECK_AVAILABILITY - 1)
-			{
-				logger.debug("Last status of keyspace {} is {}", currentKeyspace, currentStatus);
 				throw new IOException("Keyspace " + currentKeyspace + " is not available");
-			}
+			
 			try
 			{
-				Thread.sleep(CHECK_AVABILITY_TIMEOUT_MS);
+				Thread.sleep(CHECK_AVAILABILITY_TIMEOUT_MS);
 			}
 			catch (InterruptedException e)
 			{
@@ -132,7 +121,7 @@ public class AmazonTablesCreator extends CassandraTablesCreator
 		}
 	}
 
-	protected boolean getKeyspaceStatus(String keyspace) throws IOException
+	protected boolean isKeyspaceAvailable(String keyspace) throws IOException
 	{
 		ResultSet rs = exec.executeQuery(keyspaceQuery, false, keyspace);
 		Row row = rs.one();
@@ -144,7 +133,7 @@ public class AmazonTablesCreator extends CassandraTablesCreator
 	public void createAll() throws IOException
 	{
 		super.createAll();
-		checkTablesAvailability(Arrays.asList(
+		waitTablesAvailability(Arrays.asList(
 				settings.getInstanceTableName(),
 				settings.getStreamsTableName(),
 				settings.getMessagesTableName(),
@@ -160,7 +149,7 @@ public class AmazonTablesCreator extends CassandraTablesCreator
 				settings.getRootTestEventsDatesTableName()));
 	}
 
-	private void checkTablesAvailability(Collection<String> tablesNames) throws IOException
+	private void waitTablesAvailability(Collection<String> tablesNames) throws IOException
 	{
 		for (String tableName : tablesNames)
 		{
@@ -176,7 +165,7 @@ public class AmazonTablesCreator extends CassandraTablesCreator
 				}
 				try
 				{
-					Thread.sleep(CHECK_AVABILITY_TIMEOUT_MS);
+					Thread.sleep(CHECK_AVAILABILITY_TIMEOUT_MS);
 				}
 				catch (InterruptedException e)
 				{
@@ -185,25 +174,4 @@ public class AmazonTablesCreator extends CassandraTablesCreator
 			}
 		}
 	}
-
-	//	@Override
-//	protected boolean isColumnExists(String tableName, String columnName) throws IOException
-//	{
-//		Select select = columnChecksMapping.computeIfAbsent(tableName, this::generateColumnCheckSelect);
-//		ResultSet rs = exec.executeQuery(select.build(), false);
-//		return rs.getColumnDefinitions().contains(columnName);
-//	}
-
-//	private Select generateColumnCheckSelect(String tableName)
-//	{
-//		return QueryBuilder.selectFrom(currentKeyspace, tableName)
-//				.all()
-//				.limit(0);
-//	}
-
-//	private boolean isResultNotEmpty(SimpleStatement statement) throws IOException
-//	{
-//		ResultSet rs = exec.executeQuery(statement, false);
-//		return rs.one() != null; 
-//	}
 }

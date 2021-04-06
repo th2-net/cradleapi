@@ -66,8 +66,11 @@ public class TestEventMessagesEntity
 		logger.debug("Creating entity with event-messages link");
 		
 		this.eventId = eventId.toString();
-		this.messageIds = messageIds.stream().map((id) -> id.toString()).collect(Collectors.toCollection(() -> new LinkedHashSet<>()));
+		this.messageIds = messageIds.stream().map(StoredMessageId::toString).collect(Collectors.toCollection(LinkedHashSet::new));
 		this.instanceId = instanceId;
+		// Amazon Keyspaces does not support frozen data type. 
+		// In this case we cannot use messagesIds as the clustering key.
+		// Instead, we use this column as the clustering key and generate its value on every insert.
 		this.id = Uuids.timeBased();
 	}
 	

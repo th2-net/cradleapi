@@ -65,8 +65,6 @@ public abstract class CradleStorage
 	protected abstract CompletableFuture<Void> doStoreMessageBatchAsync(StoredMessageBatch batch);
 	protected abstract void doStoreTimeMessage(StoredMessage message) throws IOException;
 	protected abstract CompletableFuture<Void> doStoreTimeMessageAsync(StoredMessage message);
-	protected abstract void doStoreStream(String streamName) throws IOException;
-	protected abstract CompletableFuture<Void> doStoreStreamAsync(String streamName);
 	protected abstract void doStoreProcessedMessageBatch(StoredMessageBatch batch) throws IOException;
 	protected abstract CompletableFuture<Void> doStoreProcessedMessageBatchAsync(StoredMessageBatch batch);
 	protected abstract void doStoreTestEvent(StoredTestEvent event) throws IOException;
@@ -170,8 +168,6 @@ public abstract class CradleStorage
 		doStoreMessageBatch(batch);
 		logger.debug("Storing time/message data for batch {}", batch.getId());
 		storeTimeMessages(batch.getMessages());
-		logger.debug("Storing message stream {}", batch.getStreamName());
-		doStoreStream(batch.getStreamName());
 		logger.debug("Message batch {} has been stored", batch.getId());
 	}
 	
@@ -185,10 +181,9 @@ public abstract class CradleStorage
 	{
 		logger.debug("Storing message batch {} asynchronously", batch.getId());
 		CompletableFuture<Void> batchStoring = doStoreMessageBatchAsync(batch),
-				timeStoring = storeTimeMessagesAsync(batch.getMessages()),
-				streamStoring = doStoreStreamAsync(batch.getStreamName());
+				timeStoring = storeTimeMessagesAsync(batch.getMessages());
 		
-		return CompletableFuture.allOf(batchStoring, timeStoring, streamStoring)
+		return CompletableFuture.allOf(batchStoring, timeStoring)
 				.whenComplete((r, error) -> {
 					if (error != null)
 						logger.error("Error while storing message batch "+batch.getId()+" asynchronously", error);

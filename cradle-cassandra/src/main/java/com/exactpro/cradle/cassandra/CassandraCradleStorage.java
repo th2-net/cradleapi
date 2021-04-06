@@ -234,37 +234,6 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected void doStoreStream(String streamName) throws IOException
-	{
-		try
-		{
-			doStoreStreamAsync(streamName).get();
-		}
-		catch (Exception e)
-		{
-			throw new IOException("Error while storing message stream " + streamName, e);
-		}
-	}
-
-	@Override
-	protected CompletableFuture<Void> doStoreStreamAsync(String streamName)
-	{
-		return writeStream(streamName);
-	}
-
-	private CompletableFuture<Void> writeStream(String streamName)
-	{
-		CompletableFuture<StreamEntity> future = new AsyncOperator<StreamEntity>(semaphore)
-				.getFuture(() -> {
-					logger.trace("Executing stream storing query");
-					StreamsOperator op = ops.getStreamsOperator();
-					StreamEntity stream = new StreamEntity(instanceUuid, streamName);
-					return op.writeStream(stream, writeAttrs);
-				});
-		return future.thenAccept(e -> {});
-	}
-
-	@Override
 	protected void doStoreProcessedMessageBatch(StoredMessageBatch batch) throws IOException
 	{
 		try
@@ -737,7 +706,7 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	private CompletableFuture<Void> writeMessage(StoredMessageBatch batch, boolean rawMessage)
 	{
-		CompletableFuture<DetailedMessageBatchEntity> future = new AsyncOperator<DetailedMessageBatchEntity>(semaphore)
+		CompletableFuture<DetailedMessageBatchEntity> writeMessagefuture = new AsyncOperator<DetailedMessageBatchEntity>(semaphore)
 				.getFuture(() -> {
 					DetailedMessageBatchEntity entity;
 					try
@@ -755,7 +724,16 @@ public class CassandraCradleStorage extends CradleStorage
 					MessageBatchOperator op = rawMessage ? ops.getMessageBatchOperator() : ops.getProcessedMessageBatchOperator();
 					return op.writeMessageBatch(entity, writeAttrs);
 				});
-		return future.thenAccept(e -> {});
+		
+		CompletableFuture<StreamEntity> writeStreamfuture = new AsyncOperator<StreamEntity>(semaphore)
+				.getFuture(() -> {
+					logger.trace("Executing stream storing query");
+					StreamsOperator op = ops.getStreamsOperator();
+					StreamEntity stream = new StreamEntity(instanceUuid, batch.getStreamName());
+					return op.writeStream(stream, writeAttrs);
+				});
+		
+		return CompletableFuture.allOf(writeMessagefuture, writeStreamfuture);
 	}
 	
 	private CompletableFuture<DetailedMessageBatchEntity> readMessageBatchEntity(StoredMessageId messageId, boolean rawMessage)

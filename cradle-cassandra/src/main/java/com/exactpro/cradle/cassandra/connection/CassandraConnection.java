@@ -23,7 +23,7 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -62,7 +62,7 @@ public class CassandraConnection
 			sessionBuilder.addContactPoint(new InetSocketAddress(settings.getHost(), settings.getPort()));
 		if (!StringUtils.isEmpty(settings.getUsername()))
 			sessionBuilder.withAuthCredentials(settings.getUsername(), settings.getPassword());
-		if (!StringUtils.isEmpty(settings.getCertificatePath()))
+		if (settings.getCertificatePath() != null)
 			sessionBuilder.withSslContext(createSslContext());
 			
 		session = sessionBuilder.build();
@@ -76,7 +76,7 @@ public class CassandraConnection
 		//Init keystore
 		KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
 		ks.load(null);
-		ks.setCertificateEntry(settings.getCertificatePath(), createCertificate());
+		ks.setCertificateEntry(settings.getCertificatePath().toString(), createCertificate());
 
 		//Init key manager
 		KeyManagerFactory kmFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
@@ -91,8 +91,8 @@ public class CassandraConnection
 
 	private Certificate createCertificate() throws IOException, CertificateException
 	{
-		String certPath = settings.getCertificatePath();
-		try (BufferedInputStream bis = new BufferedInputStream(Files.newInputStream(Paths.get(certPath).toAbsolutePath())))
+		Path certPath = settings.getCertificatePath();
+		try (BufferedInputStream bis = new BufferedInputStream(Files.newInputStream(certPath)))
 		{
 			CertificateFactory cf = CertificateFactory.getInstance(settings.getCertificateType());
 			return cf.generateCertificate(bis);

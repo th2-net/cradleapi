@@ -17,7 +17,9 @@
 package com.exactpro.cradle.cassandra.connection;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
-import com.sun.tools.javac.util.StringUtils;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class CassandraConnectionSettings
 {
@@ -37,7 +39,7 @@ public class CassandraConnectionSettings
 	private int maxParallelQueries,
 			resultPageSize;
 	//Use to SSL connection
-	private String certificatePath;
+	private Path certificatePath;
 	private String certificateType = DEFAULT_CERTIFICATE_TYPE;
 	private String certificatePassword;
 	private String sslProtocol = DEFAULT_SSL_PROTOCOL;
@@ -125,7 +127,7 @@ public class CassandraConnectionSettings
 	
 	public void setKeyspace(String keyspace)
 	{
-		this.keyspace = StringUtils.toLowerCase(keyspace);
+		this.keyspace = keyspace;
 	}
 	
 	
@@ -216,14 +218,19 @@ public class CassandraConnectionSettings
 		this.resultPageSize = resultPageSize;
 	}
 
-	public String getCertificatePath()
+	public Path getCertificatePath()
 	{
 		return certificatePath;
 	}
 
-	public void setCertificatePath(String certificatePath)
+	public void setCertificatePath(Path certificatePath)
 	{
 		this.certificatePath = certificatePath;
+	}
+
+	public void setCertificatePath(String certificatePath)
+	{
+		this.certificatePath = Paths.get(certificatePath).toAbsolutePath();
 	}
 
 	public String getCertificateType()
