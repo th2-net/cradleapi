@@ -39,13 +39,13 @@ public interface TimeMessageOperator
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
 			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction AND "+MESSAGE_DATE+"=:messageDate AND "
 			+MESSAGE_TIME+">=:messageTime ORDER BY "+MESSAGE_TIME+" ASC limit 1")
-	TimeMessageEntity getNearestMessageAfter(UUID instanceId, String streamName, LocalDate messageDate, String direction, 
+	CompletableFuture<TimeMessageEntity> getNearestMessageAfter(UUID instanceId, String streamName, LocalDate messageDate, String direction, 
 			LocalTime messageTime, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
 			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction AND "+MESSAGE_DATE+"=:messageDate AND "
 			+MESSAGE_TIME+"<=:messageTime ORDER BY "+MESSAGE_TIME+" DESC limit 1")
-	TimeMessageEntity getNearestMessageBefore(UUID instanceId, String streamName, LocalDate messageDate, String direction, 
+	CompletableFuture<TimeMessageEntity> getNearestMessageBefore(UUID instanceId, String streamName, LocalDate messageDate, String direction, 
 			LocalTime messageTime, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
