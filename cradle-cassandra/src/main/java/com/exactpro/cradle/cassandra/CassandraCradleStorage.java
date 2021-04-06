@@ -441,7 +441,7 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		catch (Exception e)
 		{
-			throw new IOException("Error while getting nearest message id ", e);
+			throw new IOException("Error while getting nearest message ID", e);
 		}
 	}
 
