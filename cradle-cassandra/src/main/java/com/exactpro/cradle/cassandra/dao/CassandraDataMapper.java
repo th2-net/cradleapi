@@ -20,10 +20,12 @@ import com.datastax.oss.driver.api.mapper.annotations.DaoFactory;
 import com.datastax.oss.driver.api.mapper.annotations.DaoKeyspace;
 import com.datastax.oss.driver.api.mapper.annotations.DaoTable;
 import com.datastax.oss.driver.api.mapper.annotations.Mapper;
+import com.exactpro.cradle.cassandra.dao.healing.HealingIntervalOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchConverter;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
+import com.exactpro.cradle.cassandra.dao.healing.RecoveryStateOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenDatesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenOperator;
@@ -67,4 +69,10 @@ public interface CassandraDataMapper
 	
 	@DaoFactory
 	TestEventConverter testEventConverter();
+
+	@DaoFactory
+	RecoveryStateOperator recoveryStateOperator(@DaoKeyspace String keyspace, @DaoTable String recoveryStatesTable);
+
+	@DaoFactory
+	HealingIntervalOperator healingIntervalOperator(@DaoKeyspace String keyspace, @DaoTable String healingIntervalsTable);
 }
