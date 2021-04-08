@@ -55,6 +55,10 @@ public class StorageConstants
 			MESSAGE_IDS = "message_ids",
 			MESSAGE_ID = "message_id",
 			TEST_EVENT_ID = "test_event_id",
+			RECOVERY_STATE_ID = "recovery_state_id",
+			HEALING_INTERVAL_ID = "healing_interval_id",
+			HEALING_INTERVAL_START_TIME = "healing_interval_start_time",
+			HEALING_INTERVAL_END_TIME = "healing_interval_end_time",
 			ROOT = "root",
 			PARENT_ID = "parent_id";
 }

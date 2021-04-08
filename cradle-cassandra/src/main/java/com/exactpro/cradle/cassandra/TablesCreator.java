@@ -297,6 +297,22 @@ public class TablesCreator
 		exec.executeQuery(create.asCql(), true);
 		logger.info("Table '{}' has been created", tableName);
 	}
+
+	public void createRecoveryStatesTable() throws IOException
+	{
+		String tableName = settings.getRecoveryStatesTableName();
+		if (isTableExists(tableName))
+			return;
+
+		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				.withPartitionKey(MESSAGE_ID, DataTypes.TEXT)
+				.withClusteringColumn(RECOVERY_STATE_ID, DataTypes.TEXT);
+				//.withColumn()
+
+		exec.executeQuery(create.asCql(), true);
+		logger.info("Table '{}' has been created", tableName);
+	}
 	
 	protected void createMessagesTable(String name) throws IOException
 	{

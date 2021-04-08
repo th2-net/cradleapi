@@ -21,6 +21,8 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
+import com.exactpro.cradle.healing.HealingInterval;
+import com.exactpro.cradle.healing.RecoveryState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,6 +76,9 @@ public abstract class CradleStorage
 	protected abstract void doStoreTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messageIds) throws IOException;
 	protected abstract CompletableFuture<Void> doStoreTestEventMessagesLinkAsync(StoredTestEventId eventId, StoredTestEventId batchId, 
 			Collection<StoredMessageId> messageIds);
+	protected abstract void doStoreMessageTestEventLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messageIds) throws IOException;
+	protected abstract CompletableFuture<Void> doStoreMessageTestEventLinkAsync(StoredTestEventId eventId, StoredTestEventId batchId,
+			Collection<StoredMessageId> messageIds);
 	protected abstract StoredMessage doGetMessage(StoredMessageId id) throws IOException;
 	protected abstract CompletableFuture<StoredMessage> doGetMessageAsync(StoredMessageId id);
 	protected abstract Collection<StoredMessage> doGetMessageBatch(StoredMessageId id) throws IOException;
@@ -89,6 +94,14 @@ public abstract class CradleStorage
 	protected abstract Collection<String> doGetStreams() throws IOException;
 	protected abstract Collection<Instant> doGetRootTestEventsDates() throws IOException;
 	protected abstract Collection<Instant> doGetTestEventsDates(StoredTestEventId parentId) throws IOException;
+	protected abstract void doStoreRecoveryState(RecoveryState state) throws IOException;
+	protected abstract CompletableFuture<Void> doStoreRecoveryStateAsync(RecoveryState state);
+	protected abstract void doStoreHealingInterval(HealingInterval healingInterval) throws IOException;
+	protected abstract CompletableFuture<Void> doStoreHealingIntervalAsync(HealingInterval healingInterval);
+	protected abstract HealingInterval doGetHealingInterval(String healingIntervalId) throws IOException;
+	protected abstract CompletableFuture<HealingInterval> doGetHealingIntervalAsync(String healingIntervalId);
+	protected abstract void doUpdateHealingInterval(HealingInterval healingInterval, int handledEventsNumber) throws IOException;
+	protected abstract CompletableFuture<Void> doUpdateHealingIntervalAsync(HealingInterval healingInterval, int handledEventsNumber);
 	
 	public abstract CradleObjectsFactory getObjectsFactory();
 	
@@ -289,41 +302,73 @@ public abstract class CradleStorage
 		return CompletableFuture.allOf(result1, result2);
 	}
 	
-	
 	/**
-	 * Writes to storage the links between given test event and messages
-	 * @param eventId ID of stored test event
+	 * Writes to storage messages of test event
+	 * @param eventId ID of test event
 	 * @param batchId ID of batch where event is stored, if applicable
 	 * @param messagesIds collection of stored message IDs
 	 * @throws IOException if data writing failed
 	 */
 	public final void storeTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messagesIds) throws IOException
 	{
-		logger.debug("Storing links between test event {} and {} message(s)", eventId, messagesIds.size());
+		logger.debug("Storing {} message(s) of test event {}", messagesIds.size(), eventId);
 		doStoreTestEventMessagesLink(eventId, batchId, messagesIds);
-		logger.debug("Links between test event {} and {} message(s) have been stored", eventId, messagesIds.size());
+		logger.debug("Message(s) {} of test event {} have been stored", messagesIds.size(), eventId);
 	}
-	
+
 	/**
-	 * Asynchronously writes to storage the links between given test event and messages
-	 * @param eventId ID of stored test event
+	 * Asynchronously writes to storage messages of test event
+	 * @param eventId ID of test event
 	 * @param batchId ID of batch where event is stored, if applicable
 	 * @param messagesIds collection of stored message IDs
 	 * @return future to get know if storing was successful
 	 */
 	public final CompletableFuture<Void> storeTestEventMessagesLinkAsync(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messagesIds)
 	{
-		logger.debug("Storing links between test event {} and {} message(s) asynchronously", eventId, messagesIds.size());
+		logger.debug("Storing {} message(s) of test event {}", messagesIds.size(), eventId);
 		return doStoreTestEventMessagesLinkAsync(eventId, batchId, messagesIds)
 				.whenComplete((r, error) -> {
 					if (error != null)
-						logger.error("Error while storing links between test event "+eventId+" and "+messagesIds.size()+" message(s) asynchronously", error);
+						logger.error("Error while storing "+messagesIds.size()+" message(s) of test event "+eventId+" asynchronously", error);
 					else
-						logger.debug("Links between test event {} and {} message(s) have been stored asynchronously", eventId, messagesIds.size());
+						logger.debug("Message(s) {} of test event {} have been stored asynchronously", messagesIds.size(), eventId);
 				});
 		
 	}
-	
+
+	/**
+	 * Writes to storage test event of messages
+	 * @param eventId ID of stored test event
+	 * @param batchId ID of batch where event is stored, if applicable
+	 * @param messagesIds collection of message IDs
+	 * @throws IOException if data writing failed
+	 */
+	public final void storeMessageTestEventLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messagesIds) throws IOException
+	{
+		logger.debug("Storing test event {} of {} message(s)", eventId, messagesIds.size());
+		doStoreMessageTestEventLink(eventId, batchId, messagesIds);
+		logger.debug("Test event {} of {} message(s) has been stored", eventId, messagesIds.size());
+	}
+
+	/**
+	 * Asynchronously writes to storage test event of messages
+	 * @param eventId ID of stored test event
+	 * @param batchId ID of batch where event is stored, if applicable
+	 * @param messagesIds collection of message IDs
+	 * @return future to get know if storing was successful
+	 */
+	public final CompletableFuture<Void> storeMessageTestEventLinkAsync(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messagesIds)
+	{
+		logger.debug("Storing test event {} of {} message(s) asynchronously", eventId, messagesIds.size());
+		return doStoreMessageTestEventLinkAsync(eventId, batchId, messagesIds)
+				.whenComplete((r, error) -> {
+					if (error != null)
+						logger.error("Error while storing test event "+eventId+" of "+messagesIds.size()+" message(s) asynchronously", error);
+					else
+						logger.debug("Test event {} of {} message(s) has been stored asynchronously", eventId, messagesIds.size());
+				});
+
+	}
 	
 	/**
 	 * Retrieves message data stored under given ID
@@ -780,5 +825,97 @@ public abstract class CradleStorage
 			}
 		}
 		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+	}
+
+	/**
+	 * Writes to storage recovery state
+	 * @param state data to write
+	 * @throws IOException if data writing failed
+	 */
+	public final void storeRecoveryState(RecoveryState state) throws IOException
+	{
+		logger.debug("Storing recovery state {}", state.getId());
+		doStoreRecoveryState(state);
+		logger.debug("State {} has been stored", state.getId());
+	}
+
+	/**
+	 * Asynchronously writes to storage recovery state
+	 * @param recoveryState stored recovery state
+	 * @return future to get know if storing was successful
+	 */
+	public final CompletableFuture<Void> storeRecoveryStateAsync(RecoveryState recoveryState)
+	{
+		logger.debug("Storing recovery state {} asynchronously", recoveryState.getId());
+		return doStoreRecoveryStateAsync(recoveryState)
+				.whenComplete((r, error) -> {
+					if (error != null)
+						logger.error("Error while storing recovery state "+recoveryState.getId()+" asynchronously", error);
+					else
+						logger.debug("Recovery state {} has been stored asynchronously", recoveryState.getId());
+				});
+	}
+
+	/**
+	 * Writes to storage healing interval
+	 * @param healingInterval data to write
+	 * @throws IOException if data writing failed
+	 */
+	public final void storeHealingInterval(HealingInterval healingInterval) throws IOException {
+		logger.debug("Storing healing interval {}", healingInterval.getId());
+		doStoreHealingInterval(healingInterval);
+		logger.debug("Healing interval {} has been stored", healingInterval.getId());
+	}
+
+	/**
+	 * Asynchronously writes to storage healing interval
+	 * @param healingInterval stored healing interval
+	 * @return future to get know if storing was successful
+	 */
+	public final CompletableFuture<Void> storeHealingIntervalAsync(HealingInterval healingInterval)
+	{
+		logger.debug("Storing healing interval {} asynchronously", healingInterval.getId());
+		return doStoreHealingIntervalAsync(healingInterval)
+				.whenComplete((r, error) -> {
+					if (error != null)
+						logger.error("Error while storing healing interval {}", healingInterval.getId());
+					else
+						logger.debug("Healing interval {} has been stored asynchronously", healingInterval.getId());
+				});
+	}
+
+	/**
+	 *
+	 * @param healingIntervalId
+	 * @return
+	 */
+	public final HealingInterval getHealingInterval(String healingIntervalId) throws IOException
+	{
+		logger.debug("Getting healing interval {}", healingIntervalId);
+		HealingInterval result = doGetHealingInterval(healingIntervalId);
+
+		if (result == null)
+			throw new IOException("Interval "+healingIntervalId+" is not found");
+
+		logger.debug("Healing interval {} got", healingIntervalId);
+		return result;
+	}
+
+	/**
+	 *
+	 * @param healingIntervalId
+	 * @return
+	 */
+	public final CompletableFuture<HealingInterval> getHealingIntervalAsync(String healingIntervalId)
+	{
+		logger.debug(" Asynchronously getting healing interval {}", healingIntervalId);
+		CompletableFuture<HealingInterval> result = doGetHealingIntervalAsync(healingIntervalId)
+				.whenComplete((r, error) -> {
+					if (error != null)
+						logger.error("Error while getting healing interval "+healingIntervalId+" asynchronously", error);
+					else
+						logger.debug("Healing interval {} got asynchronously", healingIntervalId);
+				});
+		return result;
 	}
 }
