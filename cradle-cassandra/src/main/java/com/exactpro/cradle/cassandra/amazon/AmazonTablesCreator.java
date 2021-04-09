@@ -43,6 +43,8 @@ public class AmazonTablesCreator extends CassandraTablesCreator
 	public static final String TABLE_NAME_COLUMN = "table_name";
 	public static final String STATUS_COLUMN = "status";
 	public static final String ACTIVE_STATUS = "ACTIVE";
+	public static final String COLUMNS_TABLE = "columns";
+	public static final String COLUMN_NAME_COLUMN = "column_name";
 	public static final int ATTEMPTS_TO_CHECK_AVAILABILITY = 10;
 	public static final int CHECK_AVAILABILITY_TIMEOUT_MS = 5000;
 
@@ -61,6 +63,11 @@ public class AmazonTablesCreator extends CassandraTablesCreator
 			.limit(1)
 			.asCql();
 
+	private final String columnQuery = QueryBuilder.selectFrom(AMAZON_SYSTEM_KEYSPACE, COLUMNS_TABLE)
+			.all()
+			.whereColumn(KEYSPACES_COLUMN).isEqualTo(QueryBuilder.bindMarker())
+			.whereColumn(TABLE_NAME_COLUMN).isEqualTo(QueryBuilder.bindMarker())
+			.asCql();
 
 	public AmazonTablesCreator(QueryExecutor exec, CassandraStorageSettings settings)
 	{
@@ -70,18 +77,34 @@ public class AmazonTablesCreator extends CassandraTablesCreator
 	@Override
 	protected boolean isKeyspaceExists(String keyspace) throws IOException
 	{
-		return false;
+		return isKeyspaceAvailable(keyspace);
 	}
 
 	@Override
 	protected boolean isTableExists(String tableName) throws IOException
 	{
+		return getTableStatus(tableName) != null;
+	}
+
+	@Override
+	protected boolean isColumnExists(String tableName, String columnName) throws IOException
+	{
+		// We cannot use the 'column_name' column in where clause in Amazon keyspaces.
+		ResultSet rs = exec.executeQuery(columnQuery, false, currentKeyspace, tableName);
+		for (Row row : rs)
+		{
+			if (StringUtils.equals(row.getString(COLUMN_NAME_COLUMN), columnName))
+				return true;
+		}
+
 		return false;
 	}
 
 	@Override
 	protected void doAfterKeyspaceCreating(String keyspace)
 	{
+		// Amazon keyspaces stores the keyspace name in lowercase.
+		// We must use lower case for queries to work properly.
 		currentKeyspace = StringUtils.lowerCase(keyspace);
 	}
 
@@ -102,13 +125,19 @@ public class AmazonTablesCreator extends CassandraTablesCreator
 
 	private void waitKeyspaceAvailability() throws IOException
 	{
-		for (int i = 0; i < ATTEMPTS_TO_CHECK_AVAILABILITY; i++)
+		for (int i = 1; i <= ATTEMPTS_TO_CHECK_AVAILABILITY; i++)
 		{
+			logger.debug("Attempt {} to check readiness of the keyspace '{}'", i, currentKeyspace);
 			if (isKeyspaceAvailable(currentKeyspace))
+			{
+				logger.debug("Kyespace '{}' is ready to use", currentKeyspace);
 				return;
+			}
 			
-			if (i == ATTEMPTS_TO_CHECK_AVAILABILITY - 1)
+			if (i == ATTEMPTS_TO_CHECK_AVAILABILITY)
 				throw new IOException("Keyspace " + currentKeyspace + " is not available");
+			
+			logger.debug("Keyspace '{}' is not ready yet", currentKeyspace);
 			
 			try
 			{
@@ -153,16 +182,19 @@ public class AmazonTablesCreator extends CassandraTablesCreator
 	{
 		for (String tableName : tablesNames)
 		{
-			String currentStatus;
-			for (int i = 0; i < ATTEMPTS_TO_CHECK_AVAILABILITY; i++)
+			for (int i = 1; i <= ATTEMPTS_TO_CHECK_AVAILABILITY; i++)
 			{
+				String currentStatus;
+				logger.debug("Attempt {} to get status of the table '{}'", i, tableName);
 				if (ACTIVE_STATUS.equals(currentStatus = getTableStatus(tableName)))
-					break;
-				if (i == ATTEMPTS_TO_CHECK_AVAILABILITY - 1)
 				{
-					logger.warn("Last status of table '{}' is '{}'", tableName, currentStatus);
-					throw new IOException("Table '" + tableName + "' is not available");
+					logger.debug("Table '{}' is {}", tableName, currentStatus);
+					break;
 				}
+				logger.debug("Current status of table '{}' is '{}'", tableName, currentStatus);
+				if (i == ATTEMPTS_TO_CHECK_AVAILABILITY)
+					throw new IOException("Table '" + tableName + "' is not available");
+				
 				try
 				{
 					Thread.sleep(CHECK_AVAILABILITY_TIMEOUT_MS);

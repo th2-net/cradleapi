@@ -228,11 +228,6 @@ public class CassandraConnectionSettings
 		this.certificatePath = certificatePath;
 	}
 
-	public void setCertificatePath(String certificatePath)
-	{
-		this.certificatePath = Paths.get(certificatePath).toAbsolutePath();
-	}
-
 	public String getCertificateType()
 	{
 		return certificateType;

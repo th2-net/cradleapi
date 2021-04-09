@@ -24,6 +24,7 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.datastax.oss.driver.api.querybuilder.insert.Insert;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
+import com.datastax.oss.driver.shaded.guava.common.collect.Streams;
 import com.exactpro.cradle.CradleObjectsFactory;
 import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.Direction;
@@ -599,14 +600,10 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected Collection<String> doGetStreams() throws IOException
 	{
-		List<String> result = new ArrayList<>();
-		for (StreamEntity entity : ops.getStreamsOperator().getStreams(readAttrs))
-		{
-			if (instanceUuid.equals(entity.getInstanceId()))
-				result.add(entity.getStreamName());
-		}
-		result.sort(null);
-		return result;
+		return Streams.stream(ops.getStreamsOperator().getStreams(instanceUuid, readAttrs))
+				.map(StreamEntity::getStreamName)
+				.sorted()
+				.collect(toList());
 	}
 	
 	@Override

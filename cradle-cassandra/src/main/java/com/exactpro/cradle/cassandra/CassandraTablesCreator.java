@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -125,8 +125,7 @@ public class CassandraTablesCreator
 				.withPartitionKey(NAME, DataTypes.TEXT)  //Name is a key for faster ID obtaining by name
 				.withColumn(ID, DataTypes.UUID);
 		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
+		createTable(create.asCql(), tableName);
 	}
 	
 	public void createMessagesTable() throws IOException
@@ -159,9 +158,8 @@ public class CassandraTablesCreator
 				.withClusteringColumn(MESSAGE_INDEX, DataTypes.BIGINT)
 				.withClusteringOrder(MESSAGE_TIME, ClusteringOrder.ASC)
 				.withClusteringOrder(MESSAGE_INDEX, ClusteringOrder.ASC);
-		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
+
+		createTable(create.asCql(), tableName);
 	}
 	
 
@@ -189,9 +187,8 @@ public class CassandraTablesCreator
 				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
 				.withColumn(CONTENT, DataTypes.BLOB)
 				.withColumn(EVENT_COUNT, DataTypes.INT);
-		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
+
+		createTable(create.asCql(), tableName);
 	}
 	
 	public void createTimeTestEventsTable() throws IOException
@@ -225,9 +222,8 @@ public class CassandraTablesCreator
 				.withColumn(EVENT_BATCH_METADATA, DataTypes.BLOB)
 				.withClusteringOrder(START_TIME, ClusteringOrder.ASC)
 				.withClusteringOrder(ID, ClusteringOrder.ASC);
-		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
+
+		createTable(create.asCql(), tableName);
 	}
 	
 	public void createRootTestEventsTable() throws IOException
@@ -250,9 +246,8 @@ public class CassandraTablesCreator
 				.withColumn(EVENT_COUNT, DataTypes.INT)
 				.withClusteringOrder(START_TIME, ClusteringOrder.ASC)
 				.withClusteringOrder(ID, ClusteringOrder.ASC);
-		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
+
+		createTable(create.asCql(), tableName);
 	}
 	
 	public void createTestEventsChildrenTable() throws IOException
@@ -286,9 +281,8 @@ public class CassandraTablesCreator
 				.withColumn(EVENT_BATCH_METADATA, DataTypes.BLOB)
 				.withClusteringOrder(START_TIME, ClusteringOrder.ASC)
 				.withClusteringOrder(ID, ClusteringOrder.ASC);
-		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
+
+		createTable(create.asCql(), tableName);
 	}
 	
 	public void createTestEventsChildrenDatesTable() throws IOException
@@ -302,9 +296,8 @@ public class CassandraTablesCreator
 				.withPartitionKey(PARENT_ID, DataTypes.TEXT)
 				.withClusteringColumn(START_DATE, DataTypes.DATE)
 				.withClusteringOrder(START_DATE, ClusteringOrder.ASC);
-		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
+
+		createTable(create.asCql(), tableName);
 	}
 	
 	public void createTestEventsMessagesTable() throws IOException
@@ -318,10 +311,8 @@ public class CassandraTablesCreator
 				.withPartitionKey(TEST_EVENT_ID, DataTypes.TEXT)
 				.withClusteringColumn(ID, DataTypes.TIMEUUID)
 				.withColumn(MESSAGE_IDS, DataTypes.setOf(DataTypes.TEXT));
-//				.withClusteringColumn(MESSAGE_IDS, DataTypes.frozenSetOf(DataTypes.TEXT));
-		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
+
+		createTable(create.asCql(), tableName);
 	}
 	
 	public void createMessagesTestEventsTable() throws IOException
@@ -335,17 +326,16 @@ public class CassandraTablesCreator
 				.withPartitionKey(MESSAGE_ID, DataTypes.TEXT)
 				.withClusteringColumn(TEST_EVENT_ID, DataTypes.TEXT)
 				.withColumn(BATCH_ID, DataTypes.TEXT);
-		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
+
+		createTable(create.asCql(), tableName);
 	}
 	
-	protected void createMessagesTable(String name) throws IOException
+	protected void createMessagesTable(String tableName) throws IOException
 	{
-		if (isTableExists(name))
+		if (isTableExists(tableName))
 			return;
 		
-		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), name).ifNotExists()
+		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
 				.withPartitionKey(STREAM_NAME, DataTypes.TEXT)
 				.withClusteringColumn(DIRECTION, DataTypes.TEXT)
@@ -362,19 +352,20 @@ public class CassandraTablesCreator
 				.withColumn(LAST_MESSAGE_INDEX, DataTypes.BIGINT)
 				.withClusteringOrder(DIRECTION, ClusteringOrder.ASC)
 				.withClusteringOrder(MESSAGE_INDEX, ClusteringOrder.ASC);
-		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", name);
+
+		createTable(create.asCql(), tableName);
 	}
 
-	private void createStreamsTable(String name) throws IOException
+	private void createStreamsTable(String tableName) throws IOException
 	{
-		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), name).ifNotExists()
+		if (isTableExists(tableName))
+			return;
+		
+		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withClusteringColumn(STREAM_NAME, DataTypes.TEXT);
+				.withPartitionKey(STREAM_NAME, DataTypes.TEXT);
 
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", name);
+		createTable(create.asCql(), tableName);
 	}
 
 	protected boolean isTableExists(String tableName) throws IOException
@@ -390,5 +381,11 @@ public class CassandraTablesCreator
 	protected boolean isColumnExists(String tableName, String columnName) throws IOException
 	{
 		return keyspaceMetadata.getTable(tableName).get().getColumn(EVENT_BATCH_METADATA).isPresent();
+	}
+
+	private void createTable(String createQuery, String tableName) throws IOException
+	{
+		exec.executeQuery(createQuery, true);
+		logger.info("Table '{}' has been created", tableName);
 	}
 }

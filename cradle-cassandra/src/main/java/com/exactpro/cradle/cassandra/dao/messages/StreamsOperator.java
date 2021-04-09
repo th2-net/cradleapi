@@ -22,6 +22,7 @@ import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
 
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
@@ -31,8 +32,8 @@ import static com.exactpro.cradle.cassandra.StorageConstants.STREAM_NAME;
 @Dao
 public interface StreamsOperator
 {
-	@Query("SELECT "+INSTANCE_ID+", "+STREAM_NAME+" from ${qualifiedTableId}")
-	PagingIterable<StreamEntity> getStreams(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	@Query("SELECT "+INSTANCE_ID+", "+STREAM_NAME+" from ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId ALLOW FILTERING")
+	PagingIterable<StreamEntity> getStreams(UUID instanceId,Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Insert
 	CompletableFuture<StreamEntity> writeStream(StreamEntity stream,
