@@ -423,15 +423,46 @@ public class CassandraCradleStorage extends CradleStorage
 	protected StoredMessageId doGetNearestMessageId(String streamName, Direction direction, Instant timestamp,
 			TimeRelation timeRelation) throws IOException
 	{
-		LocalDateTime messageDateTime = LocalDateTime.ofInstant(timestamp, TIMEZONE_OFFSET);
-		TimeMessageEntity result = timeRelation == TimeRelation.BEFORE ? 
-				ops.getTimeMessageOperator().getNearestMessageBefore(instanceUuid, streamName, messageDateTime.toLocalDate(), direction.getLabel(), 
-						messageDateTime.toLocalTime(), readAttrs) : 
-				ops.getTimeMessageOperator().getNearestMessageAfter(instanceUuid, streamName, messageDateTime.toLocalDate(), direction.getLabel(), 
-						messageDateTime.toLocalTime(), readAttrs);
-		return result != null ? result.createMessageId() : null;
+		try
+		{
+			return doGetNearestMessageIdAsync(streamName, direction, timestamp, timeRelation).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting nearest message ID", e);
+		}
 	}
-	
+
+	@Override
+	protected CompletableFuture<StoredMessageId> doGetNearestMessageIdAsync(String streamName, Direction direction,
+			Instant timestamp, TimeRelation timeRelation)
+	{
+		CompletableFuture<TimeMessageEntity> timeMessageEntityFuture =
+				readTimeMessageEntity(streamName, direction, timestamp, timeRelation);
+		return timeMessageEntityFuture.thenCompose(entity ->
+		{
+			if (entity == null)
+				return CompletableFuture.completedFuture(null);
+
+			return CompletableFuture.completedFuture(entity.createMessageId());
+		});
+	}
+
+	private CompletableFuture<TimeMessageEntity> readTimeMessageEntity(String streamName, Direction direction,
+			Instant timestamp, TimeRelation timeRelation)
+	{
+		LocalDateTime messageDateTime = LocalDateTime.ofInstant(timestamp, TIMEZONE_OFFSET);
+		CompletableFuture<TimeMessageEntity> result = timeRelation == TimeRelation.BEFORE
+				? ops.getTimeMessageOperator()
+						.getNearestMessageBefore(instanceUuid, streamName, messageDateTime.toLocalDate(),
+								direction.getLabel(), messageDateTime.toLocalTime(), readAttrs)
+				: ops.getTimeMessageOperator()
+						.getNearestMessageAfter(instanceUuid, streamName, messageDateTime.toLocalDate(),
+								direction.getLabel(), messageDateTime.toLocalTime(), readAttrs);
+
+		return result;
+	}
+
 	@Override
 	protected StoredTestEventWrapper doGetTestEvent(StoredTestEventId id) throws IOException
 	{

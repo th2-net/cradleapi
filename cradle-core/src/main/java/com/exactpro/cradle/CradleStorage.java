@@ -83,6 +83,7 @@ public abstract class CradleStorage
 	protected abstract long doGetLastMessageIndex(String streamName, Direction direction) throws IOException;
 	protected abstract long doGetLastProcessedMessageIndex(String streamName, Direction direction) throws IOException;
 	protected abstract StoredMessageId doGetNearestMessageId(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation) throws IOException;
+	protected abstract CompletableFuture<StoredMessageId> doGetNearestMessageIdAsync(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation);
 	protected abstract StoredTestEventWrapper doGetTestEvent(StoredTestEventId id) throws IOException;
 	protected abstract CompletableFuture<StoredTestEventWrapper> doGetTestEventAsync(StoredTestEventId id);
 	protected abstract Collection<String> doGetStreams() throws IOException;
@@ -467,8 +468,39 @@ public abstract class CradleStorage
 				timestamp, timeRelation.getLabel(), streamName, direction.getLabel());
 		return result;
 	}
-	
-	
+
+	/**
+	 * Asynchronously retrieves ID of first message appeared in given timestamp or before/after it
+	 * @param streamName to which the message should be related
+	 * @param direction of message
+	 * @param timestamp to search for messages
+	 * @param timeRelation defines if need to find message appeared before given timestamp or after it
+	 * @return ID of first message appeared in given timestamp or before/after it
+	 * @throws IOException if data retrieval failed
+	 */
+	public final CompletableFuture<StoredMessageId> getNearestMessageIdAsync(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation) throws IOException
+	{
+		logger.debug(
+				"Asynchronously getting ID of first message appeared on {} or {} for stream '{}' and direction '{}'",
+				timestamp, timeRelation.getLabel(), streamName, direction.getLabel());
+		CompletableFuture<StoredMessageId> future =
+				doGetNearestMessageIdAsync(streamName, direction, timestamp, timeRelation)
+						.whenComplete((result, error) ->
+						{
+							if (error != null)
+								logger.error(
+										"Error while getting first message ID appeared on {} or {} for stream '{}' and" +
+												" direction '{}'",
+										timestamp, timeRelation.getLabel(), streamName, direction.getLabel());
+							else
+								logger.debug(
+										"First message ID appeared on {} or {} for stream '{}' and direction '{}' got",
+										timestamp, timeRelation.getLabel(), streamName, direction.getLabel());
+						});
+		return future;
+	}
+
+
 	/**
 	 * Retrieves test event data stored under given ID
 	 * @param id of stored test event to retrieve
