@@ -12,8 +12,6 @@ import java.util.function.Function;
 import static com.exactpro.cradle.cassandra.StorageConstants.ID;
 import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
 
-//TODO: add getHealingInterval and updateHeailingInterval query
-
 @Dao
 public interface HealingIntervalOperator
 {

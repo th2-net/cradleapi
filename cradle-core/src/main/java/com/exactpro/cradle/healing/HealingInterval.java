@@ -9,7 +9,7 @@ public class HealingInterval
     private final String id;
     private final Instant startTime;
     private final long maxLength;
-    private RecoveryState recoveryState;
+    private final RecoveryState recoveryState;
 
     public HealingInterval(String id, Instant startTime, long maxLength, RecoveryState recoveryState)
     {
@@ -26,6 +26,4 @@ public class HealingInterval
     public long getMaxLength() { return maxLength; }
 
     public RecoveryState getRecoveryState() { return recoveryState; }
-
-    public void setRecoveryState(RecoveryState recoveryState) { this.recoveryState = recoveryState; }
 }
