@@ -34,14 +34,12 @@ import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.healing.HealingIntervalEntity;
-import com.exactpro.cradle.cassandra.dao.healing.HealingIntervalOperator;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.messages.StreamEntity;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageEntity;
-import com.exactpro.cradle.cassandra.dao.healing.RecoveryStateEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.DetailedTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventDateEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventEntity;
@@ -957,30 +955,6 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected void doStoreRecoveryState(RecoveryState recoveryState) throws IOException
-	{
-		try
-		{
-			doStoreRecoveryStateAsync(recoveryState).get();
-		}
-		catch (Exception e)
-		{
-			throw new IOException("Error while storing state "+recoveryState.getId(), e);
-		}
-	}
-
-	@Override
-	protected CompletableFuture<Void> doStoreRecoveryStateAsync(RecoveryState recoveryState)
-	{
-		CompletableFuture<RecoveryStateEntity> future = new AsyncOperator<RecoveryStateEntity>(semaphore)
-				.getFuture(() -> {
-					RecoveryStateEntity recoveryStateEntity = new RecoveryStateEntity(recoveryState);
-					return ops.getRecoveryStateOperator().writeRecoveryState(recoveryStateEntity, writeAttrs);
-				});
-		return future.thenAccept(e -> {});
-	}
-
-	@Override
 	protected void doStoreHealingInterval(HealingInterval healingInterval) throws IOException
 	{
 		try
@@ -1019,7 +993,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected CompletableFuture<HealingInterval> doGetHealingIntervalAsync(String healingIntervalId) {
 		CompletableFuture<HealingIntervalEntity> future = new AsyncOperator<HealingIntervalEntity>(semaphore)
-				.getFuture(() -> ops.getHealingIntervalOperator().getHealingInterval(healingIntervalId, readAttrs));
+				.getFuture(() -> ops.getHealingIntervalOperator().getHealingInterval(instanceUuid, healingIntervalId, readAttrs));
 
 		return future.thenApply(entity -> {
 			try
@@ -1049,7 +1023,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Void> doUpdateHealingIntervalAsync(HealingInterval healingInterval, int handledEventsNumber) {
 		CompletableFuture<HealingIntervalEntity> future = new AsyncOperator<HealingIntervalEntity>(semaphore)
 				.getFuture(() -> ops.getHealingIntervalOperator().
-						updateHeailingInterval(healingInterval.getId(), handledEventsNumber, writeAttrs));
+						updateHeailingInterval(instanceUuid, healingInterval.getId(), handledEventsNumber, writeAttrs));
 		return future.thenAccept(e -> {});
 	}
 }

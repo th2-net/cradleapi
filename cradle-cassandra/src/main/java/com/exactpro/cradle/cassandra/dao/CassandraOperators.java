@@ -21,7 +21,6 @@ import com.exactpro.cradle.cassandra.dao.healing.HealingIntervalOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
-import com.exactpro.cradle.cassandra.dao.healing.RecoveryStateOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenDatesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenOperator;
@@ -41,7 +40,6 @@ public class CassandraOperators
 	private TestEventChildrenDatesOperator testEventChildrenDatesOperator;
 	private TestEventMessagesOperator testEventMessagesOperator;
 	private MessageTestEventOperator messageTestEventOperator;
-	private RecoveryStateOperator recoveryStateOperator;
 	private HealingIntervalOperator healingIntervalOperator;
 
 	public CassandraOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings)
@@ -56,7 +54,6 @@ public class CassandraOperators
 		testEventChildrenDatesOperator = dataMapper.testEventChildrenDatesOperator(settings.getKeyspace(), settings.getTestEventsChildrenDatesTableName());
 		testEventMessagesOperator = dataMapper.testEventMessagesOperator(settings.getKeyspace(), settings.getTestEventsMessagesTableName());
 		messageTestEventOperator = dataMapper.messageTestEventOperator(settings.getKeyspace(), settings.getMessagesTestEventsTableName());
-		recoveryStateOperator = dataMapper.recoveryStateOperator(settings.getKeyspace(), settings.getRecoveryStatesTableName());
 		healingIntervalOperator = dataMapper.healingIntervalOperator(settings.getKeyspace(), settings.getHealingIntervalsTableName());
 	}
 
@@ -109,8 +106,6 @@ public class CassandraOperators
 	{
 		return messageTestEventOperator;
 	}
-
-	public RecoveryStateOperator getRecoveryStateOperator() { return recoveryStateOperator; }
 
 	public HealingIntervalOperator getHealingIntervalOperator() { return healingIntervalOperator; }
 }
