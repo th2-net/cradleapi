@@ -1039,10 +1039,10 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected void doUpdateHealingInterval(HealingInterval healingInterval, int handledEventsNumber) throws IOException {
+	protected void doUpdateHealingInterval(HealingInterval healingInterval) throws IOException {
 		try
 		{
-			doUpdateHealingIntervalAsync(healingInterval, handledEventsNumber);
+			doUpdateHealingIntervalAsync(healingInterval);
 		}
 		catch (Exception e)
 		{
@@ -1051,10 +1051,10 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Void> doUpdateHealingIntervalAsync(HealingInterval healingInterval, int handledEventsNumber) {
+	protected CompletableFuture<Void> doUpdateHealingIntervalAsync(HealingInterval healingInterval) {
 		CompletableFuture<HealingIntervalEntity> future = new AsyncOperator<HealingIntervalEntity>(semaphore)
 				.getFuture(() -> ops.getHealingIntervalOperator().
-						updateHeailingInterval(instanceUuid, healingInterval.getId(), handledEventsNumber, writeAttrs));
+						updateHeailingInterval(instanceUuid, healingInterval.getId(),  writeAttrs));
 		return future.thenAccept(e -> {});
 	}
 }

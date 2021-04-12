@@ -26,6 +26,5 @@ public interface HealingIntervalOperator
     @Query("")
     CompletableFuture<HealingIntervalEntity> updateHeailingInterval(UUID instanceId,
                                                                     String healingIntervalId,
-                                                                    int handledEventsNumber,
                                                                     Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

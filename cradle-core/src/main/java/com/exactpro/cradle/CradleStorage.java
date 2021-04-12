@@ -98,8 +98,8 @@ public abstract class CradleStorage
 	protected abstract CompletableFuture<Void> doStoreHealingIntervalAsync(HealingInterval healingInterval);
 	protected abstract HealingInterval doGetHealingInterval(String healingIntervalId) throws IOException;
 	protected abstract CompletableFuture<HealingInterval> doGetHealingIntervalAsync(String healingIntervalId);
-	protected abstract void doUpdateHealingInterval(HealingInterval healingInterval, int handledEventsNumber) throws IOException;
-	protected abstract CompletableFuture<Void> doUpdateHealingIntervalAsync(HealingInterval healingInterval, int handledEventsNumber);
+	protected abstract void doUpdateHealingInterval(HealingInterval healingInterval) throws IOException;
+	protected abstract CompletableFuture<Void> doUpdateHealingIntervalAsync(HealingInterval healingInterval);
 	
 	public abstract CradleObjectsFactory getObjectsFactory();
 	
@@ -877,7 +877,7 @@ public abstract class CradleStorage
 	 */
 	public final CompletableFuture<HealingInterval> getHealingIntervalAsync(String healingIntervalId)
 	{
-		logger.debug(" Asynchronously getting healing interval {}", healingIntervalId);
+		logger.debug("Asynchronously getting healing interval {}", healingIntervalId);
 		CompletableFuture<HealingInterval> result = doGetHealingIntervalAsync(healingIntervalId)
 				.whenComplete((r, error) -> {
 					if (error != null)
@@ -888,13 +888,24 @@ public abstract class CradleStorage
 		return result;
 	}
 
-	public final void updateHealingInterval(HealingInterval healingInterval)
+	public final void updateHealingInterval(HealingInterval healingInterval) throws IOException
 	{
-		//TODO
+		logger.debug("Updating heailing interval "+healingInterval.getId());
+		doUpdateHealingInterval(healingInterval);
+
+		logger.debug("Updated healing interval "+healingInterval.getId());
 	}
 
 	public final CompletableFuture<Void> updateHealingIntervalAsync(HealingInterval healingInterval)
 	{
-
+		logger.debug("Asynchronously updating heailing interval "+healingInterval.getId());
+		CompletableFuture<Void> result = doUpdateHealingIntervalAsync(healingInterval)
+				.whenComplete((r, error) -> {
+					if (error != null)
+						logger.error("Error while updating healing interval "+healingInterval.getId()+" asynchronously", error);
+					else
+						logger.debug("Updated interval {} got asynchronously", healingInterval.getId());
+				});
+		return result;
 	}
 }
