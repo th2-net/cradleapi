@@ -6,7 +6,14 @@ public class RecoveryState
 {
     private final String id;
 
-    public RecoveryState(String id) { this.id = id; }
+    private final long healedEventsNumber;
+
+    public RecoveryState(String id, long healedEventsNumber) {
+        this.id = id;
+        this.healedEventsNumber = healedEventsNumber;
+    }
 
     public String getId() { return id; }
+
+    public long getHealedEventsNumber() { return healedEventsNumber; }
 }

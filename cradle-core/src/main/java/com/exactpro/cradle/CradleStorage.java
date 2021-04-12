@@ -94,8 +94,6 @@ public abstract class CradleStorage
 	protected abstract Collection<String> doGetStreams() throws IOException;
 	protected abstract Collection<Instant> doGetRootTestEventsDates() throws IOException;
 	protected abstract Collection<Instant> doGetTestEventsDates(StoredTestEventId parentId) throws IOException;
-	protected abstract void doStoreRecoveryState(RecoveryState state) throws IOException;
-	protected abstract CompletableFuture<Void> doStoreRecoveryStateAsync(RecoveryState state);
 	protected abstract void doStoreHealingInterval(HealingInterval healingInterval) throws IOException;
 	protected abstract CompletableFuture<Void> doStoreHealingIntervalAsync(HealingInterval healingInterval);
 	protected abstract HealingInterval doGetHealingInterval(String healingIntervalId) throws IOException;
@@ -828,35 +826,6 @@ public abstract class CradleStorage
 	}
 
 	/**
-	 * Writes to storage recovery state
-	 * @param state data to write
-	 * @throws IOException if data writing failed
-	 */
-	public final void storeRecoveryState(RecoveryState state) throws IOException
-	{
-		logger.debug("Storing recovery state {}", state.getId());
-		doStoreRecoveryState(state);
-		logger.debug("State {} has been stored", state.getId());
-	}
-
-	/**
-	 * Asynchronously writes to storage recovery state
-	 * @param recoveryState stored recovery state
-	 * @return future to get know if storing was successful
-	 */
-	public final CompletableFuture<Void> storeRecoveryStateAsync(RecoveryState recoveryState)
-	{
-		logger.debug("Storing recovery state {} asynchronously", recoveryState.getId());
-		return doStoreRecoveryStateAsync(recoveryState)
-				.whenComplete((r, error) -> {
-					if (error != null)
-						logger.error("Error while storing recovery state "+recoveryState.getId()+" asynchronously", error);
-					else
-						logger.debug("Recovery state {} has been stored asynchronously", recoveryState.getId());
-				});
-	}
-
-	/**
 	 * Writes to storage healing interval
 	 * @param healingInterval data to write
 	 * @throws IOException if data writing failed
@@ -917,5 +886,15 @@ public abstract class CradleStorage
 						logger.debug("Healing interval {} got asynchronously", healingIntervalId);
 				});
 		return result;
+	}
+
+	public final void updateHealingInterval(HealingInterval healingInterval)
+	{
+		//TODO
+	}
+
+	public final CompletableFuture<Void> updateHealingIntervalAsync(HealingInterval healingInterval)
+	{
+
 	}
 }

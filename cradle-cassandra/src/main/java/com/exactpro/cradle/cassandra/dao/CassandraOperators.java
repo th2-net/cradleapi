@@ -41,7 +41,10 @@ public class CassandraOperators
 	private TestEventChildrenDatesOperator testEventChildrenDatesOperator;
 	private TestEventMessagesOperator testEventMessagesOperator;
 	private MessageTestEventOperator messageTestEventOperator;
+<<<<<<< HEAD
 	private RecoveryStateOperator recoveryStateOperator;
+=======
+>>>>>>> temp-branch-2
 	private HealingIntervalOperator healingIntervalOperator;
 
 	public CassandraOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings)
@@ -56,7 +59,10 @@ public class CassandraOperators
 		testEventChildrenDatesOperator = dataMapper.testEventChildrenDatesOperator(settings.getKeyspace(), settings.getTestEventsChildrenDatesTableName());
 		testEventMessagesOperator = dataMapper.testEventMessagesOperator(settings.getKeyspace(), settings.getTestEventsMessagesTableName());
 		messageTestEventOperator = dataMapper.messageTestEventOperator(settings.getKeyspace(), settings.getMessagesTestEventsTableName());
+<<<<<<< HEAD
 		recoveryStateOperator = dataMapper.recoveryStateOperator(settings.getKeyspace(), settings.getRecoveryStatesTableName());
+=======
+>>>>>>> temp-branch-2
 		healingIntervalOperator = dataMapper.healingIntervalOperator(settings.getKeyspace(), settings.getHealingIntervalsTableName());
 	}
 
@@ -110,7 +116,10 @@ public class CassandraOperators
 		return messageTestEventOperator;
 	}
 
+<<<<<<< HEAD
 	public RecoveryStateOperator getRecoveryStateOperator() { return recoveryStateOperator; }
 
+=======
+>>>>>>> temp-branch-2
 	public HealingIntervalOperator getHealingIntervalOperator() { return healingIntervalOperator; }
 }
