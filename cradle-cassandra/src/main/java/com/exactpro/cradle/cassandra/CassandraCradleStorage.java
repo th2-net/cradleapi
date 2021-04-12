@@ -1053,7 +1053,12 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Void> doUpdateHealingIntervalAsync(HealingInterval healingInterval) {
 		CompletableFuture<HealingIntervalEntity> future = new AsyncOperator<HealingIntervalEntity>(semaphore)
 				.getFuture(() -> ops.getHealingIntervalOperator().
-						updateHeailingInterval(instanceUuid, healingInterval.getId(),  writeAttrs));
+						updateHeailingInterval(instanceUuid,
+								healingInterval.getStartTime(),
+								healingInterval.getMaxLength(),
+								healingInterval.getRecoveryState().getId(),
+								healingInterval.getRecoveryState().getHealedEventsNumber(),
+								writeAttrs));
 		return future.thenAccept(e -> {});
 	}
 }

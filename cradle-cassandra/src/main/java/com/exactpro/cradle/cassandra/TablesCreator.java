@@ -307,10 +307,10 @@ public class TablesCreator
 
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(MESSAGE_ID, DataTypes.TEXT)
-				.withClusteringColumn(HEALING_INTERVAL_ID, DataTypes.TEXT)
+				.withColumn(HEALING_INTERVAL_ID, DataTypes.TEXT)
 				.withColumn(HEALING_INTERVAL_START_TIME, DataTypes.TIME)
 				.withColumn(HEALING_INTERVAL_MAX_LENGTH, DataTypes.BIGINT)
+				.withColumn(RECOVERY_STATE_ID, DataTypes.TEXT)
 				.withColumn(HEALED_EVENTS_NUMBER, DataTypes.BIGINT);
 
 		exec.executeQuery(create.asCql(), true);
