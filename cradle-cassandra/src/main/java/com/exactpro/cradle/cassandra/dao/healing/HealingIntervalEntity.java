@@ -1,6 +1,7 @@
 package com.exactpro.cradle.cassandra.dao.healing;
 
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
+import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.exactpro.cradle.healing.HealingInterval;
 import com.exactpro.cradle.healing.RecoveryState;
@@ -13,6 +14,7 @@ import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_ID
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_START_TIME;
 import static com.exactpro.cradle.cassandra.StorageConstants.RECOVERY_STATE_ID;
 
+@Entity
 public class HealingIntervalEntity
 {
     @PartitionKey(0)

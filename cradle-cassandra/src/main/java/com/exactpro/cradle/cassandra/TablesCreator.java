@@ -62,6 +62,7 @@ public class TablesCreator
 		createTestEventsChildrenDatesTable();
 		createTestEventsMessagesTable();
 		createMessagesTestEventsTable();
+		createHealingIntervalsTable();
 	}
 	
 	public void createKeyspace()
@@ -298,17 +299,19 @@ public class TablesCreator
 		logger.info("Table '{}' has been created", tableName);
 	}
 
-	public void createRecoveryStatesTable() throws IOException
+	public void createHealingIntervalsTable() throws IOException
 	{
-		String tableName = settings.getRecoveryStatesTableName();
+		String tableName = settings.getHealingIntervalsTableName();
 		if (isTableExists(tableName))
 			return;
 
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
 				.withPartitionKey(MESSAGE_ID, DataTypes.TEXT)
-				.withClusteringColumn(RECOVERY_STATE_ID, DataTypes.TEXT);
-				//.withColumn()
+				.withClusteringColumn(HEALING_INTERVAL_ID, DataTypes.TEXT)
+				.withColumn(HEALING_INTERVAL_START_TIME, DataTypes.TIME)
+				.withColumn(HEALING_INTERVAL_MAX_LENGTH, DataTypes.BIGINT)
+				.withColumn(HEALED_EVENTS_NUMBER, DataTypes.BIGINT);
 
 		exec.executeQuery(create.asCql(), true);
 		logger.info("Table '{}' has been created", tableName);
