@@ -1002,7 +1002,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		CompletableFuture<HealingIntervalEntity> future = new AsyncOperator<HealingIntervalEntity>(semaphore)
 				.getFuture(() -> {
-					HealingIntervalEntity healingIntervalEntity = new HealingIntervalEntity(healingInterval);
+					HealingIntervalEntity healingIntervalEntity = new HealingIntervalEntity(healingInterval, instanceUuid);
 					return ops.getHealingIntervalOperator().writeHealingInterval(healingIntervalEntity, writeAttrs);
 				});
 		return future.thenAccept(e -> {});
@@ -1038,26 +1038,38 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected void doUpdateHealingInterval(HealingInterval healingInterval) throws IOException {
+	protected void doUpdateHealingInterval(UUID instanceId,
+										   String healingIntervalId,
+										   LocalTime startTime,
+										   LocalTime endTime,
+										   String recoveryStateId,
+										   long healedEventsNumber) throws IOException {
 		try
 		{
-			doUpdateHealingIntervalAsync(healingInterval);
+			doUpdateHealingIntervalAsync(instanceId, healingIntervalId, startTime, endTime, recoveryStateId, healedEventsNumber);
 		}
 		catch (Exception e)
 		{
-			throw new IOException("Error while updating healing interval "+healingInterval.getId(), e);
+			throw new IOException("Error while updating healing interval "+healingIntervalId, e);
 		}
 	}
 
 	@Override
-	protected CompletableFuture<Void> doUpdateHealingIntervalAsync(HealingInterval healingInterval) {
+	protected CompletableFuture<Void> doUpdateHealingIntervalAsync(UUID instanceId,
+																   String healingIntervalId,
+																   LocalTime startTime,
+																   LocalTime endTime,
+																   String recoveryStateId,
+																   long healedEventsNumber) {
 		CompletableFuture<HealingIntervalEntity> future = new AsyncOperator<HealingIntervalEntity>(semaphore)
 				.getFuture(() -> ops.getHealingIntervalOperator().
-						updateHeailingInterval(instanceUuid,
-								healingInterval.getStartTime(),
-								healingInterval.getMaxLength(),
-								healingInterval.getRecoveryState().getId(),
-								healingInterval.getRecoveryState().getHealedEventsNumber(),
+                        updateHealingInterval(
+                        		instanceId,
+                        		healingIntervalId,
+								startTime,
+								endTime,
+								recoveryStateId,
+								healedEventsNumber,
 								writeAttrs));
 		return future.thenAccept(e -> {});
 	}

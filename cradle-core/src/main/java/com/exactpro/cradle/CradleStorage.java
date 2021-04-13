@@ -18,6 +18,7 @@ package com.exactpro.cradle;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
@@ -98,8 +99,15 @@ public abstract class CradleStorage
 	protected abstract CompletableFuture<Void> doStoreHealingIntervalAsync(HealingInterval healingInterval);
 	protected abstract HealingInterval doGetHealingInterval(String healingIntervalId) throws IOException;
 	protected abstract CompletableFuture<HealingInterval> doGetHealingIntervalAsync(String healingIntervalId);
-	protected abstract void doUpdateHealingInterval(HealingInterval healingInterval) throws IOException;
-	protected abstract CompletableFuture<Void> doUpdateHealingIntervalAsync(HealingInterval healingInterval);
+	protected abstract void doUpdateHealingInterval(UUID instanceId,
+													String healingIntervalId,
+													LocalTime startTime,
+													LocalTime endTime,
+													String recoveryStateId, long healedEventsNumber) throws IOException;
+	protected abstract CompletableFuture<Void> doUpdateHealingIntervalAsync(UUID instanceId,
+																			String healingIntervalId,
+																			LocalTime startTime,
+																			LocalTime endTime, String recoveryStateId, long healedEventsNumber);
 	
 	public abstract CradleObjectsFactory getObjectsFactory();
 	
@@ -888,23 +896,33 @@ public abstract class CradleStorage
 		return result;
 	}
 
-	public final void updateHealingInterval(HealingInterval healingInterval) throws IOException
+	public final void updateHealingInterval(UUID instanceId,
+											String healingIntervalId,
+											LocalTime startTime,
+											LocalTime endTime,
+											String recoveryStateId,
+											long healedEventsNumber) throws IOException
 	{
-		logger.debug("Updating heailing interval "+healingInterval.getId());
-		doUpdateHealingInterval(healingInterval);
+		logger.debug("Updating heailing interval "+healingIntervalId);
+		doUpdateHealingInterval(instanceId, healingIntervalId, startTime, endTime, recoveryStateId, healedEventsNumber);
 
-		logger.debug("Updated healing interval "+healingInterval.getId());
+		logger.debug("Updated healing interval "+healingIntervalId);
 	}
 
-	public final CompletableFuture<Void> updateHealingIntervalAsync(HealingInterval healingInterval)
+	public final CompletableFuture<Void> updateHealingIntervalAsync(UUID instanceId,
+																	String healingIntervalId,
+																	LocalTime startTime,
+																	LocalTime endTime,
+																	String recoveryStateId,
+																	long healedEventsNumber)
 	{
-		logger.debug("Asynchronously updating heailing interval "+healingInterval.getId());
-		CompletableFuture<Void> result = doUpdateHealingIntervalAsync(healingInterval)
+		logger.debug("Asynchronously updating heailing interval "+healingIntervalId);
+		CompletableFuture<Void> result = doUpdateHealingIntervalAsync(instanceId, healingIntervalId, startTime, endTime, recoveryStateId, healedEventsNumber)
 				.whenComplete((r, error) -> {
 					if (error != null)
-						logger.error("Error while updating healing interval "+healingInterval.getId()+" asynchronously", error);
+						logger.error("Error while updating healing interval "+healingIntervalId+" asynchronously", error);
 					else
-						logger.debug("Updated interval {} got asynchronously", healingInterval.getId());
+						logger.debug("Updated interval {} got asynchronously", healingIntervalId);
 				});
 		return result;
 	}

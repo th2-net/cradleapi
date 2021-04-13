@@ -58,7 +58,7 @@ public class StorageConstants
 			RECOVERY_STATE_ID = "recovery_state_id",
 			HEALING_INTERVAL_ID = "healing_interval_id",
 			HEALING_INTERVAL_START_TIME = "healing_interval_start_time",
-			HEALING_INTERVAL_MAX_LENGTH = "healing_interval_max_length",
+			HEALING_INTERVAL_END_TIME = "healing_interval_end_time",
 			HEALED_EVENTS_NUMBER = "healed_events_number",
 			ROOT = "root",
 			PARENT_ID = "parent_id";
