@@ -5,20 +5,28 @@ import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.exactpro.cradle.healing.HealingInterval;
 import com.exactpro.cradle.healing.RecoveryState;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.time.LocalTime;
 import java.util.UUID;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.HEALED_EVENTS_NUMBER;
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_END_TIME;
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_ID;
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_START_TIME;
 import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
-import static com.exactpro.cradle.cassandra.StorageConstants.RECOVERY_STATE_ID;
+import static com.exactpro.cradle.cassandra.StorageConstants.RECOVERY_STATE_JSON;
 
 @Entity
 public class HealingIntervalEntity
 {
+    private static final Logger logger = LoggerFactory.getLogger(HealingIntervalEntity.class);
+
+    private final ObjectMapper mapper = new ObjectMapper();
+
     @PartitionKey(0)
     @CqlName(INSTANCE_ID)
     private UUID instanceId;
@@ -31,13 +39,10 @@ public class HealingIntervalEntity
     private LocalTime startTime;
 
     @CqlName(HEALING_INTERVAL_END_TIME)
-    private LocalTime maxLength;
+    private LocalTime endTime;
 
-    @CqlName(RECOVERY_STATE_ID)
-    private String recoveryStateId;
-
-    @CqlName(HEALED_EVENTS_NUMBER)
-    private long healedEventsNumber;
+    @CqlName(RECOVERY_STATE_JSON)
+    private String recoveryStateJson;
 
     public HealingIntervalEntity()
     {
@@ -47,9 +52,14 @@ public class HealingIntervalEntity
     {
         this.healingIntervalId = interval.getId();
         this.startTime = interval.getStartTime();
-        this.maxLength = interval.getEndTime();
-        this.recoveryStateId = interval.getRecoveryState().getId();
-        this.healedEventsNumber = interval.getRecoveryState().getHealedEventsNumber();
+        this.endTime = interval.getEndTime();
+
+        try {
+            this.recoveryStateJson = mapper.writeValueAsString(interval.getRecoveryState());
+        } catch (JsonProcessingException e) {
+            logger.error("Error with converting recovery state to JSON format", e);
+        }
+
         this.instanceId = instanceId;
     }
 
@@ -71,11 +81,18 @@ public class HealingIntervalEntity
 
     public void setStartTime(LocalTime startTime) { this.startTime = startTime; }
 
-    public LocalTime getMaxLength() { return maxLength; }
+    public LocalTime getEndTime() { return endTime; }
 
-    public void setMaxLength(LocalTime endTime) { this.maxLength = endTime; }
+    public void setEndTime(LocalTime endTime) { this.endTime = endTime; }
 
-    public HealingInterval asHealingInterval() {
-        return new HealingInterval(this.healingIntervalId, this.startTime, this.maxLength, new RecoveryState(recoveryStateId, healedEventsNumber));
+    public String getRecoveryStateJson() { return recoveryStateJson; }
+
+    public void setRecoveryStateJson(String recoveryStateJson) { this.recoveryStateJson = recoveryStateJson; }
+
+    public HealingInterval asHealingInterval() throws IOException {
+        logger.debug("RECOVERY STATE Json: " + recoveryStateJson);
+        logger.debug("this.healingIntervalId: "+this.healingIntervalId);
+        logger.debug("this.startTime: "+this.startTime);
+        return new HealingInterval(this.healingIntervalId, this.startTime, this.endTime, mapper.readValue(recoveryStateJson, RecoveryState.class));
     }
 }

@@ -310,8 +310,7 @@ public class TablesCreator
 				.withPartitionKey(HEALING_INTERVAL_ID, DataTypes.TEXT)
 				.withColumn(HEALING_INTERVAL_START_TIME, DataTypes.TIME)
 				.withColumn(HEALING_INTERVAL_END_TIME, DataTypes.TIME)
-				.withColumn(RECOVERY_STATE_ID, DataTypes.TEXT)
-				.withColumn(HEALED_EVENTS_NUMBER, DataTypes.BIGINT);
+				.withColumn(RECOVERY_STATE_JSON, DataTypes.TEXT);
 
 		exec.executeQuery(create.asCql(), true);
 		logger.info("Table '{}' has been created", tableName);

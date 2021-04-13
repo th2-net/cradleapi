@@ -1036,41 +1036,4 @@ public class CassandraCradleStorage extends CradleStorage
 			}
 		});
 	}
-
-	@Override
-	protected void doUpdateHealingInterval(UUID instanceId,
-										   String healingIntervalId,
-										   LocalTime startTime,
-										   LocalTime endTime,
-										   String recoveryStateId,
-										   long healedEventsNumber) throws IOException {
-		try
-		{
-			doUpdateHealingIntervalAsync(instanceId, healingIntervalId, startTime, endTime, recoveryStateId, healedEventsNumber);
-		}
-		catch (Exception e)
-		{
-			throw new IOException("Error while updating healing interval "+healingIntervalId, e);
-		}
-	}
-
-	@Override
-	protected CompletableFuture<Void> doUpdateHealingIntervalAsync(UUID instanceId,
-																   String healingIntervalId,
-																   LocalTime startTime,
-																   LocalTime endTime,
-																   String recoveryStateId,
-																   long healedEventsNumber) {
-		CompletableFuture<HealingIntervalEntity> future = new AsyncOperator<HealingIntervalEntity>(semaphore)
-				.getFuture(() -> ops.getHealingIntervalOperator().
-                        updateHealingInterval(
-                        		instanceId,
-                        		healingIntervalId,
-								startTime,
-								endTime,
-								recoveryStateId,
-								healedEventsNumber,
-								writeAttrs));
-		return future.thenAccept(e -> {});
-	}
 }
