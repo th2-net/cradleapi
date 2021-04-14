@@ -853,9 +853,9 @@ public abstract class CradleStorage
 	}
 
 	/**
-	 *
-	 * @param healingIntervalId
-	 * @return
+	 * Obtains healing interval
+	 * @param healingIntervalId id of healing interval
+	 * @return healing interval
 	 */
 	public final HealingInterval getHealingInterval(String healingIntervalId) throws IOException
 	{
@@ -870,9 +870,9 @@ public abstract class CradleStorage
 	}
 
 	/**
-	 *
-	 * @param healingIntervalId
-	 * @return
+	 * Asynchronously obtains healing interval
+	 * @param healingIntervalId id of healing interval
+	 * @return future to get know if obtaining was successful
 	 */
 	public final CompletableFuture<HealingInterval> getHealingIntervalAsync(String healingIntervalId)
 	{

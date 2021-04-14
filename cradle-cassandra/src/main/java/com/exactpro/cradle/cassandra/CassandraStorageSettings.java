@@ -56,7 +56,6 @@ public class CassandraStorageSettings
 			testEventsChildrenDatesTableName,
 			testEventsMessagesTableName,
 			messagesTestEventsTableName,
-			recoveryStatesTableName,
 			healingIntervalsTableName;
 	private final NetworkTopologyStrategy networkTopologyStrategy;
 	private long timeout;
@@ -223,13 +222,6 @@ public class CassandraStorageSettings
 	public void setMessagesTestEventsTableName(String messagesTestEventsTableName)
 	{
 		this.messagesTestEventsTableName = messagesTestEventsTableName;
-	}
-
-	public String getRecoveryStatesTableName() { return recoveryStatesTableName; }
-
-	public void setRecoveryStatesTableName(String recoveryStatesTableName)
-	{
-		this.recoveryStatesTableName = recoveryStatesTableName;
 	}
 
 	public String getHealingIntervalsTableName() {return healingIntervalsTableName; }

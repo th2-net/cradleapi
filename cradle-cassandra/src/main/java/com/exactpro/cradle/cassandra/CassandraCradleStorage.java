@@ -329,8 +329,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Void> doStoreTestEventMessagesLinkAsync(StoredTestEventId eventId,
-																		StoredTestEventId batchId, Collection<StoredMessageId> messageIds)
+	protected CompletableFuture<Void> doStoreTestEventMessagesLinkAsync(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messageIds)
 	{
 		List<String> messageIdsStrings = messageIds.stream().map(StoredMessageId::toString).collect(toList());
 		String eventIdString = eventId.toString();
@@ -350,8 +349,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Void> doStoreMessageTestEventLinkAsync(StoredTestEventId eventId,
-																	   StoredTestEventId batchId, Collection<StoredMessageId> messageIds)
+	protected CompletableFuture<Void> doStoreMessageTestEventLinkAsync(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messageIds)
 	{
 		List<String> messageIdsStrings = messageIds.stream().map(StoredMessageId::toString).collect(toList());
 		String eventIdString = eventId.toString();
@@ -442,8 +440,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected StoredMessageId doGetNearestMessageId(String streamName, Direction direction, Instant timestamp,
-													TimeRelation timeRelation) throws IOException
+	protected StoredMessageId doGetNearestMessageId(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation) throws IOException
 	{
 		try
 		{
@@ -598,8 +595,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsAsync(StoredTestEventId parentId,
-																						Instant from, Instant to) throws CradleStorageException
+	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsAsync(StoredTestEventId parentId, Instant from, Instant to) throws CradleStorageException
 	{
 		LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET),
 				toDateTime = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
