@@ -16,7 +16,7 @@
 
 package com.exactpro.cradle.cassandra.dao.testevents;
 
-import java.util.Set;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -38,7 +38,7 @@ public interface TestEventOperator
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+ID+" IN (:id)")
-	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> get(UUID instanceId, Set<String> id,
+	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> get(UUID instanceId, List<String> id,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
