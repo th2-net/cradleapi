@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle.cassandra.dao.healing;
 
+import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
@@ -27,15 +28,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_END_TIME;
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_ID;
+import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_DATE;
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_START_TIME;
 import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
 import static com.exactpro.cradle.cassandra.StorageConstants.RECOVERY_STATE_JSON;
 
+/**
+ * Contains healing interval data
+ */
 @Entity
 public class HealingIntervalEntity
 {
@@ -48,9 +54,13 @@ public class HealingIntervalEntity
     private UUID instanceId;
 
     @PartitionKey(1)
+    @CqlName(HEALING_INTERVAL_DATE)
+    private LocalDate date;
+
     @CqlName(HEALING_INTERVAL_ID)
     private String healingIntervalId;
 
+    @ClusteringColumn(0)
     @CqlName(HEALING_INTERVAL_START_TIME)
     private LocalTime startTime;
 
@@ -69,6 +79,7 @@ public class HealingIntervalEntity
         this.healingIntervalId = interval.getId();
         this.startTime = interval.getStartTime();
         this.endTime = interval.getEndTime();
+        this.date = interval.getDate();
 
         try {
             this.recoveryStateJson = mapper.writeValueAsString(interval.getRecoveryState());
@@ -101,11 +112,15 @@ public class HealingIntervalEntity
 
     public void setEndTime(LocalTime endTime) { this.endTime = endTime; }
 
+    public LocalDate getDate() { return date; }
+
+    public void setDate(LocalDate date) { this.date = date; }
+
     public String getRecoveryStateJson() { return recoveryStateJson; }
 
     public void setRecoveryStateJson(String recoveryStateJson) { this.recoveryStateJson = recoveryStateJson; }
 
     public HealingInterval asHealingInterval() throws IOException {
-        return new HealingInterval(this.healingIntervalId, this.startTime, this.endTime, mapper.readValue(recoveryStateJson, RecoveryState.class));
+        return new HealingInterval(this.healingIntervalId, this.startTime, this.endTime, this.date, mapper.readValue(recoveryStateJson, RecoveryState.class));
     }
 }

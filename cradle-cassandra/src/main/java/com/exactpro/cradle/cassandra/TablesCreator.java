@@ -307,8 +307,9 @@ public class TablesCreator
 
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(HEALING_INTERVAL_ID, DataTypes.TEXT)
-				.withColumn(HEALING_INTERVAL_START_TIME, DataTypes.TIME)
+				.withPartitionKey(HEALING_INTERVAL_DATE, DataTypes.DATE)
+				.withColumn(HEALING_INTERVAL_ID, DataTypes.TEXT)
+				.withClusteringColumn(HEALING_INTERVAL_START_TIME, DataTypes.TIME)
 				.withColumn(HEALING_INTERVAL_END_TIME, DataTypes.TIME)
 				.withColumn(RECOVERY_STATE_JSON, DataTypes.TEXT);
 

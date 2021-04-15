@@ -18,6 +18,7 @@ package com.exactpro.cradle.cassandra;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
+import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
@@ -49,7 +50,10 @@ import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventEntity;
+import com.exactpro.cradle.cassandra.iterators.HealingIntervalsIterator;
+import com.exactpro.cradle.cassandra.iterators.HealingIntervalsIteratorAdapter;
 import com.exactpro.cradle.cassandra.iterators.MessagesIteratorAdapter;
+import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.iterators.RootTestEventsMetadataIteratorAdapter;
 import com.exactpro.cradle.cassandra.iterators.TestEventChildrenMetadataIteratorAdapter;
 import com.exactpro.cradle.cassandra.iterators.TimeTestEventsMetadataIteratorAdapter;
@@ -1005,30 +1009,30 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected HealingInterval doGetHealingInterval(String healingIntervalId) throws IOException {
+	protected Iterable<HealingInterval> doGetHealingInterval(LocalDate date, LocalTime from) throws IOException {
 		try
 		{
-			return doGetHealingIntervalAsync(healingIntervalId).get();
+			return doGetHealingIntervalAsync(date, from).get();
 		}
 		catch (Exception e)
 		{
-			throw new IOException("Error while getting healing interval "+healingIntervalId, e);
+			throw new IOException("Error while getting healing interval date: "+date+", from: "+from, e);
 		}
 	}
 
 	@Override
-	protected CompletableFuture<HealingInterval> doGetHealingIntervalAsync(String healingIntervalId) {
-		CompletableFuture<HealingIntervalEntity> future = new AsyncOperator<HealingIntervalEntity>(semaphore)
-				.getFuture(() -> ops.getHealingIntervalOperator().getHealingInterval(instanceUuid, healingIntervalId, readAttrs));
+	protected CompletableFuture<Iterable<HealingInterval>> doGetHealingIntervalAsync(LocalDate date, LocalTime from) {
+		CompletableFuture<MappedAsyncPagingIterable<HealingIntervalEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<HealingIntervalEntity>>(semaphore)
+				.getFuture(() -> ops.getHealingIntervalOperator().getHealingIntervals(instanceUuid, date, from, readAttrs));
 
-		return future.thenApply(entity -> {
+		return future.thenApply(entities -> {
 			try
 			{
-				return entity != null ? entity.asHealingInterval() : null;
+				return new HealingIntervalsIteratorAdapter(entities);
 			}
 			catch (Exception error)
 			{
-				throw new CompletionException("Could not get healing interval "+healingIntervalId, error);
+				throw new CompletionException("Could not get healing interval date: "+date+", from: "+from, error);
 			}
 		});
 	}

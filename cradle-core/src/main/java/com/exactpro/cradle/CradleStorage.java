@@ -18,6 +18,7 @@ package com.exactpro.cradle;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -97,8 +98,8 @@ public abstract class CradleStorage
 	protected abstract Collection<Instant> doGetTestEventsDates(StoredTestEventId parentId) throws IOException;
 	protected abstract void doStoreHealingInterval(HealingInterval healingInterval) throws IOException;
 	protected abstract CompletableFuture<Void> doStoreHealingIntervalAsync(HealingInterval healingInterval);
-	protected abstract HealingInterval doGetHealingInterval(String healingIntervalId) throws IOException;
-	protected abstract CompletableFuture<HealingInterval> doGetHealingIntervalAsync(String healingIntervalId);
+	protected abstract Iterable<HealingInterval> doGetHealingInterval(LocalDate date, LocalTime from) throws IOException;
+	protected abstract CompletableFuture<Iterable<HealingInterval>> doGetHealingIntervalAsync(LocalDate date, LocalTime from);
 	
 	public abstract CradleObjectsFactory getObjectsFactory();
 	
@@ -853,36 +854,38 @@ public abstract class CradleStorage
 	}
 
 	/**
-	 * Obtains healing interval
-	 * @param healingIntervalId id of healing interval
-	 * @return healing interval
+	 * Obtains iterable of healing intervals
+	 * @param date date at which intervals are being searched
+	 * @param from time from which intervals are being searched
+	 * @return iterable of healing intervals
 	 */
-	public final HealingInterval getHealingInterval(String healingIntervalId) throws IOException
+	public final Iterable<HealingInterval> getHealingIntervals(LocalDate date, LocalTime from) throws IOException
 	{
-		logger.debug("Getting healing interval {}", healingIntervalId);
-		HealingInterval result = doGetHealingInterval(healingIntervalId);
+		logger.debug("Getting healing interval date: {}, from: {}", date, from);
+		Iterable<HealingInterval> result = doGetHealingInterval(date, from);
 
 		if (result == null)
-			throw new IOException("Interval "+healingIntervalId+" is not found");
+			throw new IOException("Interval date: "+date+", from: "+from+" is not found");
 
-		logger.debug("Healing interval {} got", healingIntervalId);
+		logger.debug("Healing interval date: {}, from: {}", date, from);
 		return result;
 	}
 
 	/**
-	 * Asynchronously obtains healing interval
-	 * @param healingIntervalId id of healing interval
+	 * Asynchronously obtains iterable of healing intervals
+	 * @param date date at which intervals are being searched
+	 * @param from time from which intervals are being searched
 	 * @return future to get know if obtaining was successful
 	 */
-	public final CompletableFuture<HealingInterval> getHealingIntervalAsync(String healingIntervalId)
+	public final CompletableFuture<Iterable<HealingInterval>> getHealingIntervalsAsync(LocalDate date, LocalTime from)
 	{
-		logger.debug("Asynchronously getting healing interval {}", healingIntervalId);
-		CompletableFuture<HealingInterval> result = doGetHealingIntervalAsync(healingIntervalId)
+		logger.debug("Asynchronously interval date: {}, from: {}", date, from);
+		CompletableFuture<Iterable<HealingInterval>> result = doGetHealingIntervalAsync(date, from)
 				.whenComplete((r, error) -> {
 					if (error != null)
-						logger.error("Error while getting healing interval "+healingIntervalId+" asynchronously", error);
+						logger.error("Error while getting healing interval date: "+date+", from: "+from+" asynchronously", error);
 					else
-						logger.debug("Healing interval {} got asynchronously", healingIntervalId);
+						logger.debug("Healing interval date: {}, from: {}", date, from);
 				});
 		return result;
 	}

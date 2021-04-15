@@ -19,6 +19,7 @@ package com.exactpro.cradle.healing;
 
 import com.exactpro.cradle.utils.CompressionUtils;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 
 public class HealingInterval
@@ -26,13 +27,15 @@ public class HealingInterval
     private final String id;
     private final LocalTime startTime;
     private final LocalTime endTime;
+    private final LocalDate date;
     private final RecoveryState recoveryState;
 
-    public HealingInterval(String id, LocalTime startTime, LocalTime endTime, RecoveryState recoveryState)
+    public HealingInterval(String id, LocalTime startTime, LocalTime endTime, LocalDate date, RecoveryState recoveryState)
     {
         this.id = id;
         this.startTime = startTime;
         this.endTime = endTime;
+        this.date = date;
         this.recoveryState = recoveryState;
     }
 
@@ -42,6 +45,8 @@ public class HealingInterval
 
     public LocalTime getEndTime() { return endTime; }
 
+    public LocalDate getDate() { return date; }
+
     public RecoveryState getRecoveryState() { return recoveryState; }
 
     @Override
@@ -50,6 +55,7 @@ public class HealingInterval
         return new StringBuilder()
                 .append("HealingInterval{").append(CompressionUtils.EOL)
                 .append("id=").append(id).append(",").append(CompressionUtils.EOL)
+                .append("date=").append(date).append(",").append(CompressionUtils.EOL)
                 .append("startTime=").append(startTime).append(",").append(CompressionUtils.EOL)
                 .append("endTime=").append(endTime).append(",").append(CompressionUtils.EOL)
                 .append(recoveryState.toString()).append(CompressionUtils.EOL)
