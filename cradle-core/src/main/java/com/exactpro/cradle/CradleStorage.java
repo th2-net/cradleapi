@@ -85,7 +85,9 @@ public abstract class CradleStorage
 	protected abstract StoredMessageId doGetNearestMessageId(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation) throws IOException;
 	protected abstract CompletableFuture<StoredMessageId> doGetNearestMessageIdAsync(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation);
 	protected abstract StoredTestEventWrapper doGetTestEvent(StoredTestEventId id) throws IOException;
-	protected abstract CompletableFuture<StoredTestEventWrapper> doGetTestEventAsync(StoredTestEventId id);
+	protected abstract CompletableFuture<StoredTestEventWrapper> doGetTestEventAsync(StoredTestEventId ids);
+	protected abstract Iterable<StoredTestEventWrapper> doGetCompleteTestEvents(Set<StoredTestEventId> ids) throws IOException;
+	protected abstract CompletableFuture<Iterable<StoredTestEventWrapper>> doGetCompleteTestEventsAsync(Set<StoredTestEventId> id);
 	protected abstract Collection<String> doGetStreams() throws IOException;
 	protected abstract Collection<Instant> doGetRootTestEventsDates() throws IOException;
 	protected abstract Collection<Instant> doGetTestEventsDates(StoredTestEventId parentId) throws IOException;
@@ -533,7 +535,39 @@ public abstract class CradleStorage
 				});
 		return result;
 	}
-	
+
+	/**
+	 * Retrieves test events data stored under given IDs
+	 * @param ids set of stored test event to retrieve
+	 * @return data of stored test event
+	 * @throws IOException if test event data retrieval failed
+	 */
+	public final Iterable<StoredTestEventWrapper> getCompleteTestEvents(Set<StoredTestEventId> ids) throws IOException
+	{
+		logger.debug("Getting test events {}", ids);
+		Iterable<StoredTestEventWrapper> result = doGetCompleteTestEvents(ids);
+		logger.debug("Test events {} got", ids);
+		return result;
+	}
+
+	/**
+	 * Asynchronously retrieves test events data stored under given IDs
+	 * @param ids set of stored test event to retrieve
+	 * @return future to obtain data of stored test event
+	 */
+	public final CompletableFuture<Iterable<StoredTestEventWrapper>> getCompleteTestEventAsync(Set<StoredTestEventId> ids)
+	{
+		logger.debug("Getting test events {} asynchronously", ids);
+
+		CompletableFuture<Iterable<StoredTestEventWrapper>> result = doGetCompleteTestEventsAsync(ids)
+				.whenComplete((r, error) -> {
+					if (error != null)
+						logger.error("Error while getting test events "+ids+" asynchronously", error);
+					else
+						logger.debug("Test events {} got asynchronously", ids);
+				});
+		return result;
+	}
 	
 	/**
 	 * Allows to enumerate stored messages, optionally filtering them by given conditions
