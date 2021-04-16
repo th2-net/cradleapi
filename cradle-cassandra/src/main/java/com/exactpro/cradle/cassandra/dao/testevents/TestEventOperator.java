@@ -16,7 +16,7 @@
 
 package com.exactpro.cradle.cassandra.dao.testevents;
 
-import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -27,6 +27,7 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
+import com.datastax.oss.driver.api.mapper.annotations.QueryProvider;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
@@ -37,8 +38,8 @@ public interface TestEventOperator
 	CompletableFuture<TestEventEntity> get(UUID instanceId, String id, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+ID+" IN (:id)")
-	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> get(UUID instanceId, List<String> id,
+	@QueryProvider(providerClass = TestEventQueryProvider.class, entityHelpers = TestEventEntity.class)
+	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getComplete(UUID instanceId, Set<String> id,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert

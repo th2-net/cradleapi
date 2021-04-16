@@ -510,8 +510,8 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> future =
 				new AsyncOperator<MappedAsyncPagingIterable<TestEventEntity>>(semaphore)
-						.getFuture(() -> ops.getTestEventOperator().get(instanceUuid,
-								id.stream().map(StoredTestEventId::toString).collect(toList()), readAttrs));
+						.getFuture(() -> ops.getTestEventOperator().getComplete(instanceUuid,
+								id.stream().map(StoredTestEventId::toString).collect(Collectors.toSet()), readAttrs));
 		
 		return future.thenApply(TestEventDataIteratorAdapter::new);
 	}
