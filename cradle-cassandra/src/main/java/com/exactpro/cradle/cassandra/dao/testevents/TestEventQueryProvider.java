@@ -27,7 +27,7 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Set;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -54,13 +54,13 @@ public class TestEventQueryProvider
 				.build();
 	}
 	
-	public CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getComplete(UUID instanceId, Set<String> id,
+	public CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getComplete(UUID instanceId, List<String> id,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 	{
 		BoundStatement bs = session.prepare(ss)
 				.boundStatementBuilder()
 				.setUuid(0, instanceId)
-				.setSet(1, id, String.class)
+				.setList(1, id, String.class)
 				.build();
 		return session.executeAsync(bs).thenApply(result -> result.map(helper::get)).toCompletableFuture();
 	}

@@ -16,7 +16,7 @@
 
 package com.exactpro.cradle.cassandra.dao.testevents;
 
-import java.util.Set;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -39,7 +39,7 @@ public interface TestEventOperator
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@QueryProvider(providerClass = TestEventQueryProvider.class, entityHelpers = TestEventEntity.class)
-	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getComplete(UUID instanceId, Set<String> id,
+	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getComplete(UUID instanceId, List<String> id,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
