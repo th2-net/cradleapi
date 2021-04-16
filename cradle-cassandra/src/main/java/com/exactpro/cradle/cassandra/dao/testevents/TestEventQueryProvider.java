@@ -59,8 +59,8 @@ public class TestEventQueryProvider
 	{
 		BoundStatement bs = session.prepare(ss)
 				.boundStatementBuilder()
-				.setUuid(INSTANCE_ID, instanceId)
-				.setSet(ID, id, String.class)
+				.setUuid(0, instanceId)
+				.setSet(1, id, String.class)
 				.build();
 		return session.executeAsync(bs).thenApply(result -> result.map(helper::get)).toCompletableFuture();
 	}
