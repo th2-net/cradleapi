@@ -38,6 +38,6 @@ public interface HealingIntervalOperator
     @Insert
     CompletableFuture<HealingIntervalEntity> writeHealingInterval(HealingIntervalEntity healingIntervalEntity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-    @Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+ HEALING_INTERVAL_DATE +"=:healingIntervalDate AND "+HEALING_INTERVAL_START_TIME+">=:healingIntervalStartTime")
-    CompletableFuture<MappedAsyncPagingIterable<HealingIntervalEntity>> getHealingIntervals(UUID instanceId, LocalDate date, LocalTime from, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+    @Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+HEALING_INTERVAL_DATE+"=:healingIntervalStartDate AND "+HEALING_INTERVAL_START_TIME+">=:healingIntervalStartTime")
+    CompletableFuture<MappedAsyncPagingIterable<HealingIntervalEntity>> getHealingIntervals(UUID instanceId, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

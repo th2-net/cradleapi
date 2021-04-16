@@ -867,7 +867,7 @@ public abstract class CradleStorage
 		if (result == null)
 			throw new IOException("Interval date: "+date+", from: "+from+" is not found");
 
-		logger.debug("Healing interval date: {}, from: {}", date, from);
+		logger.debug("Healing intervals at date: {}, from: {} got", date, from);
 		return result;
 	}
 

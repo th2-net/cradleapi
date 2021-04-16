@@ -2,7 +2,7 @@ package com.exactpro.cradle.healing;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.time.LocalTime;
+import java.sql.Timestamp;
 
 public class RecoveryState
 {
@@ -10,9 +10,9 @@ public class RecoveryState
 
     private final long healedEventsNumber;
 
-    private final LocalTime timeOfStop;
+    private final Timestamp timeOfStop;
 
-    public RecoveryState(@JsonProperty("id") String id, @JsonProperty("healedEventsNumber") long healedEventsNumber, @JsonProperty("timeOfStop") LocalTime timeOfStop) {
+    public RecoveryState(@JsonProperty("id") String id, @JsonProperty("healedEventsNumber") long healedEventsNumber, @JsonProperty("timeOfStop") Timestamp timeOfStop) {
         this.id = id;
         this.healedEventsNumber = healedEventsNumber;
         this.timeOfStop = timeOfStop;
@@ -22,7 +22,7 @@ public class RecoveryState
 
     public long getHealedEventsNumber() { return healedEventsNumber; }
 
-    public LocalTime getTimeOfStop() { return timeOfStop; }
+    public Timestamp getTimeOfStop() { return timeOfStop; }
 
     @Override
     public String toString()
@@ -30,7 +30,7 @@ public class RecoveryState
         return new StringBuilder()
                 .append("RecoveryState{")
                 .append("id=").append(id).append(",")
-                .append("healedEventsNumber=").append(healedEventsNumber)
+                .append("healedEventsNumber=").append(healedEventsNumber).append(",")
                 .append("timeOfStop=").append(timeOfStop)
                 .append("}").toString();
     }
