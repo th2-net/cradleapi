@@ -81,7 +81,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
 import static com.exactpro.cradle.cassandra.CassandraStorageSettings.*;

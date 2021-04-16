@@ -23,7 +23,6 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.mapper.MapperContext;
 import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
-import com.datastax.oss.driver.api.querybuilder.select.Select;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

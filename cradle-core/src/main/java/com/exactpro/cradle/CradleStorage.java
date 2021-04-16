@@ -555,7 +555,7 @@ public abstract class CradleStorage
 	 * @param ids set of stored test event to retrieve
 	 * @return future to obtain data of stored test event
 	 */
-	public final CompletableFuture<Iterable<StoredTestEventWrapper>> getCompleteTestEventAsync(Set<StoredTestEventId> ids)
+	public final CompletableFuture<Iterable<StoredTestEventWrapper>> getCompleteTestEventsAsync(Set<StoredTestEventId> ids)
 	{
 		logger.debug("Getting test events {} asynchronously", ids);
 
