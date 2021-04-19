@@ -538,13 +538,36 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter)
 	{
-		MessageBatchOperator op = ops.getMessageBatchOperator();
-		CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<DetailedMessageBatchEntity>>(semaphore)
-				.getFuture(() -> op.filterMessages(instanceUuid, filter, semaphore, op, readAttrs));
-		return future.thenApply(it -> new MessagesIteratorAdapter(filter, it));
+		return doGetDetailedMessageBatchEntities(filter).thenApply(it -> new MessagesIteratorAdapter(filter, it));
 	}
 	
 	
+	@Override
+	protected Iterable<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException
+	{
+		try
+		{
+			return doGetMessagesBatchesAsync(filter).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting messages filtered by "+filter, e);
+		}
+	}
+
+	@Override
+	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter)
+	{
+		return doGetDetailedMessageBatchEntities(filter).thenApply(it -> new StoredMessageBatchAdapter(it, objectsFactory));
+	}
+
+	private CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> doGetDetailedMessageBatchEntities(StoredMessageFilter filter)
+	{
+		MessageBatchOperator op = ops.getMessageBatchOperator();
+		return new AsyncOperator<MappedAsyncPagingIterable<DetailedMessageBatchEntity>>(semaphore)
+				.getFuture(() -> op.filterMessages(instanceUuid, filter, semaphore, op, readAttrs));
+	}
+
 	@Override
 	protected Iterable<StoredTestEventMetadata> doGetRootTestEvents(Instant from, Instant to) throws CradleStorageException, IOException
 	{

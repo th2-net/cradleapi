@@ -25,6 +25,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
+import com.exactpro.cradle.messages.MessageToStoreBuilder;
+import com.exactpro.cradle.messages.StoredMessage;
+import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +83,25 @@ public class DetailedMessageBatchEntity extends MessageBatchEntity
 		this.setMessageCount(batch.getMessageCount());
 		this.setLastMessageIndex(batch.getLastMessage().getIndex());
 	}
-	
+
+	public StoredMessageBatch toStoredMessageBatch(StoredMessageBatch messageBatch)
+			throws IOException, CradleStorageException
+	{
+		for (StoredMessage storedMessage : toStoredMessages())
+		{
+			MessageToStoreBuilder builder = new MessageToStoreBuilder()
+					.content(storedMessage.getContent())
+					.direction(storedMessage.getDirection())
+					.streamName(storedMessage.getStreamName())
+					.timestamp(storedMessage.getTimestamp())
+					.index(storedMessage.getIndex());
+			storedMessage.getMetadata().toMap().forEach(builder::metadata);
+			
+			messageBatch.addMessage(builder.build());
+		}
+		
+		return messageBatch;
+	}
 	
 	public LocalDate getStoredDate()
 	{

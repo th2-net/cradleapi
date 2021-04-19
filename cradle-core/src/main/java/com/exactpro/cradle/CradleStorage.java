@@ -103,6 +103,8 @@ public abstract class CradleStorage
 	
 	protected abstract Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException;
 	protected abstract CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter);
+	protected abstract Iterable<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException;
+	protected abstract CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter);
 	protected abstract Iterable<StoredTestEventMetadata> doGetRootTestEvents(Instant from, Instant to) 
 			throws CradleStorageException, IOException;
 	protected abstract CompletableFuture<Iterable<StoredTestEventMetadata>> doGetRootTestEventsAsync(Instant from, Instant to) 
@@ -582,6 +584,20 @@ public abstract class CradleStorage
 		logger.debug("Prepared iterator for messages filtered by {}", filter);
 		return result;
 	}
+
+	/**
+	 * Allows to enumerate stored messages batches, optionally filtering them by given conditions
+	 * @param filter defines conditions to filter messages batches by. Use null is no filtering is needed
+	 * @return iterable object to enumerate messages batches
+	 * @throws IOException if data retrieval failed
+	 */
+	public final Iterable<StoredMessageBatch> getMessagesBatches(StoredMessageFilter filter) throws IOException
+	{
+		logger.debug("Filtering messages batches by {}", filter);
+		Iterable<StoredMessageBatch> result = doGetMessagesBatches(filter);
+		logger.debug("Prepared iterator for messages batches filtered by {}", filter);
+		return result;
+	}
 	
 	/**
 	 * Allows to asynchronously obtain iterable object to enumerate stored messages, optionally filtering them by given conditions
@@ -600,7 +616,25 @@ public abstract class CradleStorage
 				});
 		return result;
 	}
-	
+
+	/**
+	 * Allows to asynchronously obtain iterable object to enumerate stored messages batches, optionally filtering them by given conditions
+	 * @param filter defines conditions to filter messages batches by. Use null is no filtering is needed
+	 * @return future to obtain iterable object to enumerate messages batches
+	 */
+	public final CompletableFuture<Iterable<StoredMessageBatch>> getMessagesBatchesAsync(StoredMessageFilter filter)
+	{
+		logger.debug("Asynchronously getting messages batches filtered by {}", filter);
+		CompletableFuture<Iterable<StoredMessageBatch>> result = doGetMessagesBatchesAsync(filter)
+				.whenComplete((r, error) -> {
+					if (error != null)
+						logger.error("Error while getting messages batches filtered by "+filter+" asynchronously", error);
+					else
+						logger.debug("Iterator for messages batches filtered by {} got asynchronously", filter);
+				});
+		
+		return result;
+	}
 	
 	/**
 	 * Allows to enumerate root test events started in given range of timestamps. 
