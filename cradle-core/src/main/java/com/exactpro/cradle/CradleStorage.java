@@ -99,6 +99,8 @@ public abstract class CradleStorage
 	protected abstract CompletableFuture<Void> doStoreHealingIntervalAsync(HealingInterval healingInterval);
 	protected abstract Iterable<HealingInterval> doGetHealingIntervals(LocalDate date, LocalTime from) throws IOException;
 	protected abstract CompletableFuture<Iterable<HealingInterval>> doGetHealingIntervalsAsync(LocalDate date, LocalTime from);
+	protected abstract void doOccupyInterval(String healingIntervalId, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, boolean isOccupied) throws IOException;
+	protected abstract CompletableFuture<Void> doOccupyIntervalAsync(String healingIntervalId, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, boolean isOccupied);
 	
 	public abstract CradleObjectsFactory getObjectsFactory();
 	
@@ -878,13 +880,49 @@ public abstract class CradleStorage
 	 */
 	public final CompletableFuture<Iterable<HealingInterval>> getHealingIntervalsAsync(LocalDate date, LocalTime from)
 	{
-		logger.debug("Asynchronously interval date: {}, from: {}", date, from);
+		logger.debug("Asynchronously getting interval date: {}, from: {}", date, from);
 		CompletableFuture<Iterable<HealingInterval>> result = doGetHealingIntervalsAsync(date, from)
 				.whenComplete((r, error) -> {
 					if (error != null)
 						logger.error("Error while getting healing intervals date: "+date+", from: "+from+" asynchronously", error);
 					else
 						logger.debug("Healing intervals date: {}, from: {} got", date, from);
+				});
+		return result;
+	}
+
+	/**
+	 *
+	 * @param healingIntervalId
+	 * @param healingIntervalStartDate
+	 * @param healingIntervalStartTime
+	 * @param isOccupied
+	 * @throws IOException
+	 */
+	public final void occupyInterval(String healingIntervalId, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, boolean isOccupied) throws IOException
+	{
+		logger.debug("Occupying interval: {}", healingIntervalId);
+		doOccupyInterval(healingIntervalId, healingIntervalStartDate, healingIntervalStartTime, isOccupied);
+		logger.debug("Occupied interval: {}", healingIntervalId);
+	}
+
+	/**
+	 *
+	 * @param healingIntervalId
+	 * @param healingIntervalStartDate
+	 * @param healingIntervalStartTime
+	 * @param isOccupied
+	 * @return
+	 */
+	public final CompletableFuture<Void> occupyIntervalAsync(String healingIntervalId, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, boolean isOccupied)
+	{
+		logger.debug("Asynchronously occupying interval: {}", healingIntervalId);
+		CompletableFuture<Void> result = doOccupyIntervalAsync(healingIntervalId, healingIntervalStartDate, healingIntervalStartTime,  isOccupied)
+				.whenComplete((r, error) -> {
+					if (error != null)
+						logger.error("Error while occupying healing interval "+healingIntervalId);
+					else
+						logger.debug("Healing interval {} occupied: {}", healingIntervalId, isOccupied);
 				});
 		return result;
 	}
