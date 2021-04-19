@@ -14,6 +14,13 @@ dependencies {
 	testCompile 'org.testng:testng:7.1.0'
 }
 
+def gen_dir = 'build/generated/sources/annotationProcessor/main'
+sourceSets.main.java.srcDirs += [gen_dir]
+
+compileJava {
+	options.annotationProcessorGeneratedSourcesDirectory = file("${projectDir}/${gen_dir}")
+}
+
 test {
 	useTestNG()
 }
