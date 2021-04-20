@@ -27,7 +27,7 @@ import java.io.IOException;
 public class StoredMessageBatchIterator extends ConvertingPagedIterator<StoredMessageBatch, DetailedMessageBatchEntity>
 {
 	private final CradleObjectsFactory objectsFactory;
-	private int limit;
+	private final int limit;
 	private long returnedEtities;
 	
 	public StoredMessageBatchIterator(MappedAsyncPagingIterable<DetailedMessageBatchEntity> rows,
@@ -63,7 +63,7 @@ public class StoredMessageBatchIterator extends ConvertingPagedIterator<StoredMe
 		}
 		catch (CradleStorageException e)
 		{
-			throw new IOException("Error occurs while getting StoredMessageBatch",e);
+			throw new IOException("Error occurred while converting entity to StoredMessageBatch",e);
 		}
 	}
 	

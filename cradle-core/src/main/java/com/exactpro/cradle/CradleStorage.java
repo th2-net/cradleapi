@@ -586,16 +586,16 @@ public abstract class CradleStorage
 	}
 
 	/**
-	 * Allows to enumerate stored messages batches, optionally filtering them by given conditions
-	 * @param filter defines conditions to filter messages batches by. Use null is no filtering is needed
-	 * @return iterable object to enumerate messages batches
+	 * Allows to enumerate stored message batches, optionally filtering them by given conditions
+	 * @param filter defines conditions to filter message batches by. Use null is no filtering is needed
+	 * @return iterable object to enumerate message batches
 	 * @throws IOException if data retrieval failed
 	 */
 	public final Iterable<StoredMessageBatch> getMessagesBatches(StoredMessageFilter filter) throws IOException
 	{
-		logger.debug("Filtering messages batches by {}", filter);
+		logger.debug("Filtering message batches by {}", filter);
 		Iterable<StoredMessageBatch> result = doGetMessagesBatches(filter);
-		logger.debug("Prepared iterator for messages batches filtered by {}", filter);
+		logger.debug("Prepared iterator for message batches filtered by {}", filter);
 		return result;
 	}
 	
@@ -618,19 +618,19 @@ public abstract class CradleStorage
 	}
 
 	/**
-	 * Allows to asynchronously obtain iterable object to enumerate stored messages batches, optionally filtering them by given conditions
-	 * @param filter defines conditions to filter messages batches by. Use null is no filtering is needed
-	 * @return future to obtain iterable object to enumerate messages batches
+	 * Allows to asynchronously obtain iterable object to enumerate stored message batches, optionally filtering them by given conditions
+	 * @param filter defines conditions to filter message batches by. Use null is no filtering is needed
+	 * @return future to obtain iterable object to enumerate message batches
 	 */
 	public final CompletableFuture<Iterable<StoredMessageBatch>> getMessagesBatchesAsync(StoredMessageFilter filter)
 	{
-		logger.debug("Asynchronously getting messages batches filtered by {}", filter);
+		logger.debug("Asynchronously getting message batches filtered by {}", filter);
 		CompletableFuture<Iterable<StoredMessageBatch>> result = doGetMessagesBatchesAsync(filter)
 				.whenComplete((r, error) -> {
 					if (error != null)
-						logger.error("Error while getting messages batches filtered by "+filter+" asynchronously", error);
+						logger.error("Error while getting message batches filtered by "+filter+" asynchronously", error);
 					else
-						logger.debug("Iterator for messages batches filtered by {} got asynchronously", filter);
+						logger.debug("Iterator for message batches filtered by {} got asynchronously", filter);
 				});
 		
 		return result;
