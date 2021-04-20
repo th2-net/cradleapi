@@ -27,16 +27,19 @@ public class StoredMessageBatchAdapter implements Iterable<StoredMessageBatch>
 {
 	private final MappedAsyncPagingIterable<DetailedMessageBatchEntity> entities;
 	private final CradleObjectsFactory objectsFactory;
+	private int limit;
 	
-	public StoredMessageBatchAdapter(MappedAsyncPagingIterable<DetailedMessageBatchEntity> entities, CradleObjectsFactory objectsFactory)
+	public StoredMessageBatchAdapter(MappedAsyncPagingIterable<DetailedMessageBatchEntity> entities, 
+			CradleObjectsFactory objectsFactory, int limit)
 	{
 		this.entities = entities;
 		this.objectsFactory = objectsFactory;
+		this.limit = limit;
 	}
 
 	@Override
 	public Iterator<StoredMessageBatch> iterator()
 	{
-		return new StoredMessageBatchIterator(entities, objectsFactory);
+		return new StoredMessageBatchIterator(entities, objectsFactory, limit);
 	}
 }

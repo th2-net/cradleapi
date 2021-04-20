@@ -26,13 +26,32 @@ import java.io.IOException;
 
 public class StoredMessageBatchIterator extends ConvertingPagedIterator<StoredMessageBatch, DetailedMessageBatchEntity>
 {
-	private CradleObjectsFactory objectsFactory;
+	private final CradleObjectsFactory objectsFactory;
+	private int limit;
+	private long returnedEtities;
 	
 	public StoredMessageBatchIterator(MappedAsyncPagingIterable<DetailedMessageBatchEntity> rows,
-			CradleObjectsFactory objectsFactory)
+			CradleObjectsFactory objectsFactory, int limit)
 	{
 		super(rows);
 		this.objectsFactory = objectsFactory;
+		this.limit = limit;
+	}
+
+	@Override
+	public boolean hasNext()
+	{
+		if (limit > 0 && returnedEtities >= limit)
+			return false;
+
+		return super.hasNext();
+	}
+
+	@Override
+	public StoredMessageBatch next()
+	{
+		returnedEtities++;
+		return super.next();
 	}
 
 	@Override
@@ -47,4 +66,5 @@ public class StoredMessageBatchIterator extends ConvertingPagedIterator<StoredMe
 			throw new IOException("Error occurs while getting StoredMessageBatch",e);
 		}
 	}
+	
 }
