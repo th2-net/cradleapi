@@ -27,6 +27,7 @@ import java.util.UUID;
 
 import com.exactpro.cradle.messages.MessageToStoreBuilder;
 import com.exactpro.cradle.messages.StoredMessage;
+import com.exactpro.cradle.messages.StoredMessageMetadata;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,7 +96,9 @@ public class DetailedMessageBatchEntity extends MessageBatchEntity
 					.streamName(storedMessage.getStreamName())
 					.timestamp(storedMessage.getTimestamp())
 					.index(storedMessage.getIndex());
-			storedMessage.getMetadata().toMap().forEach(builder::metadata);
+			StoredMessageMetadata metadata = storedMessage.getMetadata();
+			if (metadata != null)
+				metadata.toMap().forEach(builder::metadata);
 			
 			messageBatch.addMessage(builder.build());
 		}
