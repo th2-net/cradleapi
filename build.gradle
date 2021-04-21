@@ -11,6 +11,11 @@ ext {
 }
 
 allprojects {
+	version = release_version
+	group   = 'com.exactpro.test'
+}
+
+subprojects {
   apply plugin: 'java-library'
   apply plugin: 'maven'
   apply plugin: 'maven-publish'
@@ -45,9 +50,7 @@ allprojects {
 	targetCompatibility = 1.8 //Java version to generate classes for.
 	compileJava.options.debugOptions.debugLevel = 'source,lines,vars' // Include debug information
 
-	version = release_version
-	group   = 'com.exactpro.test'
-	
+
 	jar {
 		manifest {
 			attributes(
@@ -158,6 +161,12 @@ nexusPublishing {
             snapshotRepositoryUrl.set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
         }
     }
+}
+
+tasks.create("listProjects") {
+  doLast {
+    subprojects.forEach { println(it.name) }
+  }
 }
 
 clean {
