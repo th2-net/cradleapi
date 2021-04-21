@@ -46,7 +46,7 @@ allprojects {
 	compileJava.options.debugOptions.debugLevel = 'source,lines,vars' // Include debug information
 
 	version = release_version
-	group   = 'com.exactpro.th2'
+	group   = 'com.exactpro.test'
 	
 	jar {
 		manifest {
@@ -67,7 +67,7 @@ allprojects {
 		withJavadocJar()
 		withSourcesJar()
 	}
-  
+
   // conditionals for publications
   tasks.withType(PublishToMavenRepository) {
       onlyIf {
@@ -100,7 +100,7 @@ allprojects {
           mavenJava(MavenPublication) {
               from(components.java)
               pom {
-                name = rootProject.name
+                name = project.name
                 packaging = 'jar'
                 description = rootProject.description
                 url = vcs_url
