@@ -68,6 +68,33 @@ allprojects {
 		withSourcesJar()
 	}
   
+  // conditionals for publications
+  tasks.withType(PublishToMavenRepository) {
+      onlyIf {
+          (repository == publishing.repositories.nexusRepository &&
+              project.hasProperty('nexus_user') &&
+              project.hasProperty('nexus_password') &&
+              project.hasProperty('nexus_url')) ||
+          (repository == publishing.repositories.sonatype &&
+              project.hasProperty('sonatypeUsername') &&
+              project.hasProperty('sonatypePassword')) ||
+          (repository == publishing.repositories.localRepo)
+      }
+  }
+  tasks.withType(Sign) {
+      onlyIf { project.hasProperty('signingKey') &&
+          project.hasProperty('signingPassword')
+      }
+  }
+  // disable running task 'initializeSonatypeStagingRepository' on a gitlab
+  tasks.whenTaskAdded {task ->
+      if(task.name.equals('initializeSonatypeStagingRepository') &&
+          !(project.hasProperty('sonatypeUsername') && project.hasProperty('sonatypePassword'))
+      ) {
+          task.enabled = false
+      }
+  }
+
   publishing {
       publications {
           mavenJava(MavenPublication) {
