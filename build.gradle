@@ -12,7 +12,7 @@ ext {
 
 allprojects {
 	version = release_version
-	group   = 'com.exactpro.test'
+	group   = 'com.exactpro.th2'
 }
 
 subprojects {
