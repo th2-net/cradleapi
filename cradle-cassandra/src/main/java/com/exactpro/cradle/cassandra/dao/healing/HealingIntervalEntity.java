@@ -33,6 +33,7 @@ import java.time.LocalTime;
 import java.util.Date;
 import java.util.UUID;
 
+import static com.exactpro.cradle.cassandra.StorageConstants.CRAWLER_TYPE;
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_END_TIME;
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_ID;
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_DATE;
@@ -40,7 +41,6 @@ import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_LA
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_LAST_UPDATE_TIME;
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_START_TIME;
 import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
-import static com.exactpro.cradle.cassandra.StorageConstants.IS_OCCUPIED;
 import static com.exactpro.cradle.cassandra.StorageConstants.RECOVERY_STATE_JSON;
 
 /**
@@ -61,13 +61,17 @@ public class HealingIntervalEntity
     @CqlName(HEALING_INTERVAL_DATE)
     private LocalDate date;
 
-    @ClusteringColumn(0)
+    //@ClusteringColumn(0)
     @CqlName(HEALING_INTERVAL_ID)
     private String healingIntervalId;
 
-    @ClusteringColumn(1)
+    @ClusteringColumn(0)
     @CqlName(HEALING_INTERVAL_START_TIME)
     private LocalTime startTime;
+
+    @ClusteringColumn(1)
+    @CqlName(CRAWLER_TYPE)
+    private String crawlerType;
 
     @CqlName(HEALING_INTERVAL_END_TIME)
     private LocalTime endTime;
@@ -81,9 +85,6 @@ public class HealingIntervalEntity
     @CqlName(RECOVERY_STATE_JSON)
     private String recoveryStateJson;
 
-    @CqlName(IS_OCCUPIED)
-    private boolean occupied;
-
     public HealingIntervalEntity()
     {
     }
@@ -96,14 +97,13 @@ public class HealingIntervalEntity
         this.date = interval.getDate();
         this.lastUpdateTime = interval.getLastUpdateTime();
         this.lastUpdateDate = interval.getLastUpdateDate();
+        this.crawlerType = interval.getCrawlerType();
 
         try {
             this.recoveryStateJson = mapper.writeValueAsString(interval.getRecoveryState());
         } catch (JsonProcessingException e) {
             logger.error("Error while converting recovery state to JSON format", e);
         }
-
-        this.occupied = interval.isOccupied();
 
         this.instanceId = instanceId;
     }
@@ -146,12 +146,12 @@ public class HealingIntervalEntity
 
     public void setRecoveryStateJson(String recoveryStateJson) { this.recoveryStateJson = recoveryStateJson; }
 
-    public boolean isOccupied() { return occupied; }
+    public String getCrawlerType() { return crawlerType; }
 
-    public void setOccupied(boolean occupied) { this.occupied = occupied; }
+    public void setCrawlerType(String crawlerType) { this.crawlerType = crawlerType; }
 
     public HealingInterval asHealingInterval() throws IOException {
         return new HealingInterval(this.healingIntervalId, this.startTime, this.endTime, this.date,
-                mapper.readValue(recoveryStateJson, RecoveryState.class), this.getLastUpdateDate(), this.getLastUpdateTime());
+                mapper.readValue(recoveryStateJson, RecoveryState.class), this.getLastUpdateDate(), this.getLastUpdateTime(), this.crawlerType);
     }
 }

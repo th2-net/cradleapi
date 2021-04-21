@@ -31,10 +31,10 @@ public class HealingInterval
     private final RecoveryState recoveryState;
     private final LocalDate lastUpdateDate;
     private final LocalTime lastUpdateTime;
-    private final boolean occupied;
+    private final String crawlerType;
 
     public HealingInterval(String id, LocalTime startTime, LocalTime endTime, LocalDate date,
-                           RecoveryState recoveryState, LocalDate lastUpdateDate, LocalTime lastUpdateTime)
+                           RecoveryState recoveryState, LocalDate lastUpdateDate, LocalTime lastUpdateTime, String crawlerType)
     {
         this.id = id;
         this.startTime = startTime;
@@ -43,11 +43,11 @@ public class HealingInterval
         this.recoveryState = recoveryState;
         this.lastUpdateDate = lastUpdateDate;
         this.lastUpdateTime = lastUpdateTime;
-        this.occupied = false;
+        this.crawlerType = crawlerType;
     }
 
     public HealingInterval(String id, LocalTime startTime, LocalTime endTime,
-                           LocalDate date, RecoveryState recoveryState)
+                           LocalDate date, RecoveryState recoveryState, String crawlerType)
     {
         this.id = id;
         this.startTime = startTime;
@@ -56,7 +56,7 @@ public class HealingInterval
         this.recoveryState = recoveryState;
         this.lastUpdateDate = LocalDate.now();
         this.lastUpdateTime = LocalTime.now();
-        this.occupied = false;
+        this.crawlerType = crawlerType;
     }
 
     public String getId() { return id; }
@@ -73,7 +73,7 @@ public class HealingInterval
 
     public LocalTime getLastUpdateTime() { return lastUpdateTime; }
 
-    public boolean isOccupied() { return occupied; }
+    public String getCrawlerType() { return crawlerType; }
 
     @Override
     public String toString()
@@ -86,7 +86,6 @@ public class HealingInterval
                 .append("endTime=").append(endTime).append(",").append(CompressionUtils.EOL)
                 .append("lastUpdateDate=").append(lastUpdateDate).append(",").append(CompressionUtils.EOL)
                 .append("lastUpdateTime=").append(lastUpdateTime).append(",").append(CompressionUtils.EOL)
-                .append("occupied").append(occupied).append(",").append(CompressionUtils.EOL)
                 .append(recoveryState.toString()).append(CompressionUtils.EOL)
                 .append("}").toString();
     }

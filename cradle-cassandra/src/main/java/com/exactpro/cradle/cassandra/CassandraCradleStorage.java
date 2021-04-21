@@ -1006,11 +1006,11 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Iterable<HealingInterval> doGetHealingIntervals(LocalDate date, LocalTime from) throws IOException
+	protected Iterable<HealingInterval> doGetHealingIntervals(LocalDate date, LocalTime from, String crawlerType) throws IOException
 	{
 		try
 		{
-			return doGetHealingIntervalsAsync(date, from).get();
+			return doGetHealingIntervalsAsync(date, from, crawlerType).get();
 		}
 		catch (Exception e)
 		{
@@ -1019,10 +1019,10 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<HealingInterval>> doGetHealingIntervalsAsync(LocalDate date, LocalTime from)
+	protected CompletableFuture<Iterable<HealingInterval>> doGetHealingIntervalsAsync(LocalDate date, LocalTime from, String crawlerType)
 	{
 		CompletableFuture<MappedAsyncPagingIterable<HealingIntervalEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<HealingIntervalEntity>>(semaphore)
-				.getFuture(() -> ops.getHealingIntervalOperator().getHealingIntervals(instanceUuid, date, from, readAttrs));
+				.getFuture(() -> ops.getHealingIntervalOperator().getHealingIntervals(instanceUuid, date, from, crawlerType, readAttrs));
 
 		return future.thenApply(entities -> {
 			try
@@ -1037,23 +1037,23 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected void doOccupyInterval(String healingIntervalId, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, boolean isOccupied) throws IOException
+	protected boolean doSetLastUpdateTimeAndDate(LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, LocalTime lastUpdateTime, LocalDate lastUpdateDate, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerType) throws IOException
 	{
 		try
 		{
-			doOccupyIntervalAsync(healingIntervalId, healingIntervalStartDate, healingIntervalStartTime, isOccupied).get();
+			return doSetLastUpdateTimeAndDateAsync(healingIntervalStartDate, healingIntervalStartTime, lastUpdateTime, lastUpdateDate, previousLastUpdateTime, previousLastUpdateDate, crawlerType).get();
 		}
 		catch (Exception e)
 		{
-			throw new IOException("Error while occupying healing interval "+healingIntervalId, e);
+			throw new IOException("Error while occupying healing interval with start time "+healingIntervalStartTime, e);
 		}
 	}
 
 	@Override
-	protected CompletableFuture<Void> doOccupyIntervalAsync(String healingIntervalId, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, boolean isOccupied)
+	protected CompletableFuture<Boolean> doSetLastUpdateTimeAndDateAsync(LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, LocalTime lastUpdateTime, LocalDate lastUpdateDate, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerType)
 	{
 		CompletableFuture<AsyncResultSet> future = new AsyncOperator<AsyncResultSet>(semaphore)
-				.getFuture(() -> ops.getHealingIntervalOperator().occupyHealingInterval(instanceUuid, healingIntervalStartDate, healingIntervalId, healingIntervalStartTime, isOccupied));
-		return future.thenAccept(e -> {});
+				.getFuture(() -> ops.getHealingIntervalOperator().setLastUpdateTimeAndDate(instanceUuid, healingIntervalStartDate, healingIntervalStartTime, lastUpdateTime, lastUpdateDate, previousLastUpdateTime, previousLastUpdateDate, crawlerType, writeAttrs));
+		return future.thenApply(AsyncResultSet::wasApplied);
 	}
 }

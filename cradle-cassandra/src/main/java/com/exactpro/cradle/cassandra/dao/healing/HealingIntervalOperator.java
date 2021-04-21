@@ -29,21 +29,22 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
+import static com.exactpro.cradle.cassandra.StorageConstants.CRAWLER_TYPE;
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_DATE;
-import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_ID;
+import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_LAST_UPDATE_DATE;
+import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_LAST_UPDATE_TIME;
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_START_TIME;
 import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
-import static com.exactpro.cradle.cassandra.StorageConstants.IS_OCCUPIED;
 
 @Dao
 public interface HealingIntervalOperator
 {
-    @Insert
+    @Insert(ifNotExists = true)
     CompletableFuture<HealingIntervalEntity> writeHealingInterval(HealingIntervalEntity healingIntervalEntity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-    @Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+HEALING_INTERVAL_DATE+"=:healingIntervalStartDate AND "+HEALING_INTERVAL_START_TIME+">=:healingIntervalStartTime")
-    CompletableFuture<MappedAsyncPagingIterable<HealingIntervalEntity>> getHealingIntervals(UUID instanceId, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+    @Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+HEALING_INTERVAL_DATE+"=:healingIntervalStartDate AND "+CRAWLER_TYPE+"=:crawlerType AND "+HEALING_INTERVAL_START_TIME+">=:healingIntervalStartTime")
+    CompletableFuture<MappedAsyncPagingIterable<HealingIntervalEntity>> getHealingIntervals(UUID instanceId, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String crawlerType, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-    @Query("UPDATE ${qualifiedTableId} SET "+IS_OCCUPIED+"=:isOccupied WHERE "+INSTANCE_ID+"=:instanceId AND "+HEALING_INTERVAL_DATE+"=:healingIntervalStartDate AND "+HEALING_INTERVAL_ID+"=:healingIntervalId AND "+HEALING_INTERVAL_START_TIME+"=:healingIntervalStartTime")
-    CompletableFuture<AsyncResultSet> occupyHealingInterval(UUID instanceId, LocalDate healingIntervalStartDate, String healingIntervalId, LocalTime healingIntervalStartTime, boolean isOccupied);
+    @Query("UPDATE ${qualifiedTableId} SET "+HEALING_INTERVAL_LAST_UPDATE_TIME+"=:lastUpdateTime, "+HEALING_INTERVAL_LAST_UPDATE_DATE+"=:lastUpdateDate WHERE "+INSTANCE_ID+"=:instanceId AND "+HEALING_INTERVAL_DATE+"=:healingIntervalStartDate AND "+CRAWLER_TYPE+"=:crawlerType AND "+HEALING_INTERVAL_START_TIME+"=:healingIntervalStartTime IF "+HEALING_INTERVAL_LAST_UPDATE_TIME+"=:previousLastUpdateTime AND "+HEALING_INTERVAL_LAST_UPDATE_DATE+"=:previousLastUpdateDate")
+    CompletableFuture<AsyncResultSet> setLastUpdateTimeAndDate(UUID instanceId, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, LocalTime lastUpdateTime, LocalDate lastUpdateDate, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerType, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

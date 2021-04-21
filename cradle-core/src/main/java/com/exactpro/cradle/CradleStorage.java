@@ -97,10 +97,10 @@ public abstract class CradleStorage
 	protected abstract Collection<Instant> doGetTestEventsDates(StoredTestEventId parentId) throws IOException;
 	protected abstract void doStoreHealingInterval(HealingInterval healingInterval) throws IOException;
 	protected abstract CompletableFuture<Void> doStoreHealingIntervalAsync(HealingInterval healingInterval);
-	protected abstract Iterable<HealingInterval> doGetHealingIntervals(LocalDate date, LocalTime from) throws IOException;
-	protected abstract CompletableFuture<Iterable<HealingInterval>> doGetHealingIntervalsAsync(LocalDate date, LocalTime from);
-	protected abstract void doOccupyInterval(String healingIntervalId, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, boolean isOccupied) throws IOException;
-	protected abstract CompletableFuture<Void> doOccupyIntervalAsync(String healingIntervalId, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, boolean isOccupied);
+	protected abstract Iterable<HealingInterval> doGetHealingIntervals(LocalDate date, LocalTime from, String crawlerType) throws IOException;
+	protected abstract CompletableFuture<Iterable<HealingInterval>> doGetHealingIntervalsAsync(LocalDate date, LocalTime from, String crawlerType);
+	protected abstract boolean doSetLastUpdateTimeAndDate(LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, LocalTime lastUpdateTime, LocalDate lastUpdateDate, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerType) throws IOException;
+	protected abstract CompletableFuture<Boolean> doSetLastUpdateTimeAndDateAsync(LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, LocalTime lastUpdateTime, LocalDate lastUpdateDate, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerType);
 	
 	public abstract CradleObjectsFactory getObjectsFactory();
 	
@@ -860,10 +860,10 @@ public abstract class CradleStorage
 	 * @param from time from which intervals are being searched
 	 * @return iterable of healing intervals
 	 */
-	public final Iterable<HealingInterval> getHealingIntervals(LocalDate date, LocalTime from) throws IOException
+	public final Iterable<HealingInterval> getHealingIntervals(LocalDate date, LocalTime from, String crawlerType) throws IOException
 	{
 		logger.debug("Getting healing intervals date: {}, from: {}", date, from);
-		Iterable<HealingInterval> result = doGetHealingIntervals(date, from);
+		Iterable<HealingInterval> result = doGetHealingIntervals(date, from, crawlerType);
 
 		if (result == null)
 			throw new IOException("Interval date: "+date+", from: "+from+" is not found");
@@ -878,10 +878,10 @@ public abstract class CradleStorage
 	 * @param from time from which intervals are being searched
 	 * @return future to get know if obtaining was successful
 	 */
-	public final CompletableFuture<Iterable<HealingInterval>> getHealingIntervalsAsync(LocalDate date, LocalTime from)
+	public final CompletableFuture<Iterable<HealingInterval>> getHealingIntervalsAsync(LocalDate date, LocalTime from, String crawlerType)
 	{
 		logger.debug("Asynchronously getting interval date: {}, from: {}", date, from);
-		CompletableFuture<Iterable<HealingInterval>> result = doGetHealingIntervalsAsync(date, from)
+		CompletableFuture<Iterable<HealingInterval>> result = doGetHealingIntervalsAsync(date, from, crawlerType)
 				.whenComplete((r, error) -> {
 					if (error != null)
 						logger.error("Error while getting healing intervals date: "+date+", from: "+from+" asynchronously", error);
@@ -893,36 +893,50 @@ public abstract class CradleStorage
 
 	/**
 	 *
-	 * @param healingIntervalId
 	 * @param healingIntervalStartDate
 	 * @param healingIntervalStartTime
-	 * @param isOccupied
+	 * @param lastUpdateTime
+	 * @param lastUpdateDate
+	 * @param previousLastUpdateTime
+	 * @param previousLastUpdateDate
+	 * @param crawlerType
+	 * @return
 	 * @throws IOException
 	 */
-	public final void occupyInterval(String healingIntervalId, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, boolean isOccupied) throws IOException
+	public final boolean setLastUpdateTimeAndDate(LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, LocalTime lastUpdateTime, LocalDate lastUpdateDate, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerType) throws IOException
 	{
-		logger.debug("Occupying interval: {}", healingIntervalId);
-		doOccupyInterval(healingIntervalId, healingIntervalStartDate, healingIntervalStartTime, isOccupied);
-		logger.debug("Occupied interval: {}", healingIntervalId);
+		logger.debug("Updated interval with start time: {}, date: {}", healingIntervalStartTime, healingIntervalStartDate);
+		boolean result = this.doSetLastUpdateTimeAndDate(healingIntervalStartDate, healingIntervalStartTime, lastUpdateTime, lastUpdateDate, previousLastUpdateTime, previousLastUpdateDate, crawlerType);
+
+		if (result) {
+			return true;
+		}
+		else {
+			logger.debug("Updated interval with start time: {}, date: {}", healingIntervalStartTime, healingIntervalStartDate);
+			return false;
+		}
 	}
 
 	/**
 	 *
-	 * @param healingIntervalId
 	 * @param healingIntervalStartDate
 	 * @param healingIntervalStartTime
-	 * @param isOccupied
+	 * @param lastUpdateTime
+	 * @param lastUpdateDate
+	 * @param previousLastUpdateTime
+	 * @param previousLastUpdateDate
+	 * @param crawlerType
 	 * @return
 	 */
-	public final CompletableFuture<Void> occupyIntervalAsync(String healingIntervalId, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, boolean isOccupied)
+	public final CompletableFuture<Boolean> setLastUpdateTimeAndDateAsync(LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, LocalTime lastUpdateTime, LocalDate lastUpdateDate, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerType)
 	{
-		logger.debug("Asynchronously occupying interval: {}", healingIntervalId);
-		CompletableFuture<Void> result = doOccupyIntervalAsync(healingIntervalId, healingIntervalStartDate, healingIntervalStartTime,  isOccupied)
+		logger.debug("Asynchronously updating interval healingIntervalStartTime: {}", healingIntervalStartTime);
+		CompletableFuture<Boolean> result = doSetLastUpdateTimeAndDateAsync(healingIntervalStartDate, healingIntervalStartTime, lastUpdateTime, lastUpdateDate, previousLastUpdateTime, previousLastUpdateDate, crawlerType)
 				.whenComplete((r, error) -> {
 					if (error != null)
-						logger.error("Error while occupying healing interval "+healingIntervalId);
+						logger.error("Error while occupying healing interval healingIntervalStartTime "+healingIntervalStartTime);
 					else
-						logger.debug("Healing interval {} occupied: {}", healingIntervalId, isOccupied);
+						logger.debug("Healing interval healingIntervalStartTime {} updated", healingIntervalStartTime);
 				});
 		return result;
 	}

@@ -308,12 +308,12 @@ public class TablesCreator
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
 				.withPartitionKey(HEALING_INTERVAL_DATE, DataTypes.DATE)
-				.withClusteringColumn(HEALING_INTERVAL_ID, DataTypes.TEXT)
+				.withColumn(HEALING_INTERVAL_ID, DataTypes.TEXT)
 				.withClusteringColumn(HEALING_INTERVAL_START_TIME, DataTypes.TIME)
 				.withColumn(HEALING_INTERVAL_END_TIME, DataTypes.TIME)
 				.withColumn(HEALING_INTERVAL_LAST_UPDATE_DATE, DataTypes.DATE)
 				.withColumn(HEALING_INTERVAL_LAST_UPDATE_TIME, DataTypes.TIME)
-				.withColumn(IS_OCCUPIED, DataTypes.BOOLEAN)
+				.withClusteringColumn(CRAWLER_TYPE, DataTypes.TEXT)
 				.withColumn(RECOVERY_STATE_JSON, DataTypes.TEXT);
 
 		exec.executeQuery(create.asCql(), true);

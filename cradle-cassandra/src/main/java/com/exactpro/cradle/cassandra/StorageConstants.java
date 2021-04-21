@@ -62,7 +62,7 @@ public class StorageConstants
 			HEALING_INTERVAL_DATE = "healing_interval_start_date",
 			HEALING_INTERVAL_LAST_UPDATE_TIME = "healing_interval_last_update_time",
 			HEALING_INTERVAL_LAST_UPDATE_DATE = "healing_interval_last_update_date",
-			IS_OCCUPIED = "healing_interval_occupied",
+			CRAWLER_TYPE = "crawler_type",
 			ROOT = "root",
 			PARENT_ID = "parent_id";
 }
