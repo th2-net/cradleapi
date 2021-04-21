@@ -18,13 +18,11 @@ package com.exactpro.cradle.cassandra;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
-import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.datastax.oss.driver.api.querybuilder.insert.Insert;
-import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.CradleObjectsFactory;
 import com.exactpro.cradle.CradleStorage;
@@ -36,31 +34,21 @@ import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
-import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.messages.StreamEntity;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageEntity;
-import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.DetailedTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventDateEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildDateEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenDatesOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventOperator;
-import com.exactpro.cradle.cassandra.iterators.MessagesIteratorAdapter;
-import com.exactpro.cradle.cassandra.iterators.RootTestEventsMetadataIteratorAdapter;
-import com.exactpro.cradle.cassandra.iterators.TestEventChildrenMetadataIteratorAdapter;
-import com.exactpro.cradle.cassandra.iterators.TimeTestEventsMetadataIteratorAdapter;
+import com.exactpro.cradle.cassandra.iterators.*;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
@@ -75,7 +63,6 @@ import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.MessageUtils;
-import com.exactpro.cradle.utils.TimeUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,7 +80,6 @@ import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
@@ -435,15 +421,46 @@ public class CassandraCradleStorage extends CradleStorage
 	protected StoredMessageId doGetNearestMessageId(String streamName, Direction direction, Instant timestamp,
 			TimeRelation timeRelation) throws IOException
 	{
-		LocalDateTime messageDateTime = LocalDateTime.ofInstant(timestamp, TIMEZONE_OFFSET);
-		TimeMessageEntity result = timeRelation == TimeRelation.BEFORE ? 
-				ops.getTimeMessageOperator().getNearestMessageBefore(instanceUuid, streamName, messageDateTime.toLocalDate(), direction.getLabel(), 
-						messageDateTime.toLocalTime(), readAttrs) : 
-				ops.getTimeMessageOperator().getNearestMessageAfter(instanceUuid, streamName, messageDateTime.toLocalDate(), direction.getLabel(), 
-						messageDateTime.toLocalTime(), readAttrs);
-		return result != null ? result.createMessageId() : null;
+		try
+		{
+			return doGetNearestMessageIdAsync(streamName, direction, timestamp, timeRelation).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting nearest message ID", e);
+		}
 	}
-	
+
+	@Override
+	protected CompletableFuture<StoredMessageId> doGetNearestMessageIdAsync(String streamName, Direction direction,
+			Instant timestamp, TimeRelation timeRelation)
+	{
+		CompletableFuture<TimeMessageEntity> timeMessageEntityFuture =
+				readTimeMessageEntity(streamName, direction, timestamp, timeRelation);
+		return timeMessageEntityFuture.thenCompose(entity ->
+		{
+			if (entity == null)
+				return CompletableFuture.completedFuture(null);
+
+			return CompletableFuture.completedFuture(entity.createMessageId());
+		});
+	}
+
+	private CompletableFuture<TimeMessageEntity> readTimeMessageEntity(String streamName, Direction direction,
+			Instant timestamp, TimeRelation timeRelation)
+	{
+		LocalDateTime messageDateTime = LocalDateTime.ofInstant(timestamp, TIMEZONE_OFFSET);
+		CompletableFuture<TimeMessageEntity> result = timeRelation == TimeRelation.BEFORE
+				? ops.getTimeMessageOperator()
+						.getNearestMessageBefore(instanceUuid, streamName, messageDateTime.toLocalDate(),
+								direction.getLabel(), messageDateTime.toLocalTime(), readAttrs)
+				: ops.getTimeMessageOperator()
+						.getNearestMessageAfter(instanceUuid, streamName, messageDateTime.toLocalDate(),
+								direction.getLabel(), messageDateTime.toLocalTime(), readAttrs);
+
+		return result;
+	}
+
 	@Override
 	protected StoredTestEventWrapper doGetTestEvent(StoredTestEventId id) throws IOException
 	{
@@ -473,8 +490,31 @@ public class CassandraCradleStorage extends CradleStorage
 				}
 			});
 	}
-	
-	
+
+	@Override
+	protected Iterable<StoredTestEventWrapper> doGetCompleteTestEvents(Set<StoredTestEventId> ids) throws IOException
+	{
+		try
+		{
+			return doGetCompleteTestEventsAsync(ids).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Could not get test events", e);
+		}
+	}
+
+	@Override
+	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetCompleteTestEventsAsync(Set<StoredTestEventId> id)
+	{
+		CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> future =
+				new AsyncOperator<MappedAsyncPagingIterable<TestEventEntity>>(semaphore)
+						.getFuture(() -> ops.getTestEventOperator().getComplete(instanceUuid,
+								id.stream().map(StoredTestEventId::toString).collect(toList()), readAttrs));
+		
+		return future.thenApply(TestEventDataIteratorAdapter::new);
+	}
+
 	@Override
 	public TestEventsMessagesLinker getTestEventsMessagesLinker()
 	{
