@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 
+import com.exactpro.cradle.cassandra.dao.CassandraOperators;
+import com.exactpro.cradle.cassandra.dao.testevents.ITestEventMessagesEntity;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
@@ -43,15 +45,15 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 {
 	private final TestEventMessagesOperator testEventsOperator;
 	private final MessageTestEventOperator messagesOperator;
-	private final UUID instanceId;
-	private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
-	private final CassandraSemaphore semaphore;
+	protected final UUID instanceId;
+	protected final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
+	protected final CassandraSemaphore semaphore;
 	
-	public CassandraTestEventsMessagesLinker(TestEventMessagesOperator testEventsOperator, MessageTestEventOperator messagesOperator, 
+	public CassandraTestEventsMessagesLinker(CassandraOperators ops, 
 			UUID instanceId, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs, CassandraSemaphore semaphore)
 	{
-		this.testEventsOperator = testEventsOperator;
-		this.messagesOperator = messagesOperator;
+		this.testEventsOperator = ops.getTestEventMessagesOperator();
+		this.messagesOperator = ops.getMessageTestEventOperator();
 		this.instanceId = instanceId;
 		this.readAttrs = readAttrs;
 		this.semaphore = semaphore;
@@ -111,39 +113,41 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 	@Override
 	public CompletableFuture<Collection<StoredMessageId>> getMessageIdsByTestEventIdAsync(StoredTestEventId eventId)
 	{
-		CompletableFuture<MappedAsyncPagingIterable<TestEventMessagesEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<TestEventMessagesEntity>>(semaphore)
-				.getFuture(() -> testEventsOperator.getMessages(instanceId, eventId.toString(), readAttrs));
-		
-		return future.thenCompose((rs) -> {
-				PagedIterator<TestEventMessagesEntity> it = new PagedIterator<>(rs);
-				Set<StoredMessageId> ids = new HashSet<>();
-				while (it.hasNext())
-				{
-					Set<String> currentMessageIds = it.next().getMessageIds();
-					if (currentMessageIds == null)
-						continue;
-					
-					for (String cid : currentMessageIds)
-					{
-						try
-						{
-							StoredMessageId parsedId = StoredMessageId.fromString(cid);
-							ids.add(parsedId);
-						}
-						catch (CradleIdException e)
-						{
-							throw new CompletionException("Could not parse message ID from '"+cid+"'", e);
-						}
-					}
-				}
-				
-				if (ids.isEmpty())
-					ids = null;
-				
-				return CompletableFuture.completedFuture(ids);
-			});
+		CompletableFuture<MappedAsyncPagingIterable<TestEventMessagesEntity>> future =
+				new AsyncOperator<MappedAsyncPagingIterable<TestEventMessagesEntity>>(semaphore)
+						.getFuture(() -> testEventsOperator.getMessages(instanceId, eventId.toString(), readAttrs));
+
+		return future.thenCompose(rs -> getStoredMessageIdsAsync(new PagedIterator<>(rs)));
 	}
-	
+
+	protected CompletableFuture<Collection<StoredMessageId>> getStoredMessageIdsAsync(PagedIterator<? extends ITestEventMessagesEntity> it)
+	{
+		Set<StoredMessageId> ids = new HashSet<>();
+		while (it.hasNext())
+		{
+			Set<String> currentMessageIds = it.next().getMessageIds();
+			if (currentMessageIds == null)
+				continue;
+
+			for (String cid : currentMessageIds)
+			{
+				try
+				{
+					StoredMessageId parsedId = StoredMessageId.fromString(cid);
+					ids.add(parsedId);
+				}
+				catch (CradleIdException e)
+				{
+					throw new CompletionException("Could not parse message ID from '"+cid+"'", e);
+				}
+			}
+		}
+
+		if (ids.isEmpty())
+			ids = null;
+
+		return CompletableFuture.completedFuture(ids);
+	}
 	
 	@Override
 	public boolean isTestEventLinkedToMessages(StoredTestEventId eventId) throws IOException
@@ -164,20 +168,22 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 		CompletableFuture<MappedAsyncPagingIterable<TestEventMessagesEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<TestEventMessagesEntity>>(semaphore)
 				.getFuture(() -> testEventsOperator.getMessages(instanceId, eventId.toString(), readAttrs));
 		
-		return future.thenCompose((rs) -> {
-				PagedIterator<TestEventMessagesEntity> it = new PagedIterator<>(rs);
-				boolean result = false;
-				while (it.hasNext())
-				{
-					Collection<String> ids = it.next().getMessageIds();
-					if (ids != null && !ids.isEmpty())
-					{
-						result = true;
-						break;
-					}
-				}
-				return CompletableFuture.completedFuture(result);
-			});
+		return future.thenCompose(rs -> isThereLinkedMessagesAsync(new PagedIterator<>(rs)));
+	}
+
+	protected CompletableFuture<Boolean> isThereLinkedMessagesAsync(PagedIterator<? extends ITestEventMessagesEntity> it)
+	{
+		boolean result = false;
+		while (it.hasNext())
+		{
+			Collection<String> ids = it.next().getMessageIds();
+			if (ids != null && !ids.isEmpty())
+			{
+				result = true;
+				break;
+			}
+		}
+		return CompletableFuture.completedFuture(result);
 	}
 	
 	@Override

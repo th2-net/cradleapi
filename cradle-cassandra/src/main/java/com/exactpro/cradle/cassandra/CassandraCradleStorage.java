@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.datastax.oss.driver.api.querybuilder.insert.Insert;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.datastax.oss.driver.shaded.guava.common.collect.Streams;
 import com.exactpro.cradle.CradleObjectsFactory;
 import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.Direction;
@@ -90,18 +89,18 @@ public class CassandraCradleStorage extends CradleStorage
 	private Logger logger = LoggerFactory.getLogger(CassandraCradleStorage.class);
 	public static final ZoneOffset TIMEZONE_OFFSET = ZoneOffset.UTC;
 
-	private final CassandraConnection connection;
+	protected final CassandraConnection connection;
 	protected final CassandraStorageSettings settings;
-	private final CassandraSemaphore semaphore;
-	private final CradleObjectsFactory objectsFactory;
+	protected final CassandraSemaphore semaphore;
+	protected final CradleObjectsFactory objectsFactory;
 	
-	private CassandraOperators ops;
-	
-	private UUID instanceUuid;
-	private Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
+	protected CassandraOperators ops;
+
+	protected UUID instanceUuid;
+	protected Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
 			readAttrs,
 			strictReadAttrs;
-	private int resultPageSize;
+	protected int resultPageSize;
 
 	protected QueryExecutor exec;
 	
@@ -151,8 +150,7 @@ public class CassandraCradleStorage extends CradleStorage
 				logger.info("Schema creation/update skipped");
 			
 			instanceUuid = getInstanceId(instanceName);
-			CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(connection.getSession()).build();
-			ops = createOperators(dataMapper, settings);
+			ops = createOperators();
 			Duration timeout = Duration.ofMillis(settings.getTimeout());
 			writeAttrs = builder -> builder.setConsistencyLevel(settings.getWriteConsistencyLevel())
 					.setTimeout(timeout);
@@ -163,8 +161,7 @@ public class CassandraCradleStorage extends CradleStorage
 					.setTimeout(timeout)
 					.setPageSize(resultPageSize);
 			
-			testEventsMessagesLinker = new CassandraTestEventsMessagesLinker(ops.getTestEventMessagesOperator(), ops.getMessageTestEventOperator(),
-					instanceUuid, readAttrs, semaphore);
+			testEventsMessagesLinker = createTestEvetsMessagesLinker();
 			
 			return instanceUuid.toString();
 		}
@@ -173,7 +170,12 @@ public class CassandraCradleStorage extends CradleStorage
 			throw new CradleStorageException("Could not initialize storage", e);
 		}
 	}
-	
+
+	protected TestEventsMessagesLinker createTestEvetsMessagesLinker()
+	{
+		return new CassandraTestEventsMessagesLinker(ops, instanceUuid, readAttrs, semaphore);
+	}
+
 	@Override
 	protected void doDispose() throws CradleStorageException
 	{
@@ -279,12 +281,14 @@ public class CassandraCradleStorage extends CradleStorage
 			futures.add(storeEventDateInParent(event).thenAccept(r -> {}));
 		}
 		else
-		{
-			futures.add(storeRootEvent(event).thenAccept(r -> {}));
-			futures.add(storeRootEventDate(event.getStartTimestamp()).thenAccept(r -> {}));
-		}
+			futures.addAll(doStoreRootTestEvent(event));
 		
 		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+	}
+
+	protected Collection<CompletableFuture<Void>> doStoreRootTestEvent(StoredTestEvent event)
+	{
+		return Collections.singleton(storeRootEvent(event).thenAccept(r -> {}));
 	}
 	
 	@Override
@@ -631,17 +635,21 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected Collection<String> doGetStreams() throws IOException
 	{
-		return Streams.stream(ops.getStreamsOperator().getStreams(instanceUuid, readAttrs))
-				.map(StreamEntity::getStreamName)
-				.sorted()
-				.collect(toList());
+		List<String> result = new ArrayList<>();
+		for (StreamEntity entity : ops.getMessageBatchOperator().getStreams(readAttrs))
+		{
+			if (instanceUuid.equals(entity.getInstanceId()))
+				result.add(entity.getStreamName());
+		}
+		result.sort(null);
+		return result;
 	}
 	
 	@Override
 	protected Collection<Instant> doGetRootTestEventsDates() throws IOException
 	{
 		List<Instant> result = new ArrayList<>();
-		for (RootTestEventDateEntity entity : ops.getRootTestEventDatesOperator().getDates(readAttrs))
+		for (RootTestEventDateEntity entity : ops.getRootTestEventOperator().getDates(readAttrs))
 		{
 			if (instanceUuid.equals(entity.getInstanceId()))
 				result.add(entity.getStartDate().atStartOfDay(TIMEZONE_OFFSET).toInstant());
@@ -671,8 +679,9 @@ public class CassandraCradleStorage extends CradleStorage
 		new CassandraTablesCreator(exec, settings).createAll();
 	}
 	
-	protected CassandraOperators createOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings)
+	protected CassandraOperators createOperators()
 	{
+		CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(connection.getSession()).build();
 		return new CassandraOperators(dataMapper, settings);
 	}
 	
@@ -732,9 +741,9 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	
-	private CompletableFuture<Void> writeMessage(StoredMessageBatch batch, boolean rawMessage)
+	protected CompletableFuture<Void> writeMessage(StoredMessageBatch batch, boolean rawMessage)
 	{
-		CompletableFuture<DetailedMessageBatchEntity> writeMessagefuture = new AsyncOperator<DetailedMessageBatchEntity>(semaphore)
+		CompletableFuture<DetailedMessageBatchEntity> future = new AsyncOperator<DetailedMessageBatchEntity>(semaphore)
 				.getFuture(() -> {
 					DetailedMessageBatchEntity entity;
 					try
@@ -752,16 +761,7 @@ public class CassandraCradleStorage extends CradleStorage
 					MessageBatchOperator op = rawMessage ? ops.getMessageBatchOperator() : ops.getProcessedMessageBatchOperator();
 					return op.writeMessageBatch(entity, writeAttrs);
 				});
-		
-		CompletableFuture<StreamEntity> writeStreamfuture = new AsyncOperator<StreamEntity>(semaphore)
-				.getFuture(() -> {
-					logger.trace("Executing stream storing query");
-					StreamsOperator op = ops.getStreamsOperator();
-					StreamEntity stream = new StreamEntity(instanceUuid, batch.getStreamName());
-					return op.writeStream(stream, writeAttrs);
-				});
-		
-		return CompletableFuture.allOf(writeMessagefuture, writeStreamfuture);
+		return future.thenAccept(e -> {});
 	}
 	
 	private CompletableFuture<DetailedMessageBatchEntity> readMessageBatchEntity(StoredMessageId messageId, boolean rawMessage)
@@ -851,20 +851,6 @@ public class CassandraCradleStorage extends CradleStorage
 				
 				logger.trace("Executing root event storing query");
 				return ops.getRootTestEventOperator().writeTestEvent(entity, writeAttrs);
-		});
-	}
-	
-	protected CompletableFuture<RootTestEventDateEntity> storeRootEventDate(Instant startTimestamp)
-	{
-		return new AsyncOperator<RootTestEventDateEntity>(semaphore).getFuture(() ->
-		{
-			LocalDate ldt = startTimestamp == null 
-					? null 
-					: LocalDateTime.ofInstant(startTimestamp, CassandraCradleStorage.TIMEZONE_OFFSET).toLocalDate();
-			RootTestEventDateEntity entity = new RootTestEventDateEntity(instanceUuid, ldt);
-
-			logger.trace("Executing root event date storing query");
-			return ops.getRootTestEventDatesOperator().writeTestEventDate(entity, writeAttrs);
 		});
 	}
 	

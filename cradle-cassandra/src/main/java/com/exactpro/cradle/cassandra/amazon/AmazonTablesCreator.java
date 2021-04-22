@@ -18,7 +18,11 @@ package com.exactpro.cradle.cassandra.amazon;
 
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
+import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
+import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.CassandraTablesCreator;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
@@ -29,6 +33,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
+import static com.exactpro.cradle.cassandra.StorageConstants.START_DATE;
 
 public class AmazonTablesCreator extends CassandraTablesCreator
 {
@@ -162,6 +169,9 @@ public class AmazonTablesCreator extends CassandraTablesCreator
 	public void createAll() throws IOException
 	{
 		super.createAll();
+		createStreamsTable();
+		createRootTestEventsDatesTable();
+
 		waitTablesAvailability(Arrays.asList(
 				settings.getInstanceTableName(),
 				settings.getStreamsTableName(),
@@ -176,6 +186,33 @@ public class AmazonTablesCreator extends CassandraTablesCreator
 				settings.getTestEventsMessagesTableName(),
 				settings.getMessagesTestEventsTableName(),
 				settings.getRootTestEventsDatesTableName()));
+	}
+
+	private void createStreamsTable() throws IOException
+	{
+		String tableName = settings.getStreamsTableName();
+		if (isTableExists(tableName))
+			return;
+
+		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				.withPartitionKey(STREAM_NAME, DataTypes.TEXT);
+
+		createTable(create.asCql(), tableName);
+	}
+
+	private void createRootTestEventsDatesTable() throws IOException
+	{
+		String tableName = settings.getRootTestEventsDatesTableName();
+		if (isTableExists(tableName))
+			return;
+
+		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				.withClusteringColumn(START_DATE, DataTypes.DATE)
+				.withClusteringOrder(START_DATE, ClusteringOrder.ASC);
+
+		createTable(create.asCql(), tableName);
 	}
 
 	private void waitTablesAvailability(Collection<String> tablesNames) throws IOException

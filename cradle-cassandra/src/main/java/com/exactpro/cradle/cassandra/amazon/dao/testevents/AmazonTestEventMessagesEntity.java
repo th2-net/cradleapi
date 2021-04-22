@@ -14,67 +14,76 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.cassandra.dao.testevents;
+package com.exactpro.cradle.cassandra.amazon.dao.testevents;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
+import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
+import com.datastax.oss.driver.api.mapper.annotations.CqlName;
+import com.datastax.oss.driver.api.mapper.annotations.Entity;
+import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import com.exactpro.cradle.cassandra.dao.testevents.ITestEventMessagesEntity;
+import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.testevents.StoredTestEventId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
-import com.datastax.oss.driver.api.mapper.annotations.CqlName;
-import com.datastax.oss.driver.api.mapper.annotations.Entity;
-import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
-import com.exactpro.cradle.messages.StoredMessageId;
-import com.exactpro.cradle.testevents.StoredTestEventId;
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
+import static com.exactpro.cradle.cassandra.StorageConstants.MESSAGE_IDS;
 
 /**
  * Contains ID of test event linked with messages by ID
  */
 @Entity
-public class TestEventMessagesEntity implements ITestEventMessagesEntity
+public class AmazonTestEventMessagesEntity implements ITestEventMessagesEntity
 {
-	private static final Logger logger = LoggerFactory.getLogger(TestEventMessagesEntity.class);
-	
+	private static final Logger logger = LoggerFactory.getLogger(AmazonTestEventMessagesEntity.class);
+
 	@PartitionKey(0)
 	@CqlName(INSTANCE_ID)
 	private UUID instanceId;
-	
+
 	@PartitionKey(1)
 	@CqlName(TEST_EVENT_ID)
 	private String eventId;
-	
+
 	@ClusteringColumn(0)
+	@CqlName(ID)
+	private UUID id;
+
 	@CqlName(MESSAGE_IDS)
 	private Set<String> messageIds;
-	
-	
-	public TestEventMessagesEntity()
-	{
-	}
-	
-	public TestEventMessagesEntity(StoredTestEventId eventId, Set<StoredMessageId> messageIds, UUID instanceId) throws IOException
+
+
+	public AmazonTestEventMessagesEntity()
 	{
 		logger.debug("Creating entity with event-messages link");
-		
+		// Amazon Keyspaces does not support frozen data type. 
+		// In this case we cannot use messagesIds as the clustering key.
+		// Instead, we use this column as the clustering key and generate its value on every insert.
+		this.id = Uuids.timeBased();
+	}
+
+	public AmazonTestEventMessagesEntity(StoredTestEventId eventId, Set<StoredMessageId> messageIds, UUID instanceId)
+	{
+		this();
 		this.eventId = eventId.toString();
-		this.messageIds = messageIds.stream().map((id) -> id.toString()).collect(Collectors.toCollection(() -> new LinkedHashSet<>()));
+		this.messageIds = messageIds.stream().map(StoredMessageId::toString).collect(
+				Collectors.toCollection(LinkedHashSet::new));
 		this.instanceId = instanceId;
 	}
-	
-	
+
+
 	@Override
 	public UUID getInstanceId()
 	{
 		return instanceId;
 	}
-	
+
 	public void setInstanceId(UUID instanceId)
 	{
 		this.instanceId = instanceId;
@@ -86,7 +95,7 @@ public class TestEventMessagesEntity implements ITestEventMessagesEntity
 	{
 		return eventId;
 	}
-	
+
 	public void setEventId(String testEventId)
 	{
 		this.eventId = testEventId;
@@ -98,9 +107,20 @@ public class TestEventMessagesEntity implements ITestEventMessagesEntity
 	{
 		return messageIds;
 	}
-	
+
 	public void setMessageIds(Set<String> messageIds)
 	{
 		this.messageIds = messageIds;
+	}
+
+
+	public UUID getId()
+	{
+		return id;
+	}
+
+	public void setId(UUID id)
+	{
+		this.id = id;
 	}
 }

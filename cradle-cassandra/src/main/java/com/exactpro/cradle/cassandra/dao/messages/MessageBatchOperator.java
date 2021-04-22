@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,6 +78,9 @@ public interface MessageBatchOperator
 	CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> filterMessages(UUID instanceId, StoredMessageFilter filter, 
 			CassandraSemaphore semaphore, MessageBatchOperator operator,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
+	@Query("SELECT DISTINCT "+INSTANCE_ID+", "+STREAM_NAME+" from ${qualifiedTableId}")
+	PagingIterable<StreamEntity> getStreams(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
 	CompletableFuture<DetailedMessageBatchEntity> writeMessageBatch(DetailedMessageBatchEntity message, 

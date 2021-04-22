@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,10 @@
 package com.exactpro.cradle.cassandra.dao;
 
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
+import com.exactpro.cradle.cassandra.amazon.dao.testevents.RootTestEventDatesOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
-import com.exactpro.cradle.cassandra.dao.messages.StreamsOperator;
+import com.exactpro.cradle.cassandra.amazon.dao.messages.StreamsOperator;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
 
@@ -30,13 +31,12 @@ public class CassandraOperators
 	private TimeMessageOperator timeMessageOperator;
 	private TestEventOperator testEventOperator;
 	private RootTestEventOperator rootTestEventOperator;
-	private RootTestEventDatesOperator rootTestEventDatesOperator;
+	
 	private TestEventChildrenOperator testEventChildrenOperator;
 	private TimeTestEventOperator timeTestEventOperator;
 	private TestEventChildrenDatesOperator testEventChildrenDatesOperator;
 	private TestEventMessagesOperator testEventMessagesOperator;
 	private MessageTestEventOperator messageTestEventOperator;
-	private StreamsOperator streamsOperator;
 	
 	public CassandraOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings)
 	{
@@ -46,12 +46,10 @@ public class CassandraOperators
 		testEventOperator = dataMapper.testEventOperator(settings.getKeyspace(), settings.getTestEventsTableName());
 		timeTestEventOperator = dataMapper.timeTestEventOperator(settings.getKeyspace(), settings.getTimeTestEventsTableName());
 		rootTestEventOperator = dataMapper.rootTestEventOperator(settings.getKeyspace(), settings.getRootTestEventsTableName());
-		rootTestEventDatesOperator = dataMapper.rootTestEventDatesOperator(settings.getKeyspace(), settings.getRootTestEventsDatesTableName());
 		testEventChildrenOperator = dataMapper.testEventChildrenOperator(settings.getKeyspace(), settings.getTestEventsChildrenTableName());
 		testEventChildrenDatesOperator = dataMapper.testEventChildrenDatesOperator(settings.getKeyspace(), settings.getTestEventsChildrenDatesTableName());
 		testEventMessagesOperator = dataMapper.testEventMessagesOperator(settings.getKeyspace(), settings.getTestEventsMessagesTableName());
 		messageTestEventOperator = dataMapper.messageTestEventOperator(settings.getKeyspace(), settings.getMessagesTestEventsTableName());
-		streamsOperator = dataMapper.streamsOperator(settings.getKeyspace(), settings.getStreamsTableName());
 	}
 	
 	
@@ -80,11 +78,6 @@ public class CassandraOperators
 		return rootTestEventOperator;
 	}
 
-	public RootTestEventDatesOperator getRootTestEventDatesOperator()
-	{
-		return rootTestEventDatesOperator;
-	}
-
 	public TestEventChildrenOperator getTestEventChildrenOperator()
 	{
 		return testEventChildrenOperator;
@@ -108,10 +101,5 @@ public class CassandraOperators
 	public MessageTestEventOperator getMessageTestEventOperator()
 	{
 		return messageTestEventOperator;
-	}
-
-	public StreamsOperator getStreamsOperator()
-	{
-		return streamsOperator;
 	}
 }

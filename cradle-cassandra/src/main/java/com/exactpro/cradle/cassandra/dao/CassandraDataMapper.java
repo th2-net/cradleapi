@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import com.datastax.oss.driver.api.mapper.annotations.DaoFactory;
 import com.datastax.oss.driver.api.mapper.annotations.DaoKeyspace;
 import com.datastax.oss.driver.api.mapper.annotations.DaoTable;
 import com.datastax.oss.driver.api.mapper.annotations.Mapper;
+import com.exactpro.cradle.cassandra.amazon.dao.messages.StreamsOperator;
+import com.exactpro.cradle.cassandra.amazon.dao.testevents.RootTestEventDatesOperator;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
 
@@ -28,9 +30,6 @@ public interface CassandraDataMapper
 {
 	@DaoFactory
 	MessageBatchOperator messageBatchOperator(@DaoKeyspace String keyspace, @DaoTable String messagesTable);
-
-	@DaoFactory
-	StreamsOperator streamsOperator(@DaoKeyspace String keyspace, @DaoTable String streamsTable);
 	
 	@DaoFactory
 	MessageBatchConverter messageBatchConverter();
@@ -46,9 +45,6 @@ public interface CassandraDataMapper
 	
 	@DaoFactory
 	RootTestEventOperator rootTestEventOperator(@DaoKeyspace String keyspace, @DaoTable String rootTestEventsTable);
-
-	@DaoFactory
-	RootTestEventDatesOperator rootTestEventDatesOperator(@DaoKeyspace String keyspace, @DaoTable String rootTestEventsDatesTable);
 	
 	@DaoFactory
 	TestEventChildrenOperator testEventChildrenOperator(@DaoKeyspace String keyspace, @DaoTable String testEventsChildrenTable);

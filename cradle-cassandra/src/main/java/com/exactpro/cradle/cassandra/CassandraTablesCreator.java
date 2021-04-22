@@ -62,27 +62,6 @@ public class CassandraTablesCreator
 		createTestEventsChildrenDatesTable();
 		createTestEventsMessagesTable();
 		createMessagesTestEventsTable();
-		createStreamsTable();
-		createRootTestEventsDatesTable();
-	}
-
-	public void createRootTestEventsDatesTable() throws IOException
-	{
-		createRootTestEventsDatesTable(settings.getRootTestEventsDatesTableName());
-	}
-
-	protected void createRootTestEventsDatesTable(String tableName) throws IOException
-	{
-		if (isTableExists(tableName))
-			return;
-
-		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withClusteringColumn(START_DATE, DataTypes.DATE)
-				.withClusteringOrder(START_DATE, ClusteringOrder.ASC);
-
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
 	}
 
 	public void createKeyspace() throws IOException
@@ -131,11 +110,6 @@ public class CassandraTablesCreator
 	public void createMessagesTable() throws IOException
 	{
 		createMessagesTable(settings.getMessagesTableName());
-	}
-	
-	public void createStreamsTable() throws IOException
-	{
-		createStreamsTable(settings.getStreamsTableName());
 	}
 
 	public void createProcessedMessagesTable() throws IOException
@@ -356,18 +330,6 @@ public class CassandraTablesCreator
 		createTable(create.asCql(), tableName);
 	}
 
-	private void createStreamsTable(String tableName) throws IOException
-	{
-		if (isTableExists(tableName))
-			return;
-		
-		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(STREAM_NAME, DataTypes.TEXT);
-
-		createTable(create.asCql(), tableName);
-	}
-
 	protected boolean isTableExists(String tableName) throws IOException
 	{
 		return keyspaceMetadata.getTable(tableName).isPresent();
@@ -383,7 +345,7 @@ public class CassandraTablesCreator
 		return keyspaceMetadata.getTable(tableName).get().getColumn(EVENT_BATCH_METADATA).isPresent();
 	}
 
-	private void createTable(String createQuery, String tableName) throws IOException
+	protected void createTable(String createQuery, String tableName) throws IOException
 	{
 		exec.executeQuery(createQuery, true);
 		logger.info("Table '{}' has been created", tableName);

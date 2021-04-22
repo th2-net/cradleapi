@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,4 +51,7 @@ public interface RootTestEventOperator
 			START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:eventId")
 	CompletableFuture<AsyncResultSet> updateStatus(UUID instanceId, LocalDate startDate, LocalTime startTime, String eventId, boolean success, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
+	@Query("SELECT DISTINCT "+INSTANCE_ID+", "+START_DATE+" from ${qualifiedTableId}")
+	PagingIterable<RootTestEventDateEntity> getDates(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }
