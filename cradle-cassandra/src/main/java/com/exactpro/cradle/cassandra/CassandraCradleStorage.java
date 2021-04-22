@@ -43,10 +43,7 @@ import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventEntity;
-import com.exactpro.cradle.cassandra.iterators.MessagesIteratorAdapter;
-import com.exactpro.cradle.cassandra.iterators.RootTestEventsMetadataIteratorAdapter;
-import com.exactpro.cradle.cassandra.iterators.TestEventChildrenMetadataIteratorAdapter;
-import com.exactpro.cradle.cassandra.iterators.TimeTestEventsMetadataIteratorAdapter;
+import com.exactpro.cradle.cassandra.iterators.*;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
@@ -235,7 +232,7 @@ public class CassandraCradleStorage extends CradleStorage
 				});
 		return future.thenAccept(e -> {});
 	}
-
+	
 	@Override
 	protected void doStoreProcessedMessageBatch(StoredMessageBatch batch) throws IOException
 	{
@@ -496,8 +493,31 @@ public class CassandraCradleStorage extends CradleStorage
 				}
 			});
 	}
-	
-	
+
+	@Override
+	protected Iterable<StoredTestEventWrapper> doGetCompleteTestEvents(Set<StoredTestEventId> ids) throws IOException
+	{
+		try
+		{
+			return doGetCompleteTestEventsAsync(ids).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Could not get test events", e);
+		}
+	}
+
+	@Override
+	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetCompleteTestEventsAsync(Set<StoredTestEventId> id)
+	{
+		CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> future =
+				new AsyncOperator<MappedAsyncPagingIterable<TestEventEntity>>(semaphore)
+						.getFuture(() -> ops.getTestEventOperator().getComplete(instanceUuid,
+								id.stream().map(StoredTestEventId::toString).collect(toList()), readAttrs));
+		
+		return future.thenApply(TestEventDataIteratorAdapter::new);
+	}
+
 	@Override
 	public TestEventsMessagesLinker getTestEventsMessagesLinker()
 	{
