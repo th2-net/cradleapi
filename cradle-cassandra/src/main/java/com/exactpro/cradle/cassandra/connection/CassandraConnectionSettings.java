@@ -38,7 +38,7 @@ public class CassandraConnectionSettings
 	private NetworkTopologyStrategy networkTopologyStrategy;
 	private int maxParallelQueries,
 			resultPageSize;
-	//Use to SSL connection
+	//Uses for SSL connection
 	private Path certificatePath;
 	private String certificateType = DEFAULT_CERTIFICATE_TYPE;
 	private String certificatePassword;
