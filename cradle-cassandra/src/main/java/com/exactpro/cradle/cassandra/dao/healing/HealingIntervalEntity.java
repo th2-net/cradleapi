@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.Date;
 import java.util.UUID;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.CRAWLER_TYPE;
@@ -69,7 +68,7 @@ public class HealingIntervalEntity
     @CqlName(HEALING_INTERVAL_START_TIME)
     private LocalTime startTime;
 
-    @ClusteringColumn(1)
+    @PartitionKey(2)
     @CqlName(CRAWLER_TYPE)
     private String crawlerType;
 

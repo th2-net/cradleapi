@@ -313,7 +313,7 @@ public class TablesCreator
 				.withColumn(HEALING_INTERVAL_END_TIME, DataTypes.TIME)
 				.withColumn(HEALING_INTERVAL_LAST_UPDATE_DATE, DataTypes.DATE)
 				.withColumn(HEALING_INTERVAL_LAST_UPDATE_TIME, DataTypes.TIME)
-				.withClusteringColumn(CRAWLER_TYPE, DataTypes.TEXT)
+				.withPartitionKey(CRAWLER_TYPE, DataTypes.TEXT)
 				.withColumn(RECOVERY_STATE_JSON, DataTypes.TEXT);
 
 		exec.executeQuery(create.asCql(), true);

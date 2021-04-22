@@ -945,7 +945,21 @@ public class CassandraCradleStorage extends CradleStorage
 		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 	}
 
-	protected CompletableFuture<Void> updateEventStatus(StoredTestEventWrapper event, boolean success)
+	@Override
+	protected void doUpdateEventStatus(StoredTestEventWrapper event, boolean success) throws IOException
+	{
+		try
+		{
+			doUpdateEventStatusAsync(event, success).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while updating status of event "+event.getId(), e);
+		}
+	}
+
+	@Override
+	protected CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEventWrapper event, boolean success)
 	{
 		String id = event.getId().toString(),
 				parentId = event.getParentId() != null ? event.getParentId().toString() : null;
@@ -974,7 +988,7 @@ public class CassandraCradleStorage extends CradleStorage
 					if (event == null || !event.isSuccess())  //Invalid event ID or event is already failed, which means that its parents are already updated
 						return CompletableFuture.completedFuture(null);
 
-					CompletableFuture<Void> update = updateEventStatus(event, false);
+					CompletableFuture<Void> update = doUpdateEventStatusAsync(event, false);
 					if (event.getParentId() != null)
 						return update.thenComposeAsync((u) -> failEventAndParents(event.getParentId()));
 					return update;
@@ -1037,11 +1051,11 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected boolean doSetLastUpdateTimeAndDate(LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, LocalTime lastUpdateTime, LocalDate lastUpdateDate, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerType) throws IOException
+	protected boolean doSetLastUpdateTimeAndDate(LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerType) throws IOException
 	{
 		try
 		{
-			return doSetLastUpdateTimeAndDateAsync(healingIntervalStartDate, healingIntervalStartTime, lastUpdateTime, lastUpdateDate, previousLastUpdateTime, previousLastUpdateDate, crawlerType).get();
+			return doSetLastUpdateTimeAndDateAsync(healingIntervalStartDate, healingIntervalStartTime, previousLastUpdateTime, previousLastUpdateDate, crawlerType).get();
 		}
 		catch (Exception e)
 		{
@@ -1050,10 +1064,10 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Boolean> doSetLastUpdateTimeAndDateAsync(LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, LocalTime lastUpdateTime, LocalDate lastUpdateDate, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerType)
+	protected CompletableFuture<Boolean> doSetLastUpdateTimeAndDateAsync(LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerType)
 	{
 		CompletableFuture<AsyncResultSet> future = new AsyncOperator<AsyncResultSet>(semaphore)
-				.getFuture(() -> ops.getHealingIntervalOperator().setLastUpdateTimeAndDate(instanceUuid, healingIntervalStartDate, healingIntervalStartTime, lastUpdateTime, lastUpdateDate, previousLastUpdateTime, previousLastUpdateDate, crawlerType, writeAttrs));
+				.getFuture(() -> ops.getHealingIntervalOperator().setLastUpdateTimeAndDate(instanceUuid, healingIntervalStartDate, healingIntervalStartTime, LocalTime.now(), previousLastUpdateTime, previousLastUpdateDate, crawlerType, writeAttrs));
 		return future.thenApply(AsyncResultSet::wasApplied);
 	}
 }
