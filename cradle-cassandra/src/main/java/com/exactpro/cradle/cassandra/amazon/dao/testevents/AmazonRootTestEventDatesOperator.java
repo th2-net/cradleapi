@@ -14,29 +14,29 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.cassandra.amazon.dao.messages;
+package com.exactpro.cradle.cassandra.amazon.dao.testevents;
 
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
-import com.exactpro.cradle.cassandra.dao.messages.StreamEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventDateEntity;
 
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
-import static com.exactpro.cradle.cassandra.StorageConstants.STREAM_NAME;
+import static com.exactpro.cradle.cassandra.StorageConstants.START_DATE;
 
 @Dao
-public interface StreamsOperator
+public interface AmazonRootTestEventDatesOperator
 {
-	@Query("SELECT "+INSTANCE_ID+", "+STREAM_NAME+" from ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId ALLOW FILTERING")
-	PagingIterable<StreamEntity> getStreams(UUID instanceId,Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	@Query("SELECT "+INSTANCE_ID+", "+START_DATE+" from ${qualifiedTableId}")
+	PagingIterable<RootTestEventDateEntity> getDates(
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Insert
-	CompletableFuture<StreamEntity> writeStream(StreamEntity stream,
+	CompletableFuture<RootTestEventDateEntity> writeTestEventDate(RootTestEventDateEntity rootTestEvent, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

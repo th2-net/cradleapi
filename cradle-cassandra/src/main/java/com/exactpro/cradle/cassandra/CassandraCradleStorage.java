@@ -656,7 +656,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected Collection<String> doGetStreams() throws IOException
 	{
 		List<String> result = new ArrayList<>();
-		for (StreamEntity entity : ops.getMessageBatchOperator().getStreams(readAttrs))
+		for (StreamEntity entity : ops.getStreamsOperator().getStreams(readAttrs))
 		{
 			if (instanceUuid.equals(entity.getInstanceId()))
 				result.add(entity.getStreamName());
@@ -669,7 +669,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected Collection<Instant> doGetRootTestEventsDates() throws IOException
 	{
 		List<Instant> result = new ArrayList<>();
-		for (RootTestEventDateEntity entity : ops.getRootTestEventOperator().getDates(readAttrs))
+		for (RootTestEventDateEntity entity : ops.getRootTestEventDatesOperator().getDates(readAttrs))
 		{
 			if (instanceUuid.equals(entity.getInstanceId()))
 				result.add(entity.getStartDate().atStartOfDay(TIMEZONE_OFFSET).toInstant());

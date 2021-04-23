@@ -17,34 +17,52 @@
 package com.exactpro.cradle.cassandra.amazon.dao;
 
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
-import com.exactpro.cradle.cassandra.amazon.dao.messages.StreamsOperator;
+import com.exactpro.cradle.cassandra.amazon.dao.messages.AmazonStreamsOperator;
 import com.exactpro.cradle.cassandra.amazon.dao.testevents.AmazonTestEventMessagesOperator;
-import com.exactpro.cradle.cassandra.amazon.dao.testevents.RootTestEventDatesOperator;
+import com.exactpro.cradle.cassandra.amazon.dao.testevents.AmazonRootTestEventDatesOperator;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 
 public class AmazonOperators extends CassandraOperators
 {
-	private StreamsOperator streamsOperator;
-	private RootTestEventDatesOperator rootTestEventDatesOperator;
+	private AmazonStreamsOperator amazonStreamsOperator;
+	private AmazonRootTestEventDatesOperator amazonRootTestEventDatesOperator;
 	private AmazonTestEventMessagesOperator amazonTestEventMessagesOperator;
 
 	public AmazonOperators(CassandraDataMapper cassandraDataMapper, AmazonDataMapper amazonDataMapper, CassandraStorageSettings settings)
 	{
 		super(cassandraDataMapper, settings);
-		streamsOperator = amazonDataMapper.streamsOperator(settings.getKeyspace(), settings.getStreamsTableName());
-		rootTestEventDatesOperator = amazonDataMapper.rootTestEventDatesOperator(settings.getKeyspace(), settings.getRootTestEventsDatesTableName());
+		amazonStreamsOperator = amazonDataMapper.streamsOperator(settings.getKeyspace(), settings.getStreamsTableName());
+		amazonRootTestEventDatesOperator = amazonDataMapper.rootTestEventDatesOperator(settings.getKeyspace(), settings.getRootTestEventsDatesTableName());
 		amazonTestEventMessagesOperator = amazonDataMapper.amazonTestEventMessagesOperator(settings.getKeyspace(), settings.getTestEventsMessagesTableName());
 	}
 
-	public StreamsOperator getStreamsOperator()
+	@Override
+	protected void initStreamsOperator(CassandraDataMapper dataMapper, CassandraStorageSettings settings)
 	{
-		return streamsOperator;
+		// Do not init the StreamsOperator in the parent class
 	}
 
-	public RootTestEventDatesOperator getRootTestEventDatesOperator()
+	@Override
+	protected void initRootTestEventDatesOperator(CassandraDataMapper dataMapper, CassandraStorageSettings settings)
 	{
-		return rootTestEventDatesOperator;
+		// Do not init the RootTestEventDatesOperator in the parent class
+	}
+
+	@Override
+	protected void initTestEventMessagesOperator(CassandraDataMapper dataMapper, CassandraStorageSettings settings)
+	{
+		// Do not init the TestEventMessagesOperator in the parent class
+	}
+
+	public AmazonStreamsOperator getAmazonStreamsOperator()
+	{
+		return amazonStreamsOperator;
+	}
+
+	public AmazonRootTestEventDatesOperator getAmazonRootTestEventDatesOperator()
+	{
+		return amazonRootTestEventDatesOperator;
 	}
 
 	public AmazonTestEventMessagesOperator getAmazonTestEventMessagesOperator()

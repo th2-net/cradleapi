@@ -20,8 +20,6 @@ import com.datastax.oss.driver.api.mapper.annotations.DaoFactory;
 import com.datastax.oss.driver.api.mapper.annotations.DaoKeyspace;
 import com.datastax.oss.driver.api.mapper.annotations.DaoTable;
 import com.datastax.oss.driver.api.mapper.annotations.Mapper;
-import com.exactpro.cradle.cassandra.amazon.dao.messages.StreamsOperator;
-import com.exactpro.cradle.cassandra.amazon.dao.testevents.RootTestEventDatesOperator;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
 
@@ -30,6 +28,9 @@ public interface CassandraDataMapper
 {
 	@DaoFactory
 	MessageBatchOperator messageBatchOperator(@DaoKeyspace String keyspace, @DaoTable String messagesTable);
+
+	@DaoFactory
+	StreamsOperator streamsOperator(@DaoKeyspace String keyspace, @DaoTable String messagesTable);
 	
 	@DaoFactory
 	MessageBatchConverter messageBatchConverter();
@@ -45,7 +46,10 @@ public interface CassandraDataMapper
 	
 	@DaoFactory
 	RootTestEventOperator rootTestEventOperator(@DaoKeyspace String keyspace, @DaoTable String rootTestEventsTable);
-	
+
+	@DaoFactory
+	RootTestEventDatesOperator rootTestEventDatesOperator(@DaoKeyspace String keyspace, @DaoTable String rootTestEventsTable);
+
 	@DaoFactory
 	TestEventChildrenOperator testEventChildrenOperator(@DaoKeyspace String keyspace, @DaoTable String testEventsChildrenTable);
 	

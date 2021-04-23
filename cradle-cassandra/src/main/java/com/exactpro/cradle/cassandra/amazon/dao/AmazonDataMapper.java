@@ -20,18 +20,18 @@ import com.datastax.oss.driver.api.mapper.annotations.DaoFactory;
 import com.datastax.oss.driver.api.mapper.annotations.DaoKeyspace;
 import com.datastax.oss.driver.api.mapper.annotations.DaoTable;
 import com.datastax.oss.driver.api.mapper.annotations.Mapper;
-import com.exactpro.cradle.cassandra.amazon.dao.messages.StreamsOperator;
+import com.exactpro.cradle.cassandra.amazon.dao.messages.AmazonStreamsOperator;
 import com.exactpro.cradle.cassandra.amazon.dao.testevents.AmazonTestEventMessagesOperator;
-import com.exactpro.cradle.cassandra.amazon.dao.testevents.RootTestEventDatesOperator;
+import com.exactpro.cradle.cassandra.amazon.dao.testevents.AmazonRootTestEventDatesOperator;
 
 @Mapper
 public interface AmazonDataMapper
 {
 	@DaoFactory
-	StreamsOperator streamsOperator(@DaoKeyspace String keyspace, @DaoTable String streamsTable);
+	AmazonStreamsOperator streamsOperator(@DaoKeyspace String keyspace, @DaoTable String streamsTable);
 
 	@DaoFactory
-	RootTestEventDatesOperator rootTestEventDatesOperator(@DaoKeyspace String keyspace, @DaoTable String rootTestEventsDatesTable);
+	AmazonRootTestEventDatesOperator rootTestEventDatesOperator(@DaoKeyspace String keyspace, @DaoTable String rootTestEventsDatesTable);
 	
 	@DaoFactory
 	AmazonTestEventMessagesOperator amazonTestEventMessagesOperator(@DaoKeyspace String keyspace, @DaoTable String testEventsChildrenDatesTable);

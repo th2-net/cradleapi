@@ -51,7 +51,4 @@ public interface RootTestEventOperator
 			START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:eventId")
 	CompletableFuture<AsyncResultSet> updateStatus(UUID instanceId, LocalDate startDate, LocalTime startTime, String eventId, boolean success, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
-	@Query("SELECT DISTINCT "+INSTANCE_ID+", "+START_DATE+" from ${qualifiedTableId}")
-	PagingIterable<RootTestEventDateEntity> getDates(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }
