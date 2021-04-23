@@ -68,7 +68,7 @@ public class AmazonCradleStorage extends CassandraCradleStorage
 	@Override
 	protected AmazonTestEventsMessagesLinker createTestEvetsMessagesLinker()
 	{
-		return new AmazonTestEventsMessagesLinker((AmazonOperators) ops, instanceUuid, readAttrs, semaphore);
+		return new AmazonTestEventsMessagesLinker(getOps(), instanceUuid, readAttrs, semaphore);
 	}
 
 	@Override
@@ -84,7 +84,7 @@ public class AmazonCradleStorage extends CassandraCradleStorage
 		CompletableFuture<StreamEntity> writeStreamfuture = new AsyncOperator<StreamEntity>(semaphore)
 				.getFuture(() -> {
 					logger.trace("Executing stream storing query");
-					AmazonStreamsOperator op = ((AmazonOperators) ops).getAmazonStreamsOperator();
+					AmazonStreamsOperator op = getOps().getAmazonStreamsOperator();
 					StreamEntity stream = new StreamEntity(instanceUuid, batch.getStreamName());
 					return op.writeStream(stream, writeAttrs);
 				});
@@ -109,7 +109,7 @@ public class AmazonCradleStorage extends CassandraCradleStorage
 			RootTestEventDateEntity entity = new RootTestEventDateEntity(instanceUuid, ldt);
 
 			logger.trace("Executing root event date storing query");
-			return ((AmazonOperators) ops).getAmazonRootTestEventDatesOperator().writeTestEventDate(entity, writeAttrs);
+			return getOps().getAmazonRootTestEventDatesOperator().writeTestEventDate(entity, writeAttrs);
 		});
 	}
 
@@ -117,7 +117,7 @@ public class AmazonCradleStorage extends CassandraCradleStorage
 	protected CompletableFuture<Void> storeMessagesOfTestEvent(String eventId, List<String> messageIds)
 	{
 		List<CompletableFuture<AmazonTestEventMessagesEntity>> futures = new ArrayList<>();
-		AmazonTestEventMessagesOperator op = ((AmazonOperators) ops).getAmazonTestEventMessagesOperator();
+		AmazonTestEventMessagesOperator op = getOps().getAmazonTestEventMessagesOperator();
 		int msgsSize = messageIds.size();
 		for (int left = 0; left < msgsSize; left++)
 		{
@@ -142,7 +142,7 @@ public class AmazonCradleStorage extends CassandraCradleStorage
 	protected Collection<Instant> doGetRootTestEventsDates() throws IOException
 	{
 		List<Instant> result = new ArrayList<>();
-		for (RootTestEventDateEntity entity : ((AmazonOperators) ops).getAmazonRootTestEventDatesOperator().getDates(readAttrs))
+		for (RootTestEventDateEntity entity : getOps().getAmazonRootTestEventDatesOperator().getDates(readAttrs))
 		{
 			if (instanceUuid.equals(entity.getInstanceId()))
 				result.add(entity.getStartDate().atStartOfDay(TIMEZONE_OFFSET).toInstant());
@@ -154,9 +154,15 @@ public class AmazonCradleStorage extends CassandraCradleStorage
 	@Override
 	protected Collection<String> doGetStreams() throws IOException
 	{
-		return Streams.stream(((AmazonOperators) ops).getAmazonStreamsOperator().getStreams(instanceUuid, readAttrs))
+		return Streams.stream(getOps().getAmazonStreamsOperator().getStreams(instanceUuid, readAttrs))
 				.map(StreamEntity::getStreamName)
 				.sorted()
 				.collect(toList());
+	}
+
+	@Override
+	public AmazonOperators getOps()
+	{
+		return (AmazonOperators) super.getOps();
 	}
 }

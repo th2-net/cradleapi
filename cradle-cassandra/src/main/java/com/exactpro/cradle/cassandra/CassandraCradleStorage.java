@@ -91,7 +91,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected final CassandraSemaphore semaphore;
 	protected final CradleObjectsFactory objectsFactory;
 	
-	protected CassandraOperators ops;
+	private CassandraOperators ops;
 
 	protected UUID instanceUuid;
 	protected Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
@@ -985,5 +985,10 @@ public class CassandraCradleStorage extends CradleStorage
 						return update.thenComposeAsync((u) -> failEventAndParents(event.getParentId()));
 					return update;
 				});
+	}
+
+	public CassandraOperators getOps()
+	{
+		return ops;
 	}
 }
