@@ -24,6 +24,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import com.exactpro.cradle.healing.HealingInterval;
+import com.exactpro.cradle.healing.RecoveryState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,6 +104,8 @@ public abstract class CradleStorage
 	protected abstract CompletableFuture<Boolean> doSetLastUpdateTimeAndDateAsync(LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerType);
 	protected abstract void doUpdateEventStatus(StoredTestEventWrapper event, boolean success) throws IOException;
 	protected abstract CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEventWrapper event, boolean success);
+	protected abstract void doUpdateRecoveryState(RecoveryState recoveryState, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String crawlerType) throws IOException;
+	protected abstract CompletableFuture<Void> doUpdateRecoveryStateAsync(RecoveryState recoveryState, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String crawlerType);
 
 	public abstract CradleObjectsFactory getObjectsFactory();
 	
@@ -956,6 +959,26 @@ public abstract class CradleStorage
 						logger.error("Error while asynchronously updating status of event "+event.getId());
 					else
 						logger.debug("Status of event {} updated asynchronously", event.getId());
+				});
+		return result;
+	}
+
+	public final void updateRecoveryState(RecoveryState recoveryState, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String crawlerType) throws IOException
+	{
+		logger.debug("Updating recovery state of healing interval with start time {}", healingIntervalStartTime);
+		doUpdateRecoveryState(recoveryState, healingIntervalStartDate, healingIntervalStartTime, crawlerType);
+		logger.debug("Updated recovery state of healing interval with start time {}", healingIntervalStartTime);
+	}
+
+	public final CompletableFuture<Void> updateRecoveryStateAsync(RecoveryState recoveryState, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String crawlerType)
+	{
+		logger.debug("Asynchronously updating recovery state of healing interval with start time {}", healingIntervalStartTime);
+		CompletableFuture<Void> result = doUpdateRecoveryStateAsync(recoveryState, healingIntervalStartDate, healingIntervalStartTime, crawlerType)
+				.whenComplete((r, error) -> {
+					if (error != null)
+						logger.error("Error while asynchronously updating recovery state of healing interval with start time {}", healingIntervalStartTime);
+					else
+						logger.debug("Recovery state of healing interval with start time {} updated asynchronously", healingIntervalStartTime);
 				});
 		return result;
 	}

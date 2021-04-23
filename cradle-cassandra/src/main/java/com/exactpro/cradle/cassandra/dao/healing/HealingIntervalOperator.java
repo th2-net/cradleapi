@@ -35,6 +35,7 @@ import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_LA
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_LAST_UPDATE_TIME;
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_START_TIME;
 import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
+import static com.exactpro.cradle.cassandra.StorageConstants.RECOVERY_STATE_JSON;
 
 @Dao
 public interface HealingIntervalOperator
@@ -47,4 +48,7 @@ public interface HealingIntervalOperator
 
     @Query("UPDATE ${qualifiedTableId} SET "+HEALING_INTERVAL_LAST_UPDATE_TIME+"=:lastUpdateTime, "+HEALING_INTERVAL_LAST_UPDATE_DATE+"=toDate(now()) WHERE "+INSTANCE_ID+"=:instanceId AND "+HEALING_INTERVAL_DATE+"=:healingIntervalStartDate AND "+CRAWLER_TYPE+"=:crawlerType AND "+HEALING_INTERVAL_START_TIME+"=:healingIntervalStartTime IF "+HEALING_INTERVAL_LAST_UPDATE_TIME+"=:previousLastUpdateTime AND "+HEALING_INTERVAL_LAST_UPDATE_DATE+"=:previousLastUpdateDate")
     CompletableFuture<AsyncResultSet> setLastUpdateTimeAndDate(UUID instanceId, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, LocalTime lastUpdateTime, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerType, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+    @Query("UPDATE ${qualifiedTableId} SET "+RECOVERY_STATE_JSON+"=:recoveryStateJson WHERE "+INSTANCE_ID+"=:instanceId AND "+HEALING_INTERVAL_DATE+"=:healingIntervalStartDate AND "+CRAWLER_TYPE+"=:crawlerType AND "+HEALING_INTERVAL_START_TIME+"=:healingIntervalStartTime")
+    CompletableFuture<AsyncResultSet> updateRecoveryState(UUID instanceId, String recoveryStateJson, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String crawlerType);
 }

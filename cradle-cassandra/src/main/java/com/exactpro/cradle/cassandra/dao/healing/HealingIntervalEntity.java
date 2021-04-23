@@ -50,8 +50,6 @@ public class HealingIntervalEntity
 {
     private static final Logger logger = LoggerFactory.getLogger(HealingIntervalEntity.class);
 
-    private final ObjectMapper mapper = new ObjectMapper();
-
     @PartitionKey(0)
     @CqlName(INSTANCE_ID)
     private UUID instanceId;
@@ -97,13 +95,7 @@ public class HealingIntervalEntity
         this.lastUpdateTime = interval.getLastUpdateTime();
         this.lastUpdateDate = interval.getLastUpdateDate();
         this.crawlerType = interval.getCrawlerType();
-
-        try {
-            this.recoveryStateJson = mapper.writeValueAsString(interval.getRecoveryState());
-        } catch (JsonProcessingException e) {
-            logger.error("Error while converting recovery state to JSON format", e);
-        }
-
+        this.recoveryStateJson = interval.getRecoveryState().convertToJson();
         this.instanceId = instanceId;
     }
 
@@ -151,6 +143,6 @@ public class HealingIntervalEntity
 
     public HealingInterval asHealingInterval() throws IOException {
         return new HealingInterval(this.healingIntervalId, this.startTime, this.endTime, this.date,
-                mapper.readValue(recoveryStateJson, RecoveryState.class), this.getLastUpdateDate(), this.getLastUpdateTime(), this.crawlerType);
+                RecoveryState.getMAPPER().readValue(recoveryStateJson, RecoveryState.class), this.getLastUpdateDate(), this.getLastUpdateTime(), this.crawlerType);
     }
 }

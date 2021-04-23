@@ -58,6 +58,7 @@ import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.healing.HealingInterval;
+import com.exactpro.cradle.healing.RecoveryState;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageFilter;
@@ -77,6 +78,7 @@ import static java.lang.Math.min;
 import static java.util.stream.Collectors.toList;
 
 import java.io.*;
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -1069,5 +1071,26 @@ public class CassandraCradleStorage extends CradleStorage
 		CompletableFuture<AsyncResultSet> future = new AsyncOperator<AsyncResultSet>(semaphore)
 				.getFuture(() -> ops.getHealingIntervalOperator().setLastUpdateTimeAndDate(instanceUuid, healingIntervalStartDate, healingIntervalStartTime, LocalTime.now(), previousLastUpdateTime, previousLastUpdateDate, crawlerType, writeAttrs));
 		return future.thenApply(AsyncResultSet::wasApplied);
+	}
+
+	@Override
+	protected void doUpdateRecoveryState(RecoveryState recoveryState, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String crawlerType) throws IOException
+	{
+		try
+		{
+			doUpdateRecoveryStateAsync(recoveryState, healingIntervalStartDate, healingIntervalStartTime, crawlerType);
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while updating recovery state of healing interval with start time "+healingIntervalStartTime, e);
+		}
+	}
+
+	@Override
+	protected CompletableFuture<Void> doUpdateRecoveryStateAsync(RecoveryState recoveryState, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String crawlerType)
+	{
+		CompletableFuture<AsyncResultSet> future = new AsyncOperator<AsyncResultSet>(semaphore)
+				.getFuture(() -> ops.getHealingIntervalOperator().updateRecoveryState(instanceUuid, recoveryState.convertToJson(), healingIntervalStartDate, healingIntervalStartTime, crawlerType));
+		return future.thenAccept(e -> {}); // correct?
 	}
 }

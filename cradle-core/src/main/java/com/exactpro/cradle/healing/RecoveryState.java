@@ -17,6 +17,10 @@
 package com.exactpro.cradle.healing;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Timestamp;
 
@@ -27,6 +31,10 @@ public class RecoveryState
     private final long healedEventsNumber;
 
     private final Timestamp timeOfStop;
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    private static final Logger logger = LoggerFactory.getLogger(RecoveryState.class);
 
     public RecoveryState(@JsonProperty("id") String id, @JsonProperty("healedEventsNumber") long healedEventsNumber, @JsonProperty("timeOfStop") Timestamp timeOfStop) {
         this.id = id;
@@ -39,6 +47,19 @@ public class RecoveryState
     public long getHealedEventsNumber() { return healedEventsNumber; }
 
     public Timestamp getTimeOfStop() { return timeOfStop; }
+
+    public String convertToJson()
+    {
+        try
+        {
+            return MAPPER.writeValueAsString(this);
+        } catch (JsonProcessingException e) {
+            logger.error("Failed to convert recovery state "+id+" to JSON", e);
+        }
+        return null;
+    }
+
+    public static ObjectMapper getMAPPER() { return MAPPER; }
 
     @Override
     public String toString()
