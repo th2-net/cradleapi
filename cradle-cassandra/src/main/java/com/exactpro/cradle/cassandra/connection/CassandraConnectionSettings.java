@@ -18,8 +18,14 @@ package com.exactpro.cradle.cassandra.connection;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 public class CassandraConnectionSettings
 {
+	public static final String DEFAULT_CERTIFICATE_TYPE = "X.509";
+	public static final String DEFAULT_SSL_PROTOCOL = "TLS";
+	
 	private String localDataCenter;
 	private String host;
 	private int port;
@@ -32,6 +38,11 @@ public class CassandraConnectionSettings
 	private NetworkTopologyStrategy networkTopologyStrategy;
 	private int maxParallelQueries,
 			resultPageSize;
+	//Uses for SSL connection
+	private Path certificatePath;
+	private String certificateType = DEFAULT_CERTIFICATE_TYPE;
+	private String certificatePassword;
+	private String sslProtocol = DEFAULT_SSL_PROTOCOL;
 
 	public CassandraConnectionSettings()
 	{
@@ -205,5 +216,45 @@ public class CassandraConnectionSettings
 	public void setResultPageSize(int resultPageSize)
 	{
 		this.resultPageSize = resultPageSize;
+	}
+
+	public Path getCertificatePath()
+	{
+		return certificatePath;
+	}
+
+	public void setCertificatePath(Path certificatePath)
+	{
+		this.certificatePath = certificatePath;
+	}
+
+	public String getCertificateType()
+	{
+		return certificateType;
+	}
+
+	public void setCertificateType(String certificateType)
+	{
+		this.certificateType = certificateType;
+	}
+
+	public String getCertificatePassword()
+	{
+		return certificatePassword;
+	}
+
+	public void setCertificatePassword(String certificatePassword)
+	{
+		this.certificatePassword = certificatePassword;
+	}
+
+	public String getSslProtocol()
+	{
+		return sslProtocol;
+	}
+
+	public void setSslProtocol(String sslProtocol)
+	{
+		this.sslProtocol = sslProtocol;
 	}
 }

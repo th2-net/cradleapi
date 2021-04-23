@@ -23,7 +23,7 @@ import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
 
 public class CassandraCradleManager extends CradleManager
 {
-	private final CassandraConnection connection;
+	protected final CassandraConnection connection;
 	
 	public CassandraCradleManager(CassandraConnection connection)
 	{

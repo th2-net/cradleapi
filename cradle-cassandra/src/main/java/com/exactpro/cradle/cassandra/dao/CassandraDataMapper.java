@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,23 +20,17 @@ import com.datastax.oss.driver.api.mapper.annotations.DaoFactory;
 import com.datastax.oss.driver.api.mapper.annotations.DaoKeyspace;
 import com.datastax.oss.driver.api.mapper.annotations.DaoTable;
 import com.datastax.oss.driver.api.mapper.annotations.Mapper;
-import com.exactpro.cradle.cassandra.dao.messages.MessageBatchConverter;
-import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
-import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
-import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenDatesOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventConverter;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventOperator;
+import com.exactpro.cradle.cassandra.dao.messages.*;
+import com.exactpro.cradle.cassandra.dao.testevents.*;
 
 @Mapper
 public interface CassandraDataMapper
 {
 	@DaoFactory
 	MessageBatchOperator messageBatchOperator(@DaoKeyspace String keyspace, @DaoTable String messagesTable);
+
+	@DaoFactory
+	StreamsOperator streamsOperator(@DaoKeyspace String keyspace, @DaoTable String messagesTable);
 	
 	@DaoFactory
 	MessageBatchConverter messageBatchConverter();
@@ -52,7 +46,10 @@ public interface CassandraDataMapper
 	
 	@DaoFactory
 	RootTestEventOperator rootTestEventOperator(@DaoKeyspace String keyspace, @DaoTable String rootTestEventsTable);
-	
+
+	@DaoFactory
+	RootTestEventDatesOperator rootTestEventDatesOperator(@DaoKeyspace String keyspace, @DaoTable String rootTestEventsTable);
+
 	@DaoFactory
 	TestEventChildrenOperator testEventChildrenOperator(@DaoKeyspace String keyspace, @DaoTable String testEventsChildrenTable);
 	

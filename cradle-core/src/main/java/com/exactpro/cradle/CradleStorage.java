@@ -799,6 +799,7 @@ public abstract class CradleStorage
 		}
 	}
 	
+	
 	protected CompletableFuture<Void> storeTimeMessagesAsync(Collection<StoredMessage> messages)
 	{
 		List<CompletableFuture<Void>> futures = new ArrayList<>();

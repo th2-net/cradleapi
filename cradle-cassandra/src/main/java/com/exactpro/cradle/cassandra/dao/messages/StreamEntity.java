@@ -40,8 +40,13 @@ public class StreamEntity
 	public StreamEntity()
 	{
 	}
-	
-	
+
+	public StreamEntity(UUID instanceId, String streamName)
+	{
+		this.instanceId = instanceId;
+		this.streamName = streamName;
+	}
+
 	public UUID getInstanceId()
 	{
 		return instanceId;
