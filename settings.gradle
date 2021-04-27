@@ -1,6 +1,8 @@
 include 'cradle-core'
 include 'cradle-cassandra'
+include 'dao-generator'
 
 // Defined names will be used for jar and artifact names
 project(':cradle-core').name = 'cradle-core'
 project(':cradle-cassandra').name = 'cradle-cassandra'
+project(':dao-generator').name = 'dao-generator'

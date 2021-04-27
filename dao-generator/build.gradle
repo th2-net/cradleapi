@@ -1,0 +1,37 @@
+plugins {
+    id 'java'
+}
+
+version 'unspecified'
+
+ext {
+    driver_version = '4.2.0'
+}
+
+sourceCompatibility = 11
+targetCompatibility = 11
+
+repositories {
+    mavenCentral()
+}
+
+sourceSets {
+    main.java.srcDirs += "./src/gen"
+}
+
+dependencies {
+
+    implementation project(":cradle-cassandra")
+
+    //For generation java code. License: Apache 2.0
+    implementation "com.squareup:javapoet:1.13.0"
+
+    compile "com.datastax.oss:java-driver-core:${driver_version}"
+    compile "com.datastax.oss:java-driver-query-builder:${driver_version}"
+    compile "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
+    compile "com.datastax.oss:java-driver-mapper-runtime:${driver_version}"
+
+    annotationProcessor "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
+    
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
