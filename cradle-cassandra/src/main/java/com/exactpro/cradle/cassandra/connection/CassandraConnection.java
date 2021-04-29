@@ -19,8 +19,9 @@ package com.exactpro.cradle.cassandra.connection;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 
-import java.io.File;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
 
@@ -30,7 +31,7 @@ import org.apache.commons.lang3.StringUtils;
 public class CassandraConnection
 {
 	public static final String DRIVER_CONFIG_FILE_NAME = "application.conf";
-	private static final File DRIVER_CONFIG = Paths.get(System.getProperty("user.dir"), DRIVER_CONFIG_FILE_NAME).toFile();
+	private static final Path DRIVER_CONFIG = Paths.get(System.getProperty("user.dir"), DRIVER_CONFIG_FILE_NAME);
 	private CassandraConnectionSettings settings;
 	private CqlSession session;
 	private Date started,
@@ -50,8 +51,8 @@ public class CassandraConnection
 	public void start() throws Exception
 	{
 		CqlSessionBuilder sessionBuilder = CqlSession.builder();
-		if (DRIVER_CONFIG.exists())
-			sessionBuilder.withConfigLoader(DriverConfigLoader.fromFile(DRIVER_CONFIG));
+		if (Files.exists(DRIVER_CONFIG))
+			sessionBuilder.withConfigLoader(DriverConfigLoader.fromFile(DRIVER_CONFIG.toFile()));
 		if (!StringUtils.isEmpty(settings.getLocalDataCenter()))
 			sessionBuilder = sessionBuilder.withLocalDatacenter(settings.getLocalDataCenter());
 		if (settings.getPort() > -1)
