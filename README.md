@@ -46,6 +46,9 @@ The main classes are `CradleManager` and `CradleStorage`.
 
 `CradleManager` initializes Cradle API to work with particular database and provides access to `CradleStorage` object bound to that database.
 
+Cradle API uses DataStax Java driver to connect to Cassandra. To manage the additional driver settings you can put application.conf file
+into the root directory of your project. The structure of this file is described in https://github.com/datastax/java-driver/blob/4.0.1/core/src/main/resources/reference.conf
+
 Example of Cradle API initialization to work with Cassandra:
 ```java
 CassandraConnectionSettings settings = new CassandraConnectionSettings("datacenter1", "cassandra-host", 9042, "cassandra-keyspace");
