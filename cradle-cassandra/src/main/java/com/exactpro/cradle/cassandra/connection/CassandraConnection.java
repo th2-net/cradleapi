@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,18 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Date;
 
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import org.apache.commons.lang3.StringUtils;
 
 public class CassandraConnection
 {
+	public static final String DRIVER_CONFIG_FILE_NAME = "application.conf";
+	private static final Path DRIVER_CONFIG = Paths.get(System.getProperty("user.dir"), DRIVER_CONFIG_FILE_NAME);
 	private CassandraConnectionSettings settings;
 	private CqlSession session;
 	private Date started,
@@ -33,13 +39,11 @@ public class CassandraConnection
 
 	public CassandraConnection()
 	{
-		super();
 		this.settings = createSettings();
 	}
 
 	public CassandraConnection(CassandraConnectionSettings settings)
 	{
-		super();
 		this.settings = settings;
 	}
 
@@ -47,6 +51,8 @@ public class CassandraConnection
 	public void start() throws Exception
 	{
 		CqlSessionBuilder sessionBuilder = CqlSession.builder();
+		if (Files.exists(DRIVER_CONFIG))
+			sessionBuilder.withConfigLoader(DriverConfigLoader.fromFile(DRIVER_CONFIG.toFile()));
 		if (!StringUtils.isEmpty(settings.getLocalDataCenter()))
 			sessionBuilder = sessionBuilder.withLocalDatacenter(settings.getLocalDataCenter());
 		if (settings.getPort() > -1)
