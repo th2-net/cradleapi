@@ -28,7 +28,7 @@ public class StoredMessageBatchIterator extends ConvertingPagedIterator<StoredMe
 {
 	private final CradleObjectsFactory objectsFactory;
 	private final int limit;
-	private long returnedEtities;
+	private long returnedEntities;
 	
 	public StoredMessageBatchIterator(MappedAsyncPagingIterable<DetailedMessageBatchEntity> rows,
 			CradleObjectsFactory objectsFactory, int limit)
@@ -41,7 +41,7 @@ public class StoredMessageBatchIterator extends ConvertingPagedIterator<StoredMe
 	@Override
 	public boolean hasNext()
 	{
-		if (limit > 0 && returnedEtities >= limit)
+		if (limit > 0 && returnedEntities >= limit)
 			return false;
 
 		return super.hasNext();
@@ -50,7 +50,7 @@ public class StoredMessageBatchIterator extends ConvertingPagedIterator<StoredMe
 	@Override
 	public StoredMessageBatch next()
 	{
-		returnedEtities++;
+		returnedEntities++;
 		return super.next();
 	}
 
