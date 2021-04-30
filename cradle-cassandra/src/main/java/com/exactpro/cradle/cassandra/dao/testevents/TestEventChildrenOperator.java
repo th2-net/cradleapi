@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,9 +42,14 @@ public interface TestEventChildrenOperator
 {
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+PARENT_ID+"=:parentId AND "+
 			START_DATE+"=:startDate AND "+START_TIME+">=:timeFrom AND "+START_TIME+"<=:timeTo")
-	CompletableFuture<MappedAsyncPagingIterable<TestEventChildEntity>> getTestEvents(UUID instanceId, String parentId, 
+	CompletableFuture<MappedAsyncPagingIterable<TestEventChildEntity>> getTestEventsAsc(UUID instanceId, String parentId, 
 			LocalDate startDate, LocalTime timeFrom, LocalTime timeTo, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
+
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+PARENT_ID+"=:parentId AND "+
+			START_DATE+"=:startDate AND "+START_TIME+">=:timeFrom AND "+START_TIME+"<=:timeTo ORDER BY "+START_TIME+" DESC, "+ID+" DESC")
+	CompletableFuture<MappedAsyncPagingIterable<TestEventChildEntity>> getTestEventsDesc(UUID instanceId, String parentId,
+			LocalDate startDate, LocalTime timeFrom, LocalTime timeTo, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
 	@Insert
 	CompletableFuture<TestEventChildEntity> writeTestEvent(TestEventChildEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	

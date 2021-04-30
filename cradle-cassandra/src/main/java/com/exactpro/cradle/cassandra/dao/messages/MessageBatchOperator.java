@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
 import com.datastax.oss.driver.api.mapper.annotations.QueryProvider;
 import com.datastax.oss.driver.api.mapper.annotations.Select;
+import com.exactpro.cradle.SortingOrder;
 import com.exactpro.cradle.cassandra.CassandraSemaphore;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 
@@ -75,8 +76,8 @@ public interface MessageBatchOperator
 	DetailedMessageBatchEntity getLastIndex(UUID instanceId, String streamName, String direction, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@QueryProvider(providerClass = MessageBatchQueryProvider.class, entityHelpers = DetailedMessageBatchEntity.class)
-	CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> filterMessages(UUID instanceId, StoredMessageFilter filter, 
-			CassandraSemaphore semaphore, MessageBatchOperator operator,
+	CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> filterMessages(UUID instanceId,
+			StoredMessageFilter filter, SortingOrder order, CassandraSemaphore semaphore, MessageBatchOperator operator,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("SELECT DISTINCT "+INSTANCE_ID+", "+STREAM_NAME+" from ${qualifiedTableId}")

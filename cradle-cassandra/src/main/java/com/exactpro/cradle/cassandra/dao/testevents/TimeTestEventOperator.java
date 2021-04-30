@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,9 +40,15 @@ public interface TimeTestEventOperator
 {
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+
 			START_DATE+"=:startDate AND "+START_TIME+">=:timeFrom AND "+START_TIME+"<=:timeTo")
-	CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> getTestEvents(UUID instanceId, LocalDate startDate, LocalTime timeFrom, LocalTime timeTo, 
+	CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> getTestEventsAsc(UUID instanceId, LocalDate startDate, LocalTime timeFrom, LocalTime timeTo, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
+
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+
+			START_DATE + "=:startDate AND " + START_TIME + ">=:timeFrom AND " + START_TIME + "<=:timeTo ORDER BY " +
+			START_TIME + " DESC, " + ID + " DESC")
+	CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> getTestEventsDesc(UUID instanceId, LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
 	@Insert
 	CompletableFuture<TimeTestEventEntity> writeTestEvent(TimeTestEventEntity timeTestEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
