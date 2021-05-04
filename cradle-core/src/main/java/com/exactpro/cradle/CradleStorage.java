@@ -101,19 +101,19 @@ public abstract class CradleStorage
 	 */
 	public abstract TestEventsMessagesLinker getTestEventsMessagesLinker();
 	
-	protected abstract Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter, SortingOrder order) throws IOException;
-	protected abstract CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter, SortingOrder order);
+	protected abstract Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter, Order order) throws IOException;
+	protected abstract CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter, Order order);
 	protected abstract Iterable<StoredTestEventMetadata> doGetRootTestEvents(Instant from, Instant to) 
 			throws CradleStorageException, IOException;
 	protected abstract CompletableFuture<Iterable<StoredTestEventMetadata>> doGetRootTestEventsAsync(Instant from, Instant to) 
 			throws CradleStorageException;
-	protected abstract Iterable<StoredTestEventMetadata> doGetTestEvents(StoredTestEventId parentId, Instant from, Instant to, SortingOrder order) 
+	protected abstract Iterable<StoredTestEventMetadata> doGetTestEvents(StoredTestEventId parentId, Instant from, Instant to, Order order) 
 			throws CradleStorageException, IOException;
-	protected abstract CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsAsync(StoredTestEventId parentId, Instant from, Instant to, SortingOrder order) 
+	protected abstract CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsAsync(StoredTestEventId parentId, Instant from, Instant to, Order order) 
 			throws CradleStorageException;
-	protected abstract Iterable<StoredTestEventMetadata> doGetTestEvents(Instant from, Instant to, SortingOrder order) 
+	protected abstract Iterable<StoredTestEventMetadata> doGetTestEvents(Instant from, Instant to, Order order) 
 			throws CradleStorageException, IOException;
-	protected abstract CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsAsync(Instant from, Instant to, SortingOrder order)
+	protected abstract CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsAsync(Instant from, Instant to, Order order)
 			throws CradleStorageException;
 	
 	
@@ -579,7 +579,7 @@ public abstract class CradleStorage
 	 */
 	public final Iterable<StoredMessage> getMessages(StoredMessageFilter filter) throws IOException
 	{
-		return getMessages(filter, SortingOrder.ASC);
+		return getMessages(filter, Order.DIRECT);
 	}
 
 	/**
@@ -589,7 +589,7 @@ public abstract class CradleStorage
 	 * @return iterable object to enumerate messages
 	 * @throws IOException if data retrieval failed
 	 */
-	public final Iterable<StoredMessage> getMessages(StoredMessageFilter filter, SortingOrder order) throws IOException
+	public final Iterable<StoredMessage> getMessages(StoredMessageFilter filter, Order order) throws IOException
 	{
 		logger.debug("Filtering messages by {}, ordered by index {}", filter, order);
 		Iterable<StoredMessage> result = doGetMessages(filter, order);
@@ -606,7 +606,7 @@ public abstract class CradleStorage
 	 */
 	public final CompletableFuture<Iterable<StoredMessage>> getMessagesAsync(StoredMessageFilter filter)
 	{
-		return getMessagesAsync(filter, SortingOrder.ASC);
+		return getMessagesAsync(filter, Order.DIRECT);
 	}
 
 	
@@ -617,7 +617,7 @@ public abstract class CradleStorage
 	 * @param order defines sorting order    
 	 * @return future to obtain iterable object to enumerate messages
 	 */
-	public final CompletableFuture<Iterable<StoredMessage>> getMessagesAsync(StoredMessageFilter filter, SortingOrder order)
+	public final CompletableFuture<Iterable<StoredMessage>> getMessagesAsync(StoredMessageFilter filter, Order order)
 	{
 		logger.debug("Asynchronously getting messages filtered by {}, ordered by index {}", filter, order);
 		CompletableFuture<Iterable<StoredMessage>> result = doGetMessagesAsync(filter, order)
@@ -690,7 +690,7 @@ public abstract class CradleStorage
 	public final Iterable<StoredTestEventMetadata> getTestEvents(StoredTestEventId parentId, Instant from, Instant to) 
 			throws CradleStorageException, IOException
 	{
-		return getTestEvents(parentId, from, to, SortingOrder.ASC);
+		return getTestEvents(parentId, from, to, Order.DIRECT);
 	}
 
 
@@ -705,15 +705,15 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if given parameters are invalid
 	 * @throws IOException if data retrieval failed
 	 */
-	public final Iterable<StoredTestEventMetadata> getTestEvents(StoredTestEventId parentId, Instant from, Instant to, SortingOrder order)
+	public final Iterable<StoredTestEventMetadata> getTestEvents(StoredTestEventId parentId, Instant from, Instant to, Order order)
 			throws CradleStorageException, IOException
 	{
 		if (from == null || to == null)
 			throw new CradleStorageException("Both boundaries (from and to) should be specified");
 
-		logger.debug("Getting child test events of {} from range {}..{} ordered by {}", parentId, from, to, order);
+		logger.debug("Getting child test events of {} from range {}..{} in {} order", parentId, from, to, order);
 		Iterable<StoredTestEventMetadata> result = doGetTestEvents(parentId, from, to, order);
-		logger.debug("Prepared iterator for child test events of {} from range {}..{} ordered by {}", parentId, from, to, order);
+		logger.debug("Prepared iterator for child test events of {} from range {}..{} in {} order", parentId, from, to, order);
 		return result;
 	}
 
@@ -731,7 +731,7 @@ public abstract class CradleStorage
 	public final CompletableFuture<Iterable<StoredTestEventMetadata>> getTestEventsAsync(StoredTestEventId parentId, 
 			Instant from, Instant to) throws CradleStorageException
 	{
-		return getTestEventsAsync(parentId, from, to, SortingOrder.ASC);
+		return getTestEventsAsync(parentId, from, to, Order.DIRECT);
 	}
 
 	
@@ -747,19 +747,19 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
 	public final CompletableFuture<Iterable<StoredTestEventMetadata>> getTestEventsAsync(StoredTestEventId parentId,
-			Instant from, Instant to, SortingOrder order) throws CradleStorageException
+			Instant from, Instant to, Order order) throws CradleStorageException
 	{
 		if (from == null || to == null)
 			throw new CradleStorageException("Both boundaries (from and to) should be specified");
 
-		logger.debug("Getting child test events of {} from range {}..{} ordered by {} asynchronously", parentId, from, to, order);
+		logger.debug("Getting child test events of {} from range {}..{} in {} order asynchronously", parentId, from, to, order);
 
 		CompletableFuture<Iterable<StoredTestEventMetadata>> result = doGetTestEventsAsync(parentId, from, to, order)
 				.whenComplete((r, error) -> {
 					if (error != null)
 						logger.error("Error while getting child test events of "+parentId+" from range "+from+".."+to+" asynchronously", error);
 					else
-						logger.debug("Iterator for child test events of {} from range {}..{} ordered by {} got asynchronously", parentId, from, to, order);
+						logger.debug("Iterator for child test events of {} from range {}..{} in {} order got asynchronously", parentId, from, to, order);
 				});
 		return result;
 	}
@@ -776,7 +776,7 @@ public abstract class CradleStorage
 	 */
 	public final Iterable<StoredTestEventMetadata> getTestEvents(Instant from, Instant to) throws CradleStorageException, IOException
 	{
-		return getTestEvents(from, to, SortingOrder.ASC);
+		return getTestEvents(from, to, Order.DIRECT);
 	}
 
 	/**
@@ -789,14 +789,14 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if given parameters are invalid
 	 * @throws IOException if data retrieval failed
 	 */
-	public final Iterable<StoredTestEventMetadata> getTestEvents(Instant from, Instant to, SortingOrder order) throws CradleStorageException, IOException
+	public final Iterable<StoredTestEventMetadata> getTestEvents(Instant from, Instant to, Order order) throws CradleStorageException, IOException
 	{
 		if (from == null || to == null)
 			throw new CradleStorageException("Both boundaries (from and to) should be specified");
 
-		logger.debug("Getting test events from range {}..{} ordered by {}", from, to, order);
+		logger.debug("Getting test events from range {}..{} in {} order", from, to, order);
 		Iterable<StoredTestEventMetadata> result = doGetTestEvents(from, to, order);
-		logger.debug("Prepared iterator for test events from range {}..{} ordered by {}", from, to, order);
+		logger.debug("Prepared iterator for test events from range {}..{} in {} order", from, to, order);
 		return result;
 	}
 
@@ -811,7 +811,7 @@ public abstract class CradleStorage
 	 */
 	public final CompletableFuture<Iterable<StoredTestEventMetadata>> getTestEventsAsync(Instant from, Instant to) throws CradleStorageException
 	{
-		return getTestEventsAsync(from, to, SortingOrder.ASC);
+		return getTestEventsAsync(from, to, Order.DIRECT);
 	}
 
 	
@@ -823,19 +823,19 @@ public abstract class CradleStorage
 	 * @return future to obtain iterable object to enumerate test events
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final CompletableFuture<Iterable<StoredTestEventMetadata>> getTestEventsAsync(Instant from, Instant to, SortingOrder order) throws CradleStorageException
+	public final CompletableFuture<Iterable<StoredTestEventMetadata>> getTestEventsAsync(Instant from, Instant to, Order order) throws CradleStorageException
 	{
 		if (from == null || to == null)
 			throw new CradleStorageException("Both boundaries (from and to) should be specified");
 
-		logger.debug("Getting test events from range {}..{} ordered by {} asynchronously", from, to, order);
+		logger.debug("Getting test events from range {}..{} in {} order asynchronously", from, to, order);
 
 		CompletableFuture<Iterable<StoredTestEventMetadata>> result = doGetTestEventsAsync(from, to, order)
 				.whenComplete((r, error) -> {
 					if (error != null)
 						logger.error("Error while getting test events from range "+from+".."+to+" asynchronously", error);
 					else
-						logger.debug("Iterator for test events from range {}..{} ordered by {} got asynchronously", from, to, order);
+						logger.debug("Iterator for test events from range {}..{} in {} order got asynchronously", from, to, order);
 				});
 		return result;
 	}

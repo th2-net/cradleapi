@@ -28,7 +28,7 @@ import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
 import com.datastax.oss.driver.api.mapper.annotations.QueryProvider;
 import com.datastax.oss.driver.api.mapper.annotations.Select;
-import com.exactpro.cradle.SortingOrder;
+import com.exactpro.cradle.Order;
 import com.exactpro.cradle.cassandra.CassandraSemaphore;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 
@@ -77,7 +77,7 @@ public interface MessageBatchOperator
 	
 	@QueryProvider(providerClass = MessageBatchQueryProvider.class, entityHelpers = DetailedMessageBatchEntity.class)
 	CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> filterMessages(UUID instanceId,
-			StoredMessageFilter filter, SortingOrder order, CassandraSemaphore semaphore, MessageBatchOperator operator,
+			StoredMessageFilter filter, Order order, CassandraSemaphore semaphore, MessageBatchOperator operator,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("SELECT DISTINCT "+INSTANCE_ID+", "+STREAM_NAME+" from ${qualifiedTableId}")

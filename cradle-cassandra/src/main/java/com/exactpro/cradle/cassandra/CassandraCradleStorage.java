@@ -520,7 +520,7 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	protected Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter, SortingOrder order) throws IOException
+	protected Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter, Order order) throws IOException
 	{
 		try
 		{
@@ -533,13 +533,13 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter, SortingOrder order)
+	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter, Order order)
 	{
 		MessageBatchOperator op = ops.getMessageBatchOperator();
 		CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> future =
 				new AsyncOperator<MappedAsyncPagingIterable<DetailedMessageBatchEntity>>(semaphore)
 						.getFuture(() -> op.filterMessages(instanceUuid, filter, order, semaphore, op, readAttrs));
-		return future.thenApply(it -> new MessagesIteratorAdapter(filter, it));
+		return future.thenApply(it -> new MessagesIteratorAdapter(filter, it, order));
 	}
 	
 	
@@ -577,7 +577,7 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	protected Iterable<StoredTestEventMetadata> doGetTestEvents(StoredTestEventId parentId, Instant from, Instant to, SortingOrder order) 
+	protected Iterable<StoredTestEventMetadata> doGetTestEvents(StoredTestEventId parentId, Instant from, Instant to, Order order) 
 			throws CradleStorageException, IOException
 	{
 		try
@@ -596,7 +596,7 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	@Override
 	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsAsync(StoredTestEventId parentId,
-			Instant from, Instant to, SortingOrder order) throws CradleStorageException
+			Instant from, Instant to, Order order) throws CradleStorageException
 	{
 		LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET),
 				toDateTime = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
@@ -606,7 +606,7 @@ public class CassandraCradleStorage extends CradleStorage
 				toTime = toDateTime.toLocalTime();
 		
 		CompletableFuture<MappedAsyncPagingIterable<TestEventChildEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<TestEventChildEntity>>(semaphore)
-				.getFuture(() -> order == SortingOrder.ASC
+				.getFuture(() -> order == Order.DIRECT
 						? ops.getTestEventChildrenOperator().getTestEventsAsc(instanceUuid, parentId.toString(), 
 								fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
 						: ops.getTestEventChildrenOperator().getTestEventsDesc(instanceUuid, parentId.toString(),
@@ -616,7 +616,7 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	protected Iterable<StoredTestEventMetadata> doGetTestEvents(Instant from, Instant to, SortingOrder order) throws CradleStorageException, IOException
+	protected Iterable<StoredTestEventMetadata> doGetTestEvents(Instant from, Instant to, Order order) throws CradleStorageException, IOException
 	{
 		try
 		{
@@ -633,7 +633,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsAsync(Instant from, Instant to, SortingOrder order)
+	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsAsync(Instant from, Instant to, Order order)
 			throws CradleStorageException
 	{
 		LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET),
@@ -645,9 +645,9 @@ public class CassandraCradleStorage extends CradleStorage
 
 		CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> future =
 				new AsyncOperator<MappedAsyncPagingIterable<TimeTestEventEntity>>(semaphore)
-						.getFuture(() -> order == SortingOrder.ASC
+						.getFuture(() -> order == Order.DIRECT
 								? ops.getTimeTestEventOperator().getTestEventsAsc(instanceUuid,
-								fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
+										fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
 								: ops.getTimeTestEventOperator().getTestEventsDesc(instanceUuid,
 										fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
 		return future.thenApply(it -> new TimeTestEventsMetadataIteratorAdapter(it));

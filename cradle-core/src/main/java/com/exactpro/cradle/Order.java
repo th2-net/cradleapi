@@ -16,8 +16,8 @@
 
 package com.exactpro.cradle;
 
-public enum SortingOrder
+public enum Order
 {
-	ASC,
-	DESC
+	DIRECT,
+	INVERSE
 }

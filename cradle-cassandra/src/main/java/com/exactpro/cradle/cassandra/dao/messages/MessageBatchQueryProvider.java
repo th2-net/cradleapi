@@ -25,7 +25,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
-import com.exactpro.cradle.SortingOrder;
+import com.exactpro.cradle.Order;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,13 +68,13 @@ public class MessageBatchQueryProvider
 	}
 	
 	public CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> filterMessages(UUID instanceId, 
-			StoredMessageFilter filter, SortingOrder order, CassandraSemaphore semaphore, MessageBatchOperator operator,
+			StoredMessageFilter filter, Order order, CassandraSemaphore semaphore, MessageBatchOperator operator,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 	{
 		Select select = selectStart;
 		if (filter != null)
 			select = addFilter(select, filter);
-		select = select.orderBy(MESSAGE_INDEX, ClusteringOrder.valueOf(order.toString()));
+		select = orderBy(order, select);
 		PreparedStatement ps = session.prepare(select.build());
 		BoundStatement bs;
 		try
@@ -87,9 +87,15 @@ public class MessageBatchQueryProvider
 			error.completeExceptionally(e);
 			return error;
 		}
-		return session.executeAsync(bs).thenApply((r) -> r.map(helper::get)).toCompletableFuture();
+		return session.executeAsync(bs).thenApply(r -> r.map(helper::get)).toCompletableFuture();
 	}
-	
+
+	private Select orderBy(Order order, Select select)
+	{
+		ClusteringOrder clusteringOrder = order == Order.DIRECT ? ClusteringOrder.ASC : ClusteringOrder.DESC;
+		return select.orderBy(DIRECTION, clusteringOrder).orderBy(MESSAGE_INDEX, clusteringOrder);
+	}
+
 	private Select addFilter(Select select, StoredMessageFilter filter)
 	{
 		if (filter.getStreamName() != null)

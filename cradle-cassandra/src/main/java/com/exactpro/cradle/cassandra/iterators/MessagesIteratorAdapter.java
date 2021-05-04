@@ -20,6 +20,7 @@ import java.util.Iterator;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.PagingIterable;
+import com.exactpro.cradle.Order;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
 import com.exactpro.cradle.messages.StoredMessage;
@@ -34,16 +35,18 @@ public class MessagesIteratorAdapter implements Iterable<StoredMessage>
 {
 	private final StoredMessageFilter filter;
 	private final MappedAsyncPagingIterable<DetailedMessageBatchEntity> entities;
+	private final Order order; 
 	
-	public MessagesIteratorAdapter(StoredMessageFilter filter, MappedAsyncPagingIterable<DetailedMessageBatchEntity> entities)
+	public MessagesIteratorAdapter(StoredMessageFilter filter, MappedAsyncPagingIterable<DetailedMessageBatchEntity> entities, Order order)
 	{
 		this.filter = filter;
 		this.entities = entities;
+		this.order = order;
 	}
 	
 	@Override
 	public Iterator<StoredMessage> iterator()
 	{
-		return new MessagesIterator(entities, filter);
+		return new MessagesIterator(filter, entities, order);
 	}
 }
