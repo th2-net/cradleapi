@@ -535,14 +535,38 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter, Order order)
 	{
+		return doGetDetailedMessageBatchEntities(filter, order).thenApply(it -> new MessagesIteratorAdapter(filter, it));
+	}
+	
+	
+	@Override
+	protected Iterable<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException
+	{
+		try
+		{
+			return doGetMessagesBatchesAsync(filter).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting messages filtered by "+filter, e);
+		}
+	}
+
+	@Override
+	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter)
+	{
+		return doGetDetailedMessageBatchEntities(filter, Order.DIRECT).thenApply(it -> new StoredMessageBatchAdapter(it, objectsFactory, filter == null ? 0 : filter.getLimit()));
+	}
+
+	private CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> doGetDetailedMessageBatchEntities(StoredMessageFilter filter, Order order)
+	{
 		MessageBatchOperator op = ops.getMessageBatchOperator();
 		CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> future =
 				new AsyncOperator<MappedAsyncPagingIterable<DetailedMessageBatchEntity>>(semaphore)
 						.getFuture(() -> op.filterMessages(instanceUuid, filter, order, semaphore, op, readAttrs));
 		return future.thenApply(it -> new MessagesIteratorAdapter(filter, it, order));
 	}
-	
-	
+
 	@Override
 	protected Iterable<StoredTestEventMetadata> doGetRootTestEvents(Instant from, Instant to) throws CradleStorageException, IOException
 	{
@@ -606,11 +630,8 @@ public class CassandraCradleStorage extends CradleStorage
 				toTime = toDateTime.toLocalTime();
 		
 		CompletableFuture<MappedAsyncPagingIterable<TestEventChildEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<TestEventChildEntity>>(semaphore)
-				.getFuture(() -> order == Order.DIRECT
-						? ops.getTestEventChildrenOperator().getTestEventsAsc(instanceUuid, parentId.toString(), 
-								fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
-						: ops.getTestEventChildrenOperator().getTestEventsDesc(instanceUuid, parentId.toString(),
-								fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
+				.getFuture(() -> ops.getTestEventChildrenOperator().getTestEvents(instanceUuid, parentId.toString(), 
+						fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
 		return future.thenApply(it -> new TestEventChildrenMetadataIteratorAdapter(it));
 	}
 	
