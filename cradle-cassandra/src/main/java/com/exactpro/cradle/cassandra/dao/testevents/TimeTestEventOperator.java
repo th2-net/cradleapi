@@ -40,13 +40,13 @@ public interface TimeTestEventOperator
 {
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+
 			START_DATE+"=:startDate AND "+START_TIME+">=:timeFrom AND "+START_TIME+"<=:timeTo")
-	CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> getTestEventsAsc(UUID instanceId, LocalDate startDate, LocalTime timeFrom, LocalTime timeTo, 
+	CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> getTestEventsDirect(UUID instanceId, LocalDate startDate, LocalTime timeFrom, LocalTime timeTo, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+
 			START_DATE + "=:startDate AND " + START_TIME + ">=:timeFrom AND " + START_TIME + "<=:timeTo ORDER BY " +
 			START_TIME + " DESC, " + ID + " DESC")
-	CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> getTestEventsDesc(UUID instanceId, LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
+	CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> getTestEventsInverse(UUID instanceId, LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Insert

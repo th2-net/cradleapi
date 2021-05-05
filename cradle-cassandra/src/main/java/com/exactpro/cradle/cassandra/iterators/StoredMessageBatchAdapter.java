@@ -18,6 +18,7 @@ package com.exactpro.cradle.cassandra.iterators;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.CradleObjectsFactory;
+import com.exactpro.cradle.Order;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 
@@ -25,21 +26,23 @@ import java.util.Iterator;
 
 public class StoredMessageBatchAdapter implements Iterable<StoredMessageBatch>
 {
+	private final Order order;
 	private final MappedAsyncPagingIterable<DetailedMessageBatchEntity> entities;
 	private final CradleObjectsFactory objectsFactory;
 	private int limit;
 	
-	public StoredMessageBatchAdapter(MappedAsyncPagingIterable<DetailedMessageBatchEntity> entities, 
+	public StoredMessageBatchAdapter(MappedAsyncPagingIterable<DetailedMessageBatchEntity> entities, Order order, 
 			CradleObjectsFactory objectsFactory, int limit)
 	{
 		this.entities = entities;
 		this.objectsFactory = objectsFactory;
 		this.limit = limit;
+		this.order = order;
 	}
 
 	@Override
 	public Iterator<StoredMessageBatch> iterator()
 	{
-		return new StoredMessageBatchIterator(entities, objectsFactory, limit);
+		return new StoredMessageBatchIterator(entities, order, objectsFactory, limit);
 	}
 }

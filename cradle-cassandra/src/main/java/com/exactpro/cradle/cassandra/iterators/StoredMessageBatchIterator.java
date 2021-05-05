@@ -18,6 +18,7 @@ package com.exactpro.cradle.cassandra.iterators;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.CradleObjectsFactory;
+import com.exactpro.cradle.Order;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -26,16 +27,18 @@ import java.io.IOException;
 
 public class StoredMessageBatchIterator extends ConvertingPagedIterator<StoredMessageBatch, DetailedMessageBatchEntity>
 {
+	private final Order order;
 	private final CradleObjectsFactory objectsFactory;
 	private final int limit;
 	private long returnedEntities;
 	
-	public StoredMessageBatchIterator(MappedAsyncPagingIterable<DetailedMessageBatchEntity> rows,
+	public StoredMessageBatchIterator(MappedAsyncPagingIterable<DetailedMessageBatchEntity> rows, Order order,
 			CradleObjectsFactory objectsFactory, int limit)
 	{
 		super(rows);
 		this.objectsFactory = objectsFactory;
 		this.limit = limit;
+		this.order = order;
 	}
 
 	@Override
@@ -59,7 +62,7 @@ public class StoredMessageBatchIterator extends ConvertingPagedIterator<StoredMe
 	{
 		try
 		{
-			return entity.toStoredMessageBatch(objectsFactory.createMessageBatch());
+			return entity.toStoredMessageBatch(objectsFactory.createMessageBatch(), order);
 		}
 		catch (CradleStorageException e)
 		{

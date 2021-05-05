@@ -535,16 +535,16 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter, Order order)
 	{
-		return doGetDetailedMessageBatchEntities(filter, order).thenApply(it -> new MessagesIteratorAdapter(filter, it));
+		return doGetDetailedMessageBatchEntities(filter, order).thenApply(it -> new MessagesIteratorAdapter(filter, it, order));
 	}
 	
 	
 	@Override
-	protected Iterable<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException
+	protected Iterable<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter, Order order) throws IOException
 	{
 		try
 		{
-			return doGetMessagesBatchesAsync(filter).get();
+			return doGetMessagesBatchesAsync(filter, order).get();
 		}
 		catch (Exception e)
 		{
@@ -553,18 +553,17 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter)
+	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter, Order order)
 	{
-		return doGetDetailedMessageBatchEntities(filter, Order.DIRECT).thenApply(it -> new StoredMessageBatchAdapter(it, objectsFactory, filter == null ? 0 : filter.getLimit()));
+		return doGetDetailedMessageBatchEntities(filter, order)
+				.thenApply(it -> new StoredMessageBatchAdapter(it, order, objectsFactory, filter == null ? 0 : filter.getLimit()));
 	}
 
 	private CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> doGetDetailedMessageBatchEntities(StoredMessageFilter filter, Order order)
 	{
 		MessageBatchOperator op = ops.getMessageBatchOperator();
-		CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> future =
-				new AsyncOperator<MappedAsyncPagingIterable<DetailedMessageBatchEntity>>(semaphore)
+		return new AsyncOperator<MappedAsyncPagingIterable<DetailedMessageBatchEntity>>(semaphore)
 						.getFuture(() -> op.filterMessages(instanceUuid, filter, order, semaphore, op, readAttrs));
-		return future.thenApply(it -> new MessagesIteratorAdapter(filter, it, order));
 	}
 
 	@Override
@@ -594,8 +593,10 @@ public class CassandraCradleStorage extends CradleStorage
 		LocalTime fromTime = fromDateTime.toLocalTime(),
 				toTime = toDateTime.toLocalTime();
 		
-		CompletableFuture<MappedAsyncPagingIterable<RootTestEventEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<RootTestEventEntity>>(semaphore)
-				.getFuture(() -> ops.getRootTestEventOperator().getTestEvents(instanceUuid, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
+		CompletableFuture<MappedAsyncPagingIterable<RootTestEventEntity>> future = 
+				new AsyncOperator<MappedAsyncPagingIterable<RootTestEventEntity>>(semaphore)
+						.getFuture(() -> ops.getRootTestEventOperator()
+								.getTestEvents(instanceUuid, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
 		return future.thenApply(it -> new RootTestEventsMetadataIteratorAdapter(it));
 	}
 	
@@ -628,10 +629,14 @@ public class CassandraCradleStorage extends CradleStorage
 		
 		LocalTime fromTime = fromDateTime.toLocalTime(),
 				toTime = toDateTime.toLocalTime();
-		
-		CompletableFuture<MappedAsyncPagingIterable<TestEventChildEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<TestEventChildEntity>>(semaphore)
-				.getFuture(() -> ops.getTestEventChildrenOperator().getTestEvents(instanceUuid, parentId.toString(), 
-						fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
+
+		CompletableFuture<MappedAsyncPagingIterable<TestEventChildEntity>> future =
+				new AsyncOperator<MappedAsyncPagingIterable<TestEventChildEntity>>(semaphore)
+						.getFuture(() -> order == Order.DIRECT
+								? ops.getTestEventChildrenOperator().getTestEventsDirect(instanceUuid, parentId.toString(),
+									fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
+								: ops.getTestEventChildrenOperator().getTestEventsInverse(instanceUuid, parentId.toString(),
+									fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
 		return future.thenApply(it -> new TestEventChildrenMetadataIteratorAdapter(it));
 	}
 	
@@ -667,9 +672,9 @@ public class CassandraCradleStorage extends CradleStorage
 		CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> future =
 				new AsyncOperator<MappedAsyncPagingIterable<TimeTestEventEntity>>(semaphore)
 						.getFuture(() -> order == Order.DIRECT
-								? ops.getTimeTestEventOperator().getTestEventsAsc(instanceUuid,
+								? ops.getTimeTestEventOperator().getTestEventsDirect(instanceUuid,
 										fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
-								: ops.getTimeTestEventOperator().getTestEventsDesc(instanceUuid,
+								: ops.getTimeTestEventOperator().getTestEventsInverse(instanceUuid,
 										fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
 		return future.thenApply(it -> new TimeTestEventsMetadataIteratorAdapter(it));
 	}

@@ -103,8 +103,8 @@ public abstract class CradleStorage
 	
 	protected abstract Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter, Order order) throws IOException;
 	protected abstract CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter, Order order);
-	protected abstract Iterable<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException;
-	protected abstract CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter);
+	protected abstract Iterable<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter, Order order) throws IOException;
+	protected abstract CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter, Order order);
 	protected abstract Iterable<StoredTestEventMetadata> doGetRootTestEvents(Instant from, Instant to) 
 			throws CradleStorageException, IOException;
 	protected abstract CompletableFuture<Iterable<StoredTestEventMetadata>> doGetRootTestEventsAsync(Instant from, Instant to) 
@@ -575,7 +575,7 @@ public abstract class CradleStorage
 	
 	/**
 	 * Allows to enumerate stored messages in ascending index order, optionally filtering them by given conditions
-	 * @param filter defines conditions to filter messages by. Use null is no filtering is needed
+	 * @param filter defines conditions to filter messages by. Use null if no filtering is needed
 	 * @return iterable object to enumerate messages
 	 * @throws IOException if data retrieval failed
 	 */
@@ -586,37 +586,51 @@ public abstract class CradleStorage
 
 	/**
 	 * Allows to enumerate stored messages with specified index order, optionally filtering them by given conditions
-	 * @param filter defines conditions to filter messages by. Use null is no filtering is needed
+	 * @param filter defines conditions to filter messages by. Use null if no filtering is needed
 	 * @param order defines sorting order                 
 	 * @return iterable object to enumerate messages
 	 * @throws IOException if data retrieval failed
 	 */
 	public final Iterable<StoredMessage> getMessages(StoredMessageFilter filter, Order order) throws IOException
 	{
-		logger.debug("Filtering messages by {}, ordered by index {}", filter, order);
+		logger.debug("Filtering messages by {}, in {} order", filter, order);
 		Iterable<StoredMessage> result = doGetMessages(filter, order);
-		logger.debug("Prepared iterator for messages filtered by {}, ordered by index {}", filter, order);
+		logger.debug("Prepared iterator for messages filtered by {}, in {} order", filter, order);
 		return result;
 	}
 
 	/**
-	 * Allows to enumerate stored message batches, optionally filtering them by given conditions
-	 * @param filter defines conditions to filter message batches by. Use null is no filtering is needed
+	 * Allows to enumerate stored message batches in ascending index order, optionally filtering them by given conditions
+	 * @param filter defines conditions to filter message batches by. Use null if no filtering is needed
 	 * @return iterable object to enumerate message batches
 	 * @throws IOException if data retrieval failed
 	 */
 	public final Iterable<StoredMessageBatch> getMessagesBatches(StoredMessageFilter filter) throws IOException
 	{
-		logger.debug("Filtering message batches by {}", filter);
-		Iterable<StoredMessageBatch> result = doGetMessagesBatches(filter);
-		logger.debug("Prepared iterator for message batches filtered by {}", filter);
+		return getMessagesBatches(filter, Order.DIRECT);
+	}
+
+	
+	/**
+	 * Allows to enumerate stored message batches with specified index order, optionally filtering them by given conditions
+	 * @param filter defines conditions to filter message batches by. Use null if no filtering is needed
+	 * @param order defines sorting order   
+	 * @return iterable object to enumerate message batches
+	 * @throws IOException if data retrieval failed
+	 */
+	public final Iterable<StoredMessageBatch> getMessagesBatches(StoredMessageFilter filter, Order order) throws IOException
+	{
+		logger.debug("Filtering message batches by {} in {} order", filter, order);
+		Iterable<StoredMessageBatch> result = doGetMessagesBatches(filter, order);
+		logger.debug("Prepared iterator for message batches filtered by {} in {} order", filter, order);
 		return result;
 	}
-	
+
+
 	/**
 	 * Allows to asynchronously obtain iterable object to enumerate stored messages in ascending index order, 
 	 * optionally filtering them by given conditions
-	 * @param filter defines conditions to filter messages by. Use null is no filtering is needed
+	 * @param filter defines conditions to filter messages by. Use null if no filtering is needed
 	 * @return future to obtain iterable object to enumerate messages
 	 */
 	public final CompletableFuture<Iterable<StoredMessage>> getMessagesAsync(StoredMessageFilter filter)
@@ -628,39 +642,52 @@ public abstract class CradleStorage
 	/**
 	 * Allows to asynchronously obtain iterable object to enumerate stored messages with specified index order, 
 	 * optionally filtering them by given conditions
-	 * @param filter defines conditions to filter messages by. Use null is no filtering is needed
+	 * @param filter defines conditions to filter messages by. Use null if no filtering is needed
 	 * @param order defines sorting order    
 	 * @return future to obtain iterable object to enumerate messages
 	 */
 	public final CompletableFuture<Iterable<StoredMessage>> getMessagesAsync(StoredMessageFilter filter, Order order)
 	{
-		logger.debug("Asynchronously getting messages filtered by {}, ordered by index {}", filter, order);
+		logger.debug("Asynchronously getting messages filtered by {} in {} order", filter, order);
 		CompletableFuture<Iterable<StoredMessage>> result = doGetMessagesAsync(filter, order)
 				.whenComplete((r, error) -> {
 					if (error != null)
 						logger.error("Error while getting messages filtered by "+filter+" asynchronously", error);
 					else
-						logger.debug("Iterator for messages filtered by {}, ordered by index {} got asynchronously", filter, order);
+						logger.debug("Iterator for messages filtered by {} in {} order got asynchronously", filter, order);
 				});
 		return result;
 	}
 
 	/**
-	 * Allows to asynchronously obtain iterable object to enumerate stored message batches, optionally filtering them by given conditions
-	 * @param filter defines conditions to filter message batches by. Use null is no filtering is needed
+	 * Allows to asynchronously obtain iterable object to enumerate stored message batches in ascending index order,
+	 * optionally filtering them by given conditions
+	 * @param filter defines conditions to filter message batches by. Use null if no filtering is needed
 	 * @return future to obtain iterable object to enumerate message batches
 	 */
 	public final CompletableFuture<Iterable<StoredMessageBatch>> getMessagesBatchesAsync(StoredMessageFilter filter)
 	{
-		logger.debug("Asynchronously getting message batches filtered by {}", filter);
-		CompletableFuture<Iterable<StoredMessageBatch>> result = doGetMessagesBatchesAsync(filter)
+		return getMessagesBatchesAsync(filter, Order.DIRECT);
+	}
+
+	/**
+	 * Allows to asynchronously obtain iterable object to enumerate stored message batches with specified order,
+	 * optionally filtering them by given conditions
+	 * @param filter defines conditions to filter message batches by. Use null if no filtering is needed
+	 * @param order defines sorting order   
+	 * @return future to obtain iterable object to enumerate message batches
+	 */
+	public final CompletableFuture<Iterable<StoredMessageBatch>> getMessagesBatchesAsync(StoredMessageFilter filter, Order order)
+	{
+		logger.debug("Asynchronously getting message batches filtered by {} in {} order", filter, order);
+		CompletableFuture<Iterable<StoredMessageBatch>> result = doGetMessagesBatchesAsync(filter, order)
 				.whenComplete((r, error) -> {
 					if (error != null)
 						logger.error("Error while getting message batches filtered by "+filter+" asynchronously", error);
 					else
-						logger.debug("Iterator for message batches filtered by {} got asynchronously", filter);
+						logger.debug("Iterator for message batches filtered by {} in {} order got asynchronously", filter, order);
 				});
-		
+
 		return result;
 	}
 	
