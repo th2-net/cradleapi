@@ -22,17 +22,18 @@ import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.exactpro.cradle.healing.HealingInterval;
 import com.exactpro.cradle.healing.RecoveryState;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.CRAWLER_TYPE;
+import static com.exactpro.cradle.cassandra.StorageConstants.HEALED_EVENT_IDS;
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_END_TIME;
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_ID;
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_DATE;
@@ -82,6 +83,9 @@ public class HealingIntervalEntity
     @CqlName(RECOVERY_STATE_JSON)
     private String recoveryStateJson;
 
+    @CqlName(HEALED_EVENT_IDS)
+    private Set<String> healedEventsIds;
+
     public HealingIntervalEntity()
     {
     }
@@ -97,6 +101,7 @@ public class HealingIntervalEntity
         this.crawlerType = interval.getCrawlerType();
         this.recoveryStateJson = interval.getRecoveryState().convertToJson();
         this.instanceId = instanceId;
+        this.healedEventsIds = new HashSet<>();
     }
 
     public UUID getInstanceId()
@@ -140,6 +145,10 @@ public class HealingIntervalEntity
     public String getCrawlerType() { return crawlerType; }
 
     public void setCrawlerType(String crawlerType) { this.crawlerType = crawlerType; }
+
+    public Set<String> getHealedEventsIds() { return healedEventsIds; }
+
+    public void setHealedEventsIds(Set<String> healedEventsIds) { this.healedEventsIds = healedEventsIds; }
 
     public HealingInterval asHealingInterval() throws IOException {
         return new HealingInterval(this.healingIntervalId, this.startTime, this.endTime, this.date,

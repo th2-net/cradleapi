@@ -314,6 +314,7 @@ public class TablesCreator
 				.withColumn(HEALING_INTERVAL_LAST_UPDATE_DATE, DataTypes.DATE)
 				.withColumn(HEALING_INTERVAL_LAST_UPDATE_TIME, DataTypes.TIME)
 				.withPartitionKey(CRAWLER_TYPE, DataTypes.TEXT)
+				.withColumn(HEALED_EVENT_IDS, DataTypes.setOf(DataTypes.TEXT))
 				.withColumn(RECOVERY_STATE_JSON, DataTypes.TEXT);
 
 		exec.executeQuery(create.asCql(), true);

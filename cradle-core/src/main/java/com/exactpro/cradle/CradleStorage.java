@@ -106,6 +106,8 @@ public abstract class CradleStorage
 	protected abstract CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEventWrapper event, boolean success);
 	protected abstract void doUpdateRecoveryState(RecoveryState recoveryState, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String crawlerType) throws IOException;
 	protected abstract CompletableFuture<Void> doUpdateRecoveryStateAsync(RecoveryState recoveryState, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String crawlerType);
+	protected abstract void doStoreHealedEventsIds(Set<String> healedEventIds, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String crawlerType) throws IOException;
+	protected abstract CompletableFuture<Void> doStoreHealedEventsIdsAsync(Set<String> healedEventIds, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String crawlerType);
 
 	public abstract CradleObjectsFactory getObjectsFactory();
 	
@@ -979,6 +981,26 @@ public abstract class CradleStorage
 						logger.error("Error while asynchronously updating recovery state of healing interval with start time {}", healingIntervalStartTime);
 					else
 						logger.debug("Recovery state of healing interval with start time {} updated asynchronously", healingIntervalStartTime);
+				});
+		return result;
+	}
+
+	public final void storeHealedEventIds(Set<String> healedEventIds, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String crawlerType) throws IOException
+	{
+		logger.debug("Storing healed event ids with start time {}", healingIntervalStartTime);
+		doStoreHealedEventsIds(healedEventIds, healingIntervalStartDate, healingIntervalStartTime, crawlerType);
+		logger.debug("Stored healed event ids with start time {}", healingIntervalStartTime);
+	}
+
+	public final CompletableFuture<Void> storeHealedEventIdsAsync(Set<String> healedEventIds, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String crawlerType)
+	{
+		logger.debug("Asynchronously storing healed event ids with start time {}", healingIntervalStartTime);
+		CompletableFuture<Void> result = doStoreHealedEventsIdsAsync(healedEventIds, healingIntervalStartDate, healingIntervalStartTime, crawlerType)
+				.whenComplete((r, error) -> {
+					if (error != null)
+						logger.error("Error while asynchronously storing healed event ids with start time {}", healingIntervalStartTime);
+					else
+						logger.debug(" healed event ids with start time {} stored asynchronously", healingIntervalStartTime);
 				});
 		return result;
 	}

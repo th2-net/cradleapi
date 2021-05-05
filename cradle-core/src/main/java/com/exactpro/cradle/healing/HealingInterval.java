@@ -21,6 +21,8 @@ import com.exactpro.cradle.utils.CompressionUtils;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.HashSet;
+import java.util.Set;
 
 public class HealingInterval
 {
@@ -32,9 +34,11 @@ public class HealingInterval
     private final LocalDate lastUpdateDate;
     private final LocalTime lastUpdateTime;
     private final String crawlerType;
+    private Set<String> healedEventsIds;
 
     public HealingInterval(String id, LocalTime startTime, LocalTime endTime, LocalDate date,
-                           RecoveryState recoveryState, LocalDate lastUpdateDate, LocalTime lastUpdateTime, String crawlerType)
+                           RecoveryState recoveryState, LocalDate lastUpdateDate, LocalTime lastUpdateTime,
+                           String crawlerType)
     {
         this.id = id;
         this.startTime = startTime;
@@ -44,6 +48,7 @@ public class HealingInterval
         this.lastUpdateDate = lastUpdateDate;
         this.lastUpdateTime = lastUpdateTime;
         this.crawlerType = crawlerType;
+        this.healedEventsIds = new HashSet<>();
     }
 
     public HealingInterval(String id, LocalTime startTime, LocalTime endTime,
@@ -57,6 +62,7 @@ public class HealingInterval
         this.lastUpdateDate = LocalDate.now();
         this.lastUpdateTime = LocalTime.now();
         this.crawlerType = crawlerType;
+        this.healedEventsIds = new HashSet<>();
     }
 
     public String getId() { return id; }
@@ -74,6 +80,8 @@ public class HealingInterval
     public LocalTime getLastUpdateTime() { return lastUpdateTime; }
 
     public String getCrawlerType() { return crawlerType; }
+
+    public Set<String> getHealedEventsIds() { return healedEventsIds; }
 
     @Override
     public String toString()

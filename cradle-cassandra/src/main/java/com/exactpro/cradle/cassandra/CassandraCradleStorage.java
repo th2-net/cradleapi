@@ -1093,4 +1093,25 @@ public class CassandraCradleStorage extends CradleStorage
 				.getFuture(() -> ops.getHealingIntervalOperator().updateRecoveryState(instanceUuid, recoveryState.convertToJson(), healingIntervalStartDate, healingIntervalStartTime, crawlerType));
 		return future.thenAccept(e -> {}); // correct?
 	}
+
+	@Override
+	protected void doStoreHealedEventsIds(Set<String> healedEventIds, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String crawlerType) throws IOException
+	{
+		try
+		{
+			doStoreHealedEventsIdsAsync(healedEventIds, healingIntervalStartDate, healingIntervalStartTime, crawlerType);
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while storing healed event ids with start time "+healingIntervalStartTime, e);
+		}
+	}
+
+	@Override
+	protected CompletableFuture<Void> doStoreHealedEventsIdsAsync(Set<String> healedEventIds, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String crawlerType)
+	{
+		CompletableFuture<AsyncResultSet> future = new AsyncOperator<AsyncResultSet>(semaphore)
+				.getFuture(() -> ops.getHealingIntervalOperator().storeHealedEventsIds(instanceUuid, healingIntervalStartDate, healingIntervalStartTime, crawlerType, healedEventIds));
+		return future.thenAccept(e -> {}); // correct?
+	}
 }
