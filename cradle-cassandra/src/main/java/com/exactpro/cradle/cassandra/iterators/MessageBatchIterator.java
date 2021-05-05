@@ -20,19 +20,23 @@ import java.io.IOException;
 import java.util.Collection;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
+import com.exactpro.cradle.Order;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.messages.StoredMessage;
 
 public class MessageBatchIterator extends ConvertingPagedIterator<Collection<StoredMessage>, DetailedMessageBatchEntity>
 {
-	public MessageBatchIterator(MappedAsyncPagingIterable<DetailedMessageBatchEntity> rows)
+	private final Order order;
+	
+	public MessageBatchIterator(MappedAsyncPagingIterable<DetailedMessageBatchEntity> rows, Order order)
 	{
 		super(rows);
+		this.order = order;
 	}
 	
 	@Override
 	protected Collection<StoredMessage> convertEntity(DetailedMessageBatchEntity entity) throws IOException
 	{
-		return entity.toStoredMessages();
+		return entity.toStoredMessages(order);
 	}
 }

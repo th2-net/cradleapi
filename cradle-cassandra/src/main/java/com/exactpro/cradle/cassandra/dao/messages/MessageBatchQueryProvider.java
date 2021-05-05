@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
+import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
+import com.exactpro.cradle.Order;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,14 +67,14 @@ public class MessageBatchQueryProvider
 				.allowFiltering();
 	}
 	
-	public CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> filterMessages(UUID instanceId, StoredMessageFilter filter, 
-			CassandraSemaphore semaphore, MessageBatchOperator operator,
+	public CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> filterMessages(UUID instanceId, 
+			StoredMessageFilter filter, Order order, CassandraSemaphore semaphore, MessageBatchOperator operator,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 	{
 		Select select = selectStart;
 		if (filter != null)
 			select = addFilter(select, filter);
-		
+		select = orderBy(order, select);
 		PreparedStatement ps = session.prepare(select.build());
 		BoundStatement bs;
 		try
@@ -85,9 +87,15 @@ public class MessageBatchQueryProvider
 			error.completeExceptionally(e);
 			return error;
 		}
-		return session.executeAsync(bs).thenApply((r) -> r.map(helper::get)).toCompletableFuture();
+		return session.executeAsync(bs).thenApply(r -> r.map(helper::get)).toCompletableFuture();
 	}
-	
+
+	private Select orderBy(Order order, Select select)
+	{
+		ClusteringOrder clusteringOrder = order == Order.DIRECT ? ClusteringOrder.ASC : ClusteringOrder.DESC;
+		return select.orderBy(DIRECTION, clusteringOrder).orderBy(MESSAGE_INDEX, clusteringOrder);
+	}
+
 	private Select addFilter(Select select, StoredMessageFilter filter)
 	{
 		if (filter.getStreamName() != null)
