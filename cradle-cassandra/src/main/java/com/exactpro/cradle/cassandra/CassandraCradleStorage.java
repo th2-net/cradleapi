@@ -36,15 +36,7 @@ import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.messages.StreamEntity;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.DetailedTestEventEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventDateEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildDateEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.iterators.*;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
@@ -567,11 +559,12 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Iterable<StoredTestEventMetadata> doGetRootTestEvents(Instant from, Instant to) throws CradleStorageException, IOException
+	protected Iterable<StoredTestEventMetadata> doGetRootTestEvents(Instant from, Instant to, Order order) 
+			throws CradleStorageException, IOException
 	{
 		try
 		{
-			return doGetRootTestEventsAsync(from, to).get();
+			return doGetRootTestEventsAsync(from, to, order).get();
 		}
 		catch (CradleStorageException e)
 		{
@@ -584,7 +577,8 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetRootTestEventsAsync(Instant from, Instant to) throws CradleStorageException
+	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetRootTestEventsAsync(Instant from, Instant to,
+			Order order) throws CradleStorageException
 	{
 		LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET),
 				toDateTime = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
@@ -593,11 +587,13 @@ public class CassandraCradleStorage extends CradleStorage
 		LocalTime fromTime = fromDateTime.toLocalTime(),
 				toTime = toDateTime.toLocalTime();
 		
+		RootTestEventOperator op = ops.getRootTestEventOperator();
 		CompletableFuture<MappedAsyncPagingIterable<RootTestEventEntity>> future = 
 				new AsyncOperator<MappedAsyncPagingIterable<RootTestEventEntity>>(semaphore)
-						.getFuture(() -> ops.getRootTestEventOperator()
-								.getTestEvents(instanceUuid, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
-		return future.thenApply(it -> new RootTestEventsMetadataIteratorAdapter(it));
+						.getFuture(() -> order == Order.DIRECT
+								? op.getTestEventsDirect(instanceUuid, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
+								: op.getTestEventsInverse(instanceUuid, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
+		return future.thenApply(RootTestEventsMetadataIteratorAdapter::new);
 	}
 	
 	
@@ -637,7 +633,7 @@ public class CassandraCradleStorage extends CradleStorage
 									fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
 								: ops.getTestEventChildrenOperator().getTestEventsInverse(instanceUuid, parentId.toString(),
 									fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
-		return future.thenApply(it -> new TestEventChildrenMetadataIteratorAdapter(it));
+		return future.thenApply(TestEventChildrenMetadataIteratorAdapter::new);
 	}
 	
 	
@@ -676,7 +672,7 @@ public class CassandraCradleStorage extends CradleStorage
 										fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
 								: ops.getTimeTestEventOperator().getTestEventsInverse(instanceUuid,
 										fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
-		return future.thenApply(it -> new TimeTestEventsMetadataIteratorAdapter(it));
+		return future.thenApply(TimeTestEventsMetadataIteratorAdapter::new);
 	}
 	
 	
