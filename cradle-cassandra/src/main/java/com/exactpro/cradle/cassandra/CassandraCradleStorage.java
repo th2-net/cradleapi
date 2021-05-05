@@ -548,7 +548,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter, Order order)
 	{
 		return doGetDetailedMessageBatchEntities(filter, order)
-				.thenApply(it -> new StoredMessageBatchAdapter(it, order, objectsFactory, filter == null ? 0 : filter.getLimit()));
+				.thenApply(it -> new StoredMessageBatchAdapter(it, objectsFactory, filter == null ? 0 : filter.getLimit()));
 	}
 
 	private CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> doGetDetailedMessageBatchEntities(StoredMessageFilter filter, Order order)

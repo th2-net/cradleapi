@@ -26,23 +26,21 @@ import java.util.Iterator;
 
 public class StoredMessageBatchAdapter implements Iterable<StoredMessageBatch>
 {
-	private final Order order;
 	private final MappedAsyncPagingIterable<DetailedMessageBatchEntity> entities;
 	private final CradleObjectsFactory objectsFactory;
 	private int limit;
 	
-	public StoredMessageBatchAdapter(MappedAsyncPagingIterable<DetailedMessageBatchEntity> entities, Order order, 
+	public StoredMessageBatchAdapter(MappedAsyncPagingIterable<DetailedMessageBatchEntity> entities, 
 			CradleObjectsFactory objectsFactory, int limit)
 	{
 		this.entities = entities;
 		this.objectsFactory = objectsFactory;
 		this.limit = limit;
-		this.order = order;
 	}
 
 	@Override
 	public Iterator<StoredMessageBatch> iterator()
 	{
-		return new StoredMessageBatchIterator(entities, order, objectsFactory, limit);
+		return new StoredMessageBatchIterator(entities, objectsFactory, limit);
 	}
 }

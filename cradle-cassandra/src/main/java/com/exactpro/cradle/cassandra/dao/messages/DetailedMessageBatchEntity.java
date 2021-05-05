@@ -86,18 +86,11 @@ public class DetailedMessageBatchEntity extends MessageBatchEntity
 		this.setLastMessageIndex(batch.getLastMessage().getIndex());
 	}
 
-	// Parameter messageBatch must be created by CradleObjectFactory to have the correct batchSize 
+	// Parameter messageBatch must be created by CradleObjectFactory to have the correct batchSize
 	public StoredMessageBatch toStoredMessageBatch(StoredMessageBatch messageBatch)
 			throws IOException, CradleStorageException
 	{
-		return toStoredMessageBatch(messageBatch, Order.DIRECT);
-	}
-
-	// Parameter messageBatch must be created by CradleObjectFactory to have the correct batchSize
-	public StoredMessageBatch toStoredMessageBatch(StoredMessageBatch messageBatch, Order order)
-			throws IOException, CradleStorageException
-	{
-		for (StoredMessage storedMessage : toStoredMessages(order))
+		for (StoredMessage storedMessage : toStoredMessages())
 		{
 			MessageToStoreBuilder builder = new MessageToStoreBuilder()
 					.content(storedMessage.getContent())
