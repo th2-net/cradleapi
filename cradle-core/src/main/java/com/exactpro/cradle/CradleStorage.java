@@ -98,8 +98,8 @@ public abstract class CradleStorage
 	protected abstract Collection<Instant> doGetTestEventsDates(StoredTestEventId parentId) throws IOException;
 	protected abstract void doStoreHealingInterval(HealingInterval healingInterval) throws IOException;
 	protected abstract CompletableFuture<Void> doStoreHealingIntervalAsync(HealingInterval healingInterval);
-	protected abstract Iterable<HealingInterval> doGetHealingIntervals(LocalDate date, LocalTime from, String crawlerType) throws IOException;
-	protected abstract CompletableFuture<Iterable<HealingInterval>> doGetHealingIntervalsAsync(LocalDate date, LocalTime from, String crawlerType);
+	protected abstract Iterable<HealingInterval> doGetHealingIntervals(Instant from, String crawlerType) throws IOException;
+	protected abstract CompletableFuture<Iterable<HealingInterval>> doGetHealingIntervalsAsync(Instant from, String crawlerType);
 	protected abstract boolean doSetLastUpdateTimeAndDate(LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerType) throws IOException;
 	protected abstract CompletableFuture<Boolean> doSetLastUpdateTimeAndDateAsync(LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerType);
 	protected abstract void doUpdateEventStatus(StoredTestEventWrapper event, boolean success) throws IOException;
@@ -839,9 +839,11 @@ public abstract class CradleStorage
 	 * @throws IOException if data writing failed
 	 */
 	public final void storeHealingInterval(HealingInterval healingInterval) throws IOException {
-		logger.debug("Storing healing interval {}", healingInterval.getId());
+		logger.debug("Storing healing interval with date {} and start time {}",
+				healingInterval.getDate(), healingInterval.getStartTime());
 		doStoreHealingInterval(healingInterval);
-		logger.debug("Healing interval {} has been stored", healingInterval.getId());
+		logger.debug("Healing interval with date {} and start time {} has been stored",
+				healingInterval.getDate(), healingInterval.getStartTime());
 	}
 
 	/**
@@ -851,49 +853,50 @@ public abstract class CradleStorage
 	 */
 	public final CompletableFuture<Void> storeHealingIntervalAsync(HealingInterval healingInterval)
 	{
-		logger.debug("Storing healing interval {} asynchronously", healingInterval.getId());
+		logger.debug("Storing healing interval with date {} and start time {} asynchronously",
+				healingInterval.getDate(), healingInterval.getStartTime());
 		return doStoreHealingIntervalAsync(healingInterval)
 				.whenComplete((r, error) -> {
 					if (error != null)
-						logger.error("Error while storing healing interval {}", healingInterval.getId());
+						logger.error("Error while storing healing interval with date {} and start time {}",
+								healingInterval.getDate(), healingInterval.getStartTime());
 					else
-						logger.debug("Healing interval {} has been stored asynchronously", healingInterval.getId());
+						logger.debug("Healing interval with date {} and start time {} has been stored asynchronously",
+								healingInterval.getDate(), healingInterval.getStartTime());
 				});
 	}
 
 	/**
 	 * Obtains iterable of healing intervals
-	 * @param date date at which intervals are being searched
 	 * @param from time from which intervals are being searched
 	 * @return iterable of healing intervals
 	 */
-	public final Iterable<HealingInterval> getHealingIntervals(LocalDate date, LocalTime from, String crawlerType) throws IOException
+	public final Iterable<HealingInterval> getHealingIntervals(Instant from, String crawlerType) throws IOException
 	{
-		logger.debug("Getting healing intervals date: {}, from: {}", date, from);
-		Iterable<HealingInterval> result = doGetHealingIntervals(date, from, crawlerType);
+		logger.debug("Getting healing intervals from {}", from);
+		Iterable<HealingInterval> result = doGetHealingIntervals(from, crawlerType);
 
 		if (result == null)
-			throw new IOException("Interval date: "+date+", from: "+from+" is not found");
+			throw new IOException("Interval from "+from+" is not found");
 
-		logger.debug("Healing intervals date: {}, from: {} got", date, from);
+		logger.debug("Healing intervals from {} got", from);
 		return result;
 	}
 
 	/**
 	 * Asynchronously obtains iterable of healing intervals
-	 * @param date date at which intervals are being searched
 	 * @param from time from which intervals are being searched
 	 * @return future to get know if obtaining was successful
 	 */
-	public final CompletableFuture<Iterable<HealingInterval>> getHealingIntervalsAsync(LocalDate date, LocalTime from, String crawlerType)
+	public final CompletableFuture<Iterable<HealingInterval>> getHealingIntervalsAsync(Instant from, String crawlerType)
 	{
-		logger.debug("Asynchronously getting interval date: {}, from: {}", date, from);
-		CompletableFuture<Iterable<HealingInterval>> result = doGetHealingIntervalsAsync(date, from, crawlerType)
+		logger.debug("Asynchronously getting interval from {}", from);
+		CompletableFuture<Iterable<HealingInterval>> result = doGetHealingIntervalsAsync(from, crawlerType)
 				.whenComplete((r, error) -> {
 					if (error != null)
-						logger.error("Error while getting healing intervals date: "+date+", from: "+from+" asynchronously", error);
+						logger.error("Error while getting healing intervals from "+from+" asynchronously", error);
 					else
-						logger.debug("Healing intervals date: {}, from: {} got", date, from);
+						logger.debug("Healing intervals from {} got", from);
 				});
 		return result;
 	}
@@ -987,20 +990,20 @@ public abstract class CradleStorage
 
 	public final void storeHealedEventIds(Set<String> healedEventIds, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String crawlerType) throws IOException
 	{
-		logger.debug("Storing healed event ids with start time {}", healingIntervalStartTime);
+		logger.debug("Storing healed event ids of interval with start time {}", healingIntervalStartTime);
 		doStoreHealedEventsIds(healedEventIds, healingIntervalStartDate, healingIntervalStartTime, crawlerType);
-		logger.debug("Stored healed event ids with start time {}", healingIntervalStartTime);
+		logger.debug("Stored healed event ids of interval with start time {}", healingIntervalStartTime);
 	}
 
 	public final CompletableFuture<Void> storeHealedEventIdsAsync(Set<String> healedEventIds, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String crawlerType)
 	{
-		logger.debug("Asynchronously storing healed event ids with start time {}", healingIntervalStartTime);
+		logger.debug("Asynchronously storing healed event ids of interval with start time {}", healingIntervalStartTime);
 		CompletableFuture<Void> result = doStoreHealedEventsIdsAsync(healedEventIds, healingIntervalStartDate, healingIntervalStartTime, crawlerType)
 				.whenComplete((r, error) -> {
 					if (error != null)
-						logger.error("Error while asynchronously storing healed event ids with start time {}", healingIntervalStartTime);
+						logger.error("Error while asynchronously storing healed event ids of interval with start time {}", healingIntervalStartTime);
 					else
-						logger.debug(" healed event ids with start time {} stored asynchronously", healingIntervalStartTime);
+						logger.debug("Healed event ids of interval with start time {} stored asynchronously", healingIntervalStartTime);
 				});
 		return result;
 	}

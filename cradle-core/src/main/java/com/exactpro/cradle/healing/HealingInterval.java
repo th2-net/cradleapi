@@ -18,15 +18,18 @@
 package com.exactpro.cradle.healing;
 
 import com.exactpro.cradle.utils.CompressionUtils;
+import com.exactpro.cradle.utils.CradleStorageException;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneOffset;
 import java.util.HashSet;
 import java.util.Set;
 
 public class HealingInterval
 {
-    private final String id;
     private final LocalTime startTime;
     private final LocalTime endTime;
     private final LocalDate date;
@@ -36,14 +39,20 @@ public class HealingInterval
     private final String crawlerType;
     private Set<String> healedEventsIds;
 
-    public HealingInterval(String id, LocalTime startTime, LocalTime endTime, LocalDate date,
-                           RecoveryState recoveryState, LocalDate lastUpdateDate, LocalTime lastUpdateTime,
-                           String crawlerType)
+    private final ZoneOffset timezoneOffset = ZoneOffset.UTC;
+
+    public HealingInterval(Instant start, Instant end, RecoveryState recoveryState,
+                           LocalDate lastUpdateDate, LocalTime lastUpdateTime,
+                           String crawlerType) throws CradleStorageException
     {
-        this.id = id;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.date = date;
+
+        LocalDateTime fromDateTime = LocalDateTime.ofInstant(start, timezoneOffset),
+                toDateTime = LocalDateTime.ofInstant(end, timezoneOffset);
+        checkTimeBoundaries(fromDateTime, toDateTime, start, end);
+
+        this.startTime = fromDateTime.toLocalTime();
+        this.endTime = toDateTime.toLocalTime();
+        this.date = fromDateTime.toLocalDate();
         this.recoveryState = recoveryState;
         this.lastUpdateDate = lastUpdateDate;
         this.lastUpdateTime = lastUpdateTime;
@@ -51,13 +60,16 @@ public class HealingInterval
         this.healedEventsIds = new HashSet<>();
     }
 
-    public HealingInterval(String id, LocalTime startTime, LocalTime endTime,
-                           LocalDate date, RecoveryState recoveryState, String crawlerType)
+    public HealingInterval(Instant start, Instant end,
+                           RecoveryState recoveryState, String crawlerType) throws CradleStorageException
     {
-        this.id = id;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.date = date;
+        LocalDateTime fromDateTime = LocalDateTime.ofInstant(start, timezoneOffset),
+                toDateTime = LocalDateTime.ofInstant(end, timezoneOffset);
+        checkTimeBoundaries(fromDateTime, toDateTime, start, end);
+
+        this.startTime = fromDateTime.toLocalTime();
+        this.endTime = toDateTime.toLocalTime();
+        this.date = fromDateTime.toLocalDate();
         this.recoveryState = recoveryState;
         this.lastUpdateDate = LocalDate.now();
         this.lastUpdateTime = LocalTime.now();
@@ -65,7 +77,36 @@ public class HealingInterval
         this.healedEventsIds = new HashSet<>();
     }
 
-    public String getId() { return id; }
+    public HealingInterval(LocalTime startTime, LocalTime endTime, LocalDate date, RecoveryState recoveryState, LocalDate lastUpdateDate, LocalTime lastUpdateTime, String crawlerType) {
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.date = date;
+        this.recoveryState = recoveryState;
+        this.lastUpdateDate = lastUpdateDate;
+        this.lastUpdateTime = lastUpdateTime;
+        this.crawlerType = crawlerType;
+        this.healedEventsIds = new HashSet();
+    }
+
+    public HealingInterval(LocalTime startTime, LocalTime endTime, LocalDate date, RecoveryState recoveryState, String crawlerType) {
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.date = date;
+        this.recoveryState = recoveryState;
+        this.lastUpdateDate = LocalDate.now();
+        this.lastUpdateTime = LocalTime.now();
+        this.crawlerType = crawlerType;
+        this.healedEventsIds = new HashSet();
+    }
+
+    private void checkTimeBoundaries(LocalDateTime fromDateTime, LocalDateTime toDateTime, Instant originalFrom, Instant originalTo)
+            throws CradleStorageException
+    {
+        LocalDate fromDate = fromDateTime.toLocalDate(),
+                toDate = toDateTime.toLocalDate();
+        if (!fromDate.equals(toDate))
+            throw new CradleStorageException("Left and right boundaries should be of the same date, but got '"+originalFrom+"' and '"+originalTo+"'");
+    }
 
     public LocalTime getStartTime() { return startTime; }
 
@@ -88,7 +129,6 @@ public class HealingInterval
     {
         return new StringBuilder()
                 .append("HealingInterval{").append(CompressionUtils.EOL)
-                .append("id=").append(id).append(",").append(CompressionUtils.EOL)
                 .append("date=").append(date).append(",").append(CompressionUtils.EOL)
                 .append("startTime=").append(startTime).append(",").append(CompressionUtils.EOL)
                 .append("endTime=").append(endTime).append(",").append(CompressionUtils.EOL)

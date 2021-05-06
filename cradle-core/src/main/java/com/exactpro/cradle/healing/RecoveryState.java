@@ -22,31 +22,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Timestamp;
+import java.time.Instant;
 
 public class RecoveryState
 {
-    private final String id;
-
-    private final long healedEventsNumber;
-
-    private final Timestamp timeOfStop;
+    private final Instant timeOfStop;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private static final Logger logger = LoggerFactory.getLogger(RecoveryState.class);
 
-    public RecoveryState(@JsonProperty("id") String id, @JsonProperty("healedEventsNumber") long healedEventsNumber, @JsonProperty("timeOfStop") Timestamp timeOfStop) {
-        this.id = id;
-        this.healedEventsNumber = healedEventsNumber;
+    public RecoveryState(@JsonProperty("timeOfStop") Instant timeOfStop) {
         this.timeOfStop = timeOfStop;
     }
 
-    public String getId() { return id; }
-
-    public long getHealedEventsNumber() { return healedEventsNumber; }
-
-    public Timestamp getTimeOfStop() { return timeOfStop; }
+    public Instant getTimeOfStop() { return timeOfStop; }
 
     public String convertToJson()
     {
@@ -54,7 +44,7 @@ public class RecoveryState
         {
             return MAPPER.writeValueAsString(this);
         } catch (JsonProcessingException e) {
-            logger.error("Failed to convert recovery state "+id+" to JSON", e);
+            logger.error("Failed to convert recovery state with time of stop "+timeOfStop+" to JSON", e);
         }
         return null;
     }
@@ -66,8 +56,6 @@ public class RecoveryState
     {
         return new StringBuilder()
                 .append("RecoveryState{")
-                .append("id=").append(id).append(",")
-                .append("healedEventsNumber=").append(healedEventsNumber).append(",")
                 .append("timeOfStop=").append(timeOfStop)
                 .append("}").toString();
     }

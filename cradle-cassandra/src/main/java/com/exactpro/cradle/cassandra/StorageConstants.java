@@ -56,7 +56,6 @@ public class StorageConstants
 			MESSAGE_ID = "message_id",
 			TEST_EVENT_ID = "test_event_id",
 			RECOVERY_STATE_JSON = "recovery_state_json",
-			HEALING_INTERVAL_ID = "healing_interval_id",
 			HEALING_INTERVAL_START_TIME = "healing_interval_start_time",
 			HEALING_INTERVAL_END_TIME = "healing_interval_end_time",
 			HEALING_INTERVAL_DATE = "healing_interval_start_date",

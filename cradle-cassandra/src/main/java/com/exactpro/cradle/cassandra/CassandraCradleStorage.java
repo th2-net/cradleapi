@@ -1006,7 +1006,8 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		catch (Exception e)
 		{
-			throw new IOException("Error while storing healing interval "+healingInterval.getId(), e);
+			throw new IOException("Error while storing healing interval with date "+healingInterval.getDate()+"and" +
+					"start time "+healingInterval.getStartTime(), e);
 		}
 	}
 
@@ -1022,23 +1023,30 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Iterable<HealingInterval> doGetHealingIntervals(LocalDate date, LocalTime from, String crawlerType) throws IOException
+	protected Iterable<HealingInterval> doGetHealingIntervals(Instant from, String crawlerType) throws IOException
 	{
 		try
 		{
-			return doGetHealingIntervalsAsync(date, from, crawlerType).get();
+			return doGetHealingIntervalsAsync(from, crawlerType).get();
 		}
 		catch (Exception e)
 		{
-			throw new IOException("Error while getting healing intervals date: "+date+", from: "+from, e);
+			throw new IOException("Error while getting healing intervals from " + from, e);
 		}
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<HealingInterval>> doGetHealingIntervalsAsync(LocalDate date, LocalTime from, String crawlerType)
+	protected CompletableFuture<Iterable<HealingInterval>> doGetHealingIntervalsAsync(Instant from, String crawlerType)
 	{
+
+		LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET);
+
+		LocalTime fromTime = fromDateTime.toLocalTime();
+
+		LocalDate date = fromDateTime.toLocalDate();
+
 		CompletableFuture<MappedAsyncPagingIterable<HealingIntervalEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<HealingIntervalEntity>>(semaphore)
-				.getFuture(() -> ops.getHealingIntervalOperator().getHealingIntervals(instanceUuid, date, from, crawlerType, readAttrs));
+				.getFuture(() -> ops.getHealingIntervalOperator().getHealingIntervals(instanceUuid, date, fromTime, crawlerType, readAttrs));
 
 		return future.thenApply(entities -> {
 			try
@@ -1047,7 +1055,7 @@ public class CassandraCradleStorage extends CradleStorage
 			}
 			catch (Exception error)
 			{
-				throw new CompletionException("Could not get healing intervals date: "+date+", from: "+from, error);
+				throw new CompletionException("Could not get healing intervals from "+from, error);
 			}
 		});
 	}

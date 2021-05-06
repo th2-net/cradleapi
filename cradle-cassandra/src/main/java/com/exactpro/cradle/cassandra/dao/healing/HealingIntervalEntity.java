@@ -35,7 +35,6 @@ import java.util.UUID;
 import static com.exactpro.cradle.cassandra.StorageConstants.CRAWLER_TYPE;
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALED_EVENT_IDS;
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_END_TIME;
-import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_ID;
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_DATE;
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_LAST_UPDATE_DATE;
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_LAST_UPDATE_TIME;
@@ -58,10 +57,6 @@ public class HealingIntervalEntity
     @PartitionKey(1)
     @CqlName(HEALING_INTERVAL_DATE)
     private LocalDate date;
-
-    //@ClusteringColumn(0)
-    @CqlName(HEALING_INTERVAL_ID)
-    private String healingIntervalId;
 
     @ClusteringColumn(0)
     @CqlName(HEALING_INTERVAL_START_TIME)
@@ -92,7 +87,6 @@ public class HealingIntervalEntity
 
     public HealingIntervalEntity(HealingInterval interval, UUID instanceId)
     {
-        this.healingIntervalId = interval.getId();
         this.startTime = interval.getStartTime();
         this.endTime = interval.getEndTime();
         this.date = interval.getDate();
@@ -113,10 +107,6 @@ public class HealingIntervalEntity
     {
         this.instanceId = instanceId;
     }
-
-    public String getHealingIntervalId() { return healingIntervalId; }
-
-    public void setHealingIntervalId(String healingIntervalId) { this.healingIntervalId = healingIntervalId; }
 
     public LocalTime getStartTime() { return startTime; }
 
@@ -151,7 +141,7 @@ public class HealingIntervalEntity
     public void setHealedEventsIds(Set<String> healedEventsIds) { this.healedEventsIds = healedEventsIds; }
 
     public HealingInterval asHealingInterval() throws IOException {
-        return new HealingInterval(this.healingIntervalId, this.startTime, this.endTime, this.date,
+        return new HealingInterval(this.startTime, this.endTime, this.date,
                 RecoveryState.getMAPPER().readValue(recoveryStateJson, RecoveryState.class), this.getLastUpdateDate(), this.getLastUpdateTime(), this.crawlerType);
     }
 }
