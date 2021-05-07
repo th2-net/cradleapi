@@ -22,7 +22,6 @@ subprojects {
   apply plugin: 'signing'
 
 	repositories {
-		jcenter()
 		mavenCentral()
 
     configurations.all {
