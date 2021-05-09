@@ -25,6 +25,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.commons.lang3.ArrayUtils;
+
+import com.exactpro.cradle.messages.MessageToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
 
@@ -36,18 +39,18 @@ import com.exactpro.cradle.utils.TestEventUtils;
  */
 public class StoredTestEventBatch extends MinimalStoredTestEvent implements StoredTestEvent
 {
-	public static int MAX_EVENTS_NUMBER = 100,
-			MAX_EVENTS_SIZE = 1024*1024;  //1 Mb
+	public static final int DEFAULT_MAX_BATCH_SIZE = 1024*1024;  //1 Mb
 	
 	private final Map<StoredTestEventId, BatchedStoredTestEvent> events = new LinkedHashMap<>();
 	private final Collection<BatchedStoredTestEvent> rootEvents = new ArrayList<>();
 	private final Map<StoredTestEventId, Collection<BatchedStoredTestEvent>> children = new HashMap<>();
+	private final long maxBatchSize;
 	private Instant startTimestamp,
 			endTimestamp;
 	private boolean success = true;
-	private long storedEventsSize = 0;
+	private long batchSize = 0;
 	
-	public StoredTestEventBatch(TestEventBatchToStore batchData) throws CradleStorageException
+	public StoredTestEventBatch(TestEventBatchToStore batchData, long maxBatchSize) throws CradleStorageException
 	{
 		super(batchData.getId() != null ? batchData.getId() : new StoredTestEventId(UUID.randomUUID().toString()),
 				batchData.getName(),
@@ -55,6 +58,12 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 				batchData.getParentId());
 		if (getParentId() == null)
 			throw new CradleStorageException("Batch must have a parent");
+		this.maxBatchSize = maxBatchSize;
+	}
+	
+	public StoredTestEventBatch(TestEventBatchToStore batchData) throws CradleStorageException
+	{
+		this(batchData, DEFAULT_MAX_BATCH_SIZE);
 	}
 	
 	
@@ -97,11 +106,11 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 	}
 	
 	/**
-	 * @return size of events content currently stored in the batch
+	 * @return size of events currently stored in the batch
 	 */
-	public long getTestEventsSize()
+	public long getBatchSize()
 	{
-		return storedEventsSize;
+		return batchSize;
 	}
 	
 	/**
@@ -149,7 +158,28 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 	 */
 	public boolean isFull()
 	{
-		return events.size() >= MAX_EVENTS_NUMBER || storedEventsSize >= MAX_EVENTS_SIZE;
+		return batchSize >= maxBatchSize;
+	}
+	
+	/**
+	 * Shows how many bytes the batch can hold till its capacity is reached
+	 * @return number of bytes the batch can hold
+	 */
+	public long getSpaceLeft()
+	{
+		long result = maxBatchSize-batchSize;
+		return result > 0 ? result : 0;
+	}
+	
+	/**
+	 * Shows if batch has enough space to hold given test event
+	 * @param event to check against batch capacity
+	 * @return true if batch has enough space to hold given test event
+	 */
+	public boolean hasSpace(StoredTestEventWithContent event)
+	{
+		byte[] content = event.getContent();
+		return ArrayUtils.isEmpty(content) || batchSize+content.length <= maxBatchSize;
 	}
 	
 	
@@ -181,8 +211,8 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 	
 	private BatchedStoredTestEvent addStoredTestEvent(StoredTestEventWithContent event) throws CradleStorageException
 	{
-		if (isFull())
-			throw new CradleStorageException("Batch is full");
+		if (!hasSpace(event))
+			throw new CradleStorageException("Batch has not enough space to hold given test event");
 		
 		TestEventUtils.validateTestEvent(event, true);
 		
@@ -215,7 +245,7 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 			rootEvents.add(result);
 		
 		if (event.getContent() != null)
-			storedEventsSize += event.getContent().length;
+			batchSize += event.getContent().length;
 		return result;
 	}
 	

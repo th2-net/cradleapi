@@ -46,18 +46,10 @@ public interface TestEventChildrenOperator
 			LocalDate startDate, LocalTime timeFrom, LocalTime timeTo, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
-	TestEventChildEntity writeTestEvent(TestEventChildEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
-	@Insert
-	CompletableFuture<TestEventChildEntity> writeTestEventAsync(TestEventChildEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<TestEventChildEntity> writeTestEvent(TestEventChildEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+INSTANCE_ID+"=:instanceId AND "+
 			PARENT_ID+"=:parentId AND "+START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:eventId")
-	ResultSet updateStatus(UUID instanceId, String parentId, LocalDate startDate, LocalTime startTime, String eventId, boolean success,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
-	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+INSTANCE_ID+"=:instanceId AND "+
-			PARENT_ID+"=:parentId AND "+START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:eventId")
-	CompletableFuture<AsyncResultSet> updateStatusAsync(UUID instanceId, String parentId, LocalDate startDate, LocalTime startTime, 
+	CompletableFuture<AsyncResultSet> updateStatus(UUID instanceId, String parentId, LocalDate startDate, LocalTime startTime, 
 			String eventId, boolean success, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

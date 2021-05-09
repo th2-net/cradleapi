@@ -16,7 +16,6 @@
 
 package com.exactpro.cradle.cassandra.iterators;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 
@@ -26,11 +25,10 @@ import org.slf4j.LoggerFactory;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 
 /**
- * Wrapper for asynchronous paging iterable that converts retrieved entities into Cradle objects
- * @param <R> - class of objects to get while using the wrapper
+ * Wrapper for asynchronous paging iterable to get entities retrieved from Cassandra
  * @param <E> - class of entities obtained from Cassandra
  */
-public abstract class PagedIterator<R, E> implements Iterator<R>
+public class PagedIterator<E> implements Iterator<E>
 {
 	private final Logger logger = LoggerFactory.getLogger(PagedIterator.class);
 	
@@ -42,9 +40,6 @@ public abstract class PagedIterator<R, E> implements Iterator<R>
 		this.rows = rows;
 		this.rowsIterator = rows.currentPage().iterator();
 	}
-	
-	
-	protected abstract R convertEntity(E entity) throws IOException;
 	
 	
 	@Override
@@ -68,19 +63,10 @@ public abstract class PagedIterator<R, E> implements Iterator<R>
 	}
 	
 	@Override
-	public R next()
+	public E next()
 	{
 		logger.trace("Getting next data row");
-		
-		E entity = rowsIterator.next();
-		try
-		{
-			return convertEntity(entity);
-		}
-		catch (IOException e)
-		{
-			throw new RuntimeException("Error while getting next data row", e);
-		}
+		return rowsIterator.next();
 	}
 	
 	

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,22 +16,30 @@
 
 package com.exactpro.cradle.cassandra.iterators;
 
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
+import com.exactpro.cradle.testevents.StoredTestEventWrapper;
+import com.exactpro.cradle.utils.CradleStorageException;
+
 import java.io.IOException;
 
-import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildEntity;
-import com.exactpro.cradle.testevents.StoredTestEventMetadata;
-
-public class TestEventChildrenMetadataIterator extends ConvertingPagedIterator<StoredTestEventMetadata, TestEventChildEntity>
+public class TestEventsDataIterator extends ConvertingPagedIterator<StoredTestEventWrapper, TestEventEntity>
 {
-	public TestEventChildrenMetadataIterator(MappedAsyncPagingIterable<TestEventChildEntity> rows)
+	public TestEventsDataIterator(MappedAsyncPagingIterable<TestEventEntity> rows)
 	{
 		super(rows);
 	}
-	
+
 	@Override
-	protected StoredTestEventMetadata convertEntity(TestEventChildEntity entity) throws IOException
+	protected StoredTestEventWrapper convertEntity(TestEventEntity entity) throws IOException
 	{
-		return entity.toStoredTestEventMetadata();
+		try
+		{
+			return entity.toStoredTestEventWrapper();
+		}
+		catch (CradleStorageException e)
+		{
+			throw new IOException("Could not get test event", e);
+		}
 	}
 }

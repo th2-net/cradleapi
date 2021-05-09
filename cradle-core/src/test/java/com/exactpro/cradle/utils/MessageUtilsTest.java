@@ -45,6 +45,7 @@ public class MessageUtilsTest
 		String streamName = "Stream1";
 		Direction direction = Direction.FIRST;
 		Instant timestamp = Instant.now();
+		byte[] content = "Message text".getBytes();
 		
 		long index = 10;
 		batch = new StoredMessageBatch();
@@ -53,6 +54,7 @@ public class MessageUtilsTest
 				.direction(direction)
 				.index(10)
 				.timestamp(timestamp)
+				.content(content)
 				.build());
 		
 		msg2 = batch.addMessage(builder
@@ -60,6 +62,7 @@ public class MessageUtilsTest
 				.direction(direction)
 				.index(index+10)  //Need to have a gap between indices to verify that messages are written/read correctly
 				.timestamp(timestamp)
+				.content(content)
 				.build());
 	}
 	

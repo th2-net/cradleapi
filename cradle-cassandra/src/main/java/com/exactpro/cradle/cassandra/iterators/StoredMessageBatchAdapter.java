@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,23 +16,30 @@
 
 package com.exactpro.cradle.cassandra.iterators;
 
-import java.io.IOException;
-import java.util.Collection;
-
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
+import com.exactpro.cradle.CradleObjectsFactory;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
-import com.exactpro.cradle.messages.StoredMessage;
+import com.exactpro.cradle.messages.StoredMessageBatch;
 
-public class MessageBatchIterator extends ConvertingPagedIterator<Collection<StoredMessage>, DetailedMessageBatchEntity>
+import java.util.Iterator;
+
+public class StoredMessageBatchAdapter implements Iterable<StoredMessageBatch>
 {
-	public MessageBatchIterator(MappedAsyncPagingIterable<DetailedMessageBatchEntity> rows)
-	{
-		super(rows);
-	}
+	private final MappedAsyncPagingIterable<DetailedMessageBatchEntity> entities;
+	private final CradleObjectsFactory objectsFactory;
+	private int limit;
 	
-	@Override
-	protected Collection<StoredMessage> convertEntity(DetailedMessageBatchEntity entity) throws IOException
+	public StoredMessageBatchAdapter(MappedAsyncPagingIterable<DetailedMessageBatchEntity> entities, 
+			CradleObjectsFactory objectsFactory, int limit)
 	{
-		return entity.toStoredMessages();
+		this.entities = entities;
+		this.objectsFactory = objectsFactory;
+		this.limit = limit;
+	}
+
+	@Override
+	public Iterator<StoredMessageBatch> iterator()
+	{
+		return new StoredMessageBatchIterator(entities, objectsFactory, limit);
 	}
 }

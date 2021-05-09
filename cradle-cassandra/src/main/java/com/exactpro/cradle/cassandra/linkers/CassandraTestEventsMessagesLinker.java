@@ -16,137 +16,192 @@
 
 package com.exactpro.cradle.cassandra.linkers;
 
-import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
-import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
-import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
-import static com.exactpro.cradle.cassandra.StorageConstants.MESSAGE_IDS;
-import static com.exactpro.cradle.cassandra.StorageConstants.MESSAGE_ID;
-import static com.exactpro.cradle.cassandra.StorageConstants.TEST_EVENT_ID;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.function.Function;
 
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
 import com.exactpro.cradle.utils.CradleIdException;
-import com.datastax.oss.driver.api.core.cql.Row;
-import com.datastax.oss.driver.api.core.type.reflect.GenericType;
-import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.exactpro.cradle.cassandra.utils.QueryExecutor;
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
+import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
+import com.exactpro.cradle.cassandra.CassandraSemaphore;
+import com.exactpro.cradle.cassandra.dao.AsyncOperator;
+import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventEntity;
+import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesOperator;
+import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 
 public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLinker
 {
-	private final QueryExecutor exec;
-	private final String keyspace,
-			testEventsMessagesTable,
-			messagesTestEventsTable;
+	private final TestEventMessagesOperator testEventsOperator;
+	private final MessageTestEventOperator messagesOperator;
 	private final UUID instanceId;
+	private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
+	private final CassandraSemaphore semaphore;
 	
-	public CassandraTestEventsMessagesLinker(QueryExecutor exec, String keyspace, 
-			String testEventsMessagesTable, String messagesTestEventsTable, UUID instanceId)
+	public CassandraTestEventsMessagesLinker(TestEventMessagesOperator testEventsOperator, MessageTestEventOperator messagesOperator, 
+			UUID instanceId, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs, CassandraSemaphore semaphore)
 	{
-		this.exec = exec;
-		this.keyspace = keyspace;
-		this.testEventsMessagesTable = testEventsMessagesTable;
-		this.messagesTestEventsTable = messagesTestEventsTable;
+		this.testEventsOperator = testEventsOperator;
+		this.messagesOperator = messagesOperator;
 		this.instanceId = instanceId;
+		this.readAttrs = readAttrs;
+		this.semaphore = semaphore;
 	}
 	
 	
 	@Override
 	public Collection<StoredTestEventId> getTestEventIdsByMessageId(StoredMessageId messageId) throws IOException
 	{
-		Select selectFrom = prepareTestEventsOfMessageQuery(messageId.toString());
-		
-		Iterator<Row> resultIterator = exec.executeQuery(selectFrom.asCql(), false).iterator();
-		Set<StoredTestEventId> ids = new HashSet<>();
-		while (resultIterator.hasNext())
+		try
 		{
-			String eventId = resultIterator.next().get(TEST_EVENT_ID, GenericType.STRING);
-			StoredTestEventId parsedId = new StoredTestEventId(eventId);
-			ids.add(parsedId);
+			return getTestEventIdsByMessageIdAsync(messageId).get();
 		}
-		if (ids.isEmpty())
-			return null;
-		
-		return ids;
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting IDs of test events linked to message "+messageId, e);
+		}
 	}
+	
+	@Override
+	public CompletableFuture<Collection<StoredTestEventId>> getTestEventIdsByMessageIdAsync(StoredMessageId messageId)
+	{
+		CompletableFuture<MappedAsyncPagingIterable<MessageTestEventEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<MessageTestEventEntity>>(semaphore)
+				.getFuture(() -> messagesOperator.getTestEvents(instanceId, messageId.toString(), readAttrs));
+		
+		return future.thenCompose((rs) -> {
+				PagedIterator<MessageTestEventEntity> it = new PagedIterator<>(rs);
+				Set<StoredTestEventId> ids = new HashSet<>();
+				while (it.hasNext())
+				{
+					String eventId = it.next().getEventId();
+					StoredTestEventId parsedId = new StoredTestEventId(eventId);
+					ids.add(parsedId);
+				}
+				
+				if (ids.isEmpty())
+					ids = null;
+				
+				return CompletableFuture.completedFuture(ids);
+			});
+	}
+	
 	
 	@Override
 	public Collection<StoredMessageId> getMessageIdsByTestEventId(StoredTestEventId eventId) throws IOException
 	{
-		Select selectFrom = prepareMessagesOfTestEventQuery(eventId.toString());
-		
-		Iterator<Row> resultIterator = exec.executeQuery(selectFrom.asCql(), false).iterator();
-		Set<StoredMessageId> ids = new HashSet<>();
-		while (resultIterator.hasNext())
+		try
 		{
-			Set<String> currentMessageIds = resultIterator.next().get(MESSAGE_IDS,
-					GenericType.setOf(GenericType.STRING));
-			if (currentMessageIds != null)
-			{
-				for (String cid : currentMessageIds)
+			return getMessageIdsByTestEventIdAsync(eventId).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting IDs of messages linked to test event "+eventId, e);
+		}
+	}
+	
+	@Override
+	public CompletableFuture<Collection<StoredMessageId>> getMessageIdsByTestEventIdAsync(StoredTestEventId eventId)
+	{
+		CompletableFuture<MappedAsyncPagingIterable<TestEventMessagesEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<TestEventMessagesEntity>>(semaphore)
+				.getFuture(() -> testEventsOperator.getMessages(instanceId, eventId.toString(), readAttrs));
+		
+		return future.thenCompose((rs) -> {
+				PagedIterator<TestEventMessagesEntity> it = new PagedIterator<>(rs);
+				Set<StoredMessageId> ids = new HashSet<>();
+				while (it.hasNext())
 				{
-					try
+					Set<String> currentMessageIds = it.next().getMessageIds();
+					if (currentMessageIds == null)
+						continue;
+					
+					for (String cid : currentMessageIds)
 					{
-						StoredMessageId parsedId = StoredMessageId.fromString(cid);
-						ids.add(parsedId);
-					}
-					catch (CradleIdException e)
-					{
-						throw new IOException("Could not parse message ID from '"+cid+"'", e);
+						try
+						{
+							StoredMessageId parsedId = StoredMessageId.fromString(cid);
+							ids.add(parsedId);
+						}
+						catch (CradleIdException e)
+						{
+							throw new CompletionException("Could not parse message ID from '"+cid+"'", e);
+						}
 					}
 				}
-			}
-		}
-		if (ids.isEmpty())
-			return null;
-		
-		return ids;
+				
+				if (ids.isEmpty())
+					ids = null;
+				
+				return CompletableFuture.completedFuture(ids);
+			});
 	}
+	
 	
 	@Override
 	public boolean isTestEventLinkedToMessages(StoredTestEventId eventId) throws IOException
 	{
-		String id = eventId.toString();
-		Select select = prepareMessagesOfTestEventQuery(id);
-		return isLinked(select);
+		try
+		{
+			return isTestEventLinkedToMessagesAsync(eventId).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting if test event "+eventId+" has messages linked to it", e);
+		}
+	}
+	
+	@Override
+	public CompletableFuture<Boolean> isTestEventLinkedToMessagesAsync(StoredTestEventId eventId)
+	{
+		CompletableFuture<MappedAsyncPagingIterable<TestEventMessagesEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<TestEventMessagesEntity>>(semaphore)
+				.getFuture(() -> testEventsOperator.getMessages(instanceId, eventId.toString(), readAttrs));
+		
+		return future.thenCompose((rs) -> {
+				PagedIterator<TestEventMessagesEntity> it = new PagedIterator<>(rs);
+				boolean result = false;
+				while (it.hasNext())
+				{
+					Collection<String> ids = it.next().getMessageIds();
+					if (ids != null && !ids.isEmpty())
+					{
+						result = true;
+						break;
+					}
+				}
+				return CompletableFuture.completedFuture(result);
+			});
 	}
 	
 	@Override
 	public boolean isMessageLinkedToTestEvents(StoredMessageId messageId) throws IOException
 	{
-		String id = messageId.toString();
-		Select select = prepareTestEventsOfMessageQuery(id);
-		return isLinked(select);
+		try
+		{
+			return isMessageLinkedToTestEventsAsync(messageId).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting if message "+messageId+" has test events linked to it", e);
+		}
 	}
 	
-	
-	
-	private Select prepareMessagesOfTestEventQuery(String eventId)
+	@Override
+	public CompletableFuture<Boolean> isMessageLinkedToTestEventsAsync(StoredMessageId messageId)
 	{
-		return selectFrom(keyspace, testEventsMessagesTable)
-				.column(MESSAGE_IDS)
-				.whereColumn(INSTANCE_ID).isEqualTo(literal(instanceId))
-				.whereColumn(TEST_EVENT_ID).isEqualTo(literal(eventId));
-	}
-	
-	private Select prepareTestEventsOfMessageQuery(String messageId)
-	{
-		return selectFrom(keyspace, messagesTestEventsTable)
-				.column(TEST_EVENT_ID)
-				.whereColumn(INSTANCE_ID).isEqualTo(literal(instanceId))
-				.whereColumn(MESSAGE_ID).isEqualTo(literal(messageId));
-	}
-	
-	private boolean isLinked(Select select) throws IOException
-	{
-		Select selectFrom = select.limit(1);
-		return exec.executeQuery(selectFrom.asCql(), false).one() != null;
+		CompletableFuture<MappedAsyncPagingIterable<MessageTestEventEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<MessageTestEventEntity>>(semaphore)
+				.getFuture(() -> messagesOperator.getTestEvents(instanceId, messageId.toString(), readAttrs));
+		
+		return future.thenCompose((rs) -> {
+				PagedIterator<MessageTestEventEntity> it = new PagedIterator<>(rs);
+				return CompletableFuture.completedFuture(it.hasNext());
+			});
 	}
 }

@@ -22,7 +22,7 @@ package com.exactpro.cradle;
 public class DefaultCradleManager extends CradleManager
 {
 	@Override
-	protected CradleStorage createStorage()
+	protected CradleStorage createStorage(long maxMessageBatchSize, long maxTestEventBatchSize)
 	{
 		return null;
 	}

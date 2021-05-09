@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,22 +16,24 @@
 
 package com.exactpro.cradle.cassandra.iterators;
 
-import java.io.IOException;
-
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildEntity;
-import com.exactpro.cradle.testevents.StoredTestEventMetadata;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
+import com.exactpro.cradle.testevents.StoredTestEventWrapper;
 
-public class TestEventChildrenMetadataIterator extends ConvertingPagedIterator<StoredTestEventMetadata, TestEventChildEntity>
+import java.util.Iterator;
+
+public class TestEventDataIteratorAdapter implements Iterable<StoredTestEventWrapper>
 {
-	public TestEventChildrenMetadataIterator(MappedAsyncPagingIterable<TestEventChildEntity> rows)
+	private final MappedAsyncPagingIterable<TestEventEntity> rows;
+
+	public TestEventDataIteratorAdapter(MappedAsyncPagingIterable<TestEventEntity> rows)
 	{
-		super(rows);
+		this.rows = rows;
 	}
-	
+
 	@Override
-	protected StoredTestEventMetadata convertEntity(TestEventChildEntity entity) throws IOException
+	public Iterator<StoredTestEventWrapper> iterator()
 	{
-		return entity.toStoredTestEventMetadata();
+		return new TestEventsDataIterator(rows);
 	}
 }

@@ -14,26 +14,28 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.cassandra.dao.testevents;
+package com.exactpro.cradle.cassandra.dao.messages;
+
+import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
+import static com.exactpro.cradle.cassandra.StorageConstants.MESSAGE_ID;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import com.datastax.oss.driver.api.core.PagingIterable;
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
-import com.datastax.oss.driver.api.mapper.annotations.Select;
+import com.datastax.oss.driver.api.mapper.annotations.Query;
 
 @Dao
-public interface TestEventChildrenDatesOperator
+public interface MessageTestEventOperator
 {
-	@Insert
-	CompletableFuture<TestEventChildDateEntity> writeTestEventDate(TestEventChildDateEntity testEventDate, 
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+MESSAGE_ID+"=:messageId")
+	CompletableFuture<MappedAsyncPagingIterable<MessageTestEventEntity>> getTestEvents(UUID instanceId, String messageId, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Select
-	PagingIterable<TestEventChildDateEntity> get(UUID instanceId, String parentId, 
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	@Insert
+	CompletableFuture<MessageTestEventEntity> writeTestEvent(MessageTestEventEntity messageEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

@@ -22,7 +22,7 @@ import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventEntity;
 import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 
-public class RootTestEventsMetadataIterator extends PagedIterator<StoredTestEventMetadata, RootTestEventEntity>
+public class RootTestEventsMetadataIterator extends ConvertingPagedIterator<StoredTestEventMetadata, RootTestEventEntity>
 {
 	public RootTestEventsMetadataIterator(MappedAsyncPagingIterable<RootTestEventEntity> rows)
 	{

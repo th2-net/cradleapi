@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.zip.DataFormatException;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.SerializationUtils;
 
 import com.exactpro.cradle.messages.MessageToStore;
@@ -48,6 +49,8 @@ public class MessageUtils
 			throw new CradleStorageException("Message must have direction");
 		if (message.getTimestamp() == null)
 			throw new CradleStorageException("Message must have timestamp");
+		if (ArrayUtils.isEmpty(message.getContent()))
+			throw new CradleStorageException("Message must have content");
 	}
 	
 	/**
