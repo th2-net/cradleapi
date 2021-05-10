@@ -4,10 +4,12 @@ ext {
 
 sourceSets {
 	main.java.srcDirs += "build/generated/sources/annotationProcessor/java/main"
+	main.java.srcDirs += "src/main/generated/com/exactpro/cradle/cassandra"
 }
 
 dependencies {
-	compile project(":cradle-core")
+	//compile project(":cradle-core")
+	compile project(":dao-module")
 	compile "com.datastax.oss:java-driver-core:${driver_version}"
 	compile "com.datastax.oss:java-driver-query-builder:${driver_version}"
 	compile "com.datastax.oss:java-driver-mapper-processor:${driver_version}"

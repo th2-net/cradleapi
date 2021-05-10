@@ -18,7 +18,7 @@ package com.exactpro.cradle.cassandra.utils;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
+import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,10 +32,10 @@ import java.util.function.Function;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.exactpro.cradle.cassandra.CassandraSemaphore;
-import com.exactpro.cradle.cassandra.dao.AsyncOperator;
-import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
-import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
+import com.exactpro.cradle.daomodule.dao.CassandraSemaphore;
+import com.exactpro.cradle.daomodule.dao.AsyncOperator;
+import com.exactpro.cradle.daomodule.dao.messages.DetailedMessageBatchEntity;
+import com.exactpro.cradle.daomodule.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageFilter;

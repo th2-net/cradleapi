@@ -19,7 +19,7 @@ package com.exactpro.cradle.cassandra.iterators;
 import java.io.IOException;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
-import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventEntity;
+import com.exactpro.cradle.daomodule.dao.testevents.TimeTestEventEntity;
 import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 
 public class TimeTestEventsMetadataIterator extends ConvertingPagedIterator<StoredTestEventMetadata, TimeTestEventEntity>

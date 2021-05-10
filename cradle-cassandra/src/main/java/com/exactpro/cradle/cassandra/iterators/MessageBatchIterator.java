@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.Collection;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
-import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
+import com.exactpro.cradle.daomodule.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.messages.StoredMessage;
 
 public class MessageBatchIterator extends ConvertingPagedIterator<Collection<StoredMessage>, DetailedMessageBatchEntity>

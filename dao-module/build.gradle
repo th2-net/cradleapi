@@ -1,0 +1,30 @@
+plugins {
+    id 'java'
+}
+
+ext {
+    driver_version = '4.2.0'
+}
+
+group 'com.exactpro.th2'
+version '2.13.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile project(":cradle-core")
+    compile "com.datastax.oss:java-driver-core:${driver_version}"
+    compile "com.datastax.oss:java-driver-query-builder:${driver_version}"
+    compile "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
+    compile "com.datastax.oss:java-driver-mapper-runtime:${driver_version}"
+
+    annotationProcessor "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
+
+    testCompile 'org.testng:testng:7.1.0'
+}
+
+test {
+    useJUnitPlatform()
+}

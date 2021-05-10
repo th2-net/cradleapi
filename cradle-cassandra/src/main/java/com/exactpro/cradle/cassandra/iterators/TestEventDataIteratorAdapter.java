@@ -17,7 +17,7 @@
 package com.exactpro.cradle.cassandra.iterators;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
+import com.exactpro.cradle.daomodule.dao.testevents.TestEventEntity;
 import com.exactpro.cradle.testevents.StoredTestEventWrapper;
 
 import java.util.Iterator;

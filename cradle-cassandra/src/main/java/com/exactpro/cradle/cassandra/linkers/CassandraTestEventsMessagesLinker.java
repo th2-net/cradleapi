@@ -31,7 +31,7 @@ import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
 import com.exactpro.cradle.utils.CradleIdException;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.exactpro.cradle.cassandra.CassandraSemaphore;
+import com.exactpro.cradle.daomodule.dao.CassandraSemaphore;
 import com.exactpro.cradle.cassandra.dao.AsyncOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
