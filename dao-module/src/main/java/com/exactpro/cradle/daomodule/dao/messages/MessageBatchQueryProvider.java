@@ -25,8 +25,8 @@ import com.datastax.oss.driver.api.mapper.MapperContext;
 import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 
-import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
-import com.exactpro.cradle.cassandra.utils.FilterUtils;
+import com.exactpro.cradle.daomodule.dao.utils.CassandraMessageUtils;
+import com.exactpro.cradle.daomodule.dao.utils.FilterUtils;
 import com.exactpro.cradle.daomodule.dao.CassandraSemaphore;
 import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.messages.StoredMessageFilter;
@@ -43,7 +43,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
-import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
 

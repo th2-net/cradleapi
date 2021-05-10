@@ -20,7 +20,6 @@ import com.datastax.oss.driver.api.mapper.annotations.DaoFactory;
 import com.datastax.oss.driver.api.mapper.annotations.DaoKeyspace;
 import com.datastax.oss.driver.api.mapper.annotations.DaoTable;
 import com.datastax.oss.driver.api.mapper.annotations.Mapper;
-import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.daomodule.dao.messages.MessageBatchConverter;
 import com.exactpro.cradle.daomodule.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.daomodule.dao.messages.MessageTestEventOperator;

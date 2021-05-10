@@ -18,7 +18,6 @@ package com.exactpro.cradle.daomodule.dao.testevents;
 
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Transient;
-import com.exactpro.cradle.cassandra.CassandraCradleStorage;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
@@ -33,7 +32,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
+import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
 
 /**
  * Contains test event metadata to extend with partition and clustering fields
@@ -146,7 +145,7 @@ public abstract class TestEventMetadataEntity
 		LocalTime st = getStartTime();
 		if (sd == null || st == null)
 			return null;
-		return LocalDateTime.of(sd, st).toInstant(CassandraCradleStorage.TIMEZONE_OFFSET);
+		return LocalDateTime.of(sd, st).toInstant(TIMEZONE_OFFSET);
 	}
 	
 	@Transient
@@ -154,7 +153,7 @@ public abstract class TestEventMetadataEntity
 	{
 		if (timestamp == null)
 			return;
-		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, CassandraCradleStorage.TIMEZONE_OFFSET);
+		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, TIMEZONE_OFFSET);
 		setStartDate(ldt.toLocalDate());
 		setStartTime(ldt.toLocalTime());
 	}
@@ -187,7 +186,7 @@ public abstract class TestEventMetadataEntity
 		LocalTime et = getEndTime();
 		if (ed == null || et == null)
 			return null;
-		return LocalDateTime.of(ed, et).toInstant(CassandraCradleStorage.TIMEZONE_OFFSET);
+		return LocalDateTime.of(ed, et).toInstant(TIMEZONE_OFFSET);
 	}
 	
 	@Transient
@@ -195,7 +194,7 @@ public abstract class TestEventMetadataEntity
 	{
 		if (timestamp == null)
 			return;
-		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, CassandraCradleStorage.TIMEZONE_OFFSET);
+		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, TIMEZONE_OFFSET);
 		setEndDate(ldt.toLocalDate());
 		setEndTime(ldt.toLocalTime());
 	}

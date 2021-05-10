@@ -20,14 +20,13 @@ import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
-import com.exactpro.cradle.cassandra.CassandraCradleStorage;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
+import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
 
 /**
  * Contains start date of test event related to given parent
@@ -57,7 +56,7 @@ public class TestEventChildDateEntity
 		this.setInstanceId(instanceId);
 		this.setParentId(event.getParentId().toString());
 		
-		LocalDateTime ldt = LocalDateTime.ofInstant(event.getStartTimestamp(), CassandraCradleStorage.TIMEZONE_OFFSET);
+		LocalDateTime ldt = LocalDateTime.ofInstant(event.getStartTimestamp(), TIMEZONE_OFFSET);
 		this.setStartDate(ldt.toLocalDate());
 	}
 	

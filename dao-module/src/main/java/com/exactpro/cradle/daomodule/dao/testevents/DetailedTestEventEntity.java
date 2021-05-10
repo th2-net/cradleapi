@@ -19,7 +19,6 @@ package com.exactpro.cradle.daomodule.dao.testevents;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.Transient;
-import com.exactpro.cradle.cassandra.CassandraCradleStorage;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import org.slf4j.Logger;
@@ -32,7 +31,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
+import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
 
 /**
  * Contains all data about {@link StoredTestEvent} to store in Cassandra
@@ -88,13 +87,13 @@ public class DetailedTestEventEntity extends TestEventEntity
 	@Transient
 	public Instant getStoredTimestamp()
 	{
-		return LocalDateTime.of(getStoredDate(), getStoredTime()).toInstant(CassandraCradleStorage.TIMEZONE_OFFSET);
+		return LocalDateTime.of(getStoredDate(), getStoredTime()).toInstant(TIMEZONE_OFFSET);
 	}
 	
 	@Transient
 	public void setStoredTimestamp(Instant timestamp)
 	{
-		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, CassandraCradleStorage.TIMEZONE_OFFSET);
+		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, TIMEZONE_OFFSET);
 		setStoredDate(ldt.toLocalDate());
 		setStoredTime(ldt.toLocalTime());
 	}

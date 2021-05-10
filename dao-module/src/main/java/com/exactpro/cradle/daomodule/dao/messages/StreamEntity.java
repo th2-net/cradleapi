@@ -22,8 +22,8 @@ import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 
 import java.util.UUID;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
-import static com.exactpro.cradle.cassandra.StorageConstants.STREAM_NAME;
+import static com.exactpro.cradle.daomodule.dao.StorageConstants.INSTANCE_ID;
+import static com.exactpro.cradle.daomodule.dao.StorageConstants.STREAM_NAME;
 
 @Entity
 public class StreamEntity

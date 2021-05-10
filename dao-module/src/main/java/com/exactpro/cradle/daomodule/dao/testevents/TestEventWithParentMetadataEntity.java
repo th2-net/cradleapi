@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.EVENT_BATCH_METADATA;
+import static com.exactpro.cradle.daomodule.dao.StorageConstants.EVENT_BATCH_METADATA;
 
 /**
  * Contains metadata of test event with parent to extend with partition and clustering fields

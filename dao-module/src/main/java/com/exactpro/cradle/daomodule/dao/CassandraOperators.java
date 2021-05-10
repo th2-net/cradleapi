@@ -16,7 +16,6 @@
 
 package com.exactpro.cradle.daomodule.dao;
 
-import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.daomodule.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.daomodule.dao.messages.MessageTestEventOperator;
 import com.exactpro.cradle.daomodule.dao.messages.TimeMessageOperator;

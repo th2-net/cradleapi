@@ -32,8 +32,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
-import static com.exactpro.cradle.cassandra.StorageConstants.ID;
-import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
+import static com.exactpro.cradle.daomodule.dao.StorageConstants.INSTANCE_ID;
+import static com.exactpro.cradle.daomodule.dao.StorageConstants.ID;
 
 public class TestEventQueryProvider
 {

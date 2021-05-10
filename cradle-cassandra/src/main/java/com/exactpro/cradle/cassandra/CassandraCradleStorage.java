@@ -28,12 +28,10 @@ import com.exactpro.cradle.CradleObjectsFactory;
 import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.TimeRelation;
-import com.exactpro.cradle.cassandra.connection.CassandraConnection;
-import com.exactpro.cradle.daomodule.dao.AsyncOperator;
-import com.exactpro.cradle.daomodule.dao.CassandraDataMapper;
+import com.exactpro.cradle.daomodule.dao.connection.CassandraConnection;
+import com.exactpro.cradle.daomodule.dao.*;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilderWithRetry;
-import com.exactpro.cradle.daomodule.dao.CassandraOperators;
 import com.exactpro.cradle.daomodule.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.daomodule.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.daomodule.dao.messages.MessageTestEventEntity;
@@ -51,9 +49,8 @@ import com.exactpro.cradle.daomodule.dao.testevents.TestEventMessagesOperator;
 import com.exactpro.cradle.daomodule.dao.testevents.TimeTestEventEntity;
 import com.exactpro.cradle.cassandra.iterators.*;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
-import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
-import com.exactpro.cradle.cassandra.utils.QueryExecutor;
-import com.exactpro.cradle.daomodule.dao.CassandraSemaphore;
+import com.exactpro.cradle.daomodule.dao.utils.CassandraMessageUtils;
+import com.exactpro.cradle.daomodule.dao.utils.QueryExecutor;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageFilter;
@@ -85,7 +82,7 @@ import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
-import static com.exactpro.cradle.cassandra.CassandraStorageSettings.*;
+import static com.exactpro.cradle.daomodule.dao.CassandraStorageSettings.*;
 import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
 
 public class CassandraCradleStorage extends CradleStorage

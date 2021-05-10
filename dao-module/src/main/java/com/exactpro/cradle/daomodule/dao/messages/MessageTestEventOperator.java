@@ -26,8 +26,8 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
-import static com.exactpro.cradle.cassandra.StorageConstants.MESSAGE_ID;
+import static com.exactpro.cradle.daomodule.dao.StorageConstants.INSTANCE_ID;
+import static com.exactpro.cradle.daomodule.dao.StorageConstants.MESSAGE_ID;
 
 @Dao
 public interface MessageTestEventOperator

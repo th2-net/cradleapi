@@ -18,7 +18,6 @@ package com.exactpro.cradle.daomodule.dao.messages;
 
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.exactpro.cradle.Direction;
-import com.exactpro.cradle.cassandra.CassandraCradleStorage;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageId;
 import org.slf4j.Logger;
@@ -30,7 +29,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
+import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
 
 /**
  * Contains message data related to given time
@@ -138,13 +137,13 @@ public class TimeMessageEntity
 	@Transient
 	public Instant getMessageTimestamp()
 	{
-		return LocalDateTime.of(getMessageDate(), getMessageTime()).toInstant(CassandraCradleStorage.TIMEZONE_OFFSET);
+		return LocalDateTime.of(getMessageDate(), getMessageTime()).toInstant(TIMEZONE_OFFSET);
 	}
 	
 	@Transient
 	public void setMessageTimestamp(Instant timestamp)
 	{
-		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, CassandraCradleStorage.TIMEZONE_OFFSET);
+		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, TIMEZONE_OFFSET);
 		setMessageDate(ldt.toLocalDate());
 		setMessageTime(ldt.toLocalTime());
 	}
