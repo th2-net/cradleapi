@@ -15,14 +15,15 @@ repositories {
 
 dependencies {
     compile project(":cradle-core")
+
     compile "com.datastax.oss:java-driver-core:${driver_version}"
     compile "com.datastax.oss:java-driver-query-builder:${driver_version}"
     compile "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
     compile "com.datastax.oss:java-driver-mapper-runtime:${driver_version}"
 
-    annotationProcessor "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
+    //annotationProcessor "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
 
-    testCompile 'org.testng:testng:7.1.0'
+    //testCompile 'org.testng:testng:7.1.0'
 }
 
 test {

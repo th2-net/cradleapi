@@ -28,10 +28,9 @@ import com.exactpro.cradle.CradleObjectsFactory;
 import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.TimeRelation;
+import com.exactpro.cradle.daomodule.dao.CassandraDataMapperBuilderWithRetry;
 import com.exactpro.cradle.daomodule.dao.connection.CassandraConnection;
 import com.exactpro.cradle.daomodule.dao.*;
-import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
-import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilderWithRetry;
 import com.exactpro.cradle.daomodule.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.daomodule.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.daomodule.dao.messages.MessageTestEventEntity;
@@ -151,7 +150,7 @@ public class CassandraCradleStorage extends CradleStorage
 				logger.info("Schema creation/update skipped");
 			
 			instanceUuid = getInstanceId(instanceName);
-			CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(connection.getSession()).build();
+			CassandraDataMapper dataMapper = new CassandraDataMapperBuilderWithRetry(connection.getSession()).build();
 			ops = createOperators(dataMapper, settings);
 			Duration timeout = Duration.ofMillis(settings.getTimeout());
 			writeAttrs = builder -> builder.setConsistencyLevel(settings.getWriteConsistencyLevel())

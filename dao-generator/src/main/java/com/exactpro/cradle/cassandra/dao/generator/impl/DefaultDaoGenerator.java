@@ -17,6 +17,7 @@ public class DefaultDaoGenerator extends AbstractJavaGenerator {
     @Override
     public JavaFile[] generate(Class<?> interfaceClass, Class<?> implClass) {
         if (interfaceClass.getAnnotation(Dao.class) == null || implClass == null) {
+        //if (interfaceClass.getAnnotation(Dao.class) == null) {
             throw new IllegalStateException();
         }
 

@@ -8,8 +8,8 @@ ext {
     driver_version = '4.2.0'
 }
 
-sourceCompatibility = 11
-targetCompatibility = 11
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 repositories {
     mavenCentral()
@@ -21,7 +21,7 @@ sourceSets {
 
 dependencies {
 
-    implementation project(":cradle-cassandra")
+    implementation project(":dao-module")
 
     //For generation java code. License: Apache 2.0
     implementation "com.squareup:javapoet:1.13.0"

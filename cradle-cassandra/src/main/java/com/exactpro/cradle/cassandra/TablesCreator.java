@@ -33,7 +33,7 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
 import com.exactpro.cradle.daomodule.dao.utils.QueryExecutor;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
+import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
 
 public class TablesCreator
 {
