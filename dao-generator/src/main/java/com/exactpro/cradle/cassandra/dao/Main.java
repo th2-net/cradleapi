@@ -13,7 +13,7 @@ import com.squareup.javapoet.JavaFile;
 
 public class Main {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws ClassNotFoundException {
         DefaultMapperToDaoConverter converter = new DefaultMapperToDaoConverter();
         DefaultDaoGenerator daoGenerator = new DefaultDaoGenerator();
         DefaultMapperGenerator mapperGenerator = new DefaultMapperGenerator();
@@ -22,6 +22,7 @@ public class Main {
 
         for (Class<?> mapper : new DefaultDaoMapperLoader().loadAllDaoMapper()) {
             for (Entry<Class<?>, Class<?>> entry : converter.convert(mapper).entrySet()) {
+                System.out.println("key: " + entry.getKey() + "value: " + entry.getValue());
                 writeTo(daoGenerator.generate(entry.getKey(), entry.getValue()), directory);
             }
             writeTo(mapperGenerator.generate(mapper, null), directory);

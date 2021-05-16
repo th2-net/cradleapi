@@ -31,7 +31,5 @@ dependencies {
     compile "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
     compile "com.datastax.oss:java-driver-mapper-runtime:${driver_version}"
 
-    annotationProcessor "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
-    
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }

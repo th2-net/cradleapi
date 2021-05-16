@@ -1,8 +1,6 @@
 package com.exactpro.cradle.cassandra.dao.loader.impl;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;

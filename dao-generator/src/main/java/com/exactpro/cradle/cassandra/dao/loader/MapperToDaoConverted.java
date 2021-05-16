@@ -4,6 +4,6 @@ import java.util.Map;
 
 public interface MapperToDaoConverted {
 
-    Map<Class<?>, Class<?>> convert(Class<?> mapper);
+    Map<Class<?>, Class<?>> convert(Class<?> mapper) throws ClassNotFoundException;
 
 }

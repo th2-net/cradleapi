@@ -27,9 +27,27 @@ public abstract class AbstractRetryDao {
 
     public AbstractRetryDao(MapperContext context) {
         Map<Object, Object> customState = context.getCustomState();
-        minTimeout = Objects.requireNonNullElse((Number) customState.get(MIN_TIMEOUT_KEY), 1000L).longValue();
-        long maxTimeout = Objects.requireNonNullElse((Number) customState.get(MAX_TIMEOUT_KEY), 60000L).longValue();
-        countAttempts = Objects.requireNonNullElse((Number) customState.get(COUNT_ATTEMPTS_KEY), 5L).longValue();
+
+        if (customState.get(MIN_TIMEOUT_KEY) != null) {
+            minTimeout = ((Number) customState.get(MIN_TIMEOUT_KEY)).longValue();
+        } else {
+            minTimeout = 1000L;
+        }
+
+        long maxTimeout;
+
+        if (customState.get(MAX_TIMEOUT_KEY) != null) {
+            maxTimeout = ((Number) customState.get(MAX_TIMEOUT_KEY)).longValue();
+        } else {
+            maxTimeout = 60000L;
+        }
+
+        if (customState.get(COUNT_ATTEMPTS_KEY) != null) {
+            countAttempts = ((Number) customState.get(COUNT_ATTEMPTS_KEY)).longValue();
+        } else {
+            countAttempts = 5L;
+        }
+
         h = (maxTimeout - minTimeout) / countAttempts;
     }
 

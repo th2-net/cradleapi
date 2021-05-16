@@ -1,3 +1,5 @@
+import org.gradle.api.internal.project.taskfactory.AnnotationProcessingTaskFactory
+
 ext {
     driver_version = '4.2.0'
 }
@@ -21,9 +23,9 @@ dependencies {
 	compile "com.datastax.oss:java-driver-query-builder:${driver_version}"
 	compile "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
 	compile "com.datastax.oss:java-driver-mapper-runtime:${driver_version}"
-	
+
 	annotationProcessor "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
-	
+
 	testCompile 'org.testng:testng:7.1.0'
 }
 

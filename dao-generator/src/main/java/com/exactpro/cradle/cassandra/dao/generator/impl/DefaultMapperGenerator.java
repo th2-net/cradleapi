@@ -75,8 +75,8 @@ public class DefaultMapperGenerator extends AbstractJavaGenerator {
         }
 
         return new JavaFile[] {
-                JavaFile.builder(cls.getPackageName(), mapperBuilder.build()).build(),
-                JavaFile.builder(cls.getPackageName(), mapperBuilderBuilder.build()).build()
+                JavaFile.builder(cls.getPackage().getName(), mapperBuilder.build()).build(),
+                JavaFile.builder(cls.getPackage().getName(), mapperBuilderBuilder.build()).build()
         };
     }
 

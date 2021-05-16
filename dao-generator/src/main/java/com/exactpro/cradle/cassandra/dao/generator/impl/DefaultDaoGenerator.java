@@ -17,7 +17,6 @@ public class DefaultDaoGenerator extends AbstractJavaGenerator {
     @Override
     public JavaFile[] generate(Class<?> interfaceClass, Class<?> implClass) {
         if (interfaceClass.getAnnotation(Dao.class) == null || implClass == null) {
-        //if (interfaceClass.getAnnotation(Dao.class) == null) {
             throw new IllegalStateException();
         }
 
@@ -37,7 +36,7 @@ public class DefaultDaoGenerator extends AbstractJavaGenerator {
             typeBuilder.addMethod(override(method, this::getMethodCode).build());
         }
 
-        return new JavaFile[] { JavaFile.builder(interfaceClass.getPackageName(), typeBuilder.build()).build() };
+        return new JavaFile[] { JavaFile.builder(interfaceClass.getPackage().getName(), typeBuilder.build()).build() };
     }
 
     private String getMethodCode(Class<?> cls) {

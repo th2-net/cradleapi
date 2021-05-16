@@ -10,7 +10,7 @@ import com.exactpro.cradle.cassandra.dao.loader.MapperToDaoConverted;
 
 public class DefaultMapperToDaoConverter implements MapperToDaoConverted {
     @Override
-    public Map<Class<?>, Class<?>> convert(Class<?> mapper) {
+    public Map<Class<?>, Class<?>> convert(Class<?> mapper) throws ClassNotFoundException {
         if (mapper.getAnnotation(Mapper.class) == null) {
             throw new IllegalStateException();
         }
@@ -23,12 +23,7 @@ public class DefaultMapperToDaoConverter implements MapperToDaoConverted {
                 continue;
             }
 
-            Class<?> implClass = null;
-
-            try {
-                implClass = Class.forName(method.getReturnType().getTypeName() + "Impl__MapperGenerated");
-            } catch (ClassNotFoundException e) {}
-
+            Class<?> implClass = Class.forName(method.getReturnType().getTypeName() + "Impl__MapperGenerated");
 
             dao.put(method.getReturnType(), implClass);
         }
