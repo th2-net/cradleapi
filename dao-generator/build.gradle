@@ -19,6 +19,13 @@ sourceSets {
     main.java.srcDirs += "./src/gen"
 }
 
+task mainGenerator(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'com.exactpro.cradle.cassandra.dao.Main'
+}
+
+compileJava.finalizedBy mainGenerator
+
 dependencies {
 
     implementation project(":dao-module")

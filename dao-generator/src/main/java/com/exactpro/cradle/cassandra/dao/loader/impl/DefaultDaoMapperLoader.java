@@ -23,6 +23,7 @@ public class DefaultDaoMapperLoader implements DaoMapperLoader {
             List<Class<?>> list = new ArrayList<>();
             while (resources.hasMoreElements()) {
                 URL url = resources.nextElement();
+
                 try (InputStream inputStream = url.openStream()) {
                     try (BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream)) {
                         try (Scanner sc = new Scanner(bufferedInputStream)) {
