@@ -19,8 +19,6 @@ package com.exactpro.cradle.cassandra;
 import com.exactpro.cradle.CradleManager;
 import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
-import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
-import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 

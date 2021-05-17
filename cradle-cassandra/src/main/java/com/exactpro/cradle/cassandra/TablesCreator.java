@@ -19,7 +19,6 @@ package com.exactpro.cradle.cassandra;
 import java.io.IOException;
 import java.util.Optional;
 
-import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +30,7 @@ import com.datastax.oss.driver.api.querybuilder.schema.AlterTableAddColumnEnd;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
-import com.exactpro.cradle.daomodule.dao.utils.QueryExecutor;
+import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
