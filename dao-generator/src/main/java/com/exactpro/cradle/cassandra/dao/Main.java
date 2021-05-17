@@ -11,7 +11,7 @@ import com.exactpro.cradle.cassandra.dao.loader.impl.DefaultMapperToDaoConverter
 import com.squareup.javapoet.JavaFile;
 
 public class Main {
-    public static void main(String[] args) throws ClassNotFoundException, IOException {
+    public static void main(String[] args) throws ClassNotFoundException {
         DefaultMapperToDaoConverter converter = new DefaultMapperToDaoConverter();
         DefaultDaoGenerator daoGenerator = new DefaultDaoGenerator();
         DefaultMapperGenerator mapperGenerator = new DefaultMapperGenerator();
