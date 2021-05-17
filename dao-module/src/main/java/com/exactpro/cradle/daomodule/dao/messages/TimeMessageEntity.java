@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.daomodule.dao.messages;
+package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.exactpro.cradle.Direction;
@@ -29,7 +29,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
-import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 /**
  * Contains message data related to given time

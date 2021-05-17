@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.daomodule.dao;
+package com.exactpro.cradle.cassandra;
 
 import java.time.ZoneOffset;
 
 public class StorageConstants
 {
 	public static final ZoneOffset TIMEZONE_OFFSET = ZoneOffset.UTC;
-	public static final int MESSAGE_BATCH_SIZE_LIMIT_BYTES = 5000;
-	public static final int TEST_EVENT_BATCH_SIZE_LIMIT_BYTES = 5000;
 
 	public static final String ID = "id",
 			NAME = "name",

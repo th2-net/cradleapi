@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.daomodule.dao.testevents;
+package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
@@ -35,7 +35,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
-import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
+import static com.exactpro.cradle.cassandra.CassandraStorageSettings.TEST_EVENT_BATCH_SIZE_LIMIT_BYTES;
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 /**
  * Contains minimal set of data to obtain from Cassandra to build {@link StoredTestEvent}

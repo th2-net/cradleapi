@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.daomodule.dao.testevents;
+package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
@@ -31,16 +31,18 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
+
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
-import static com.exactpro.cradle.daomodule.dao.StorageConstants.INSTANCE_ID;
-import static com.exactpro.cradle.daomodule.dao.StorageConstants.ID;
+import static com.exactpro.cradle.cassandra.StorageConstants.ID;
+import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
 
 public class TestEventQueryProvider
 {
 	private static final Logger logger = LoggerFactory.getLogger(TestEventQueryProvider.class);
 
 	private final CqlSession session;
-	private final EntityHelper<TestEventEntity> helper;
+	private final EntityHelper<com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity> helper;
 	private final SimpleStatement ss;
 	
 	public TestEventQueryProvider(MapperContext context, EntityHelper<TestEventEntity> helper)

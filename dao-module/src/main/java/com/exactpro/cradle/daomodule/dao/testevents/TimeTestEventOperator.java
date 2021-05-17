@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.daomodule.dao.testevents;
+package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
@@ -29,14 +29,16 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
+import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventEntity;
+
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 @Dao
 public interface TimeTestEventOperator
 {
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+
 			START_DATE+"=:startDate AND "+START_TIME+">=:timeFrom AND "+START_TIME+"<=:timeTo")
-	CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> getTestEvents(UUID instanceId, LocalDate startDate, LocalTime timeFrom, LocalTime timeTo, 
+	CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> getTestEvents(UUID instanceId, LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert

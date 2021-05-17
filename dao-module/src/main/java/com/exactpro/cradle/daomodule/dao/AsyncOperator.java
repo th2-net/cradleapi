@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.daomodule.dao;
+package com.exactpro.cradle.cassandra.dao;
+
+import com.exactpro.cradle.cassandra.CassandraSemaphore;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;

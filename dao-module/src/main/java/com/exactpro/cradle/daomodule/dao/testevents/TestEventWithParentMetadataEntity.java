@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.daomodule.dao.testevents;
+package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.exactpro.cradle.testevents.StoredTestEvent;
@@ -27,7 +27,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
-import static com.exactpro.cradle.daomodule.dao.StorageConstants.EVENT_BATCH_METADATA;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventMetadataEntity;
+
+import static com.exactpro.cradle.cassandra.StorageConstants.EVENT_BATCH_METADATA;
 
 /**
  * Contains metadata of test event with parent to extend with partition and clustering fields

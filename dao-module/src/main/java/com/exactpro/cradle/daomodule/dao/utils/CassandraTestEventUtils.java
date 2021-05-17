@@ -18,7 +18,7 @@ package com.exactpro.cradle.daomodule.dao.utils;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
-import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 import java.util.UUID;
 

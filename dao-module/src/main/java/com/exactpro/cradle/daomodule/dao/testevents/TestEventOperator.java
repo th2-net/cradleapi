@@ -29,14 +29,19 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
+import com.exactpro.cradle.cassandra.dao.testevents.DetailedTestEventEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventQueryProvider;
+
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
+
 
 @Dao
 public interface TestEventOperator
 {
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+ID+"=:id")
-	CompletableFuture<TestEventEntity> get(UUID instanceId, String id, 
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<TestEventEntity> get(UUID instanceId, String id,
+										   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@QueryProvider(providerClass = TestEventQueryProvider.class, entityHelpers = TestEventEntity.class)
 	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getComplete(UUID instanceId, List<String> id,

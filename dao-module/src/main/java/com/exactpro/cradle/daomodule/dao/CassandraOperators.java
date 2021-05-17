@@ -14,13 +14,22 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.daomodule.dao;
+package com.exactpro.cradle.cassandra.dao;
 
+import com.exactpro.cradle.cassandra.CassandraStorageSettings;
+import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
-import com.exactpro.cradle.daomodule.dao.messages.MessageTestEventOperator;
-import com.exactpro.cradle.daomodule.dao.messages.TimeMessageOperator;
+import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
+import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
 import com.exactpro.cradle.daomodule.dao.testevents.*;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
+
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenOperator;
+import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventOperator;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenDatesOperator;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesOperator;
+
+import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventOperator;
 
 public class CassandraOperators
 {

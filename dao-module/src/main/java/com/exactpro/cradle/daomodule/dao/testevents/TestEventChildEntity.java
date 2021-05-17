@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.daomodule.dao.testevents;
+package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventWithParentMetadataEntity;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 
 import java.io.IOException;
@@ -27,7 +28,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
 
-import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 /**
  * Contains test event metadata related to given parent

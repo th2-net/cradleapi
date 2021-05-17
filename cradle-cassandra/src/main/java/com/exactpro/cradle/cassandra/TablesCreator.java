@@ -19,7 +19,7 @@ package com.exactpro.cradle.cassandra;
 import java.io.IOException;
 import java.util.Optional;
 
-import com.exactpro.cradle.daomodule.dao.CassandraStorageSettings;
+import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +33,7 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
 import com.exactpro.cradle.daomodule.dao.utils.QueryExecutor;
 
-import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 public class TablesCreator
 {

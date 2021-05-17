@@ -19,7 +19,7 @@ package com.exactpro.cradle.cassandra.iterators;
 import java.util.Iterator;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
-import com.exactpro.cradle.daomodule.dao.testevents.TestEventChildEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildEntity;
 import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 
 public class TestEventChildrenMetadataIteratorAdapter implements Iterable<StoredTestEventMetadata>

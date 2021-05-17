@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.daomodule.dao.testevents;
+package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
@@ -26,11 +26,13 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildDateEntity;
+
 @Dao
 public interface TestEventChildrenDatesOperator
 {
 	@Insert
-	CompletableFuture<TestEventChildDateEntity> writeTestEventDate(TestEventChildDateEntity testEventDate, 
+	CompletableFuture<TestEventChildDateEntity> writeTestEventDate(TestEventChildDateEntity testEventDate,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Select

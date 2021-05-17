@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
-import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 /**
  * Contains meta-data fields of message batch to obtain from Cassandra

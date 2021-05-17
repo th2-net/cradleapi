@@ -33,7 +33,8 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.UUID;
 
-import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
+import static com.exactpro.cradle.cassandra.CassandraStorageSettings.MESSAGE_BATCH_SIZE_LIMIT_BYTES;
+import static com.exactpro.cradle.cassandra.StorageConstants.CONTENT;
 
 /**
  * Contains minimal set of data to obtain from Cassandra to build {@link StoredMessageBatch}

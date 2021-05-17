@@ -25,18 +25,18 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 
+import com.exactpro.cradle.cassandra.dao.AsyncOperator;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
 import com.exactpro.cradle.utils.CradleIdException;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.exactpro.cradle.daomodule.dao.CassandraSemaphore;
-import com.exactpro.cradle.daomodule.dao.AsyncOperator;
-import com.exactpro.cradle.daomodule.dao.messages.MessageTestEventEntity;
-import com.exactpro.cradle.daomodule.dao.messages.MessageTestEventOperator;
-import com.exactpro.cradle.daomodule.dao.testevents.TestEventMessagesEntity;
-import com.exactpro.cradle.daomodule.dao.testevents.TestEventMessagesOperator;
+import com.exactpro.cradle.cassandra.CassandraSemaphore;
+import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventEntity;
+import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesOperator;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 
 public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLinker

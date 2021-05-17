@@ -20,9 +20,9 @@ import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.*;
-import com.exactpro.cradle.daomodule.dao.CassandraSemaphore;
-import com.exactpro.cradle.daomodule.dao.messages.MessageBatchQueryProvider;
-import com.exactpro.cradle.daomodule.dao.messages.StreamEntity;
+import com.exactpro.cradle.cassandra.CassandraSemaphore;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchQueryProvider;
+import com.exactpro.cradle.cassandra.dao.messages.StreamEntity;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 
 import java.util.UUID;
@@ -31,7 +31,7 @@ import java.util.function.Function;
 
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 
-import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 @Dao
 public interface MessageBatchOperator
@@ -76,8 +76,8 @@ public interface MessageBatchOperator
 	
 	@QueryProvider(providerClass = MessageBatchQueryProvider.class, entityHelpers = DetailedMessageBatchEntity.class)
 	CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> filterMessages(UUID instanceId, StoredMessageFilter filter,
-			CassandraSemaphore semaphore, MessageBatchOperator operator,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+																							CassandraSemaphore semaphore, MessageBatchOperator operator,
+																							Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("SELECT DISTINCT "+INSTANCE_ID+", "+STREAM_NAME+" from ${qualifiedTableId}")
 	PagingIterable<StreamEntity> getStreams(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);

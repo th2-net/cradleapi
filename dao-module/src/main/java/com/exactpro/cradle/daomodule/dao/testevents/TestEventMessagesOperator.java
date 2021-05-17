@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.daomodule.dao.testevents;
+package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
@@ -26,14 +26,16 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.daomodule.dao.StorageConstants.INSTANCE_ID;
-import static com.exactpro.cradle.daomodule.dao.StorageConstants.TEST_EVENT_ID;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesEntity;
+
+import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
+import static com.exactpro.cradle.cassandra.StorageConstants.TEST_EVENT_ID;
 
 @Dao
 public interface TestEventMessagesOperator
 {
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+TEST_EVENT_ID+"=:eventId")
-	CompletableFuture<MappedAsyncPagingIterable<TestEventMessagesEntity>> getMessages(UUID instanceId, String eventId, 
+	CompletableFuture<MappedAsyncPagingIterable<TestEventMessagesEntity>> getMessages(UUID instanceId, String eventId,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert

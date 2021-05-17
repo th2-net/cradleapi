@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.daomodule.dao.testevents;
+package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.GetEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
 
 @Dao
 public interface TestEventConverter

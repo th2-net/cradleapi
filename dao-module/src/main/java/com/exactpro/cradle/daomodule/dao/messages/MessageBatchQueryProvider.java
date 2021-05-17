@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.daomodule.dao.messages;
+package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
@@ -25,9 +25,9 @@ import com.datastax.oss.driver.api.mapper.MapperContext;
 import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 
+import com.exactpro.cradle.cassandra.CassandraSemaphore;
 import com.exactpro.cradle.daomodule.dao.utils.CassandraMessageUtils;
 import com.exactpro.cradle.daomodule.dao.utils.FilterUtils;
-import com.exactpro.cradle.daomodule.dao.CassandraSemaphore;
 import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
@@ -44,7 +44,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
-import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
@@ -143,9 +143,9 @@ public class MessageBatchQueryProvider
 		return select;
 	}
 	
-	private BoundStatement bindParameters(PreparedStatement ps, UUID instanceId, StoredMessageFilter filter, 
-			CassandraSemaphore semaphore, MessageBatchOperator operator,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes) throws CradleStorageException
+	private BoundStatement bindParameters(PreparedStatement ps, UUID instanceId, StoredMessageFilter filter,
+										  CassandraSemaphore semaphore, MessageBatchOperator operator,
+										  Function<BoundStatementBuilder, BoundStatementBuilder> attributes) throws CradleStorageException
 	{
 		BoundStatementBuilder builder = ps.boundStatementBuilder()
 				.setUuid(INSTANCE_ID, instanceId);

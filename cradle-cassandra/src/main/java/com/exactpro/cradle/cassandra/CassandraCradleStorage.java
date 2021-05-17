@@ -28,24 +28,25 @@ import com.exactpro.cradle.CradleObjectsFactory;
 import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.TimeRelation;
+import com.exactpro.cradle.cassandra.dao.AsyncOperator;
+import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
+import com.exactpro.cradle.cassandra.dao.CassandraOperators;
+import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventEntity;
+import com.exactpro.cradle.cassandra.dao.messages.TimeMessageEntity;
 import com.exactpro.cradle.daomodule.dao.CassandraDataMapperBuilderWithRetry;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
-import com.exactpro.cradle.daomodule.dao.*;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
-import com.exactpro.cradle.daomodule.dao.messages.MessageTestEventEntity;
-import com.exactpro.cradle.daomodule.dao.messages.MessageTestEventOperator;
-import com.exactpro.cradle.daomodule.dao.messages.StreamEntity;
-import com.exactpro.cradle.daomodule.dao.messages.TimeMessageEntity;
-import com.exactpro.cradle.daomodule.dao.testevents.DetailedTestEventEntity;
-import com.exactpro.cradle.daomodule.dao.testevents.RootTestEventDateEntity;
-import com.exactpro.cradle.daomodule.dao.testevents.RootTestEventEntity;
-import com.exactpro.cradle.daomodule.dao.testevents.TestEventChildDateEntity;
-import com.exactpro.cradle.daomodule.dao.testevents.TestEventChildEntity;
-import com.exactpro.cradle.daomodule.dao.testevents.TestEventEntity;
-import com.exactpro.cradle.daomodule.dao.testevents.TestEventMessagesEntity;
-import com.exactpro.cradle.daomodule.dao.testevents.TestEventMessagesOperator;
-import com.exactpro.cradle.daomodule.dao.testevents.TimeTestEventEntity;
+import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
+import com.exactpro.cradle.cassandra.dao.testevents.DetailedTestEventEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventDateEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildDateEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesOperator;
+import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventEntity;
 import com.exactpro.cradle.cassandra.iterators.*;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
 import com.exactpro.cradle.daomodule.dao.utils.CassandraMessageUtils;
@@ -61,6 +62,8 @@ import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.MessageUtils;
+
+import com.exactpro.cradle.cassandra.dao.messages.StreamEntity;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,9 +83,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 
+import com.exactpro.cradle.cassandra.CassandraStorageSettings;
+import com.exactpro.cradle.cassandra.CassandraSemaphore;
+
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
-import static com.exactpro.cradle.daomodule.dao.CassandraStorageSettings.*;
-import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
+import static com.exactpro.cradle.cassandra.CassandraStorageSettings.*;
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 public class CassandraCradleStorage extends CradleStorage
 {
@@ -223,7 +229,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected CompletableFuture<Void> doStoreTimeMessageAsync(StoredMessage message)
 	{
-		CompletableFuture<TimeMessageEntity > future = new AsyncOperator<TimeMessageEntity>(semaphore)
+		CompletableFuture<TimeMessageEntity> future = new AsyncOperator<TimeMessageEntity>(semaphore)
 				.getFuture(() -> {
 					TimeMessageEntity timeEntity = new TimeMessageEntity(message, instanceUuid);
 					

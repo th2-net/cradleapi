@@ -17,7 +17,7 @@
 package com.exactpro.cradle.daomodule.dao.utils;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
-import static com.exactpro.cradle.daomodule.dao.StorageConstants.TIMEZONE_OFFSET;
+import static com.exactpro.cradle.cassandra.StorageConstants.TIMEZONE_OFFSET;
 
 import java.time.Instant;
 import java.time.LocalDateTime;

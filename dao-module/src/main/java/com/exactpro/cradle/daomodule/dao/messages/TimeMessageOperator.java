@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.daomodule.dao.messages;
+package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
@@ -27,7 +27,9 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
+import com.exactpro.cradle.cassandra.dao.messages.TimeMessageEntity;
+
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 @Dao
 public interface TimeMessageOperator
@@ -35,7 +37,7 @@ public interface TimeMessageOperator
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
 			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction AND "+MESSAGE_DATE+"=:messageDate AND "
 			+MESSAGE_TIME+">=:messageTime ORDER BY "+MESSAGE_TIME+" ASC limit 1")
-	CompletableFuture<TimeMessageEntity> getNearestMessageAfter(UUID instanceId, String streamName, LocalDate messageDate, String direction, 
+	CompletableFuture<TimeMessageEntity> getNearestMessageAfter(UUID instanceId, String streamName, LocalDate messageDate, String direction,
 			LocalTime messageTime, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
