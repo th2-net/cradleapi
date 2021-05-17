@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.daomodule.dao.connection;
+package com.exactpro.cradle.cassandra.connection;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
@@ -28,11 +28,13 @@ import java.util.Date;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import org.apache.commons.lang3.StringUtils;
 
+import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
+
 public class CassandraConnection
 {
 	public static final String DRIVER_CONFIG_FILE_NAME = "application.conf";
 	private static final Path DRIVER_CONFIG = Paths.get(System.getProperty("user.dir"), DRIVER_CONFIG_FILE_NAME);
-	private CassandraConnectionSettings settings;
+	private com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings settings;
 	private CqlSession session;
 	private Date started,
 			stopped;

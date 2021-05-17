@@ -16,11 +16,11 @@
 
 package com.exactpro.cradle.daomodule.dao;
 
-import com.exactpro.cradle.daomodule.dao.messages.MessageBatchOperator;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.daomodule.dao.messages.MessageTestEventOperator;
 import com.exactpro.cradle.daomodule.dao.messages.TimeMessageOperator;
 import com.exactpro.cradle.daomodule.dao.testevents.*;
-import com.exactpro.cradle.daomodule.dao.messages.MessageBatchOperator;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 
 public class CassandraOperators
 {

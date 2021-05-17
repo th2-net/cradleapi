@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.daomodule.dao.messages;
+package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.GetEntity;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
 
 @Dao
 public interface MessageBatchConverter

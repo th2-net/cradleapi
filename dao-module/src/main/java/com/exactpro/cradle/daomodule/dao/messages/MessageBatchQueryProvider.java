@@ -46,6 +46,9 @@ import java.util.function.Function;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
 
+import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
+
 public class MessageBatchQueryProvider
 {
 	private static final Logger logger = LoggerFactory.getLogger(MessageBatchQueryProvider.class);

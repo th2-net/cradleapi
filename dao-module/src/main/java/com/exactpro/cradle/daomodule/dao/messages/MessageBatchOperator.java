@@ -14,18 +14,22 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.daomodule.dao.messages;
+package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.exactpro.cradle.daomodule.dao.CassandraSemaphore;
+import com.exactpro.cradle.daomodule.dao.messages.MessageBatchQueryProvider;
+import com.exactpro.cradle.daomodule.dao.messages.StreamEntity;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+
+import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 
 import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
 
@@ -33,8 +37,8 @@ import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
 public interface MessageBatchOperator
 {
 	@Select
-	PagingIterable<DetailedMessageBatchEntity> get(UUID instanceId, String streamName, 
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	PagingIterable<DetailedMessageBatchEntity> get(UUID instanceId, String streamName,
+																							  Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Select
 	PagingIterable<DetailedMessageBatchEntity> get(UUID instanceId, String streamName, String direction, 

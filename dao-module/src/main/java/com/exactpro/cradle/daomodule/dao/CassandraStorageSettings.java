@@ -17,7 +17,7 @@
 package com.exactpro.cradle.daomodule.dao;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
-import com.exactpro.cradle.daomodule.dao.connection.NetworkTopologyStrategy;
+import com.exactpro.cradle.cassandra.connection.NetworkTopologyStrategy;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
 
@@ -63,7 +63,7 @@ public class CassandraStorageSettings
 	private long maxMessageBatchSize,
 			maxTestEventBatchSize;
 	
-	public CassandraStorageSettings(String keyspace, NetworkTopologyStrategy networkTopologyStrategy, 
+	public CassandraStorageSettings(String keyspace, NetworkTopologyStrategy networkTopologyStrategy,
 			long timeout, ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel)
 	{
 		this.messagesTableName = MESSAGES_TABLE_DEFAULT_NAME;

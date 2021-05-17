@@ -20,8 +20,8 @@ import java.util.Iterator;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.PagingIterable;
-import com.exactpro.cradle.daomodule.dao.messages.DetailedMessageBatchEntity;
-import com.exactpro.cradle.daomodule.dao.messages.MessageBatchEntity;
+import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 

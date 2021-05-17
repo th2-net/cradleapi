@@ -22,7 +22,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import com.exactpro.cradle.CradleStorage;
-import com.exactpro.cradle.daomodule.dao.connection.CassandraConnection;
+import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;

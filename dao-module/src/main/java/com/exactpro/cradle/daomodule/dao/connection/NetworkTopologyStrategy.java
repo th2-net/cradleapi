@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.daomodule.dao.connection;
+package com.exactpro.cradle.cassandra.connection;
 
 import java.util.Collections;
 import java.util.HashMap;

@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.daomodule.dao.connection;
+package com.exactpro.cradle.cassandra.connection;
 
 import java.util.HashMap;
 import java.util.Map;
+import com.exactpro.cradle.cassandra.connection.NetworkTopologyStrategy;
 
 public class NetworkTopologyStrategyBuilder
 {

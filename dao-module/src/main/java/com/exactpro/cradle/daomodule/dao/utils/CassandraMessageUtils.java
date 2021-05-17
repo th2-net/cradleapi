@@ -34,12 +34,13 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.daomodule.dao.CassandraSemaphore;
 import com.exactpro.cradle.daomodule.dao.AsyncOperator;
-import com.exactpro.cradle.daomodule.dao.messages.DetailedMessageBatchEntity;
-import com.exactpro.cradle.daomodule.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
+
+import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 
 public class CassandraMessageUtils
 {

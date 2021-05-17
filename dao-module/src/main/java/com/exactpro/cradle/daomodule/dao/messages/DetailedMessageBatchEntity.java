@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.daomodule.dao.messages;
+package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
@@ -36,6 +36,8 @@ import java.time.LocalTime;
 import java.util.UUID;
 
 import static com.exactpro.cradle.daomodule.dao.StorageConstants.*;
+
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
 
 /**
  * Contains all data about {@link StoredMessageBatch} to store in Cassandra

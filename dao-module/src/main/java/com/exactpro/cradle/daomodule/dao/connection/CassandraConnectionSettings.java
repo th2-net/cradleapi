@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.daomodule.dao.connection;
+package com.exactpro.cradle.cassandra.connection;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.exactpro.cradle.cassandra.connection.NetworkTopologyStrategy;
 
 public class CassandraConnectionSettings
 {
