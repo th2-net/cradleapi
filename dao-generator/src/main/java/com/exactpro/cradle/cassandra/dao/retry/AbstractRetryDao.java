@@ -43,14 +43,13 @@ public abstract class AbstractRetryDao {
 
     public AbstractRetryDao(MapperContext context) {
         Map<Object, Object> customState = context.getCustomState();
+        long maxTimeout;
 
         if (customState.get(MIN_TIMEOUT_KEY) != null) {
             minTimeout = ((Number) customState.get(MIN_TIMEOUT_KEY)).longValue();
         } else {
             minTimeout = 1000L;
         }
-
-        long maxTimeout;
 
         if (customState.get(MAX_TIMEOUT_KEY) != null) {
             maxTimeout = ((Number) customState.get(MAX_TIMEOUT_KEY)).longValue();
@@ -71,7 +70,7 @@ public abstract class AbstractRetryDao {
         try {
             return supplier.get();
         } catch (Exception e) {
-            LOGGER.warn("Can not execute blocking request for method {}", methodName);
+            LOGGER.warn("Cannot execute blocking request for method {}. Exception message: {}", methodName, e.getMessage());
 
             for (int i = 0; i < countAttempts; i++) {
                 try {
@@ -84,11 +83,11 @@ public abstract class AbstractRetryDao {
                     return supplier.get();
                 } catch (Exception ex) {
                     e.addSuppressed(ex);
-                    LOGGER.warn("Can not retry blocking request for method with name {}. Count attempt = {}. Timeout = {}", methodName, i + 1, getTimeout(i));
+                    LOGGER.warn("Cannot retry blocking request for method with name {}. Count attempt = {}. Timeout = {}", methodName, i + 1, getTimeout(i));
                 }
             }
 
-            LOGGER.warn("Can not retry blocking request for method with name {}", methodName);
+            LOGGER.warn("Cannot retry blocking request for method with name {}", methodName);
             throw e;
         }
     }
