@@ -16,7 +16,6 @@
 
 package com.exactpro.cradle.cassandra;
 
-import com.exactpro.cradle.daomodule.dao.CassandraStorageSettings;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
