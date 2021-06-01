@@ -17,7 +17,6 @@
 package com.exactpro.cradle.cassandra.dao.retry;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -42,35 +41,32 @@ public abstract class AbstractRetryDao {
     private final long h;
 
     public AbstractRetryDao(MapperContext context) {
-        Map<Object, Object> customState = context.getCustomState();
         long maxTimeout;
 
-        if (customState.get(MIN_TIMEOUT_KEY) != null) {
-            minTimeout = ((Number) customState.get(MIN_TIMEOUT_KEY)).longValue();
-        } else {
-            minTimeout = 1000L;
-        }
+        minTimeout = getValueFromCustomState(MIN_TIMEOUT_KEY, context, 1000L);
 
-        if (customState.get(MAX_TIMEOUT_KEY) != null) {
-            maxTimeout = ((Number) customState.get(MAX_TIMEOUT_KEY)).longValue();
-        } else {
-            maxTimeout = 60000L;
-        }
+        maxTimeout = getValueFromCustomState(MAX_TIMEOUT_KEY, context, 60000L);
 
-        if (customState.get(COUNT_ATTEMPTS_KEY) != null) {
-            countAttempts = ((Number) customState.get(COUNT_ATTEMPTS_KEY)).longValue();
-        } else {
-            countAttempts = 5L;
-        }
+        countAttempts = getValueFromCustomState(COUNT_ATTEMPTS_KEY, context, 5L);
 
         h = (maxTimeout - minTimeout) / countAttempts;
+    }
+
+    private long getValueFromCustomState(String key, MapperContext context, long defaultValue) {
+        Map<Object, Object> customState = context.getCustomState();
+
+        if (customState.get(key) != null) {
+            return ((Number) customState.get(key)).longValue();
+        } else {
+            return defaultValue;
+        }
     }
 
     protected <T> T blockingRequest(String methodName, Supplier<T> supplier) {
         try {
             return supplier.get();
         } catch (Exception e) {
-            LOGGER.warn("Cannot execute blocking request for method {}. Exception message: {}", methodName, e.getMessage());
+            LOGGER.warn("Cannot execute blocking request for method {}", methodName, e);
 
             for (int i = 0; i < countAttempts; i++) {
                 try {
