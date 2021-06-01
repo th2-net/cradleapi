@@ -53,7 +53,7 @@ public class DefaultDaoMapperLoader implements DaoMapperLoader {
                                         list.add(classCandidate);
                                     }
                                 } catch (ClassNotFoundException e) {
-                                    e.printStackTrace();
+                                    LOGGER.error("Failed to load class", e);
                                 }
                             }
                         }
@@ -63,7 +63,7 @@ public class DefaultDaoMapperLoader implements DaoMapperLoader {
 
             return list.toArray(new Class[0]);
         } catch (IOException e) {
-            LOGGER.error(e.getMessage());
+            LOGGER.error("Error while working with mappers", e);
             return new Class[0];
         }
     }
