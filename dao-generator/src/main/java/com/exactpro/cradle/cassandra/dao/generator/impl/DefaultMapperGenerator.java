@@ -1,3 +1,19 @@
+/*
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.exactpro.cradle.cassandra.dao.generator.impl;
 
 import java.lang.reflect.Constructor;
@@ -20,7 +36,7 @@ import com.squareup.javapoet.TypeSpec.Builder;
 public class DefaultMapperGenerator extends AbstractJavaGenerator {
 
     @Override
-    public JavaFile[] generate(Class<?> cls, Class<?> implClass) {
+    public JavaFile[] generate(Class<?> cls, Class<?> implClass) throws ClassNotFoundException {
         Mapper mapperAnnotation = cls.getAnnotation(Mapper.class);
 
         if (mapperAnnotation == null) {
@@ -34,12 +50,7 @@ public class DefaultMapperGenerator extends AbstractJavaGenerator {
             builderName = cls.getTypeName() + "Builder";
         }
 
-        try {
-            builder = Class.forName(builderName);
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            return null;
-        }
+        builder = Class.forName(builderName);
 
         Builder mapperBuilder = TypeSpec.classBuilder(cls.getSimpleName() + "Impl__RetryGeneratedWithRetry")
                 .addSuperinterface(cls)

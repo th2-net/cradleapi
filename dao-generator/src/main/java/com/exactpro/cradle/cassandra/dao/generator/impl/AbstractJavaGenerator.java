@@ -1,3 +1,19 @@
+/*
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.exactpro.cradle.cassandra.dao.generator.impl;
 
 import java.lang.reflect.Constructor;
@@ -55,13 +71,9 @@ public abstract class AbstractJavaGenerator implements Generator {
     private List<String> buildSpec(Executable method, MethodSpec.Builder methodBuilder) {
         if (java.lang.reflect.Modifier.isPublic(method.getModifiers())) {
             methodBuilder.addModifiers(Modifier.PUBLIC);
-        }
-
-        if (java.lang.reflect.Modifier.isProtected(method.getModifiers())) {
+        } else if (java.lang.reflect.Modifier.isProtected(method.getModifiers())) {
             methodBuilder.addModifiers(Modifier.PROTECTED);
-        }
-
-        if (java.lang.reflect.Modifier.isPrivate(method.getModifiers())) {
+        } else if (java.lang.reflect.Modifier.isPrivate(method.getModifiers())) {
             methodBuilder.addModifiers(Modifier.PRIVATE);
         }
 

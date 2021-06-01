@@ -141,8 +141,8 @@ public class MessageBatchQueryProvider
 	}
 	
 	private BoundStatement bindParameters(PreparedStatement ps, UUID instanceId, StoredMessageFilter filter,
-										  CassandraSemaphore semaphore, MessageBatchOperator operator,
-										  Function<BoundStatementBuilder, BoundStatementBuilder> attributes) throws CradleStorageException
+			CassandraSemaphore semaphore, MessageBatchOperator operator,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes) throws CradleStorageException
 	{
 		BoundStatementBuilder builder = ps.boundStatementBuilder()
 				.setUuid(INSTANCE_ID, instanceId);

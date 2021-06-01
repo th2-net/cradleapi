@@ -32,7 +32,7 @@ public class CassandraConnection
 {
 	public static final String DRIVER_CONFIG_FILE_NAME = "application.conf";
 	private static final Path DRIVER_CONFIG = Paths.get(System.getProperty("user.dir"), DRIVER_CONFIG_FILE_NAME);
-	private com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings settings;
+	private CassandraConnectionSettings settings;
 	private CqlSession session;
 	private Date started,
 			stopped;

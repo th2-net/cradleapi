@@ -37,7 +37,7 @@ public interface TestEventOperator
 {
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+ID+"=:id")
 	CompletableFuture<TestEventEntity> get(UUID instanceId, String id,
-										   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@QueryProvider(providerClass = TestEventQueryProvider.class, entityHelpers = TestEventEntity.class)
 	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getComplete(UUID instanceId, List<String> id,

@@ -34,7 +34,7 @@ public interface MessageBatchOperator
 {
 	@Select
 	PagingIterable<DetailedMessageBatchEntity> get(UUID instanceId, String streamName,
-																							  Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Select
 	PagingIterable<DetailedMessageBatchEntity> get(UUID instanceId, String streamName, String direction, 

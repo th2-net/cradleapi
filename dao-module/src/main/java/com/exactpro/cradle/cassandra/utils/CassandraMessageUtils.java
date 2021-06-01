@@ -35,12 +35,11 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.cassandra.CassandraSemaphore;
 import com.exactpro.cradle.cassandra.dao.AsyncOperator;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
-
-import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 
 public class CassandraMessageUtils
 {
@@ -52,7 +51,7 @@ public class CassandraMessageUtils
 	}
 	
 	public static CompletableFuture<DetailedMessageBatchEntity> getMessageBatch(StoredMessageId id, MessageBatchOperator op, CassandraSemaphore semaphore,
-																				UUID instanceId, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
+					UUID instanceId, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
 	{
 		return new AsyncOperator<DetailedMessageBatchEntity>(semaphore)
 				.getFuture(() -> op.getMessageBatch(instanceId,
