@@ -71,8 +71,8 @@ public class TimeInterval
         this.endTime = toDateTime.toLocalTime();
         this.date = fromDateTime.toLocalDate();
         this.recoveryState = recoveryState;
-        this.lastUpdateDate = LocalDate.now();
-        this.lastUpdateTime = LocalTime.now();
+        this.lastUpdateDate = date;
+        this.lastUpdateTime = startTime;
         this.crawlerType = crawlerType;
         this.healedEventsIds = new HashSet<>();
     }
@@ -93,8 +93,8 @@ public class TimeInterval
         this.endTime = endTime;
         this.date = date;
         this.recoveryState = recoveryState;
-        this.lastUpdateDate = LocalDate.now();
-        this.lastUpdateTime = LocalTime.now();
+        this.lastUpdateDate = date;
+        this.lastUpdateTime = startTime;
         this.crawlerType = crawlerType;
         this.healedEventsIds = new HashSet();
     }

@@ -16,9 +16,12 @@
 
 package com.exactpro.cradle.intervals;
 
+import com.exactpro.cradle.utils.CompressionUtils;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,15 +31,24 @@ public class RecoveryState
 {
     private final Instant timeOfStop;
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private final long processedEventsNumber;
+
+    private static final ObjectMapper MAPPER = new ObjectMapper().findAndRegisterModules()
+            .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 
     private static final Logger logger = LoggerFactory.getLogger(RecoveryState.class);
 
-    public RecoveryState(@JsonProperty("timeOfStop") Instant timeOfStop) {
+    public RecoveryState(@JsonProperty("timeOfStop")
+                         @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSS", timezone = "UTC") Instant timeOfStop,
+                         @JsonProperty("processedEvents") long processedEventsNumber)
+    {
         this.timeOfStop = timeOfStop;
+        this.processedEventsNumber = processedEventsNumber;
     }
 
     public Instant getTimeOfStop() { return timeOfStop; }
+
+    public long getProcessedEventsNumber() { return processedEventsNumber; }
 
     public String convertToJson()
     {
@@ -56,7 +68,8 @@ public class RecoveryState
     {
         return new StringBuilder()
                 .append("RecoveryState{")
-                .append("timeOfStop=").append(timeOfStop)
+                .append("timeOfStop=").append(timeOfStop).append(CompressionUtils.EOL)
+                .append("processedEventsNumber=").append(processedEventsNumber)
                 .append("}").toString();
     }
 }
