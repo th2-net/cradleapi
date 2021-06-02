@@ -33,7 +33,8 @@ import com.exactpro.cradle.cassandra.dao.AsyncOperator;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
-import com.exactpro.cradle.cassandra.dao.healing.HealingIntervalEntity;
+import com.exactpro.cradle.cassandra.dao.intervals.IntervalEntity;
+import com.exactpro.cradle.cassandra.dao.intervals.TimeIntervalEntity;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventEntity;
@@ -49,16 +50,13 @@ import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventEntity;
-import com.exactpro.cradle.cassandra.iterators.HealingIntervalsIteratorAdapter;
-import com.exactpro.cradle.cassandra.iterators.MessagesIteratorAdapter;
-import com.exactpro.cradle.cassandra.iterators.RootTestEventsMetadataIteratorAdapter;
-import com.exactpro.cradle.cassandra.iterators.TestEventChildrenMetadataIteratorAdapter;
-import com.exactpro.cradle.cassandra.iterators.TimeTestEventsMetadataIteratorAdapter;
+import com.exactpro.cradle.cassandra.iterators.*;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
-import com.exactpro.cradle.healing.HealingInterval;
-import com.exactpro.cradle.healing.RecoveryState;
+import com.exactpro.cradle.intervals.Interval;
+import com.exactpro.cradle.intervals.TimeInterval;
+import com.exactpro.cradle.intervals.RecoveryState;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageFilter;
@@ -78,7 +76,6 @@ import static java.lang.Math.min;
 import static java.util.stream.Collectors.toList;
 
 import java.io.*;
-import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -998,36 +995,35 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected void doStoreHealingInterval(HealingInterval healingInterval) throws IOException
+	protected void doStoreInterval(Interval interval) throws IOException
 	{
 		try
 		{
-			doStoreHealingIntervalAsync(healingInterval).get();
+			doStoreIntervalAsync(interval).get();
 		}
 		catch (Exception e)
 		{
-			throw new IOException("Error while storing healing interval with date "+healingInterval.getDate()+"and" +
-					"start time "+healingInterval.getStartTime(), e);
+			throw new IOException("Error while storing interval "+interval.getId(), e);
 		}
 	}
 
 	@Override
-	protected CompletableFuture<Void> doStoreHealingIntervalAsync(HealingInterval healingInterval)
+	protected CompletableFuture<Void> doStoreIntervalAsync(Interval interval)
 	{
-		CompletableFuture<HealingIntervalEntity> future = new AsyncOperator<HealingIntervalEntity>(semaphore)
+		CompletableFuture<TimeIntervalEntity> future = new AsyncOperator<TimeIntervalEntity>(semaphore)
 				.getFuture(() -> {
-					HealingIntervalEntity healingIntervalEntity = new HealingIntervalEntity(healingInterval, instanceUuid);
-					return ops.getHealingIntervalOperator().writeHealingInterval(healingIntervalEntity, writeAttrs);
+					IntervalEntity intervalEntity = new IntervalEntity(interval, instanceUuid);
+					return ops.getIntervalOperator().writeInterval(intervalEntity, writeAttrs);
 				});
 		return future.thenAccept(e -> {});
 	}
 
 	@Override
-	protected Iterable<HealingInterval> doGetHealingIntervals(Instant from, String crawlerType) throws IOException
+	protected Iterable<TimeInterval> doGetTimeIntervals(Instant from, String crawlerType) throws IOException
 	{
 		try
 		{
-			return doGetHealingIntervalsAsync(from, crawlerType).get();
+			return doGetTimeIntervalsAsync(from, crawlerType).get();
 		}
 		catch (Exception e)
 		{
@@ -1036,7 +1032,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<HealingInterval>> doGetHealingIntervalsAsync(Instant from, String crawlerType)
+	protected CompletableFuture<Iterable<TimeInterval>> doGetTimeIntervalsAsync(Instant from, String crawlerType)
 	{
 
 		LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET);
@@ -1045,13 +1041,13 @@ public class CassandraCradleStorage extends CradleStorage
 
 		LocalDate date = fromDateTime.toLocalDate();
 
-		CompletableFuture<MappedAsyncPagingIterable<HealingIntervalEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<HealingIntervalEntity>>(semaphore)
-				.getFuture(() -> ops.getHealingIntervalOperator().getHealingIntervals(instanceUuid, date, fromTime, crawlerType, readAttrs));
+		CompletableFuture<MappedAsyncPagingIterable<TimeIntervalEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<TimeIntervalEntity>>(semaphore)
+				.getFuture(() -> ops.getTimeIntervalOperator().getTimeIntervals(instanceUuid, date, fromTime, crawlerType, readAttrs));
 
 		return future.thenApply(entities -> {
 			try
 			{
-				return new HealingIntervalsIteratorAdapter(entities);
+				return new TimeIntervalsIteratorAdapter(entities);
 			}
 			catch (Exception error)
 			{
@@ -1061,65 +1057,65 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected boolean doSetLastUpdateTimeAndDate(LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerType) throws IOException
+	protected boolean doSetLastUpdateTimeAndDate(String id, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerType) throws IOException
 	{
 		try
 		{
-			return doSetLastUpdateTimeAndDateAsync(healingIntervalStartDate, healingIntervalStartTime, previousLastUpdateTime, previousLastUpdateDate, crawlerType).get();
+			return doSetLastUpdateTimeAndDateAsync(id, previousLastUpdateTime, previousLastUpdateDate, crawlerType).get();
 		}
 		catch (Exception e)
 		{
-			throw new IOException("Error while occupying healing interval with start time "+healingIntervalStartTime, e);
+			throw new IOException("Error while occupying interval "+id, e);
 		}
 	}
 
 	@Override
-	protected CompletableFuture<Boolean> doSetLastUpdateTimeAndDateAsync(LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerType)
+	protected CompletableFuture<Boolean> doSetLastUpdateTimeAndDateAsync(String id, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerType)
 	{
 		CompletableFuture<AsyncResultSet> future = new AsyncOperator<AsyncResultSet>(semaphore)
-				.getFuture(() -> ops.getHealingIntervalOperator().setLastUpdateTimeAndDate(instanceUuid, healingIntervalStartDate, healingIntervalStartTime, LocalTime.now(), previousLastUpdateTime, previousLastUpdateDate, crawlerType, writeAttrs));
+				.getFuture(() -> ops.getIntervalOperator().setLastUpdateTimeAndDate(instanceUuid, id, LocalTime.now(), previousLastUpdateTime, previousLastUpdateDate, crawlerType, writeAttrs));
 		return future.thenApply(AsyncResultSet::wasApplied);
 	}
 
 	@Override
-	protected void doUpdateRecoveryState(RecoveryState recoveryState, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String crawlerType) throws IOException
+	protected void doUpdateRecoveryState(RecoveryState recoveryState, String id, String crawlerType) throws IOException
 	{
 		try
 		{
-			doUpdateRecoveryStateAsync(recoveryState, healingIntervalStartDate, healingIntervalStartTime, crawlerType);
+			doUpdateRecoveryStateAsync(recoveryState, id, crawlerType);
 		}
 		catch (Exception e)
 		{
-			throw new IOException("Error while updating recovery state of healing interval with start time "+healingIntervalStartTime, e);
+			throw new IOException("Error while updating recovery state of interval "+id, e);
 		}
 	}
 
 	@Override
-	protected CompletableFuture<Void> doUpdateRecoveryStateAsync(RecoveryState recoveryState, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String crawlerType)
+	protected CompletableFuture<Void> doUpdateRecoveryStateAsync(RecoveryState recoveryState, String id, String crawlerType)
 	{
 		CompletableFuture<AsyncResultSet> future = new AsyncOperator<AsyncResultSet>(semaphore)
-				.getFuture(() -> ops.getHealingIntervalOperator().updateRecoveryState(instanceUuid, recoveryState.convertToJson(), healingIntervalStartDate, healingIntervalStartTime, crawlerType));
+				.getFuture(() -> ops.getIntervalOperator().updateRecoveryState(instanceUuid, id, recoveryState.convertToJson(), crawlerType));
 		return future.thenAccept(e -> {}); // correct?
 	}
 
 	@Override
-	protected void doStoreHealedEventsIds(Set<String> healedEventIds, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String crawlerType) throws IOException
+	protected void doStoreHealedEventsIds(Set<String> healedEventIds, String id, String crawlerType) throws IOException
 	{
 		try
 		{
-			doStoreHealedEventsIdsAsync(healedEventIds, healingIntervalStartDate, healingIntervalStartTime, crawlerType);
+			doStoreHealedEventsIdsAsync(healedEventIds, id, crawlerType);
 		}
 		catch (Exception e)
 		{
-			throw new IOException("Error while storing healed event ids with start time "+healingIntervalStartTime, e);
+			throw new IOException("Error while storing healed event ids to interval "+id, e);
 		}
 	}
 
 	@Override
-	protected CompletableFuture<Void> doStoreHealedEventsIdsAsync(Set<String> healedEventIds, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String crawlerType)
+	protected CompletableFuture<Void> doStoreHealedEventsIdsAsync(Set<String> healedEventIds, String id, String crawlerType)
 	{
 		CompletableFuture<AsyncResultSet> future = new AsyncOperator<AsyncResultSet>(semaphore)
-				.getFuture(() -> ops.getHealingIntervalOperator().storeHealedEventsIds(instanceUuid, healingIntervalStartDate, healingIntervalStartTime, crawlerType, healedEventIds));
+				.getFuture(() -> ops.getIntervalOperator().storeHealedEventsIds(instanceUuid, id, crawlerType, healedEventIds));
 		return future.thenAccept(e -> {}); // correct?
 	}
 }

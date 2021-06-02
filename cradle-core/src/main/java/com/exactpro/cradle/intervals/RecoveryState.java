@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.healing;
+package com.exactpro.cradle.intervals;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;

@@ -15,7 +15,7 @@
  */
 
 
-package com.exactpro.cradle.healing;
+package com.exactpro.cradle.intervals;
 
 import com.exactpro.cradle.utils.CompressionUtils;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -28,7 +28,7 @@ import java.time.ZoneOffset;
 import java.util.HashSet;
 import java.util.Set;
 
-public class HealingInterval
+public class TimeInterval
 {
     private final LocalTime startTime;
     private final LocalTime endTime;
@@ -41,9 +41,9 @@ public class HealingInterval
 
     private final ZoneOffset timezoneOffset = ZoneOffset.UTC;
 
-    public HealingInterval(Instant start, Instant end, RecoveryState recoveryState,
-                           LocalDate lastUpdateDate, LocalTime lastUpdateTime,
-                           String crawlerType) throws CradleStorageException
+    public TimeInterval(Instant start, Instant end, RecoveryState recoveryState,
+                        LocalDate lastUpdateDate, LocalTime lastUpdateTime,
+                        String crawlerType) throws CradleStorageException
     {
 
         LocalDateTime fromDateTime = LocalDateTime.ofInstant(start, timezoneOffset),
@@ -60,8 +60,8 @@ public class HealingInterval
         this.healedEventsIds = new HashSet<>();
     }
 
-    public HealingInterval(Instant start, Instant end,
-                           RecoveryState recoveryState, String crawlerType) throws CradleStorageException
+    public TimeInterval(Instant start, Instant end,
+                        RecoveryState recoveryState, String crawlerType) throws CradleStorageException
     {
         LocalDateTime fromDateTime = LocalDateTime.ofInstant(start, timezoneOffset),
                 toDateTime = LocalDateTime.ofInstant(end, timezoneOffset);
@@ -77,7 +77,7 @@ public class HealingInterval
         this.healedEventsIds = new HashSet<>();
     }
 
-    public HealingInterval(LocalTime startTime, LocalTime endTime, LocalDate date, RecoveryState recoveryState, LocalDate lastUpdateDate, LocalTime lastUpdateTime, String crawlerType) {
+    public TimeInterval(LocalTime startTime, LocalTime endTime, LocalDate date, RecoveryState recoveryState, LocalDate lastUpdateDate, LocalTime lastUpdateTime, String crawlerType) {
         this.startTime = startTime;
         this.endTime = endTime;
         this.date = date;
@@ -88,7 +88,7 @@ public class HealingInterval
         this.healedEventsIds = new HashSet();
     }
 
-    public HealingInterval(LocalTime startTime, LocalTime endTime, LocalDate date, RecoveryState recoveryState, String crawlerType) {
+    public TimeInterval(LocalTime startTime, LocalTime endTime, LocalDate date, RecoveryState recoveryState, String crawlerType) {
         this.startTime = startTime;
         this.endTime = endTime;
         this.date = date;
@@ -128,7 +128,7 @@ public class HealingInterval
     public String toString()
     {
         return new StringBuilder()
-                .append("HealingInterval{").append(CompressionUtils.EOL)
+                .append("TimeInterval{").append(CompressionUtils.EOL)
                 .append("date=").append(date).append(",").append(CompressionUtils.EOL)
                 .append("startTime=").append(startTime).append(",").append(CompressionUtils.EOL)
                 .append("endTime=").append(endTime).append(",").append(CompressionUtils.EOL)

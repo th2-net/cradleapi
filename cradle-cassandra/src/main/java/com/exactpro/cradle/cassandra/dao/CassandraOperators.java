@@ -17,7 +17,8 @@
 package com.exactpro.cradle.cassandra.dao;
 
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
-import com.exactpro.cradle.cassandra.dao.healing.HealingIntervalOperator;
+import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
+import com.exactpro.cradle.cassandra.dao.intervals.TimeIntervalOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
@@ -40,7 +41,8 @@ public class CassandraOperators
 	private TestEventChildrenDatesOperator testEventChildrenDatesOperator;
 	private TestEventMessagesOperator testEventMessagesOperator;
 	private MessageTestEventOperator messageTestEventOperator;
-	private HealingIntervalOperator healingIntervalOperator;
+	private TimeIntervalOperator timeIntervalOperator;
+	private IntervalOperator intervalOperator;
 
 	public CassandraOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings)
 	{
@@ -54,7 +56,8 @@ public class CassandraOperators
 		testEventChildrenDatesOperator = dataMapper.testEventChildrenDatesOperator(settings.getKeyspace(), settings.getTestEventsChildrenDatesTableName());
 		testEventMessagesOperator = dataMapper.testEventMessagesOperator(settings.getKeyspace(), settings.getTestEventsMessagesTableName());
 		messageTestEventOperator = dataMapper.messageTestEventOperator(settings.getKeyspace(), settings.getMessagesTestEventsTableName());
-		healingIntervalOperator = dataMapper.healingIntervalOperator(settings.getKeyspace(), settings.getHealingIntervalsTableName());
+		intervalOperator = dataMapper.intervalOperator(settings.getKeyspace(), settings.getTimeIntervalsTableName());
+		timeIntervalOperator = dataMapper.timeIntervalOperator(settings.getKeyspace(), settings.getIntervalsTableName());
 	}
 
 	public MessageBatchOperator getMessageBatchOperator()
@@ -107,5 +110,7 @@ public class CassandraOperators
 		return messageTestEventOperator;
 	}
 
-	public HealingIntervalOperator getHealingIntervalOperator() { return healingIntervalOperator; }
+	public TimeIntervalOperator getTimeIntervalOperator() { return timeIntervalOperator; }
+
+	public IntervalOperator getIntervalOperator() { return intervalOperator; }
 }

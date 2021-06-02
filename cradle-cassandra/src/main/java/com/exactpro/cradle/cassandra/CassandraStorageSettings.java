@@ -37,7 +37,8 @@ public class CassandraStorageSettings
 			TEST_EVENTS_CHILDREN_DATES_TABLE_DEFAULT_NAME = "test_events_children_dates",
 			TEST_EVENTS_MESSAGES_TABLE_DEFAULT_NAME = "test_events_messages",
 			MESSAGES_TEST_EVENTS_TABLE_DEFAULT_NAME = "messages_test_events",
-			HEALING_INTERVALS_TABLE_DEFAULT_NAME = "healing_intervals";
+			INTERVALS_TABLE_DEFAULT_NAME = "intervals",
+			TIME_INTERVALS_TABLE_DEFAULT_NAME = "time_intervals";
 	public static final long DEFAULT_TIMEOUT = 5000,
 			DEFAULT_MAX_MESSAGE_BATCH_SIZE = StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE,
 			DEFAULT_MAX_EVENT_BATCH_SIZE = StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE;
@@ -56,7 +57,8 @@ public class CassandraStorageSettings
 			testEventsChildrenDatesTableName,
 			testEventsMessagesTableName,
 			messagesTestEventsTableName,
-			healingIntervalsTableName;
+			timeIntervalsTableName,
+			intervalsTableName;
 	private final NetworkTopologyStrategy networkTopologyStrategy;
 	private long timeout;
 	private ConsistencyLevel writeConsistencyLevel,
@@ -78,7 +80,8 @@ public class CassandraStorageSettings
 		this.testEventsChildrenDatesTableName = TEST_EVENTS_CHILDREN_DATES_TABLE_DEFAULT_NAME;
 		this.testEventsMessagesTableName = TEST_EVENTS_MESSAGES_TABLE_DEFAULT_NAME;
 		this.messagesTestEventsTableName = MESSAGES_TEST_EVENTS_TABLE_DEFAULT_NAME;
-		this.healingIntervalsTableName = HEALING_INTERVALS_TABLE_DEFAULT_NAME;
+		this.intervalsTableName = INTERVALS_TABLE_DEFAULT_NAME;
+		this.timeIntervalsTableName = TIME_INTERVALS_TABLE_DEFAULT_NAME;
 		this.keyspace = keyspace;
 		this.networkTopologyStrategy = networkTopologyStrategy;
 		this.timeout = timeout;
@@ -224,11 +227,13 @@ public class CassandraStorageSettings
 		this.messagesTestEventsTableName = messagesTestEventsTableName;
 	}
 
-	public String getHealingIntervalsTableName() {return healingIntervalsTableName; }
+	public String getIntervalsTableName() { return intervalsTableName; }
 
-	public void setHealingIntervalsTableName(String healingIntervalsTableName)
+	public String getTimeIntervalsTableName() { return timeIntervalsTableName; }
+
+	public void setIntervalsTableName(String intervalsTableName)
 	{
-		this.healingIntervalsTableName = healingIntervalsTableName;
+		this.intervalsTableName = intervalsTableName;
 	}
 	
 	public int getKeyspaceReplicationFactor()

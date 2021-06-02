@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.cassandra.dao.healing;
+package com.exactpro.cradle.cassandra.dao.intervals;
 
 import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
-import com.exactpro.cradle.healing.HealingInterval;
-import com.exactpro.cradle.healing.RecoveryState;
+import com.exactpro.cradle.intervals.TimeInterval;
+import com.exactpro.cradle.intervals.RecoveryState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,45 +34,42 @@ import java.util.UUID;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.CRAWLER_TYPE;
 import static com.exactpro.cradle.cassandra.StorageConstants.HEALED_EVENT_IDS;
-import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_END_TIME;
-import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_DATE;
-import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_LAST_UPDATE_DATE;
-import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_LAST_UPDATE_TIME;
-import static com.exactpro.cradle.cassandra.StorageConstants.HEALING_INTERVAL_START_TIME;
+import static com.exactpro.cradle.cassandra.StorageConstants.INTERVAL_END_TIME;
+import static com.exactpro.cradle.cassandra.StorageConstants.INTERVAL_DATE;
+import static com.exactpro.cradle.cassandra.StorageConstants.INTERVAL_LAST_UPDATE_DATE;
+import static com.exactpro.cradle.cassandra.StorageConstants.INTERVAL_LAST_UPDATE_TIME;
+import static com.exactpro.cradle.cassandra.StorageConstants.INTERVAL_START_TIME;
 import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
 import static com.exactpro.cradle.cassandra.StorageConstants.RECOVERY_STATE_JSON;
 
-/**
- * Contains healing interval data
- */
 @Entity
-public class HealingIntervalEntity
+public class TimeIntervalEntity
 {
-    private static final Logger logger = LoggerFactory.getLogger(HealingIntervalEntity.class);
+    private static final Logger logger = LoggerFactory.getLogger(TimeIntervalEntity.class);
 
     @PartitionKey(0)
     @CqlName(INSTANCE_ID)
     private UUID instanceId;
 
     @PartitionKey(1)
-    @CqlName(HEALING_INTERVAL_DATE)
+    @CqlName(INTERVAL_DATE)
     private LocalDate date;
 
     @ClusteringColumn(0)
-    @CqlName(HEALING_INTERVAL_START_TIME)
+    @CqlName(INTERVAL_START_TIME)
     private LocalTime startTime;
 
     @PartitionKey(2)
     @CqlName(CRAWLER_TYPE)
     private String crawlerType;
 
-    @CqlName(HEALING_INTERVAL_END_TIME)
+    @CqlName(INTERVAL_END_TIME)
     private LocalTime endTime;
 
-    @CqlName(HEALING_INTERVAL_LAST_UPDATE_DATE)
+    @CqlName(INTERVAL_LAST_UPDATE_DATE)
     private LocalDate lastUpdateDate;
 
-    @CqlName(HEALING_INTERVAL_LAST_UPDATE_TIME)
+    @CqlName(INTERVAL_LAST_UPDATE_TIME)
     private LocalTime lastUpdateTime;
 
     @CqlName(RECOVERY_STATE_JSON)
@@ -81,19 +78,19 @@ public class HealingIntervalEntity
     @CqlName(HEALED_EVENT_IDS)
     private Set<String> healedEventsIds;
 
-    public HealingIntervalEntity()
+    public TimeIntervalEntity()
     {
     }
 
-    public HealingIntervalEntity(HealingInterval interval, UUID instanceId)
+    public TimeIntervalEntity(TimeInterval timeInterval, UUID instanceId)
     {
-        this.startTime = interval.getStartTime();
-        this.endTime = interval.getEndTime();
-        this.date = interval.getDate();
-        this.lastUpdateTime = interval.getLastUpdateTime();
-        this.lastUpdateDate = interval.getLastUpdateDate();
-        this.crawlerType = interval.getCrawlerType();
-        this.recoveryStateJson = interval.getRecoveryState().convertToJson();
+        this.startTime = timeInterval.getStartTime();
+        this.endTime = timeInterval.getEndTime();
+        this.date = timeInterval.getDate();
+        this.lastUpdateTime = timeInterval.getLastUpdateTime();
+        this.lastUpdateDate = timeInterval.getLastUpdateDate();
+        this.crawlerType = timeInterval.getCrawlerType();
+        this.recoveryStateJson = timeInterval.getRecoveryState().convertToJson();
         this.instanceId = instanceId;
         this.healedEventsIds = new HashSet<>();
     }
@@ -140,8 +137,8 @@ public class HealingIntervalEntity
 
     public void setHealedEventsIds(Set<String> healedEventsIds) { this.healedEventsIds = healedEventsIds; }
 
-    public HealingInterval asHealingInterval() throws IOException {
-        return new HealingInterval(this.startTime, this.endTime, this.date,
+    public TimeInterval asTimeInterval() throws IOException {
+        return new TimeInterval(this.startTime, this.endTime, this.date,
                 RecoveryState.getMAPPER().readValue(recoveryStateJson, RecoveryState.class), this.getLastUpdateDate(), this.getLastUpdateTime(), this.crawlerType);
     }
 }
