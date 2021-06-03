@@ -18,17 +18,17 @@ package com.exactpro.cradle.cassandra.iterators;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.cassandra.dao.intervals.TimeIntervalEntity;
-import com.exactpro.cradle.intervals.TimeInterval;
+import com.exactpro.cradle.intervals.Interval;
 
 import java.io.IOException;
 
-public class TimeIntervalsIterator extends ConvertingPagedIterator<TimeInterval, TimeIntervalEntity>
+public class TimeIntervalsIterator extends ConvertingPagedIterator<Interval, TimeIntervalEntity>
 {
 
     public TimeIntervalsIterator(MappedAsyncPagingIterable<TimeIntervalEntity> rows) { super(rows); }
 
     @Override
-    protected TimeInterval convertEntity(TimeIntervalEntity entity) throws IOException {
-        return entity.asTimeInterval();
+    protected Interval convertEntity(TimeIntervalEntity entity) throws IOException {
+        return entity.asInterval();
     }
 }

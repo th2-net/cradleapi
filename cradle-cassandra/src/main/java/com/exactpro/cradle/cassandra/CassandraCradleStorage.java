@@ -55,7 +55,6 @@ import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.intervals.Interval;
-import com.exactpro.cradle.intervals.TimeInterval;
 import com.exactpro.cradle.intervals.RecoveryState;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
@@ -1010,16 +1009,28 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected CompletableFuture<Void> doStoreIntervalAsync(Interval interval)
 	{
-		CompletableFuture<TimeIntervalEntity> future = new AsyncOperator<TimeIntervalEntity>(semaphore)
+		List<CompletableFuture<Void>> futures = new ArrayList<>();
+
+		CompletableFuture<IntervalEntity> future1 = new AsyncOperator<IntervalEntity>(semaphore)
 				.getFuture(() -> {
 					IntervalEntity intervalEntity = new IntervalEntity(interval, instanceUuid);
 					return ops.getIntervalOperator().writeInterval(intervalEntity, writeAttrs);
 				});
-		return future.thenAccept(e -> {});
+
+		CompletableFuture<TimeIntervalEntity> future2 = new AsyncOperator<TimeIntervalEntity>(semaphore)
+				.getFuture(() -> {
+					TimeIntervalEntity timeIntervalEntity = new TimeIntervalEntity(interval, instanceUuid);
+					return ops.getTimeIntervalOperator().writeTimeInterval(timeIntervalEntity, writeAttrs);
+				});
+
+		futures.add(future1.thenAccept(r -> {}));
+		futures.add(future2.thenAccept(r -> {}));
+
+		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 	}
 
 	@Override
-	protected Iterable<TimeInterval> doGetTimeIntervals(Instant from, String crawlerType) throws IOException
+	protected Iterable<Interval> doGetTimeIntervals(Instant from, String crawlerType) throws IOException
 	{
 		try
 		{
@@ -1032,7 +1043,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<TimeInterval>> doGetTimeIntervalsAsync(Instant from, String crawlerType)
+	protected CompletableFuture<Iterable<Interval>> doGetTimeIntervalsAsync(Instant from, String crawlerType)
 	{
 
 		LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET);
@@ -1095,27 +1106,30 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		CompletableFuture<AsyncResultSet> future = new AsyncOperator<AsyncResultSet>(semaphore)
 				.getFuture(() -> ops.getIntervalOperator().updateRecoveryState(instanceUuid, id, recoveryState.convertToJson(), crawlerType));
-		return future.thenAccept(e -> {}); // correct?
+		return future.thenAccept(e -> {});
 	}
 
 	@Override
-	protected void doStoreHealedEventsIds(Set<String> healedEventIds, String id, String crawlerType) throws IOException
+	protected void doStoreHealedEventsIds(Interval interval, Set<String> healedEventIds) throws IOException
 	{
 		try
 		{
-			doStoreHealedEventsIdsAsync(healedEventIds, id, crawlerType);
+			doStoreHealedEventsIdsAsync(interval, healedEventIds);
 		}
 		catch (Exception e)
 		{
-			throw new IOException("Error while storing healed event ids to interval "+id, e);
+			throw new IOException("Error while storing healed event ids to interval "+interval.getId(), e);
 		}
 	}
 
 	@Override
-	protected CompletableFuture<Void> doStoreHealedEventsIdsAsync(Set<String> healedEventIds, String id, String crawlerType)
+	protected CompletableFuture<Void> doStoreHealedEventsIdsAsync(Interval interval, Set<String> healedEventIds)
 	{
-		CompletableFuture<AsyncResultSet> future = new AsyncOperator<AsyncResultSet>(semaphore)
-				.getFuture(() -> ops.getIntervalOperator().storeHealedEventsIds(instanceUuid, id, crawlerType, healedEventIds));
-		return future.thenAccept(e -> {}); // correct?
+		CompletableFuture<AsyncResultSet> future1 = new AsyncOperator<AsyncResultSet>(semaphore)
+				.getFuture(() -> ops.getIntervalOperator().storeHealedEventsIds(instanceUuid, interval.getId(), interval.getCrawlerType(), healedEventIds));
+		CompletableFuture<AsyncResultSet> future2 = new AsyncOperator<AsyncResultSet>(semaphore)
+				.getFuture(() -> ops.getTimeIntervalOperator().storeHealedEventsIds(instanceUuid, interval.getDate(), interval.getStartTime(), interval.getId(), interval.getCrawlerType(), healedEventIds));
+
+		return CompletableFuture.allOf(future1, future2);
 	}
 }

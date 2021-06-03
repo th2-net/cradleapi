@@ -30,18 +30,17 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.CRAWLER_TYPE;
-import static com.exactpro.cradle.cassandra.StorageConstants.HEALED_EVENT_IDS;
-import static com.exactpro.cradle.cassandra.StorageConstants.INTERVAL_DATE;
-import static com.exactpro.cradle.cassandra.StorageConstants.INTERVAL_LAST_UPDATE_DATE;
-import static com.exactpro.cradle.cassandra.StorageConstants.INTERVAL_LAST_UPDATE_TIME;
-import static com.exactpro.cradle.cassandra.StorageConstants.INTERVAL_START_TIME;
-import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
-import static com.exactpro.cradle.cassandra.StorageConstants.RECOVERY_STATE_JSON;
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 @Dao
 public interface TimeIntervalOperator
 {
+    @Insert(ifNotExists = true)
+    CompletableFuture<TimeIntervalEntity> writeTimeInterval(TimeIntervalEntity IntervalEntity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
     @Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+ INTERVAL_DATE +"=:healingIntervalStartDate AND "+CRAWLER_TYPE+"=:crawlerType AND "+ INTERVAL_START_TIME +">=:healingIntervalStartTime")
     CompletableFuture<MappedAsyncPagingIterable<TimeIntervalEntity>> getTimeIntervals(UUID instanceId, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String crawlerType, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+    @Query("UPDATE ${qualifiedTableId} SET "+HEALED_EVENT_IDS+"="+HEALED_EVENT_IDS+" + :healedEventIds WHERE "+INSTANCE_ID+"=:instanceId AND "+ INTERVAL_DATE +"=:healingIntervalStartDate AND "+ INTERVAL_START_TIME +"=:healingIntervalStartTime AND "+INTERVAL_ID+"=:id AND "+CRAWLER_TYPE+"=:crawlerType")
+    CompletableFuture<AsyncResultSet> storeHealedEventsIds(UUID instanceId, LocalDate healingIntervalStartDate, LocalTime healingIntervalStartTime, String id, String crawlerType, Set<String> healedEventIds);
 }

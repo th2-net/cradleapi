@@ -18,11 +18,11 @@ package com.exactpro.cradle.cassandra.iterators;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.cassandra.dao.intervals.TimeIntervalEntity;
-import com.exactpro.cradle.intervals.TimeInterval;
+import com.exactpro.cradle.intervals.Interval;
 
 import java.util.Iterator;
 
-public class TimeIntervalsIteratorAdapter implements Iterable<TimeInterval> {
+public class TimeIntervalsIteratorAdapter implements Iterable<Interval> {
     private final MappedAsyncPagingIterable<TimeIntervalEntity> rows;
 
     public TimeIntervalsIteratorAdapter(MappedAsyncPagingIterable<TimeIntervalEntity> rows)
@@ -31,7 +31,7 @@ public class TimeIntervalsIteratorAdapter implements Iterable<TimeInterval> {
     }
 
     @Override
-    public Iterator<TimeInterval> iterator() {
+    public Iterator<Interval> iterator() {
         return new TimeIntervalsIterator(rows);
     }
 }

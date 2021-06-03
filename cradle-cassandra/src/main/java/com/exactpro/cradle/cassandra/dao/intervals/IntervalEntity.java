@@ -4,7 +4,6 @@ import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.exactpro.cradle.intervals.Interval;
-import com.exactpro.cradle.intervals.TimeInterval;
 import com.exactpro.cradle.intervals.RecoveryState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,12 +45,20 @@ public class IntervalEntity {
     @CqlName(HEALED_EVENT_IDS)
     private Set<String> healedEventsIds;
 
+    private LocalTime startTime;
+    private LocalTime endTime;
+    private LocalDate date;
+
     public IntervalEntity()
     {
     }
 
     public IntervalEntity(Interval interval, UUID instanceId)
     {
+        this.id = interval.getId();
+        this.startTime = interval.getStartTime();
+        this.endTime = interval.getEndTime();
+        this.date = interval.getDate();
         this.lastUpdateTime = interval.getLastUpdateTime();
         this.lastUpdateDate = interval.getLastUpdateDate();
         this.crawlerType = interval.getCrawlerType();
@@ -69,6 +76,10 @@ public class IntervalEntity {
     {
         this.instanceId = instanceId;
     }
+
+    public String getId() { return id; }
+
+    public void setId(String id) { this.id = id; }
 
     public LocalDate getLastUpdateDate() { return lastUpdateDate; }
 
@@ -91,7 +102,7 @@ public class IntervalEntity {
     public void setHealedEventsIds(Set<String> healedEventsIds) { this.healedEventsIds = healedEventsIds; }
 
     public Interval asInterval() throws IOException {
-        return new Interval(id, RecoveryState.getMAPPER().readValue(recoveryStateJson, RecoveryState.class),
+        return new Interval(this.id, startTime, endTime, date, RecoveryState.getMAPPER().readValue(recoveryStateJson, RecoveryState.class),
                 this.getLastUpdateDate(), this.getLastUpdateTime(), this.crawlerType);
     }
 }

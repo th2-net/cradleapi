@@ -18,9 +18,7 @@ package com.exactpro.cradle.cassandra.iterators;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalEntity;
-import com.exactpro.cradle.cassandra.dao.intervals.TimeIntervalEntity;
 import com.exactpro.cradle.intervals.Interval;
-import com.exactpro.cradle.intervals.TimeInterval;
 
 import java.io.IOException;
 

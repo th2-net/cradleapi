@@ -25,7 +25,10 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 public class RecoveryState
 {
@@ -39,14 +42,14 @@ public class RecoveryState
     private static final Logger logger = LoggerFactory.getLogger(RecoveryState.class);
 
     public RecoveryState(@JsonProperty("timeOfStop")
-                         @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSS", timezone = "UTC") Instant timeOfStop,
+                          Timestamp timeOfStop,
                          @JsonProperty("processedEvents") long processedEventsNumber)
     {
-        this.timeOfStop = timeOfStop;
+        this.timeOfStop = timeOfStop.toInstant();
         this.processedEventsNumber = processedEventsNumber;
     }
 
-    public Instant getTimeOfStop() { return timeOfStop; }
+    public Timestamp getTimeOfStop() { return Timestamp.from(timeOfStop); }
 
     public long getProcessedEventsNumber() { return processedEventsNumber; }
 
