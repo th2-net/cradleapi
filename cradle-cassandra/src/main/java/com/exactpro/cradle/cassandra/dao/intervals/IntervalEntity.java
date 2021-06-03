@@ -1,5 +1,6 @@
 package com.exactpro.cradle.cassandra.dao.intervals;
 
+import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
@@ -25,13 +26,17 @@ public class IntervalEntity {
     @CqlName(INSTANCE_ID)
     private UUID instanceId;
 
-    @PartitionKey(1)
+    @ClusteringColumn(0)
     @CqlName(INTERVAL_ID)
     private String id;
 
-    @PartitionKey(2)
-    @CqlName(CRAWLER_TYPE)
-    private String crawlerType;
+    @ClusteringColumn(1)
+    @CqlName(INTERVAL_DATE)
+    private LocalDate date;
+
+    @ClusteringColumn(2)
+    @CqlName(INTERVAL_START_TIME)
+    private LocalTime startTime;
 
     @CqlName(INTERVAL_LAST_UPDATE_DATE)
     private LocalDate lastUpdateDate;
@@ -42,13 +47,6 @@ public class IntervalEntity {
     @CqlName(RECOVERY_STATE_JSON)
     private String recoveryStateJson;
 
-    @CqlName(HEALED_EVENT_IDS)
-    private Set<String> healedEventsIds;
-
-    private LocalTime startTime;
-    private LocalTime endTime;
-    private LocalDate date;
-
     public IntervalEntity()
     {
     }
@@ -57,14 +55,11 @@ public class IntervalEntity {
     {
         this.id = interval.getId();
         this.startTime = interval.getStartTime();
-        this.endTime = interval.getEndTime();
         this.date = interval.getDate();
         this.lastUpdateTime = interval.getLastUpdateTime();
         this.lastUpdateDate = interval.getLastUpdateDate();
-        this.crawlerType = interval.getCrawlerType();
         this.recoveryStateJson = interval.getRecoveryState().convertToJson();
         this.instanceId = instanceId;
-        this.healedEventsIds = new HashSet<>();
     }
 
     public UUID getInstanceId()
@@ -81,6 +76,14 @@ public class IntervalEntity {
 
     public void setId(String id) { this.id = id; }
 
+    public LocalDate getDate() { return date; }
+
+    public void setDate(LocalDate date) { this.date = date; }
+
+    public LocalTime getStartTime() { return startTime; }
+
+    public void setStartTime(LocalTime startTime) { this.startTime = startTime; }
+
     public LocalDate getLastUpdateDate() { return lastUpdateDate; }
 
     public void setLastUpdateDate(LocalDate lastUpdateDate) { this.lastUpdateDate = lastUpdateDate; }
@@ -93,16 +96,8 @@ public class IntervalEntity {
 
     public void setRecoveryStateJson(String recoveryStateJson) { this.recoveryStateJson = recoveryStateJson; }
 
-    public String getCrawlerType() { return crawlerType; }
-
-    public void setCrawlerType(String crawlerType) { this.crawlerType = crawlerType; }
-
-    public Set<String> getHealedEventsIds() { return healedEventsIds; }
-
-    public void setHealedEventsIds(Set<String> healedEventsIds) { this.healedEventsIds = healedEventsIds; }
-
     public Interval asInterval() throws IOException {
-        return new Interval(this.id, startTime, endTime, date, RecoveryState.getMAPPER().readValue(recoveryStateJson, RecoveryState.class),
-                this.getLastUpdateDate(), this.getLastUpdateTime(), this.crawlerType);
+        return new Interval(this.id, startTime, date, RecoveryState.getMAPPER().readValue(recoveryStateJson, RecoveryState.class),
+                this.getLastUpdateDate(), this.getLastUpdateTime());
     }
 }

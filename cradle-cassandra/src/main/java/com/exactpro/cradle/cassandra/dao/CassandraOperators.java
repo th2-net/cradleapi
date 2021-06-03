@@ -18,7 +18,6 @@ package com.exactpro.cradle.cassandra.dao;
 
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
-import com.exactpro.cradle.cassandra.dao.intervals.TimeIntervalOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
@@ -41,7 +40,6 @@ public class CassandraOperators
 	private TestEventChildrenDatesOperator testEventChildrenDatesOperator;
 	private TestEventMessagesOperator testEventMessagesOperator;
 	private MessageTestEventOperator messageTestEventOperator;
-	private TimeIntervalOperator timeIntervalOperator;
 	private IntervalOperator intervalOperator;
 
 	public CassandraOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings)
@@ -57,7 +55,6 @@ public class CassandraOperators
 		testEventMessagesOperator = dataMapper.testEventMessagesOperator(settings.getKeyspace(), settings.getTestEventsMessagesTableName());
 		messageTestEventOperator = dataMapper.messageTestEventOperator(settings.getKeyspace(), settings.getMessagesTestEventsTableName());
 		intervalOperator = dataMapper.intervalOperator(settings.getKeyspace(), settings.getIntervalsTableName());
-		timeIntervalOperator = dataMapper.timeIntervalOperator(settings.getKeyspace(), settings.getTimeIntervalsTableName());
 	}
 
 	public MessageBatchOperator getMessageBatchOperator()
@@ -109,8 +106,6 @@ public class CassandraOperators
 	{
 		return messageTestEventOperator;
 	}
-
-	public TimeIntervalOperator getTimeIntervalOperator() { return timeIntervalOperator; }
 
 	public IntervalOperator getIntervalOperator() { return intervalOperator; }
 }

@@ -63,7 +63,6 @@ public class TablesCreator
 		createTestEventsMessagesTable();
 		createMessagesTestEventsTable();
 		createIntervalsTable();
-		createTimeIntervalsTable();
 	}
 	
 	public void createKeyspace()
@@ -327,28 +326,6 @@ public class TablesCreator
 		logger.info("Table '{}' has been created", name);
 	}
 
-	public void createTimeIntervalsTable() throws IOException
-	{
-		String tableName = settings.getTimeIntervalsTableName();
-		if (isTableExists(tableName))
-			return;
-
-		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(INTERVAL_DATE, DataTypes.DATE)
-				.withClusteringColumn(INTERVAL_START_TIME, DataTypes.TIME)
-				.withClusteringColumn(INTERVAL_ID, DataTypes.TEXT)
-				.withColumn(INTERVAL_END_TIME, DataTypes.TIME)
-				.withColumn(INTERVAL_LAST_UPDATE_DATE, DataTypes.DATE)
-				.withColumn(INTERVAL_LAST_UPDATE_TIME, DataTypes.TIME)
-				.withPartitionKey(CRAWLER_TYPE, DataTypes.TEXT)
-				.withColumn(HEALED_EVENT_IDS, DataTypes.setOf(DataTypes.TEXT))
-				.withColumn(RECOVERY_STATE_JSON, DataTypes.TEXT);
-
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
-	}
-
 	public void createIntervalsTable() throws IOException
 	{
 		String tableName = settings.getIntervalsTableName();
@@ -357,11 +334,11 @@ public class TablesCreator
 
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(INTERVAL_ID, DataTypes.TEXT)
+				.withClusteringColumn(INTERVAL_DATE, DataTypes.DATE)
+				.withClusteringColumn(INTERVAL_START_TIME, DataTypes.TIME)
+				.withClusteringColumn(INTERVAL_ID, DataTypes.TEXT)
 				.withColumn(INTERVAL_LAST_UPDATE_DATE, DataTypes.DATE)
 				.withColumn(INTERVAL_LAST_UPDATE_TIME, DataTypes.TIME)
-				.withPartitionKey(CRAWLER_TYPE, DataTypes.TEXT)
-				.withColumn(HEALED_EVENT_IDS, DataTypes.setOf(DataTypes.TEXT))
 				.withColumn(RECOVERY_STATE_JSON, DataTypes.TEXT);
 
 		exec.executeQuery(create.asCql(), true);

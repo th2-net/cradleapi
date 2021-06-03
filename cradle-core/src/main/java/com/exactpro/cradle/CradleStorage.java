@@ -18,7 +18,6 @@ package com.exactpro.cradle;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -98,16 +97,14 @@ public abstract class CradleStorage
 	protected abstract Collection<Instant> doGetTestEventsDates(StoredTestEventId parentId) throws IOException;
 	protected abstract void doStoreInterval(Interval interval) throws IOException;
 	protected abstract CompletableFuture<Void> doStoreIntervalAsync(Interval interval);
-	protected abstract Iterable<Interval> doGetTimeIntervals(Instant from, String crawlerType) throws IOException;
-	protected abstract CompletableFuture<Iterable<Interval>> doGetTimeIntervalsAsync(Instant from, String crawlerType);
-	protected abstract boolean doSetLastUpdateTimeAndDate(String id, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerType) throws IOException;
-	protected abstract CompletableFuture<Boolean> doSetLastUpdateTimeAndDateAsync(String id, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerType);
+	protected abstract Iterable<Interval> doGetIntervals(Instant from, Instant to, String crawlerType) throws IOException;
+	protected abstract CompletableFuture<Iterable<Interval>> doGetIntervalsAsync(Instant from, Instant to, String crawlerType);
+	protected abstract boolean doSetIntervalLastUpdateTimeAndDate(Interval interval, LocalTime newLastUpdateTime) throws IOException;
+	protected abstract CompletableFuture<Boolean> doSetIntervalLastUpdateTimeAndDateAsync(Interval interval, LocalTime newLastUpdateTime);
 	protected abstract void doUpdateEventStatus(StoredTestEventWrapper event, boolean success) throws IOException;
 	protected abstract CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEventWrapper event, boolean success);
-	protected abstract void doUpdateRecoveryState(RecoveryState recoveryState, String id, String crawlerType) throws IOException;
-	protected abstract CompletableFuture<Void> doUpdateRecoveryStateAsync(RecoveryState recoveryState, String id, String crawlerType);
-	protected abstract void doStoreHealedEventsIds(Interval interval, Set<String> healedEventIds) throws IOException;
-	protected abstract CompletableFuture<Void> doStoreHealedEventsIdsAsync(Interval interval, Set<String> healedEventIds);
+	protected abstract void doUpdateRecoveryState(Interval interval, RecoveryState recoveryState) throws IOException;
+	protected abstract CompletableFuture<Void> doUpdateRecoveryStateAsync(Interval interval, RecoveryState recoveryState);
 
 	public abstract CradleObjectsFactory getObjectsFactory();
 	
@@ -866,10 +863,10 @@ public abstract class CradleStorage
 	 * @param from time from which intervals are being searched
 	 * @return iterable of healing intervals
 	 */
-	public final Iterable<Interval> getIntervals(Instant from, String crawlerType) throws IOException
+	public final Iterable<Interval> getIntervals(Instant from, Instant to, String crawlerType) throws IOException
 	{
 		logger.debug("Getting intervals from {}", from);
-		Iterable<Interval> result = doGetTimeIntervals(from, crawlerType);
+		Iterable<Interval> result = doGetIntervals(from, to, crawlerType);
 
 		if (result == null)
 			throw new IOException("Interval from "+from+" is not found");
@@ -883,10 +880,10 @@ public abstract class CradleStorage
 	 * @param from time from which intervals are being searched
 	 * @return future to get know if obtaining was successful
 	 */
-	public final CompletableFuture<Iterable<Interval>> getIntervalsAsync(Instant from, String crawlerType)
+	public final CompletableFuture<Iterable<Interval>> getIntervalsAsync(Instant from, Instant to, String crawlerType)
 	{
 		logger.debug("Asynchronously getting interval from {}", from);
-		CompletableFuture<Iterable<Interval>> result = doGetTimeIntervalsAsync(from, crawlerType)
+		CompletableFuture<Iterable<Interval>> result = doGetIntervalsAsync(from, to, crawlerType)
 				.whenComplete((r, error) -> {
 					if (error != null)
 						logger.error("Error while getting intervals from "+from+" asynchronously", error);
@@ -898,45 +895,41 @@ public abstract class CradleStorage
 
 	/**
 	 * Sets last update time and last update date of  healing interval.
-	 * @param id id of interval
-	 * @param previousLastUpdateTime time of previous update to check if interval hasn't been updated by another Crawler
-	 * @param previousLastUpdateDate date of previous update to check if interval hasn't been updated by another Crawler
-	 * @param crawlerType type of Crawler
+	 * @param interval interval in which last update time and date will be set
+	 * @param newLastUpdateTime new time of last update
 	 * @return true if time and date of last update was set successfully, false otherwise. This operation is successful
 	 * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate
 	 */
-	public final boolean setIntervalLastUpdateTimeAndDate(String id, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerType) throws IOException
+	public final boolean setIntervalLastUpdateTimeAndDate(Interval interval, LocalTime newLastUpdateTime) throws IOException
 	{
-		logger.debug("Updating interval with {}", id);
-		boolean result = this.doSetLastUpdateTimeAndDate(id, previousLastUpdateTime, previousLastUpdateDate, crawlerType);
+		logger.debug("Updating interval with {}", interval.getId());
+		boolean result = this.doSetIntervalLastUpdateTimeAndDate(interval, newLastUpdateTime);
 
 		if (result) {
 			return true;
 		}
 		else {
-			logger.debug("Updated interval {}", id);
+			logger.debug("Updated interval {}", interval.getId());
 			return false;
 		}
 	}
 
 	/**
 	 * Asynchronously sets last update time and last update date of  healing interval.
-	 * @param id id of interval
-	 * @param previousLastUpdateTime time of previous update to check if interval hasn't been updated by another Crawler
-	 * @param previousLastUpdateDate date of previous update to check if interval hasn't been updated by another Crawler
-	 * @param crawlerType type of Crawler
+	 * @param interval interval in which last update time and date will be set
+	 * @param newLastUpdateTime new time of last update
 	 * @return CompletableFuture with true inside if time and date of last update was set successfully, false otherwise.
 	 * This operation is successful only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate
 	 */
-	public final CompletableFuture<Boolean> setIntevalLastUpdateTimeAndDateAsync(String id, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerType)
+	public final CompletableFuture<Boolean> setIntevalLastUpdateTimeAndDateAsync(Interval interval, LocalTime newLastUpdateTime)
 	{
-		logger.debug("Asynchronously updating interval {}", id);
-		CompletableFuture<Boolean> result = doSetLastUpdateTimeAndDateAsync(id, previousLastUpdateTime, previousLastUpdateDate, crawlerType)
+		logger.debug("Asynchronously updating interval {}", interval.getId());
+		CompletableFuture<Boolean> result = doSetIntervalLastUpdateTimeAndDateAsync(interval, newLastUpdateTime)
 				.whenComplete((r, error) -> {
 					if (error != null)
-						logger.error("Error while asynchronously updating interval "+id);
+						logger.error("Error while asynchronously updating interval "+interval.getId());
 					else
-						logger.debug("Interval {} updated asynchronously", id);
+						logger.debug("Interval {} updated asynchronously", interval.getId());
 				});
 		return result;
 	}
@@ -961,42 +954,22 @@ public abstract class CradleStorage
 		return result;
 	}
 
-	public final void updateRecoveryState(RecoveryState recoveryState, String id, String crawlerType) throws IOException
+	public final void updateRecoveryState(Interval interval, RecoveryState recoveryState) throws IOException
 	{
-		logger.debug("Updating recovery state of interval {}", id);
-		doUpdateRecoveryState(recoveryState, id, crawlerType);
-		logger.debug("Updated recovery state of interval {}", id);
+		logger.debug("Updating recovery state of interval {}", interval.getId());
+		doUpdateRecoveryState(interval, recoveryState);
+		logger.debug("Updated recovery state of interval {}", interval.getId());
 	}
 
-	public final CompletableFuture<Void> updateRecoveryStateAsync(RecoveryState recoveryState, String id, String crawlerType)
+	public final CompletableFuture<Void> updateRecoveryStateAsync(Interval interval, RecoveryState recoveryState)
 	{
-		logger.debug("Asynchronously updating recovery state of interval {}", id);
-		CompletableFuture<Void> result = doUpdateRecoveryStateAsync(recoveryState, id, crawlerType)
+		logger.debug("Asynchronously updating recovery state of interval {}", interval.getId());
+		CompletableFuture<Void> result = doUpdateRecoveryStateAsync(interval, recoveryState)
 				.whenComplete((r, error) -> {
 					if (error != null)
-						logger.error("Error while asynchronously updating recovery state of interval {}", id);
+						logger.error("Error while asynchronously updating recovery state of interval {}", interval.getId());
 					else
-						logger.debug("Recovery state of interval {} updated asynchronously", id);
-				});
-		return result;
-	}
-
-	public final void storeHealedEventIds(Interval interval, Set<String> healedEventIds) throws IOException
-	{
-		logger.debug("Storing healed event ids of interval {}", interval.getId());
-		doStoreHealedEventsIds(interval, healedEventIds);
-		logger.debug("Stored healed event ids of interval {}", interval.getId());
-	}
-
-	public final CompletableFuture<Void> storeHealedEventIdsAsync(Interval interval, Set<String> healedEventIds)
-	{
-		logger.debug("Asynchronously storing healed event ids of interval {}", interval.getId());
-		CompletableFuture<Void> result = doStoreHealedEventsIdsAsync(interval, healedEventIds)
-				.whenComplete((r, error) -> {
-					if (error != null)
-						logger.error("Error while asynchronously storing healed event ids of interval {}", interval.getId());
-					else
-						logger.debug("Healed event ids of interval {} stored asynchronously", interval.getId());
+						logger.debug("Recovery state of interval {} updated asynchronously", interval.getId());
 				});
 		return result;
 	}
