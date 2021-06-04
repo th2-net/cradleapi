@@ -18,6 +18,7 @@ package com.exactpro.cradle;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -99,8 +100,8 @@ public abstract class CradleStorage
 	protected abstract CompletableFuture<Void> doStoreIntervalAsync(Interval interval);
 	protected abstract Iterable<Interval> doGetIntervals(Instant from, Instant to, String crawlerName, String crawlerVersion) throws IOException;
 	protected abstract CompletableFuture<Iterable<Interval>> doGetIntervalsAsync(Instant from, Instant to, String crawlerName, String crawlerVersion);
-	protected abstract boolean doSetIntervalLastUpdateTimeAndDate(Interval interval, LocalTime newLastUpdateTime) throws IOException;
-	protected abstract CompletableFuture<Boolean> doSetIntervalLastUpdateTimeAndDateAsync(Interval interval, LocalTime newLastUpdateTime);
+	protected abstract boolean doSetIntervalLastUpdateTimeAndDate(Interval interval, Instant newLastUpdateTime) throws IOException;
+	protected abstract CompletableFuture<Boolean> doSetIntervalLastUpdateTimeAndDateAsync(Interval interval, Instant newLastUpdateTime);
 	protected abstract void doUpdateEventStatus(StoredTestEventWrapper event, boolean success) throws IOException;
 	protected abstract CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEventWrapper event, boolean success);
 	protected abstract void doUpdateRecoveryState(Interval interval, RecoveryState recoveryState) throws IOException;
@@ -900,7 +901,7 @@ public abstract class CradleStorage
 	 * @return true if time and date of last update was set successfully, false otherwise. This operation is successful
 	 * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate
 	 */
-	public final boolean setIntervalLastUpdateTimeAndDate(Interval interval, LocalTime newLastUpdateTime) throws IOException
+	public final boolean setIntervalLastUpdateTimeAndDate(Interval interval, Instant newLastUpdateTime) throws IOException
 	{
 		logger.debug("Updating interval with {}", interval.getId());
 		boolean result = this.doSetIntervalLastUpdateTimeAndDate(interval, newLastUpdateTime);
@@ -921,7 +922,7 @@ public abstract class CradleStorage
 	 * @return CompletableFuture with true inside if time and date of last update was set successfully, false otherwise.
 	 * This operation is successful only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate
 	 */
-	public final CompletableFuture<Boolean> setIntevalLastUpdateTimeAndDateAsync(Interval interval, LocalTime newLastUpdateTime)
+	public final CompletableFuture<Boolean> setIntevalLastUpdateTimeAndDateAsync(Interval interval, Instant newLastUpdateTime)
 	{
 		logger.debug("Asynchronously updating interval {}", interval.getId());
 		CompletableFuture<Boolean> result = doSetIntervalLastUpdateTimeAndDateAsync(interval, newLastUpdateTime)

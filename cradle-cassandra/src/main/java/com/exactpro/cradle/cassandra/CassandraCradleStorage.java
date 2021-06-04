@@ -70,16 +70,14 @@ import com.exactpro.cradle.utils.MessageUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.lang.Math.log;
 import static java.lang.Math.min;
 import static java.util.stream.Collectors.toList;
 
 import java.io.*;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneOffset;
+import java.time.*;
+import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -1059,7 +1057,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected boolean doSetIntervalLastUpdateTimeAndDate(Interval interval, LocalTime newLastUpdateTime) throws IOException
+	protected boolean doSetIntervalLastUpdateTimeAndDate(Interval interval, Instant newLastUpdateTime) throws IOException
 	{
 		try
 		{
@@ -1072,12 +1070,17 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Boolean> doSetIntervalLastUpdateTimeAndDateAsync(Interval interval, LocalTime newLastUpdateTime)
+	protected CompletableFuture<Boolean> doSetIntervalLastUpdateTimeAndDateAsync(Interval interval, Instant newLastUpdateTime)
 	{
+		LocalDateTime dateTime = LocalDateTime.ofInstant(newLastUpdateTime, TIMEZONE_OFFSET);
+
+		LocalTime time = dateTime.toLocalTime();
+		LocalDate date = dateTime.toLocalDate();
+
 		CompletableFuture<AsyncResultSet> future = new AsyncOperator<AsyncResultSet>(semaphore)
 				.getFuture(() ->
 				ops.getIntervalOperator().setIntervalLastUpdateTimeAndDate(instanceUuid, interval.getId(), interval.getDate(),
-				interval.getStartTime(), newLastUpdateTime, interval.getLastUpdateTime(), interval.getLastUpdateDate(),
+				interval.getStartTime(), time, date, interval.getLastUpdateTime(), interval.getLastUpdateDate(),
 				interval.getCrawlerName(), interval.getCrawlerVersion(),
 				writeAttrs));
 		return future.thenApply(AsyncResultSet::wasApplied);
