@@ -1018,11 +1018,11 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Iterable<Interval> doGetIntervals(Instant from, Instant to, String crawlerType) throws IOException
+	protected Iterable<Interval> doGetIntervals(Instant from, Instant to, String crawlerName, String crawlerVersion) throws IOException
 	{
 		try
 		{
-			return doGetIntervalsAsync(from, to, crawlerType).get();
+			return doGetIntervalsAsync(from, to, crawlerName, crawlerVersion).get();
 		}
 		catch (Exception e)
 		{
@@ -1031,7 +1031,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<Interval>> doGetIntervalsAsync(Instant from, Instant to, String crawlerType)
+	protected CompletableFuture<Iterable<Interval>> doGetIntervalsAsync(Instant from, Instant to, String crawlerName, String crawlerVersion)
 	{
 		LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET),
 					  toDateTime = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
@@ -1041,8 +1041,10 @@ public class CassandraCradleStorage extends CradleStorage
 
 		LocalDate date = fromDateTime.toLocalDate();
 
-		CompletableFuture<MappedAsyncPagingIterable<IntervalEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<IntervalEntity>>(semaphore)
-				.getFuture(() -> ops.getIntervalOperator().getIntervals(instanceUuid, date, fromTime, toTime, readAttrs));
+		CompletableFuture<MappedAsyncPagingIterable<IntervalEntity>> future =
+				new AsyncOperator<MappedAsyncPagingIterable<IntervalEntity>>(semaphore)
+				.getFuture(() -> ops.getIntervalOperator().
+						getIntervals(instanceUuid, date, fromTime, toTime, crawlerName, crawlerVersion, readAttrs));
 
 		return future.thenApply(entities -> {
 			try
@@ -1076,6 +1078,7 @@ public class CassandraCradleStorage extends CradleStorage
 				.getFuture(() ->
 				ops.getIntervalOperator().setIntervalLastUpdateTimeAndDate(instanceUuid, interval.getId(), interval.getDate(),
 				interval.getStartTime(), newLastUpdateTime, interval.getLastUpdateTime(), interval.getLastUpdateDate(),
+				interval.getCrawlerName(), interval.getCrawlerVersion(),
 				writeAttrs));
 		return future.thenApply(AsyncResultSet::wasApplied);
 	}
@@ -1097,7 +1100,9 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Void> doUpdateRecoveryStateAsync(Interval interval, RecoveryState recoveryState)
 	{
 		CompletableFuture<AsyncResultSet> future = new AsyncOperator<AsyncResultSet>(semaphore)
-				.getFuture(() -> ops.getIntervalOperator().updateRecoveryState(instanceUuid, interval.getDate(), interval.getStartTime(), interval.getId(), recoveryState.convertToJson()));
+				.getFuture(() -> ops.getIntervalOperator().updateRecoveryState(instanceUuid, interval.getDate(),
+						interval.getStartTime(), interval.getId(), interval.getCrawlerName(),
+						interval.getCrawlerVersion(), recoveryState.convertToJson()));
 
 		return future.thenAccept(r -> {});
 	}

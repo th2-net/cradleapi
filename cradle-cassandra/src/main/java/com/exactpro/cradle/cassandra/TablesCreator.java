@@ -334,6 +334,8 @@ public class TablesCreator
 
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				.withClusteringColumn(CRAWLER_NAME, DataTypes.TEXT)
+				.withClusteringColumn(CRAWLER_VERSION, DataTypes.TEXT)
 				.withClusteringColumn(INTERVAL_DATE, DataTypes.DATE)
 				.withClusteringColumn(INTERVAL_START_TIME, DataTypes.TIME)
 				.withClusteringColumn(INTERVAL_ID, DataTypes.TEXT)

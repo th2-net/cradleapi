@@ -35,6 +35,14 @@ public class IntervalEntity {
     private LocalDate date;
 
     @ClusteringColumn(2)
+    @CqlName(CRAWLER_NAME)
+    private String crawlerName;
+
+    @ClusteringColumn(3)
+    @CqlName(CRAWLER_VERSION)
+    private String crawlerVersion;
+
+    @ClusteringColumn(4)
     @CqlName(INTERVAL_START_TIME)
     private LocalTime startTime;
 
@@ -60,6 +68,8 @@ public class IntervalEntity {
         this.lastUpdateDate = interval.getLastUpdateDate();
         this.recoveryStateJson = interval.getRecoveryState().convertToJson();
         this.instanceId = instanceId;
+        this.crawlerName = interval.getCrawlerName();
+        this.crawlerVersion = interval.getCrawlerVersion();
     }
 
     public UUID getInstanceId()
@@ -96,8 +106,16 @@ public class IntervalEntity {
 
     public void setRecoveryStateJson(String recoveryStateJson) { this.recoveryStateJson = recoveryStateJson; }
 
+    public String getCrawlerName() { return crawlerName; }
+
+    public void setCrawlerName(String crawlerName) { this.crawlerName = crawlerName; }
+
+    public String getCrawlerVersion() { return crawlerVersion; }
+
+    public void setCrawlerVersion(String crawlerVersion) { this.crawlerVersion = crawlerVersion; }
+
     public Interval asInterval() throws IOException {
-        return new Interval(this.id, startTime, date, RecoveryState.getMAPPER().readValue(recoveryStateJson, RecoveryState.class),
-                this.getLastUpdateDate(), this.getLastUpdateTime());
+        return new Interval(id, startTime, date, RecoveryState.getMAPPER().readValue(recoveryStateJson, RecoveryState.class),
+                lastUpdateDate, lastUpdateTime, crawlerName, crawlerVersion);
     }
 }

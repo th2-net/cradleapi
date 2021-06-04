@@ -13,8 +13,11 @@ public class Interval {
     private final RecoveryState recoveryState;
     private final LocalDate lastUpdateDate;
     private final LocalTime lastUpdateTime;
+    private final String crawlerName;
+    private final String crawlerVersion;
 
-    public Interval(String id, LocalTime startTime, LocalDate date, RecoveryState recoveryState, LocalDate lastUpdateDate, LocalTime lastUpdateTime)
+    public Interval(String id, LocalTime startTime, LocalDate date, RecoveryState recoveryState,
+                    LocalDate lastUpdateDate, LocalTime lastUpdateTime, String crawlerName, String crawlerVersion)
     {
         this.id = id;
         this.startTime = startTime;
@@ -22,16 +25,8 @@ public class Interval {
         this.recoveryState = recoveryState;
         this.lastUpdateDate = lastUpdateDate;
         this.lastUpdateTime = lastUpdateTime;
-    }
-
-    public Interval(String id, LocalTime startTime, LocalDate date, RecoveryState recoveryState)
-    {
-        this.id = id;
-        this.startTime = startTime;
-        this.date = date;
-        this.recoveryState = recoveryState;
-        this.lastUpdateDate = LocalDate.now();
-        this.lastUpdateTime = LocalTime.now();
+        this.crawlerName = crawlerName;
+        this.crawlerVersion = crawlerVersion;
     }
 
     public String getId() { return id; }
@@ -45,6 +40,10 @@ public class Interval {
     public LocalDate getLastUpdateDate() { return lastUpdateDate; }
 
     public LocalTime getLastUpdateTime() { return lastUpdateTime; }
+
+    public String getCrawlerName() { return crawlerName; }
+
+    public String getCrawlerVersion() { return crawlerVersion; }
 
     @Override
     public String toString()
