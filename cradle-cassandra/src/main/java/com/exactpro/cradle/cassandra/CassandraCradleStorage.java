@@ -497,17 +497,40 @@ public class CassandraCradleStorage extends CradleStorage
 		CompletableFuture<TestEventEntity> future = new AsyncOperator<TestEventEntity>(semaphore)
 				.getFuture(() -> ops.getTestEventOperator().get(instanceUuid, id.toString(), readAttrs));
 		return future.thenApply(e -> {
-			try
-			{
-				return e != null ? e.toStoredTestEventWrapper() : null;
-			}
-			catch (Exception error)
-			{
-				throw new CompletionException("Could not get test event", error);
-			}
-		});
+				try
+				{
+					return e != null ? e.toStoredTestEventWrapper() : null;
+				}
+				catch (Exception error)
+				{
+					throw new CompletionException("Could not get test event", error);
+				}
+			});
 	}
 
+	@Override
+	protected Iterable<StoredTestEventWrapper> doGetCompleteTestEvents(Set<StoredTestEventId> ids) throws IOException
+	{
+		try
+		{
+			return doGetCompleteTestEventsAsync(ids).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Could not get test events", e);
+		}
+	}
+
+	@Override
+	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetCompleteTestEventsAsync(Set<StoredTestEventId> id)
+	{
+		CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> future =
+				new AsyncOperator<MappedAsyncPagingIterable<TestEventEntity>>(semaphore)
+						.getFuture(() -> ops.getTestEventOperator().getComplete(instanceUuid,
+								id.stream().map(StoredTestEventId::toString).collect(toList()), readAttrs));
+		
+		return future.thenApply(TestEventDataIteratorAdapter::new);
+	}
 
 	@Override
 	public TestEventsMessagesLinker getTestEventsMessagesLinker()
@@ -532,12 +555,35 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter)
 	{
-		MessageBatchOperator op = ops.getMessageBatchOperator();
-		CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<DetailedMessageBatchEntity>>(semaphore)
-				.getFuture(() -> op.filterMessages(instanceUuid, filter, semaphore, op, readAttrs));
-		return future.thenApply(it -> new MessagesIteratorAdapter(filter, it));
+		return doGetDetailedMessageBatchEntities(filter).thenApply(it -> new MessagesIteratorAdapter(filter, it));
 	}
 
+
+	@Override
+	protected Iterable<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException
+	{
+		try
+		{
+			return doGetMessagesBatchesAsync(filter).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting messages filtered by "+filter, e);
+		}
+	}
+
+	@Override
+	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter)
+	{
+		return doGetDetailedMessageBatchEntities(filter).thenApply(it -> new StoredMessageBatchAdapter(it, objectsFactory, filter == null ? 0 : filter.getLimit()));
+	}
+
+	private CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> doGetDetailedMessageBatchEntities(StoredMessageFilter filter)
+	{
+		MessageBatchOperator op = ops.getMessageBatchOperator();
+		return new AsyncOperator<MappedAsyncPagingIterable<DetailedMessageBatchEntity>>(semaphore)
+				.getFuture(() -> op.filterMessages(instanceUuid, filter, semaphore, op, readAttrs));
+	}
 
 	@Override
 	protected Iterable<StoredTestEventMetadata> doGetRootTestEvents(Instant from, Instant to) throws CradleStorageException, IOException

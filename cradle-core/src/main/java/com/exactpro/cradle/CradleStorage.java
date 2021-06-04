@@ -92,7 +92,9 @@ public abstract class CradleStorage
 	protected abstract StoredMessageId doGetNearestMessageId(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation) throws IOException;
 	protected abstract CompletableFuture<StoredMessageId> doGetNearestMessageIdAsync(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation);
 	protected abstract StoredTestEventWrapper doGetTestEvent(StoredTestEventId id) throws IOException;
-	protected abstract CompletableFuture<StoredTestEventWrapper> doGetTestEventAsync(StoredTestEventId id);
+	protected abstract CompletableFuture<StoredTestEventWrapper> doGetTestEventAsync(StoredTestEventId ids);
+	protected abstract Iterable<StoredTestEventWrapper> doGetCompleteTestEvents(Set<StoredTestEventId> ids) throws IOException;
+	protected abstract CompletableFuture<Iterable<StoredTestEventWrapper>> doGetCompleteTestEventsAsync(Set<StoredTestEventId> id);
 	protected abstract Collection<String> doGetStreams() throws IOException;
 	protected abstract Collection<Instant> doGetRootTestEventsDates() throws IOException;
 	protected abstract Collection<Instant> doGetTestEventsDates(StoredTestEventId parentId) throws IOException;
@@ -118,6 +120,8 @@ public abstract class CradleStorage
 	
 	protected abstract Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException;
 	protected abstract CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter);
+	protected abstract Iterable<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException;
+	protected abstract CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter);
 	protected abstract Iterable<StoredTestEventMetadata> doGetRootTestEvents(Instant from, Instant to) 
 			throws CradleStorageException, IOException;
 	protected abstract CompletableFuture<Iterable<StoredTestEventMetadata>> doGetRootTestEventsAsync(Instant from, Instant to) 
@@ -582,7 +586,39 @@ public abstract class CradleStorage
 				});
 		return result;
 	}
-	
+
+	/**
+	 * Retrieves test events data stored under given IDs
+	 * @param ids set of stored test event to retrieve
+	 * @return data of stored test event
+	 * @throws IOException if test event data retrieval failed
+	 */
+	public final Iterable<StoredTestEventWrapper> getCompleteTestEvents(Set<StoredTestEventId> ids) throws IOException
+	{
+		logger.debug("Getting test events {}", ids);
+		Iterable<StoredTestEventWrapper> result = doGetCompleteTestEvents(ids);
+		logger.debug("Test events {} got", ids);
+		return result;
+	}
+
+	/**
+	 * Asynchronously retrieves test events data stored under given IDs
+	 * @param ids set of stored test event to retrieve
+	 * @return future to obtain data of stored test event
+	 */
+	public final CompletableFuture<Iterable<StoredTestEventWrapper>> getCompleteTestEventsAsync(Set<StoredTestEventId> ids)
+	{
+		logger.debug("Getting test events {} asynchronously", ids);
+
+		CompletableFuture<Iterable<StoredTestEventWrapper>> result = doGetCompleteTestEventsAsync(ids)
+				.whenComplete((r, error) -> {
+					if (error != null)
+						logger.error("Error while getting test events "+ids+" asynchronously", error);
+					else
+						logger.debug("Test events {} got asynchronously", ids);
+				});
+		return result;
+	}
 	
 	/**
 	 * Allows to enumerate stored messages, optionally filtering them by given conditions
@@ -595,6 +631,20 @@ public abstract class CradleStorage
 		logger.debug("Filtering messages by {}", filter);
 		Iterable<StoredMessage> result = doGetMessages(filter);
 		logger.debug("Prepared iterator for messages filtered by {}", filter);
+		return result;
+	}
+
+	/**
+	 * Allows to enumerate stored message batches, optionally filtering them by given conditions
+	 * @param filter defines conditions to filter message batches by. Use null is no filtering is needed
+	 * @return iterable object to enumerate message batches
+	 * @throws IOException if data retrieval failed
+	 */
+	public final Iterable<StoredMessageBatch> getMessagesBatches(StoredMessageFilter filter) throws IOException
+	{
+		logger.debug("Filtering message batches by {}", filter);
+		Iterable<StoredMessageBatch> result = doGetMessagesBatches(filter);
+		logger.debug("Prepared iterator for message batches filtered by {}", filter);
 		return result;
 	}
 	
@@ -615,7 +665,25 @@ public abstract class CradleStorage
 				});
 		return result;
 	}
-	
+
+	/**
+	 * Allows to asynchronously obtain iterable object to enumerate stored message batches, optionally filtering them by given conditions
+	 * @param filter defines conditions to filter message batches by. Use null is no filtering is needed
+	 * @return future to obtain iterable object to enumerate message batches
+	 */
+	public final CompletableFuture<Iterable<StoredMessageBatch>> getMessagesBatchesAsync(StoredMessageFilter filter)
+	{
+		logger.debug("Asynchronously getting message batches filtered by {}", filter);
+		CompletableFuture<Iterable<StoredMessageBatch>> result = doGetMessagesBatchesAsync(filter)
+				.whenComplete((r, error) -> {
+					if (error != null)
+						logger.error("Error while getting message batches filtered by "+filter+" asynchronously", error);
+					else
+						logger.debug("Iterator for message batches filtered by {} got asynchronously", filter);
+				});
+		
+		return result;
+	}
 	
 	/**
 	 * Allows to enumerate root test events started in given range of timestamps. 
