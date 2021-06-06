@@ -928,7 +928,7 @@ public abstract class CradleStorage
 	}
 
 	/**
-	 * Obtains iterable of intervals with startTime >= that from and < then to
+	 * Obtains iterable of intervals with startTime greater or equal that from and less or equal then to
 	 * @param from time from which intervals are being searched
 	 * @return iterable of intervals
 	 */
@@ -945,7 +945,7 @@ public abstract class CradleStorage
 	}
 
 	/**
-	 * Asynchronously obtains iterable of intervals with startTime >= that from and < then to
+	 * Asynchronously obtains iterable of intervals with startTime greater or equal that from and less or equal then to
 	 * @param from time from which intervals are being searched
 	 * @return future to get know if obtaining was successful
 	 */
