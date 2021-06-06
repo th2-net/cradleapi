@@ -20,7 +20,7 @@ public interface IntervalOperator {
     @Insert(ifNotExists = true)
     CompletableFuture<IntervalEntity> writeInterval(IntervalEntity IntervalEntity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-    @Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+ INTERVAL_DATE +"=:intervalDate AND "+CRAWLER_NAME+"=:crawlerName AND "+CRAWLER_VERSION+"=:crawlerVersion AND "+INTERVAL_START_TIME+">=:intervalStartTime AND "+INTERVAL_START_TIME+"<:intervalEndTime")
+    @Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+ INTERVAL_DATE +"=:intervalDate AND "+CRAWLER_NAME+"=:crawlerName AND "+CRAWLER_VERSION+"=:crawlerVersion AND "+INTERVAL_START_TIME+">=:intervalStartTime AND "+INTERVAL_START_TIME+"<=:intervalEndTime")
     CompletableFuture<MappedAsyncPagingIterable<IntervalEntity>> getIntervals(UUID instanceId, LocalDate intervalDate, LocalTime intervalStartTime, LocalTime intervalEndTime, String crawlerName, String crawlerVersion, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
     //FIXME: Is it really necessary to put IF here?
