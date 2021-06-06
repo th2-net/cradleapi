@@ -339,6 +339,7 @@ public class TablesCreator
 				.withClusteringColumn(INTERVAL_DATE, DataTypes.DATE)
 				.withClusteringColumn(INTERVAL_START_TIME, DataTypes.TIME)
 				.withClusteringColumn(INTERVAL_ID, DataTypes.TEXT)
+				.withColumn(INTERVAL_END_TIME, DataTypes.TIME)
 				.withColumn(INTERVAL_LAST_UPDATE_DATE, DataTypes.DATE)
 				.withColumn(INTERVAL_LAST_UPDATE_TIME, DataTypes.TIME)
 				.withColumn(RECOVERY_STATE_JSON, DataTypes.TEXT);

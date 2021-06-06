@@ -46,6 +46,9 @@ public class IntervalEntity {
     @CqlName(INTERVAL_START_TIME)
     private LocalTime startTime;
 
+    @CqlName(INTERVAL_END_TIME)
+    private LocalTime endTime;
+
     @CqlName(INTERVAL_LAST_UPDATE_DATE)
     private LocalDate lastUpdateDate;
 
@@ -63,6 +66,7 @@ public class IntervalEntity {
     {
         this.id = interval.getId();
         this.startTime = interval.getStartTime();
+        this.endTime = interval.getEndTime();
         this.date = interval.getDate();
         this.lastUpdateTime = interval.getLastUpdateTime();
         this.lastUpdateDate = interval.getLastUpdateDate();
@@ -94,6 +98,10 @@ public class IntervalEntity {
 
     public void setStartTime(LocalTime startTime) { this.startTime = startTime; }
 
+    public LocalTime getEndTime() { return endTime; }
+
+    public void setEndTime(LocalTime endTime) { this.endTime = endTime; }
+
     public LocalDate getLastUpdateDate() { return lastUpdateDate; }
 
     public void setLastUpdateDate(LocalDate lastUpdateDate) { this.lastUpdateDate = lastUpdateDate; }
@@ -115,7 +123,7 @@ public class IntervalEntity {
     public void setCrawlerVersion(String crawlerVersion) { this.crawlerVersion = crawlerVersion; }
 
     public Interval asInterval() throws IOException {
-        return new Interval(id, startTime, date, RecoveryState.getMAPPER().readValue(recoveryStateJson, RecoveryState.class),
+        return new Interval(id, startTime, endTime, date, RecoveryState.getMAPPER().readValue(recoveryStateJson, RecoveryState.class),
                 lastUpdateDate, lastUpdateTime, crawlerName, crawlerVersion);
     }
 }
