@@ -309,71 +309,37 @@ public abstract class CradleStorage
 				});
 		return CompletableFuture.allOf(result1, result2);
 	}
-	
+
 	/**
-	 * Writes to storage messages of test event
-	 * @param eventId ID of test event
+	 * Writes to storage the links between given test event and messages
+	 * @param eventId ID of stored test event
 	 * @param batchId ID of batch where event is stored, if applicable
 	 * @param messagesIds collection of stored message IDs
 	 * @throws IOException if data writing failed
 	 */
 	public final void storeTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messagesIds) throws IOException
 	{
-		logger.debug("Storing {} message(s) of test event {}", messagesIds.size(), eventId);
+		logger.debug("Storing links between test event {} and {} message(s)", eventId, messagesIds.size());
 		doStoreTestEventMessagesLink(eventId, batchId, messagesIds);
-		logger.debug("Message(s) {} of test event {} have been stored", messagesIds.size(), eventId);
+		logger.debug("Links between test event {} and {} message(s) have been stored", eventId, messagesIds.size());
 	}
 
 	/**
-	 * Asynchronously writes to storage messages of test event
-	 * @param eventId ID of test event
+	 * Asynchronously writes to storage the links between given test event and messages
+	 * @param eventId ID of stored test event
 	 * @param batchId ID of batch where event is stored, if applicable
 	 * @param messagesIds collection of stored message IDs
 	 * @return future to get know if storing was successful
 	 */
 	public final CompletableFuture<Void> storeTestEventMessagesLinkAsync(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messagesIds)
 	{
-		logger.debug("Storing {} message(s) of test event {}", messagesIds.size(), eventId);
+		logger.debug("Storing links between test event {} and {} message(s) asynchronously", eventId, messagesIds.size());
 		return doStoreTestEventMessagesLinkAsync(eventId, batchId, messagesIds)
 				.whenComplete((r, error) -> {
 					if (error != null)
-						logger.error("Error while storing "+messagesIds.size()+" message(s) of test event "+eventId+" asynchronously", error);
+						logger.error("Error while storing links between test event "+eventId+" and "+messagesIds.size()+" message(s) asynchronously", error);
 					else
-						logger.debug("Message(s) {} of test event {} have been stored asynchronously", messagesIds.size(), eventId);
-				});
-		
-	}
-
-	/**
-	 * Writes to storage test event of messages
-	 * @param eventId ID of stored test event
-	 * @param batchId ID of batch where event is stored, if applicable
-	 * @param messagesIds collection of message IDs
-	 * @throws IOException if data writing failed
-	 */
-	public final void storeMessageTestEventLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messagesIds) throws IOException
-	{
-		logger.debug("Storing test event {} of {} message(s)", eventId, messagesIds.size());
-		doStoreMessageTestEventLink(eventId, batchId, messagesIds);
-		logger.debug("Test event {} of {} message(s) has been stored", eventId, messagesIds.size());
-	}
-
-	/**
-	 * Asynchronously writes to storage test event of messages
-	 * @param eventId ID of stored test event
-	 * @param batchId ID of batch where event is stored, if applicable
-	 * @param messagesIds collection of message IDs
-	 * @return future to get know if storing was successful
-	 */
-	public final CompletableFuture<Void> storeMessageTestEventLinkAsync(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messagesIds)
-	{
-		logger.debug("Storing test event {} of {} message(s) asynchronously", eventId, messagesIds.size());
-		return doStoreMessageTestEventLinkAsync(eventId, batchId, messagesIds)
-				.whenComplete((r, error) -> {
-					if (error != null)
-						logger.error("Error while storing test event "+eventId+" of "+messagesIds.size()+" message(s) asynchronously", error);
-					else
-						logger.debug("Test event {} of {} message(s) has been stored asynchronously", eventId, messagesIds.size());
+						logger.debug("Links between test event {} and {} message(s) have been stored asynchronously", eventId, messagesIds.size());
 				});
 
 	}
@@ -972,15 +938,16 @@ public abstract class CradleStorage
 	public final boolean setIntervalLastUpdateTimeAndDate(Interval interval, Instant newLastUpdateTime) throws IOException
 	{
 		logger.debug("Updating interval with {}", interval.getId());
+
 		boolean result = this.doSetIntervalLastUpdateTimeAndDate(interval, newLastUpdateTime);
 
 		if (result) {
-			return true;
-		}
-		else {
 			logger.debug("Updated interval {}", interval.getId());
-			return false;
+		} else {
+			logger.debug("Failed to update last update time and date of interval {}", interval.getId());
 		}
+
+		return result;
 	}
 
 	/**
@@ -995,11 +962,16 @@ public abstract class CradleStorage
 		logger.debug("Asynchronously updating interval {}", interval.getId());
 		CompletableFuture<Boolean> result = doSetIntervalLastUpdateTimeAndDateAsync(interval, newLastUpdateTime)
 				.whenComplete((r, error) -> {
-					if (error != null)
+					if (error != null) {
 						logger.error("Error while asynchronously updating interval "+interval.getId());
-					else
-						logger.debug("Interval {} updated asynchronously", interval.getId());
+					} else {
+						if (r)
+							logger.debug("Interval {} updated asynchronously", interval.getId());
+						else
+							logger.debug("Failed to update last update time and date of interval {}", interval.getId());
+					}
 				});
+
 		return result;
 	}
 
