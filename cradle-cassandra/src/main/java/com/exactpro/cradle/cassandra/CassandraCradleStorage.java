@@ -333,26 +333,6 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected void doStoreMessageTestEventLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messageIds) throws IOException {
-		try
-		{
-			doStoreMessageTestEventLinkAsync(eventId, batchId, messageIds).get();
-		}
-		catch (Exception e)
-		{
-			throw new IOException("Error while storing link between "+messageIds.size()+" message(s) and test event "+eventId, e);
-		}
-	}
-
-	@Override
-	protected CompletableFuture<Void> doStoreMessageTestEventLinkAsync(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messageIds)
-	{
-		List<String> messageIdsStrings = messageIds.stream().map(StoredMessageId::toString).collect(toList());
-		String eventIdString = eventId.toString();
-		return CompletableFuture.allOf(storeTestEventOfMessages(messageIdsStrings, eventIdString, batchId));
-	}
-
-	@Override
 	protected StoredMessage doGetMessage(StoredMessageId id) throws IOException
 	{
 		try

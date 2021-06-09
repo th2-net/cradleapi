@@ -78,9 +78,6 @@ public abstract class CradleStorage
 	protected abstract void doStoreTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messageIds) throws IOException;
 	protected abstract CompletableFuture<Void> doStoreTestEventMessagesLinkAsync(StoredTestEventId eventId, StoredTestEventId batchId, 
 			Collection<StoredMessageId> messageIds);
-	protected abstract void doStoreMessageTestEventLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messageIds) throws IOException;
-	protected abstract CompletableFuture<Void> doStoreMessageTestEventLinkAsync(StoredTestEventId eventId, StoredTestEventId batchId,
-			Collection<StoredMessageId> messageIds);
 	protected abstract StoredMessage doGetMessage(StoredMessageId id) throws IOException;
 	protected abstract CompletableFuture<StoredMessage> doGetMessageAsync(StoredMessageId id);
 	protected abstract Collection<StoredMessage> doGetMessageBatch(StoredMessageId id) throws IOException;
