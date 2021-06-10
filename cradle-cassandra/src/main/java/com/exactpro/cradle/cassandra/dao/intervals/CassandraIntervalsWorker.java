@@ -90,7 +90,8 @@ public class CassandraIntervalsWorker implements IntervalsWorker
         }
         catch (Exception e)
         {
-            throw new IOException("Error while getting intervals from: "+from+", to: "+to, e);
+            throw new IOException("Error while getting intervals from: "+from+", to: "+to+" by Crawler with " +
+                    "name: "+crawlerName+", version: "+crawlerVersion, e);
         }
     }
 
@@ -117,7 +118,8 @@ public class CassandraIntervalsWorker implements IntervalsWorker
             }
             catch (Exception error)
             {
-                throw new CompletionException("Could not get intervals from: "+from+", to: "+to, error);
+                throw new CompletionException("Could not get intervals from: "+from+", to: "+to+" by Crawler with " +
+                        "name: "+crawlerName+", version: "+crawlerVersion, error);
             }
         });
     }
