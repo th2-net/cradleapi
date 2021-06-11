@@ -521,10 +521,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	public IntervalsWorker getIntervalsWorker()
-	{
-		return intervalsWorker;
-	}
+	public IntervalsWorker getIntervalsWorker() { return intervalsWorker; }
 
 
 	@Override

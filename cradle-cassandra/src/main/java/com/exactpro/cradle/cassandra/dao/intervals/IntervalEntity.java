@@ -45,8 +45,11 @@ public class IntervalEntity {
     private String id;
 
     @ClusteringColumn(1)
-    @CqlName(INTERVAL_DATE)
-    private LocalDate date;
+    @CqlName(INTERVAL_START_DATE)
+    private LocalDate startDate;
+
+    @CqlName(INTERVAL_END_DATE)
+    private LocalDate endDate;
 
     @ClusteringColumn(2)
     @CqlName(CRAWLER_NAME)
@@ -72,6 +75,9 @@ public class IntervalEntity {
     @CqlName(RECOVERY_STATE_JSON)
     private String recoveryStateJson;
 
+    @CqlName(INTERVAL_PROCESSED)
+    private boolean processed;
+
     public IntervalEntity()
     {
     }
@@ -81,13 +87,15 @@ public class IntervalEntity {
         this.id = interval.getId();
         this.startTime = interval.getStartTime();
         this.endTime = interval.getEndTime();
-        this.date = interval.getDate();
+        this.startDate = interval.getStartDate();
+        this.endDate = interval.getEndDate();
         this.lastUpdateTime = interval.getLastUpdateTime();
         this.lastUpdateDate = interval.getLastUpdateDate();
         this.recoveryStateJson = interval.getRecoveryState().convertToJson();
         this.instanceId = instanceId;
         this.crawlerName = interval.getCrawlerName();
         this.crawlerVersion = interval.getCrawlerVersion();
+        this.processed = interval.isProcessed();
     }
 
     public UUID getInstanceId()
@@ -104,9 +112,9 @@ public class IntervalEntity {
 
     public void setId(String id) { this.id = id; }
 
-    public LocalDate getDate() { return date; }
+    public LocalDate getStartDate() { return startDate; }
 
-    public void setDate(LocalDate date) { this.date = date; }
+    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
 
     public LocalTime getStartTime() { return startTime; }
 
@@ -119,6 +127,10 @@ public class IntervalEntity {
     public LocalDate getLastUpdateDate() { return lastUpdateDate; }
 
     public void setLastUpdateDate(LocalDate lastUpdateDate) { this.lastUpdateDate = lastUpdateDate; }
+
+    public LocalDate getEndDate() { return endDate; }
+
+    public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
 
     public LocalTime getLastUpdateTime() { return lastUpdateTime; }
 
@@ -136,8 +148,12 @@ public class IntervalEntity {
 
     public void setCrawlerVersion(String crawlerVersion) { this.crawlerVersion = crawlerVersion; }
 
+    public boolean isProcessed() { return processed; }
+
+    public void setProcessed(boolean processed) { this.processed = processed; }
+
     public Interval asInterval() throws IOException {
-        return new Interval(id, startTime, endTime, date, RecoveryState.getMAPPER().readValue(recoveryStateJson, RecoveryState.class),
-                lastUpdateDate, lastUpdateTime, crawlerName, crawlerVersion);
+        return new Interval(id, startTime, endTime, startDate, endDate, RecoveryState.getMAPPER().readValue(recoveryStateJson, RecoveryState.class),
+                lastUpdateDate, lastUpdateTime, crawlerName, crawlerVersion, processed);
     }
 }

@@ -336,13 +336,15 @@ public class TablesCreator
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
 				.withClusteringColumn(CRAWLER_NAME, DataTypes.TEXT)
 				.withClusteringColumn(CRAWLER_VERSION, DataTypes.TEXT)
-				.withClusteringColumn(INTERVAL_DATE, DataTypes.DATE)
+				.withClusteringColumn(INTERVAL_START_DATE, DataTypes.DATE)
 				.withClusteringColumn(INTERVAL_START_TIME, DataTypes.TIME)
 				.withClusteringColumn(INTERVAL_ID, DataTypes.TEXT)
+				.withColumn(INTERVAL_END_DATE, DataTypes.DATE)
 				.withColumn(INTERVAL_END_TIME, DataTypes.TIME)
 				.withColumn(INTERVAL_LAST_UPDATE_DATE, DataTypes.DATE)
 				.withColumn(INTERVAL_LAST_UPDATE_TIME, DataTypes.TIME)
-				.withColumn(RECOVERY_STATE_JSON, DataTypes.TEXT);
+				.withColumn(RECOVERY_STATE_JSON, DataTypes.TEXT)
+				.withColumn(INTERVAL_PROCESSED, DataTypes.BOOLEAN);
 
 		exec.executeQuery(create.asCql(), true);
 		logger.info("Table '{}' has been created", tableName);

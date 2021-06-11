@@ -147,7 +147,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
 
         CompletableFuture<AsyncResultSet> future = new AsyncOperator<AsyncResultSet>(semaphore)
                 .getFuture(() ->
-                        intervalOperator.setIntervalLastUpdateTimeAndDate(instanceUuid, interval.getId(), interval.getDate(),
+                        intervalOperator.setIntervalLastUpdateTimeAndDate(instanceUuid, interval.getId(), interval.getStartDate(),
                                 interval.getStartTime(), time, date, interval.getLastUpdateTime(), interval.getLastUpdateDate(),
                                 interval.getCrawlerName(), interval.getCrawlerVersion(),
                                 writeAttrs));
@@ -171,9 +171,33 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     public CompletableFuture<Void> updateRecoveryStateAsync(Interval interval, RecoveryState recoveryState)
     {
         CompletableFuture<AsyncResultSet> future = new AsyncOperator<AsyncResultSet>(semaphore)
-                .getFuture(() -> intervalOperator.updateRecoveryState(instanceUuid, interval.getDate(),
+                .getFuture(() -> intervalOperator.updateRecoveryState(instanceUuid, interval.getStartDate(),
                         interval.getStartTime(), interval.getId(), interval.getCrawlerName(),
-                        interval.getCrawlerVersion(), recoveryState.convertToJson()));
+                        interval.getCrawlerVersion(), recoveryState.convertToJson(), writeAttrs));
+
+        return future.thenAccept(r -> {});
+    }
+
+    @Override
+    public void setIntervalProcessed(Interval interval, boolean processed) throws IOException
+    {
+        try
+        {
+            setIntervalProcessedAsync(interval, processed);
+        }
+        catch (Exception e)
+        {
+            throw new IOException("Error while setting processed flag of interval "+interval.getId(), e);
+        }
+    }
+
+    @Override
+    public CompletableFuture<Void> setIntervalProcessedAsync(Interval interval, boolean processed)
+    {
+        CompletableFuture<AsyncResultSet> future = new AsyncOperator<AsyncResultSet>(semaphore)
+                .getFuture(() -> intervalOperator.setIntervalProcessed(instanceUuid, interval.getId(),
+                        interval.getStartDate(), interval.getStartTime(), interval.getCrawlerName(),
+                        interval.getCrawlerVersion(), processed, writeAttrs));
 
         return future.thenAccept(r -> {});
     }

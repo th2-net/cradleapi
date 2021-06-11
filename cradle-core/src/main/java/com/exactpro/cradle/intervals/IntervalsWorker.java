@@ -68,7 +68,31 @@ public interface IntervalsWorker
      */
     CompletableFuture<Boolean> setIntervalLastUpdateTimeAndDateAsync(Interval interval, Instant newLastUpdateTime);
 
+    /**
+     * Updates RecoveryState
+     * @param interval interval in which Recovery State will be updated
+     * @param recoveryState information for recovering of Crawler
+     */
     void updateRecoveryState(Interval interval, RecoveryState recoveryState) throws IOException;
 
+    /**
+     * Asynchronously updates RecoveryState
+     * @param interval interval in which Recovery State will be updated
+     * @param recoveryState information for recovering of Crawler
+     */
     CompletableFuture<Void> updateRecoveryStateAsync(Interval interval, RecoveryState recoveryState);
+
+    /**
+     * Sets flag that indicates if interval was processed completely
+     * @param interval interval in which flag will be set
+     * @param processed whether interval was processed completely
+     */
+    void setIntervalProcessed(Interval interval, boolean processed) throws IOException;
+
+    /**
+     * Asynchronously sets flag that indicates if interval was processed completely
+     * @param interval interval in which flag will be set
+     * @param processed whether interval was processed completely
+     */
+    CompletableFuture<Void> setIntervalProcessedAsync(Interval interval, boolean processed);
 }
