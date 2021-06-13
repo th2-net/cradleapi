@@ -91,6 +91,39 @@ public class RecoveryState
         return sb.toString();
     }
 
+    @Override
+    public int hashCode()
+    {
+        final int prime = 31;
+        int result = 1;
+
+        result = prime * result + lastProcessedEvent.hashCode();
+        for (InnerMessage message : lastProcessedMessages) {
+            result = prime * result + message.hashCode();
+        }
+
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        RecoveryState other = (RecoveryState) obj;
+        if (lastProcessedEvent != other.lastProcessedEvent)
+            return false;
+        if (!lastProcessedMessages.containsAll(other.lastProcessedMessages)
+                && lastProcessedMessages.size() != other.lastProcessedMessages.size())
+            return false;
+
+        return true;
+    }
+
     public static class InnerEvent
     {
         private final Instant startTimestamp;
@@ -112,7 +145,8 @@ public class RecoveryState
         }
 
         @Override
-        public String toString() {
+        public String toString()
+        {
             return new StringBuilder()
                     .append("InnerEvent{").append(CompressionUtils.EOL)
                     .append("id=").append(id).append(CompressionUtils.EOL)
@@ -120,6 +154,39 @@ public class RecoveryState
                     .append("endTimestamp=").append(endTimestamp).append(CompressionUtils.EOL)
                     .append("}")
                     .toString();
+        }
+
+        @Override
+        public int hashCode()
+        {
+            final int prime = 31;
+            int result = 1;
+
+            result = prime * result + ((startTimestamp == null) ? 0 : startTimestamp.hashCode());
+            result = prime * result + ((endTimestamp == null) ? 0 : endTimestamp.hashCode());
+            result = prime * result + ((id == null) ? 0 : id.hashCode());
+
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            InnerEvent other = (InnerEvent) obj;
+            if (startTimestamp != other.startTimestamp)
+                return false;
+            if (endTimestamp != other.endTimestamp)
+                return false;
+            if (id != other.id)
+                return false;
+
+            return true;
         }
 
         public Instant getStartTimestamp() { return startTimestamp; }
@@ -153,7 +220,8 @@ public class RecoveryState
         }
 
         @Override
-        public String toString() {
+        public String toString()
+        {
             return new StringBuilder()
                     .append("InnerMessage{").append(CompressionUtils.EOL)
                     .append("id=").append(id).append(CompressionUtils.EOL)
@@ -162,6 +230,42 @@ public class RecoveryState
                     .append("sequence=").append(sequence).append(CompressionUtils.EOL)
                     .append("}")
                     .toString();
+        }
+
+        @Override
+        public int hashCode()
+        {
+            final int prime = 31;
+            int result = 1;
+
+            result = prime * result + ((id == null) ? 0 : id.hashCode());
+            result = prime * result + ((timestamp == null) ? 0 : timestamp.hashCode());
+            result = prime * result + ((direction == null) ? 0 : direction.hashCode());
+            result = prime * result + (int) (sequence ^ (sequence >>> 32));
+
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            InnerMessage other = (InnerMessage) obj;
+            if (id != other.id)
+                return false;
+            if (timestamp != other.timestamp)
+                return false;
+            if (direction != other.direction)
+                return false;
+            if (sequence != other.sequence)
+                return false;
+
+            return true;
         }
 
         public String getId() { return id; }
