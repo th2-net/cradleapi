@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import jdk.internal.jline.internal.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,8 +43,8 @@ public class RecoveryState
 
     private static final Logger logger = LoggerFactory.getLogger(RecoveryState.class);
 
-    public RecoveryState(@JsonProperty("lastProcessedEvent") InnerEvent lastProcessedEvent,
-                         @JsonProperty("lastProcessedMessages") List<InnerMessage> lastProcessedMessages)
+    public RecoveryState(@Nullable @JsonProperty("lastProcessedEvent") InnerEvent lastProcessedEvent,
+                         @Nullable @JsonProperty("lastProcessedMessages") List<InnerMessage> lastProcessedMessages)
     {
         this.lastProcessedEvent = lastProcessedEvent;
         this.lastProcessedMessages = lastProcessedMessages;
@@ -70,14 +71,23 @@ public class RecoveryState
     public String toString()
     {
         StringJoiner joiner = new StringJoiner(", ");
+        StringBuilder sb = new StringBuilder();
 
-        lastProcessedMessages.forEach(m -> joiner.add(m.toString()));
+        sb.append("RecoveryState{")
+                .append("lastProcessedEvent=")
+                .append(lastProcessedEvent).append(CompressionUtils.EOL)
+                .append("lastProcessedMessages=");
 
-        return new StringBuilder()
-                .append("RecoveryState{")
-                .append("lastProcessedEvent=").append(lastProcessedEvent).append(CompressionUtils.EOL)
-                .append("lastProcessedMessages=").append(joiner)
-                .append("}").toString();
+        if (lastProcessedMessages != null) {
+            lastProcessedMessages.forEach(m -> joiner.add(m.toString()));
+            sb.append(joiner);
+        } else {
+            sb.append("null");
+        }
+
+        sb.append("}");
+
+        return sb.toString();
     }
 
     public static class InnerEvent
