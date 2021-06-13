@@ -24,12 +24,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import jdk.internal.jline.internal.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.StringJoiner;
 
 public class RecoveryState
@@ -43,11 +44,11 @@ public class RecoveryState
 
     private static final Logger logger = LoggerFactory.getLogger(RecoveryState.class);
 
-    public RecoveryState(@Nullable @JsonProperty("lastProcessedEvent") InnerEvent lastProcessedEvent,
-                         @Nullable @JsonProperty("lastProcessedMessages") List<InnerMessage> lastProcessedMessages)
+    public RecoveryState(@JsonProperty("lastProcessedEvent") InnerEvent lastProcessedEvent,
+                         @JsonProperty("lastProcessedMessages") List<InnerMessage> lastProcessedMessages)
     {
-        this.lastProcessedEvent = lastProcessedEvent;
-        this.lastProcessedMessages = lastProcessedMessages;
+        this.lastProcessedEvent = Optional.ofNullable(lastProcessedEvent).orElse(null);
+        this.lastProcessedMessages = Optional.ofNullable(lastProcessedMessages).orElse(null);
     }
 
     public InnerEvent getLastProcessedEvent() { return lastProcessedEvent; }
@@ -73,7 +74,7 @@ public class RecoveryState
         StringJoiner joiner = new StringJoiner(", ");
         StringBuilder sb = new StringBuilder();
 
-        sb.append("RecoveryState{")
+        sb.append("RecoveryState{").append(CompressionUtils.EOL)
                 .append("lastProcessedEvent=")
                 .append(lastProcessedEvent).append(CompressionUtils.EOL)
                 .append("lastProcessedMessages=");
@@ -110,6 +111,17 @@ public class RecoveryState
             this.id = null;
         }
 
+        @Override
+        public String toString() {
+            return new StringBuilder()
+                    .append("InnerEvent{").append(CompressionUtils.EOL)
+                    .append("id=").append(id).append(CompressionUtils.EOL)
+                    .append("startTimestamp=").append(startTimestamp).append(CompressionUtils.EOL)
+                    .append("endTimestamp=").append(endTimestamp).append(CompressionUtils.EOL)
+                    .append("}")
+                    .toString();
+        }
+
         public Instant getStartTimestamp() { return startTimestamp; }
 
         public Instant getEndTimestamp() { return endTimestamp; }
@@ -138,6 +150,18 @@ public class RecoveryState
             this.timestamp = null;
             this.direction = null;
             this.sequence = 0;
+        }
+
+        @Override
+        public String toString() {
+            return new StringBuilder()
+                    .append("InnerMessage{").append(CompressionUtils.EOL)
+                    .append("id=").append(id).append(CompressionUtils.EOL)
+                    .append("timestamp=").append(timestamp).append(CompressionUtils.EOL)
+                    .append("direction=").append(direction).append(CompressionUtils.EOL)
+                    .append("sequence=").append(sequence).append(CompressionUtils.EOL)
+                    .append("}")
+                    .toString();
         }
 
         public String getId() { return id; }
