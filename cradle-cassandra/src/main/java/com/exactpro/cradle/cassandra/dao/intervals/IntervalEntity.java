@@ -40,28 +40,28 @@ public class IntervalEntity {
     @CqlName(INSTANCE_ID)
     private UUID instanceId;
 
-    @ClusteringColumn(0)
-    @CqlName(INTERVAL_ID)
-    private String id;
-
-    @ClusteringColumn(1)
+    @PartitionKey(1)
     @CqlName(INTERVAL_START_DATE)
     private LocalDate startDate;
 
-    @CqlName(INTERVAL_END_DATE)
-    private LocalDate endDate;
-
-    @ClusteringColumn(2)
+    @ClusteringColumn(0)
     @CqlName(CRAWLER_NAME)
     private String crawlerName;
 
-    @ClusteringColumn(3)
+    @ClusteringColumn(1)
     @CqlName(CRAWLER_VERSION)
     private String crawlerVersion;
 
-    @ClusteringColumn(4)
+    @ClusteringColumn(2)
     @CqlName(INTERVAL_START_TIME)
     private LocalTime startTime;
+
+    @ClusteringColumn(3)
+    @CqlName(INTERVAL_ID)
+    private String id;
+
+    @CqlName(INTERVAL_END_DATE)
+    private LocalDate endDate;
 
     @CqlName(INTERVAL_END_TIME)
     private LocalTime endTime;
@@ -153,7 +153,10 @@ public class IntervalEntity {
     public void setProcessed(boolean processed) { this.processed = processed; }
 
     public Interval asInterval() throws IOException {
-        return new Interval(id, startTime, endTime, startDate, endDate, RecoveryState.getMAPPER().readValue(recoveryStateJson, RecoveryState.class),
-                lastUpdateDate, lastUpdateTime, crawlerName, crawlerVersion, processed);
+        return Interval.builder().id(id).startTime(startTime).endTime(endTime).startDate(startDate).endDate(endDate)
+                .recoveryState(RecoveryState.getMAPPER().readValue(recoveryStateJson, RecoveryState.class))
+                .lastUpdateTime(lastUpdateTime).lastUpdateDate(lastUpdateDate)
+                .crawlerName(crawlerName).crawlerVersion(crawlerVersion)
+                .processed(processed).build();
     }
 }
