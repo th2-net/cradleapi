@@ -10,7 +10,7 @@ To build Cradle API binaries you will need to have JDK 8 or higher.
 
 Clone the project to some directory, navigate to that directory and execute the following command:
 ```
-$ ./gradlew clean build publish
+$ ./gradlew clean build publishToMavenLocal
 ```
 
 The binaries will be published to your local Maven repository which can be added to your Gradle project:
@@ -25,20 +25,22 @@ Alternatively, you can use pre-built artifacts by adding the following repositor
 ```
 repositories {
 	maven {
-		name 'Bintray'
-		url 'https://dl.bintray.com/exactpro/th2'
+		name 'Sonatype_releases'
+		url 'https://s01.oss.sonatype.org/content/repositories/releases/'
 	}
 	...
 }
 ```
 
-To use Cradle API, add the following dependency:
+To use Cradle API, add the following dependency to your project:
 ```
 dependencies {
-	implementation 'com.exactpro.th2:cradle-cassandra'
+	implementation 'com.exactpro.th2:cradle-cassandra:2.12.0'
 	...
 }
 ```
+
+Or other Cradle API version you need to use.
 
 Once the dependency is resolved, Cradle API classes will become available.
 
