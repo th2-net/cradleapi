@@ -22,13 +22,10 @@ import java.time.*;
 
 public class Interval {
     private String id;
-    private LocalTime startTime;
-    private LocalTime endTime;
-    private LocalDate startDate;
-    private LocalDate endDate;
+    private LocalDateTime startDateTime;
+    private LocalDateTime endDateTime;
     private RecoveryState recoveryState;
-    private LocalDate lastUpdateDate;
-    private LocalTime lastUpdateTime;
+    private LocalDateTime lastUpdateDateTime;
     private String crawlerName;
     private String crawlerVersion;
     private boolean processed;
@@ -39,33 +36,21 @@ public class Interval {
 
     public void setId(String id) { this.id = id; }
 
-    public LocalTime getStartTime() { return startTime; }
+    public LocalDateTime getStartDateTime() { return startDateTime; }
 
-    public void setStartTime(LocalTime startTime) { this.startTime = startTime; }
+    public void setStartDateTime(LocalDateTime startDateTime) { this.startDateTime = startDateTime; }
 
-    public LocalTime getEndTime() { return endTime; }
+    public LocalDateTime getEndDateTime() { return endDateTime; }
 
-    public void setEndTime(LocalTime endTime) { this.endTime = endTime; }
-
-    public LocalDate getStartDate() { return startDate; }
-
-    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
-
-    public LocalDate getEndDate() { return endDate; }
-
-    public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
+    public void setEndDateTime(LocalDateTime endDateTime) { this.endDateTime = endDateTime; }
 
     public RecoveryState getRecoveryState() { return recoveryState; }
 
     public void setRecoveryState(RecoveryState recoveryState) { this.recoveryState = recoveryState; }
 
-    public LocalDate getLastUpdateDate() { return lastUpdateDate; }
+    public LocalDateTime getLastUpdateDateTime() { return lastUpdateDateTime; }
 
-    public void setLastUpdateDate(LocalDate lastUpdateDate) { this.lastUpdateDate = lastUpdateDate; }
-
-    public LocalTime getLastUpdateTime() { return lastUpdateTime; }
-
-    public void setLastUpdateTime(LocalTime lastUpdateTime) { this.lastUpdateTime = lastUpdateTime; }
+    public void setLastUpdateDateTime(LocalDateTime lastUpdateDateTime) { this.lastUpdateDateTime = lastUpdateDateTime; }
 
     public String getCrawlerName() { return crawlerName; }
 
@@ -85,12 +70,12 @@ public class Interval {
         return new StringBuilder()
                 .append("Interval{").append(CompressionUtils.EOL)
                 .append("id=").append(id).append(",").append(CompressionUtils.EOL)
-                .append("startDate=").append(startDate).append(",").append(CompressionUtils.EOL)
-                .append("startTime=").append(startTime).append(",").append(CompressionUtils.EOL)
-                .append("endDate=").append(endDate).append(",").append(CompressionUtils.EOL)
-                .append("endTime=").append(endTime).append(",").append(CompressionUtils.EOL)
-                .append("lastUpdateDate=").append(lastUpdateDate).append(",").append(CompressionUtils.EOL)
-                .append("lastUpdateTime=").append(lastUpdateTime).append(",").append(CompressionUtils.EOL)
+                .append("startDate=").append(startDateTime.toLocalDate()).append(",").append(CompressionUtils.EOL)
+                .append("startTime=").append(startDateTime.toLocalTime()).append(",").append(CompressionUtils.EOL)
+                .append("endDate=").append(endDateTime.toLocalDate()).append(",").append(CompressionUtils.EOL)
+                .append("endTime=").append(endDateTime.toLocalTime()).append(",").append(CompressionUtils.EOL)
+                .append("lastUpdateDate=").append(lastUpdateDateTime.toLocalDate()).append(",").append(CompressionUtils.EOL)
+                .append("lastUpdateTime=").append(lastUpdateDateTime.toLocalTime()).append(",").append(CompressionUtils.EOL)
                 .append("crawlerName=").append(crawlerName).append(",").append(CompressionUtils.EOL)
                 .append("crawlerVersion=").append(crawlerVersion).append(",").append(CompressionUtils.EOL)
                 .append("processed=").append(processed).append(",").append(CompressionUtils.EOL)

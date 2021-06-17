@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
@@ -85,12 +86,12 @@ public class IntervalEntity {
     public IntervalEntity(Interval interval, UUID instanceId)
     {
         this.id = interval.getId();
-        this.startTime = interval.getStartTime();
-        this.endTime = interval.getEndTime();
-        this.startDate = interval.getStartDate();
-        this.endDate = interval.getEndDate();
-        this.lastUpdateTime = interval.getLastUpdateTime();
-        this.lastUpdateDate = interval.getLastUpdateDate();
+        this.startTime = interval.getStartDateTime().toLocalTime();
+        this.endTime = interval.getEndDateTime().toLocalTime();
+        this.startDate = interval.getStartDateTime().toLocalDate();
+        this.endDate = interval.getEndDateTime().toLocalDate();
+        this.lastUpdateTime = interval.getLastUpdateDateTime().toLocalTime();
+        this.lastUpdateDate = interval.getLastUpdateDateTime().toLocalDate();
         this.recoveryStateJson = interval.getRecoveryState().convertToJson();
         this.instanceId = instanceId;
         this.crawlerName = interval.getCrawlerName();
@@ -153,9 +154,10 @@ public class IntervalEntity {
     public void setProcessed(boolean processed) { this.processed = processed; }
 
     public Interval asInterval() throws IOException {
-        return Interval.builder().id(id).startTime(startTime).endTime(endTime).startDate(startDate).endDate(endDate)
+        return Interval.builder().id(id).startDateTime(LocalDateTime.of(startDate, startTime))
+                .endDateTime(LocalDateTime.of(endDate, endTime))
                 .recoveryState(RecoveryState.getMAPPER().readValue(recoveryStateJson, RecoveryState.class))
-                .lastUpdateTime(lastUpdateTime).lastUpdateDate(lastUpdateDate)
+                .lastUpdateDateTime(LocalDateTime.of(lastUpdateDate, lastUpdateTime))
                 .crawlerName(crawlerName).crawlerVersion(crawlerVersion)
                 .processed(processed).build();
     }
