@@ -46,20 +46,8 @@ public class IntervalEntity {
     private LocalDate startDate;
 
     @ClusteringColumn(0)
-    @CqlName(CRAWLER_NAME)
-    private String crawlerName;
-
-    @ClusteringColumn(1)
-    @CqlName(CRAWLER_VERSION)
-    private String crawlerVersion;
-
-    @ClusteringColumn(2)
     @CqlName(INTERVAL_START_TIME)
     private LocalTime startTime;
-
-    @ClusteringColumn(3)
-    @CqlName(INTERVAL_ID)
-    private String id;
 
     @CqlName(INTERVAL_END_DATE)
     private LocalDate endDate;
@@ -73,8 +61,17 @@ public class IntervalEntity {
     @CqlName(INTERVAL_LAST_UPDATE_TIME)
     private LocalTime lastUpdateTime;
 
+    @CqlName(INTERVAL_ID)
+    private String id;
+
     @CqlName(RECOVERY_STATE_JSON)
     private String recoveryStateJson;
+
+    @CqlName(CRAWLER_NAME)
+    private String crawlerName;
+
+    @CqlName(CRAWLER_VERSION)
+    private String crawlerVersion;
 
     @CqlName(INTERVAL_PROCESSED)
     private boolean processed;

@@ -109,7 +109,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
         CompletableFuture<MappedAsyncPagingIterable<IntervalEntity>> future =
                 new AsyncOperator<MappedAsyncPagingIterable<IntervalEntity>>(semaphore)
                         .getFuture(() -> intervalOperator
-                                .getIntervals(instanceUuid, date, fromTime, toTime, crawlerName, crawlerVersion, readAttrs));
+                                .getIntervals(instanceUuid, date, fromTime, toTime, readAttrs));
 
         return future.thenApply(entities -> {
             try
@@ -147,12 +147,11 @@ public class CassandraIntervalsWorker implements IntervalsWorker
 
         CompletableFuture<AsyncResultSet> future = new AsyncOperator<AsyncResultSet>(semaphore)
                 .getFuture(() ->
-                        intervalOperator.setIntervalLastUpdateTimeAndDate(instanceUuid, interval.getId(),
+                        intervalOperator.setIntervalLastUpdateTimeAndDate(instanceUuid,
                                 interval.getStartDateTime().toLocalDate(),
                                 interval.getStartDateTime().toLocalTime(), time, date,
                                 interval.getLastUpdateDateTime().toLocalTime(),
                                 interval.getLastUpdateDateTime().toLocalDate(),
-                                interval.getCrawlerName(), interval.getCrawlerVersion(),
                                 writeAttrs));
         return future.thenApply(AsyncResultSet::wasApplied);
     }
@@ -174,10 +173,9 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     public CompletableFuture<Void> updateRecoveryStateAsync(Interval interval, RecoveryState recoveryState)
     {
         CompletableFuture<AsyncResultSet> future1 = new AsyncOperator<AsyncResultSet>(semaphore)
-                .getFuture(() -> intervalOperator.updateRecoveryState(instanceUuid, interval.getStartDateTime().toLocalDate(),
-                        interval.getStartDateTime().toLocalTime(), interval.getId(), interval.getCrawlerName(),
-                        interval.getCrawlerVersion(), recoveryState.convertToJson(),
-                        interval.getRecoveryState().convertToJson(), writeAttrs));
+                .getFuture(() -> intervalOperator.updateRecoveryState(instanceUuid,
+                        interval.getStartDateTime().toLocalDate(), interval.getStartDateTime().toLocalTime(),
+                        recoveryState.convertToJson(), interval.getRecoveryState().convertToJson(), writeAttrs));
 
         CompletableFuture<Boolean> future2 = setIntervalLastUpdateTimeAndDateAsync(interval, Instant.now().atOffset(TIMEZONE_OFFSET).toInstant());
 
@@ -201,9 +199,9 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     public CompletableFuture<Void> setIntervalProcessedAsync(Interval interval, boolean processed)
     {
         CompletableFuture<AsyncResultSet> future1 = new AsyncOperator<AsyncResultSet>(semaphore)
-                .getFuture(() -> intervalOperator.setIntervalProcessed(instanceUuid, interval.getId(),
-                        interval.getStartDateTime().toLocalDate(), interval.getStartDateTime().toLocalTime(), interval.getCrawlerName(),
-                        interval.getCrawlerVersion(), processed, interval.isProcessed(), writeAttrs));
+                .getFuture(() -> intervalOperator.setIntervalProcessed(instanceUuid,
+                        interval.getStartDateTime().toLocalDate(), interval.getStartDateTime().toLocalTime(),
+                        processed, interval.isProcessed(), writeAttrs));
 
         CompletableFuture<Boolean> future2 = setIntervalLastUpdateTimeAndDateAsync(interval, Instant.now().atOffset(TIMEZONE_OFFSET).toInstant());
 
