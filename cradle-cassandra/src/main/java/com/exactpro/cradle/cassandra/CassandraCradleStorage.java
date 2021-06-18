@@ -28,17 +28,16 @@ import com.exactpro.cradle.CradleObjectsFactory;
 import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.TimeRelation;
-import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.dao.AsyncOperator;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
-import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
+import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventEntity;
+import com.exactpro.cradle.cassandra.dao.messages.TimeMessageEntity;
+import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilderWithRetry;
+import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
-import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
-import com.exactpro.cradle.cassandra.dao.messages.StreamEntity;
-import com.exactpro.cradle.cassandra.dao.messages.TimeMessageEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.DetailedTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventDateEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventEntity;
@@ -63,6 +62,8 @@ import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.MessageUtils;
+
+import com.exactpro.cradle.cassandra.dao.messages.StreamEntity;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -152,7 +153,7 @@ public class CassandraCradleStorage extends CradleStorage
 				logger.info("Schema creation/update skipped");
 			
 			instanceUuid = getInstanceId(instanceName);
-			CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(connection.getSession()).build();
+			CassandraDataMapper dataMapper = new CassandraDataMapperBuilderWithRetry(connection.getSession()).build();
 			ops = createOperators(dataMapper, settings);
 			Duration timeout = Duration.ofMillis(settings.getTimeout());
 			writeAttrs = builder -> builder.setConsistencyLevel(settings.getWriteConsistencyLevel())
@@ -225,7 +226,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected CompletableFuture<Void> doStoreTimeMessageAsync(StoredMessage message)
 	{
-		CompletableFuture<TimeMessageEntity > future = new AsyncOperator<TimeMessageEntity>(semaphore)
+		CompletableFuture<TimeMessageEntity> future = new AsyncOperator<TimeMessageEntity>(semaphore)
 				.getFuture(() -> {
 					TimeMessageEntity timeEntity = new TimeMessageEntity(message, instanceUuid);
 					

@@ -18,8 +18,9 @@ package com.exactpro.cradle.cassandra;
 
 import com.exactpro.cradle.CradleManager;
 import com.exactpro.cradle.CradleStorage;
-import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
+
+import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 
 public class CassandraCradleManager extends CradleManager
 {

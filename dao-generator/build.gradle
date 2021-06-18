@@ -1,0 +1,42 @@
+plugins {
+    id 'java'
+}
+
+version 'unspecified'
+
+ext {
+    driver_version = '4.2.0'
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+sourceSets {
+    main.java.srcDirs += "./src/gen"
+}
+
+task mainGenerator(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'com.exactpro.cradle.cassandra.dao.Main'
+}
+
+compileJava.finalizedBy mainGenerator
+
+dependencies {
+
+    implementation project(":dao-module")
+
+    //For generation java code. License: Apache 2.0
+    implementation "com.squareup:javapoet:1.13.0"
+
+    compile "com.datastax.oss:java-driver-core:${driver_version}"
+    compile "com.datastax.oss:java-driver-query-builder:${driver_version}"
+    compile "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
+    compile "com.datastax.oss:java-driver-mapper-runtime:${driver_version}"
+
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}

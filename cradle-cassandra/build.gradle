@@ -2,15 +2,21 @@ ext {
     driver_version = '4.2.0'
 }
 
+sourceSets {
+	main.java.srcDirs += "build/generated/sources/annotationProcessor/java/main"
+	main.java.srcDirs += "src/main/generated/"
+}
+
 dependencies {
-	compile project(":cradle-core")
+	compile project(":dao-module")
+	compile project(":dao-generator")
 	compile "com.datastax.oss:java-driver-core:${driver_version}"
 	compile "com.datastax.oss:java-driver-query-builder:${driver_version}"
 	compile "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
 	compile "com.datastax.oss:java-driver-mapper-runtime:${driver_version}"
-	
+
 	annotationProcessor "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
-	
+
 	testCompile 'org.testng:testng:7.1.0'
 }
 
