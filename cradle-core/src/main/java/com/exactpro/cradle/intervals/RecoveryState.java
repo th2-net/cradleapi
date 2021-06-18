@@ -39,21 +39,33 @@ public class RecoveryState
 
     private final List<InnerMessage> lastProcessedMessages;
 
+    private final long lastNumberOfEvents;
+
+    private final long lastNumberOfMessages;
+
     private static final ObjectMapper MAPPER = new ObjectMapper().findAndRegisterModules()
             .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 
     private static final Logger logger = LoggerFactory.getLogger(RecoveryState.class);
 
     public RecoveryState(@JsonProperty("lastProcessedEvent") InnerEvent lastProcessedEvent,
-                         @JsonProperty("lastProcessedMessages") List<InnerMessage> lastProcessedMessages)
+                         @JsonProperty("lastProcessedMessages") List<InnerMessage> lastProcessedMessages,
+                         @JsonProperty("lastNumberOfEvents") long lastNumberOfEvents,
+                         @JsonProperty("lastNumberOfMessages") long lastNumberOfMessages)
     {
         this.lastProcessedEvent = Optional.ofNullable(lastProcessedEvent).orElse(null);
         this.lastProcessedMessages = Optional.ofNullable(lastProcessedMessages).orElse(null);
+        this.lastNumberOfEvents = lastNumberOfEvents;
+        this.lastNumberOfMessages = lastNumberOfMessages;
     }
 
     public InnerEvent getLastProcessedEvent() { return lastProcessedEvent; }
 
     public List<InnerMessage> getLastProcessedMessages() { return lastProcessedMessages; }
+
+    public long getLastNumberOfEvents() { return lastNumberOfEvents; }
+
+    public long getLastNumberOfMessages() { return lastNumberOfMessages; }
 
     public String convertToJson()
     {
@@ -83,10 +95,14 @@ public class RecoveryState
             lastProcessedMessages.forEach(m -> joiner.add(m.toString()));
             sb.append(joiner);
         } else {
-            sb.append("null");
+            sb.append("null").append(CompressionUtils.EOL);
         }
 
-        sb.append("}");
+        sb.append("lastNumberOfEvents=")
+                .append(lastNumberOfEvents).append(CompressionUtils.EOL)
+                .append("lastNumberOfMessages=")
+                .append(lastNumberOfMessages).append(CompressionUtils.EOL)
+                .append("}");
 
         return sb.toString();
     }
@@ -97,10 +113,22 @@ public class RecoveryState
         final int prime = 31;
         int result = 1;
 
-        result = prime * result + lastProcessedEvent.hashCode();
-        for (InnerMessage message : lastProcessedMessages) {
-            result = prime * result + message.hashCode();
+        result = prime * result + (lastProcessedEvent == null ? 0 : lastProcessedEvent.hashCode());
+
+        if (lastProcessedMessages != null)
+        {
+            for (InnerMessage message : lastProcessedMessages)
+            {
+                result = prime * result + message.hashCode();
+            }
         }
+        else
+        {
+            result = prime * result;
+        }
+
+        result = prime * result + (int) lastNumberOfEvents;
+        result = prime * result + (int) lastNumberOfMessages;
 
         return result;
     }
@@ -119,6 +147,10 @@ public class RecoveryState
             return false;
         if (!lastProcessedMessages.containsAll(other.lastProcessedMessages)
                 && lastProcessedMessages.size() != other.lastProcessedMessages.size())
+            return false;
+        if (lastNumberOfEvents != other.lastNumberOfEvents)
+            return false;
+        if (lastNumberOfMessages != other.lastNumberOfMessages)
             return false;
 
         return true;
