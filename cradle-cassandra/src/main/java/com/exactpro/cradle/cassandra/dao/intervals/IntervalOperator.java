@@ -34,7 +34,7 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 @Dao
 public interface IntervalOperator {
     @Insert(ifNotExists = true)
-    CompletableFuture<IntervalEntity> writeInterval(IntervalEntity IntervalEntity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+    CompletableFuture<AsyncResultSet> writeInterval(IntervalEntity IntervalEntity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
     @Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+ INTERVAL_START_DATE +"=:intervalStartDate AND "+INTERVAL_START_TIME+">=:intervalStartTime AND "+INTERVAL_START_TIME+"<=:intervalEndTime")
     CompletableFuture<MappedAsyncPagingIterable<IntervalEntity>> getIntervals(UUID instanceId, LocalDate intervalStartDate, LocalTime intervalStartTime, LocalTime intervalEndTime, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);

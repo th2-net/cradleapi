@@ -57,11 +57,11 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     }
 
     @Override
-    public void storeInterval(Interval interval) throws IOException
+    public boolean storeInterval(Interval interval) throws IOException
     {
         try
         {
-            storeIntervalAsync(interval).get();
+            return storeIntervalAsync(interval).get();
         }
         catch (Exception e)
         {
@@ -70,15 +70,15 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     }
 
     @Override
-    public CompletableFuture<Void> storeIntervalAsync(Interval interval)
+    public CompletableFuture<Boolean> storeIntervalAsync(Interval interval)
     {
-        CompletableFuture<IntervalEntity> future = new AsyncOperator<IntervalEntity>(semaphore)
+        CompletableFuture<AsyncResultSet> future = new AsyncOperator<AsyncResultSet>(semaphore)
                 .getFuture(() -> {
                     IntervalEntity intervalEntity = new IntervalEntity(interval, instanceUuid);
                     return intervalOperator.writeInterval(intervalEntity, writeAttrs);
                 });
 
-        return future.thenAccept(r -> {});
+        return future.thenApply(AsyncResultSet::wasApplied);
     }
 
     @Override
@@ -161,7 +161,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     {
         try
         {
-            updateRecoveryStateAsync(interval, recoveryState);
+            updateRecoveryStateAsync(interval, recoveryState).get();
         }
         catch (Exception e)
         {

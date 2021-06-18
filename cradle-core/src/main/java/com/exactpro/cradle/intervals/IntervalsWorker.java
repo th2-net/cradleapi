@@ -25,16 +25,17 @@ public interface IntervalsWorker
     /**
      * Writes to storage interval
      * @param interval data to write
+     * @return true if interval was stored, false otherwise
      * @throws IOException if data writing failed
      */
-    void storeInterval(Interval interval) throws IOException;
+    boolean storeInterval(Interval interval) throws IOException;
 
     /**
      * Asynchronously writes to storage interval
      * @param interval stored interval
      * @return future to get know if storing was successful
      */
-    CompletableFuture<Void> storeIntervalAsync(Interval interval);
+    CompletableFuture<Boolean> storeIntervalAsync(Interval interval);
 
     /**
      * Obtains iterable of intervals with startTime greater or equal that from and less or equal then to
