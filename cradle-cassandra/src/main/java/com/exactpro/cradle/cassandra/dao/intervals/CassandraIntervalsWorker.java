@@ -172,14 +172,21 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     @Override
     public CompletableFuture<Void> updateRecoveryStateAsync(Interval interval, RecoveryState recoveryState)
     {
-        CompletableFuture<AsyncResultSet> future1 = new AsyncOperator<AsyncResultSet>(semaphore)
+        LocalDateTime newLastUpdateDateTime = LocalDateTime.ofInstant(Instant.now(), TIMEZONE_OFFSET);
+
+        LocalTime newLastUpdateTime = newLastUpdateDateTime.toLocalTime();
+        LocalDate newLastUpdateDate = newLastUpdateDateTime.toLocalDate();
+
+        CompletableFuture<AsyncResultSet> future = new AsyncOperator<AsyncResultSet>(semaphore)
                 .getFuture(() -> intervalOperator.updateRecoveryState(instanceUuid,
                         interval.getStartDateTime().toLocalDate(), interval.getStartDateTime().toLocalTime(),
-                        recoveryState.convertToJson(), interval.getRecoveryState().convertToJson(), writeAttrs));
+                        newLastUpdateTime, newLastUpdateDate, recoveryState.convertToJson(),
+                        interval.getRecoveryState().convertToJson(),
+                        interval.getLastUpdateDateTime().toLocalTime(),
+                        interval.getLastUpdateDateTime().toLocalDate(),
+                        writeAttrs));
 
-        CompletableFuture<Boolean> future2 = setIntervalLastUpdateTimeAndDateAsync(interval, Instant.now().atOffset(TIMEZONE_OFFSET).toInstant());
-
-        return CompletableFuture.allOf(future1, future2);
+        return future.thenAccept(r -> {});
     }
 
     @Override
@@ -198,13 +205,19 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     @Override
     public CompletableFuture<Void> setIntervalProcessedAsync(Interval interval, boolean processed)
     {
-        CompletableFuture<AsyncResultSet> future1 = new AsyncOperator<AsyncResultSet>(semaphore)
+        LocalDateTime newLastUpdateDateTime = LocalDateTime.ofInstant(Instant.now(), TIMEZONE_OFFSET);
+
+        LocalTime newLastUpdateTime = newLastUpdateDateTime.toLocalTime();
+        LocalDate newLastUpdateDate = newLastUpdateDateTime.toLocalDate();
+
+        CompletableFuture<AsyncResultSet> future = new AsyncOperator<AsyncResultSet>(semaphore)
                 .getFuture(() -> intervalOperator.setIntervalProcessed(instanceUuid,
                         interval.getStartDateTime().toLocalDate(), interval.getStartDateTime().toLocalTime(),
-                        processed, interval.isProcessed(), writeAttrs));
+                        newLastUpdateTime, newLastUpdateDate, processed, interval.isProcessed(),
+                        interval.getLastUpdateDateTime().toLocalTime(),
+                        interval.getLastUpdateDateTime().toLocalDate(),
+                        writeAttrs));
 
-        CompletableFuture<Boolean> future2 = setIntervalLastUpdateTimeAndDateAsync(interval, Instant.now().atOffset(TIMEZONE_OFFSET).toInstant());
-
-        return CompletableFuture.allOf(future1, future2);
+        return future.thenAccept(r -> {});
     }
 }
