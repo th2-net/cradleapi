@@ -70,30 +70,34 @@ public interface IntervalsWorker
     CompletableFuture<Boolean> setIntervalLastUpdateTimeAndDateAsync(Interval interval, Instant newLastUpdateTime);
 
     /**
-     * Updates RecoveryState
+     * Updates RecoveryState, also sets lastUpdateTime and lastUpdateDate as current time and date
      * @param interval interval in which Recovery State will be updated
      * @param recoveryState information for recovering of Crawler
+     * @return true if recovery state was updated successfully, false otherwise
      */
-    void updateRecoveryState(Interval interval, RecoveryState recoveryState) throws IOException;
+    boolean updateRecoveryState(Interval interval, RecoveryState recoveryState) throws IOException;
 
     /**
-     * Asynchronously updates RecoveryState
+     * Asynchronously updates RecoveryState, also sets lastUpdateTime and lastUpdateDate as current time and date
      * @param interval interval in which Recovery State will be updated
      * @param recoveryState information for recovering of Crawler
+     * @return CompletableFuture with true inside if recovery state was updated successfully, false otherwise
      */
-    CompletableFuture<Void> updateRecoveryStateAsync(Interval interval, RecoveryState recoveryState);
+    CompletableFuture<Boolean> updateRecoveryStateAsync(Interval interval, RecoveryState recoveryState);
 
     /**
-     * Sets flag that indicates if interval was processed completely
+     * Sets flag that indicates if interval was processed completely, also sets lastUpdateTime and lastUpdateDate as current time and date
      * @param interval interval in which flag will be set
      * @param processed whether interval was processed completely
+     * @return true if flag was updated successfully, false otherwise
      */
-    void setIntervalProcessed(Interval interval, boolean processed) throws IOException;
+    boolean setIntervalProcessed(Interval interval, boolean processed) throws IOException;
 
     /**
-     * Asynchronously sets flag that indicates if interval was processed completely
+     * Asynchronously sets flag that indicates if interval was processed completely, also sets lastUpdateTime and lastUpdateDate as current time and date
      * @param interval interval in which flag will be set
      * @param processed whether interval was processed completely
+     * @return CompletableFuture with true inside if flag was updated successfully, false otherwise
      */
-    CompletableFuture<Void> setIntervalProcessedAsync(Interval interval, boolean processed);
+    CompletableFuture<Boolean> setIntervalProcessedAsync(Interval interval, boolean processed);
 }

@@ -157,11 +157,11 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     }
 
     @Override
-    public void updateRecoveryState(Interval interval, RecoveryState recoveryState) throws IOException
+    public boolean updateRecoveryState(Interval interval, RecoveryState recoveryState) throws IOException
     {
         try
         {
-            updateRecoveryStateAsync(interval, recoveryState).get();
+            return updateRecoveryStateAsync(interval, recoveryState).get();
         }
         catch (Exception e)
         {
@@ -170,7 +170,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     }
 
     @Override
-    public CompletableFuture<Void> updateRecoveryStateAsync(Interval interval, RecoveryState recoveryState)
+    public CompletableFuture<Boolean> updateRecoveryStateAsync(Interval interval, RecoveryState recoveryState)
     {
         LocalDateTime newLastUpdateDateTime = LocalDateTime.ofInstant(Instant.now(), TIMEZONE_OFFSET);
 
@@ -186,15 +186,15 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                         interval.getLastUpdateDateTime().toLocalDate(),
                         writeAttrs));
 
-        return future.thenAccept(r -> {});
+        return future.thenApply(AsyncResultSet::wasApplied);
     }
 
     @Override
-    public void setIntervalProcessed(Interval interval, boolean processed) throws IOException
+    public boolean setIntervalProcessed(Interval interval, boolean processed) throws IOException
     {
         try
         {
-            setIntervalProcessedAsync(interval, processed).get();
+            return setIntervalProcessedAsync(interval, processed).get();
         }
         catch (Exception e)
         {
@@ -203,7 +203,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     }
 
     @Override
-    public CompletableFuture<Void> setIntervalProcessedAsync(Interval interval, boolean processed)
+    public CompletableFuture<Boolean> setIntervalProcessedAsync(Interval interval, boolean processed)
     {
         LocalDateTime newLastUpdateDateTime = LocalDateTime.ofInstant(Instant.now(), TIMEZONE_OFFSET);
 
@@ -218,6 +218,6 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                         interval.getLastUpdateDateTime().toLocalDate(),
                         writeAttrs));
 
-        return future.thenAccept(r -> {});
+        return future.thenApply(AsyncResultSet::wasApplied);
     }
 }
