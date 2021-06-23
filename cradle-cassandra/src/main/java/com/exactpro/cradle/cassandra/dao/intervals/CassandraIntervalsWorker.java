@@ -109,7 +109,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
         CompletableFuture<MappedAsyncPagingIterable<IntervalEntity>> future =
                 new AsyncOperator<MappedAsyncPagingIterable<IntervalEntity>>(semaphore)
                         .getFuture(() -> intervalOperator
-                                .getIntervals(instanceUuid, date, fromTime, toTime, readAttrs));
+                                .getIntervals(instanceUuid, date, fromTime, toTime, crawlerName, crawlerVersion, readAttrs));
 
         return future.thenApply(entities -> {
             try
@@ -152,6 +152,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                                 interval.getStartDateTime().toLocalTime(), time, date,
                                 interval.getLastUpdateDateTime().toLocalTime(),
                                 interval.getLastUpdateDateTime().toLocalDate(),
+                                interval.getCrawlerName(), interval.getCrawlerVersion(),
                                 writeAttrs));
         return future.thenApply(AsyncResultSet::wasApplied);
     }
@@ -184,6 +185,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                         interval.getRecoveryState().convertToJson(),
                         interval.getLastUpdateDateTime().toLocalTime(),
                         interval.getLastUpdateDateTime().toLocalDate(),
+                        interval.getCrawlerName(), interval.getCrawlerVersion(),
                         writeAttrs));
 
         return future.thenApply(AsyncResultSet::wasApplied);
@@ -216,6 +218,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                         newLastUpdateTime, newLastUpdateDate, processed, interval.isProcessed(),
                         interval.getLastUpdateDateTime().toLocalTime(),
                         interval.getLastUpdateDateTime().toLocalDate(),
+                        interval.getCrawlerName(), interval.getCrawlerVersion(),
                         writeAttrs));
 
         return future.thenApply(AsyncResultSet::wasApplied);
