@@ -82,11 +82,11 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     }
 
     @Override
-    public Iterable<Interval> getIntervals(Instant from, Instant to, String crawlerName, String crawlerVersion) throws IOException
+    public Iterable<Interval> getIntervals(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException
     {
         try
         {
-            return getIntervalsAsync(from, to, crawlerName, crawlerVersion).get();
+            return getIntervalsAsync(from, to, crawlerName, crawlerVersion, crawlerType).get();
         }
         catch (Exception e)
         {
@@ -96,7 +96,8 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     }
 
     @Override
-    public CompletableFuture<Iterable<Interval>> getIntervalsAsync(Instant from, Instant to, String crawlerName, String crawlerVersion)
+    public CompletableFuture<Iterable<Interval>> getIntervalsAsync(Instant from, Instant to, String crawlerName,
+                                                                   String crawlerVersion, String crawlerType)
     {
         LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET),
                 toDateTime = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
@@ -109,7 +110,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
         CompletableFuture<MappedAsyncPagingIterable<IntervalEntity>> future =
                 new AsyncOperator<MappedAsyncPagingIterable<IntervalEntity>>(semaphore)
                         .getFuture(() -> intervalOperator
-                                .getIntervals(instanceUuid, date, fromTime, toTime, crawlerName, crawlerVersion, readAttrs));
+                                .getIntervals(instanceUuid, date, fromTime, toTime, crawlerName, crawlerVersion, crawlerType, readAttrs));
 
         return future.thenApply(entities -> {
             try
@@ -152,7 +153,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                                 interval.getStartDateTime().toLocalTime(), time, date,
                                 interval.getLastUpdateDateTime().toLocalTime(),
                                 interval.getLastUpdateDateTime().toLocalDate(),
-                                interval.getCrawlerName(), interval.getCrawlerVersion(),
+                                interval.getCrawlerName(), interval.getCrawlerVersion(), interval.getCrawlerType(),
                                 writeAttrs));
         return future.thenApply(AsyncResultSet::wasApplied);
     }
@@ -185,7 +186,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                         interval.getRecoveryState().convertToJson(),
                         interval.getLastUpdateDateTime().toLocalTime(),
                         interval.getLastUpdateDateTime().toLocalDate(),
-                        interval.getCrawlerName(), interval.getCrawlerVersion(),
+                        interval.getCrawlerName(), interval.getCrawlerVersion(), interval.getCrawlerType(),
                         writeAttrs));
 
         return future.thenApply(AsyncResultSet::wasApplied);
@@ -218,7 +219,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                         newLastUpdateTime, newLastUpdateDate, processed, interval.isProcessed(),
                         interval.getLastUpdateDateTime().toLocalTime(),
                         interval.getLastUpdateDateTime().toLocalDate(),
-                        interval.getCrawlerName(), interval.getCrawlerVersion(),
+                        interval.getCrawlerName(), interval.getCrawlerVersion(), interval.getCrawlerType(),
                         writeAttrs));
 
         return future.thenApply(AsyncResultSet::wasApplied);

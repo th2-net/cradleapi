@@ -28,6 +28,7 @@ public class Interval {
     private LocalDateTime lastUpdateDateTime;
     private String crawlerName;
     private String crawlerVersion;
+    private String crawlerType;
     private boolean processed;
 
     public static IntervalBuilder builder() { return new IntervalBuilder(); }
@@ -60,6 +61,10 @@ public class Interval {
 
     public void setCrawlerVersion(String crawlerVersion) { this.crawlerVersion = crawlerVersion; }
 
+    public String getCrawlerType() { return crawlerType; }
+
+    public void setCrawlerType(String crawlerType) { this.crawlerType = crawlerType; }
+
     public boolean isProcessed() { return processed; }
 
     public void setProcessed(boolean processed) { this.processed = processed; }
@@ -78,6 +83,7 @@ public class Interval {
                 .append("lastUpdateTime=").append(lastUpdateDateTime.toLocalTime()).append(",").append(CompressionUtils.EOL)
                 .append("crawlerName=").append(crawlerName).append(",").append(CompressionUtils.EOL)
                 .append("crawlerVersion=").append(crawlerVersion).append(",").append(CompressionUtils.EOL)
+                .append("crawlerType=").append(crawlerType).append(",").append(CompressionUtils.EOL)
                 .append("processed=").append(processed).append(",").append(CompressionUtils.EOL)
                 .append(recoveryState.toString()).append(CompressionUtils.EOL)
                 .append("}").toString();

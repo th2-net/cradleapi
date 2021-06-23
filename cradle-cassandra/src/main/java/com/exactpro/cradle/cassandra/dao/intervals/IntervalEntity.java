@@ -54,6 +54,10 @@ public class IntervalEntity {
     private String crawlerVersion;
 
     @ClusteringColumn(2)
+    @CqlName(CRAWLER_TYPE)
+    private String crawlerType;
+
+    @ClusteringColumn(3)
     @CqlName(INTERVAL_START_TIME)
     private LocalTime startTime;
 
@@ -95,6 +99,7 @@ public class IntervalEntity {
         this.instanceId = instanceId;
         this.crawlerName = interval.getCrawlerName();
         this.crawlerVersion = interval.getCrawlerVersion();
+        this.crawlerType = interval.getCrawlerType();
         this.processed = interval.isProcessed();
     }
 
@@ -148,6 +153,10 @@ public class IntervalEntity {
 
     public void setCrawlerVersion(String crawlerVersion) { this.crawlerVersion = crawlerVersion; }
 
+    public String getCrawlerType() { return crawlerType; }
+
+    public void setCrawlerType(String crawlerType) { this.crawlerType = crawlerType; }
+
     public boolean isProcessed() { return processed; }
 
     public void setProcessed(boolean processed) { this.processed = processed; }
@@ -157,7 +166,7 @@ public class IntervalEntity {
                 .endDateTime(LocalDateTime.of(endDate, endTime))
                 .recoveryState(RecoveryState.getMAPPER().readValue(recoveryStateJson, RecoveryState.class))
                 .lastUpdateDateTime(LocalDateTime.of(lastUpdateDate, lastUpdateTime))
-                .crawlerName(crawlerName).crawlerVersion(crawlerVersion)
+                .crawlerName(crawlerName).crawlerVersion(crawlerVersion).crawlerType(crawlerType)
                 .processed(processed).build();
     }
 }

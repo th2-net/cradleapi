@@ -65,6 +65,7 @@ public class StorageConstants
 			INTERVAL_ID = "interval_id",
 			CRAWLER_NAME = "crawler_name",
 			CRAWLER_VERSION = "crawler_version",
+			CRAWLER_TYPE = "crawler_type",
 			INTERVAL_PROCESSED = "interval_processed",
 			ROOT = "root",
 			PARENT_ID = "parent_id";

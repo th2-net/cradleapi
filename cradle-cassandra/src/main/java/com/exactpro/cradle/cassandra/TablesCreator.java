@@ -337,6 +337,7 @@ public class TablesCreator
 				.withPartitionKey(INTERVAL_START_DATE, DataTypes.DATE)
 				.withClusteringColumn(CRAWLER_NAME, DataTypes.TEXT)
 				.withClusteringColumn(CRAWLER_VERSION, DataTypes.TEXT)
+				.withClusteringColumn(CRAWLER_TYPE, DataTypes.TEXT)
 				.withClusteringColumn(INTERVAL_START_TIME, DataTypes.TIME)
 				.withColumn(INTERVAL_END_DATE, DataTypes.DATE)
 				.withColumn(INTERVAL_END_TIME, DataTypes.TIME)

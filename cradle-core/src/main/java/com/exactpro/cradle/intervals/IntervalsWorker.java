@@ -42,14 +42,14 @@ public interface IntervalsWorker
      * @param from time from which intervals are being searched
      * @return iterable of intervals
      */
-    Iterable<Interval> getIntervals(Instant from, Instant to, String crawlerName, String crawlerVersion) throws IOException;
+    Iterable<Interval> getIntervals(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException;
 
     /**
      * Asynchronously obtains iterable of intervals with startTime greater or equal that from and less or equal then to
      * @param from time from which intervals are being searched
      * @return future to get know if obtaining was successful
      */
-    CompletableFuture<Iterable<Interval>> getIntervalsAsync(Instant from, Instant to, String crawlerName, String crawlerVersion);
+    CompletableFuture<Iterable<Interval>> getIntervalsAsync(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType);
 
     /**
      * Sets last update time and last update date of interval.

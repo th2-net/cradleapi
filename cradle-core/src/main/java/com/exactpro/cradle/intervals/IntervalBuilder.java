@@ -84,6 +84,13 @@ public class IntervalBuilder
         return this;
     }
 
+    public IntervalBuilder crawlerType(String crawlerType)
+    {
+        initIfNeeded();
+        interval.setCrawlerType(crawlerType);
+        return this;
+    }
+
     public IntervalBuilder processed(boolean processed)
     {
         initIfNeeded();
