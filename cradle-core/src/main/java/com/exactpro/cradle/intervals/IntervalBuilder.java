@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle.intervals;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -42,17 +43,17 @@ public class IntervalBuilder
         return this;
     }
 
-    public IntervalBuilder startDateTime(LocalDateTime startDateTime)
+    public IntervalBuilder startDateTime(Instant startTime)
     {
         initIfNeeded();
-        interval.setStartDateTime(startDateTime);
+        interval.setStartDateTime(startTime);
         return this;
     }
 
-    public IntervalBuilder endDateTime(LocalDateTime endDateTime)
+    public IntervalBuilder endDateTime(Instant endTime)
     {
         initIfNeeded();
-        interval.setEndDateTime(endDateTime);
+        interval.setEndDateTime(endTime);
         return this;
     }
 
@@ -63,10 +64,10 @@ public class IntervalBuilder
         return this;
     }
 
-    public IntervalBuilder lastUpdateDateTime(LocalDateTime lastUpdateDateTime)
+    public IntervalBuilder lastUpdateDateTime(Instant lastUpdateTime)
     {
         initIfNeeded();
-        interval.setLastUpdateDateTime(lastUpdateDateTime);
+        interval.setLastUpdateDateTime(lastUpdateTime);
         return this;
     }
 

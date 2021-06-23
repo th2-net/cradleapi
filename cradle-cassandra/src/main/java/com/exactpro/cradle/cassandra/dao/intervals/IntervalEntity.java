@@ -26,9 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 import java.util.UUID;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
@@ -36,6 +34,7 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 @Entity
 public class IntervalEntity {
     private static final Logger logger = LoggerFactory.getLogger(IntervalEntity.class);
+    public static final ZoneOffset TIMEZONE_OFFSET = ZoneOffset.UTC;
 
     @PartitionKey(0)
     @CqlName(INSTANCE_ID)
@@ -89,12 +88,12 @@ public class IntervalEntity {
     public IntervalEntity(Interval interval, UUID instanceId)
     {
         this.id = interval.getId();
-        this.startTime = interval.getStartDateTime().toLocalTime();
-        this.endTime = interval.getEndDateTime().toLocalTime();
-        this.startDate = interval.getStartDateTime().toLocalDate();
-        this.endDate = interval.getEndDateTime().toLocalDate();
-        this.lastUpdateTime = interval.getLastUpdateDateTime().toLocalTime();
-        this.lastUpdateDate = interval.getLastUpdateDateTime().toLocalDate();
+        this.startTime = LocalTime.from(interval.getStartTime().atOffset(TIMEZONE_OFFSET));
+        this.endTime = LocalTime.from(interval.getEndDateTime().atOffset(TIMEZONE_OFFSET));
+        this.startDate = LocalDate.from(interval.getStartTime().atOffset(TIMEZONE_OFFSET));
+        this.endDate = LocalDate.from(interval.getEndDateTime().atOffset(TIMEZONE_OFFSET));
+        this.lastUpdateTime = LocalTime.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET));
+        this.lastUpdateDate = LocalDate.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET));
         this.recoveryStateJson = interval.getRecoveryState().convertToJson();
         this.instanceId = instanceId;
         this.crawlerName = interval.getCrawlerName();
@@ -162,10 +161,10 @@ public class IntervalEntity {
     public void setProcessed(boolean processed) { this.processed = processed; }
 
     public Interval asInterval() throws IOException {
-        return Interval.builder().id(id).startDateTime(LocalDateTime.of(startDate, startTime))
-                .endDateTime(LocalDateTime.of(endDate, endTime))
+        return Interval.builder().id(id).startDateTime(Instant.from(LocalDateTime.of(startDate, startTime).atOffset(TIMEZONE_OFFSET)))
+                .endDateTime(Instant.from(LocalDateTime.of(endDate, endTime).atOffset(TIMEZONE_OFFSET)))
                 .recoveryState(RecoveryState.getMAPPER().readValue(recoveryStateJson, RecoveryState.class))
-                .lastUpdateDateTime(LocalDateTime.of(lastUpdateDate, lastUpdateTime))
+                .lastUpdateDateTime(Instant.from(LocalDateTime.of(lastUpdateDate, lastUpdateTime).atOffset(TIMEZONE_OFFSET)))
                 .crawlerName(crawlerName).crawlerVersion(crawlerVersion).crawlerType(crawlerType)
                 .processed(processed).build();
     }

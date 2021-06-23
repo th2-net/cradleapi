@@ -31,27 +31,29 @@ public class Interval {
     private String crawlerType;
     private boolean processed;
 
+    public static final ZoneOffset TIMEZONE_OFFSET = ZoneOffset.UTC;
+
     public static IntervalBuilder builder() { return new IntervalBuilder(); }
 
     public String getId() { return id; }
 
     public void setId(String id) { this.id = id; }
 
-    public LocalDateTime getStartDateTime() { return startDateTime; }
+    public Instant getStartTime() { return startDateTime.toInstant(TIMEZONE_OFFSET); }
 
-    public void setStartDateTime(LocalDateTime startDateTime) { this.startDateTime = startDateTime; }
+    public void setStartDateTime(Instant startTime) { this.startDateTime = LocalDateTime.ofInstant(startTime, TIMEZONE_OFFSET); }
 
-    public LocalDateTime getEndDateTime() { return endDateTime; }
+    public Instant getEndDateTime() { return endDateTime.toInstant(TIMEZONE_OFFSET); }
 
-    public void setEndDateTime(LocalDateTime endDateTime) { this.endDateTime = endDateTime; }
+    public void setEndDateTime(Instant endTime) { this.endDateTime = LocalDateTime.ofInstant(endTime, TIMEZONE_OFFSET); }
 
     public RecoveryState getRecoveryState() { return recoveryState; }
 
     public void setRecoveryState(RecoveryState recoveryState) { this.recoveryState = recoveryState; }
 
-    public LocalDateTime getLastUpdateDateTime() { return lastUpdateDateTime; }
+    public Instant getLastUpdateDateTime() { return lastUpdateDateTime.toInstant(TIMEZONE_OFFSET); }
 
-    public void setLastUpdateDateTime(LocalDateTime lastUpdateDateTime) { this.lastUpdateDateTime = lastUpdateDateTime; }
+    public void setLastUpdateDateTime(Instant lastUpdateTime) { this.lastUpdateDateTime = LocalDateTime.ofInstant(lastUpdateTime, TIMEZONE_OFFSET); }
 
     public String getCrawlerName() { return crawlerName; }
 
