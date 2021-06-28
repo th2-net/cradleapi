@@ -29,7 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
-import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
 
@@ -37,7 +37,7 @@ public class RecoveryState
 {
     private final InnerEvent lastProcessedEvent;
 
-    private final List<InnerMessage> lastProcessedMessages;
+    private final Map<String, InnerMessage> lastProcessedMessages;
 
     private final long lastNumberOfEvents;
 
@@ -49,7 +49,7 @@ public class RecoveryState
     private static final Logger logger = LoggerFactory.getLogger(RecoveryState.class);
 
     public RecoveryState(@JsonProperty("lastProcessedEvent") InnerEvent lastProcessedEvent,
-                         @JsonProperty("lastProcessedMessages") List<InnerMessage> lastProcessedMessages,
+                         @JsonProperty("lastProcessedMessages") Map<String, InnerMessage> lastProcessedMessages,
                          @JsonProperty("lastNumberOfEvents") long lastNumberOfEvents,
                          @JsonProperty("lastNumberOfMessages") long lastNumberOfMessages)
     {
@@ -61,7 +61,7 @@ public class RecoveryState
 
     public InnerEvent getLastProcessedEvent() { return lastProcessedEvent; }
 
-    public List<InnerMessage> getLastProcessedMessages() { return lastProcessedMessages; }
+    public Map<String, InnerMessage> getLastProcessedMessages() { return lastProcessedMessages; }
 
     public long getLastNumberOfEvents() { return lastNumberOfEvents; }
 
@@ -92,7 +92,7 @@ public class RecoveryState
                 .append("lastProcessedMessages=");
 
         if (lastProcessedMessages != null) {
-            lastProcessedMessages.forEach(m -> joiner.add(m.toString()));
+            lastProcessedMessages.forEach((k, v) -> joiner.add(k + ": "+ v));
             sb.append(joiner);
         } else {
             sb.append("null").append(CompressionUtils.EOL);
@@ -117,9 +117,12 @@ public class RecoveryState
 
         if (lastProcessedMessages != null)
         {
-            for (InnerMessage message : lastProcessedMessages)
+
+            for (Map.Entry<String, InnerMessage> entry : lastProcessedMessages.entrySet())
             {
-                result = prime * result + message.hashCode();
+                result = prime * result + entry.getKey().hashCode();
+                result = prime * result + entry.getValue().hashCode();
+
             }
         }
         else
@@ -145,8 +148,7 @@ public class RecoveryState
         RecoveryState other = (RecoveryState) obj;
         if (lastProcessedEvent != other.lastProcessedEvent)
             return false;
-        if (!lastProcessedMessages.containsAll(other.lastProcessedMessages)
-                && lastProcessedMessages.size() != other.lastProcessedMessages.size())
+        if (!lastProcessedMessages.equals(other.lastProcessedMessages))
             return false;
         if (lastNumberOfEvents != other.lastNumberOfEvents)
             return false;
@@ -159,21 +161,24 @@ public class RecoveryState
     public static class InnerEvent
     {
         private final Instant startTimestamp;
-        private final Instant endTimestamp;
         private final String id;
 
         public InnerEvent(StoredTestEventWrapper event)
         {
             this.startTimestamp = event.getStartTimestamp();
-            this.endTimestamp = event.getEndTimestamp();
             this.id = event.getId().toString();
         }
 
         public InnerEvent()
         {
             this.startTimestamp = null;
-            this.endTimestamp = null;
             this.id = null;
+        }
+
+        public InnerEvent(Instant startTimestamp, String id)
+        {
+            this.startTimestamp = startTimestamp;
+            this.id = id;
         }
 
         @Override
@@ -183,7 +188,6 @@ public class RecoveryState
                     .append("InnerEvent{").append(CompressionUtils.EOL)
                     .append("id=").append(id).append(CompressionUtils.EOL)
                     .append("startTimestamp=").append(startTimestamp).append(CompressionUtils.EOL)
-                    .append("endTimestamp=").append(endTimestamp).append(CompressionUtils.EOL)
                     .append("}")
                     .toString();
         }
@@ -195,7 +199,6 @@ public class RecoveryState
             int result = 1;
 
             result = prime * result + ((startTimestamp == null) ? 0 : startTimestamp.hashCode());
-            result = prime * result + ((endTimestamp == null) ? 0 : endTimestamp.hashCode());
             result = prime * result + ((id == null) ? 0 : id.hashCode());
 
             return result;
@@ -213,17 +216,13 @@ public class RecoveryState
             InnerEvent other = (InnerEvent) obj;
             if (startTimestamp != other.startTimestamp)
                 return false;
-            if (endTimestamp != other.endTimestamp)
-                return false;
-            if (id != other.id)
+            if (!id.equals(other.id))
                 return false;
 
             return true;
         }
 
         public Instant getStartTimestamp() { return startTimestamp; }
-
-        public Instant getEndTimestamp() { return endTimestamp; }
 
         public String getId() { return id; }
     }
@@ -249,6 +248,14 @@ public class RecoveryState
             this.timestamp = null;
             this.direction = null;
             this.sequence = 0;
+        }
+
+        public InnerMessage(String id, Instant timestamp, Direction direction, long sequence)
+        {
+            this.id = id;
+            this.timestamp = timestamp;
+            this.direction = direction;
+            this.sequence = sequence;
         }
 
         @Override
@@ -288,7 +295,7 @@ public class RecoveryState
             if (getClass() != obj.getClass())
                 return false;
             InnerMessage other = (InnerMessage) obj;
-            if (id != other.id)
+            if (!id.equals(other.id))
                 return false;
             if (timestamp != other.timestamp)
                 return false;
