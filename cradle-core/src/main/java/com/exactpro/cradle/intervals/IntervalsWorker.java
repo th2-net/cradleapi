@@ -16,6 +16,8 @@
 
 package com.exactpro.cradle.intervals;
 
+import com.exactpro.cradle.utils.CradleStorageException;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
@@ -38,18 +40,19 @@ public interface IntervalsWorker
     CompletableFuture<Boolean> storeIntervalAsync(Interval interval);
 
     /**
-     * Obtains iterable of intervals with startTime greater or equal that from and less or equal then to
+     * Obtains iterable of intervals with startTime greater or equal that from and less or equal then to. Intervals must be within one day
      * @param from time from which intervals are being searched
      * @return iterable of intervals
      */
     Iterable<Interval> getIntervals(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException;
 
     /**
-     * Asynchronously obtains iterable of intervals with startTime greater or equal that from and less or equal then to
+     * Asynchronously obtains iterable of intervals with startTime greater or equal that from and less or equal then to. Intervals must be within one day
      * @param from time from which intervals are being searched
      * @return future to get know if obtaining was successful
+     * @throws CradleStorageException if given parameters are invalid
      */
-    CompletableFuture<Iterable<Interval>> getIntervalsAsync(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType);
+    CompletableFuture<Iterable<Interval>> getIntervalsAsync(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws CradleStorageException;
 
     /**
      * Sets last update time and last update date of interval.

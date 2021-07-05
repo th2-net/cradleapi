@@ -25,6 +25,7 @@ import com.exactpro.cradle.cassandra.iterators.IntervalsIteratorAdapter;
 import com.exactpro.cradle.intervals.Interval;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.intervals.RecoveryState;
+import com.exactpro.cradle.utils.CradleStorageException;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -97,10 +98,12 @@ public class CassandraIntervalsWorker implements IntervalsWorker
 
     @Override
     public CompletableFuture<Iterable<Interval>> getIntervalsAsync(Instant from, Instant to, String crawlerName,
-                                                                   String crawlerVersion, String crawlerType)
+                                                                   String crawlerVersion, String crawlerType) throws CradleStorageException
     {
         LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET),
                 toDateTime = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
+
+        checkTimeBoundaries(fromDateTime, toDateTime, from, to);
 
         LocalTime fromTime = fromDateTime.toLocalTime(),
                 toTime = toDateTime.toLocalTime();
@@ -225,5 +228,14 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                         writeAttrs));
 
         return future.thenApply(AsyncResultSet::wasApplied);
+    }
+
+    private void checkTimeBoundaries(LocalDateTime fromDateTime, LocalDateTime toDateTime, Instant originalFrom, Instant originalTo)
+            throws CradleStorageException
+    {
+        LocalDate fromDate = fromDateTime.toLocalDate(),
+                toDate = toDateTime.toLocalDate();
+        if (!fromDate.equals(toDate))
+            throw new CradleStorageException("Left and right boundaries should be of the same date, but got '"+originalFrom+"' and '"+originalTo+"'");
     }
 }
