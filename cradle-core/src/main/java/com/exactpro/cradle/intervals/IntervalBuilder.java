@@ -17,9 +17,6 @@
 package com.exactpro.cradle.intervals;
 
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 /**
  * Builder for {@link Interval} object. After calling {@link #build()} method, the builder can be reused to build new test event
@@ -46,14 +43,14 @@ public class IntervalBuilder
     public IntervalBuilder startDateTime(Instant startTime)
     {
         initIfNeeded();
-        interval.setStartDateTime(startTime);
+        interval.setStartTime(startTime);
         return this;
     }
 
     public IntervalBuilder endDateTime(Instant endTime)
     {
         initIfNeeded();
-        interval.setEndDateTime(endTime);
+        interval.setEndTime(endTime);
         return this;
     }
 

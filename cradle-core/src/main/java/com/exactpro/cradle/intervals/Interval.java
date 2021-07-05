@@ -41,11 +41,11 @@ public class Interval {
 
     public Instant getStartTime() { return startDateTime.toInstant(TIMEZONE_OFFSET); }
 
-    public void setStartDateTime(Instant startTime) { this.startDateTime = LocalDateTime.ofInstant(startTime, TIMEZONE_OFFSET); }
+    public void setStartTime(Instant startTime) { this.startDateTime = LocalDateTime.ofInstant(startTime, TIMEZONE_OFFSET); }
 
-    public Instant getEndDateTime() { return endDateTime.toInstant(TIMEZONE_OFFSET); }
+    public Instant getEndTime() { return endDateTime.toInstant(TIMEZONE_OFFSET); }
 
-    public void setEndDateTime(Instant endTime) { this.endDateTime = LocalDateTime.ofInstant(endTime, TIMEZONE_OFFSET); }
+    public void setEndTime(Instant endTime) { this.endDateTime = LocalDateTime.ofInstant(endTime, TIMEZONE_OFFSET); }
 
     public RecoveryState getRecoveryState() { return recoveryState; }
 

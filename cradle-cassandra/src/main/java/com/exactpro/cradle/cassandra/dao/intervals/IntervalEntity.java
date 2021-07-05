@@ -89,9 +89,9 @@ public class IntervalEntity {
     {
         this.id = interval.getId();
         this.startTime = LocalTime.from(interval.getStartTime().atOffset(TIMEZONE_OFFSET));
-        this.endTime = LocalTime.from(interval.getEndDateTime().atOffset(TIMEZONE_OFFSET));
+        this.endTime = LocalTime.from(interval.getEndTime().atOffset(TIMEZONE_OFFSET));
         this.startDate = LocalDate.from(interval.getStartTime().atOffset(TIMEZONE_OFFSET));
-        this.endDate = LocalDate.from(interval.getEndDateTime().atOffset(TIMEZONE_OFFSET));
+        this.endDate = LocalDate.from(interval.getEndTime().atOffset(TIMEZONE_OFFSET));
         this.lastUpdateTime = LocalTime.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET));
         this.lastUpdateDate = LocalDate.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET));
         this.recoveryStateJson = interval.getRecoveryState().convertToJson();
