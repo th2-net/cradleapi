@@ -41,18 +41,37 @@ public interface IntervalsWorker
 
     /**
      * Obtains iterable of intervals with startTime greater or equal that from and less or equal then to. Intervals must be within one day
-     * @param from time from which intervals are being searched
+     * @param from time from which intervals are searched
+     * @param to time to which intervals are searched
+     * @param crawlerName name of Crawler
+     * @param crawlerVersion version of Crawler
+     * @param crawlerType type of Crawler
      * @return iterable of intervals
      */
-    Iterable<Interval> getIntervals(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException;
+    Iterable<Interval> getIntervalsPerDay(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException;
 
     /**
      * Asynchronously obtains iterable of intervals with startTime greater or equal that from and less or equal then to. Intervals must be within one day
-     * @param from time from which intervals are being searched
+     * @param from time from which intervals are searched
+     * @param to time to which intervals are searched
+     * @param crawlerName name of Crawler
+     * @param crawlerVersion version of Crawler
+     * @param crawlerType type of Crawler
      * @return future to get know if obtaining was successful
      * @throws CradleStorageException if given parameters are invalid
      */
-    CompletableFuture<Iterable<Interval>> getIntervalsAsync(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws CradleStorageException;
+    CompletableFuture<Iterable<Interval>> getIntervalsPerDayAsync(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws CradleStorageException;
+
+    /**
+     * Obtains iterable of intervals with startTime greater or equal that from and less or equal then to
+     * @param from time from which intervals are searched
+     * @param to time to which intervals are searched
+     * @param crawlerName name of Crawler
+     * @param crawlerVersion version of Crawler
+     * @param crawlerType type of Crawler
+     * @return iterable of intervals
+     */
+    Iterable<Interval> getIntervals(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException;
 
     /**
      * Sets last update time and last update date of interval.

@@ -19,6 +19,7 @@ package com.exactpro.cradle.cassandra.dao.intervals;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
+import com.datastax.oss.driver.shaded.guava.common.collect.Iterables;
 import com.exactpro.cradle.cassandra.CassandraSemaphore;
 import com.exactpro.cradle.cassandra.dao.AsyncOperator;
 import com.exactpro.cradle.cassandra.iterators.IntervalsIteratorAdapter;
@@ -32,6 +33,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -83,11 +86,11 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     }
 
     @Override
-    public Iterable<Interval> getIntervals(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException
+    public Iterable<Interval> getIntervalsPerDay(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException
     {
         try
         {
-            return getIntervalsAsync(from, to, crawlerName, crawlerVersion, crawlerType).get();
+            return getIntervalsPerDayAsync(from, to, crawlerName, crawlerVersion, crawlerType).get();
         }
         catch (Exception e)
         {
@@ -97,8 +100,8 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     }
 
     @Override
-    public CompletableFuture<Iterable<Interval>> getIntervalsAsync(Instant from, Instant to, String crawlerName,
-                                                                   String crawlerVersion, String crawlerType) throws CradleStorageException
+    public CompletableFuture<Iterable<Interval>> getIntervalsPerDayAsync(Instant from, Instant to, String crawlerName,
+                                                                         String crawlerVersion, String crawlerType) throws CradleStorageException
     {
         LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET),
                 toDateTime = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
@@ -126,6 +129,38 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                         "name: "+crawlerName+", version: "+crawlerVersion, error);
             }
         });
+    }
+
+    @Override
+    public Iterable<Interval> getIntervals(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException
+    {
+        LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET),
+                toDateTime = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
+
+        Iterable<Interval> result = new ArrayList<>();
+
+        LocalDateTime point = fromDateTime;
+
+        if (fromDateTime.toLocalDate().compareTo(toDateTime.toLocalDate()) == 0)
+        {
+            return getIntervalsPerDay(from, to, crawlerName, crawlerVersion, crawlerType);
+        }
+
+        while (point.isBefore(toDateTime))
+        {
+            point = LocalDateTime.of(fromDateTime.toLocalDate(), LocalTime.MAX);
+
+            if (point.isAfter(toDateTime) || point.isEqual(toDateTime))
+                point = toDateTime;
+
+            Iterable<Interval> intervals = getIntervalsPerDay(Instant.from(fromDateTime), Instant.from(point), crawlerName, crawlerVersion, crawlerType);
+
+            fromDateTime = fromDateTime.plusDays(1).truncatedTo(ChronoUnit.DAYS);
+
+            result = Iterables.concat(result, intervals);
+        }
+
+        return result;
     }
 
     @Override
