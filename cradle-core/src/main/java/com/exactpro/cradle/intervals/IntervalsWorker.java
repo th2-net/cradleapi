@@ -40,7 +40,7 @@ public interface IntervalsWorker
     CompletableFuture<Boolean> storeIntervalAsync(Interval interval);
 
     /**
-     * Obtains iterable of intervals with startTime greater or equal that from and less or equal then to. Intervals must be within one day
+     * Obtains iterable of intervals with startTime greater than or equal to "from" and less than or equal to "to". Intervals must be within one day
      * @param from time from which intervals are searched
      * @param to time to which intervals are searched
      * @param crawlerName name of Crawler
@@ -51,7 +51,7 @@ public interface IntervalsWorker
     Iterable<Interval> getIntervalsPerDay(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException;
 
     /**
-     * Asynchronously obtains iterable of intervals with startTime greater or equal that from and less or equal then to. Intervals must be within one day
+     * Asynchronously obtains iterable of intervals with startTime greater than or equal to "from" and less than or equal to "to". Intervals must be within one day
      * @param from time from which intervals are searched
      * @param to time to which intervals are searched
      * @param crawlerName name of Crawler
@@ -63,7 +63,7 @@ public interface IntervalsWorker
     CompletableFuture<Iterable<Interval>> getIntervalsPerDayAsync(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws CradleStorageException;
 
     /**
-     * Obtains iterable of intervals with startTime greater or equal that from and less or equal then to
+     * Obtains iterable of intervals with startTime greater than or equal to "from" and less than or equal to "to"
      * @param from time from which intervals are searched
      * @param to time to which intervals are searched
      * @param crawlerName name of Crawler

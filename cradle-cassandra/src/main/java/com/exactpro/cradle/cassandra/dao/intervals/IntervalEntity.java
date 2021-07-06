@@ -161,10 +161,10 @@ public class IntervalEntity {
     public void setProcessed(boolean processed) { this.processed = processed; }
 
     public Interval asInterval() throws IOException {
-        return Interval.builder().id(id).startDateTime(Instant.from(LocalDateTime.of(startDate, startTime).atOffset(TIMEZONE_OFFSET)))
-                .endDateTime(Instant.from(LocalDateTime.of(endDate, endTime).atOffset(TIMEZONE_OFFSET)))
+        return Interval.builder().id(id).startTime(Instant.from(LocalDateTime.of(startDate, startTime).atOffset(TIMEZONE_OFFSET)))
+                .endTime(Instant.from(LocalDateTime.of(endDate, endTime).atOffset(TIMEZONE_OFFSET)))
                 .recoveryState(RecoveryState.getMAPPER().readValue(recoveryStateJson, RecoveryState.class))
-                .lastUpdateDateTime(Instant.from(LocalDateTime.of(lastUpdateDate, lastUpdateTime).atOffset(TIMEZONE_OFFSET)))
+                .lastUpdateTime(Instant.from(LocalDateTime.of(lastUpdateDate, lastUpdateTime).atOffset(TIMEZONE_OFFSET)))
                 .crawlerName(crawlerName).crawlerVersion(crawlerVersion).crawlerType(crawlerType)
                 .processed(processed).build();
     }

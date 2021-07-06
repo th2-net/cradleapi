@@ -40,14 +40,14 @@ public class IntervalBuilder
         return this;
     }
 
-    public IntervalBuilder startDateTime(Instant startTime)
+    public IntervalBuilder startTime(Instant startTime)
     {
         initIfNeeded();
         interval.setStartTime(startTime);
         return this;
     }
 
-    public IntervalBuilder endDateTime(Instant endTime)
+    public IntervalBuilder endTime(Instant endTime)
     {
         initIfNeeded();
         interval.setEndTime(endTime);
@@ -61,7 +61,7 @@ public class IntervalBuilder
         return this;
     }
 
-    public IntervalBuilder lastUpdateDateTime(Instant lastUpdateTime)
+    public IntervalBuilder lastUpdateTime(Instant lastUpdateTime)
     {
         initIfNeeded();
         interval.setLastUpdateDateTime(lastUpdateTime);
