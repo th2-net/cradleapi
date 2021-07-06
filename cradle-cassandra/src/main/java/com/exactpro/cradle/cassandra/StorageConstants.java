@@ -62,7 +62,6 @@ public class StorageConstants
 			INTERVAL_END_DATE = "interval_end_date",
 			INTERVAL_LAST_UPDATE_TIME = "interval_last_update_time",
 			INTERVAL_LAST_UPDATE_DATE = "interval_last_update_date",
-			INTERVAL_ID = "interval_id",
 			CRAWLER_NAME = "crawler_name",
 			CRAWLER_VERSION = "crawler_version",
 			CRAWLER_TYPE = "crawler_type",

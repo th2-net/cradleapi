@@ -22,13 +22,11 @@ import com.exactpro.cradle.intervals.Interval;
 
 import java.util.Iterator;
 
-public class IntervalsIteratorAdapter implements Iterable<Interval> {
+public class IntervalsIteratorAdapter implements Iterable<Interval>
+{
     private final MappedAsyncPagingIterable<IntervalEntity> rows;
 
-    public IntervalsIteratorAdapter(MappedAsyncPagingIterable<IntervalEntity> rows)
-    {
-        this.rows = rows;
-    }
+    public IntervalsIteratorAdapter(MappedAsyncPagingIterable<IntervalEntity> rows) { this.rows = rows; }
 
     @Override
     public Iterator<Interval> iterator() {

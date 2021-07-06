@@ -28,7 +28,5 @@ public class IntervalsIterator extends ConvertingPagedIterator<Interval, Interva
     public IntervalsIterator(MappedAsyncPagingIterable<IntervalEntity> rows) { super(rows); }
 
     @Override
-    protected Interval convertEntity(IntervalEntity entity) throws IOException {
-       return entity.asInterval();
-    }
+    protected Interval convertEntity(IntervalEntity entity) throws IOException { return entity.asInterval(); }
 }

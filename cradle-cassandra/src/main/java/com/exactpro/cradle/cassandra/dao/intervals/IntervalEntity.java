@@ -72,9 +72,6 @@ public class IntervalEntity {
     @CqlName(INTERVAL_LAST_UPDATE_TIME)
     private LocalTime lastUpdateTime;
 
-    @CqlName(INTERVAL_ID)
-    private String id;
-
     @CqlName(RECOVERY_STATE_JSON)
     private String recoveryStateJson;
 
@@ -87,7 +84,6 @@ public class IntervalEntity {
 
     public IntervalEntity(Interval interval, UUID instanceId)
     {
-        this.id = interval.getId();
         this.startTime = LocalTime.from(interval.getStartTime().atOffset(TIMEZONE_OFFSET));
         this.endTime = LocalTime.from(interval.getEndTime().atOffset(TIMEZONE_OFFSET));
         this.startDate = LocalDate.from(interval.getStartTime().atOffset(TIMEZONE_OFFSET));
@@ -111,10 +107,6 @@ public class IntervalEntity {
     {
         this.instanceId = instanceId;
     }
-
-    public String getId() { return id; }
-
-    public void setId(String id) { this.id = id; }
 
     public LocalDate getStartDate() { return startDate; }
 
@@ -161,7 +153,7 @@ public class IntervalEntity {
     public void setProcessed(boolean processed) { this.processed = processed; }
 
     public Interval asInterval() throws IOException {
-        return Interval.builder().id(id).startTime(Instant.from(LocalDateTime.of(startDate, startTime).atOffset(TIMEZONE_OFFSET)))
+        return Interval.builder().startTime(Instant.from(LocalDateTime.of(startDate, startTime).atOffset(TIMEZONE_OFFSET)))
                 .endTime(Instant.from(LocalDateTime.of(endDate, endTime).atOffset(TIMEZONE_OFFSET)))
                 .recoveryState(RecoveryState.getMAPPER().readValue(recoveryStateJson, RecoveryState.class))
                 .lastUpdateTime(Instant.from(LocalDateTime.of(lastUpdateDate, lastUpdateTime).atOffset(TIMEZONE_OFFSET)))

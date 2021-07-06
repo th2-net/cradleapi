@@ -343,7 +343,6 @@ public class TablesCreator
 				.withColumn(INTERVAL_END_TIME, DataTypes.TIME)
 				.withColumn(INTERVAL_LAST_UPDATE_DATE, DataTypes.DATE)
 				.withColumn(INTERVAL_LAST_UPDATE_TIME, DataTypes.TIME)
-				.withColumn(INTERVAL_ID, DataTypes.TEXT)
 				.withColumn(RECOVERY_STATE_JSON, DataTypes.TEXT)
 				.withColumn(INTERVAL_PROCESSED, DataTypes.BOOLEAN);
 

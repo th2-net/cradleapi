@@ -21,7 +21,6 @@ import com.exactpro.cradle.utils.CompressionUtils;
 import java.time.*;
 
 public class Interval {
-    private String id;
     private LocalDateTime startDateTime;
     private LocalDateTime endDateTime;
     private RecoveryState recoveryState;
@@ -34,10 +33,6 @@ public class Interval {
     public static final ZoneOffset TIMEZONE_OFFSET = ZoneOffset.UTC;
 
     public static IntervalBuilder builder() { return new IntervalBuilder(); }
-
-    public String getId() { return id; }
-
-    public void setId(String id) { this.id = id; }
 
     public Instant getStartTime() { return startDateTime.toInstant(TIMEZONE_OFFSET); }
 
@@ -76,7 +71,6 @@ public class Interval {
     {
         return new StringBuilder()
                 .append("Interval{").append(CompressionUtils.EOL)
-                .append("id=").append(id).append(",").append(CompressionUtils.EOL)
                 .append("startDate=").append(startDateTime.toLocalDate()).append(",").append(CompressionUtils.EOL)
                 .append("startTime=").append(startDateTime.toLocalTime()).append(",").append(CompressionUtils.EOL)
                 .append("endDate=").append(endDateTime.toLocalDate()).append(",").append(CompressionUtils.EOL)

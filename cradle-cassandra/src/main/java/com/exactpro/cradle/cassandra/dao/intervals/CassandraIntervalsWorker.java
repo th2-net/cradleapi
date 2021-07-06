@@ -37,7 +37,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.CassandraCradleStorage.TIMEZONE_OFFSET;
@@ -69,7 +68,9 @@ public class CassandraIntervalsWorker implements IntervalsWorker
         }
         catch (Exception e)
         {
-            throw new IOException("Error while storing interval "+interval.getId(), e);
+            throw new IOException("Error while storing interval from: "+interval.getStartTime()+", to: "
+                    +interval.getEndTime()+", name: "+interval.getCrawlerName()+", version: "
+                    +interval.getCrawlerVersion()+", type: "+interval.getCrawlerType(), e);
         }
     }
 
@@ -95,7 +96,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
         catch (Exception e)
         {
             throw new IOException("Error while getting intervals from: "+from+", to: "+to+" by Crawler with " +
-                    "name: "+crawlerName+", version: "+crawlerVersion, e);
+                    "name: "+crawlerName+", version: "+crawlerVersion+", type: "+crawlerType, e);
         }
     }
 
@@ -118,17 +119,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                         .getFuture(() -> intervalOperator
                                 .getIntervals(instanceUuid, date, fromTime, toTime, crawlerName, crawlerVersion, crawlerType, readAttrs));
 
-        return future.thenApply(entities -> {
-            try
-            {
-                return new IntervalsIteratorAdapter(entities);
-            }
-            catch (Exception error)
-            {
-                throw new CompletionException("Could not get intervals from: "+from+", to: "+to+" by Crawler with " +
-                        "name: "+crawlerName+", version: "+crawlerVersion, error);
-            }
-        });
+        return future.thenApply(IntervalsIteratorAdapter::new);
     }
 
     @Override
@@ -172,7 +163,9 @@ public class CassandraIntervalsWorker implements IntervalsWorker
         }
 		catch (Exception e)
         {
-            throw new IOException("Error while occupying interval "+interval.getId(), e);
+            throw new IOException("Error while occupying interval from: "+interval.getStartTime()+", to: "
+                    +interval.getEndTime()+", name: "+interval.getCrawlerName()+", version: "
+                    +interval.getCrawlerVersion()+", type: "+interval.getCrawlerType(), e);
         }
     }
 
@@ -205,7 +198,9 @@ public class CassandraIntervalsWorker implements IntervalsWorker
         }
         catch (Exception e)
         {
-            throw new IOException("Error while updating recovery state of interval "+interval.getId(), e);
+            throw new IOException("Error while updating recovery state of interval from: "+interval.getStartTime()+", to: "
+                    +interval.getEndTime()+", name: "+interval.getCrawlerName()+", version: "
+                    +interval.getCrawlerVersion()+", type: "+interval.getCrawlerType(), e);
         }
     }
 
@@ -240,7 +235,9 @@ public class CassandraIntervalsWorker implements IntervalsWorker
         }
         catch (Exception e)
         {
-            throw new IOException("Error while setting processed flag of interval "+interval.getId(), e);
+            throw new IOException("Error while setting processed flag of interval from: "+interval.getStartTime()+", to: "
+                    +interval.getEndTime()+", name: "+interval.getCrawlerName()+", version: "
+                    +interval.getCrawlerVersion()+", type: "+interval.getCrawlerType(), e);
         }
     }
 

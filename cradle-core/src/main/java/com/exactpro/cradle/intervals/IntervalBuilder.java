@@ -33,13 +33,6 @@ public class IntervalBuilder
             interval = createInterval();
     }
 
-    public IntervalBuilder id(String id)
-    {
-        initIfNeeded();
-        interval.setId(id);
-        return this;
-    }
-
     public IntervalBuilder startTime(Instant startTime)
     {
         initIfNeeded();
