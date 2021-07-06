@@ -150,7 +150,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
         {
             point = LocalDateTime.of(fromDateTime.toLocalDate(), LocalTime.MAX);
 
-            if (point.isAfter(toDateTime) || point.isEqual(toDateTime))
+            if (!point.isBefore(toDateTime))
                 point = toDateTime;
 
             Iterable<Interval> intervals = getIntervalsPerDay(Instant.from(fromDateTime), Instant.from(point), crawlerName, crawlerVersion, crawlerType);
