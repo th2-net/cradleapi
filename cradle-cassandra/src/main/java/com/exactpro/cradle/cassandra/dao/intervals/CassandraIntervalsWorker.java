@@ -122,6 +122,36 @@ public class CassandraIntervalsWorker implements IntervalsWorker
         return future.thenApply(IntervalsIteratorAdapter::new);
     }
 
+    private Iterable<Interval> getIntervalsPerDay(LocalDateTime from, LocalDateTime to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException {
+        try
+        {
+            return getIntervalsPerDayAsync(from, to, crawlerName, crawlerVersion, crawlerType).get();
+        }
+        catch (Exception e)
+        {
+            throw new IOException("Error while getting intervals from: "+from+", to: "+to+" by Crawler with " +
+                    "name: "+crawlerName+", version: "+crawlerVersion+", type: "+crawlerType, e);
+        }
+    }
+
+    private CompletableFuture<Iterable<Interval>> getIntervalsPerDayAsync(LocalDateTime from, LocalDateTime to, String crawlerName,
+                                                                         String crawlerVersion, String crawlerType) throws CradleStorageException
+    {
+        checkTimeBoundaries(from, to);
+
+        LocalTime fromTime = from.toLocalTime(),
+                toTime = to.toLocalTime();
+
+        LocalDate date = from.toLocalDate();
+
+        CompletableFuture<MappedAsyncPagingIterable<IntervalEntity>> future =
+                new AsyncOperator<MappedAsyncPagingIterable<IntervalEntity>>(semaphore)
+                        .getFuture(() -> intervalOperator
+                                .getIntervals(instanceUuid, date, fromTime, toTime, crawlerName, crawlerVersion, crawlerType, readAttrs));
+
+        return future.thenApply(IntervalsIteratorAdapter::new);
+    }
+
     @Override
     public Iterable<Interval> getIntervals(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException
     {
@@ -144,7 +174,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
             if (point.isAfter(toDateTime))
                 point = toDateTime;
 
-            Iterable<Interval> intervals = getIntervalsPerDay(fromDateTime.toInstant(TIMEZONE_OFFSET), point.toInstant(TIMEZONE_OFFSET), crawlerName, crawlerVersion, crawlerType);
+            Iterable<Interval> intervals = getIntervalsPerDay(fromDateTime, point, crawlerName, crawlerVersion, crawlerType);
 
             fromDateTime = fromDateTime.plusDays(1).truncatedTo(ChronoUnit.DAYS);
 
@@ -269,5 +299,12 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                 toDate = toDateTime.toLocalDate();
         if (!fromDate.equals(toDate))
             throw new CradleStorageException("Left and right boundaries should be of the same date, but got '"+originalFrom+"' and '"+originalTo+"'");
+    }
+
+    private void checkTimeBoundaries(LocalDateTime fromDateTime, LocalDateTime toDateTime) throws CradleStorageException {
+        LocalDate fromDate = fromDateTime.toLocalDate(),
+                toDate = toDateTime.toLocalDate();
+        if (!fromDate.equals(toDate))
+            throw new CradleStorageException("Left and right boundaries should be of the same date, but got '"+fromDateTime+"' and '"+toDateTime+"'");
     }
 }
