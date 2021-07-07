@@ -27,6 +27,7 @@ import com.exactpro.cradle.intervals.Interval;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.intervals.RecoveryState;
 import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.UpdateNotAppliedException;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -37,6 +38,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.CassandraCradleStorage.TIMEZONE_OFFSET;
@@ -185,7 +187,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     }
 
     @Override
-    public boolean setIntervalLastUpdateTimeAndDate(Interval interval, Instant newLastUpdateTime) throws IOException
+    public Interval setIntervalLastUpdateTimeAndDate(Interval interval, Instant newLastUpdateTime) throws IOException
     {
         try
         {
@@ -193,6 +195,9 @@ public class CassandraIntervalsWorker implements IntervalsWorker
         }
 		catch (Exception e)
         {
+            if (e instanceof ExecutionException && e.getCause() instanceof UpdateNotAppliedException) {
+                throw (UpdateNotAppliedException) e.getCause();
+            }
             throw new IOException("Error while occupying interval from: "+interval.getStartTime()+", to: "
                     +interval.getEndTime()+", name: "+interval.getCrawlerName()+", version: "
                     +interval.getCrawlerVersion()+", type: "+interval.getCrawlerType(), e);
@@ -200,7 +205,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     }
 
     @Override
-    public CompletableFuture<Boolean> setIntervalLastUpdateTimeAndDateAsync(Interval interval, Instant newLastUpdateTime)
+    public CompletableFuture<Interval> setIntervalLastUpdateTimeAndDateAsync(Interval interval, Instant newLastUpdateTime)
     {
         LocalDateTime dateTime = LocalDateTime.ofInstant(newLastUpdateTime, TIMEZONE_OFFSET);
 
@@ -216,11 +221,19 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                                 LocalDate.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET)),
                                 interval.getCrawlerName(), interval.getCrawlerVersion(), interval.getCrawlerType(),
                                 writeAttrs));
-        return future.thenApply(AsyncResultSet::wasApplied);
+        return future.thenApply(result -> {
+            if (!result.wasApplied()) {
+                throw new UpdateNotAppliedException(
+                        String.format("Cannot update the 'lastUpdateTime' column for interval from %s to %s (name: %s, version: %s)",
+                                interval.getStartTime(), interval.getEndTime(), interval.getCrawlerName(), interval.getCrawlerVersion()
+                        ));
+            }
+            return Interval.copyWith(interval, interval.getRecoveryState(), dateTime, interval.isProcessed());
+        });
     }
 
     @Override
-    public boolean updateRecoveryState(Interval interval, RecoveryState recoveryState) throws IOException
+    public Interval updateRecoveryState(Interval interval, RecoveryState recoveryState) throws IOException
     {
         try
         {
@@ -228,6 +241,9 @@ public class CassandraIntervalsWorker implements IntervalsWorker
         }
         catch (Exception e)
         {
+            if (e instanceof ExecutionException && e.getCause() instanceof UpdateNotAppliedException) {
+                throw (UpdateNotAppliedException) e.getCause();
+            }
             throw new IOException("Error while updating recovery state of interval from: "+interval.getStartTime()+", to: "
                     +interval.getEndTime()+", name: "+interval.getCrawlerName()+", version: "
                     +interval.getCrawlerVersion()+", type: "+interval.getCrawlerType(), e);
@@ -235,7 +251,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     }
 
     @Override
-    public CompletableFuture<Boolean> updateRecoveryStateAsync(Interval interval, RecoveryState recoveryState)
+    public CompletableFuture<Interval> updateRecoveryStateAsync(Interval interval, RecoveryState recoveryState)
     {
         LocalDateTime newLastUpdateDateTime = LocalDateTime.ofInstant(Instant.now(), TIMEZONE_OFFSET);
 
@@ -253,11 +269,19 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                         interval.getCrawlerName(), interval.getCrawlerVersion(), interval.getCrawlerType(),
                         writeAttrs));
 
-        return future.thenApply(AsyncResultSet::wasApplied);
+        return future.thenApply(result -> {
+            if (!result.wasApplied()) {
+                throw new UpdateNotAppliedException(
+                        String.format("Cannot update the 'recovery state' column for interval from %s to %s (name: %s, version: %s)",
+                                interval.getStartTime(), interval.getEndTime(), interval.getCrawlerName(), interval.getCrawlerVersion()
+                        ));
+            }
+            return Interval.copyWith(interval, recoveryState, newLastUpdateDateTime, interval.isProcessed());
+        });
     }
 
     @Override
-    public boolean setIntervalProcessed(Interval interval, boolean processed) throws IOException
+    public Interval setIntervalProcessed(Interval interval, boolean processed) throws IOException
     {
         try
         {
@@ -265,6 +289,9 @@ public class CassandraIntervalsWorker implements IntervalsWorker
         }
         catch (Exception e)
         {
+            if (e instanceof ExecutionException && e.getCause() instanceof UpdateNotAppliedException) {
+                throw (UpdateNotAppliedException) e.getCause();
+            }
             throw new IOException("Error while setting processed flag of interval from: "+interval.getStartTime()+", to: "
                     +interval.getEndTime()+", name: "+interval.getCrawlerName()+", version: "
                     +interval.getCrawlerVersion()+", type: "+interval.getCrawlerType(), e);
@@ -272,7 +299,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     }
 
     @Override
-    public CompletableFuture<Boolean> setIntervalProcessedAsync(Interval interval, boolean processed)
+    public CompletableFuture<Interval> setIntervalProcessedAsync(Interval interval, boolean processed)
     {
         LocalDateTime newLastUpdateDateTime = LocalDateTime.ofInstant(Instant.now(), TIMEZONE_OFFSET);
 
@@ -289,7 +316,15 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                         interval.getCrawlerName(), interval.getCrawlerVersion(), interval.getCrawlerType(),
                         writeAttrs));
 
-        return future.thenApply(AsyncResultSet::wasApplied);
+        return future.thenApply(result -> {
+            if (!result.wasApplied()) {
+                throw new UpdateNotAppliedException(
+                        String.format("Cannot update the 'process' column for interval from %s to %s (name: %s, version: %s)",
+                                interval.getStartTime(), interval.getEndTime(), interval.getCrawlerName(), interval.getCrawlerVersion()
+                        ));
+            }
+            return Interval.copyWith(interval, interval.getRecoveryState(), newLastUpdateDateTime, processed);
+        });
     }
 
     private void checkTimeBoundaries(LocalDateTime fromDateTime, LocalDateTime toDateTime, Instant originalFrom, Instant originalTo)

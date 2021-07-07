@@ -19,6 +19,7 @@ package com.exactpro.cradle.intervals;
 import com.exactpro.cradle.utils.CompressionUtils;
 
 import java.time.*;
+import java.util.Objects;
 
 public class Interval {
     private LocalDateTime startDateTime;
@@ -65,6 +66,25 @@ public class Interval {
     public boolean isProcessed() { return processed; }
 
     public void setProcessed(boolean processed) { this.processed = processed; }
+
+    public static Interval copyWith(Interval original, RecoveryState recoveryState, LocalDateTime lastUpdateDateTime, boolean processed) {
+        Objects.requireNonNull(lastUpdateDateTime, "'lastUpdateDateTime' parameter");
+        Interval interval = new Interval();
+        interval.setStartTime(original.getStartTime());
+        interval.setEndTime(original.getEndTime());
+        interval.setCrawlerName(original.getCrawlerName());
+        interval.setCrawlerVersion(original.getCrawlerVersion());
+        interval.setCrawlerType(original.getCrawlerType());
+
+        interval.setRecoveryState(recoveryState);
+        interval.lastUpdateDateTime = lastUpdateDateTime;
+        interval.setProcessed(processed);
+        return interval;
+    }
+
+    public static Interval copyWith(Interval original, RecoveryState recoveryState, Instant lastUpdateDateTime, boolean processed) {
+        return copyWith(original, recoveryState, LocalDateTime.ofInstant(lastUpdateDateTime, TIMEZONE_OFFSET), processed);
+    }
 
     @Override
     public String toString()

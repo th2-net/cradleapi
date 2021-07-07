@@ -77,49 +77,59 @@ public interface IntervalsWorker
      * Sets last update time and last update date of interval.
      * @param interval interval in which last update time and date will be set
      * @param newLastUpdateTime new time of last update
-     * @return true if time and date of last update was set successfully, false otherwise. This operation is successful
-     * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate
+     * @return the new instance of {@link Interval} with updated newLastUpdateTime. This operation is successful
+     * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
+     * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      */
-    boolean setIntervalLastUpdateTimeAndDate(Interval interval, Instant newLastUpdateTime) throws IOException;
+    Interval setIntervalLastUpdateTimeAndDate(Interval interval, Instant newLastUpdateTime) throws IOException;
 
     /**
      * Asynchronously sets last update time and last update date of interval.
      * @param interval interval in which last update time and date will be set
      * @param newLastUpdateTime new time of last update
-     * @return CompletableFuture with true inside if time and date of last update was set successfully, false otherwise.
-     * This operation is successful only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate
+     * @return CompletableFuture with the new instance of {@link Interval} with updated newLastUpdateTime. This operation is successful
+     * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
+     * If it was not successful throws an {@link java.util.concurrent.ExecutionException} with cause {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      */
-    CompletableFuture<Boolean> setIntervalLastUpdateTimeAndDateAsync(Interval interval, Instant newLastUpdateTime);
+    CompletableFuture<Interval> setIntervalLastUpdateTimeAndDateAsync(Interval interval, Instant newLastUpdateTime);
 
     /**
      * Updates RecoveryState, also sets lastUpdateTime and lastUpdateDate as current time and date
      * @param interval interval in which Recovery State will be updated
      * @param recoveryState information for recovering of Crawler
-     * @return true if recovery state was updated successfully, false otherwise
+     * @return the new instance of {@link Interval} with updated recoveryState. This operation is successful
+     * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
+     * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      */
-    boolean updateRecoveryState(Interval interval, RecoveryState recoveryState) throws IOException;
+    Interval updateRecoveryState(Interval interval, RecoveryState recoveryState) throws IOException;
 
     /**
      * Asynchronously updates RecoveryState, also sets lastUpdateTime and lastUpdateDate as current time and date
      * @param interval interval in which Recovery State will be updated
      * @param recoveryState information for recovering of Crawler
-     * @return CompletableFuture with true inside if recovery state was updated successfully, false otherwise
+     * @return CompletableFuture with the new instance of {@link Interval} with updated recoveryState. This operation is successful
+     * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
+     * If it was not successful throws an {@link java.util.concurrent.ExecutionException} with cause {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      */
-    CompletableFuture<Boolean> updateRecoveryStateAsync(Interval interval, RecoveryState recoveryState);
+    CompletableFuture<Interval> updateRecoveryStateAsync(Interval interval, RecoveryState recoveryState);
 
     /**
      * Sets flag that indicates if interval was processed completely, also sets lastUpdateTime and lastUpdateDate as current time and date
      * @param interval interval in which flag will be set
      * @param processed whether interval was processed completely
-     * @return true if flag was updated successfully, false otherwise
+     * @return the new instance of {@link Interval} with updated processed. This operation is successful
+     * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
+     * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      */
-    boolean setIntervalProcessed(Interval interval, boolean processed) throws IOException;
+    Interval setIntervalProcessed(Interval interval, boolean processed) throws IOException;
 
     /**
      * Asynchronously sets flag that indicates if interval was processed completely, also sets lastUpdateTime and lastUpdateDate as current time and date
      * @param interval interval in which flag will be set
      * @param processed whether interval was processed completely
-     * @return CompletableFuture with true inside if flag was updated successfully, false otherwise
+     * @return CompletableFuture with the new instance of {@link Interval} with updated processed. This operation is successful
+     * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
+     * If it was not successful throws an {@link java.util.concurrent.ExecutionException} with cause {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      */
-    CompletableFuture<Boolean> setIntervalProcessedAsync(Interval interval, boolean processed);
+    CompletableFuture<Interval> setIntervalProcessedAsync(Interval interval, boolean processed);
 }
