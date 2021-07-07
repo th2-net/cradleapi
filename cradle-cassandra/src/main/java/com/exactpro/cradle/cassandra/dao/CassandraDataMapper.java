@@ -20,6 +20,7 @@ import com.datastax.oss.driver.api.mapper.annotations.DaoFactory;
 import com.datastax.oss.driver.api.mapper.annotations.DaoKeyspace;
 import com.datastax.oss.driver.api.mapper.annotations.DaoTable;
 import com.datastax.oss.driver.api.mapper.annotations.Mapper;
+import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchConverter;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
@@ -67,4 +68,7 @@ public interface CassandraDataMapper
 	
 	@DaoFactory
 	TestEventConverter testEventConverter();
+
+	@DaoFactory
+	IntervalOperator intervalOperator(@DaoKeyspace String keyspace, @DaoTable String intervalsTable);
 }

@@ -36,7 +36,8 @@ public class CassandraStorageSettings
 			TEST_EVENTS_CHILDREN_TABLE_DEFAULT_NAME = "test_events_children",
 			TEST_EVENTS_CHILDREN_DATES_TABLE_DEFAULT_NAME = "test_events_children_dates",
 			TEST_EVENTS_MESSAGES_TABLE_DEFAULT_NAME = "test_events_messages",
-			MESSAGES_TEST_EVENTS_TABLE_DEFAULT_NAME = "messages_test_events";
+			MESSAGES_TEST_EVENTS_TABLE_DEFAULT_NAME = "messages_test_events",
+			INTERVALS_TABLE_DEFAULT_NAME = "intervals";
 	public static final long DEFAULT_TIMEOUT = 5000,
 			DEFAULT_MAX_MESSAGE_BATCH_SIZE = StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE,
 			DEFAULT_MAX_EVENT_BATCH_SIZE = StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE;
@@ -54,7 +55,9 @@ public class CassandraStorageSettings
 			testEventsChildrenTableName,
 			testEventsChildrenDatesTableName,
 			testEventsMessagesTableName,
-			messagesTestEventsTableName;
+			messagesTestEventsTableName,
+			timeIntervalsTableName,
+			intervalsTableName;
 	private final NetworkTopologyStrategy networkTopologyStrategy;
 	private long timeout;
 	private ConsistencyLevel writeConsistencyLevel,
@@ -76,6 +79,7 @@ public class CassandraStorageSettings
 		this.testEventsChildrenDatesTableName = TEST_EVENTS_CHILDREN_DATES_TABLE_DEFAULT_NAME;
 		this.testEventsMessagesTableName = TEST_EVENTS_MESSAGES_TABLE_DEFAULT_NAME;
 		this.messagesTestEventsTableName = MESSAGES_TEST_EVENTS_TABLE_DEFAULT_NAME;
+		this.intervalsTableName = INTERVALS_TABLE_DEFAULT_NAME;
 		this.keyspace = keyspace;
 		this.networkTopologyStrategy = networkTopologyStrategy;
 		this.timeout = timeout;
@@ -220,7 +224,15 @@ public class CassandraStorageSettings
 	{
 		this.messagesTestEventsTableName = messagesTestEventsTableName;
 	}
-	
+
+	public String getIntervalsTableName() { return intervalsTableName; }
+
+	public String getTimeIntervalsTableName() { return timeIntervalsTableName; }
+
+	public void setIntervalsTableName(String intervalsTableName)
+	{
+		this.intervalsTableName = intervalsTableName;
+	}
 	
 	public int getKeyspaceReplicationFactor()
 	{
@@ -231,8 +243,7 @@ public class CassandraStorageSettings
 	{
 		this.keyspaceReplicationFactor = keyspaceReplicationFactor;
 	}
-	
-	
+
 	public long getTimeout()
 	{
 		return timeout;

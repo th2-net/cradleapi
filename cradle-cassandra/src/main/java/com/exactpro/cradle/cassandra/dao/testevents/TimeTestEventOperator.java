@@ -40,14 +40,15 @@ public interface TimeTestEventOperator
 {
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+
 			START_DATE+"=:startDate AND "+START_TIME+">=:timeFrom AND "+START_TIME+"<=:timeTo")
-	CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> getTestEvents(UUID instanceId, LocalDate startDate, LocalTime timeFrom, LocalTime timeTo, 
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> getTestEvents(UUID instanceId, LocalDate startDate,
+					LocalTime timeFrom, LocalTime timeTo,
+					Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
 	CompletableFuture<TimeTestEventEntity> writeTestEvent(TimeTestEventEntity timeTestEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+INSTANCE_ID+"=:instanceId AND "+
 			START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:eventId")
-	CompletableFuture<AsyncResultSet> updateStatus(UUID instanceId, LocalDate startDate, LocalTime startTime, String eventId, boolean success, 
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);;
+	CompletableFuture<AsyncResultSet> updateStatus(UUID instanceId, LocalDate startDate, LocalTime startTime,
+					String eventId, boolean success, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

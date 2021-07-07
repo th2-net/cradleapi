@@ -62,6 +62,7 @@ public class TablesCreator
 		createTestEventsChildrenDatesTable();
 		createTestEventsMessagesTable();
 		createMessagesTestEventsTable();
+		createIntervalsTable();
 	}
 	
 	public void createKeyspace()
@@ -324,7 +325,31 @@ public class TablesCreator
 		exec.executeQuery(create.asCql(), true);
 		logger.info("Table '{}' has been created", name);
 	}
-	
+
+	public void createIntervalsTable() throws IOException
+	{
+		String tableName = settings.getIntervalsTableName();
+		if (isTableExists(tableName))
+			return;
+
+		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				.withPartitionKey(INTERVAL_START_DATE, DataTypes.DATE)
+				.withClusteringColumn(CRAWLER_NAME, DataTypes.TEXT)
+				.withClusteringColumn(CRAWLER_VERSION, DataTypes.TEXT)
+				.withClusteringColumn(CRAWLER_TYPE, DataTypes.TEXT)
+				.withClusteringColumn(INTERVAL_START_TIME, DataTypes.TIME)
+				.withColumn(INTERVAL_END_DATE, DataTypes.DATE)
+				.withColumn(INTERVAL_END_TIME, DataTypes.TIME)
+				.withColumn(INTERVAL_LAST_UPDATE_DATE, DataTypes.DATE)
+				.withColumn(INTERVAL_LAST_UPDATE_TIME, DataTypes.TIME)
+				.withColumn(RECOVERY_STATE_JSON, DataTypes.TEXT)
+				.withColumn(INTERVAL_PROCESSED, DataTypes.BOOLEAN);
+
+		exec.executeQuery(create.asCql(), true);
+		logger.info("Table '{}' has been created", tableName);
+	}
+
 	
 	private boolean isTableExists(String tableName)
 	{

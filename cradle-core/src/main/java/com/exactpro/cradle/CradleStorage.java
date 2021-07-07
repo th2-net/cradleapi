@@ -18,9 +18,14 @@ package com.exactpro.cradle;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
+import com.exactpro.cradle.intervals.Interval;
+import com.exactpro.cradle.intervals.IntervalsWorker;
+import com.exactpro.cradle.intervals.RecoveryState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,7 +96,9 @@ public abstract class CradleStorage
 	protected abstract Collection<String> doGetStreams() throws IOException;
 	protected abstract Collection<Instant> doGetRootTestEventsDates() throws IOException;
 	protected abstract Collection<Instant> doGetTestEventsDates(StoredTestEventId parentId) throws IOException;
-	
+	protected abstract void doUpdateEventStatus(StoredTestEventWrapper event, boolean success) throws IOException;
+	protected abstract CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEventWrapper event, boolean success);
+
 	public abstract CradleObjectsFactory getObjectsFactory();
 	
 	
@@ -100,6 +107,12 @@ public abstract class CradleStorage
 	 * @return instance of TestEventsMessagesLinker
 	 */
 	public abstract TestEventsMessagesLinker getTestEventsMessagesLinker();
+
+	/**
+	 * IntervalsWorker is used to work with Crawler intervals
+	 * @return instance of IntervalsWorker
+	 */
+	public abstract IntervalsWorker getIntervalsWorker();
 	
 	protected abstract Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException;
 	protected abstract CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter);
@@ -292,8 +305,7 @@ public abstract class CradleStorage
 				});
 		return CompletableFuture.allOf(result1, result2);
 	}
-	
-	
+
 	/**
 	 * Writes to storage the links between given test event and messages
 	 * @param eventId ID of stored test event
@@ -307,7 +319,7 @@ public abstract class CradleStorage
 		doStoreTestEventMessagesLink(eventId, batchId, messagesIds);
 		logger.debug("Links between test event {} and {} message(s) have been stored", eventId, messagesIds.size());
 	}
-	
+
 	/**
 	 * Asynchronously writes to storage the links between given test event and messages
 	 * @param eventId ID of stored test event
@@ -325,9 +337,8 @@ public abstract class CradleStorage
 					else
 						logger.debug("Links between test event {} and {} message(s) have been stored asynchronously", eventId, messagesIds.size());
 				});
-		
+
 	}
-	
 	
 	/**
 	 * Retrieves message data stored under given ID
@@ -848,5 +859,25 @@ public abstract class CradleStorage
 			}
 		}
 		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+	}
+
+	public final void updateEventStatus(StoredTestEventWrapper event, boolean success) throws IOException
+	{
+		logger.debug("Updating status of event {}", event.getId());
+		doUpdateEventStatus(event, success);
+		logger.debug("Status of event {} has been updated", event.getId());
+	}
+
+	public final CompletableFuture<Void> updateEventStatusAsync(StoredTestEventWrapper event, boolean success)
+	{
+		logger.debug("Asynchronously updating status of event {}", event.getId());
+		CompletableFuture<Void> result = doUpdateEventStatusAsync(event, success)
+				.whenComplete((r, error) -> {
+					if (error != null)
+						logger.error("Error while asynchronously updating status of event "+event.getId());
+					else
+						logger.debug("Status of event {} updated asynchronously", event.getId());
+				});
+		return result;
 	}
 }

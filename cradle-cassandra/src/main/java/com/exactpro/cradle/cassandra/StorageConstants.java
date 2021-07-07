@@ -55,6 +55,17 @@ public class StorageConstants
 			MESSAGE_IDS = "message_ids",
 			MESSAGE_ID = "message_id",
 			TEST_EVENT_ID = "test_event_id",
+			RECOVERY_STATE_JSON = "recovery_state_json",
+			INTERVAL_START_TIME = "interval_start_time",
+			INTERVAL_END_TIME = "interval_end_time",
+			INTERVAL_START_DATE = "interval_start_date",
+			INTERVAL_END_DATE = "interval_end_date",
+			INTERVAL_LAST_UPDATE_TIME = "interval_last_update_time",
+			INTERVAL_LAST_UPDATE_DATE = "interval_last_update_date",
+			CRAWLER_NAME = "crawler_name",
+			CRAWLER_VERSION = "crawler_version",
+			CRAWLER_TYPE = "crawler_type",
+			INTERVAL_PROCESSED = "interval_processed",
 			ROOT = "root",
 			PARENT_ID = "parent_id";
 }
