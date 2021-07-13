@@ -41,6 +41,9 @@ import static org.mockito.Mockito.when;
 
 public class IntervalTest
 {
+    private static final Instant FROM = Instant.parse("2021-06-16T12:00:00.00Z");
+    private static final Instant FROM_PLUS_DAY = Instant.parse("2021-06-17T12:00:00.00Z");
+    private static final Instant TO = Instant.parse("2021-06-16T13:00:00.00Z");
     private static final String DUMMY_NAME = "TestCrawler";
     private static final String DUMMY_VERSION = "TestVersion";
     private static final String DUMMY_TYPE = "TestType";
@@ -51,8 +54,6 @@ public class IntervalTest
     private List<Interval> intervals = new ArrayList<>();
     private IntervalsWorker intervalsWorkerMock;
 
-    Instant from;
-    Instant to;
 
     @BeforeClass
     public void prepare() throws IOException, CradleStorageException {
@@ -61,16 +62,31 @@ public class IntervalTest
         intervals = new ArrayList<>();
         intervalsWorkerMock = mock(IntervalsWorker.class);
 
-        from = Instant.parse("2021-06-16T12:00:00.00Z");
-        to = Instant.parse("2021-06-16T13:00:00.00Z");
-
         event = new StoredTestEventWrapper(
                 new StoredTestEventBatch
                         (TestEventBatchToStore.builder().id(
                                 new StoredTestEventId("test_id")).name("test_name").type("test_type").parentId(
                                 new StoredTestEventId("test_par_id")).build()));
 
-        when(intervalsWorkerMock.getIntervals(any(Instant.class), any(Instant.class), anyString(), anyString(), anyString())).thenReturn(intervals);
+        when(intervalsWorkerMock.getIntervals(any(Instant.class), any(Instant.class), anyString(), anyString(), anyString())).then(invocation -> {
+            List<Interval> result = new ArrayList<>();
+            Instant from = invocation.getArgument(0);
+            Instant to = invocation.getArgument(1);
+            String crawlerName = invocation.getArgument(2);
+            String crawlerVersion = invocation.getArgument(3);
+            String crawlerType = invocation.getArgument(4);
+
+
+            for (Interval interval : intervals) {
+                if (interval.getStartTime().equals(from) && interval.getEndTime().equals(to) && interval.getCrawlerName().equals(crawlerName)
+                        && interval.getCrawlerVersion().equals(crawlerVersion)
+                        && interval.getCrawlerType().equals(crawlerType)) {
+                    result.add(interval);
+                }
+            }
+
+            return result;
+        });
 
         when(intervalsWorkerMock.updateRecoveryState(any(Interval.class), any(RecoveryState.class))).then(invocation -> {
             Interval interval = invocation.getArgument(0);
@@ -129,8 +145,8 @@ public class IntervalTest
     public void intervalWithWrongStartTime()
     {
         Interval interval = builder
-                .startTime(to)
-                .endTime(from)
+                .startTime(TO)
+                .endTime(FROM)
                 .processed(false)
                 .recoveryState(null)
                 .lastUpdateTime(Instant.now())
@@ -144,11 +160,11 @@ public class IntervalTest
     public void intervalWithWrongLastUpdateTime()
     {
         Interval interval = builder
-                .startTime(from)
-                .endTime(to)
+                .startTime(FROM)
+                .endTime(TO)
                 .processed(false)
                 .recoveryState(null)
-                .lastUpdateTime(from.minus(1, ChronoUnit.MINUTES))
+                .lastUpdateTime(FROM.minus(1, ChronoUnit.MINUTES))
                 .crawlerName(DUMMY_NAME)
                 .crawlerVersion(DUMMY_VERSION)
                 .crawlerType(DUMMY_TYPE)
@@ -159,8 +175,8 @@ public class IntervalTest
     public void forgotProcessedField()
     {
         Interval interval = builder
-                .startTime(from)
-                .endTime(to)
+                .startTime(FROM)
+                .endTime(TO)
                 .recoveryState(null)
                 .lastUpdateTime(Instant.now())
                 .crawlerName(DUMMY_NAME)
@@ -175,11 +191,11 @@ public class IntervalTest
     public void storeInterval() throws IOException
     {
         Interval interval = builder
-                .startTime(from)
-                .endTime(to)
+                .startTime(FROM)
+                .endTime(TO)
                 .processed(false)
                 .recoveryState(new RecoveryState(new RecoveryState.InnerEvent(event), null, 10, 10))
-                .lastUpdateTime(from)
+                .lastUpdateTime(FROM)
                 .crawlerName(DUMMY_NAME)
                 .crawlerVersion(DUMMY_VERSION)
                 .crawlerType(DUMMY_TYPE)
@@ -187,7 +203,7 @@ public class IntervalTest
 
         intervalsWorkerMock.storeInterval(interval);
 
-        Iterable<Interval> intervals = intervalsWorkerMock.getIntervals(from, to, DUMMY_NAME, DUMMY_VERSION, DUMMY_TYPE);
+        Iterable<Interval> intervals = intervalsWorkerMock.getIntervals(FROM, TO, DUMMY_NAME, DUMMY_VERSION, DUMMY_TYPE);
 
         List<Interval> list = StreamSupport.stream(intervals.spliterator(), false).collect(Collectors.toList());
 
