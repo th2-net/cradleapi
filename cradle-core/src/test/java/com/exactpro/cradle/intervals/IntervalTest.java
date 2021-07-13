@@ -186,27 +186,4 @@ public class IntervalTest
 
         Assert.assertFalse(interval.isProcessed());
     }
-
-    @Test
-    public void storeInterval() throws IOException
-    {
-        Interval interval = builder
-                .startTime(FROM)
-                .endTime(TO)
-                .processed(false)
-                .recoveryState(new RecoveryState(new RecoveryState.InnerEvent(event), null, 10, 10))
-                .lastUpdateTime(FROM)
-                .crawlerName(DUMMY_NAME)
-                .crawlerVersion(DUMMY_VERSION)
-                .crawlerType(DUMMY_TYPE)
-                .build();
-
-        intervalsWorkerMock.storeInterval(interval);
-
-        Iterable<Interval> intervals = intervalsWorkerMock.getIntervals(FROM, TO, DUMMY_NAME, DUMMY_VERSION, DUMMY_TYPE);
-
-        List<Interval> list = StreamSupport.stream(intervals.spliterator(), false).collect(Collectors.toList());
-
-        Assert.assertEquals(list.get(0), interval);
-    }
 }
