@@ -61,8 +61,8 @@ public class IntervalTest
         intervals = new ArrayList<>();
         intervalsWorkerMock = mock(IntervalsWorker.class);
 
-        from = Instant.now();
-        to = Instant.now().plus(1, ChronoUnit.MINUTES);
+        from = Instant.parse("2021-06-16T12:00:00.00Z");
+        to = Instant.parse("2021-06-16T13:00:00.00Z");
 
         event = new StoredTestEventWrapper(
                 new StoredTestEventBatch
