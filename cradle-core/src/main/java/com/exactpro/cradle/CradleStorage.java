@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,10 @@ package com.exactpro.cradle;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
-import com.exactpro.cradle.intervals.Interval;
 import com.exactpro.cradle.intervals.IntervalsWorker;
-import com.exactpro.cradle.intervals.RecoveryState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +37,6 @@ import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
-import com.exactpro.cradle.utils.TimeUtils;
 
 /**
  * Storage which holds information about all data sent or verified and generated reports.
@@ -68,14 +63,10 @@ public abstract class CradleStorage
 	
 	protected abstract void doStoreMessageBatch(StoredMessageBatch batch) throws IOException;
 	protected abstract CompletableFuture<Void> doStoreMessageBatchAsync(StoredMessageBatch batch);
-	protected abstract void doStoreTimeMessage(StoredMessage message) throws IOException;
-	protected abstract CompletableFuture<Void> doStoreTimeMessageAsync(StoredMessage message);
 	protected abstract void doStoreProcessedMessageBatch(StoredMessageBatch batch) throws IOException;
 	protected abstract CompletableFuture<Void> doStoreProcessedMessageBatchAsync(StoredMessageBatch batch);
 	protected abstract void doStoreTestEvent(StoredTestEvent event) throws IOException;
 	protected abstract CompletableFuture<Void> doStoreTestEventAsync(StoredTestEvent event);
-	protected abstract void doUpdateParentTestEvents(StoredTestEvent event) throws IOException;
-	protected abstract CompletableFuture<Void> doUpdateParentTestEventsAsync(StoredTestEvent event);
 	protected abstract void doStoreTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messageIds) throws IOException;
 	protected abstract CompletableFuture<Void> doStoreTestEventMessagesLinkAsync(StoredTestEventId eventId, StoredTestEventId batchId, 
 			Collection<StoredMessageId> messageIds);
@@ -100,6 +91,16 @@ public abstract class CradleStorage
 	protected abstract CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEventWrapper event, boolean success);
 
 	public abstract CradleObjectsFactory getObjectsFactory();
+	
+	/**
+	 * @return number of submitted and currently executed asynchronous requests
+	 */
+	public abstract int getActiveAsyncRequests();
+	
+	/**
+	 * @return number of submitted asynchronous requests that are not started yet
+	 */
+	public abstract int getPendingAsyncRequests();
 	
 	
 	/**
@@ -184,8 +185,6 @@ public abstract class CradleStorage
 	{
 		logger.debug("Storing message batch {}", batch.getId());
 		doStoreMessageBatch(batch);
-		logger.debug("Storing time/message data for batch {}", batch.getId());
-		storeTimeMessages(batch.getMessages());
 		logger.debug("Message batch {} has been stored", batch.getId());
 	}
 	
@@ -198,16 +197,14 @@ public abstract class CradleStorage
 	public final CompletableFuture<Void> storeMessageBatchAsync(StoredMessageBatch batch)
 	{
 		logger.debug("Storing message batch {} asynchronously", batch.getId());
-		CompletableFuture<Void> batchStoring = doStoreMessageBatchAsync(batch),
-				timeStoring = storeTimeMessagesAsync(batch.getMessages());
-		
-		return CompletableFuture.allOf(batchStoring, timeStoring)
-				.whenComplete((r, error) -> {
-					if (error != null)
-						logger.error("Error while storing message batch "+batch.getId()+" asynchronously", error);
-					else
-						logger.debug("Message batch {} has been stored asynchronously", batch.getId());
-				});
+		CompletableFuture<Void> result = doStoreMessageBatchAsync(batch);
+		result.whenComplete((r, error) -> {
+				if (error != null)
+					logger.error("Error while storing message batch "+batch.getId()+" asynchronously", error);
+				else
+					logger.debug("Message batch {} has been stored asynchronously", batch.getId());
+			});
+		return result;
 	}
 	
 	/**
@@ -230,13 +227,14 @@ public abstract class CradleStorage
 	public final CompletableFuture<Void> storeProcessedMessageBatchAsync(StoredMessageBatch batch)
 	{
 		logger.debug("Storing processed message batch {} asynchronously", batch.getId());
-		return doStoreProcessedMessageBatchAsync(batch)
-				.whenComplete((r, error) -> {
-					if (error != null)
-						logger.error("Error while storing processed message batch "+batch.getId()+" asynchronously", error);
-					else
-						logger.debug("Processed message batch {} has been stored asynchronously", batch.getId());
-				});
+		CompletableFuture<Void> result = doStoreProcessedMessageBatchAsync(batch);
+		result.whenComplete((r, error) -> {
+				if (error != null)
+					logger.error("Error while storing processed message batch "+batch.getId()+" asynchronously", error);
+				else
+					logger.debug("Processed message batch {} has been stored asynchronously", batch.getId());
+			});
+		return result;
 	}
 	
 	
@@ -258,12 +256,6 @@ public abstract class CradleStorage
 		}
 		doStoreTestEvent(event);
 		logger.debug("Test event {} has been stored", event.getId());
-		if (event.getParentId() != null)
-		{
-			logger.debug("Updating parents of test event {}", event.getId());
-			doUpdateParentTestEvents(event);
-			logger.debug("Parents of test event {} have been updated", event.getId());
-		}
 	}
 	
 	/**
@@ -284,26 +276,14 @@ public abstract class CradleStorage
 			throw new IOException("Invalid test event", e);
 		}
 		
-		CompletableFuture<Void> result1 = doStoreTestEventAsync(event)
-				.whenComplete((r, error) -> {
-					if (error != null)
-						logger.error("Error while storing test event "+event.getId()+" asynchronously", error);
-					else
-						logger.debug("Test event {} has been stored asynchronously", event.getId());
-				});
-		
-		if (event.getParentId() == null)
-			return result1;
-		
-		logger.debug("Updating parents of test event {} asynchronously", event.getId());
-		CompletableFuture<Void> result2 = doUpdateParentTestEventsAsync(event)
-				.whenComplete((r, error) -> {
-					if (error != null)
-						logger.error("Error while updating parent of test event "+event.getId()+" asynchronously", error);
-					else
-						logger.debug("Parents of test event {} have been updated asynchronously", event.getId());
-				});
-		return CompletableFuture.allOf(result1, result2);
+		CompletableFuture<Void> result = doStoreTestEventAsync(event);
+		result.whenComplete((r, error) -> {
+				if (error != null)
+					logger.error("Error while storing test event "+event.getId()+" asynchronously", error);
+				else
+					logger.debug("Test event {} has been stored asynchronously", event.getId());
+			});
+		return result;
 	}
 
 	/**
@@ -830,37 +810,6 @@ public abstract class CradleStorage
 	}
 	
 	
-	protected void storeTimeMessages(Collection<StoredMessage> messages) throws IOException
-	{
-		Instant ts = null;
-		for (StoredMessage msg : messages)
-		{
-			Instant msgSeconds = TimeUtils.cutNanos(msg.getTimestamp());
-			if (!msgSeconds.equals(ts))
-			{
-				ts = msgSeconds;
-				doStoreTimeMessage(msg);
-			}
-		}
-	}
-	
-	protected CompletableFuture<Void> storeTimeMessagesAsync(Collection<StoredMessage> messages)
-	{
-		List<CompletableFuture<Void>> futures = new ArrayList<>();
-		Instant ts = null;
-		for (StoredMessage msg : messages)
-		{
-			Instant msgSeconds = TimeUtils.cutNanos(msg.getTimestamp());
-			if (!msgSeconds.equals(ts))
-			{
-				ts = msgSeconds;
-				
-				futures.add(doStoreTimeMessageAsync(msg));
-			}
-		}
-		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-	}
-
 	public final void updateEventStatus(StoredTestEventWrapper event, boolean success) throws IOException
 	{
 		logger.debug("Updating status of event {}", event.getId());
@@ -879,5 +828,13 @@ public abstract class CradleStorage
 						logger.debug("Status of event {} updated asynchronously", event.getId());
 				});
 		return result;
+	}
+	
+	/**
+	 * @return number of submitted asynchronous requests being processed, both active and pending
+	 */
+	public int getAsyncRequests()
+	{
+		return getActiveAsyncRequests()+getPendingAsyncRequests();
 	}
 }

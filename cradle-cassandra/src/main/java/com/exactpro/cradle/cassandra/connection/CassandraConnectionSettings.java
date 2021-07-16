@@ -16,6 +16,8 @@
 
 package com.exactpro.cradle.cassandra.connection;
 
+import java.util.concurrent.ExecutorService;
+
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 
 public class CassandraConnectionSettings
@@ -31,7 +33,11 @@ public class CassandraConnectionSettings
 			readConsistencyLevel;
 	private NetworkTopologyStrategy networkTopologyStrategy;
 	private int maxParallelQueries,
-			resultPageSize;
+			resultPageSize,
+			maxSyncRetries,
+			maxAsyncRetries,
+			retryDelay;
+	private ExecutorService composingService;
 
 	public CassandraConnectionSettings()
 	{
@@ -47,6 +53,10 @@ public class CassandraConnectionSettings
 		networkTopologyStrategy = null;
 		maxParallelQueries = 500;
 		resultPageSize = 0;  //In this case default page size will be used
+		maxSyncRetries = 3;
+		maxAsyncRetries = -1;  //Infinite "retry till success"
+		retryDelay = 100;
+		composingService = null;
 	}
 
 	public CassandraConnectionSettings(String localDataCenter, String host, int port, String keyspace)
@@ -73,6 +83,10 @@ public class CassandraConnectionSettings
 		this.networkTopologyStrategy = settings.getNetworkTopologyStrategy() != null ? new NetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap()) : null;
 		this.maxParallelQueries = settings.maxParallelQueries;
 		this.resultPageSize = settings.resultPageSize;
+		this.maxSyncRetries = settings.maxSyncRetries;
+		this.maxAsyncRetries = settings.maxAsyncRetries;
+		this.retryDelay = settings.retryDelay;
+		this.composingService = settings.composingService;
 	}
 
 	
@@ -186,11 +200,13 @@ public class CassandraConnectionSettings
 	}
 	
 	
+	@Deprecated
 	public int getMaxParallelQueries()
 	{
 		return maxParallelQueries;
 	}
 	
+	@Deprecated
 	public void setMaxParallelQueries(int maxParallelQueries)
 	{
 		this.maxParallelQueries = maxParallelQueries;
@@ -205,5 +221,49 @@ public class CassandraConnectionSettings
 	public void setResultPageSize(int resultPageSize)
 	{
 		this.resultPageSize = resultPageSize;
+	}
+	
+	
+	public int getMaxSyncRetries()
+	{
+		return maxSyncRetries;
+	}
+	
+	public void setMaxSyncRetries(int maxSyncRetries)
+	{
+		this.maxSyncRetries = maxSyncRetries;
+	}
+	
+	
+	public int getMaxAsyncRetries()
+	{
+		return maxAsyncRetries;
+	}
+	
+	public void setMaxAsyncRetries(int maxAsyncRetries)
+	{
+		this.maxAsyncRetries = maxAsyncRetries;
+	}
+	
+	
+	public int getRetryDelay()
+	{
+		return retryDelay;
+	}
+	
+	public void setRetryDelay(int retryDelay)
+	{
+		this.retryDelay = retryDelay;
+	}
+	
+	
+	public ExecutorService getComposingService()
+	{
+		return composingService;
+	}
+	
+	public void setComposingService(ExecutorService composingService)
+	{
+		this.composingService = composingService;
 	}
 }
