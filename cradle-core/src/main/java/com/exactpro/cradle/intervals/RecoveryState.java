@@ -229,14 +229,14 @@ public class RecoveryState
 
     public static class InnerMessage
     {
-        private final String id;
+        private final String sessionAlias;
         private final Instant timestamp;
         private final Direction direction;
         private final long sequence;
 
         public InnerMessage(StoredMessage message)
         {
-            this.id = message.getId().toString();
+            this.sessionAlias = message.getId().toString();
             this.timestamp = message.getTimestamp();
             this.direction = message.getDirection();
             this.sequence = message.getIndex();
@@ -244,15 +244,15 @@ public class RecoveryState
 
         public InnerMessage()
         {
-            this.id = null;
+            this.sessionAlias = null;
             this.timestamp = null;
             this.direction = null;
             this.sequence = 0;
         }
 
-        public InnerMessage(String id, Instant timestamp, Direction direction, long sequence)
+        public InnerMessage(String sessionAlias, Instant timestamp, Direction direction, long sequence)
         {
-            this.id = id;
+            this.sessionAlias = sessionAlias;
             this.timestamp = timestamp;
             this.direction = direction;
             this.sequence = sequence;
@@ -263,7 +263,7 @@ public class RecoveryState
         {
             return new StringBuilder()
                     .append("InnerMessage{").append(CompressionUtils.EOL)
-                    .append("id=").append(id).append(CompressionUtils.EOL)
+                    .append("sessionAlias=").append(sessionAlias).append(CompressionUtils.EOL)
                     .append("timestamp=").append(timestamp).append(CompressionUtils.EOL)
                     .append("direction=").append(direction).append(CompressionUtils.EOL)
                     .append("sequence=").append(sequence).append(CompressionUtils.EOL)
@@ -277,7 +277,7 @@ public class RecoveryState
             final int prime = 31;
             int result = 1;
 
-            result = prime * result + ((id == null) ? 0 : id.hashCode());
+            result = prime * result + ((sessionAlias == null) ? 0 : sessionAlias.hashCode());
             result = prime * result + ((timestamp == null) ? 0 : timestamp.hashCode());
             result = prime * result + ((direction == null) ? 0 : direction.hashCode());
             result = prime * result + (int) (sequence ^ (sequence >>> 32));
@@ -295,7 +295,7 @@ public class RecoveryState
             if (getClass() != obj.getClass())
                 return false;
             InnerMessage other = (InnerMessage) obj;
-            if (!id.equals(other.id))
+            if (!sessionAlias.equals(other.sessionAlias))
                 return false;
             if (timestamp != other.timestamp)
                 return false;
@@ -307,7 +307,7 @@ public class RecoveryState
             return true;
         }
 
-        public String getId() { return id; }
+        public String getSessionAlias() { return sessionAlias; }
 
         public Instant getTimestamp() { return timestamp; }
 
