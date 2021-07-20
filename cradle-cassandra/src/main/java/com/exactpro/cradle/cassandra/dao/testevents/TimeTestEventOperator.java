@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,6 @@
 
 package com.exactpro.cradle.cassandra.dao.testevents;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.ID;
-import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
-import static com.exactpro.cradle.cassandra.StorageConstants.START_DATE;
-import static com.exactpro.cradle.cassandra.StorageConstants.START_TIME;
-import static com.exactpro.cradle.cassandra.StorageConstants.SUCCESS;
-
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
@@ -35,15 +23,30 @@ import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
+
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
+
 @Dao
 public interface TimeTestEventOperator
 {
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+
-			START_DATE+"=:startDate AND "+START_TIME+">=:timeFrom AND "+START_TIME+"<=:timeTo")
-	CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> getTestEvents(UUID instanceId, LocalDate startDate,
-					LocalTime timeFrom, LocalTime timeTo,
-					Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " +
+			START_DATE + "=:startDate AND " + START_TIME + ">=:timeFrom AND " + START_TIME + "<=:timeTo")
+	CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> getTestEventsDirect(UUID instanceId,
+			LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " +
+			START_DATE + "=:startDate AND " + START_TIME + ">=:timeFrom AND " + START_TIME + "<=:timeTo ORDER BY " +
+			START_TIME + " DESC, " + ID + " DESC")
+	CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> getTestEventsReverse(UUID instanceId,
+			LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
 	@Insert
 	CompletableFuture<TimeTestEventEntity> writeTestEvent(TimeTestEventEntity timeTestEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	

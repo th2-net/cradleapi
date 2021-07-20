@@ -115,6 +115,17 @@ public class StoredMessageBatch
 	}
 
 	/**
+	 * @return collection of messages stored in the batch in reverse order
+	 */
+	public Collection<StoredMessage> getMessagesReverse()
+	{
+		List<StoredMessage> list = new ArrayList<>(messages);
+		Collections.reverse(list);
+		
+		return list;
+	}
+
+	/**
 	 * Adds message to the batch. Batch will add correct message ID by itself, verifying message to match batch conditions.
 	 * Messages can be added to batch until {@link #isFull()} returns true.
 	 * Result of this method should be used for all further operations on the message

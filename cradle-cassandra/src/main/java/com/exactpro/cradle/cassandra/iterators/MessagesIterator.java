@@ -18,6 +18,7 @@ package com.exactpro.cradle.cassandra.iterators;
 
 import java.util.Iterator;
 
+import com.exactpro.cradle.Order;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,10 +37,10 @@ public class MessagesIterator implements Iterator<StoredMessage>
 	private long returnedMessages;
 	private StoredMessage nextMessage;
 	
-	public MessagesIterator(MappedAsyncPagingIterable<DetailedMessageBatchEntity> rows, StoredMessageFilter filter)
+	public MessagesIterator(StoredMessageFilter filter, MappedAsyncPagingIterable<DetailedMessageBatchEntity> rows)
 	{
-		this.entitiesIterator = new MessageBatchIterator(rows);
 		this.filter = filter;
+		this.entitiesIterator = new MessageBatchIterator(rows, filter == null ? Order.DIRECT : filter.getOrder());
 	}
 	
 	

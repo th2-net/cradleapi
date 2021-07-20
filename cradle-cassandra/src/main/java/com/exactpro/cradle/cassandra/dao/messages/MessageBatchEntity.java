@@ -22,8 +22,11 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
+import com.exactpro.cradle.Order;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,7 +102,17 @@ public class MessageBatchEntity extends MessageBatchMetadataEntity
 	
 	public Collection<StoredMessage> toStoredMessages() throws IOException
 	{
-		return MessageUtils.bytesToMessages(content, isCompressed());
+		return toStoredMessages(Order.DIRECT);
+	}
+
+	public Collection<StoredMessage> toStoredMessages(Order order) throws IOException
+	{
+		List<StoredMessage> messages = MessageUtils.bytesToMessages(content, isCompressed());
+		if (order == Order.DIRECT)
+			return messages;
+		
+		Collections.reverse(messages);
+		return messages;
 	}
 	
 	public StoredMessage toStoredMessage(StoredMessageId id) throws IOException

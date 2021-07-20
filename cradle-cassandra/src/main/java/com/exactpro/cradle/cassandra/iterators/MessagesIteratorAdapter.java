@@ -44,6 +44,6 @@ public class MessagesIteratorAdapter implements Iterable<StoredMessage>
 	@Override
 	public Iterator<StoredMessage> iterator()
 	{
-		return new MessagesIterator(entities, filter);
+		return new MessagesIterator(filter, entities);
 	}
 }

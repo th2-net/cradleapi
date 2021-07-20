@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
+import com.exactpro.cradle.Order;
 import com.exactpro.cradle.messages.MessageToStoreBuilder;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageMetadata;
@@ -85,6 +86,7 @@ public class DetailedMessageBatchEntity extends MessageBatchEntity
 		this.setLastMessageIndex(batch.getLastMessage().getIndex());
 	}
 
+	// Parameter messageBatch must be created by CradleObjectFactory to have the correct batchSize
 	public StoredMessageBatch toStoredMessageBatch(StoredMessageBatch messageBatch)
 			throws IOException, CradleStorageException
 	{
@@ -99,13 +101,13 @@ public class DetailedMessageBatchEntity extends MessageBatchEntity
 			StoredMessageMetadata metadata = storedMessage.getMetadata();
 			if (metadata != null)
 				metadata.toMap().forEach(builder::metadata);
-			
+
 			messageBatch.addMessage(builder.build());
 		}
-		
+
 		return messageBatch;
 	}
-	
+
 	public LocalDate getStoredDate()
 	{
 		return storedDate;
