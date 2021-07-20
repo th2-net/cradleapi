@@ -19,8 +19,8 @@ package com.exactpro.cradle.messages;
 import java.time.Instant;
 
 import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.Order;
 import com.exactpro.cradle.filters.ComparisonOperation;
-import com.exactpro.cradle.filters.FilterByFieldBuilder;
 import com.exactpro.cradle.filters.FilterForAny;
 import com.exactpro.cradle.filters.FilterForAnyBuilder;
 import com.exactpro.cradle.filters.FilterForEquals;
@@ -105,7 +105,15 @@ public class StoredMessageFilterBuilder
 	 */
 	public StoredMessageFilterBuilder limit(int limit)
 	{
+		initIfNeeded();
 		msgFilter.setLimit(limit);
+		return this;
+	}
+
+	public StoredMessageFilterBuilder order(Order order)
+	{
+		initIfNeeded();
+		msgFilter.setOrder(order);
 		return this;
 	}
 	
