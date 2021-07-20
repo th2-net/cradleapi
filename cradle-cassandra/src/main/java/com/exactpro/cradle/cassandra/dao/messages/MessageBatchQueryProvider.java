@@ -68,12 +68,16 @@ public class MessageBatchQueryProvider
 	}
 	
 	public CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> filterMessages(UUID instanceId, 
-			StoredMessageFilter filter, Order order, CassandraSemaphore semaphore, MessageBatchOperator operator,
+			StoredMessageFilter filter, CassandraSemaphore semaphore, MessageBatchOperator operator,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 	{
 		Select select = selectStart;
+		Order order = null;
 		if (filter != null)
+		{
+			order = filter.getOrder();
 			select = addFilter(select, filter);
+		}
 		select = orderBy(order, select);
 		PreparedStatement ps = session.prepare(select.build());
 		BoundStatement bs;
@@ -92,6 +96,8 @@ public class MessageBatchQueryProvider
 
 	private Select orderBy(Order order, Select select)
 	{
+		if (order == null)
+			order = Order.DIRECT;
 		ClusteringOrder clusteringOrder = order == Order.DIRECT ? ClusteringOrder.ASC : ClusteringOrder.DESC;
 		return select.orderBy(DIRECTION, clusteringOrder).orderBy(MESSAGE_INDEX, clusteringOrder);
 	}

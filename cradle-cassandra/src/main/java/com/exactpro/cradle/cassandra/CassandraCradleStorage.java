@@ -512,11 +512,11 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	protected Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter, Order order) throws IOException
+	protected Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException
 	{
 		try
 		{
-			return doGetMessagesAsync(filter, order).get();
+			return doGetMessagesAsync(filter).get();
 		}
 		catch (Exception e)
 		{
@@ -525,18 +525,18 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter, Order order)
+	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter)
 	{
-		return doGetDetailedMessageBatchEntities(filter, order).thenApply(it -> new MessagesIteratorAdapter(filter, it, order));
+		return doGetDetailedMessageBatchEntities(filter).thenApply(it -> new MessagesIteratorAdapter(filter, it));
 	}
 	
 	
 	@Override
-	protected Iterable<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter, Order order) throws IOException
+	protected Iterable<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException
 	{
 		try
 		{
-			return doGetMessagesBatchesAsync(filter, order).get();
+			return doGetMessagesBatchesAsync(filter).get();
 		}
 		catch (Exception e)
 		{
@@ -545,17 +545,18 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter, Order order)
+	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter)
 	{
-		return doGetDetailedMessageBatchEntities(filter, order)
+		return doGetDetailedMessageBatchEntities(filter)
 				.thenApply(it -> new StoredMessageBatchAdapter(it, objectsFactory, filter == null ? 0 : filter.getLimit()));
 	}
 
-	private CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> doGetDetailedMessageBatchEntities(StoredMessageFilter filter, Order order)
+	private CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> doGetDetailedMessageBatchEntities(
+			StoredMessageFilter filter)
 	{
 		MessageBatchOperator op = ops.getMessageBatchOperator();
 		return new AsyncOperator<MappedAsyncPagingIterable<DetailedMessageBatchEntity>>(semaphore)
-						.getFuture(() -> op.filterMessages(instanceUuid, filter, order, semaphore, op, readAttrs));
+						.getFuture(() -> op.filterMessages(instanceUuid, filter, semaphore, op, readAttrs));
 	}
 
 	@Override
@@ -592,7 +593,7 @@ public class CassandraCradleStorage extends CradleStorage
 				new AsyncOperator<MappedAsyncPagingIterable<RootTestEventEntity>>(semaphore)
 						.getFuture(() -> order == Order.DIRECT
 								? op.getTestEventsDirect(instanceUuid, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
-								: op.getTestEventsInverse(instanceUuid, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
+								: op.getTestEventsReverse(instanceUuid, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
 		return future.thenApply(RootTestEventsMetadataIteratorAdapter::new);
 	}
 	
@@ -670,7 +671,7 @@ public class CassandraCradleStorage extends CradleStorage
 						.getFuture(() -> order == Order.DIRECT
 								? ops.getTimeTestEventOperator().getTestEventsDirect(instanceUuid,
 										fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
-								: ops.getTimeTestEventOperator().getTestEventsInverse(instanceUuid,
+								: ops.getTimeTestEventOperator().getTestEventsReverse(instanceUuid,
 										fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
 		return future.thenApply(TimeTestEventsMetadataIteratorAdapter::new);
 	}

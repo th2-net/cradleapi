@@ -46,7 +46,7 @@ public interface RootTestEventOperator
 
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+
 			START_DATE+"=:startDate AND "+START_TIME+">=:timeFrom AND "+START_TIME+"<=:timeTo ORDER BY start_time DESC, id DESC")
-	CompletableFuture<MappedAsyncPagingIterable<RootTestEventEntity>> getTestEventsInverse(UUID instanceId, LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
+	CompletableFuture<MappedAsyncPagingIterable<RootTestEventEntity>> getTestEventsReverse(UUID instanceId, LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Insert

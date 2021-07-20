@@ -37,10 +37,10 @@ public class MessagesIterator implements Iterator<StoredMessage>
 	private long returnedMessages;
 	private StoredMessage nextMessage;
 	
-	public MessagesIterator(StoredMessageFilter filter, MappedAsyncPagingIterable<DetailedMessageBatchEntity> rows, Order order)
+	public MessagesIterator(StoredMessageFilter filter, MappedAsyncPagingIterable<DetailedMessageBatchEntity> rows)
 	{
-		this.entitiesIterator = new MessageBatchIterator(rows, order);
 		this.filter = filter;
+		this.entitiesIterator = new MessageBatchIterator(rows, filter == null ? Order.DIRECT : filter.getOrder());
 	}
 	
 	
