@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Transient;
-import com.exactpro.cradle.cassandra.CassandraCradleStorage;
+import com.exactpro.cradle.cassandra.utils.DateTimeUtils;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
@@ -153,7 +153,7 @@ public abstract class TestEventMetadataEntity
 		LocalTime st = getStartTime();
 		if (sd == null || st == null)
 			return null;
-		return LocalDateTime.of(sd, st).toInstant(CassandraCradleStorage.TIMEZONE_OFFSET);
+		return DateTimeUtils.toInstant(sd, st);
 	}
 	
 	@Transient
@@ -161,7 +161,7 @@ public abstract class TestEventMetadataEntity
 	{
 		if (timestamp == null)
 			return;
-		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, CassandraCradleStorage.TIMEZONE_OFFSET);
+		LocalDateTime ldt = DateTimeUtils.toDateTime(timestamp);
 		setStartDate(ldt.toLocalDate());
 		setStartTime(ldt.toLocalTime());
 	}
@@ -194,7 +194,7 @@ public abstract class TestEventMetadataEntity
 		LocalTime et = getEndTime();
 		if (ed == null || et == null)
 			return null;
-		return LocalDateTime.of(ed, et).toInstant(CassandraCradleStorage.TIMEZONE_OFFSET);
+		return DateTimeUtils.toInstant(ed, et);
 	}
 	
 	@Transient
@@ -202,7 +202,7 @@ public abstract class TestEventMetadataEntity
 	{
 		if (timestamp == null)
 			return;
-		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, CassandraCradleStorage.TIMEZONE_OFFSET);
+		LocalDateTime ldt = DateTimeUtils.toDateTime(timestamp);
 		setEndDate(ldt.toLocalDate());
 		setEndTime(ldt.toLocalTime());
 	}

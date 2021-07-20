@@ -32,11 +32,13 @@ public class AsyncExecutor
 	//This queue should be unbounded else submission of a task will block
 	private final BlockingQueue<RequestInfo<?>> requests = new LinkedBlockingQueue<RequestInfo<?>>();
 	private final ExecutorService execService;
+	private final int defaultRetries;
 	private final AsyncRequestProcessor processor;
 	
-	public AsyncExecutor(ExecutorService execService, ExecutorService composingService, int delay)
+	public AsyncExecutor(ExecutorService execService, ExecutorService composingService, int defaultRetries, int delay)
 	{
 		this.execService = execService;
+		this.defaultRetries = defaultRetries;
 		this.processor = new AsyncRequestProcessor(requests, composingService, delay);
 		execService.submit(processor);
 	}
@@ -55,6 +57,11 @@ public class AsyncExecutor
 			result.completeExceptionally(new RetryException(msg, e));
 		}
 		return result;
+	}
+	
+	public <T> CompletableFuture<T> submit(String requestInfo, Supplier<CompletableFuture<T>> supplier)
+	{
+		return submit(requestInfo, defaultRetries, supplier);
 	}
 	
 	public void dispose()

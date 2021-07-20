@@ -26,10 +26,12 @@ public class SyncExecutor
 {
 	private static final Logger logger = LoggerFactory.getLogger(SyncExecutor.class);
 	
-	private final int delay;
+	private final int defaultRetries,
+			delay;
 	
-	public SyncExecutor(int delay)
+	public SyncExecutor(int defaultRetries, int delay)
 	{
+		this.defaultRetries = defaultRetries;
 		this.delay = delay;
 	}
 	
@@ -57,5 +59,10 @@ public class SyncExecutor
 		while (!Thread.currentThread().isInterrupted());
 		
 		throw new RetryException("'"+requestInfo+"' failed and retry was interrupted");
+	}
+	
+	public <T> T submit(String requestInfo, Supplier<CompletableFuture<T>> supplier) throws Exception
+	{
+		return submit(requestInfo, defaultRetries, supplier);
 	}
 }

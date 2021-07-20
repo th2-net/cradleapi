@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,38 +23,44 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
 import com.exactpro.cradle.utils.CradleIdException;
-import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.exactpro.cradle.cassandra.CassandraSemaphore;
-import com.exactpro.cradle.cassandra.dao.AsyncOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesOperator;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
+import com.exactpro.cradle.cassandra.retry.AsyncExecutor;
+import com.exactpro.cradle.cassandra.retry.SyncExecutor;
 
 public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLinker
 {
 	private final TestEventMessagesOperator testEventsOperator;
 	private final MessageTestEventOperator messagesOperator;
 	private final UUID instanceId;
+	private final SyncExecutor syncExecutor;
+	private final AsyncExecutor asyncExecutor;
+	private final ExecutorService composingService;
 	private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
-	private final CassandraSemaphore semaphore;
 	
 	public CassandraTestEventsMessagesLinker(TestEventMessagesOperator testEventsOperator, MessageTestEventOperator messagesOperator, 
-			UUID instanceId, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs, CassandraSemaphore semaphore)
+			UUID instanceId, 
+			SyncExecutor syncExecutor, AsyncExecutor asyncExecutor, ExecutorService composingService, 
+			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
 	{
 		this.testEventsOperator = testEventsOperator;
 		this.messagesOperator = messagesOperator;
 		this.instanceId = instanceId;
+		this.syncExecutor = syncExecutor;
+		this.asyncExecutor = asyncExecutor;
+		this.composingService = composingService;
 		this.readAttrs = readAttrs;
-		this.semaphore = semaphore;
 	}
 	
 	
@@ -63,7 +69,8 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 	{
 		try
 		{
-			return getTestEventIdsByMessageIdAsync(messageId).get();
+			return syncExecutor.submit("get event IDs linked to message "+messageId, 
+					() -> readEventIds(messageId));
 		}
 		catch (Exception e)
 		{
@@ -74,24 +81,8 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 	@Override
 	public CompletableFuture<Collection<StoredTestEventId>> getTestEventIdsByMessageIdAsync(StoredMessageId messageId)
 	{
-		CompletableFuture<MappedAsyncPagingIterable<MessageTestEventEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<MessageTestEventEntity>>(semaphore)
-				.getFuture(() -> messagesOperator.getTestEvents(instanceId, messageId.toString(), readAttrs));
-		
-		return future.thenCompose((rs) -> {
-				PagedIterator<MessageTestEventEntity> it = new PagedIterator<>(rs);
-				Set<StoredTestEventId> ids = new HashSet<>();
-				while (it.hasNext())
-				{
-					String eventId = it.next().getEventId();
-					StoredTestEventId parsedId = new StoredTestEventId(eventId);
-					ids.add(parsedId);
-				}
-				
-				if (ids.isEmpty())
-					ids = null;
-				
-				return CompletableFuture.completedFuture(ids);
-			});
+		return asyncExecutor.submit("get event IDs linked to message "+messageId, 
+				() -> readEventIds(messageId));
 	}
 	
 	
@@ -100,7 +91,8 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 	{
 		try
 		{
-			return getMessageIdsByTestEventIdAsync(eventId).get();
+			return syncExecutor.submit("get message IDs linked to event "+eventId, 
+					() -> readMessageIds(eventId));
 		}
 		catch (Exception e)
 		{
@@ -111,37 +103,8 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 	@Override
 	public CompletableFuture<Collection<StoredMessageId>> getMessageIdsByTestEventIdAsync(StoredTestEventId eventId)
 	{
-		CompletableFuture<MappedAsyncPagingIterable<TestEventMessagesEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<TestEventMessagesEntity>>(semaphore)
-				.getFuture(() -> testEventsOperator.getMessages(instanceId, eventId.toString(), readAttrs));
-		
-		return future.thenCompose((rs) -> {
-				PagedIterator<TestEventMessagesEntity> it = new PagedIterator<>(rs);
-				Set<StoredMessageId> ids = new HashSet<>();
-				while (it.hasNext())
-				{
-					Set<String> currentMessageIds = it.next().getMessageIds();
-					if (currentMessageIds == null)
-						continue;
-					
-					for (String cid : currentMessageIds)
-					{
-						try
-						{
-							StoredMessageId parsedId = StoredMessageId.fromString(cid);
-							ids.add(parsedId);
-						}
-						catch (CradleIdException e)
-						{
-							throw new CompletionException("Could not parse message ID from '"+cid+"'", e);
-						}
-					}
-				}
-				
-				if (ids.isEmpty())
-					ids = null;
-				
-				return CompletableFuture.completedFuture(ids);
-			});
+		return asyncExecutor.submit("get message IDs linked to event "+eventId, 
+				() -> readMessageIds(eventId));
 	}
 	
 	
@@ -150,7 +113,8 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 	{
 		try
 		{
-			return isTestEventLinkedToMessagesAsync(eventId).get();
+			return syncExecutor.submit("get if event "+eventId+" is linked to messages", 
+					() -> checkIfMessagesLinked(eventId));
 		}
 		catch (Exception e)
 		{
@@ -161,23 +125,8 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 	@Override
 	public CompletableFuture<Boolean> isTestEventLinkedToMessagesAsync(StoredTestEventId eventId)
 	{
-		CompletableFuture<MappedAsyncPagingIterable<TestEventMessagesEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<TestEventMessagesEntity>>(semaphore)
-				.getFuture(() -> testEventsOperator.getMessages(instanceId, eventId.toString(), readAttrs));
-		
-		return future.thenCompose((rs) -> {
-				PagedIterator<TestEventMessagesEntity> it = new PagedIterator<>(rs);
-				boolean result = false;
-				while (it.hasNext())
-				{
-					Collection<String> ids = it.next().getMessageIds();
-					if (ids != null && !ids.isEmpty())
-					{
-						result = true;
-						break;
-					}
-				}
-				return CompletableFuture.completedFuture(result);
-			});
+		return asyncExecutor.submit("get if event "+eventId+" is linked to messages", 
+				() -> checkIfMessagesLinked(eventId));
 	}
 	
 	@Override
@@ -185,7 +134,8 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 	{
 		try
 		{
-			return isMessageLinkedToTestEventsAsync(messageId).get();
+			return syncExecutor.submit("get if message "+messageId+" is linked to events", 
+					() -> checkIfEventsLinked(messageId));
 		}
 		catch (Exception e)
 		{
@@ -196,12 +146,82 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 	@Override
 	public CompletableFuture<Boolean> isMessageLinkedToTestEventsAsync(StoredMessageId messageId)
 	{
-		CompletableFuture<MappedAsyncPagingIterable<MessageTestEventEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<MessageTestEventEntity>>(semaphore)
-				.getFuture(() -> messagesOperator.getTestEvents(instanceId, messageId.toString(), readAttrs));
-		
-		return future.thenCompose((rs) -> {
-				PagedIterator<MessageTestEventEntity> it = new PagedIterator<>(rs);
-				return CompletableFuture.completedFuture(it.hasNext());
-			});
+		return asyncExecutor.submit("get if message "+messageId+" is linked to events", 
+				() -> checkIfEventsLinked(messageId));
+	}
+	
+	
+	private CompletableFuture<Collection<StoredTestEventId>> readEventIds(StoredMessageId messageId)
+	{
+		return messagesOperator.getTestEvents(instanceId, messageId.toString(), readAttrs)
+				.thenApplyAsync((rs) -> {
+					PagedIterator<MessageTestEventEntity> it = new PagedIterator<>(rs);
+					Set<StoredTestEventId> ids = new HashSet<>();
+					while (it.hasNext())
+					{
+						String eventId = it.next().getEventId();
+						StoredTestEventId parsedId = new StoredTestEventId(eventId);
+						ids.add(parsedId);
+					}
+					
+					if (ids.isEmpty())
+						ids = null;
+					
+					return ids;
+				}, composingService);
+	}
+	
+	private CompletableFuture<Collection<StoredMessageId>> readMessageIds(StoredTestEventId eventId)
+	{
+		return testEventsOperator.getMessages(instanceId, eventId.toString(), readAttrs)
+				.thenApplyAsync((rs) -> {
+					PagedIterator<TestEventMessagesEntity> it = new PagedIterator<>(rs);
+					Set<StoredMessageId> ids = new HashSet<>();
+					while (it.hasNext())
+					{
+						Set<String> currentMessageIds = it.next().getMessageIds();
+						if (currentMessageIds == null)
+							continue;
+						
+						for (String cid : currentMessageIds)
+						{
+							try
+							{
+								StoredMessageId parsedId = StoredMessageId.fromString(cid);
+								ids.add(parsedId);
+							}
+							catch (CradleIdException e)
+							{
+								throw new CompletionException("Could not parse message ID from '"+cid+"'", e);
+							}
+						}
+					}
+					
+					if (ids.isEmpty())
+						ids = null;
+					
+					return ids;
+				}, composingService);
+	}
+	
+	private CompletableFuture<Boolean> checkIfMessagesLinked(StoredTestEventId eventId)
+	{
+		return testEventsOperator.getMessages(instanceId, eventId.toString(), readAttrs)
+				.thenApply((rs) -> {
+					PagedIterator<TestEventMessagesEntity> it = new PagedIterator<>(rs);
+					while (it.hasNext())
+					{
+						Collection<String> ids = it.next().getMessageIds();
+						if (ids != null && !ids.isEmpty())
+							return true;
+					}
+					return false;
+				});
+	}
+	
+	private CompletableFuture<Boolean> checkIfEventsLinked(StoredMessageId messageId)
+	{
+		return messagesOperator.getTestEvents(instanceId, messageId.toString(), readAttrs)
+				.thenApply((rs) -> new PagedIterator<>(rs).hasNext());
 	}
 }

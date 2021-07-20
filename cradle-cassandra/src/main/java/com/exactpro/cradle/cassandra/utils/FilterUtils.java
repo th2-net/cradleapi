@@ -27,7 +27,6 @@ import com.datastax.oss.driver.api.querybuilder.Literal;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.relation.ColumnRelationBuilder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.exactpro.cradle.cassandra.CassandraCradleStorage;
 import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.filters.FilterByField;
 
@@ -95,7 +94,7 @@ public class FilterUtils
 	 */
 	public static Select timestampFilterToWhere(FilterByField<Instant> filter, Select select, String dateColumn, String timeColumn)
 	{
-		LocalDateTime ldt = LocalDateTime.ofInstant(filter.getValue(), CassandraCradleStorage.TIMEZONE_OFFSET);
+		LocalDateTime ldt = DateTimeUtils.toDateTime(filter.getValue());
 		Select result = filterToWhere(ldt.toLocalDate(), filter.getOperation(), select.whereColumn(dateColumn));
 		result = filterToWhere(ldt.toLocalTime(), filter.getOperation(), result.whereColumn(timeColumn));
 		return result;
@@ -111,9 +110,8 @@ public class FilterUtils
 	 */
 	public static BoundStatementBuilder bindTimestamp(Instant timestamp, BoundStatementBuilder builder, String dateColumn, String timeColumn)
 	{
-		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, CassandraCradleStorage.TIMEZONE_OFFSET);
-		builder = builder.setLocalDate(dateColumn, ldt.toLocalDate());
-		builder = builder.setLocalTime(timeColumn, ldt.toLocalTime());
-		return builder;
+		LocalDateTime ldt = DateTimeUtils.toDateTime(timestamp);
+		return builder.setLocalDate(dateColumn, ldt.toLocalDate())
+				.setLocalTime(timeColumn, ldt.toLocalTime());
 	}
 }

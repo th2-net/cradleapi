@@ -32,8 +32,6 @@ import java.util.function.Function;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.exactpro.cradle.cassandra.CassandraSemaphore;
-import com.exactpro.cradle.cassandra.dao.AsyncOperator;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.filters.ComparisonOperation;
@@ -50,15 +48,12 @@ public class CassandraMessageUtils
 				.whereColumn(INSTANCE_ID).isEqualTo(literal(instanceId));
 	}
 	
-	public static CompletableFuture<DetailedMessageBatchEntity> getMessageBatch(StoredMessageId id, MessageBatchOperator op, CassandraSemaphore semaphore,
+	public static CompletableFuture<DetailedMessageBatchEntity> getMessageBatch(StoredMessageId id, MessageBatchOperator op, 
 			UUID instanceId, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
 	{
-		return new AsyncOperator<DetailedMessageBatchEntity>(semaphore)
-				.getFuture(() -> op.getMessageBatch(instanceId,
-							id.getStreamName(), 
-							id.getDirection().getLabel(),
-							id.getIndex(),
-							readAttrs));
+		return op.getMessageBatch(instanceId, 
+				id.getStreamName(), id.getDirection().getLabel(), id.getIndex(),
+				readAttrs);
 	}
 	
 	public static long findLeftMessageIndex(DetailedMessageBatchEntity batch, StoredMessageFilter filter, UUID instanceId, 

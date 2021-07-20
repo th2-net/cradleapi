@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.Transient;
-import com.exactpro.cradle.cassandra.CassandraCradleStorage;
+import com.exactpro.cradle.cassandra.utils.DateTimeUtils;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 
 /**
@@ -129,13 +129,13 @@ public class DetailedMessageBatchEntity extends MessageBatchEntity
 	@Transient
 	public Instant getStoredTimestamp()
 	{
-		return LocalDateTime.of(getStoredDate(), getStoredTime()).toInstant(CassandraCradleStorage.TIMEZONE_OFFSET);
+		return DateTimeUtils.toInstant(getStoredDate(), getStoredTime());
 	}
 	
 	@Transient
 	public void setStoredTimestamp(Instant timestamp)
 	{
-		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, CassandraCradleStorage.TIMEZONE_OFFSET);
+		LocalDateTime ldt = DateTimeUtils.toDateTime(timestamp);
 		setStoredDate(ldt.toLocalDate());
 		setStoredTime(ldt.toLocalTime());
 	}
@@ -164,13 +164,13 @@ public class DetailedMessageBatchEntity extends MessageBatchEntity
 	@Transient
 	public Instant getFirstMessageTimestamp()
 	{
-		return LocalDateTime.of(getFirstMessageDate(), getFirstMessageTime()).toInstant(CassandraCradleStorage.TIMEZONE_OFFSET);
+		return DateTimeUtils.toInstant(getFirstMessageDate(), getFirstMessageTime());
 	}
 	
 	@Transient
 	public void setFirstMessageTimestamp(Instant timestamp)
 	{
-		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, CassandraCradleStorage.TIMEZONE_OFFSET);
+		LocalDateTime ldt = DateTimeUtils.toDateTime(timestamp);
 		setFirstMessageDate(ldt.toLocalDate());
 		setFirstMessageTime(ldt.toLocalTime());
 	}
@@ -199,13 +199,13 @@ public class DetailedMessageBatchEntity extends MessageBatchEntity
 	@Transient
 	public Instant getLastMessageTimestamp()
 	{
-		return LocalDateTime.of(getLastMessageDate(), getLastMessageTime()).toInstant(CassandraCradleStorage.TIMEZONE_OFFSET);
+		return DateTimeUtils.toInstant(getLastMessageDate(), getLastMessageTime());
 	}
 	
 	@Transient
 	public void setLastMessageTimestamp(Instant timestamp)
 	{
-		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, CassandraCradleStorage.TIMEZONE_OFFSET);
+		LocalDateTime ldt = DateTimeUtils.toDateTime(timestamp);
 		setLastMessageDate(ldt.toLocalDate());
 		setLastMessageTime(ldt.toLocalTime());
 	}

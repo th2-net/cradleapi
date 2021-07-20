@@ -34,7 +34,7 @@ import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.datastax.oss.driver.api.mapper.annotations.Transient;
-import com.exactpro.cradle.cassandra.CassandraCradleStorage;
+import com.exactpro.cradle.cassandra.utils.DateTimeUtils;
 import com.exactpro.cradle.testevents.TestEventBatchToStoreBuilder;
 import com.exactpro.cradle.testevents.StoredTestEventWrapper;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
@@ -261,7 +261,7 @@ public class TestEventEntity
 		LocalTime st = getStartTime();
 		if (sd == null || st == null)
 			return null;
-		return LocalDateTime.of(sd, st).toInstant(CassandraCradleStorage.TIMEZONE_OFFSET);
+		return DateTimeUtils.toInstant(sd, st);
 	}
 	
 	@Transient
@@ -269,7 +269,7 @@ public class TestEventEntity
 	{
 		if (timestamp == null)
 			return;
-		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, CassandraCradleStorage.TIMEZONE_OFFSET);
+		LocalDateTime ldt = DateTimeUtils.toDateTime(timestamp);
 		setStartDate(ldt.toLocalDate());
 		setStartTime(ldt.toLocalTime());
 	}
@@ -302,7 +302,7 @@ public class TestEventEntity
 		LocalTime et = getEndTime();
 		if (ed == null || et == null)
 			return null;
-		return LocalDateTime.of(ed, et).toInstant(CassandraCradleStorage.TIMEZONE_OFFSET);
+		return DateTimeUtils.toInstant(ed, et);
 	}
 	
 	@Transient
@@ -310,7 +310,7 @@ public class TestEventEntity
 	{
 		if (timestamp == null)
 			return;
-		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, CassandraCradleStorage.TIMEZONE_OFFSET);
+		LocalDateTime ldt = DateTimeUtils.toDateTime(timestamp);
 		setEndDate(ldt.toLocalDate());
 		setEndTime(ldt.toLocalTime());
 	}

@@ -23,8 +23,6 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.mapper.MapperContext;
 import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.UUID;
@@ -37,8 +35,6 @@ import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
 
 public class TestEventQueryProvider
 {
-	private static final Logger logger = LoggerFactory.getLogger(TestEventQueryProvider.class);
-
 	private final CqlSession session;
 	private final EntityHelper<TestEventEntity> helper;
 	private final SimpleStatement ss;

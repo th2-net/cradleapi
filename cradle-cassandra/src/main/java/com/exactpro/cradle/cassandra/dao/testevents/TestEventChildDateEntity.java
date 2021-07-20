@@ -28,7 +28,7 @@ import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
-import com.exactpro.cradle.cassandra.CassandraCradleStorage;
+import com.exactpro.cradle.cassandra.utils.DateTimeUtils;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 
 /**
@@ -59,7 +59,7 @@ public class TestEventChildDateEntity
 		this.setInstanceId(instanceId);
 		this.setParentId(event.getParentId().toString());
 		
-		LocalDateTime ldt = LocalDateTime.ofInstant(event.getStartTimestamp(), CassandraCradleStorage.TIMEZONE_OFFSET);
+		LocalDateTime ldt = DateTimeUtils.toDateTime(event.getStartTimestamp());
 		this.setStartDate(ldt.toLocalDate());
 	}
 	

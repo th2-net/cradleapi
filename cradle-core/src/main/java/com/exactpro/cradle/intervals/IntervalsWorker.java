@@ -47,6 +47,7 @@ public interface IntervalsWorker
      * @param crawlerVersion version of Crawler
      * @param crawlerType type of Crawler
      * @return iterable of intervals
+     * @throws IOException if data reading failed
      */
     Iterable<Interval> getIntervalsPerDay(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException;
 
@@ -60,7 +61,8 @@ public interface IntervalsWorker
      * @return future to get know if obtaining was successful
      * @throws CradleStorageException if given parameters are invalid
      */
-    CompletableFuture<Iterable<Interval>> getIntervalsPerDayAsync(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws CradleStorageException;
+    CompletableFuture<Iterable<Interval>> getIntervalsPerDayAsync(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) 
+    		throws CradleStorageException;
 
     /**
      * Obtains iterable of intervals with startTime greater than or equal to "from" and less than or equal to "to"
@@ -70,6 +72,7 @@ public interface IntervalsWorker
      * @param crawlerVersion version of Crawler
      * @param crawlerType type of Crawler
      * @return iterable of intervals
+     * @throws IOException if data reading failed
      */
     Iterable<Interval> getIntervals(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException;
 
@@ -80,6 +83,7 @@ public interface IntervalsWorker
      * @return the new instance of {@link Interval} with updated newLastUpdateTime. This operation is successful
      * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
      * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
+     * @throws IOException if update failed
      */
     Interval setIntervalLastUpdateTimeAndDate(Interval interval, Instant newLastUpdateTime) throws IOException;
 
@@ -100,6 +104,7 @@ public interface IntervalsWorker
      * @return the new instance of {@link Interval} with updated recoveryState. This operation is successful
      * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
      * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
+     * @throws IOException if update failed
      */
     Interval updateRecoveryState(Interval interval, RecoveryState recoveryState) throws IOException;
 
@@ -120,6 +125,7 @@ public interface IntervalsWorker
      * @return the new instance of {@link Interval} with updated processed. This operation is successful
      * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
      * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
+     * @throws IOException if update failed
      */
     Interval setIntervalProcessed(Interval interval, boolean processed) throws IOException;
 

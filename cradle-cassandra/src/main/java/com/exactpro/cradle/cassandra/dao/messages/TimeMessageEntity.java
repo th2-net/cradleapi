@@ -38,7 +38,7 @@ import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.datastax.oss.driver.api.mapper.annotations.Transient;
 import com.exactpro.cradle.Direction;
-import com.exactpro.cradle.cassandra.CassandraCradleStorage;
+import com.exactpro.cradle.cassandra.utils.DateTimeUtils;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageId;
 
@@ -148,13 +148,13 @@ public class TimeMessageEntity
 	@Transient
 	public Instant getMessageTimestamp()
 	{
-		return LocalDateTime.of(getMessageDate(), getMessageTime()).toInstant(CassandraCradleStorage.TIMEZONE_OFFSET);
+		return DateTimeUtils.toInstant(getMessageDate(), getMessageTime());
 	}
 	
 	@Transient
 	public void setMessageTimestamp(Instant timestamp)
 	{
-		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, CassandraCradleStorage.TIMEZONE_OFFSET);
+		LocalDateTime ldt = DateTimeUtils.toDateTime(timestamp);
 		setMessageDate(ldt.toLocalDate());
 		setMessageTime(ldt.toLocalTime());
 	}
