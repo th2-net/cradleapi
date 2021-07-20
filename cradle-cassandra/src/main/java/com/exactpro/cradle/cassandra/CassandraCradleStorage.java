@@ -58,14 +58,11 @@ import com.exactpro.cradle.utils.MessageUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.lang.Math.log;
 import static java.lang.Math.min;
 import static java.util.stream.Collectors.toList;
 
 import java.io.*;
 import java.time.*;
-import java.time.temporal.ChronoField;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -634,7 +631,7 @@ public class CassandraCradleStorage extends CradleStorage
 						.getFuture(() -> order == Order.DIRECT
 								? ops.getTestEventChildrenOperator().getTestEventsDirect(instanceUuid, parentId.toString(),
 									fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
-								: ops.getTestEventChildrenOperator().getTestEventsInverse(instanceUuid, parentId.toString(),
+								: ops.getTestEventChildrenOperator().getTestEventsReverse(instanceUuid, parentId.toString(),
 									fromDateTime.toLocalDate(), fromTime, toTime, readAttrs));
 		return future.thenApply(TestEventChildrenMetadataIteratorAdapter::new);
 	}

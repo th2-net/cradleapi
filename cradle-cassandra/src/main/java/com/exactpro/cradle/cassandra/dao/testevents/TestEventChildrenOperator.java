@@ -47,7 +47,7 @@ public interface TestEventChildrenOperator
 
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+INSTANCE_ID+"=:instanceId AND "+PARENT_ID+"=:parentId AND "+
 			START_DATE+"=:startDate AND "+START_TIME+">=:timeFrom AND "+START_TIME+"<=:timeTo ORDER BY "+START_TIME+" DESC, "+ID+" DESC")
-	CompletableFuture<MappedAsyncPagingIterable<TestEventChildEntity>> getTestEventsInverse(UUID instanceId, String parentId,
+	CompletableFuture<MappedAsyncPagingIterable<TestEventChildEntity>> getTestEventsReverse(UUID instanceId, String parentId,
 			LocalDate startDate, LocalTime timeFrom, LocalTime timeTo, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Insert

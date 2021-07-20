@@ -115,9 +115,9 @@ public class StoredMessageBatch
 	}
 
 	/**
-	 * @return collection of messages stored in the batch in inverse order
+	 * @return collection of messages stored in the batch in reverse order
 	 */
-	public Collection<StoredMessage> getMessagesInverse()
+	public Collection<StoredMessage> getMessagesReverse()
 	{
 		List<StoredMessage> list = new ArrayList<>(messages);
 		Collections.reverse(list);
