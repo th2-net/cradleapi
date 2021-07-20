@@ -48,12 +48,10 @@ public interface TimeTestEventOperator
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Insert
-	CompletableFuture<TimeTestEventEntity> writeTestEvent(TimeTestEventEntity timeTestEvent,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-
-	@Query("UPDATE ${qualifiedTableId} SET " + SUCCESS + "=:success WHERE " + INSTANCE_ID + "=:instanceId AND " +
-			START_DATE + "=:startDate AND " + START_TIME + "=:startTime AND " + ID + "=:eventId")
+	CompletableFuture<TimeTestEventEntity> writeTestEvent(TimeTestEventEntity timeTestEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
+	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+INSTANCE_ID+"=:instanceId AND "+
+			START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:eventId")
 	CompletableFuture<AsyncResultSet> updateStatus(UUID instanceId, LocalDate startDate, LocalTime startTime,
-			String eventId, boolean success,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+					String eventId, boolean success, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }
