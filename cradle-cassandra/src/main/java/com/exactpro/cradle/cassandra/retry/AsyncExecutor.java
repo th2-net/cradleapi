@@ -19,6 +19,7 @@ package com.exactpro.cradle.cassandra.retry;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Supplier;
 
@@ -37,12 +38,13 @@ public class AsyncExecutor
 	private final int defaultRetries;
 	private final AsyncRequestProcessor processor;
 	
-	public AsyncExecutor(int maxQueueSize, ExecutorService execService, ExecutorService composingService, int defaultRetries, int delay)
+	public AsyncExecutor(int maxQueueSize, ExecutorService composingService, int defaultRetries, int delay)
 	{
 		this.requests = new LinkedBlockingQueue<RequestInfo<?>>(maxQueueSize);
-		this.execService = execService;
+		this.execService = Executors.newSingleThreadExecutor();
 		this.defaultRetries = defaultRetries;
 		this.processor = new AsyncRequestProcessor(requests, composingService, delay);
+		
 		execService.submit(processor);
 	}
 	

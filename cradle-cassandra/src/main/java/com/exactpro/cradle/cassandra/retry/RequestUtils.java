@@ -22,6 +22,9 @@ import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.DriverException;
 import com.datastax.oss.driver.api.core.DriverExecutionException;
@@ -32,13 +35,16 @@ import com.datastax.oss.driver.api.core.servererrors.QueryExecutionException;
 
 public class RequestUtils
 {
-	private static final List<Class<? extends DriverException>> recoverableErrors = Collections.unmodifiableList(Arrays.asList(
+	private static final Logger logger = LoggerFactory.getLogger(RequestUtils.class);
+	
+	private static final List<Class<? extends DriverException>> RECOVERABLE_ERRORS = Collections.unmodifiableList(Arrays.asList(
 			AllNodesFailedException.class,
 			BusyConnectionException.class,
 			QueryExecutionException.class,
 			DriverExecutionException.class,
 			DriverTimeoutException.class,
 			RequestThrottlingException.class));
+	private static final int MAX_DELAY = 300000;  //5 minutes
 	
 	/**
 	 * Handles error of request execution, if possible. Request's future will be completed if the method has processed the failure
@@ -69,7 +75,7 @@ public class RequestUtils
 		
 		if (!isRecoverableError(error))
 		{
-			handleNonRecoverable(request, error);
+			handleUnrecoverable(request, error);
 			return true;
 		}
 		
@@ -87,7 +93,7 @@ public class RequestUtils
 		if (error == null)  //Can't recover after runtime exception with no cause
 			return false;
 		
-		for (Class<? extends DriverException> c : recoverableErrors)
+		for (Class<? extends DriverException> c : RECOVERABLE_ERRORS)
 		{
 			if (c.isInstance(error))
 				return true;
@@ -108,7 +114,7 @@ public class RequestUtils
 		{
 			try
 			{
-				Thread.sleep(delay);
+				Thread.sleep(Math.max(MAX_DELAY, delay*request.getRetries()));
 			}
 			catch (InterruptedException e)
 			{
@@ -136,7 +142,8 @@ public class RequestUtils
 	
 	private static void handleCancelled(RequestInfo<?> request, Throwable error)
 	{
-		request.getFuture().completeExceptionally(new RetryException("'"+request.getInfo()+"' failed and was cancelled after "+request.getRetries()+" retries", error));
+		if (logger.isDebugEnabled())
+			logger.debug("'"+request.getInfo()+"' failed and was cancelled after "+request.getRetries()+" retries", error);
 	}
 	
 	private static void handleNoRetry(RequestInfo<?> request, Throwable error)
@@ -149,7 +156,7 @@ public class RequestUtils
 		request.getFuture().completeExceptionally(new RetryException("'"+request.getInfo()+"' failed, maximum number of retries done ("+retries+")", error));
 	}
 	
-	private static void handleNonRecoverable(RequestInfo<?> request, Throwable error)
+	private static void handleUnrecoverable(RequestInfo<?> request, Throwable error)
 	{
 		request.getFuture().completeExceptionally(new RetryException("'"+request.getInfo()+"' failed, can't recover after error", error));
 	}

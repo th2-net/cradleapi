@@ -16,9 +16,12 @@
 
 package com.exactpro.cradle.cassandra.retry;
 
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +39,7 @@ public class AsyncRequestProcessor implements Runnable
 	private final BlockingQueue<RequestInfo<?>> requests;
 	private final ExecutorService composingService;
 	private final int delay;
-	private final AtomicInteger active = new AtomicInteger(0);
+	private final Set<CompletableFuture<?>> futures = ConcurrentHashMap.newKeySet();
 	
 	public AsyncRequestProcessor(BlockingQueue<RequestInfo<?>> requests, ExecutorService composingService, int delay)
 	{
@@ -58,38 +61,51 @@ public class AsyncRequestProcessor implements Runnable
 			catch (InterruptedException e)
 			{
 				Thread.currentThread().interrupt();
-				logger.info("Wait for next request to process interrupted, {} active, {} pending", active.get(), requests.size());
+				logger.info("Wait for next request to process interrupted, {} active, {} pending", futures.size(), requests.size());
+				cancelFutures();
+				futures.clear();
 				return;
 			}
 			
-			if (r.getFuture().isDone())  //Execution was cancelled or completed in any other way
+			CompletableFuture<?> f = r.getFuture();
+			if (f.isDone())  //Execution was cancelled or completed in any other way
+			{
+				futures.remove(f);
 				continue;
+			}
 			
 			if (logger.isTraceEnabled())
-				logger.trace("Executing '{}', {} more request(s) active, {} pending", r.getInfo(), active.get(), requests.size());
-			active.incrementAndGet();
+				logger.trace("Executing '{}', {} more request(s) active, {} pending", r.getInfo(), futures.size(), requests.size());
+			futures.add(f);
 			r.getSupplier().get().whenCompleteAsync((result, error) -> retryOrComplete(r, result, error), composingService);
 		}
 	}
 	
 	public int getActiveRequests()
 	{
-		return active.get();
+		return futures.size();
 	}
 	
 	
 	private void retryOrComplete(RequestInfo<?> request, Object result, Throwable error)
 	{
-		active.decrementAndGet();
-		
-		if (error == null)
+		try
 		{
-			request.completeFuture(result);
-			return;
+			if (error == null)
+			{
+				request.completeFuture(result);
+				return;
+			}
+			
+			if (!RequestUtils.handleRequestError(request, error))
+				retry(request, error);
 		}
-		
-		if (!RequestUtils.handleRequestError(request, error))
-			retry(request, error);
+		finally
+		{
+			CompletableFuture<?> f = request.getFuture();
+			if (f.isDone())
+				futures.remove(f);
+		}
 	}
 	
 	private void retry(RequestInfo<?> request, Throwable error)
@@ -98,8 +114,26 @@ public class AsyncRequestProcessor implements Runnable
 			return;
 		
 		logger.warn(RequestUtils.getRetryMessage(request, error));
-		if (!requests.offer(request))
-			request.getFuture().completeExceptionally(
-					new TooManyRequestsException("Could not retry request '"+request.getInfo()+"' after "+request.getRetries()+" retries", error));
+		try
+		{
+			if (!requests.offer(request, 5000, TimeUnit.MILLISECONDS))
+				request.getFuture().completeExceptionally(
+						new TooManyRequestsException("Could not retry request '"+request.getInfo()+"' after "+request.getRetries()+" retries", error));
+		}
+		catch (InterruptedException e)
+		{
+			Thread.currentThread().interrupt();
+			request.getFuture().completeExceptionally(e);
+		}
+	}
+	
+	private void cancelFutures()
+	{
+		if (futures.isEmpty())
+			return;
+		
+		Exception e = new Exception("Async execution cancelled");
+		for (CompletableFuture<?> f : futures)
+			f.completeExceptionally(e);  //Not canceling to be able to track who completed the future
 	}
 }

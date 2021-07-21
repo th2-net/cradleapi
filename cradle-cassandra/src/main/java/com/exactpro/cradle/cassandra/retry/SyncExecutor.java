@@ -17,6 +17,8 @@
 package com.exactpro.cradle.cassandra.retry;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
@@ -53,11 +55,21 @@ public class SyncExecutor
 			}
 			catch (Throwable e)
 			{
-				if (RequestUtils.handleRequestError(request, e))
-					return request.getFuture().get();  //Error handled = future completed exceptionally
-				
-				if (!RequestUtils.sleepBeforeRetry(request, e, delay))
-					return request.getFuture().get();  //Failed to make delay = future completed exceptionally
+				try
+				{
+					if (RequestUtils.handleRequestError(request, e))
+						return request.getFuture().get();  //Error handled = future completed exceptionally
+					
+					if (!RequestUtils.sleepBeforeRetry(request, e, delay))
+						return request.getFuture().get();  //Failed to make delay = future completed exceptionally
+				}
+				catch (ExecutionException | CompletionException e2)
+				{
+					Throwable cause = e2.getCause();
+					if (cause != null && cause instanceof Exception)
+						throw (Exception)cause;
+					throw e2;
+				}
 				
 				logger.warn(RequestUtils.getRetryMessage(request, e));
 			}
