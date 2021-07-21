@@ -19,6 +19,10 @@ package com.exactpro.cradle.cassandra.retry;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
+/**
+ * Information about request to be sent to Cassandra
+ * @param <T> class of request result
+ */
 public class RequestInfo<T>
 {
 	private final String info;

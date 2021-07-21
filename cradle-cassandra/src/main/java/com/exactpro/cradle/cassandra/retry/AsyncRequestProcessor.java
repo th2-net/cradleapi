@@ -23,6 +23,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Asynchronous processor for requests to Cassandra.
+ * It takes requests from given queue, triggering their execution and assigning asynchronous callbacks.
+ * Callback puts request back to queue if it has failed with recoverable error. 
+ * If number of retries exceeds limit defined for request or the failure is unrecoverable, request completes exceptionally.
+ */
 public class AsyncRequestProcessor implements Runnable
 {
 	private static final Logger logger = LoggerFactory.getLogger(AsyncRequestProcessor.class);
@@ -91,17 +97,9 @@ public class AsyncRequestProcessor implements Runnable
 		if (!RequestUtils.sleepBeforeRetry(request, error, delay))
 			return;
 		
-		logger.warn(RequestUtils.getRetryMessage(request), error);
-		try
-		{
-			requests.add(request);
-		}
-		catch (IllegalArgumentException e)
-		{
-			String msg = "Could not retry request '"+request.getInfo()+"' after "+request.getRetries()+" retries";
-			e.addSuppressed(error);
-			logger.error(msg, e);
-			request.getFuture().completeExceptionally(new RetryException(msg, e));
-		}
+		logger.warn(RequestUtils.getRetryMessage(request, error));
+		if (!requests.offer(request))
+			request.getFuture().completeExceptionally(
+					new TooManyRequestsException("Could not retry request '"+request.getInfo()+"' after "+request.getRetries()+" retries", error));
 	}
 }

@@ -22,9 +22,6 @@ import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.DriverException;
 import com.datastax.oss.driver.api.core.DriverExecutionException;
@@ -35,7 +32,6 @@ import com.datastax.oss.driver.api.core.servererrors.QueryExecutionException;
 
 public class RequestUtils
 {
-	private static final Logger logger = LoggerFactory.getLogger(RequestUtils.class);
 	private static final List<Class<? extends DriverException>> recoverableErrors = Collections.unmodifiableList(Arrays.asList(
 			AllNodesFailedException.class,
 			BusyConnectionException.class,
@@ -81,18 +77,15 @@ public class RequestUtils
 	}
 	
 	/**
-	 * Checks if request failure with given error can be retried
+	 * Checks if request failed with given error can be retried
 	 * @param error to check
 	 * @return true if request failed with the error can be retried
 	 */
 	public static boolean isRecoverableError(Throwable error)
 	{
-		if (error instanceof CompletionException || error instanceof ExecutionException)
-		{
-			error = error.getCause();
-			if (error == null)  //Can't recover after runtime exception with no cause
-				return false;
-		}
+		error = getRealError(error);
+		if (error == null)  //Can't recover after runtime exception with no cause
+			return false;
 		
 		for (Class<? extends DriverException> c : recoverableErrors)
 		{
@@ -120,7 +113,8 @@ public class RequestUtils
 			catch (InterruptedException e)
 			{
 				Thread.currentThread().interrupt();
-				logger.info("Sleep before retry of '"+request.getInfo()+"' interrupted. Request was failed with error", error);
+				e.addSuppressed(error);
+				handleInterruption(request, e);
 				return false;
 			}
 		}
@@ -128,41 +122,48 @@ public class RequestUtils
 	}
 	
 	/**
-	 * Builds a message to print before retrying request
+	 * Builds a message to print before retrying failed request
 	 * @param request to retry
+	 * @param error cause of failure
 	 * @return message to print to log
 	 */
-	public static String getRetryMessage(RequestInfo<?> request)
+	public static String getRetryMessage(RequestInfo<?> request, Throwable error)
 	{
-		return "Retrying '"+request.getInfo()+"', attempt #"+request.nextRetry()+" after error";
+		error = getRealError(error);
+		return "Retrying '"+request.getInfo()+"', attempt #"+request.nextRetry()+" after error: "+error.getClass().getName()+" "+error.getMessage();
 	}
 	
 	
 	private static void handleCancelled(RequestInfo<?> request, Throwable error)
 	{
-		String msg = "'"+request.getInfo()+"' failed and was cancelled after "+request.getRetries()+" retries";
-		logger.debug(msg, error);
-		request.getFuture().completeExceptionally(new RetryException(msg, error));
+		request.getFuture().completeExceptionally(new RetryException("'"+request.getInfo()+"' failed and was cancelled after "+request.getRetries()+" retries", error));
 	}
 	
 	private static void handleNoRetry(RequestInfo<?> request, Throwable error)
 	{
-		String msg = "'"+request.getInfo()+"' failed, retrying is switched off";
-		logger.warn(msg, error);
-		request.getFuture().completeExceptionally(new RetryException(msg, error));
+		request.getFuture().completeExceptionally(new RetryException("'"+request.getInfo()+"' failed, retrial is switched off", error));
 	}
 	
 	private static void handleRetriesExceeded(RequestInfo<?> request, Throwable error, int retries)
 	{
-		String msg = "'"+request.getInfo()+"' failed, maximum number of retries done ("+retries+")";
-		logger.warn(msg, error);
-		request.getFuture().completeExceptionally(new RetryException(msg, error));
+		request.getFuture().completeExceptionally(new RetryException("'"+request.getInfo()+"' failed, maximum number of retries done ("+retries+")", error));
 	}
 	
 	private static void handleNonRecoverable(RequestInfo<?> request, Throwable error)
 	{
-		String msg = "'"+request.getInfo()+"' failed, can't recover after error";
-		logger.warn(msg, error);
-		request.getFuture().completeExceptionally(new RetryException(msg, error));
+		request.getFuture().completeExceptionally(new RetryException("'"+request.getInfo()+"' failed, can't recover after error", error));
+	}
+	
+	private static void handleInterruption(RequestInfo<?> request, Throwable error)
+	{
+		request.getFuture().completeExceptionally(new RetryException("Sleep before retrial of '"+request.getInfo()+"' interrupted", error));
+	}
+	
+	
+	private static Throwable getRealError(Throwable error)
+	{
+		if (error instanceof CompletionException || error instanceof ExecutionException)
+			return error.getCause();
+		return error;
 	}
 }

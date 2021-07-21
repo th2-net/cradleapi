@@ -200,13 +200,11 @@ public class CassandraConnectionSettings
 	}
 	
 	
-	@Deprecated
 	public int getMaxParallelQueries()
 	{
 		return maxParallelQueries;
 	}
 	
-	@Deprecated
 	public void setMaxParallelQueries(int maxParallelQueries)
 	{
 		this.maxParallelQueries = maxParallelQueries;

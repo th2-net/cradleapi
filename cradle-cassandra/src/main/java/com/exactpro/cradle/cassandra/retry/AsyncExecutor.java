@@ -22,21 +22,24 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Supplier;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+/**
+ * Asynchronous executor for requests to Cassandra.
+ * Requests are queued and CompletableFuture to track the execution is returned.
+ * Queue size is limited. Requests that can't be queued due to this limitation are completed exceptionally.
+ * If request execution fails with a recoverable error, the request is retried.
+ * CompletableFuture related to the request remains incomplete until request completes successfully or with unrecoverable error
+ * or if number of retries exceeds limit defined for request.
+ */
 public class AsyncExecutor
 {
-	private static final Logger logger = LoggerFactory.getLogger(AsyncExecutor.class);
-	
-	//This queue should be unbounded else submission of a task will block
-	private final BlockingQueue<RequestInfo<?>> requests = new LinkedBlockingQueue<RequestInfo<?>>();
+	private final BlockingQueue<RequestInfo<?>> requests;
 	private final ExecutorService execService;
 	private final int defaultRetries;
 	private final AsyncRequestProcessor processor;
 	
-	public AsyncExecutor(ExecutorService execService, ExecutorService composingService, int defaultRetries, int delay)
+	public AsyncExecutor(int maxQueueSize, ExecutorService execService, ExecutorService composingService, int defaultRetries, int delay)
 	{
+		this.requests = new LinkedBlockingQueue<RequestInfo<?>>(maxQueueSize);
 		this.execService = execService;
 		this.defaultRetries = defaultRetries;
 		this.processor = new AsyncRequestProcessor(requests, composingService, delay);
@@ -46,16 +49,8 @@ public class AsyncExecutor
 	public <T> CompletableFuture<T> submit(String requestInfo, int maxRetries, Supplier<CompletableFuture<T>> supplier)
 	{
 		CompletableFuture<T> result = new CompletableFuture<T>();
-		try
-		{
-			requests.add(new RequestInfo<T>(requestInfo, maxRetries, supplier, result));
-		}
-		catch (IllegalArgumentException e)
-		{
-			String msg = "Could not submit new request '"+requestInfo+"'";
-			logger.error(msg, e);
-			result.completeExceptionally(new RetryException(msg, e));
-		}
+		if (!requests.offer(new RequestInfo<T>(requestInfo, maxRetries, supplier, result)))
+			result.completeExceptionally(new TooManyRequestsException("Could not submit new request '"+requestInfo+"'"));
 		return result;
 	}
 	

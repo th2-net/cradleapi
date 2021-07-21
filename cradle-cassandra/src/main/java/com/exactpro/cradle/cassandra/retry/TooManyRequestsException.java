@@ -17,23 +17,23 @@
 package com.exactpro.cradle.cassandra.retry;
 
 /**
- * Exception to indicate that request to Cassandra has failed and cannot be retried.
+ * Exception to indicate that request to Cassandra cannot be submitted due to large number of requests being currently executed
  */
-public class RetryException extends Exception
+public class TooManyRequestsException extends Exception
 {
-	private static final long serialVersionUID = 8629258280897290696L;
-
-	public RetryException(String message)
+	private static final long serialVersionUID = 5038905499201453283L;
+	
+	public TooManyRequestsException(String message)
 	{
 		super(message);
 	}
 	
-	public RetryException(Throwable cause)
+	public TooManyRequestsException(Throwable cause)
 	{
 		super(cause);
 	}
 	
-	public RetryException(String message, Throwable cause)
+	public TooManyRequestsException(String message, Throwable cause)
 	{
 		super(message, cause);
 	}

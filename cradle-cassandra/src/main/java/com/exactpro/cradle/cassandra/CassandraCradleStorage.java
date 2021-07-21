@@ -84,9 +84,6 @@ public class CassandraCradleStorage extends CradleStorage
 	private final CassandraConnection connection;
 	private final CassandraStorageSettings settings;
 	private final CradleObjectsFactory objectsFactory;
-	private final int syncRetries,
-			asyncRetries,
-			retryDelay;
 	private final ExecutorService composingService;
 	private final boolean ownedComposingService;
 
@@ -96,8 +93,7 @@ public class CassandraCradleStorage extends CradleStorage
 	private Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
 			readAttrs,
 			strictReadAttrs;
-	private int resultPageSize;
-
+	
 	private QueryExecutor exec;
 	private SyncExecutor syncExecutor;
 	private AsyncExecutor asyncExecutor;
@@ -114,10 +110,6 @@ public class CassandraCradleStorage extends CradleStorage
 		this.connection = connection;
 		this.settings = settings;
 		objectsFactory = new CradleObjectsFactory(settings.getMaxMessageBatchSize(), settings.getMaxTestEventBatchSize());
-		resultPageSize = conSettings.getResultPageSize();
-		syncRetries = conSettings.getMaxSyncRetries();
-		asyncRetries = conSettings.getMaxAsyncRetries();
-		retryDelay = conSettings.getRetryDelay();
 		
 		if (conSettings.getComposingService() == null)
 		{
@@ -153,10 +145,15 @@ public class CassandraCradleStorage extends CradleStorage
 		
 		try
 		{
+			CassandraConnectionSettings conSettings = connection.getSettings();
+			
 			exec = new QueryExecutor(connection.getSession(),
 					settings.getTimeout(), settings.getWriteConsistencyLevel(), settings.getReadConsistencyLevel());
-			syncExecutor = new SyncExecutor(syncRetries, retryDelay);
-			asyncExecutor = new AsyncExecutor(Executors.newSingleThreadExecutor(), composingService, asyncRetries, retryDelay);
+			
+			int retryDelay = conSettings.getRetryDelay();
+			syncExecutor = new SyncExecutor(conSettings.getMaxSyncRetries(), retryDelay);
+			asyncExecutor = new AsyncExecutor(conSettings.getMaxParallelQueries(), Executors.newSingleThreadExecutor(), composingService, 
+					conSettings.getMaxAsyncRetries(), retryDelay);
 			
 			if (prepareStorage)
 			{
@@ -172,6 +169,7 @@ public class CassandraCradleStorage extends CradleStorage
 			ops = createOperators(dataMapper, settings);
 			
 			Duration timeout = Duration.ofMillis(settings.getTimeout());
+			int resultPageSize = conSettings.getResultPageSize();
 			writeAttrs = builder -> builder.setConsistencyLevel(settings.getWriteConsistencyLevel())
 					.setTimeout(timeout);
 			readAttrs = builder -> builder.setConsistencyLevel(settings.getReadConsistencyLevel())

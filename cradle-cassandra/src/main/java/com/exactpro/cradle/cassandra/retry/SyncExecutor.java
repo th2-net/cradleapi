@@ -22,6 +22,12 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Synchronous executor for requests to Cassandra.
+ * Requests are executed, blocking the current thread.
+ * If request execution fails with a recoverable error, the request is retried.
+ * Current thread remains blocked until request completes successfully or with unrecoverable error or if number of retries exceeds limit defined for request.
+ */
 public class SyncExecutor
 {
 	private static final Logger logger = LoggerFactory.getLogger(SyncExecutor.class);
@@ -53,7 +59,7 @@ public class SyncExecutor
 				if (!RequestUtils.sleepBeforeRetry(request, e, delay))
 					return request.getFuture().get();  //Failed to make delay = future completed exceptionally
 				
-				logger.warn(RequestUtils.getRetryMessage(request), e);
+				logger.warn(RequestUtils.getRetryMessage(request, e));
 			}
 		}
 		while (!Thread.currentThread().isInterrupted());
