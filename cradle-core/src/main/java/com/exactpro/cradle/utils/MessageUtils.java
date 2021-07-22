@@ -108,7 +108,7 @@ public class MessageUtils
 	 * @return collection of deserialized messages
 	 * @throws IOException if deserialization failed
 	 */
-	public static Collection<StoredMessage> deserializeMessages(byte[] contentBytes) throws IOException
+	public static List<StoredMessage> deserializeMessages(byte[] contentBytes) throws IOException
 	{
 		List<StoredMessage> storedMessages = new ArrayList<>();
 		try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(contentBytes)))
@@ -144,7 +144,7 @@ public class MessageUtils
 	 * @return collection of deserialized messages
 	 * @throws IOException if deserialization failed
 	 */
-	public static Collection<StoredMessage> bytesToMessages(ByteBuffer content, boolean compressed) throws IOException
+	public static List<StoredMessage> bytesToMessages(ByteBuffer content, boolean compressed) throws IOException
 	{
 		byte[] contentBytes = getMessageContentBytes(content, compressed, null);
 		return deserializeMessages(contentBytes);

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.Order;
 import com.exactpro.cradle.filters.FilterForAny;
 import com.exactpro.cradle.filters.FilterForEquals;
 import com.exactpro.cradle.filters.FilterForGreater;
@@ -34,9 +35,8 @@ public class StoredMessageFilter
 	private FilterForGreater<Instant> timestampFrom;
 	private FilterForLess<Instant> timestampTo;
 	private int limit;
-	
+	private Order order = Order.DIRECT;
 	private long leftBoundIndex = -1;
-	
 	
 	public StoredMessageFilter()
 	{
@@ -44,6 +44,7 @@ public class StoredMessageFilter
 	
 	public StoredMessageFilter(StoredMessageFilter copyFrom)
 	{
+		this.order = copyFrom.getOrder();
 		this.streamName = copyFrom.getStreamName();
 		this.direction = copyFrom.getDirection();
 		this.index = copyFrom.getIndex();
@@ -136,24 +137,35 @@ public class StoredMessageFilter
 	{
 		this.leftBoundIndex = leftBoundIndex;
 	}
-	
-	
+
+	public Order getOrder()
+	{
+		return order;
+	}
+
+	public void setOrder(Order order)
+	{
+		this.order = order == null ? Order.DIRECT : order;
+	}
+
 	@Override
 	public String toString()
 	{
 		List<String> result = new ArrayList<>();
+		if (order !=null)
+			result.add("order=" + order);
 		if (streamName != null)
-			result.add("stream name"+streamName.toString());
+			result.add("stream name" + streamName);
 		if (direction != null)
-			result.add("direction"+direction.toString());
+			result.add("direction" + direction);
 		if (index != null)
-			result.add("index"+index.toString());
+			result.add("index" + index);
 		if (timestampFrom != null)
-			result.add("timestamp"+timestampFrom.toString());
+			result.add("timestamp" + timestampFrom);
 		if (timestampTo != null)
-			result.add("timestamp"+timestampTo.toString());
+			result.add("timestamp" + timestampTo);
 		if (limit > 0)
-			result.add("limit="+limit);
+			result.add("limit=" + limit);
 		return String.join(", ", result);
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,7 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.datastax.oss.driver.api.querybuilder.insert.Insert;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.exactpro.cradle.CradleObjectsFactory;
-import com.exactpro.cradle.CradleStorage;
-import com.exactpro.cradle.Direction;
-import com.exactpro.cradle.TimeRelation;
+import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
@@ -36,11 +33,7 @@ import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.StreamEntity;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.DetailedTestEventEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventDateEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildDateEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesOperator;
+import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.retry.AsyncExecutor;
 import com.exactpro.cradle.cassandra.retry.SyncExecutor;
@@ -513,13 +506,15 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	protected Iterable<StoredTestEventMetadata> doGetRootTestEvents(Instant from, Instant to) throws CradleStorageException, IOException
+	protected Iterable<StoredTestEventMetadata> doGetRootTestEvents(Instant from, Instant to, Order order) 
+			throws CradleStorageException, IOException
 	{
 		try
 		{
 			TimestampRange range = new TimestampRange(from, to);
-			return syncExecutor.submit("get root test events from range "+from+".."+to, 
-					() -> testEventsWorker.readRootEvents(range));
+			return syncExecutor.submit("get root test events from range "+from+".."+to
+					+" in "+(order == Order.REVERSE ? "reversed" : "direct")+" order", 
+					() -> testEventsWorker.readRootEvents(range, order));
 		}
 		catch (CradleStorageException e)
 		{
@@ -532,23 +527,26 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetRootTestEventsAsync(Instant from, Instant to) throws CradleStorageException
+	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetRootTestEventsAsync(Instant from, Instant to,
+			Order order) throws CradleStorageException
 	{
 		TimestampRange range = new TimestampRange(from, to);
-		return asyncExecutor.submit("get root test events from range "+from+".."+to, 
-				() -> testEventsWorker.readRootEvents(range));
+		return asyncExecutor.submit("get root test events from range "+from+".."+to
+				+" in "+(order == Order.REVERSE ? "reversed" : "direct")+" order", 
+				() -> testEventsWorker.readRootEvents(range, order));
 	}
 
 
 	@Override
-	protected Iterable<StoredTestEventMetadata> doGetTestEvents(StoredTestEventId parentId, Instant from, Instant to)
+	protected Iterable<StoredTestEventMetadata> doGetTestEvents(StoredTestEventId parentId, Instant from, Instant to, Order order) 
 			throws CradleStorageException, IOException
 	{
 		try
 		{
 			TimestampRange range = new TimestampRange(from, to);
-			return syncExecutor.submit("get child test events of "+parentId+" from range "+from+".."+to, 
-					() -> testEventsWorker.readEvents(parentId, range));
+			return syncExecutor.submit("get child test events of "+parentId+" from range "+from+".."+to
+					+" in "+(order == Order.REVERSE ? "reversed" : "direct")+" order", 
+					() -> testEventsWorker.readEvents(parentId, range, order));
 		}
 		catch (CradleStorageException e)
 		{
@@ -561,22 +559,25 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsAsync(StoredTestEventId parentId, Instant from, Instant to) throws CradleStorageException
+	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsAsync(StoredTestEventId parentId,
+			Instant from, Instant to, Order order) throws CradleStorageException
 	{
 		TimestampRange range = new TimestampRange(from, to);
-		return asyncExecutor.submit("get child test events of "+parentId+" from range "+from+".."+to, 
-				() -> testEventsWorker.readEvents(parentId, range));
+		return asyncExecutor.submit("get child test events of "+parentId+" from range "+from+".."+to
+				+" in "+(order == Order.REVERSE ? "reversed" : "direct")+" order", 
+				() -> testEventsWorker.readEvents(parentId, range, order));
 	}
 
 
 	@Override
-	protected Iterable<StoredTestEventMetadata> doGetTestEvents(Instant from, Instant to) throws CradleStorageException, IOException
+	protected Iterable<StoredTestEventMetadata> doGetTestEvents(Instant from, Instant to, Order order) throws CradleStorageException, IOException
 	{
 		try
 		{
 			TimestampRange range = new TimestampRange(from, to);
-			return syncExecutor.submit("get test events from range "+from+".."+to, 
-					() -> testEventsWorker.readEvents(range));
+			return syncExecutor.submit("get test events from range "+from+".."+to
+					+" in "+(order == Order.REVERSE ? "reversed" : "direct")+" order", 
+					() -> testEventsWorker.readEvents(range, order));
 		}
 		catch (CradleStorageException e)
 		{
@@ -589,12 +590,13 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsAsync(Instant from, Instant to)
+	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsAsync(Instant from, Instant to, Order order)
 			throws CradleStorageException
 	{
 		TimestampRange range = new TimestampRange(from, to);
-		return asyncExecutor.submit("get test events from range "+from+".."+to, 
-				() -> testEventsWorker.readEvents(range));
+		return asyncExecutor.submit("get test events from range "+from+".."+to
+				+" in "+(order == Order.REVERSE ? "reversed" : "direct")+" order",
+				() -> testEventsWorker.readEvents(range, order));
 	}
 
 

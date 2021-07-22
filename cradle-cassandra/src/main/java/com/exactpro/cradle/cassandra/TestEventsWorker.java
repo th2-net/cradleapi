@@ -32,13 +32,18 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
+import com.exactpro.cradle.Order;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.testevents.DetailedTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildDateEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventOperator;
 import com.exactpro.cradle.cassandra.iterators.RootTestEventsMetadataIteratorAdapter;
 import com.exactpro.cradle.cassandra.iterators.TestEventChildrenMetadataIteratorAdapter;
 import com.exactpro.cradle.cassandra.iterators.TestEventDataIteratorAdapter;
@@ -131,28 +136,43 @@ public class TestEventsWorker
 				.thenApply(TestEventDataIteratorAdapter::new);
 	}
 	
-	public CompletableFuture<Iterable<StoredTestEventMetadata>> readRootEvents(TimestampRange range)
+	public CompletableFuture<Iterable<StoredTestEventMetadata>> readRootEvents(TimestampRange range, Order order)
 	{
+		LocalDate fromDate = range.getFrom().toLocalDate();
 		LocalTime fromTime = range.getFrom().toLocalTime(),
 				toTime = range.getTo().toLocalTime();
-		return ops.getRootTestEventOperator().getTestEvents(instanceUuid, range.getFrom().toLocalDate(), fromTime, toTime, readAttrs)
-				.thenApply(RootTestEventsMetadataIteratorAdapter::new);
+		
+		RootTestEventOperator op = ops.getRootTestEventOperator();
+		CompletableFuture<MappedAsyncPagingIterable<RootTestEventEntity>> future = order == Order.DIRECT
+				? op.getTestEventsDirect(instanceUuid, fromDate, fromTime, toTime, readAttrs)
+				: op.getTestEventsReverse(instanceUuid, fromDate, fromTime, toTime, readAttrs);
+		return future.thenApply(RootTestEventsMetadataIteratorAdapter::new);
 	}
 	
-	public CompletableFuture<Iterable<StoredTestEventMetadata>> readEvents(StoredTestEventId parentId, TimestampRange range)
+	public CompletableFuture<Iterable<StoredTestEventMetadata>> readEvents(StoredTestEventId parentId, TimestampRange range, Order order)
 	{
+		LocalDate fromDate = range.getFrom().toLocalDate();
 		LocalTime fromTime = range.getFrom().toLocalTime(),
 				toTime = range.getTo().toLocalTime();
-		return ops.getTestEventChildrenOperator().getTestEvents(instanceUuid, parentId.toString(), range.getFrom().toLocalDate(), fromTime, toTime, readAttrs)
-				.thenApply(TestEventChildrenMetadataIteratorAdapter::new);
+		
+		TestEventChildrenOperator op = ops.getTestEventChildrenOperator();
+		CompletableFuture<MappedAsyncPagingIterable<TestEventChildEntity>> future = order == Order.DIRECT
+				? op.getTestEventsDirect(instanceUuid, parentId.toString(), fromDate, fromTime, toTime, readAttrs)
+				: op.getTestEventsReverse(instanceUuid, parentId.toString(), fromDate, fromTime, toTime, readAttrs);
+		return future.thenApply(TestEventChildrenMetadataIteratorAdapter::new);
 	}
 	
-	public CompletableFuture<Iterable<StoredTestEventMetadata>> readEvents(TimestampRange range)
+	public CompletableFuture<Iterable<StoredTestEventMetadata>> readEvents(TimestampRange range, Order order)
 	{
+		LocalDate fromDate = range.getFrom().toLocalDate();
 		LocalTime fromTime = range.getFrom().toLocalTime(),
 				toTime = range.getTo().toLocalTime();
-		return ops.getTimeTestEventOperator().getTestEvents(instanceUuid, range.getFrom().toLocalDate(), fromTime, toTime, readAttrs)
-				.thenApply(TimeTestEventsMetadataIteratorAdapter::new);
+		
+		TimeTestEventOperator op = ops.getTimeTestEventOperator();
+		CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> future = order == Order.DIRECT
+				? op.getTestEventsDirect(instanceUuid, fromDate, fromTime, toTime, readAttrs)
+				: op.getTestEventsReverse(instanceUuid, fromDate, fromTime, toTime, readAttrs);
+		return future.thenApply(TimeTestEventsMetadataIteratorAdapter::new);
 	}
 	
 	
