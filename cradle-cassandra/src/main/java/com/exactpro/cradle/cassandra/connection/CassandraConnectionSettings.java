@@ -36,7 +36,8 @@ public class CassandraConnectionSettings
 			resultPageSize,
 			maxSyncRetries,
 			maxAsyncRetries,
-			retryDelay;
+			minRetryDelay,
+			maxRetryDelay;
 	private ExecutorService composingService;
 
 	public CassandraConnectionSettings()
@@ -55,7 +56,8 @@ public class CassandraConnectionSettings
 		resultPageSize = 0;  //In this case default page size will be used
 		maxSyncRetries = 3;
 		maxAsyncRetries = -1;  //Infinite "retry till success"
-		retryDelay = 100;
+		minRetryDelay = 100;
+		maxRetryDelay = 60000;
 		composingService = null;
 	}
 
@@ -85,7 +87,8 @@ public class CassandraConnectionSettings
 		this.resultPageSize = settings.resultPageSize;
 		this.maxSyncRetries = settings.maxSyncRetries;
 		this.maxAsyncRetries = settings.maxAsyncRetries;
-		this.retryDelay = settings.retryDelay;
+		this.minRetryDelay = settings.minRetryDelay;
+		this.maxRetryDelay = settings.maxRetryDelay;
 		this.composingService = settings.composingService;
 	}
 
@@ -244,14 +247,24 @@ public class CassandraConnectionSettings
 	}
 	
 	
-	public int getRetryDelay()
+	public int getMinRetryDelay()
 	{
-		return retryDelay;
+		return minRetryDelay;
 	}
 	
-	public void setRetryDelay(int retryDelay)
+	public void setMinRetryDelay(int minRetryDelay)
 	{
-		this.retryDelay = retryDelay;
+		this.minRetryDelay = minRetryDelay;
+	}
+	
+	public int getMaxRetryDelay()
+	{
+		return maxRetryDelay;
+	}
+	
+	public void setMaxRetryDelay(int maxRetryDelay)
+	{
+		this.maxRetryDelay = maxRetryDelay;
 	}
 	
 	

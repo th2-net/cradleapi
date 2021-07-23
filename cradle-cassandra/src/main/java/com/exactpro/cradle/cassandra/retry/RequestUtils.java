@@ -44,7 +44,6 @@ public class RequestUtils
 			DriverExecutionException.class,
 			DriverTimeoutException.class,
 			RequestThrottlingException.class));
-	private static final int MAX_DELAY = 300000;  //5 minutes
 	
 	/**
 	 * Handles error of request execution, if possible. Request's future will be completed if the method has processed the failure
@@ -105,16 +104,19 @@ public class RequestUtils
 	 * Makes delay before request retry
 	 * @param request to retry
 	 * @param error that caused previous request failure
-	 * @param delay to make before retry
+	 * @param minDelay minimum delay to make before retry. Real delay is calculated as retry*minDelay and doesn't exceed maxDelay
+	 * @param maxDelay limit for real delay to make before retry
 	 * @return true if delay was successfully made. If method returns false, request's future is completed with error
 	 */
-	public static boolean sleepBeforeRetry(RequestInfo<?> request, Throwable error, int delay)
+	public static boolean sleepBeforeRetry(RequestInfo<?> request, Throwable error, int minDelay, int maxDelay)
 	{
+		long delay = Math.min(maxDelay, minDelay*request.getRetries());
 		if (delay > 0)
 		{
+			logger.debug("Sleeping {} ms before retry #{} of '{}'", delay, request.getRetries(), request.getInfo());
 			try
 			{
-				Thread.sleep(Math.max(MAX_DELAY, delay*request.getRetries()));
+				Thread.sleep(delay);
 			}
 			catch (InterruptedException e)
 			{
@@ -128,15 +130,25 @@ public class RequestUtils
 	}
 	
 	/**
-	 * Builds a message to print before retrying failed request
-	 * @param request to retry
+	 * Builds a message about failed request
+	 * @param request that failed
 	 * @param error cause of failure
 	 * @return message to print to log
 	 */
-	public static String getRetryMessage(RequestInfo<?> request, Throwable error)
+	public static String getFailureMessage(RequestInfo<?> request, Throwable error)
 	{
 		error = getRealError(error);
-		return "Retrying '"+request.getInfo()+"', attempt #"+request.nextRetry()+" after error: "+error.getClass().getName()+" "+error.getMessage();
+		return "'"+request.getInfo()+"' failed: "+error.getClass().getName()+" "+error.getMessage();
+	}
+	
+	/**
+	 * Builds a message to print before retrying failed request
+	 * @param request that failed
+	 * @return message to print to log
+	 */
+	public static String getRetryMessage(RequestInfo<?> request)
+	{
+		return "Retrying '"+request.getInfo()+"', attempt #"+request.getRetries();
 	}
 	
 	

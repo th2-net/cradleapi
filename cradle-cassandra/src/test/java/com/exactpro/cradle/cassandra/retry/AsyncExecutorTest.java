@@ -52,7 +52,7 @@ public class AsyncExecutorTest
 	@BeforeMethod
 	public void init()
 	{
-		executor = new AsyncExecutor(1, composingService, 0, 10);
+		executor = new AsyncExecutor(1, composingService, 0, 10, 10);
 	}
 	
 	@AfterMethod

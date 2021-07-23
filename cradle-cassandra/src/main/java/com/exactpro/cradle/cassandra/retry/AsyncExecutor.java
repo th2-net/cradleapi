@@ -40,12 +40,12 @@ public class AsyncExecutor
 	private final int defaultRetries;
 	private final AsyncRequestProcessor processor;
 	
-	public AsyncExecutor(int maxQueueSize, ExecutorService composingService, int defaultRetries, int delay)
+	public AsyncExecutor(int maxQueueSize, ExecutorService composingService, int defaultRetries, int minDelay, int maxDelay)
 	{
 		this.requests = new LinkedBlockingQueue<RequestInfo<?>>(maxQueueSize);
 		this.execService = Executors.newSingleThreadExecutor();
 		this.defaultRetries = defaultRetries;
-		this.processor = new AsyncRequestProcessor(requests, composingService, delay);
+		this.processor = new AsyncRequestProcessor(requests, composingService, minDelay, maxDelay);
 		
 		execService.submit(processor);
 	}

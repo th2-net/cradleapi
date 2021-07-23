@@ -35,12 +35,14 @@ public class SyncExecutor
 	private static final Logger logger = LoggerFactory.getLogger(SyncExecutor.class);
 	
 	private final int defaultRetries,
-			delay;
+			minDelay,
+			maxDelay;
 	
-	public SyncExecutor(int defaultRetries, int delay)
+	public SyncExecutor(int defaultRetries, int minDelay, int maxDelay)
 	{
 		this.defaultRetries = defaultRetries;
-		this.delay = delay;
+		this.minDelay = minDelay;
+		this.maxDelay = maxDelay;
 	}
 	
 	
@@ -55,12 +57,14 @@ public class SyncExecutor
 			}
 			catch (Throwable e)
 			{
+				logger.warn(RequestUtils.getFailureMessage(request, e));
 				try
 				{
 					if (RequestUtils.handleRequestError(request, e))
 						return request.getFuture().get();  //Error handled = future completed exceptionally
 					
-					if (!RequestUtils.sleepBeforeRetry(request, e, delay))
+					request.nextRetry();
+					if (!RequestUtils.sleepBeforeRetry(request, e, minDelay, maxDelay))
 						return request.getFuture().get();  //Failed to make delay = future completed exceptionally
 				}
 				catch (ExecutionException | CompletionException e2)
@@ -71,7 +75,7 @@ public class SyncExecutor
 					throw e2;
 				}
 				
-				logger.warn(RequestUtils.getRetryMessage(request, e));
+				logger.warn(RequestUtils.getRetryMessage(request));
 			}
 		}
 		while (!Thread.currentThread().isInterrupted());

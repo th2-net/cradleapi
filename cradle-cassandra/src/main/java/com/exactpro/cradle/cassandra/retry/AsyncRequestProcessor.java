@@ -40,14 +40,16 @@ public class AsyncRequestProcessor implements Runnable
 	
 	private final BlockingQueue<RequestInfo<?>> requests;
 	private final ExecutorService composingService;
-	private final int delay;
+	private final int minDelay,
+			maxDelay;
 	private final Set<CompletableFuture<?>> futures = ConcurrentHashMap.newKeySet();
 	
-	public AsyncRequestProcessor(BlockingQueue<RequestInfo<?>> requests, ExecutorService composingService, int delay)
+	public AsyncRequestProcessor(BlockingQueue<RequestInfo<?>> requests, ExecutorService composingService, int minDelay, int maxDelay)
 	{
 		this.requests = requests;
 		this.composingService = composingService;
-		this.delay = delay;
+		this.minDelay = minDelay;
+		this.maxDelay = maxDelay;
 	}
 	
 	@Override
@@ -99,6 +101,7 @@ public class AsyncRequestProcessor implements Runnable
 				return;
 			}
 			
+			logger.warn(RequestUtils.getFailureMessage(request, error));
 			if (!RequestUtils.handleRequestError(request, error))
 				retry(request, error);
 		}
@@ -112,10 +115,11 @@ public class AsyncRequestProcessor implements Runnable
 	
 	private void retry(RequestInfo<?> request, Throwable error)
 	{
-		if (!RequestUtils.sleepBeforeRetry(request, error, delay))
+		request.nextRetry();
+		if (!RequestUtils.sleepBeforeRetry(request, error, minDelay, maxDelay))
 			return;
 		
-		logger.warn(RequestUtils.getRetryMessage(request, error));
+		logger.warn(RequestUtils.getRetryMessage(request));
 		try
 		{
 			if (!requests.offer(request, 5000, TimeUnit.MILLISECONDS))

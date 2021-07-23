@@ -29,7 +29,7 @@ public class SyncExecutorTest
 	@BeforeTest
 	public void init()
 	{
-		executor = new SyncExecutor(0, 10);
+		executor = new SyncExecutor(0, 10, 10);
 	}
 	
 	@Test

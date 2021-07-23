@@ -144,9 +144,10 @@ public class CassandraCradleStorage extends CradleStorage
 			exec = new QueryExecutor(connection.getSession(),
 					settings.getTimeout(), settings.getWriteConsistencyLevel(), settings.getReadConsistencyLevel());
 			
-			int retryDelay = conSettings.getRetryDelay();
-			syncExecutor = new SyncExecutor(conSettings.getMaxSyncRetries(), retryDelay);
-			asyncExecutor = new AsyncExecutor(conSettings.getMaxParallelQueries(), composingService, conSettings.getMaxAsyncRetries(), retryDelay);
+			int minRetryDelay = conSettings.getMinRetryDelay(),
+					maxRetryDelay = conSettings.getMaxRetryDelay();
+			syncExecutor = new SyncExecutor(conSettings.getMaxSyncRetries(), minRetryDelay, maxRetryDelay);
+			asyncExecutor = new AsyncExecutor(conSettings.getMaxParallelQueries(), composingService, conSettings.getMaxAsyncRetries(), minRetryDelay, maxRetryDelay);
 			
 			if (prepareStorage)
 			{
