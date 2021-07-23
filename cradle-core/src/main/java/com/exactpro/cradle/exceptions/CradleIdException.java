@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.utils;
+package com.exactpro.cradle.exceptions;
 
+/**
+ * Exception thrown when ID of Cradle entity is invalid
+ */
 public class CradleIdException extends Exception
 {
 	private static final long serialVersionUID = 5461840136011810462L;

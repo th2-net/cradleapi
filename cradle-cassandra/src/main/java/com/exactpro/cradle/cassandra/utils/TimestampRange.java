@@ -20,7 +20,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.exceptions.CradleStorageException;
 
 public class TimestampRange
 {

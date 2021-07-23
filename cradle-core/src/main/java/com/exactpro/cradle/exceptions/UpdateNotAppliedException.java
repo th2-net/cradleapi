@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.utils;
+package com.exactpro.cradle.exceptions;
 
 /**
- * Should be thrown if the update was not applied because of the condition the current state should match
+ * Should be thrown if the update was not applied because conditions for the current state is not met
  */
 public class UpdateNotAppliedException extends RuntimeException {
     public UpdateNotAppliedException(String message) {

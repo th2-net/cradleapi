@@ -39,10 +39,10 @@ import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
+import com.exactpro.cradle.exceptions.CradleStorageException;
 import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
-import com.exactpro.cradle.utils.CradleStorageException;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;

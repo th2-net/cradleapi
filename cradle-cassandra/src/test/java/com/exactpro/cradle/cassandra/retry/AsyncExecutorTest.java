@@ -28,6 +28,8 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
+import com.exactpro.cradle.exceptions.TooManyRequestsException;
+
 public class AsyncExecutorTest
 {
 	private static final String REQUEST_NAME = "fake request";
@@ -61,33 +63,33 @@ public class AsyncExecutorTest
 	
 	
 	@Test
-	public void retry() throws InterruptedException, ExecutionException
+	public void retry() throws InterruptedException, ExecutionException, TooManyRequestsException
 	{
 		CompletableFuture<Integer> f = submitRequest(new FakeRequest(2), 10);
 		Assert.assertEquals(f.get().intValue(), 2, "made 2 calls retrying failed request");
 	}
 	
 	@Test(expectedExceptions = ExecutionException.class, expectedExceptionsMessageRegExp = ".*\\.RetryException.* retrial is switched off")
-	public void noRetry() throws InterruptedException, ExecutionException
+	public void noRetry() throws InterruptedException, ExecutionException, TooManyRequestsException
 	{
 		submitRequest(new FakeRequest(10), 0).get();
 	}
 	
 	@Test(expectedExceptions = ExecutionException.class, expectedExceptionsMessageRegExp = ".*\\.RetryException.* maximum number of retries done .*")
-	public void limitedRetries() throws InterruptedException, ExecutionException
+	public void limitedRetries() throws InterruptedException, ExecutionException, TooManyRequestsException
 	{
 		submitRequest(new FakeRequest(3), 1).get();
 	}
 	
 	@Test(expectedExceptions = ExecutionException.class, expectedExceptionsMessageRegExp = ".*\\.RetryException.* can't recover after error")
-	public void unrecoverableError() throws InterruptedException, ExecutionException
+	public void unrecoverableError() throws InterruptedException, ExecutionException, TooManyRequestsException
 	{
 		submitRequest(new FakeRequest(2, new Exception("Can't recover")), 100).get();
 	}
 	
 	@Test(description = "Futures left after AsyncExecutor disposal should be completed anyway",
 			expectedExceptions = ExecutionException.class, expectedExceptionsMessageRegExp = ".* cancelled")
-	public void executorDispose() throws InterruptedException, ExecutionException
+	public void executorDispose() throws InterruptedException, ExecutionException, TooManyRequestsException
 	{
 		FakeRequest r = new FakeRequest(-1);
 		CompletableFuture<Integer> f = submitRequest(r, -1);
@@ -99,7 +101,7 @@ public class AsyncExecutorTest
 	}
 	
 	
-	private CompletableFuture<Integer> submitRequest(FakeRequest request, int retries)
+	private CompletableFuture<Integer> submitRequest(FakeRequest request, int retries) throws TooManyRequestsException
 	{
 		return executor.submit(REQUEST_NAME, retries, () -> request.call());
 	}

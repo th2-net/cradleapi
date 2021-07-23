@@ -29,7 +29,6 @@ import java.util.function.Function;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
-import com.exactpro.cradle.utils.CradleIdException;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
@@ -38,6 +37,8 @@ import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesOperator;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.retry.AsyncExecutor;
 import com.exactpro.cradle.cassandra.retry.SyncExecutor;
+import com.exactpro.cradle.exceptions.CradleIdException;
+import com.exactpro.cradle.exceptions.TooManyRequestsException;
 
 public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLinker
 {
@@ -79,7 +80,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 	}
 	
 	@Override
-	public CompletableFuture<Collection<StoredTestEventId>> getTestEventIdsByMessageIdAsync(StoredMessageId messageId)
+	public CompletableFuture<Collection<StoredTestEventId>> getTestEventIdsByMessageIdAsync(StoredMessageId messageId) throws TooManyRequestsException
 	{
 		return asyncExecutor.submit("get event IDs linked to message "+messageId, 
 				() -> readEventIds(messageId));
@@ -101,7 +102,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 	}
 	
 	@Override
-	public CompletableFuture<Collection<StoredMessageId>> getMessageIdsByTestEventIdAsync(StoredTestEventId eventId)
+	public CompletableFuture<Collection<StoredMessageId>> getMessageIdsByTestEventIdAsync(StoredTestEventId eventId) throws TooManyRequestsException
 	{
 		return asyncExecutor.submit("get message IDs linked to event "+eventId, 
 				() -> readMessageIds(eventId));
@@ -123,7 +124,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 	}
 	
 	@Override
-	public CompletableFuture<Boolean> isTestEventLinkedToMessagesAsync(StoredTestEventId eventId)
+	public CompletableFuture<Boolean> isTestEventLinkedToMessagesAsync(StoredTestEventId eventId) throws TooManyRequestsException
 	{
 		return asyncExecutor.submit("get if event "+eventId+" is linked to messages", 
 				() -> checkIfMessagesLinked(eventId));
@@ -144,7 +145,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 	}
 	
 	@Override
-	public CompletableFuture<Boolean> isMessageLinkedToTestEventsAsync(StoredMessageId messageId)
+	public CompletableFuture<Boolean> isMessageLinkedToTestEventsAsync(StoredMessageId messageId) throws TooManyRequestsException
 	{
 		return asyncExecutor.submit("get if message "+messageId+" is linked to events", 
 				() -> checkIfEventsLinked(messageId));

@@ -23,6 +23,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Supplier;
 
+import com.exactpro.cradle.exceptions.TooManyRequestsException;
+
 /**
  * Asynchronous executor for requests to Cassandra.
  * Requests are queued and CompletableFuture to track the execution is returned.
@@ -48,15 +50,15 @@ public class AsyncExecutor
 		execService.submit(processor);
 	}
 	
-	public <T> CompletableFuture<T> submit(String requestInfo, int maxRetries, Supplier<CompletableFuture<T>> supplier)
+	public <T> CompletableFuture<T> submit(String requestInfo, int maxRetries, Supplier<CompletableFuture<T>> supplier) throws TooManyRequestsException
 	{
 		CompletableFuture<T> result = new CompletableFuture<T>();
 		if (!requests.offer(new RequestInfo<T>(requestInfo, maxRetries, supplier, result)))
-			result.completeExceptionally(new TooManyRequestsException("Could not submit new request '"+requestInfo+"'"));
+			throw new TooManyRequestsException("Could not submit new request '"+requestInfo+"'");
 		return result;
 	}
 	
-	public <T> CompletableFuture<T> submit(String requestInfo, Supplier<CompletableFuture<T>> supplier)
+	public <T> CompletableFuture<T> submit(String requestInfo, Supplier<CompletableFuture<T>> supplier) throws TooManyRequestsException
 	{
 		return submit(requestInfo, defaultRetries, supplier);
 	}

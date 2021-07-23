@@ -24,11 +24,12 @@ import com.exactpro.cradle.cassandra.retry.AsyncExecutor;
 import com.exactpro.cradle.cassandra.retry.SyncExecutor;
 import com.exactpro.cradle.cassandra.utils.DateTimeUtils;
 import com.exactpro.cradle.cassandra.utils.TimestampRange;
+import com.exactpro.cradle.exceptions.CradleStorageException;
+import com.exactpro.cradle.exceptions.TooManyRequestsException;
+import com.exactpro.cradle.exceptions.UpdateNotAppliedException;
 import com.exactpro.cradle.intervals.Interval;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.intervals.RecoveryState;
-import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.UpdateNotAppliedException;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -80,7 +81,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
 	}
 
 	@Override
-	public CompletableFuture<Boolean> storeIntervalAsync(Interval interval)
+	public CompletableFuture<Boolean> storeIntervalAsync(Interval interval) throws TooManyRequestsException
 	{
 		return asyncExecutor.submit("store interval "+interval.getStartTime()+".."+interval.getEndTime(), 
 				() -> writeInterval(interval));
@@ -104,7 +105,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
 
 	@Override
 	public CompletableFuture<Iterable<Interval>> getIntervalsPerDayAsync(Instant from, Instant to, String crawlerName,
-			String crawlerVersion, String crawlerType) throws CradleStorageException
+			String crawlerVersion, String crawlerType) throws CradleStorageException, TooManyRequestsException
 	{
 		TimestampRange range = new TimestampRange(from, to);
 		return asyncExecutor.submit("get intervals from "+from+" to "+to, 
@@ -174,7 +175,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
 	}
 
 	@Override
-	public CompletableFuture<Interval> setIntervalLastUpdateTimeAndDateAsync(Interval interval, Instant newLastUpdateTime)
+	public CompletableFuture<Interval> setIntervalLastUpdateTimeAndDateAsync(Interval interval, Instant newLastUpdateTime) throws TooManyRequestsException
 	{
 		return asyncExecutor.submit("set update timestamp of interval "+interval.getStartTime()+".."+interval.getEndTime(), 
 				() -> writeIntervalUpdateTimestamp(interval, newLastUpdateTime));
@@ -201,7 +202,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
 	}
 
 	@Override
-	public CompletableFuture<Interval> updateRecoveryStateAsync(Interval interval, RecoveryState recoveryState)
+	public CompletableFuture<Interval> updateRecoveryStateAsync(Interval interval, RecoveryState recoveryState) throws TooManyRequestsException
 	{
 		return asyncExecutor.submit("update recovery state of interval "+interval.getStartTime()+".."+interval.getEndTime(), 
 				() -> writeRecoveryState(interval, recoveryState));
@@ -227,7 +228,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
 	}
 
 	@Override
-	public CompletableFuture<Interval> setIntervalProcessedAsync(Interval interval, boolean processed)
+	public CompletableFuture<Interval> setIntervalProcessedAsync(Interval interval, boolean processed) throws TooManyRequestsException
 	{
 		return asyncExecutor.submit("set processed flag of interval "+interval.getStartTime()+".."+interval.getEndTime(), 
 				() -> writeIntervalProcessed(interval, processed));

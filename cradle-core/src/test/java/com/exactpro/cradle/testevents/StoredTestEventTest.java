@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import com.exactpro.cradle.utils.CradleIdException;
-import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.exceptions.CradleIdException;
+import com.exactpro.cradle.exceptions.CradleStorageException;
 
 public class StoredTestEventTest
 {

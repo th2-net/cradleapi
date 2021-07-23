@@ -40,6 +40,8 @@ import com.exactpro.cradle.cassandra.retry.SyncExecutor;
 import com.exactpro.cradle.cassandra.utils.DateTimeUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.cassandra.utils.TimestampRange;
+import com.exactpro.cradle.exceptions.CradleStorageException;
+import com.exactpro.cradle.exceptions.TooManyRequestsException;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
@@ -50,7 +52,6 @@ import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
-import com.exactpro.cradle.utils.CradleStorageException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -229,7 +230,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Void> doStoreMessageBatchAsync(StoredMessageBatch batch)
+	protected CompletableFuture<Void> doStoreMessageBatchAsync(StoredMessageBatch batch) throws IOException, TooManyRequestsException
 	{
 		return writeMessageBatch(batch, true);
 	}
@@ -251,7 +252,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Void> doStoreProcessedMessageBatchAsync(StoredMessageBatch batch)
+	protected CompletableFuture<Void> doStoreProcessedMessageBatchAsync(StoredMessageBatch batch) throws IOException, TooManyRequestsException
 	{
 		return writeMessageBatch(batch, false);
 	}
@@ -274,26 +275,16 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Void> doStoreTestEventAsync(StoredTestEvent event)
+	protected CompletableFuture<Void> doStoreTestEventAsync(StoredTestEvent event) throws IOException, TooManyRequestsException
 	{
-		DetailedTestEventEntity entity;
-		try
-		{
-			entity = new DetailedTestEventEntity(event, instanceUuid);
-		}
-		catch (IOException e)
-		{
-			CompletableFuture<Void> error = new CompletableFuture<>();
-			error.completeExceptionally(e);
-			return error;
-		}
-		
+		DetailedTestEventEntity entity = new DetailedTestEventEntity(event, instanceUuid);
 		return asyncExecutor.submit("store test event "+event.getId(), 
 				() -> testEventsWorker.writeEvent(entity, event).thenAccept(r -> {}));
 	}
 
 	@Override
-	protected void doStoreTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messageIds) throws IOException
+	protected void doStoreTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, 
+			Collection<StoredMessageId> messageIds) throws IOException
 	{
 		try
 		{
@@ -307,7 +298,8 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Void> doStoreTestEventMessagesLinkAsync(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messageIds)
+	protected CompletableFuture<Void> doStoreTestEventMessagesLinkAsync(StoredTestEventId eventId, StoredTestEventId batchId, 
+			Collection<StoredMessageId> messageIds) throws IOException, TooManyRequestsException
 	{
 		return asyncExecutor.submit("store link between "+eventId+" and "+messageIds.size()+" messsage(s)", 
 				() -> writeTestEventMessagesLinks(eventId, batchId, messageIds).thenAccept(r -> {}));
@@ -328,7 +320,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<StoredMessage> doGetMessageAsync(StoredMessageId id)
+	protected CompletableFuture<StoredMessage> doGetMessageAsync(StoredMessageId id) throws TooManyRequestsException
 	{
 		return asyncExecutor.submit("get message "+id, 
 				() -> messagesWorker.readMessage(id, true));
@@ -349,7 +341,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Collection<StoredMessage>> doGetMessageBatchAsync(StoredMessageId id)
+	protected CompletableFuture<Collection<StoredMessage>> doGetMessageBatchAsync(StoredMessageId id) throws TooManyRequestsException
 	{
 		return asyncExecutor.submit("get message batch "+id, 
 				() -> messagesWorker.readMessageBatch(id));
@@ -370,7 +362,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<StoredMessage> doGetProcessedMessageAsync(StoredMessageId id)
+	protected CompletableFuture<StoredMessage> doGetProcessedMessageAsync(StoredMessageId id) throws TooManyRequestsException
 	{
 		return asyncExecutor.submit("get processed message "+id, 
 				() -> messagesWorker.readMessage(id, false));
@@ -403,7 +395,8 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<StoredMessageId> doGetNearestMessageIdAsync(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation)
+	protected CompletableFuture<StoredMessageId> doGetNearestMessageIdAsync(String streamName, Direction direction, Instant timestamp, 
+			TimeRelation timeRelation) throws TooManyRequestsException
 	{
 		return asyncExecutor.submit("get message ID with timestamp "+timeRelation.getLabel()+" "+timestamp+", stream "+streamName+", "+direction.getLabel(), 
 				() -> readNearestMessageId(streamName, direction, timestamp, timeRelation));
@@ -424,7 +417,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<StoredTestEventWrapper> doGetTestEventAsync(StoredTestEventId id)
+	protected CompletableFuture<StoredTestEventWrapper> doGetTestEventAsync(StoredTestEventId id) throws TooManyRequestsException
 	{
 		return asyncExecutor.submit("get event "+id, 
 				() -> testEventsWorker.readEvent(id));
@@ -445,7 +438,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetCompleteTestEventsAsync(Set<StoredTestEventId> ids)
+	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetCompleteTestEventsAsync(Set<StoredTestEventId> ids) throws TooManyRequestsException
 	{
 		return asyncExecutor.submit("get "+ids.size()+" test event(s)", 
 				() -> testEventsWorker.readCompleteEvents(ids));
@@ -476,7 +469,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter)
+	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter) throws TooManyRequestsException
 	{
 		return asyncExecutor.submit("get messages filtered by "+filter, 
 				() -> messagesWorker.readMessages(filter));
@@ -498,7 +491,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter)
+	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter) throws TooManyRequestsException
 	{
 		return asyncExecutor.submit("get message batches filtered by "+filter, 
 				() -> messagesWorker.readMessageBatches(filter));
@@ -528,7 +521,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetRootTestEventsAsync(Instant from, Instant to,
-			Order order) throws CradleStorageException
+			Order order) throws CradleStorageException, TooManyRequestsException
 	{
 		TimestampRange range = new TimestampRange(from, to);
 		return asyncExecutor.submit("get root test events from range "+from+".."+to
@@ -560,7 +553,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsAsync(StoredTestEventId parentId,
-			Instant from, Instant to, Order order) throws CradleStorageException
+			Instant from, Instant to, Order order) throws CradleStorageException, TooManyRequestsException
 	{
 		TimestampRange range = new TimestampRange(from, to);
 		return asyncExecutor.submit("get child test events of "+parentId+" from range "+from+".."+to
@@ -591,7 +584,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsAsync(Instant from, Instant to, Order order)
-			throws CradleStorageException
+			throws CradleStorageException, TooManyRequestsException
 	{
 		TimestampRange range = new TimestampRange(from, to);
 		return asyncExecutor.submit("get test events from range "+from+".."+to
@@ -651,7 +644,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEventWrapper event, boolean success)
+	protected CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEventWrapper event, boolean success) throws TooManyRequestsException
 	{
 		return asyncExecutor.submit("update status of event "+event.getId(), 
 				() -> testEventsWorker.updateStatus(event, success));
@@ -738,25 +731,11 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	
-	private CompletableFuture<Void> writeMessageBatch(StoredMessageBatch batch, boolean rawMessage)
+	private CompletableFuture<Void> writeMessageBatch(StoredMessageBatch batch, boolean rawMessage) throws IOException, TooManyRequestsException
 	{
-		DetailedMessageBatchEntity entity;
-		try
-		{
-			entity = new DetailedMessageBatchEntity(batch, instanceUuid);
-		}
-		catch (IOException e)
-		{
-			CompletableFuture<Void> error = new CompletableFuture<>();
-			error.completeExceptionally(e);
-			return error;
-		}
-		
+		DetailedMessageBatchEntity entity = new DetailedMessageBatchEntity(batch, instanceUuid);
 		return asyncExecutor.submit(rawMessage ? "store message batch "+batch.getId() : "store processed message batch "+batch.getId(), 
-				() -> {
-					return messagesWorker.writeMessageBatch(entity, batch, rawMessage)
-							.thenAccept(r -> {});
-		});
+				() -> messagesWorker.writeMessageBatch(entity, batch, rawMessage).thenAccept(r -> {}));
 	}
 	
 	

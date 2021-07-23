@@ -26,6 +26,8 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.exactpro.cradle.exceptions.TooManyRequestsException;
+
 /**
  * Asynchronous processor for requests to Cassandra.
  * It takes requests from given queue, triggering their execution and assigning asynchronous callbacks.

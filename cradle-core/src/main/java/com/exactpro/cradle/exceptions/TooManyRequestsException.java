@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.cassandra.retry;
+package com.exactpro.cradle.exceptions;
 
 /**
- * Exception to indicate that request to Cassandra cannot be submitted due to large number of requests being currently executed
+ * Exception to indicate that request to Cradle API cannot be submitted due to large number of requests being currently executed
  */
 public class TooManyRequestsException extends Exception
 {

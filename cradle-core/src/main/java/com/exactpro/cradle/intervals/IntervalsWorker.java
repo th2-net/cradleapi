@@ -16,11 +16,12 @@
 
 package com.exactpro.cradle.intervals;
 
-import com.exactpro.cradle.utils.CradleStorageException;
-
 import java.io.IOException;
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
+
+import com.exactpro.cradle.exceptions.CradleStorageException;
+import com.exactpro.cradle.exceptions.TooManyRequestsException;
 
 public interface IntervalsWorker
 {
@@ -36,8 +37,9 @@ public interface IntervalsWorker
      * Asynchronously writes to storage interval
      * @param interval stored interval
      * @return future to get know if storing was successful
+     * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
      */
-    CompletableFuture<Boolean> storeIntervalAsync(Interval interval);
+    CompletableFuture<Boolean> storeIntervalAsync(Interval interval) throws TooManyRequestsException;
 
     /**
      * Obtains iterable of intervals with startTime greater than or equal to "from" and less than or equal to "to". Intervals must be within one day
@@ -60,9 +62,10 @@ public interface IntervalsWorker
      * @param crawlerType type of Crawler
      * @return future to get know if obtaining was successful
      * @throws CradleStorageException if given parameters are invalid
+     * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
      */
     CompletableFuture<Iterable<Interval>> getIntervalsPerDayAsync(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) 
-    		throws CradleStorageException;
+    		throws CradleStorageException, TooManyRequestsException;
 
     /**
      * Obtains iterable of intervals with startTime greater than or equal to "from" and less than or equal to "to"
@@ -82,7 +85,7 @@ public interface IntervalsWorker
      * @param newLastUpdateTime new time of last update
      * @return the new instance of {@link Interval} with updated newLastUpdateTime. This operation is successful
      * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
-     * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
+     * If it was not successful throws an {@link com.exactpro.cradle.exceptions.UpdateNotAppliedException} exception
      * @throws IOException if update failed
      */
     Interval setIntervalLastUpdateTimeAndDate(Interval interval, Instant newLastUpdateTime) throws IOException;
@@ -93,9 +96,10 @@ public interface IntervalsWorker
      * @param newLastUpdateTime new time of last update
      * @return CompletableFuture with the new instance of {@link Interval} with updated newLastUpdateTime. This operation is successful
      * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
-     * If it was not successful throws an {@link java.util.concurrent.ExecutionException} with cause {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
+     * If it was not successful throws an {@link java.util.concurrent.ExecutionException} with cause {@link com.exactpro.cradle.exceptions.UpdateNotAppliedException} exception
+     * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
      */
-    CompletableFuture<Interval> setIntervalLastUpdateTimeAndDateAsync(Interval interval, Instant newLastUpdateTime);
+    CompletableFuture<Interval> setIntervalLastUpdateTimeAndDateAsync(Interval interval, Instant newLastUpdateTime) throws TooManyRequestsException;
 
     /**
      * Updates RecoveryState, also sets lastUpdateTime and lastUpdateDate as current time and date
@@ -103,7 +107,7 @@ public interface IntervalsWorker
      * @param recoveryState information for recovering of Crawler
      * @return the new instance of {@link Interval} with updated recoveryState. This operation is successful
      * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
-     * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
+     * If it was not successful throws an {@link com.exactpro.cradle.exceptions.UpdateNotAppliedException} exception
      * @throws IOException if update failed
      */
     Interval updateRecoveryState(Interval interval, RecoveryState recoveryState) throws IOException;
@@ -114,9 +118,10 @@ public interface IntervalsWorker
      * @param recoveryState information for recovering of Crawler
      * @return CompletableFuture with the new instance of {@link Interval} with updated recoveryState. This operation is successful
      * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
-     * If it was not successful throws an {@link java.util.concurrent.ExecutionException} with cause {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
+     * If it was not successful throws an {@link java.util.concurrent.ExecutionException} with cause {@link com.exactpro.cradle.exceptions.UpdateNotAppliedException} exception
+     * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
      */
-    CompletableFuture<Interval> updateRecoveryStateAsync(Interval interval, RecoveryState recoveryState);
+    CompletableFuture<Interval> updateRecoveryStateAsync(Interval interval, RecoveryState recoveryState) throws TooManyRequestsException;
 
     /**
      * Sets flag that indicates if interval was processed completely, also sets lastUpdateTime and lastUpdateDate as current time and date
@@ -124,7 +129,7 @@ public interface IntervalsWorker
      * @param processed whether interval was processed completely
      * @return the new instance of {@link Interval} with updated processed. This operation is successful
      * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
-     * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
+     * If it was not successful throws an {@link com.exactpro.cradle.exceptions.UpdateNotAppliedException} exception
      * @throws IOException if update failed
      */
     Interval setIntervalProcessed(Interval interval, boolean processed) throws IOException;
@@ -135,7 +140,8 @@ public interface IntervalsWorker
      * @param processed whether interval was processed completely
      * @return CompletableFuture with the new instance of {@link Interval} with updated processed. This operation is successful
      * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
-     * If it was not successful throws an {@link java.util.concurrent.ExecutionException} with cause {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
+     * If it was not successful throws an {@link java.util.concurrent.ExecutionException} with cause {@link com.exactpro.cradle.exceptions.UpdateNotAppliedException} exception
+     * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
      */
-    CompletableFuture<Interval> setIntervalProcessedAsync(Interval interval, boolean processed);
+    CompletableFuture<Interval> setIntervalProcessedAsync(Interval interval, boolean processed) throws TooManyRequestsException;
 }

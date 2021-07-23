@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package com.exactpro.cradle.messages;
 import org.apache.commons.lang3.StringUtils;
 
 import com.exactpro.cradle.Direction;
-import com.exactpro.cradle.utils.CradleIdException;
+import com.exactpro.cradle.exceptions.CradleIdException;
 
 /**
  * Utilities to parse {@link StoredMessageId} and {@link StoredMessageBatchId} from their string representation which consists of streamName:direction:index

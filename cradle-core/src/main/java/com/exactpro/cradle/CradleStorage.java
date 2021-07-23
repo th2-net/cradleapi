@@ -21,6 +21,8 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
+import com.exactpro.cradle.exceptions.CradleStorageException;
+import com.exactpro.cradle.exceptions.TooManyRequestsException;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +37,6 @@ import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
-import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
 
 /**
@@ -62,33 +63,36 @@ public abstract class CradleStorage
 	
 	
 	protected abstract void doStoreMessageBatch(StoredMessageBatch batch) throws IOException;
-	protected abstract CompletableFuture<Void> doStoreMessageBatchAsync(StoredMessageBatch batch);
+	protected abstract CompletableFuture<Void> doStoreMessageBatchAsync(StoredMessageBatch batch) throws IOException, TooManyRequestsException;
 	protected abstract void doStoreProcessedMessageBatch(StoredMessageBatch batch) throws IOException;
-	protected abstract CompletableFuture<Void> doStoreProcessedMessageBatchAsync(StoredMessageBatch batch);
+	protected abstract CompletableFuture<Void> doStoreProcessedMessageBatchAsync(StoredMessageBatch batch) throws IOException, TooManyRequestsException;
 	protected abstract void doStoreTestEvent(StoredTestEvent event) throws IOException;
-	protected abstract CompletableFuture<Void> doStoreTestEventAsync(StoredTestEvent event);
-	protected abstract void doStoreTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messageIds) throws IOException;
+	protected abstract CompletableFuture<Void> doStoreTestEventAsync(StoredTestEvent event) throws IOException, TooManyRequestsException;
+	protected abstract void doStoreTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, 
+			Collection<StoredMessageId> messageIds) throws IOException;
 	protected abstract CompletableFuture<Void> doStoreTestEventMessagesLinkAsync(StoredTestEventId eventId, StoredTestEventId batchId, 
-			Collection<StoredMessageId> messageIds);
+			Collection<StoredMessageId> messageIds) throws IOException, TooManyRequestsException;
 	protected abstract StoredMessage doGetMessage(StoredMessageId id) throws IOException;
-	protected abstract CompletableFuture<StoredMessage> doGetMessageAsync(StoredMessageId id);
+	protected abstract CompletableFuture<StoredMessage> doGetMessageAsync(StoredMessageId id) throws TooManyRequestsException;
 	protected abstract Collection<StoredMessage> doGetMessageBatch(StoredMessageId id) throws IOException;
-	protected abstract CompletableFuture<Collection<StoredMessage>> doGetMessageBatchAsync(StoredMessageId id);
+	protected abstract CompletableFuture<Collection<StoredMessage>> doGetMessageBatchAsync(StoredMessageId id) throws TooManyRequestsException;
 	protected abstract StoredMessage doGetProcessedMessage(StoredMessageId id) throws IOException;
-	protected abstract CompletableFuture<StoredMessage> doGetProcessedMessageAsync(StoredMessageId id);
+	protected abstract CompletableFuture<StoredMessage> doGetProcessedMessageAsync(StoredMessageId id) throws TooManyRequestsException;
 	protected abstract long doGetLastMessageIndex(String streamName, Direction direction) throws IOException;
 	protected abstract long doGetLastProcessedMessageIndex(String streamName, Direction direction) throws IOException;
-	protected abstract StoredMessageId doGetNearestMessageId(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation) throws IOException;
-	protected abstract CompletableFuture<StoredMessageId> doGetNearestMessageIdAsync(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation);
+	protected abstract StoredMessageId doGetNearestMessageId(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation) 
+			throws IOException;
+	protected abstract CompletableFuture<StoredMessageId> doGetNearestMessageIdAsync(String streamName, Direction direction, Instant timestamp, 
+			TimeRelation timeRelation) throws TooManyRequestsException;
 	protected abstract StoredTestEventWrapper doGetTestEvent(StoredTestEventId id) throws IOException;
-	protected abstract CompletableFuture<StoredTestEventWrapper> doGetTestEventAsync(StoredTestEventId ids);
+	protected abstract CompletableFuture<StoredTestEventWrapper> doGetTestEventAsync(StoredTestEventId ids) throws TooManyRequestsException;
 	protected abstract Iterable<StoredTestEventWrapper> doGetCompleteTestEvents(Set<StoredTestEventId> ids) throws IOException;
-	protected abstract CompletableFuture<Iterable<StoredTestEventWrapper>> doGetCompleteTestEventsAsync(Set<StoredTestEventId> ids);
+	protected abstract CompletableFuture<Iterable<StoredTestEventWrapper>> doGetCompleteTestEventsAsync(Set<StoredTestEventId> ids) throws TooManyRequestsException;
 	protected abstract Collection<String> doGetStreams() throws IOException;
 	protected abstract Collection<Instant> doGetRootTestEventsDates() throws IOException;
 	protected abstract Collection<Instant> doGetTestEventsDates(StoredTestEventId parentId) throws IOException;
 	protected abstract void doUpdateEventStatus(StoredTestEventWrapper event, boolean success) throws IOException;
-	protected abstract CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEventWrapper event, boolean success);
+	protected abstract CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEventWrapper event, boolean success) throws TooManyRequestsException;
 
 	public abstract CradleObjectsFactory getObjectsFactory();
 	
@@ -116,21 +120,21 @@ public abstract class CradleStorage
 	public abstract IntervalsWorker getIntervalsWorker();
 	
 	protected abstract Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException;
-	protected abstract CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter);
+	protected abstract CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter) throws TooManyRequestsException;
 	protected abstract Iterable<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException;
-	protected abstract CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter);
+	protected abstract CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter) throws TooManyRequestsException;
 	protected abstract Iterable<StoredTestEventMetadata> doGetRootTestEvents(Instant from, Instant to, Order order) 
 			throws CradleStorageException, IOException;
 	protected abstract CompletableFuture<Iterable<StoredTestEventMetadata>> doGetRootTestEventsAsync(Instant from, Instant to, Order order) 
-			throws CradleStorageException;
+			throws CradleStorageException, TooManyRequestsException;
 	protected abstract Iterable<StoredTestEventMetadata> doGetTestEvents(StoredTestEventId parentId, Instant from, Instant to, Order order) 
 			throws CradleStorageException, IOException;
 	protected abstract CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsAsync(StoredTestEventId parentId, Instant from, Instant to, Order order) 
-			throws CradleStorageException;
+			throws CradleStorageException, TooManyRequestsException;
 	protected abstract Iterable<StoredTestEventMetadata> doGetTestEvents(Instant from, Instant to, Order order) 
 			throws CradleStorageException, IOException;
 	protected abstract CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsAsync(Instant from, Instant to, Order order)
-			throws CradleStorageException;
+			throws CradleStorageException, TooManyRequestsException;
 	
 	
 	/**
@@ -194,9 +198,11 @@ public abstract class CradleStorage
 	/**
 	 * Asynchronously writes data about given message batch to storage.
 	 * @param batch data to write
-	 * @return future to get know if storing was successful
+	 * @return future to get know if writing was successful
+	 * @throws IOException if writing preparation failed
+	 * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
 	 */
-	public final CompletableFuture<Void> storeMessageBatchAsync(StoredMessageBatch batch)
+	public final CompletableFuture<Void> storeMessageBatchAsync(StoredMessageBatch batch) throws IOException, TooManyRequestsException
 	{
 		logger.debug("Storing message batch {} asynchronously", batch.getId());
 		CompletableFuture<Void> result = doStoreMessageBatchAsync(batch);
@@ -224,9 +230,11 @@ public abstract class CradleStorage
 	/**
 	 * Asynchronously writes data about given processed message batch to storage.
 	 * @param batch data to write
-	 * @return future to get know if storing was successful
+	 * @return future to get know if writing was successful
+	 * @throws IOException if writing preparation failed
+	 * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
 	 */
-	public final CompletableFuture<Void> storeProcessedMessageBatchAsync(StoredMessageBatch batch)
+	public final CompletableFuture<Void> storeProcessedMessageBatchAsync(StoredMessageBatch batch) throws IOException, TooManyRequestsException
 	{
 		logger.debug("Storing processed message batch {} asynchronously", batch.getId());
 		CompletableFuture<Void> result = doStoreProcessedMessageBatchAsync(batch);
@@ -263,10 +271,11 @@ public abstract class CradleStorage
 	/**
 	 * Asynchronously writes data about given test event to storage
 	 * @param event data to write
-	 * @throws IOException if data is invalid
-	 * @return future to get know if storing was successful
+	 * @return future to get know if writing was successful
+	 * @throws IOException if writing preparation failed
+	 * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
 	 */
-	public final CompletableFuture<Void> storeTestEventAsync(StoredTestEvent event) throws IOException
+	public final CompletableFuture<Void> storeTestEventAsync(StoredTestEvent event) throws IOException, TooManyRequestsException
 	{
 		logger.debug("Storing test event {} asynchronously", event.getId());
 		try
@@ -307,9 +316,12 @@ public abstract class CradleStorage
 	 * @param eventId ID of stored test event
 	 * @param batchId ID of batch where event is stored, if applicable
 	 * @param messagesIds collection of stored message IDs
-	 * @return future to get know if storing was successful
+	 * @return future to get know if storing writing was successful
+	 * @throws IOException if writing preparation failed
+	 * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
 	 */
-	public final CompletableFuture<Void> storeTestEventMessagesLinkAsync(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messagesIds)
+	public final CompletableFuture<Void> storeTestEventMessagesLinkAsync(StoredTestEventId eventId, StoredTestEventId batchId, 
+			Collection<StoredMessageId> messagesIds) throws IOException, TooManyRequestsException
 	{
 		logger.debug("Storing links between test event {} and {} message(s) asynchronously", eventId, messagesIds.size());
 		CompletableFuture<Void> result = doStoreTestEventMessagesLinkAsync(eventId, batchId, messagesIds);
@@ -340,8 +352,9 @@ public abstract class CradleStorage
 	 * Asynchronously retrieves message data stored under given ID
 	 * @param id of stored message to retrieve
 	 * @return future to obtain data of stored message
+	 * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
 	 */
-	public final CompletableFuture<StoredMessage> getMessageAsync(StoredMessageId id)
+	public final CompletableFuture<StoredMessage> getMessageAsync(StoredMessageId id) throws TooManyRequestsException
 	{
 		logger.debug("Getting message {} asynchronously", id);
 		CompletableFuture<StoredMessage> result = doGetMessageAsync(id);
@@ -372,8 +385,9 @@ public abstract class CradleStorage
 	 * Asynchronously retrieves batch of messages where message with given ID is stored
 	 * @param id of stored message whose batch to retrieve
 	 * @return future to obtain collection with messages stored in batch
+	 * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
 	 */
-	public final CompletableFuture<Collection<StoredMessage>> getMessageBatchAsync(StoredMessageId id)
+	public final CompletableFuture<Collection<StoredMessage>> getMessageBatchAsync(StoredMessageId id) throws TooManyRequestsException
 	{
 		logger.debug("Getting message batch by message ID {} asynchronously", id);
 		CompletableFuture<Collection<StoredMessage>> result = doGetMessageBatchAsync(id);
@@ -404,8 +418,9 @@ public abstract class CradleStorage
 	 * Asynchronously retrieves processed message data stored under given ID
 	 * @param id of stored processed message to retrieve
 	 * @return future to obtain data of stored processed message
+	 * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
 	 */
-	public final CompletableFuture<StoredMessage> getProcessedMessageAsync(StoredMessageId id)
+	public final CompletableFuture<StoredMessage> getProcessedMessageAsync(StoredMessageId id) throws TooManyRequestsException
 	{
 		logger.debug("Getting processed message {} asynchronously", id);
 		CompletableFuture<StoredMessage> result = doGetProcessedMessageAsync(id);
@@ -475,10 +490,11 @@ public abstract class CradleStorage
 	 * @param direction of message
 	 * @param timestamp to search for messages
 	 * @param timeRelation defines if need to find message appeared before given timestamp or after it
-	 * @return ID of first message appeared in given timestamp or before/after it
-	 * @throws IOException if data retrieval failed
+	 * @return future to get ID of first message appeared in given timestamp or before/after it
+	 * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
 	 */
-	public final CompletableFuture<StoredMessageId> getNearestMessageIdAsync(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation) throws IOException
+	public final CompletableFuture<StoredMessageId> getNearestMessageIdAsync(String streamName, Direction direction, Instant timestamp, 
+			TimeRelation timeRelation) throws TooManyRequestsException
 	{
 		logger.debug(
 				"Asynchronously getting ID of first message appeared on {} or {} for stream '{}' and direction '{}'",
@@ -517,8 +533,9 @@ public abstract class CradleStorage
 	 * Asynchronously retrieves test event data stored under given ID
 	 * @param id of stored test event to retrieve
 	 * @return future to obtain data of stored test event
+	 * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
 	 */
-	public final CompletableFuture<StoredTestEventWrapper> getTestEventAsync(StoredTestEventId id)
+	public final CompletableFuture<StoredTestEventWrapper> getTestEventAsync(StoredTestEventId id) throws TooManyRequestsException
 	{
 		logger.debug("Getting test event {} asynchronously", id);
 		
@@ -550,8 +567,9 @@ public abstract class CradleStorage
 	 * Asynchronously retrieves test events data stored under given IDs
 	 * @param ids set of stored test event to retrieve
 	 * @return future to obtain data of stored test event
+	 * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
 	 */
-	public final CompletableFuture<Iterable<StoredTestEventWrapper>> getCompleteTestEventsAsync(Set<StoredTestEventId> ids)
+	public final CompletableFuture<Iterable<StoredTestEventWrapper>> getCompleteTestEventsAsync(Set<StoredTestEventId> ids) throws TooManyRequestsException
 	{
 		logger.debug("Getting test events {} asynchronously", ids);
 
@@ -600,8 +618,9 @@ public abstract class CradleStorage
 	 * optionally filtering them by given conditions
 	 * @param filter defines conditions to filter messages by. Use null if no filtering is needed
 	 * @return future to obtain iterable object to enumerate messages
+	 * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
 	 */
-	public final CompletableFuture<Iterable<StoredMessage>> getMessagesAsync(StoredMessageFilter filter)
+	public final CompletableFuture<Iterable<StoredMessage>> getMessagesAsync(StoredMessageFilter filter) throws TooManyRequestsException
 	{
 		logger.debug("Asynchronously getting messages filtered by {}", filter);
 		CompletableFuture<Iterable<StoredMessage>> result = doGetMessagesAsync(filter);
@@ -619,8 +638,9 @@ public abstract class CradleStorage
 	 * optionally filtering them by given conditions
 	 * @param filter defines conditions to filter message batches by. Use null if no filtering is needed
 	 * @return future to obtain iterable object to enumerate message batches
+	 * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
 	 */
-	public final CompletableFuture<Iterable<StoredMessageBatch>> getMessagesBatchesAsync(StoredMessageFilter filter)
+	public final CompletableFuture<Iterable<StoredMessageBatch>> getMessagesBatchesAsync(StoredMessageFilter filter) throws TooManyRequestsException
 	{
 		logger.debug("Asynchronously getting message batches filtered by {}", filter);
 		CompletableFuture<Iterable<StoredMessageBatch>> result = doGetMessagesBatchesAsync(filter);
@@ -639,9 +659,10 @@ public abstract class CradleStorage
 	 * @param filter defines conditions to filter message batches by. Use null if no filtering is needed
 	 * @param order defines sorting order   
 	 * @return future to obtain iterable object to enumerate message batches
+	 * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
 	 */
 	@Deprecated
-	public final CompletableFuture<Iterable<StoredMessageBatch>> getMessagesBatchesAsync(StoredMessageFilter filter, Order order)
+	public final CompletableFuture<Iterable<StoredMessageBatch>> getMessagesBatchesAsync(StoredMessageFilter filter, Order order) throws TooManyRequestsException
 	{
 		StoredMessageFilter copyFilter = new StoredMessageFilter(filter);
 		copyFilter.setOrder(order);
@@ -692,8 +713,10 @@ public abstract class CradleStorage
 	 * @param to right boundary of timestamps range
 	 * @return future to obtain iterable object to enumerate root test events
 	 * @throws CradleStorageException if given parameters are invalid
+	 * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
 	 */
-	public final CompletableFuture<Iterable<StoredTestEventMetadata>> getRootTestEventsAsync(Instant from, Instant to) throws CradleStorageException
+	public final CompletableFuture<Iterable<StoredTestEventMetadata>> getRootTestEventsAsync(Instant from, Instant to) 
+			throws CradleStorageException, TooManyRequestsException
 	{
 		return getRootTestEventsAsync(from, to, Order.DIRECT);
 	}
@@ -708,8 +731,10 @@ public abstract class CradleStorage
 	 * @param order defines sorting order   
 	 * @return future to obtain iterable object to enumerate root test events
 	 * @throws CradleStorageException if given parameters are invalid
+	 * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
 	 */
-	public final CompletableFuture<Iterable<StoredTestEventMetadata>> getRootTestEventsAsync(Instant from, Instant to, Order order) throws CradleStorageException
+	public final CompletableFuture<Iterable<StoredTestEventMetadata>> getRootTestEventsAsync(Instant from, Instant to, Order order) 
+			throws CradleStorageException, TooManyRequestsException
 	{
 		if (from == null || to == null)
 			throw new CradleStorageException("Both boundaries (from and to) should be specified");
@@ -777,9 +802,10 @@ public abstract class CradleStorage
 	 * @param to right boundary of timestamps range
 	 * @return future to obtain iterable object to enumerate test events
 	 * @throws CradleStorageException if given parameters are invalid
+	 * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
 	 */
 	public final CompletableFuture<Iterable<StoredTestEventMetadata>> getTestEventsAsync(StoredTestEventId parentId, 
-			Instant from, Instant to) throws CradleStorageException
+			Instant from, Instant to) throws CradleStorageException, TooManyRequestsException
 	{
 		return getTestEventsAsync(parentId, from, to, Order.DIRECT);
 	}
@@ -795,9 +821,10 @@ public abstract class CradleStorage
 	 * @param order defines sorting order
 	 * @return future to obtain iterable object to enumerate test events
 	 * @throws CradleStorageException if given parameters are invalid
+	 * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
 	 */
 	public final CompletableFuture<Iterable<StoredTestEventMetadata>> getTestEventsAsync(StoredTestEventId parentId,
-			Instant from, Instant to, Order order) throws CradleStorageException
+			Instant from, Instant to, Order order) throws CradleStorageException, TooManyRequestsException
 	{
 		if (from == null || to == null)
 			throw new CradleStorageException("Both boundaries (from and to) should be specified");
@@ -858,8 +885,10 @@ public abstract class CradleStorage
 	 * @param to right boundary of timestamps range
 	 * @return future to obtain iterable object to enumerate test events
 	 * @throws CradleStorageException if given parameters are invalid
+	 * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
 	 */
-	public final CompletableFuture<Iterable<StoredTestEventMetadata>> getTestEventsAsync(Instant from, Instant to) throws CradleStorageException
+	public final CompletableFuture<Iterable<StoredTestEventMetadata>> getTestEventsAsync(Instant from, Instant to) 
+			throws CradleStorageException, TooManyRequestsException
 	{
 		return getTestEventsAsync(from, to, Order.DIRECT);
 	}
@@ -872,8 +901,10 @@ public abstract class CradleStorage
 	 * @param to right boundary of timestamps range
 	 * @return future to obtain iterable object to enumerate test events
 	 * @throws CradleStorageException if given parameters are invalid
+	 * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
 	 */
-	public final CompletableFuture<Iterable<StoredTestEventMetadata>> getTestEventsAsync(Instant from, Instant to, Order order) throws CradleStorageException
+	public final CompletableFuture<Iterable<StoredTestEventMetadata>> getTestEventsAsync(Instant from, Instant to, Order order) 
+			throws CradleStorageException, TooManyRequestsException
 	{
 		if (from == null || to == null)
 			throw new CradleStorageException("Both boundaries (from and to) should be specified");
@@ -939,7 +970,7 @@ public abstract class CradleStorage
 		logger.debug("Status of event {} has been updated", event.getId());
 	}
 
-	public final CompletableFuture<Void> updateEventStatusAsync(StoredTestEventWrapper event, boolean success)
+	public final CompletableFuture<Void> updateEventStatusAsync(StoredTestEventWrapper event, boolean success) throws TooManyRequestsException
 	{
 		logger.debug("Asynchronously updating status of event {}", event.getId());
 		CompletableFuture<Void> result = doUpdateEventStatusAsync(event, success);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.exactpro.cradle.Direction;
-import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.exceptions.CradleStorageException;
 import com.exactpro.cradle.utils.MessageUtils;
 
 /**

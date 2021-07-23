@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
+import com.exactpro.cradle.exceptions.TooManyRequestsException;
 import com.exactpro.cradle.messages.StoredMessageId;
 
 public interface TestEventsMessagesLinker
@@ -36,8 +37,9 @@ public interface TestEventsMessagesLinker
 	 * Asynchronously retrieves IDs of stored test events by linked message ID
 	 * @param messageId ID of stored message
 	 * @return future to obtain collection of stored test event IDs
+	 * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted 
 	 */
-	CompletableFuture<Collection<StoredTestEventId>> getTestEventIdsByMessageIdAsync(StoredMessageId messageId);
+	CompletableFuture<Collection<StoredTestEventId>> getTestEventIdsByMessageIdAsync(StoredMessageId messageId) throws TooManyRequestsException;
 
 	/**
 	 * Retrieves IDs of stored messages by linked test event ID
@@ -51,8 +53,9 @@ public interface TestEventsMessagesLinker
 	 * Asynchronously retrieves IDs of stored messages by linked test event ID
 	 * @param eventId ID of stored test event
 	 * @return future to obtain collection of stored message IDs
+	 * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
 	 */
-	CompletableFuture<Collection<StoredMessageId>> getMessageIdsByTestEventIdAsync(StoredTestEventId eventId);
+	CompletableFuture<Collection<StoredMessageId>> getMessageIdsByTestEventIdAsync(StoredTestEventId eventId) throws TooManyRequestsException;
 
 	/**
 	 * Checks if test event has messages linked to it
@@ -66,8 +69,9 @@ public interface TestEventsMessagesLinker
 	 * Asynchronously checks if test event has messages linked to it
 	 * @param eventId ID of stored test event
 	 * @return future to get if test event has linked messages
+	 * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
 	 */
-	CompletableFuture<Boolean> isTestEventLinkedToMessagesAsync(StoredTestEventId eventId);
+	CompletableFuture<Boolean> isTestEventLinkedToMessagesAsync(StoredTestEventId eventId) throws TooManyRequestsException;
 	
 	/**
 	 * Checks if message has test events linked to it
@@ -81,6 +85,7 @@ public interface TestEventsMessagesLinker
 	 * Asynchronously checks if message has test events linked to it
 	 * @param messageId ID of stored message
 	 * @return future to get if message has linked test events
+	 * @throws TooManyRequestsException if Cradle API already executes too many asynchronous requests and new one cannot be submitted
 	 */
-	CompletableFuture<Boolean> isMessageLinkedToTestEventsAsync(StoredMessageId messageId);
+	CompletableFuture<Boolean> isMessageLinkedToTestEventsAsync(StoredMessageId messageId) throws TooManyRequestsException;
 }
