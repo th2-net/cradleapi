@@ -87,6 +87,13 @@ public class AsyncExecutorTest
 		submitRequest(new FakeRequest(2, new Exception("Can't recover")), 100).get();
 	}
 	
+	@Test(expectedExceptions = TooManyRequestsException.class)
+	public void tooManyRequests() throws TooManyRequestsException
+	{
+		for (int i = 0; i < 10; i++)
+			submitRequest(new FakeRequest(-1), -1);
+	}
+	
 	@Test(description = "Futures left after AsyncExecutor disposal should be completed anyway",
 			expectedExceptions = ExecutionException.class, expectedExceptionsMessageRegExp = ".* cancelled")
 	public void executorDispose() throws InterruptedException, ExecutionException, TooManyRequestsException

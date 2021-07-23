@@ -35,14 +35,16 @@ import com.exactpro.cradle.exceptions.TooManyRequestsException;
  */
 public class AsyncExecutor
 {
+	private final int maxRequests;
 	private final BlockingQueue<RequestInfo<?>> requests;
 	private final ExecutorService execService;
 	private final int defaultRetries;
 	private final AsyncRequestProcessor processor;
 	
-	public AsyncExecutor(int maxQueueSize, ExecutorService composingService, int defaultRetries, int minDelay, int maxDelay)
+	public AsyncExecutor(int maxRequests, ExecutorService composingService, int defaultRetries, int minDelay, int maxDelay)
 	{
-		this.requests = new LinkedBlockingQueue<RequestInfo<?>>(maxQueueSize);
+		this.maxRequests = maxRequests;
+		this.requests = new LinkedBlockingQueue<RequestInfo<?>>(maxRequests);
 		this.execService = Executors.newSingleThreadExecutor();
 		this.defaultRetries = defaultRetries;
 		this.processor = new AsyncRequestProcessor(requests, composingService, minDelay, maxDelay);
@@ -53,7 +55,8 @@ public class AsyncExecutor
 	public <T> CompletableFuture<T> submit(String requestInfo, int maxRetries, Supplier<CompletableFuture<T>> supplier) throws TooManyRequestsException
 	{
 		CompletableFuture<T> result = new CompletableFuture<T>();
-		if (!requests.offer(new RequestInfo<T>(requestInfo, maxRetries, supplier, result)))
+		if (getPendingRequests()+getActiveRequests() >= maxRequests 
+				|| !requests.offer(new RequestInfo<T>(requestInfo, maxRetries, supplier, result)))
 			throw new TooManyRequestsException("Could not submit new request '"+requestInfo+"'");
 		return result;
 	}
