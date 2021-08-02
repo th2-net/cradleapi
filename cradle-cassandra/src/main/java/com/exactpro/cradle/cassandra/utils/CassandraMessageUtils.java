@@ -58,7 +58,12 @@ public class CassandraMessageUtils
 							id.getStreamName(), 
 							id.getDirection().getLabel(),
 							id.getIndex(),
-							readAttrs));
+							readAttrs))
+				.thenApply(batch ->{
+					if (batch == null || batch.getLastMessageIndex() >= id.getIndex())
+						return batch;						
+					return null;
+				});
 	}
 	
 	public static long findLeftMessageIndex(DetailedMessageBatchEntity batch, StoredMessageFilter filter, UUID instanceId, 
