@@ -18,8 +18,8 @@ package com.exactpro.cradle;
 
 public enum Direction
 {
-	FIRST("first"),
-	SECOND("second");
+	FIRST("1"),
+	SECOND("2");
 	
 	private final String label;
 

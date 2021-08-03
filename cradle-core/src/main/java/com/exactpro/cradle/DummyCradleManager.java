@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,13 @@
 package com.exactpro.cradle;
 
 /**
- * Default implementation of CradleManager that does nothing and works like a stub.
+ * Dummy implementation of CradleManager that does nothing and serves as a stub
  */
-public class DefaultCradleManager extends CradleManager
+public class DummyCradleManager extends CradleManager
 {
 	@Override
-	protected CradleStorage createStorage(long maxMessageBatchSize, long maxTestEventBatchSize)
+	protected CradleStorage createStorage(String book)
 	{
-		return null;
+		return new DummyCradleStorage(book);
 	}
 }
