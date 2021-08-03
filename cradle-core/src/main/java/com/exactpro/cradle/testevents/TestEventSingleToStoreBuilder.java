@@ -19,21 +19,21 @@ package com.exactpro.cradle.testevents;
 import java.time.Instant;
 
 /**
- * Builder for {@link TestEventToStore} object. After calling {@link #build()} method, the builder can be reused to build new test event
+ * Builder for {@link TestEventSingleToStore} object. After calling {@link #build()} method, the builder can be reused to build new test event
  */
-public class TestEventToStoreBuilder
+public class TestEventSingleToStoreBuilder
 {
-	private TestEventToStore event;
+	private TestEventSingleToStore event;
 	
-	public TestEventToStoreBuilder()
+	public TestEventSingleToStoreBuilder()
 	{
 		event = createTestEventToStore();
 	}
 	
 	
-	protected TestEventToStore createTestEventToStore()
+	protected TestEventSingleToStore createTestEventToStore()
 	{
-		return new TestEventToStore();
+		return new TestEventSingleToStore();
 	}
 	
 	private void initIfNeeded()
@@ -43,56 +43,49 @@ public class TestEventToStoreBuilder
 	}
 	
 	
-	public TestEventToStoreBuilder id(StoredTestEventId id)
+	public TestEventSingleToStoreBuilder id(StoredTestEventId id)
 	{
 		initIfNeeded();
 		event.setId(id);
 		return this;
 	}
 	
-	public TestEventToStoreBuilder name(String name)
+	public TestEventSingleToStoreBuilder name(String name)
 	{
 		initIfNeeded();
 		event.setName(name);
 		return this;
 	}
 	
-	public TestEventToStoreBuilder type(String type)
+	public TestEventSingleToStoreBuilder type(String type)
 	{
 		initIfNeeded();
 		event.setType(type);
 		return this;
 	}
 	
-	public TestEventToStoreBuilder parentId(StoredTestEventId parentId)
+	public TestEventSingleToStoreBuilder parentId(StoredTestEventId parentId)
 	{
 		initIfNeeded();
 		event.setParentId(parentId);
 		return this;
 	}
 	
-	public TestEventToStoreBuilder startTimestamp(Instant startTimestamp)
-	{
-		initIfNeeded();
-		event.setStartTimestamp(startTimestamp);
-		return this;
-	}
-	
-	public TestEventToStoreBuilder endTimestamp(Instant endTimestamp)
+	public TestEventSingleToStoreBuilder endTimestamp(Instant endTimestamp)
 	{
 		initIfNeeded();
 		event.setEndTimestamp(endTimestamp);
 		return this;
 	}
 	
-	public TestEventToStoreBuilder success(boolean success)
+	public TestEventSingleToStoreBuilder success(boolean success)
 	{
 		initIfNeeded();
 		event.setSuccess(success);
 		return this;
 	}
 	
-	public TestEventToStoreBuilder content(byte[] content)
+	public TestEventSingleToStoreBuilder content(byte[] content)
 	{
 		initIfNeeded();
 		event.setContent(content);
@@ -100,10 +93,10 @@ public class TestEventToStoreBuilder
 	}
 	
 	
-	public TestEventToStore build()
+	public TestEventSingleToStore build()
 	{
 		initIfNeeded();
-		TestEventToStore result = event;
+		TestEventSingleToStore result = event;
 		event = null;
 		return result;
 	}

@@ -18,7 +18,7 @@ package com.exactpro.cradle.intervals;
 
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.messages.StoredMessage;
-import com.exactpro.cradle.testevents.StoredTestEventWrapper;
+import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.utils.CompressionUtils;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -163,7 +163,7 @@ public class RecoveryState
         private final Instant startTimestamp;
         private final String id;
 
-        public InnerEvent(StoredTestEventWrapper event)
+        public InnerEvent(StoredTestEvent event)
         {
             this.startTimestamp = event.getStartTimestamp();
             this.id = event.getId().toString();

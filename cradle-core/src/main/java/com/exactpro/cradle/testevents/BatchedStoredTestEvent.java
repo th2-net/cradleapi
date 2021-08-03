@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,28 +23,26 @@ import java.util.Collection;
 /**
  * Holds information about one test event stored in batch of events ({@link StoredTestEventBatch})
  */
-public class BatchedStoredTestEvent implements StoredTestEventWithContent, Serializable
+public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 {
-	private static final long serialVersionUID = 1052669983594471856L;
+	private static final long serialVersionUID = -1350827714114261304L;
 	
 	private final StoredTestEventId id;
 	private final String name,
 			type;
 	private final StoredTestEventId parentId;
-	private final Instant startTimestamp,
-			endTimestamp;
+	private final Instant endTimestamp;
 	private final boolean success;
 	private final byte[] content;
 	
 	private final transient StoredTestEventBatch batch;
 	
-	public BatchedStoredTestEvent(StoredTestEventWithContent event, StoredTestEventBatch batch)
+	public BatchedStoredTestEvent(TestEventSingle event, StoredTestEventBatch batch)
 	{
 		this.id = event.getId();
 		this.name = event.getName();
 		this.type = event.getType();
 		this.parentId = event.getParentId();
-		this.startTimestamp = event.getStartTimestamp();
 		this.endTimestamp = event.getEndTimestamp();
 		this.success = event.isSuccess();
 		this.content = event.getContent();
@@ -78,9 +76,9 @@ public class BatchedStoredTestEvent implements StoredTestEventWithContent, Seria
 	}
 	
 	@Override
-	public Instant getStartTimestamp()
+	public final Instant getStartTimestamp()
 	{
-		return startTimestamp;
+		return TestEvent.startTimestamp(this);
 	}
 	
 	@Override

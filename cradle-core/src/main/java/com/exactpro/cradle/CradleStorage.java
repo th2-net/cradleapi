@@ -30,7 +30,6 @@ import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
-import com.exactpro.cradle.testevents.StoredTestEventWrapper;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
@@ -66,8 +65,8 @@ public abstract class CradleStorage
 	protected abstract CompletableFuture<Void> doStoreTestEventAsync(StoredTestEvent event);
 	protected abstract void doUpdateParentTestEvents(StoredTestEvent event) throws IOException;
 	protected abstract CompletableFuture<Void> doUpdateParentTestEventsAsync(StoredTestEvent event);
-	protected abstract void doUpdateEventStatus(StoredTestEventWrapper event, boolean success) throws IOException;
-	protected abstract CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEventWrapper event, boolean success);
+	protected abstract void doUpdateEventStatus(StoredTestEvent event, boolean success) throws IOException;
+	protected abstract CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEvent event, boolean success);
 	
 	
 	protected abstract StoredMessage doGetMessage(StoredMessageId id) throws IOException;
@@ -84,20 +83,20 @@ public abstract class CradleStorage
 	protected abstract Collection<String> doGetStreams() throws IOException;
 	
 	
-	protected abstract StoredTestEventWrapper doGetTestEvent(StoredTestEventId id) throws IOException;
-	protected abstract CompletableFuture<StoredTestEventWrapper> doGetTestEventAsync(StoredTestEventId ids);
+	protected abstract StoredTestEvent doGetTestEvent(StoredTestEventId id) throws IOException;
+	protected abstract CompletableFuture<StoredTestEvent> doGetTestEventAsync(StoredTestEventId ids);
 	
-	protected abstract Iterable<StoredTestEventWrapper> doGetRootTestEvents(Instant from, Instant to, Order order) 
+	protected abstract Iterable<StoredTestEvent> doGetRootTestEvents(Instant from, Instant to, Order order) 
 			throws CradleStorageException, IOException;
-	protected abstract CompletableFuture<Iterable<StoredTestEventWrapper>> doGetRootTestEventsAsync(Instant from, Instant to, Order order)
+	protected abstract CompletableFuture<Iterable<StoredTestEvent>> doGetRootTestEventsAsync(Instant from, Instant to, Order order)
 			throws CradleStorageException;
-	protected abstract Iterable<StoredTestEventWrapper> doGetTestEvents(StoredTestEventId parentId, Instant from, Instant to, Order order) 
+	protected abstract Iterable<StoredTestEvent> doGetTestEvents(StoredTestEventId parentId, Instant from, Instant to, Order order) 
 			throws CradleStorageException, IOException;
-	protected abstract CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsAsync(StoredTestEventId parentId, 
+	protected abstract CompletableFuture<Iterable<StoredTestEvent>> doGetTestEventsAsync(StoredTestEventId parentId, 
 			Instant from, Instant to, Order order) throws CradleStorageException;
-	protected abstract Iterable<StoredTestEventWrapper> doGetTestEvents(Instant from, Instant to, Order order) 
+	protected abstract Iterable<StoredTestEvent> doGetTestEvents(Instant from, Instant to, Order order) 
 			throws CradleStorageException, IOException;
-	protected abstract CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsAsync(Instant from, Instant to, Order order)
+	protected abstract CompletableFuture<Iterable<StoredTestEvent>> doGetTestEventsAsync(Instant from, Instant to, Order order)
 			throws CradleStorageException;
 	
 	
@@ -320,10 +319,10 @@ public abstract class CradleStorage
 	 * @return data of stored test event
 	 * @throws IOException if test event data retrieval failed
 	 */
-	public final StoredTestEventWrapper getTestEvent(StoredTestEventId id) throws IOException
+	public final StoredTestEvent getTestEvent(StoredTestEventId id) throws IOException
 	{
 		logger.debug("Getting test event {}", id);
-		StoredTestEventWrapper result = doGetTestEvent(id);
+		StoredTestEvent result = doGetTestEvent(id);
 		logger.debug("Test event {} got", id);
 		return result;
 	}
@@ -333,11 +332,11 @@ public abstract class CradleStorage
 	 * @param id of stored test event to retrieve
 	 * @return future to obtain data of stored test event
 	 */
-	public final CompletableFuture<StoredTestEventWrapper> getTestEventAsync(StoredTestEventId id)
+	public final CompletableFuture<StoredTestEvent> getTestEventAsync(StoredTestEventId id)
 	{
 		logger.debug("Getting test event {} asynchronously", id);
 		
-		CompletableFuture<StoredTestEventWrapper> result = doGetTestEventAsync(id)
+		CompletableFuture<StoredTestEvent> result = doGetTestEventAsync(id)
 				.whenComplete((r, error) -> {
 					if (error != null)
 						logger.error("Error while getting test event "+id+" asynchronously", error);
@@ -425,7 +424,7 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if given parameters are invalid
 	 * @throws IOException if data retrieval failed
 	 */
-	public final Iterable<StoredTestEventWrapper> getRootTestEvents(Instant from, Instant to) throws CradleStorageException, IOException
+	public final Iterable<StoredTestEvent> getRootTestEvents(Instant from, Instant to) throws CradleStorageException, IOException
 	{
 		return getRootTestEvents(from, to, Order.DIRECT);
 	}
@@ -440,13 +439,13 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if given parameters are invalid
 	 * @throws IOException if data retrieval failed
 	 */
-	public final Iterable<StoredTestEventWrapper> getRootTestEvents(Instant from, Instant to, Order order) throws CradleStorageException, IOException
+	public final Iterable<StoredTestEvent> getRootTestEvents(Instant from, Instant to, Order order) throws CradleStorageException, IOException
 	{
 		if (from == null || to == null)
 			throw new CradleStorageException("Both boundaries (from and to) should be specified");
 
 		logger.debug("Getting root test events from range {}..{} in {} order", from, to, order);
-		Iterable<StoredTestEventWrapper> result = doGetRootTestEvents(from, to, order);
+		Iterable<StoredTestEvent> result = doGetRootTestEvents(from, to, order);
 		logger.debug("Prepared iterator for root test events from range {}..{} in {} order", from, to, order);
 		return result;
 	}
@@ -460,7 +459,7 @@ public abstract class CradleStorage
 	 * @return future to obtain iterable object to enumerate root test events
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final CompletableFuture<Iterable<StoredTestEventWrapper>> getRootTestEventsAsync(Instant from, Instant to) throws CradleStorageException
+	public final CompletableFuture<Iterable<StoredTestEvent>> getRootTestEventsAsync(Instant from, Instant to) throws CradleStorageException
 	{
 		return getRootTestEventsAsync(from, to, Order.DIRECT);
 	}
@@ -476,14 +475,14 @@ public abstract class CradleStorage
 	 * @return future to obtain iterable object to enumerate root test events
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final CompletableFuture<Iterable<StoredTestEventWrapper>> getRootTestEventsAsync(Instant from, Instant to, Order order) throws CradleStorageException
+	public final CompletableFuture<Iterable<StoredTestEvent>> getRootTestEventsAsync(Instant from, Instant to, Order order) throws CradleStorageException
 	{
 		if (from == null || to == null)
 			throw new CradleStorageException("Both boundaries (from and to) should be specified");
 
 		logger.debug("Getting root test events from range {}..{} in {} order asynchronously", from, to, order);
 
-		CompletableFuture<Iterable<StoredTestEventWrapper>> result = doGetRootTestEventsAsync(from, to, order)
+		CompletableFuture<Iterable<StoredTestEvent>> result = doGetRootTestEventsAsync(from, to, order)
 				.whenComplete((r, error) -> {
 					if (error != null)
 						logger.error("Error while getting root test events from range "+from+".."+to+" asynchronously", error);
@@ -504,7 +503,7 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if given parameters are invalid
 	 * @throws IOException if data retrieval failed
 	 */
-	public final Iterable<StoredTestEventWrapper> getTestEvents(StoredTestEventId parentId, Instant from, Instant to) 
+	public final Iterable<StoredTestEvent> getTestEvents(StoredTestEventId parentId, Instant from, Instant to) 
 			throws CradleStorageException, IOException
 	{
 		return getTestEvents(parentId, from, to, Order.DIRECT);
@@ -522,14 +521,14 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if given parameters are invalid
 	 * @throws IOException if data retrieval failed
 	 */
-	public final Iterable<StoredTestEventWrapper> getTestEvents(StoredTestEventId parentId, Instant from, Instant to, Order order)
+	public final Iterable<StoredTestEvent> getTestEvents(StoredTestEventId parentId, Instant from, Instant to, Order order)
 			throws CradleStorageException, IOException
 	{
 		if (from == null || to == null)
 			throw new CradleStorageException("Both boundaries (from and to) should be specified");
 
 		logger.debug("Getting child test events of {} from range {}..{} in {} order", parentId, from, to, order);
-		Iterable<StoredTestEventWrapper> result = doGetTestEvents(parentId, from, to, order);
+		Iterable<StoredTestEvent> result = doGetTestEvents(parentId, from, to, order);
 		logger.debug("Prepared iterator for child test events of {} from range {}..{} in {} order", parentId, from, to, order);
 		return result;
 	}
@@ -545,7 +544,7 @@ public abstract class CradleStorage
 	 * @return future to obtain iterable object to enumerate test events
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final CompletableFuture<Iterable<StoredTestEventWrapper>> getTestEventsAsync(StoredTestEventId parentId, 
+	public final CompletableFuture<Iterable<StoredTestEvent>> getTestEventsAsync(StoredTestEventId parentId, 
 			Instant from, Instant to) throws CradleStorageException
 	{
 		return getTestEventsAsync(parentId, from, to, Order.DIRECT);
@@ -563,7 +562,7 @@ public abstract class CradleStorage
 	 * @return future to obtain iterable object to enumerate test events
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final CompletableFuture<Iterable<StoredTestEventWrapper>> getTestEventsAsync(StoredTestEventId parentId,
+	public final CompletableFuture<Iterable<StoredTestEvent>> getTestEventsAsync(StoredTestEventId parentId,
 			Instant from, Instant to, Order order) throws CradleStorageException
 	{
 		if (from == null || to == null)
@@ -571,7 +570,7 @@ public abstract class CradleStorage
 
 		logger.debug("Getting child test events of {} from range {}..{} in {} order asynchronously", parentId, from, to, order);
 
-		CompletableFuture<Iterable<StoredTestEventWrapper>> result = doGetTestEventsAsync(parentId, from, to, order)
+		CompletableFuture<Iterable<StoredTestEvent>> result = doGetTestEventsAsync(parentId, from, to, order)
 				.whenComplete((r, error) -> {
 					if (error != null)
 						logger.error("Error while getting child test events of "+parentId+" from range "+from+".."+to+" asynchronously", error);
@@ -591,7 +590,7 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if given parameters are invalid
 	 * @throws IOException if data retrieval failed
 	 */
-	public final Iterable<StoredTestEventWrapper> getTestEvents(Instant from, Instant to) throws CradleStorageException, IOException
+	public final Iterable<StoredTestEvent> getTestEvents(Instant from, Instant to) throws CradleStorageException, IOException
 	{
 		return getTestEvents(from, to, Order.DIRECT);
 	}
@@ -606,13 +605,13 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if given parameters are invalid
 	 * @throws IOException if data retrieval failed
 	 */
-	public final Iterable<StoredTestEventWrapper> getTestEvents(Instant from, Instant to, Order order) throws CradleStorageException, IOException
+	public final Iterable<StoredTestEvent> getTestEvents(Instant from, Instant to, Order order) throws CradleStorageException, IOException
 	{
 		if (from == null || to == null)
 			throw new CradleStorageException("Both boundaries (from and to) should be specified");
 
 		logger.debug("Getting test events from range {}..{} in {} order", from, to, order);
-		Iterable<StoredTestEventWrapper> result = doGetTestEvents(from, to, order);
+		Iterable<StoredTestEvent> result = doGetTestEvents(from, to, order);
 		logger.debug("Prepared iterator for test events from range {}..{} in {} order", from, to, order);
 		return result;
 	}
@@ -626,7 +625,7 @@ public abstract class CradleStorage
 	 * @return future to obtain iterable object to enumerate test events
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final CompletableFuture<Iterable<StoredTestEventWrapper>> getTestEventsAsync(Instant from, Instant to) throws CradleStorageException
+	public final CompletableFuture<Iterable<StoredTestEvent>> getTestEventsAsync(Instant from, Instant to) throws CradleStorageException
 	{
 		return getTestEventsAsync(from, to, Order.DIRECT);
 	}
@@ -640,14 +639,14 @@ public abstract class CradleStorage
 	 * @return future to obtain iterable object to enumerate test events
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final CompletableFuture<Iterable<StoredTestEventWrapper>> getTestEventsAsync(Instant from, Instant to, Order order) throws CradleStorageException
+	public final CompletableFuture<Iterable<StoredTestEvent>> getTestEventsAsync(Instant from, Instant to, Order order) throws CradleStorageException
 	{
 		if (from == null || to == null)
 			throw new CradleStorageException("Both boundaries (from and to) should be specified");
 
 		logger.debug("Getting test events from range {}..{} in {} order asynchronously", from, to, order);
 
-		CompletableFuture<Iterable<StoredTestEventWrapper>> result = doGetTestEventsAsync(from, to, order)
+		CompletableFuture<Iterable<StoredTestEvent>> result = doGetTestEventsAsync(from, to, order)
 				.whenComplete((r, error) -> {
 					if (error != null)
 						logger.error("Error while getting test events from range "+from+".."+to+" asynchronously", error);
@@ -672,14 +671,14 @@ public abstract class CradleStorage
 	}
 	
 	
-	public final void updateEventStatus(StoredTestEventWrapper event, boolean success) throws IOException
+	public final void updateEventStatus(StoredTestEvent event, boolean success) throws IOException
 	{
 		logger.debug("Updating status of event {}", event.getId());
 		doUpdateEventStatus(event, success);
 		logger.debug("Status of event {} has been updated", event.getId());
 	}
 
-	public final CompletableFuture<Void> updateEventStatusAsync(StoredTestEventWrapper event, boolean success)
+	public final CompletableFuture<Void> updateEventStatusAsync(StoredTestEvent event, boolean success)
 	{
 		logger.debug("Asynchronously updating status of event {}", event.getId());
 		CompletableFuture<Void> result = doUpdateEventStatusAsync(event, success)

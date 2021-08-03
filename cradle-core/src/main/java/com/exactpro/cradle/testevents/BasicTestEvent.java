@@ -16,13 +16,16 @@
 
 package com.exactpro.cradle.testevents;
 
+import java.time.Instant;
+
 /**
- * This class only makes naming more clear: TestEventBatchToStore is used for batches of events while {@link TestEventSingleToStore} is for single events
+ * Interface to access basic metadata fields of test event
  */
-public class TestEventBatchToStore extends TestEventToStore
+public interface BasicTestEvent
 {
-	public static TestEventBatchToStoreBuilder builder()
-	{
-		return new TestEventBatchToStoreBuilder();
-	}
+	StoredTestEventId getId();
+	String getName();
+	String getType();
+	StoredTestEventId getParentId();
+	Instant getStartTimestamp();
 }

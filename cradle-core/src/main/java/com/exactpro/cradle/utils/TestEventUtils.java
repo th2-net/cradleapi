@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,12 +30,10 @@ import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
-import com.exactpro.cradle.testevents.BatchedStoredTestEventMetadata;
-import com.exactpro.cradle.testevents.StoredTestEvent;
+import com.exactpro.cradle.testevents.TestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
-import com.exactpro.cradle.testevents.StoredTestEventBatchMetadata;
 import com.exactpro.cradle.testevents.StoredTestEventId;
-import com.exactpro.cradle.testevents.TestEventToStore;
+import com.exactpro.cradle.testevents.TestEventSingleToStore;
 
 public class TestEventUtils
 {
@@ -45,7 +43,7 @@ public class TestEventUtils
 	 * @param checkName indicates whether event name should be validated. For some events name is optional and thus shouldn't be checked
 	 * @throws CradleStorageException if validation failed
 	 */
-	public static void validateTestEvent(StoredTestEvent event, boolean checkName) throws CradleStorageException
+	public static void validateTestEvent(TestEvent event, boolean checkName) throws CradleStorageException
 	{
 		if (event.getId() == null)
 			throw new CradleStorageException("Test event ID cannot be null");
@@ -78,26 +76,6 @@ public class TestEventUtils
 	}
 	
 	/**
-	 * Serializes test events metadata, skipping non-meaningful or calculatable fields
-	 * @param testEventsMetadata to serialize
-	 * @return array of bytes, containing serialized and compressed metadata of events
-	 * @throws IOException if serialization failed
-	 */
-	public static byte[] serializeTestEventsMetadata(Collection<BatchedStoredTestEventMetadata> testEventsMetadata) throws IOException
-	{
-		byte[] batchContent;
-		try (ByteArrayOutputStream out = new ByteArrayOutputStream();
-				DataOutputStream dos = new DataOutputStream(out))
-		{
-			for (BatchedStoredTestEventMetadata te : testEventsMetadata)
-				serialize(te, dos);
-			dos.flush();
-			batchContent = CompressionUtils.compressData(out.toByteArray());
-		}
-		return batchContent;
-	}
-	
-	/**
 	 * Deserializes all test events, adding them to given batch
 	 * @param contentBytes to deserialize events from
 	 * @param batch to add events to
@@ -115,12 +93,11 @@ public class TestEventUtils
 				BatchedStoredTestEvent tempTe = deserializeTestEvent(teBytes);
 				if (tempTe.getParentId() == null)  //Workaround to fix events stored before commit f71b224e6f4dc0c8c99512de6a8f2034a1c3badc. TODO: remove it in future
 				{
-					TestEventToStore te = TestEventToStore.builder()
+					TestEventSingleToStore te = TestEventSingleToStore.builder()
 							.id(tempTe.getId())
 							.name(tempTe.getName())
 							.type(tempTe.getType())
 							.parentId(batch.getParentId())
-							.startTimestamp(tempTe.getStartTimestamp())
 							.endTimestamp(tempTe.getEndTimestamp())
 							.success(tempTe.isSuccess())
 							.content(tempTe.getContent())
@@ -129,39 +106,6 @@ public class TestEventUtils
 				}
 				else
 					StoredTestEventBatch.addTestEvent(tempTe, batch);
-			}
-		}
-	}
-	
-	/**
-	 * Deserializes all test events metadata, adding them to given batch for metadata
-	 * @param contentBytes to deserialize events metadata from
-	 * @param batch to add events to
-	 * @throws IOException if deserialization failed
-	 */
-	public static void deserializeTestEventsMetadata(byte[] contentBytes, StoredTestEventBatchMetadata batch) 
-			throws IOException
-	{
-		try
-		{
-			contentBytes = CompressionUtils.decompressData(contentBytes);
-		}
-		catch (IOException e)
-		{
-			throw new IOException("Could not decompress metadata of test events from batch with ID '"+batch.getId()+"'", e);
-		}
-		catch (DataFormatException e)
-		{
-			//Data seems to be not compressed, i.e written by Cradle API prior to 2.9.0, let's try to deserialize events from bytes as they are
-		}
-		
-		try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(contentBytes)))
-		{
-			while (dis.available() != 0)
-			{
-				byte[] teBytes = readNextData(dis);
-				BatchedStoredTestEventMetadata tempTe = deserializeTestEventMetadata(teBytes);
-				StoredTestEventBatchMetadata.addTestEventMetadata(tempTe, batch);
 			}
 		}
 	}
@@ -217,10 +161,5 @@ public class TestEventUtils
 	private static BatchedStoredTestEvent deserializeTestEvent(byte[] bytes)
 	{
 		return (BatchedStoredTestEvent)SerializationUtils.deserialize(bytes);
-	}
-	
-	private static BatchedStoredTestEventMetadata deserializeTestEventMetadata(byte[] bytes)
-	{
-		return (BatchedStoredTestEventMetadata)SerializationUtils.deserialize(bytes);
 	}
 }

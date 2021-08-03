@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,66 +19,67 @@ package com.exactpro.cradle.testevents;
 import java.time.Instant;
 
 /**
- * Object to hold information about one test event prepared to be stored in Cradle
+ * Holds basic information about test event prepared to be stored in Cradle. Events extend this class with additional data
  */
-public class TestEventToStore extends MinimalTestEventToStore implements StoredTestEventWithContent
+public abstract class TestEventToStore implements BasicTestEvent
 {
-	private Instant startTimestamp,
-		endTimestamp;
-	private boolean success;
-	private byte[] content;
+	private StoredTestEventId id;
+	private String name,
+			type;
+	private StoredTestEventId parentId;
 	
 	
-	public static TestEventToStoreBuilder builder()
+	@Override
+	public StoredTestEventId getId()
 	{
-		return new TestEventToStoreBuilder();
+		return id;
+	}
+	
+	public void setId(StoredTestEventId id)
+	{
+		this.id = id;
 	}
 	
 	
 	@Override
-	public Instant getStartTimestamp()
+	public String getName()
 	{
-		return startTimestamp;
+		return name;
 	}
 	
-	public void setStartTimestamp(Instant startTimestamp)
+	public void setName(String name)
 	{
-		this.startTimestamp = startTimestamp;
-	}
-	
-	
-	@Override
-	public Instant getEndTimestamp()
-	{
-		return endTimestamp;
-	}
-	
-	public void setEndTimestamp(Instant endTimestamp)
-	{
-		this.endTimestamp = endTimestamp;
+		this.name = name;
 	}
 	
 	
 	@Override
-	public boolean isSuccess()
+	public String getType()
 	{
-		return success;
+		return type;
 	}
 	
-	public void setSuccess(boolean success)
+	public void setType(String type)
 	{
-		this.success = success;
+		this.type = type;
 	}
 	
 	
 	@Override
-	public byte[] getContent()
+	public StoredTestEventId getParentId()
 	{
-		return content;
+		return parentId;
 	}
 	
-	public void setContent(byte[] content)
+	public void setParentId(StoredTestEventId parentId)
 	{
-		this.content = content;
+		this.parentId = parentId;
+	}
+	
+	
+	@Override
+	public final Instant getStartTimestamp()
+	{
+		return TestEvent.startTimestamp(this);
 	}
 }

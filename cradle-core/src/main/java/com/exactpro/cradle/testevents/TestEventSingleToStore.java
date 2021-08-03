@@ -18,27 +18,19 @@ package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
 
-import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.TestEventUtils;
-
 /**
- * Holds information about single (individual) test event stored in Cradle
+ * Holds information about single (individual) test event prepared to be stored in Cradle
  */
-public class StoredTestEventSingle extends StoredTestEvent implements TestEventSingle
+public class TestEventSingleToStore extends TestEventToStore implements TestEventSingle
 {
-	private final Instant endTimestamp;
-	private final boolean success;
-	private final byte[] content;
+	private Instant endTimestamp;
+	private boolean success;
+	private byte[] content;
 	
-	public StoredTestEventSingle(TestEventSingle event) throws CradleStorageException
+	
+	public static TestEventSingleToStoreBuilder builder()
 	{
-		super(event);
-		
-		this.endTimestamp = event.getEndTimestamp();
-		this.success = event.isSuccess();
-		this.content = event.getContent();
-		
-		TestEventUtils.validateTestEvent(this, true);
+		return new TestEventSingleToStoreBuilder();
 	}
 	
 	
@@ -48,15 +40,32 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 		return endTimestamp;
 	}
 	
+	public void setEndTimestamp(Instant endTimestamp)
+	{
+		this.endTimestamp = endTimestamp;
+	}
+	
+	
 	@Override
 	public boolean isSuccess()
 	{
 		return success;
 	}
 	
+	public void setSuccess(boolean success)
+	{
+		this.success = success;
+	}
+	
+	
 	@Override
 	public byte[] getContent()
 	{
 		return content;
+	}
+	
+	public void setContent(byte[] content)
+	{
+		this.content = content;
 	}
 }

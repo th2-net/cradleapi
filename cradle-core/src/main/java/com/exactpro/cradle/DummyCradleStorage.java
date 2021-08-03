@@ -28,7 +28,6 @@ import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
-import com.exactpro.cradle.testevents.StoredTestEventWrapper;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
@@ -80,12 +79,12 @@ public class DummyCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected void doUpdateEventStatus(StoredTestEventWrapper event, boolean success) throws IOException
+	protected void doUpdateEventStatus(StoredTestEvent event, boolean success) throws IOException
 	{
 	}
 
 	@Override
-	protected CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEventWrapper event, boolean success)
+	protected CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEvent event, boolean success)
 	{
 		return null;
 	}
@@ -127,13 +126,13 @@ public class DummyCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected StoredTestEventWrapper doGetTestEvent(StoredTestEventId id) throws IOException
+	protected StoredTestEvent doGetTestEvent(StoredTestEventId id) throws IOException
 	{
 		return null;
 	}
 
 	@Override
-	protected CompletableFuture<StoredTestEventWrapper> doGetTestEventAsync(StoredTestEventId ids)
+	protected CompletableFuture<StoredTestEvent> doGetTestEventAsync(StoredTestEventId ids)
 	{
 		return null;
 	}
@@ -169,42 +168,42 @@ public class DummyCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected Iterable<StoredTestEventWrapper> doGetRootTestEvents(Instant from, Instant to, Order order)
+	protected Iterable<StoredTestEvent> doGetRootTestEvents(Instant from, Instant to, Order order)
 			throws CradleStorageException, IOException
 	{
 		return null;
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetRootTestEventsAsync(Instant from, Instant to,
+	protected CompletableFuture<Iterable<StoredTestEvent>> doGetRootTestEventsAsync(Instant from, Instant to,
 			Order order) throws CradleStorageException
 	{
 		return null;
 	}
 
 	@Override
-	protected Iterable<StoredTestEventWrapper> doGetTestEvents(StoredTestEventId parentId, Instant from,
+	protected Iterable<StoredTestEvent> doGetTestEvents(StoredTestEventId parentId, Instant from,
 			Instant to, Order order) throws CradleStorageException, IOException
 	{
 		return null;
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsAsync(StoredTestEventId parentId,
+	protected CompletableFuture<Iterable<StoredTestEvent>> doGetTestEventsAsync(StoredTestEventId parentId,
 			Instant from, Instant to, Order order) throws CradleStorageException
 	{
 		return null;
 	}
 
 	@Override
-	protected Iterable<StoredTestEventWrapper> doGetTestEvents(Instant from, Instant to, Order order)
+	protected Iterable<StoredTestEvent> doGetTestEvents(Instant from, Instant to, Order order)
 			throws CradleStorageException, IOException
 	{
 		return null;
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsAsync(Instant from, Instant to,
+	protected CompletableFuture<Iterable<StoredTestEvent>> doGetTestEventsAsync(Instant from, Instant to,
 			Order order) throws CradleStorageException
 	{
 		return null;

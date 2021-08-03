@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.commons.lang3.ArrayUtils;
-
-import com.exactpro.cradle.messages.MessageToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
 
@@ -35,35 +32,24 @@ import com.exactpro.cradle.utils.TestEventUtils;
  * Holds information about batch of test events stored in Cradle.
  * Events stored in the batch can refer to each other to form a hierarchy. No references to these events are possible outside of the batch and vice versa.
  * Root events in the batch should reference batch's parent.
- * Batch has limited capacity. If batch is full, events can't be added to it and the batch must be flushed to Cradle
  */
-public class StoredTestEventBatch extends MinimalStoredTestEvent implements StoredTestEvent
+public class StoredTestEventBatch extends StoredTestEvent
 {
-	public static final int DEFAULT_MAX_BATCH_SIZE = 1024*1024;  //1 Mb
-	
 	private final Map<StoredTestEventId, BatchedStoredTestEvent> events = new LinkedHashMap<>();
 	private final Collection<BatchedStoredTestEvent> rootEvents = new ArrayList<>();
 	private final Map<StoredTestEventId, Collection<BatchedStoredTestEvent>> children = new HashMap<>();
-	private final long maxBatchSize;
-	private Instant startTimestamp,
-			endTimestamp;
+	private Instant endTimestamp;
 	private boolean success = true;
 	private long batchSize = 0;
 	
-	public StoredTestEventBatch(TestEventBatchToStore batchData, long maxBatchSize) throws CradleStorageException
+	public StoredTestEventBatch(TestEventBatchToStore batchData) throws CradleStorageException
 	{
-		super(batchData.getId() != null ? batchData.getId() : new StoredTestEventId(UUID.randomUUID().toString()),
+		super(batchData.getId() != null ? batchData.getId() : new StoredTestEventId(Instant.now(), UUID.randomUUID().toString()),
 				batchData.getName(),
 				batchData.getType(),
 				batchData.getParentId());
 		if (getParentId() == null)
 			throw new CradleStorageException("Batch must have a parent");
-		this.maxBatchSize = maxBatchSize;
-	}
-	
-	public StoredTestEventBatch(TestEventBatchToStore batchData) throws CradleStorageException
-	{
-		this(batchData, DEFAULT_MAX_BATCH_SIZE);
 	}
 	
 	
@@ -72,18 +58,12 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 		return new BatchedStoredTestEvent(event, batch);
 	}
 	
-	public static BatchedStoredTestEvent addTestEvent(StoredTestEventWithContent event, StoredTestEventBatch batch) throws CradleStorageException
+	public static BatchedStoredTestEvent addTestEvent(TestEventSingle event, StoredTestEventBatch batch) throws CradleStorageException
 	{
 		return batch.addStoredTestEvent(event);
 	}
 
 	
-	@Override
-	public Instant getStartTimestamp()
-	{
-		return startTimestamp;
-	}
-
 	@Override
 	public Instant getEndTimestamp()
 	{
@@ -139,47 +119,12 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 		return Collections.unmodifiableCollection(rootEvents);
 	}
 	
-	public StoredTestEventBatchMetadata getTestEventsMetadata()
-	{
-		return new StoredTestEventBatchMetadata(this);
-	}
-	
 	/**
 	 * @return true if no test events were added to batch yet
 	 */
 	public boolean isEmpty()
 	{
 		return events.isEmpty();
-	}
-	
-	/**
-	 * Indicates if the batch cannot hold more test events
-	 * @return true if batch capacity is reached and the batch must be flushed to Cradle
-	 */
-	public boolean isFull()
-	{
-		return batchSize >= maxBatchSize;
-	}
-	
-	/**
-	 * Shows how many bytes the batch can hold till its capacity is reached
-	 * @return number of bytes the batch can hold
-	 */
-	public long getSpaceLeft()
-	{
-		long result = maxBatchSize-batchSize;
-		return result > 0 ? result : 0;
-	}
-	
-	/**
-	 * Shows if batch has enough space to hold given test event
-	 * @param event to check against batch capacity
-	 * @return true if batch has enough space to hold given test event
-	 */
-	public boolean hasSpace(StoredTestEventWithContent event)
-	{
-		byte[] content = event.getContent();
-		return ArrayUtils.isEmpty(content) || batchSize+content.length <= maxBatchSize;
 	}
 	
 	
@@ -203,17 +148,14 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 	 * @throws CradleStorageException if test event cannot be added to the batch due to verification failure or if batch limit is reached
 	 */
 	//This method is public and shows that only TestEventToStore can be directly added to batch
-	public BatchedStoredTestEvent addTestEvent(TestEventToStore event) throws CradleStorageException
+	public BatchedStoredTestEvent addTestEvent(TestEventSingleToStore event) throws CradleStorageException
 	{
 		return addStoredTestEvent(event);
 	}
 	
 	
-	private BatchedStoredTestEvent addStoredTestEvent(StoredTestEventWithContent event) throws CradleStorageException
+	private BatchedStoredTestEvent addStoredTestEvent(TestEventSingle event) throws CradleStorageException
 	{
-		if (!hasSpace(event))
-			throw new CradleStorageException("Batch has not enough space to hold given test event");
-		
 		TestEventUtils.validateTestEvent(event, true);
 		
 		if (events.containsKey(event.getId()))
@@ -249,15 +191,8 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 		return result;
 	}
 	
-	private void updateBatchData(StoredTestEventWithContent event)
+	private void updateBatchData(TestEventSingle event)
 	{
-		Instant eventStart = event.getStartTimestamp();
-		if (eventStart != null)
-		{
-			if (startTimestamp == null || startTimestamp.isAfter(eventStart))
-				startTimestamp = eventStart;
-		}
-		
 		Instant eventEnd = event.getEndTimestamp();
 		if (eventEnd != null)
 		{
@@ -267,6 +202,6 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 		
 		if (!event.isSuccess()) {
 			success = false;
-        }
+		}
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,19 @@
 
 package com.exactpro.cradle.testevents;
 
+import java.time.Instant;
+
 /**
- * Interface to access minimal meta-data fields set of test event
+ * Interface to access all metadata fields of test event
  */
-public interface MinimalTestEventFields
+public interface TestEvent extends BasicTestEvent
 {
-	StoredTestEventId getId();
-	String getName();
-	String getType();
-	StoredTestEventId getParentId();
+	Instant getEndTimestamp();
+	boolean isSuccess();
+	
+	public static Instant startTimestamp(BasicTestEvent event)
+	{
+		StoredTestEventId id = event.getId();
+		return id != null ? id.getStartTimestamp() : null;
+	}
 }

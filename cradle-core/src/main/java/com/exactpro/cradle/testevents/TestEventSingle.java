@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@
 package com.exactpro.cradle.testevents;
 
 /**
- * Interface to access all data fields of test event
+ * Interface for all single (individual) test events
  */
-public interface StoredTestEventWithContent extends StoredTestEvent
+public interface TestEventSingle extends TestEvent
 {
 	byte[] getContent();
 }

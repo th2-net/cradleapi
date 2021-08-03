@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,35 +17,63 @@
 package com.exactpro.cradle.testevents;
 
 import java.io.Serializable;
+import java.time.Instant;
+import java.util.Objects;
+
+import com.exactpro.cradle.utils.CradleIdException;
 
 /**
  * Holds ID of a test event stored in Cradle
  */
 public class StoredTestEventId implements Serializable
 {
-	private static final long serialVersionUID = 8372826721377298138L;
+	private static final long serialVersionUID = 6954746788528942942L;
 	
+	public static final String ID_PARTS_DELIMITER = ":";
+	
+	private final Instant startTimestamp;
 	private final String id;
 	
-	public StoredTestEventId(String id)
+	public StoredTestEventId(Instant startTimestamp, String id)
 	{
+		this.startTimestamp = startTimestamp;
 		this.id = id;
+	}
+	
+	public static StoredTestEventId fromString(String id) throws CradleIdException
+	{
+		String[] parts = StoredTestEventIdUtils.splitParts(id);
+		if (parts.length < 2)
+			throw new CradleIdException("Test Event ID ("+id+") should contain timestamp and unique ID "
+					+ "delimited with '"+ID_PARTS_DELIMITER+"'");
+		
+		String uniqueId = StoredTestEventIdUtils.getId(parts);
+		Instant timestamp = StoredTestEventIdUtils.getTimestamp(parts);
+		return new StoredTestEventId(timestamp, uniqueId);
+	}
+	
+	
+	public Instant getStartTimestamp()
+	{
+		return startTimestamp;
+	}
+	
+	public String getId()
+	{
+		return id;
 	}
 	
 	
 	@Override
 	public String toString()
 	{
-		return id;
+		return StoredTestEventIdUtils.timestampToString(startTimestamp)+ID_PARTS_DELIMITER+id;
 	}
 	
 	@Override
 	public int hashCode()
 	{
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((id == null) ? 0 : id.hashCode());
-		return result;
+		return Objects.hash(startTimestamp, id);
 	}
 	
 	@Override
@@ -58,12 +86,6 @@ public class StoredTestEventId implements Serializable
 		if (getClass() != obj.getClass())
 			return false;
 		StoredTestEventId other = (StoredTestEventId) obj;
-		if (id == null)
-		{
-			if (other.id != null)
-				return false;
-		} else if (!id.equals(other.id))
-			return false;
-		return true;
+		return Objects.equals(startTimestamp, other.startTimestamp) && Objects.equals(id, other.id);
 	}
 }

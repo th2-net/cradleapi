@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,22 +21,89 @@ import java.time.Instant;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
- * Interface for all stored test events. Provides access only to event meta-data. Event content is specific to event
+ * Holds information about test event stored in Cradle.
+ * Can be a single event or a batch of events.
+ * Use {@link #isSingle()} or {@link #isBatch()} to determine how to treat the event.
+ * Depending on the result, use {@link #asSingle()} or {@link #asBatch()} to work with event as a single event or as a batch, respectively
  */
-public interface StoredTestEvent extends MinimalTestEventFields
+public abstract class StoredTestEvent implements TestEvent
 {
-	Instant getStartTimestamp();
-	Instant getEndTimestamp();
-	boolean isSuccess();
+	private final StoredTestEventId id;
+	private final String name,
+			type;
+	private final StoredTestEventId parentId;
 	
-	
-	public static StoredTestEventSingle newStoredTestEventSingle(TestEventToStore event) throws CradleStorageException
+	public StoredTestEvent(StoredTestEventId id, String name, String type, StoredTestEventId parentId) throws CradleStorageException
 	{
-		return new StoredTestEventSingle(event);
+		this.id = id;
+		this.name = name;
+		this.type = type;
+		this.parentId = parentId;
+		
+		if (this.id == null)
+			throw new CradleStorageException("Test event ID cannot be null");
+		if (this.id.equals(parentId))
+			throw new CradleStorageException("Test event cannot reference itself");
 	}
 	
-	public static StoredTestEventBatch newStoredTestEventBatch(TestEventBatchToStore batchData) throws CradleStorageException
+	public StoredTestEvent(TestEvent event) throws CradleStorageException
 	{
-		return new StoredTestEventBatch(batchData);
+		this(event.getId(), event.getName(), event.getType(), event.getParentId());
+	}
+	
+	
+	@Override
+	public StoredTestEventId getId()
+	{
+		return id;
+	}
+	
+	@Override
+	public String getName()
+	{
+		return name;
+	}
+	
+	@Override
+	public String getType()
+	{
+		return type;
+	}
+	
+	@Override
+	public StoredTestEventId getParentId()
+	{
+		return parentId;
+	}
+	
+	@Override
+	public final Instant getStartTimestamp()
+	{
+		return TestEvent.startTimestamp(this);
+	}
+	
+	
+	public final boolean isSingle()
+	{
+		return this instanceof StoredTestEventSingle;
+	}
+	
+	public final boolean isBatch()
+	{
+		return this instanceof StoredTestEventBatch;
+	}
+	
+	public final StoredTestEventSingle asSingle()
+	{
+		if (isSingle())
+			return (StoredTestEventSingle)this;
+		return null;
+	}
+	
+	public final StoredTestEventBatch asBatch()
+	{
+		if (isBatch())
+			return (StoredTestEventBatch)this;
+		return null;
 	}
 }
