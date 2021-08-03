@@ -25,8 +25,8 @@ import com.exactpro.cradle.messages.StoredMessageId;
 public interface TestEventsMessagesLinker
 {
 	/**
-	 * This method is deprecated, use {@link #getTestEventIds(StoredMessageId) getTestEventIds}
 	 * Retrieves IDs of stored test events by linked message ID
+	 * @deprecated Use {@link #getTestEventIds(StoredMessageId) getTestEventIds} instead
 	 * @param messageId ID of stored message
 	 * @return collection of stored test event IDs
 	 * @throws IOException if test event data retrieval failed
@@ -35,8 +35,8 @@ public interface TestEventsMessagesLinker
 	Collection<StoredTestEventId> getTestEventIdsByMessageId(StoredMessageId messageId) throws IOException;
 	
 	/**
-	 * This method is deprecated, use {@link #getTestEventIdsAsync(StoredMessageId) getTestEventIdsAsync}
 	 * Asynchronously retrieves IDs of stored test events by linked message ID
+	 * @deprecated Use {@link #getTestEventIdsAsync(StoredMessageId) getTestEventIdsAsync} instead
 	 * @param messageId ID of stored message
 	 * @return future to obtain collection of stored test event IDs
 	 */

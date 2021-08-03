@@ -78,7 +78,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 		CompletableFuture<MappedAsyncPagingIterable<MessageTestEventEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<MessageTestEventEntity>>(semaphore)
 				.getFuture(() -> messagesOperator.getTestEvents(instanceId, messageId.toString(), readAttrs));
 		
-		return future.thenCompose((rs) -> {
+		return future.thenApply(rs -> {
 				PagedIterator<MessageTestEventEntity> it = new PagedIterator<>(rs);
 				Set<StoredTestEventId> ids = new HashSet<>();
 				while (it.hasNext())
@@ -91,7 +91,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 				if (ids.isEmpty())
 					ids = null;
 				
-				return CompletableFuture.completedFuture(ids);
+				return ids;
 			});
 	}
 	
@@ -114,7 +114,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 		CompletableFuture<MappedAsyncPagingIterable<MessageTestEventEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<MessageTestEventEntity>>(semaphore)
 				.getFuture(() -> messagesOperator.getTestEvents(instanceId, messageId.toString(), readAttrs));
 		
-		return future.thenCompose((rs) -> {
+		return future.thenApply(rs -> {
 				PagedIterator<MessageTestEventEntity> it = new PagedIterator<>(rs);
 				Set<ExtendedTestEventId> ids = new HashSet<>();
 				while (it.hasNext())
@@ -126,10 +126,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 					ids.add(parsedId);
 				}
 				
-				if (ids.isEmpty())
-					ids = null;
-				
-				return CompletableFuture.completedFuture(ids);
+				return ids;
 			});
 	}
 	
@@ -153,7 +150,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 		CompletableFuture<MappedAsyncPagingIterable<TestEventMessagesEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<TestEventMessagesEntity>>(semaphore)
 				.getFuture(() -> testEventsOperator.getMessages(instanceId, eventId.toString(), readAttrs));
 		
-		return future.thenCompose((rs) -> {
+		return future.thenApply(rs -> {
 				PagedIterator<TestEventMessagesEntity> it = new PagedIterator<>(rs);
 				Set<StoredMessageId> ids = new HashSet<>();
 				while (it.hasNext())
@@ -179,7 +176,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 				if (ids.isEmpty())
 					ids = null;
 				
-				return CompletableFuture.completedFuture(ids);
+				return ids;
 			});
 	}
 	
@@ -203,7 +200,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 		CompletableFuture<MappedAsyncPagingIterable<TestEventMessagesEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<TestEventMessagesEntity>>(semaphore)
 				.getFuture(() -> testEventsOperator.getMessages(instanceId, eventId.toString(), readAttrs));
 		
-		return future.thenCompose((rs) -> {
+		return future.thenApply(rs -> {
 				PagedIterator<TestEventMessagesEntity> it = new PagedIterator<>(rs);
 				boolean result = false;
 				while (it.hasNext())
@@ -215,7 +212,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 						break;
 					}
 				}
-				return CompletableFuture.completedFuture(result);
+				return result;
 			});
 	}
 	
@@ -238,9 +235,9 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 		CompletableFuture<MappedAsyncPagingIterable<MessageTestEventEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<MessageTestEventEntity>>(semaphore)
 				.getFuture(() -> messagesOperator.getTestEvents(instanceId, messageId.toString(), readAttrs));
 		
-		return future.thenCompose((rs) -> {
+		return future.thenApply((rs) -> {
 				PagedIterator<MessageTestEventEntity> it = new PagedIterator<>(rs);
-				return CompletableFuture.completedFuture(it.hasNext());
+				return it.hasNext();
 			});
 	}
 }
