@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,19 +25,38 @@ import com.exactpro.cradle.messages.StoredMessageId;
 public interface TestEventsMessagesLinker
 {
 	/**
+	 * This method is deprecated, use {@link #getTestEventIds(StoredMessageId) getTestEventIds}
 	 * Retrieves IDs of stored test events by linked message ID
 	 * @param messageId ID of stored message
 	 * @return collection of stored test event IDs
 	 * @throws IOException if test event data retrieval failed
 	 */
+	@Deprecated
 	Collection<StoredTestEventId> getTestEventIdsByMessageId(StoredMessageId messageId) throws IOException;
+	
+	/**
+	 * This method is deprecated, use {@link #getTestEventIdsAsync(StoredMessageId) getTestEventIdsAsync}
+	 * Asynchronously retrieves IDs of stored test events by linked message ID
+	 * @param messageId ID of stored message
+	 * @return future to obtain collection of stored test event IDs
+	 */
+	@Deprecated
+	CompletableFuture<Collection<StoredTestEventId>> getTestEventIdsByMessageIdAsync(StoredMessageId messageId);
+	
+	/**
+	 * Retrieves IDs of stored test events by linked message ID
+	 * @param messageId ID of stored message
+	 * @return collection of stored test event IDs
+	 * @throws IOException if test event data retrieval failed
+	 */
+	Collection<ExtendedTestEventId> getTestEventIds(StoredMessageId messageId) throws IOException;
 	
 	/**
 	 * Asynchronously retrieves IDs of stored test events by linked message ID
 	 * @param messageId ID of stored message
 	 * @return future to obtain collection of stored test event IDs
 	 */
-	CompletableFuture<Collection<StoredTestEventId>> getTestEventIdsByMessageIdAsync(StoredMessageId messageId);
+	CompletableFuture<Collection<ExtendedTestEventId>> getTestEventIdsAsync(StoredMessageId messageId);
 
 	/**
 	 * Retrieves IDs of stored messages by linked test event ID

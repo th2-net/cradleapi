@@ -26,6 +26,7 @@ import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 
 import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.testevents.ExtendedTestEventId;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
 import com.exactpro.cradle.utils.CradleIdException;
@@ -84,6 +85,44 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 				{
 					String eventId = it.next().getEventId();
 					StoredTestEventId parsedId = new StoredTestEventId(eventId);
+					ids.add(parsedId);
+				}
+				
+				if (ids.isEmpty())
+					ids = null;
+				
+				return CompletableFuture.completedFuture(ids);
+			});
+	}
+	
+	@Override
+	public Collection<ExtendedTestEventId> getTestEventIds(StoredMessageId messageId) throws IOException
+	{
+		try
+		{
+			return getTestEventIdsAsync(messageId).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting IDs of test events linked to message "+messageId, e);
+		}
+	}
+	
+	@Override
+	public CompletableFuture<Collection<ExtendedTestEventId>> getTestEventIdsAsync(StoredMessageId messageId)
+	{
+		CompletableFuture<MappedAsyncPagingIterable<MessageTestEventEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<MessageTestEventEntity>>(semaphore)
+				.getFuture(() -> messagesOperator.getTestEvents(instanceId, messageId.toString(), readAttrs));
+		
+		return future.thenCompose((rs) -> {
+				PagedIterator<MessageTestEventEntity> it = new PagedIterator<>(rs);
+				Set<ExtendedTestEventId> ids = new HashSet<>();
+				while (it.hasNext())
+				{
+					MessageTestEventEntity entity = it.next();
+					String batchId = entity.getBatchId();
+					ExtendedTestEventId parsedId = new ExtendedTestEventId(new StoredTestEventId(entity.getEventId()), 
+							batchId != null ? new StoredTestEventId(batchId) : null);
 					ids.add(parsedId);
 				}
 				
