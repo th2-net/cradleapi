@@ -239,7 +239,7 @@ public class RecoveryState
             this.id = message.getId().toString();
             this.timestamp = message.getTimestamp();
             this.direction = message.getDirection();
-            this.sequence = message.getIndex();
+            this.sequence = message.getSequence();
         }
 
         public InnerMessage()

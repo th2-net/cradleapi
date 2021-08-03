@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,11 +38,11 @@ public class StoredMessageFilterBuilder
 {
 	private StoredMessageFilter msgFilter;
 	
-	public FilterForEqualsBuilder<String, StoredMessageFilterBuilder> streamName()
+	public FilterForEqualsBuilder<String, StoredMessageFilterBuilder> sessionAlias()
 	{
 		initIfNeeded();
 		FilterForEquals<String> f = new FilterForEquals<>();
-		msgFilter.setStreamName(f);
+		msgFilter.setSessionAlias(f);
 		return new FilterForEqualsBuilder<String, StoredMessageFilterBuilder>(f, this);
 	}
 	
@@ -52,14 +52,6 @@ public class StoredMessageFilterBuilder
 		FilterForEquals<Direction> f = new FilterForEquals<>();
 		msgFilter.setDirection(f);
 		return new FilterForEqualsBuilder<Direction, StoredMessageFilterBuilder>(f, this);
-	}
-	
-	public FilterForAnyBuilder<Long, StoredMessageFilterBuilder> index()
-	{
-		initIfNeeded();
-		FilterForAny<Long> f = new FilterForAny<>();
-		msgFilter.setIndex(f);
-		return new FilterForAnyBuilder<Long, StoredMessageFilterBuilder>(f, this);
 	}
 	
 	public FilterForGreaterBuilder<Instant, StoredMessageFilterBuilder> timestampFrom()
@@ -78,12 +70,22 @@ public class StoredMessageFilterBuilder
 		return new FilterForLessBuilder<Instant, StoredMessageFilterBuilder>(f, this);
 	}
 	
+	public FilterForAnyBuilder<Long, StoredMessageFilterBuilder> sequence()
+	{
+		initIfNeeded();
+		FilterForAny<Long> f = new FilterForAny<>();
+		msgFilter.setSequence(f);
+		return new FilterForAnyBuilder<Long, StoredMessageFilterBuilder>(f, this);
+	}
+	
 	public StoredMessageFilterBuilder next(StoredMessageId fromId, int count)
 	{
 		initIfNeeded();
-		msgFilter.setStreamName(new FilterForEquals<String>(fromId.getStreamName()));
+		msgFilter.setSessionAlias(new FilterForEquals<String>(fromId.getSessionAlias()));
 		msgFilter.setDirection(new FilterForEquals<Direction>(fromId.getDirection()));
-		msgFilter.setIndex(new FilterForAny<Long>(fromId.getIndex(), ComparisonOperation.GREATER));
+		msgFilter.setTimestampFrom(new FilterForGreater<Instant>(fromId.getTimestamp()));
+		msgFilter.setTimestampTo(null);
+		msgFilter.setSequence(new FilterForAny<Long>(fromId.getSequence(), ComparisonOperation.GREATER));
 		msgFilter.setLimit(count);
 		return this;
 	}
@@ -91,9 +93,11 @@ public class StoredMessageFilterBuilder
 	public StoredMessageFilterBuilder previous(StoredMessageId fromId, int count)
 	{
 		initIfNeeded();
-		msgFilter.setStreamName(new FilterForEquals<String>(fromId.getStreamName()));
+		msgFilter.setSessionAlias(new FilterForEquals<String>(fromId.getSessionAlias()));
 		msgFilter.setDirection(new FilterForEquals<Direction>(fromId.getDirection()));
-		msgFilter.setIndex(new FilterForAny<Long>(fromId.getIndex(), ComparisonOperation.LESS));
+		msgFilter.setTimestampFrom(new FilterForGreater<Instant>(fromId.getTimestamp()));
+		msgFilter.setTimestampTo(null);
+		msgFilter.setSequence(new FilterForAny<Long>(fromId.getSequence(), ComparisonOperation.LESS));
 		msgFilter.setLimit(count);
 		return this;
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,10 +45,10 @@ public class MessageToStoreBuilder
 	}
 	
 	
-	public MessageToStoreBuilder streamName(String streamName)
+	public MessageToStoreBuilder sessionAlias(String sessionAlias)
 	{
 		initIfNeeded();
-		msg.setStreamName(streamName);
+		msg.setSessionAlias(sessionAlias);
 		return this;
 	}
 	
@@ -59,17 +59,17 @@ public class MessageToStoreBuilder
 		return this;
 	}
 	
-	public MessageToStoreBuilder index(long index)
-	{
-		initIfNeeded();
-		msg.setIndex(index);
-		return this;
-	}
-	
 	public MessageToStoreBuilder timestamp(Instant timestamp)
 	{
 		initIfNeeded();
 		msg.setTimestamp(timestamp);
+		return this;
+	}
+	
+	public MessageToStoreBuilder sequence(long sequence)
+	{
+		initIfNeeded();
+		msg.setSequence(sequence);
 		return this;
 	}
 	

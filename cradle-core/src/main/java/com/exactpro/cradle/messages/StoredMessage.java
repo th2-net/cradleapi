@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,14 +31,12 @@ public class StoredMessage implements Serializable
 	private static final long serialVersionUID = 200983136307497672L;
 	
 	private final StoredMessageId id;
-	private final Instant timestamp;
 	private final StoredMessageMetadata metadata;
 	private final byte[] content;
 	
 	public StoredMessage(MessageToStore message, StoredMessageId id)
 	{
 		this.id = id;
-		this.timestamp = message.getTimestamp();
 		this.metadata = message.getMetadata() != null ? new StoredMessageMetadata(message.getMetadata()) : null;
 		this.content = message.getContent();
 	}
@@ -46,7 +44,6 @@ public class StoredMessage implements Serializable
 	public StoredMessage(StoredMessage copyFrom, StoredMessageId id)
 	{
 		this.id = id;
-		this.timestamp = copyFrom.getTimestamp();
 		this.metadata = copyFrom.getMetadata() != null ? new StoredMessageMetadata(copyFrom.getMetadata()) : null;
 		this.content = copyFrom.getContent();
 	}
@@ -67,11 +64,11 @@ public class StoredMessage implements Serializable
 	}
 	
 	/**
-	 * @return name of stream the message is related to
+	 * @return alias of session the message is related to
 	 */
-	public String getStreamName()
+	public String getSessionAlias()
 	{
-		return id.getStreamName();
+		return id.getSessionAlias();
 	}
 	
 	/**
@@ -83,19 +80,19 @@ public class StoredMessage implements Serializable
 	}
 	
 	/**
-	 * @return index the message has for its stream and direction
-	 */
-	public long getIndex()
-	{
-		return id.getIndex();
-	}
-	
-	/**
 	 * @return timestamp of message creation
 	 */
 	public Instant getTimestamp()
 	{
-		return timestamp;
+		return id.getTimestamp();
+	}
+	
+	/**
+	 * @return sequence number the message has for its session, direction and timestamp
+	 */
+	public long getSequence()
+	{
+		return id.getSequence();
 	}
 	
 	/**
@@ -123,7 +120,6 @@ public class StoredMessage implements Serializable
 		result = prime * result + Arrays.hashCode(content);
 		result = prime * result + ((id == null) ? 0 : id.hashCode());
 		result = prime * result + ((metadata == null) ? 0 : metadata.hashCode());
-		result = prime * result + ((timestamp == null) ? 0 : timestamp.hashCode());
 		return result;
 	}
 	
@@ -151,12 +147,6 @@ public class StoredMessage implements Serializable
 				return false;
 		} else if (!metadata.equals(other.metadata))
 			return false;
-		if (timestamp == null)
-		{
-			if (other.timestamp != null)
-				return false;
-		} else if (!timestamp.equals(other.timestamp))
-			return false;
 		return true;
 	}
 	
@@ -166,10 +156,6 @@ public class StoredMessage implements Serializable
 		return new StringBuilder()
 				.append("StoredMessage{").append(CompressionUtils.EOL)
 				.append("ID=").append(id).append(",").append(CompressionUtils.EOL)
-				.append("streamName=").append(getStreamName()).append(",").append(CompressionUtils.EOL)
-				.append("direction=").append(getDirection()).append(",").append(CompressionUtils.EOL)
-				.append("index=").append(getIndex()).append(",").append(CompressionUtils.EOL)
-				.append("timestamp=").append(getTimestamp()).append(",").append(CompressionUtils.EOL)
 				.append("metadata=").append(getMetadata()).append(",").append(CompressionUtils.EOL)
 				.append("content=").append(Arrays.toString(getContent())).append(CompressionUtils.EOL)
 				.append("}").toString();

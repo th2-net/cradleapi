@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,11 +29,11 @@ import com.exactpro.cradle.filters.FilterForLess;
 
 public class StoredMessageFilter
 {
-	private FilterForEquals<String> streamName;
+	private FilterForEquals<String> sessionAlias;
 	private FilterForEquals<Direction> direction;
-	private FilterForAny<Long> index;
 	private FilterForGreater<Instant> timestampFrom;
 	private FilterForLess<Instant> timestampTo;
+	private FilterForAny<Long> sequence;
 	private int limit;
 	private Order order = Order.DIRECT;
 	private long leftBoundIndex = -1;
@@ -45,23 +45,23 @@ public class StoredMessageFilter
 	public StoredMessageFilter(StoredMessageFilter copyFrom)
 	{
 		this.order = copyFrom.getOrder();
-		this.streamName = copyFrom.getStreamName();
+		this.sessionAlias = copyFrom.getSessionAlias();
 		this.direction = copyFrom.getDirection();
-		this.index = copyFrom.getIndex();
 		this.timestampFrom = copyFrom.getTimestampFrom();
 		this.timestampTo = copyFrom.getTimestampTo();
+		this.sequence = copyFrom.getSequence();
 		this.limit = copyFrom.getLimit();
 	}
 	
 	
-	public FilterForEquals<String> getStreamName()
+	public FilterForEquals<String> getSessionAlias()
 	{
-		return streamName;
+		return sessionAlias;
 	}
 	
-	public void setStreamName(FilterForEquals<String> streamName)
+	public void setSessionAlias(FilterForEquals<String> sessionAlias)
 	{
-		this.streamName = streamName;
+		this.sessionAlias = sessionAlias;
 	}
 	
 	
@@ -73,17 +73,6 @@ public class StoredMessageFilter
 	public void setDirection(FilterForEquals<Direction> direction)
 	{
 		this.direction = direction;
-	}
-	
-	
-	public FilterForAny<Long> getIndex()
-	{
-		return index;
-	}
-	
-	public void setIndex(FilterForAny<Long> index)
-	{
-		this.index = index;
 	}
 	
 	
@@ -106,6 +95,17 @@ public class StoredMessageFilter
 	public void setTimestampTo(FilterForLess<Instant> timestampTo)
 	{
 		this.timestampTo = timestampTo;
+	}
+	
+	
+	public FilterForAny<Long> getSequence()
+	{
+		return sequence;
+	}
+	
+	public void setSequence(FilterForAny<Long> sequence)
+	{
+		this.sequence = sequence;
 	}
 	
 	
@@ -154,16 +154,16 @@ public class StoredMessageFilter
 		List<String> result = new ArrayList<>();
 		if (order !=null)
 			result.add("order=" + order);
-		if (streamName != null)
-			result.add("stream name" + streamName);
+		if (sessionAlias != null)
+			result.add("session alias" + sessionAlias);
 		if (direction != null)
 			result.add("direction" + direction);
-		if (index != null)
-			result.add("index" + index);
 		if (timestampFrom != null)
 			result.add("timestamp" + timestampFrom);
 		if (timestampTo != null)
 			result.add("timestamp" + timestampTo);
+		if (sequence != null)
+			result.add("sequence" + sequence);
 		if (limit > 0)
 			result.add("limit=" + limit);
 		return String.join(", ", result);

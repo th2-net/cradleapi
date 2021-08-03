@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,23 +27,23 @@ import com.exactpro.cradle.utils.CompressionUtils;
  */
 public class MessageToStore
 {
-	private String streamName;
+	private String sessionAlias;
 	private Direction direction;
-	private long index;
 	private Instant timestamp;
+	private long sequence;
 	private MessageMetadata metadata = null;
 	private byte[] content;
 	
 	public MessageToStore()
 	{
-		index = -1;
+		sequence = -1;
 	}
 	
 	public MessageToStore(MessageToStore copyFrom)
 	{
-		this.streamName = copyFrom.getStreamName();
+		this.sessionAlias = copyFrom.getSessionAlias();
 		this.direction = copyFrom.getDirection();
-		this.index = copyFrom.getIndex();
+		this.sequence = copyFrom.getSequence();
 		this.timestamp = copyFrom.getTimestamp();
 		this.metadata = copyFrom.getMetadata() != null ? new MessageMetadata(copyFrom.getMetadata()) : null;
 		this.content = copyFrom.getContent();
@@ -51,21 +51,21 @@ public class MessageToStore
 	
 	
 	/**
-	 * @return name of stream the message is related to
+	 * @return alias of session the message is related to
 	 */
-	public String getStreamName()
+	public String getSessionAlias()
 	{
-		return streamName;
+		return sessionAlias;
 	}
 	
-	public void setStreamName(String streamName)
+	public void setSessionAlias(String sessionAlias)
 	{
-		this.streamName = streamName;
+		this.sessionAlias = sessionAlias;
 	}
 	
 	
 	/**
-	 * @return direction in which the message went through the stream
+	 * @return direction in which the message went through the session
 	 */
 	public Direction getDirection()
 	{
@@ -75,20 +75,6 @@ public class MessageToStore
 	public void setDirection(Direction direction)
 	{
 		this.direction = direction;
-	}
-	
-	
-	/**
-	 * @return index the message has for its stream and direction
-	 */
-	public long getIndex()
-	{
-		return index;
-	}
-	
-	public void setIndex(long index)
-	{
-		this.index = index;
 	}
 	
 	
@@ -103,6 +89,20 @@ public class MessageToStore
 	public void setTimestamp(Instant timestamp)
 	{
 		this.timestamp = timestamp;
+	}
+	
+	
+	/**
+	 * @return sequence number the message has for its session, direction and timestamp
+	 */
+	public long getSequence()
+	{
+		return sequence;
+	}
+	
+	public void setSequence(long sequence)
+	{
+		this.sequence = sequence;
 	}
 	
 	
@@ -143,9 +143,9 @@ public class MessageToStore
 	{
 		return new StringBuilder()
 				.append("MessageToStore{").append(CompressionUtils.EOL)
-				.append("streamName=").append(streamName).append(",").append(CompressionUtils.EOL)
+				.append("sessionAlias=").append(sessionAlias).append(",").append(CompressionUtils.EOL)
 				.append("direction=").append(direction).append(",").append(CompressionUtils.EOL)
-				.append("index=").append(index).append(",").append(CompressionUtils.EOL)
+				.append("sequence=").append(sequence).append(",").append(CompressionUtils.EOL)
 				.append("timestamp=").append(timestamp).append(",").append(CompressionUtils.EOL)
 				.append("metadata=").append(metadata).append(",").append(CompressionUtils.EOL)
 				.append("content=").append(Arrays.toString(content)).append(CompressionUtils.EOL)

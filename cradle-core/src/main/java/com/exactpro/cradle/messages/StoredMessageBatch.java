@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,6 @@ package com.exactpro.cradle.messages;
 import java.time.Instant;
 import java.util.*;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,9 +28,8 @@ import com.exactpro.cradle.utils.MessageUtils;
 
 /**
  * Holds information about batch of messages stored in Cradle.
- * All messages stored in the batch should be from one sequence and should be related to the same batch, having the same direction.
+ * All messages stored in the batch should be from one sequence and should be related to the same session, having the same direction.
  * ID of first message is treated as batch ID.
- * Batch has limited capacity. If batch is full, messages can't be added to it and the batch must be flushed to Cradle
  */
 public class StoredMessageBatch
 {
@@ -40,21 +37,13 @@ public class StoredMessageBatch
 	
 	public static final int DEFAULT_MAX_BATCH_SIZE = 1024*1024;  //1 Mb
 	
-	private StoredMessageBatchId id;
-	private final long maxBatchSize;
+	private StoredMessageId id;
 	private long batchSize = 0;
 	private final List<StoredMessage> messages;
 	
 	public StoredMessageBatch()
 	{
 		this.messages = createMessagesList();
-		this.maxBatchSize = DEFAULT_MAX_BATCH_SIZE;
-	}
-	
-	public StoredMessageBatch(long maxBatchSize)
-	{
-		this.messages = createMessagesList();
-		this.maxBatchSize = maxBatchSize;
 	}
 	
 	
@@ -69,7 +58,7 @@ public class StoredMessageBatch
 	/**
 	 * @return batch ID. It is based on first message in the batch
 	 */
-	public StoredMessageBatchId getId()
+	public StoredMessageId getId()
 	{
 		return id;
 	}
@@ -83,11 +72,11 @@ public class StoredMessageBatch
 	}
 	
 	/**
-	 * @return name of stream all messages in the batch are related to
+	 * @return alias of session all messages in the batch are related to
 	 */
-	public String getStreamName()
+	public String getSessionAlias()
 	{
-		return id != null ? id.getStreamName() : null;
+		return id != null ? id.getSessionAlias() : null;
 	}
 	
 	/**
@@ -127,56 +116,56 @@ public class StoredMessageBatch
 
 	/**
 	 * Adds message to the batch. Batch will add correct message ID by itself, verifying message to match batch conditions.
-	 * Messages can be added to batch until {@link #isFull()} returns true.
 	 * Result of this method should be used for all further operations on the message
 	 * @param message to add to the batch
 	 * @return immutable message object with assigned ID
-	 * @throws CradleStorageException if message cannot be added to the batch due to verification failure or if batch limit is reached
+	 * @throws CradleStorageException if message cannot be added to the batch due to verification failure
 	 */
 	public StoredMessage addMessage(MessageToStore message) throws CradleStorageException
 	{
-		if (!hasSpace(message))
-			throw new CradleStorageException("Batch has not enough space to hold given message");
+		MessageUtils.validateMessage(message);  //Checking if session alias, direction, timestamp and content are set
 		
-		MessageUtils.validateMessage(message);
-		
-		long messageIndex;
+		long messageSeq;
 		if (id == null)
 		{
-			String sm = message.getStreamName();
-			Direction d = message.getDirection();
-			long i = message.getIndex();
-			if (StringUtils.isEmpty(sm))
-				throw new CradleStorageException("Stream name for first message in batch cannot be empty");
-			if (d == null)
-				throw new CradleStorageException("Message direction for first message in batch must be set");
+			long i = message.getSequence();
 			if (i < 0)
-				throw new CradleStorageException("Message index for first message in batch cannot be negative");
+				throw new CradleStorageException("Message sequence number for first message in batch cannot be negative");
 			
-			id = new StoredMessageBatchId(sm, d, i);
-			messageIndex = message.getIndex();
+			id = new StoredMessageId(message.getSessionAlias(), message.getDirection(), message.getTimestamp(), i);
+			messageSeq = message.getSequence();
 		}
 		else
 		{
-			if (!id.getStreamName().equals(message.getStreamName()))
-				throw new CradleStorageException("Batch contains messages of stream with name '"+id.getStreamName()+"', but in your message it is '"+message.getStreamName()+"'");
+			if (!id.getSessionAlias().equals(message.getSessionAlias()))
+				throw new CradleStorageException("Batch contains messages of session '"+id.getSessionAlias()+"', "
+						+ "but in your message it is '"+message.getSessionAlias()+"'");
 			if (id.getDirection() != message.getDirection())
-				throw new CradleStorageException("Batch contains messages with direction "+id.getDirection()+", but in your message it is "+message.getDirection());
+				throw new CradleStorageException("Batch contains messages with direction "+id.getDirection()+", "
+						+ "but in your message it is "+message.getDirection());
 			
 			StoredMessage lastMsg = getLastMessage();
-			if (message.getIndex() > 0)  //I.e. message index is set
+			
+			if (lastMsg.getTimestamp().isAfter(message.getTimestamp()))
+				throw new CradleStorageException("Message timestamp should be not before "+lastMsg.getTimestamp()+", "
+						+ "but in your message it is "+message.getTimestamp());
+			
+			if (message.getSequence() > 0)  //I.e. message sequence is set
 			{
-				messageIndex = message.getIndex();
-				if (messageIndex <= lastMsg.getIndex())
-					throw new CradleStorageException("Message index should be greater than "+lastMsg.getIndex()+" for the batch to contain sequenced messages, but in your message it is "+messageIndex);
-				if (messageIndex != lastMsg.getIndex()+1)
-					logger.warn("Message index should be "+(lastMsg.getIndex()+1)+" for the batch to contain strictly sequenced messages, but in your message it is "+messageIndex);
+				messageSeq = message.getSequence();
+				if (messageSeq <= lastMsg.getSequence())
+					throw new CradleStorageException("Sequence number should be greater than "+lastMsg.getSequence()+" "
+							+ "for the batch to contain sequenced messages, but in your message it is "+messageSeq);
+				if (messageSeq != lastMsg.getSequence()+1)
+					logger.warn("Sequence number should be "+(lastMsg.getSequence()+1)+" "
+							+ "for the batch to contain strictly sequenced messages, but in your message it is "+messageSeq);
 			}
 			else
-				messageIndex = lastMsg.getIndex()+1;
+				messageSeq = lastMsg.getSequence()+1;
 		}
 		
-		StoredMessage msg = new StoredMessage(message, new StoredMessageId(message.getStreamName(), message.getDirection(), messageIndex));
+		StoredMessage msg = new StoredMessage(message, new StoredMessageId(message.getSessionAlias(), message.getDirection(), 
+				message.getTimestamp(), messageSeq));
 		messages.add(msg);
 		batchSize += msg.getContent().length;
 		return msg;
@@ -220,37 +209,7 @@ public class StoredMessageBatch
 		return messages.size() == 0;
 	}
 	
-	/**
-	 * Indicates if the batch cannot hold more messages
-	 * @return true if batch capacity is reached and the batch must be flushed to Cradle
-	 */
-	public boolean isFull()
-	{
-		return batchSize >= maxBatchSize;
-	}
 	
-	/**
-	 * Shows how many bytes the batch can hold till its capacity is reached
-	 * @return number of bytes the batch can hold
-	 */
-	public long getSpaceLeft()
-	{
-		long result = maxBatchSize-batchSize;
-		return result > 0 ? result : 0;
-	}
-	
-	/**
-	 * Shows if batch has enough space to hold given message
-	 * @param message to check against batch capacity
-	 * @return true if batch has enough space to hold given message
-	 */
-	public boolean hasSpace(MessageToStore message)
-	{
-		byte[] content = message.getContent();
-		return ArrayUtils.isEmpty(content) || batchSize+content.length <= maxBatchSize;
-	}
-	
-
   /**
    *
    * @param batch the batch to add to the current one.
@@ -271,14 +230,7 @@ public class StoredMessageBatch
 			messages.addAll(batch.messages);
 			return true;
 		}
-		if (isFull() || batch.isFull()) {
-			return false;
-		}
 		long resultSize = batchSize + batch.batchSize;
-		if (resultSize > maxBatchSize) {
-			// cannot add because of size limit
-			return false;
-		}
 		verifyBatch(batch);
 		messages.addAll(batch.messages);
 		this.batchSize = resultSize;
@@ -286,13 +238,23 @@ public class StoredMessageBatch
 	}
 	
 	private void verifyBatch(StoredMessageBatch otherBatch) throws CradleStorageException {
-		StoredMessageBatchId otherId = otherBatch.id;
-		if (!Objects.equals(id.getStreamName(), otherId.getStreamName())
+		StoredMessageId otherId = otherBatch.id;
+		if (!Objects.equals(id.getSessionAlias(), otherId.getSessionAlias())
 				|| id.getDirection() != otherId.getDirection()) {
 			throw new CradleStorageException(String.format("IDs are not compatible. Current id: %s, Other id: %s", id, otherId));
 		}
-		long currentLastIndex = getLastMessage().getIndex();
-		long otherFirstIndex = otherBatch.getFirstMessage().getIndex();
+		
+		StoredMessage lastMsg = getLastMessage(),
+				otherFirstMsg = otherBatch.getFirstMessage();
+		
+		Instant currentLastTimestamp = lastMsg.getTimestamp(),
+				otherFirstTimestamp = otherFirstMsg.getTimestamp();
+		if (currentLastTimestamp.isAfter(otherFirstTimestamp))
+			throw new CradleStorageException(String.format("Batches are not ordered. Current last timestamp: %d; Other first timestamp: %d", 
+					currentLastTimestamp, otherFirstTimestamp));
+		
+		long currentLastIndex = lastMsg.getSequence();
+		long otherFirstIndex = otherFirstMsg.getSequence();
 		if (currentLastIndex >= otherFirstIndex) {
 			throw new CradleStorageException(String.format("Batches are not ordered. Current last index: %d; Other first index: %d", currentLastIndex, otherFirstIndex));
 		}

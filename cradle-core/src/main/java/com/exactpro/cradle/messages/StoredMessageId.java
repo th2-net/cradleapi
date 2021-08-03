@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,47 +17,54 @@
 package com.exactpro.cradle.messages;
 
 import java.io.Serializable;
+import java.time.Instant;
+import java.util.Objects;
 
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.utils.CradleIdException;
 
 /**
  * Holds ID of a message stored in Cradle.
- * All messages have sequenced index, scoped by direction and stream related to the message.
- * Message index in conjunction with stream name and direction of the message form the message ID
+ * All messages have sequenced index, scoped by timestamp, direction and session related to the message.
+ * Message sequence in conjunction with session alias, direction of the message and its timestamp form the message ID
  */
 public class StoredMessageId implements Serializable
 {
-	private static final long serialVersionUID = -6856521491563727644L;
+	private static final long serialVersionUID = -1962956491991274031L;
+	public static final String ID_PARTS_DELIMITER = ":";
 	
-	private final String streamName;
+	private final String sessionAlias;
 	private final Direction direction;
-	private final long index;
+	private final Instant timestamp;
+	private final long sequence;
 	
-	public StoredMessageId(String streamName, Direction direction, long index)
+	public StoredMessageId(String sessionAlias, Direction direction, Instant timestamp, long sequence)
 	{
-		this.streamName = streamName;
+		this.sessionAlias = sessionAlias;
 		this.direction = direction;
-		this.index = index;
+		this.timestamp = timestamp;
+		this.sequence = sequence;
 	}
 	
 	
 	public static StoredMessageId fromString(String id) throws CradleIdException
 	{
 		String[] parts = StoredMessageIdUtils.splitParts(id);
-		if (parts.length < 3)
-			throw new CradleIdException("Message ID ("+id+") should contain stream name, direction and message index delimited with '"+StoredMessageBatchId.IDS_DELIMITER+"'");
+		if (parts.length < 4)
+			throw new CradleIdException("Message ID ("+id+") should contain session alias, direction, timestamp and sequence number "
+					+ "delimited with '"+ID_PARTS_DELIMITER+"'");
 		
-		long index = StoredMessageIdUtils.getIndex(parts);
+		long seq = StoredMessageIdUtils.getSequence(parts);
+		Instant timestamp = StoredMessageIdUtils.getTimestamp(parts);
 		Direction direction = StoredMessageIdUtils.getDirection(parts);
-		String streamName = StoredMessageIdUtils.getStreamName(parts);
-		return new StoredMessageId(streamName, direction, index);
+		String session = StoredMessageIdUtils.getSessionAlias(parts);
+		return new StoredMessageId(session, direction, timestamp, seq);
 	}
 	
 	
-	public String getStreamName()
+	public String getSessionAlias()
 	{
-		return streamName;
+		return sessionAlias;
 	}
 	
 	public Direction getDirection()
@@ -65,27 +72,30 @@ public class StoredMessageId implements Serializable
 		return direction;
 	}
 	
-	public long getIndex()
+	public Instant getTimestamp()
 	{
-		return index;
+		return timestamp;
+	}
+	
+	public long getSequence()
+	{
+		return sequence;
 	}
 	
 	
 	@Override
 	public String toString()
 	{
-		return streamName+StoredMessageBatchId.IDS_DELIMITER+direction.getLabel()+StoredMessageBatchId.IDS_DELIMITER+index;
+		return sessionAlias+ID_PARTS_DELIMITER
+				+direction.getLabel()+ID_PARTS_DELIMITER
+				+StoredMessageIdUtils.timestampToString(timestamp)+ID_PARTS_DELIMITER
+				+sequence;
 	}
 	
 	@Override
 	public int hashCode()
 	{
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((direction == null) ? 0 : direction.hashCode());
-		result = prime * result + (int) (index ^ (index >>> 32));
-		result = prime * result + ((streamName == null) ? 0 : streamName.hashCode());
-		return result;
+		return Objects.hash(sessionAlias, direction, timestamp, sequence);
 	}
 	
 	@Override
@@ -98,16 +108,7 @@ public class StoredMessageId implements Serializable
 		if (getClass() != obj.getClass())
 			return false;
 		StoredMessageId other = (StoredMessageId) obj;
-		if (direction != other.direction)
-			return false;
-		if (index != other.index)
-			return false;
-		if (streamName == null)
-		{
-			if (other.streamName != null)
-				return false;
-		} else if (!streamName.equals(other.streamName))
-			return false;
-		return true;
+		return Objects.equals(sessionAlias, other.sessionAlias) && direction == other.direction 
+				&& Objects.equals(timestamp, other.timestamp) && sequence == other.sequence;
 	}
 }

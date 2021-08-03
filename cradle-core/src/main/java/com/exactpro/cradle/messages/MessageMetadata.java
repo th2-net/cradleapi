@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ package com.exactpro.cradle.messages;
  */
 public class MessageMetadata extends StoredMessageMetadata
 {
+	private static final long serialVersionUID = -5653282321813972483L;
+	
 	public MessageMetadata()
 	{
 	}

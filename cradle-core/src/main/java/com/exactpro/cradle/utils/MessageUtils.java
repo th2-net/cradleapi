@@ -29,6 +29,7 @@ import java.util.zip.DataFormatException;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.SerializationUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import com.exactpro.cradle.messages.MessageToStore;
 import com.exactpro.cradle.messages.StoredMessage;
@@ -43,8 +44,8 @@ public class MessageUtils
 	 */
 	public static void validateMessage(MessageToStore message) throws CradleStorageException
 	{
-		if (message.getStreamName() == null)
-			throw new CradleStorageException("Message must have stream name");
+		if (StringUtils.isEmpty(message.getSessionAlias()))
+			throw new CradleStorageException("Message must have session alias");
 		if (message.getDirection() == null)
 			throw new CradleStorageException("Message must have direction");
 		if (message.getTimestamp() == null)
