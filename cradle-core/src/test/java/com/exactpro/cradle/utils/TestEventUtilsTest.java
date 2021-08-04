@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,22 +25,21 @@ import org.testng.annotations.Test;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
-import com.exactpro.cradle.testevents.TestEventToStore;
-import com.exactpro.cradle.testevents.TestEventToStoreBuilder;
-import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.testevents.TestEventSingleToStore;
+import com.exactpro.cradle.testevents.TestEventSingleToStoreBuilder;
 
 public class TestEventUtilsTest
 {
-	private static final StoredTestEventId DUMMY_ID = new StoredTestEventId("123");
+	private static final StoredTestEventId DUMMY_ID = new StoredTestEventId(Instant.EPOCH, "123"),
+			BROKEN_ID = new StoredTestEventId(null, "123");
 	private static final String DUMMY_NAME = "TestEvent";
-	private static final Instant DUMMY_START_TIMESTAMP = Instant.now();
 	
-	private TestEventToStoreBuilder eventBuilder;
+	private TestEventSingleToStoreBuilder eventBuilder;
 	
 	@BeforeClass
 	public void prepare() throws CradleStorageException
 	{
-		eventBuilder = new TestEventToStoreBuilder();
+		eventBuilder = new TestEventSingleToStoreBuilder();
 	}
 	
 	@DataProvider(name = "invalid events")
@@ -51,16 +50,13 @@ public class TestEventUtilsTest
 					{eventBuilder.build()},  //Empty event
 					{eventBuilder.id(DUMMY_ID).build()},
 					{eventBuilder.name(DUMMY_NAME).build()},
-					{eventBuilder.startTimestamp(DUMMY_START_TIMESTAMP).build()},
-					{eventBuilder.id(DUMMY_ID).name(DUMMY_NAME).build()},
-					{eventBuilder.id(DUMMY_ID).startTimestamp(DUMMY_START_TIMESTAMP).build()},
-					{eventBuilder.name(DUMMY_NAME).startTimestamp(DUMMY_START_TIMESTAMP).build()}
+					{eventBuilder.id(BROKEN_ID).name(DUMMY_NAME).build()}
 				};
 	}
 	
 	@Test(dataProvider = "invalid events",
 			expectedExceptions = CradleStorageException.class)
-	public void eventValidation(TestEventToStore event) throws CradleStorageException
+	public void eventValidation(TestEventSingleToStore event) throws CradleStorageException
 	{
 		TestEventUtils.validateTestEvent(event, true);
 	}
@@ -68,9 +64,8 @@ public class TestEventUtilsTest
 	@Test
 	public void validEvent() throws CradleStorageException
 	{
-		TestEventToStore event = eventBuilder.id(DUMMY_ID)
+		TestEventSingleToStore event = eventBuilder.id(DUMMY_ID)
 				.name(DUMMY_NAME)
-				.startTimestamp(DUMMY_START_TIMESTAMP)
 				.content("Test content".getBytes())
 				.build();
 		TestEventUtils.validateTestEvent(event, true);
@@ -79,10 +74,9 @@ public class TestEventUtilsTest
 	@Test
 	public void validBatchEvent() throws CradleStorageException
 	{
-		StoredTestEventId parentId = new StoredTestEventId("ParentID");
-		TestEventToStore event = eventBuilder.id(DUMMY_ID)
+		StoredTestEventId parentId = new StoredTestEventId(Instant.EPOCH, "ParentID");
+		TestEventSingleToStore event = eventBuilder.id(DUMMY_ID)
 				.name(DUMMY_NAME)
-				.startTimestamp(DUMMY_START_TIMESTAMP)
 				.parentId(parentId)
 				.content("Test content".getBytes())
 				.build();

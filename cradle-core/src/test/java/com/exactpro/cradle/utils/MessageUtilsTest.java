@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,6 @@ import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.messages.MessageToStoreBuilder;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
-import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.MessageUtils;
 
 public class MessageUtilsTest
 {
@@ -42,25 +40,25 @@ public class MessageUtilsTest
 	public void prepare() throws CradleStorageException
 	{
 		MessageToStoreBuilder builder = new MessageToStoreBuilder();
-		String streamName = "Stream1";
+		String sessionAlias = "Session1";
 		Direction direction = Direction.FIRST;
 		Instant timestamp = Instant.now();
 		byte[] content = "Message text".getBytes();
 		
-		long index = 10;
+		long seq = 10;
 		batch = new StoredMessageBatch();
 		msg1 = batch.addMessage(builder
-				.streamName(streamName)
+				.sessionAlias(sessionAlias)
 				.direction(direction)
-				.index(10)
+				.sequence(10)
 				.timestamp(timestamp)
 				.content(content)
 				.build());
 		
 		msg2 = batch.addMessage(builder
-				.streamName(streamName)
+				.sessionAlias(sessionAlias)
 				.direction(direction)
-				.index(index+10)  //Need to have a gap between indices to verify that messages are written/read correctly
+				.sequence(seq+10)  //Need to have a gap between sequence numbers to verify that messages are written/read correctly
 				.timestamp(timestamp)
 				.content(content)
 				.build());

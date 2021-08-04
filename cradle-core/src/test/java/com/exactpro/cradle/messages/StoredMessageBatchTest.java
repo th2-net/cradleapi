@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import com.exactpro.cradle.utils.MessageUtils;
 public class StoredMessageBatchTest
 {
 	private MessageToStoreBuilder builder;
-	private String streamName;
+	private String sessionAlias;
 	private Direction direction;
 	private Instant timestamp;
 	private byte[] messageContent;
@@ -42,37 +42,28 @@ public class StoredMessageBatchTest
 	public void prepare()
 	{
 		builder = new MessageToStoreBuilder();
-		streamName = "Stream1";
+		sessionAlias = "Session1";
 		direction = Direction.FIRST;
 		timestamp = Instant.now();
 		messageContent = "Message text".getBytes();
-	}
-	
-	@DataProvider(name = "first message")
-	public Object[][] firstMessage()
-	{
-		return new Object[][]
-				{
-					{"", direction, 0},
-					//{streamName, null, 0},  - this is invalid message, so skipping it
-					{streamName, direction, -1}
-				};
 	}
 	
 	@DataProvider(name = "multiple messages")
 	public Object[][] multipleMessages()
 	{
 		Direction d = Direction.FIRST;
-		long index = 10;
+		long seq = 10;
 		return new Object[][]
 				{
-					{Arrays.asList(new IdData(streamName, d, index), 
-							new IdData(streamName+"X", d, index+1))},             //Different streams
-					{Arrays.asList(new IdData(streamName, d, index), 
-							new IdData(streamName, Direction.SECOND, index+1))},  //Different directions
-					{Arrays.asList(new IdData(streamName, d, index), 
-							new IdData(streamName, d, index),                     //Index is not incremented
-							new IdData(streamName, d, index-1))}                  //Index is less than previous
+					{Arrays.asList(new IdData(sessionAlias, d, timestamp, seq), 
+							new IdData(sessionAlias+"X", d, timestamp, seq+1))},             //Different sessions
+					{Arrays.asList(new IdData(sessionAlias, d, timestamp, seq), 
+							new IdData(sessionAlias, Direction.SECOND, timestamp, seq+1))},  //Different directions
+					{Arrays.asList(new IdData(sessionAlias, d, timestamp, seq), 
+							new IdData(sessionAlias, d, timestamp.minusMillis(1), seq))},    //Timestamp is less than previous
+					{Arrays.asList(new IdData(sessionAlias, d, timestamp, seq), 
+							new IdData(sessionAlias, d, timestamp, seq),                     //Sequence is not incremented
+							new IdData(sessionAlias, d, timestamp, seq-1))}                  //Sequence is less than previous
 				};
 	}
 	
@@ -81,100 +72,22 @@ public class StoredMessageBatchTest
 	{
 		return new Object[][]
 				{
-					{builder.build()},                                                                      //Empty message
-					{builder.streamName(streamName).direction(null).timestamp(null).build()},               //Only stream is set
-					{builder.streamName(streamName).direction(direction).timestamp(null).build()},          //Only stream and direction are set
-					{builder.streamName(streamName).direction(direction).timestamp(Instant.now()).build()}  //Content is not set
+					{builder.build()},                                                                          //Empty message
+					{builder.sessionAlias(sessionAlias).direction(null).timestamp(null).build()},               //Only session is set
+					{builder.sessionAlias(sessionAlias).direction(direction).timestamp(null).build()},          //Only session and direction are set
+					{builder.sessionAlias(sessionAlias).direction(direction).timestamp(Instant.now()).build()}  //Content is not set
 				};
 	}
 	
 	
-	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Batch has not enough space to hold given message")
-	public void batchContentIsLimited() throws CradleStorageException
-	{
-		byte[] content = new byte[5000];
-		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
-				.streamName(streamName)
-				.direction(direction)
-				.index(1)
-				.timestamp(timestamp)
-				.content(content)
-				.build());
-		for (int i = 0; i <= (StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE/content.length)+1; i++)
-			batch.addMessage(builder
-					.streamName(streamName)
-					.direction(direction)
-					.timestamp(timestamp)
-					.content(content)
-					.build());
-	}
-	
-	@Test
-	public void batchIsFull() throws CradleStorageException
-	{
-		byte[] content = new byte[StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE/2];
-		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
-				.streamName(streamName)
-				.direction(direction)
-				.index(1)
-				.timestamp(timestamp)
-				.content(content)
-				.build());
-		batch.addMessage(builder
-				.streamName(streamName)
-				.direction(direction)
-				.timestamp(timestamp)
-				.content(content)
-				.build());
-		
-		Assert.assertEquals(batch.isFull(), true, "Batch indicates it is full");
-	}
-	
-	@Test
-	public void batchCountsSpaceLeft() throws CradleStorageException
-	{
-		byte[] content = new byte[StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE-1];
-		StoredMessageBatch batch = new StoredMessageBatch();
-		long left = batch.getSpaceLeft();
-		
-		batch.addMessage(builder
-				.streamName(streamName)
-				.direction(direction)
-				.index(1)
-				.timestamp(timestamp)
-				.content(content)
-				.build());
-		
-		Assert.assertEquals(batch.getSpaceLeft(), left-content.length, "Batch counts space left");
-	}
-	
-	@Test
-	public void batchChecksSpaceLeft() throws CradleStorageException
-	{
-		byte[] content = new byte[StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE-1];
-		StoredMessageBatch batch = new StoredMessageBatch();
-		
-		MessageToStore msg = builder
-				.streamName(streamName)
-				.direction(direction)
-				.index(1)
-				.timestamp(timestamp)
-				.content(content)
-				.build();
-		batch.addMessage(msg);
-		
-		Assert.assertEquals(batch.hasSpace(msg), false, "Batch shows if it has space to hold given message");
-	}
-	
-	@Test(dataProvider = "first message",
-			expectedExceptions = {CradleStorageException.class}, 
+	@Test(expectedExceptions = {CradleStorageException.class}, 
 			expectedExceptionsMessageRegExp = ".* for first message in batch .*")
-	public void batchChecksFirstMessage(String streamName, Direction direction, long index) throws CradleStorageException
+	public void batchChecksFirstMessage() throws CradleStorageException
 	{
 		StoredMessageBatch.singleton(builder
-				.streamName(streamName)
+				.sessionAlias(sessionAlias)
 				.direction(direction)
-				.index(index)
+				.sequence(-1)
 				.timestamp(timestamp)
 				.content(messageContent)
 				.build());
@@ -189,10 +102,10 @@ public class StoredMessageBatchTest
 		for (IdData id : ids)
 		{
 			batch.addMessage(builder
-					.streamName(id.streamName)
+					.sessionAlias(id.sessionAlias)
 					.direction(id.direction)
-					.index(id.index)
-					.timestamp(timestamp)
+					.sequence(id.sequence)
+					.timestamp(id.timestamp)
 					.content(messageContent)
 					.build());
 		}
@@ -208,51 +121,51 @@ public class StoredMessageBatchTest
 	}
 	
 	@Test
-	public void indexAutoIncrement() throws CradleStorageException
+	public void sequenceAutoIncrement() throws CradleStorageException
 	{
-		long index = 10;
+		long seq = 10;
 		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
-				.streamName(streamName)
+				.sessionAlias(sessionAlias)
 				.direction(direction)
-				.index(index)
+				.sequence(seq)
 				.timestamp(timestamp)
 				.content(messageContent)
 				.build());
 		
 		StoredMessage msg1 = batch.addMessage(builder
-				.streamName(streamName)
+				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.timestamp(timestamp)
 				.content(messageContent)
 				.build());
 		
 		StoredMessage msg2 = batch.addMessage(builder
-				.streamName(streamName)
+				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.timestamp(timestamp)
 				.content(messageContent)
 				.build());
 		
-		Assert.assertEquals(msg1.getIndex(), index+1, "1st and 2nd messages should have sequenced indices");
-		Assert.assertEquals(msg2.getIndex(), msg1.getIndex()+1, "2nd and 3rd messages should have sequenced indices");
+		Assert.assertEquals(msg1.getSequence(), seq+1, "1st and 2nd messages should have ordered sequence numbers");
+		Assert.assertEquals(msg2.getSequence(), msg1.getSequence()+1, "2nd and 3rd messages should have ordered sequence numbers");
 	}
 	
 	@Test
-	public void indexGapsAllowed() throws CradleStorageException
+	public void sequenceGapsAllowed() throws CradleStorageException
 	{
-		long index = 10;
+		long seq = 10;
 		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
-				.streamName(streamName)
+				.sessionAlias(sessionAlias)
 				.direction(direction)
-				.index(index)
+				.sequence(seq)
 				.timestamp(timestamp)
 				.content(messageContent)
 				.build());
 		
 		batch.addMessage(builder
-				.streamName(streamName)
+				.sessionAlias(sessionAlias)
 				.direction(direction)
-				.index(index+10)
+				.sequence(seq+10)
 				.timestamp(timestamp)
 				.content(messageContent)
 				.build());
@@ -261,21 +174,21 @@ public class StoredMessageBatchTest
 	@Test
 	public void correctMessageId() throws CradleStorageException
 	{
-		long index = 10;
+		long seq = 10;
 		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
-				.streamName(streamName)
+				.sessionAlias(sessionAlias)
 				.direction(direction)
-				.index(index)
+				.sequence(seq)
 				.timestamp(timestamp)
 				.content(messageContent)
 				.build());
 		StoredMessage msg = batch.addMessage(builder
-				.streamName(streamName)
+				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.timestamp(timestamp)
 				.content(messageContent)
 				.build());
-		Assert.assertEquals(msg.getId(), new StoredMessageId(streamName, direction, index+1));
+		Assert.assertEquals(msg.getId(), new StoredMessageId(sessionAlias, direction, timestamp, seq+1));
 	}
 	
 	@Test
@@ -283,15 +196,15 @@ public class StoredMessageBatchTest
 	{
 		Instant timestamp = Instant.ofEpochSecond(1000);
 		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
-				.streamName(streamName)
+				.sessionAlias(sessionAlias)
 				.direction(direction)
-				.index(1)
+				.sequence(1)
 				.timestamp(timestamp)
 				.content(messageContent)
 				.build());
 		
 		batch.addMessage(builder
-				.streamName(streamName)
+				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.timestamp(timestamp.plusSeconds(10))
 				.content(messageContent)
@@ -300,7 +213,7 @@ public class StoredMessageBatchTest
 		Instant lastTimestamp = batch.getLastTimestamp();
 		
 		batch.addMessage(builder
-				.streamName(streamName)
+				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.timestamp(timestamp.plusSeconds(20))
 				.content(messageContent)
@@ -313,9 +226,9 @@ public class StoredMessageBatchTest
 	public void batchSerialization() throws CradleStorageException, IOException
 	{
 		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
-				.streamName(streamName)
+				.sessionAlias(sessionAlias)
 				.direction(direction)
-				.index(0)
+				.sequence(0)
 				.timestamp(timestamp)
 				.metadata("md", "some value")
 				.content(messageContent)
@@ -329,21 +242,26 @@ public class StoredMessageBatchTest
 	
 	class IdData
 	{
-		String streamName;
-		Direction direction;
-		long index;
+		final String sessionAlias;
+		final Direction direction;
+		final Instant timestamp;
+		final long sequence;
 		
-		public IdData(String streamName, Direction direction, long index)
+		public IdData(String sessionAlias, Direction direction, Instant timestamp, long sequence)
 		{
-			this.streamName = streamName;
+			this.sessionAlias = sessionAlias;
 			this.direction = direction;
-			this.index = index;
+			this.timestamp = timestamp;
+			this.sequence = sequence;
 		}
 		
 		@Override
 		public String toString()
 		{
-			return streamName+StoredMessageBatchId.IDS_DELIMITER+direction.getLabel()+StoredMessageBatchId.IDS_DELIMITER+index;
+			return sessionAlias+StoredMessageId.ID_PARTS_DELIMITER
+					+direction.getLabel()+StoredMessageId.ID_PARTS_DELIMITER
+					+StoredMessageIdUtils.timestampToString(timestamp)+StoredMessageId.ID_PARTS_DELIMITER
+					+sequence;
 		}
 	}
 }

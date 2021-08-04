@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,28 +24,38 @@ import org.testng.annotations.Test;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.utils.CradleIdException;
 
-import static com.exactpro.cradle.messages.StoredMessageBatchId.*;
+import static com.exactpro.cradle.messages.StoredMessageId.*;
+
+import java.time.Instant;
 
 public class StoredMessageIdTest
 {
-	private String streamName,
-			streamNameWithColon;
+	private String sessionAlias,
+			sessionAliasWithColon;
 	private Direction direction;
-	private long index,
-			messageIndex;
+	private Instant timestamp;
+	private long seq,
+			messageSeq;
 	private String stringId,
 			stringIdWithColon;
 	
 	@BeforeClass
 	public void prepare()
 	{
-		streamName = "Stream1";
-		streamNameWithColon = "10.20.30.40:8080-10:20:30:42:9000";
+		sessionAlias = "Session1";
+		sessionAliasWithColon = "10.20.30.40:8080-10:20:30:42:9000";
 		direction = Direction.FIRST;
-		index = 100;
-		messageIndex = index+3;
-		stringId = streamName+IDS_DELIMITER+direction.getLabel()+IDS_DELIMITER+messageIndex;
-		stringIdWithColon = streamNameWithColon+IDS_DELIMITER+direction.getLabel()+IDS_DELIMITER+messageIndex;
+		timestamp = Instant.EPOCH;
+		seq = 100;
+		messageSeq = seq+3;
+		stringId = sessionAlias+ID_PARTS_DELIMITER
+				+direction.getLabel()+ID_PARTS_DELIMITER
+				+StoredMessageIdUtils.timestampToString(timestamp)+ID_PARTS_DELIMITER
+				+messageSeq;
+		stringIdWithColon = sessionAliasWithColon+ID_PARTS_DELIMITER
+				+direction.getLabel()+ID_PARTS_DELIMITER
+				+StoredMessageIdUtils.timestampToString(timestamp)+ID_PARTS_DELIMITER
+				+messageSeq;
 	}
 	
 	@DataProvider(name = "ids")
@@ -54,15 +64,15 @@ public class StoredMessageIdTest
 		return new Object[][]
 				{
 					{""},
-					{streamName},
-					{streamName+IDS_DELIMITER},
-					{streamName+IDS_DELIMITER+"XXX"},
-					{streamName+IDS_DELIMITER+"XXX"+IDS_DELIMITER},
-					{streamName+IDS_DELIMITER+"XXX"+IDS_DELIMITER+"NNN"},
-					{streamName+IDS_DELIMITER+"XXX"+IDS_DELIMITER+index},
-					{streamName+IDS_DELIMITER+direction.getLabel()},
-					{streamName+IDS_DELIMITER+direction.getLabel()+IDS_DELIMITER},
-					{streamName+IDS_DELIMITER+direction.getLabel()+IDS_DELIMITER+"NNN"}
+					{sessionAlias},
+					{sessionAlias+ID_PARTS_DELIMITER},
+					{sessionAlias+ID_PARTS_DELIMITER+"XXX"},
+					{sessionAlias+ID_PARTS_DELIMITER+"XXX"+ID_PARTS_DELIMITER},
+					{sessionAlias+ID_PARTS_DELIMITER+"XXX"+ID_PARTS_DELIMITER+"NNN"},
+					{sessionAlias+ID_PARTS_DELIMITER+"XXX"+ID_PARTS_DELIMITER+seq},
+					{sessionAlias+ID_PARTS_DELIMITER+direction.getLabel()},
+					{sessionAlias+ID_PARTS_DELIMITER+direction.getLabel()+ID_PARTS_DELIMITER},
+					{sessionAlias+ID_PARTS_DELIMITER+direction.getLabel()+ID_PARTS_DELIMITER+"NNN"}
 				};
 	}
 	
@@ -70,14 +80,14 @@ public class StoredMessageIdTest
 	@Test
 	public void idToString()
 	{
-		StoredMessageId id = new StoredMessageId(streamName, direction, messageIndex);
+		StoredMessageId id = new StoredMessageId(sessionAlias, direction, timestamp, messageSeq);
 		Assert.assertEquals(id.toString(), stringId);
 	}
 	
 	@Test
 	public void idFromString() throws CradleIdException
 	{
-		StoredMessageId id = new StoredMessageId(streamName, direction, messageIndex),
+		StoredMessageId id = new StoredMessageId(sessionAlias, direction, timestamp, messageSeq),
 				fromString = StoredMessageId.fromString(stringId);
 		Assert.assertEquals(fromString, id);
 	}
@@ -85,7 +95,7 @@ public class StoredMessageIdTest
 	@Test
 	public void idFromStringWithColon() throws CradleIdException
 	{
-		StoredMessageId id = new StoredMessageId(streamNameWithColon, direction, messageIndex),
+		StoredMessageId id = new StoredMessageId(sessionAliasWithColon, direction, timestamp, messageSeq),
 				fromString = StoredMessageId.fromString(stringIdWithColon);
 		Assert.assertEquals(fromString, id);
 	}
@@ -98,16 +108,16 @@ public class StoredMessageIdTest
 	}
 	
 	@Test
-	public void correctStreamName() throws CradleIdException
+	public void correctSessionAlias() throws CradleIdException
 	{
 		StoredMessageId id = StoredMessageId.fromString(stringIdWithColon);
-		Assert.assertEquals(id.getStreamName(), streamNameWithColon);
+		Assert.assertEquals(id.getSessionAlias(), sessionAliasWithColon);
 	}
 	
 	@Test
-	public void correctMessageIndex() throws CradleIdException
+	public void correctSequence() throws CradleIdException
 	{
 		StoredMessageId id = StoredMessageId.fromString(stringId);
-		Assert.assertEquals(id.getIndex(), messageIndex);
+		Assert.assertEquals(id.getSequence(), messageSeq);
 	}
 }
