@@ -21,7 +21,6 @@ import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.exactpro.cradle.intervals.Interval;
-import com.exactpro.cradle.intervals.RecoveryState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,7 +89,7 @@ public class IntervalEntity {
         this.endDate = LocalDate.from(interval.getEndTime().atOffset(TIMEZONE_OFFSET));
         this.lastUpdateTime = LocalTime.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET));
         this.lastUpdateDate = LocalDate.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET));
-        this.recoveryStateJson = interval.getRecoveryState().convertToJson();
+        this.recoveryStateJson = interval.getRecoveryStateJson();
         this.instanceId = instanceId;
         this.crawlerName = interval.getCrawlerName();
         this.crawlerVersion = interval.getCrawlerVersion();
@@ -155,7 +154,7 @@ public class IntervalEntity {
     public Interval asInterval() throws IOException {
         return Interval.builder().startTime(Instant.from(LocalDateTime.of(startDate, startTime).atOffset(TIMEZONE_OFFSET)))
                 .endTime(Instant.from(LocalDateTime.of(endDate, endTime).atOffset(TIMEZONE_OFFSET)))
-                .recoveryState(RecoveryState.getMAPPER().readValue(recoveryStateJson, RecoveryState.class))
+                .recoveryState(recoveryStateJson)
                 .lastUpdateTime(Instant.from(LocalDateTime.of(lastUpdateDate, lastUpdateTime).atOffset(TIMEZONE_OFFSET)))
                 .crawlerName(crawlerName).crawlerVersion(crawlerVersion).crawlerType(crawlerType)
                 .processed(processed).build();

@@ -25,7 +25,6 @@ import com.exactpro.cradle.cassandra.dao.AsyncOperator;
 import com.exactpro.cradle.cassandra.iterators.IntervalsIteratorAdapter;
 import com.exactpro.cradle.intervals.Interval;
 import com.exactpro.cradle.intervals.IntervalsWorker;
-import com.exactpro.cradle.intervals.RecoveryState;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.UpdateNotAppliedException;
 
@@ -228,16 +227,16 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                                 interval.getStartTime(), interval.getEndTime(), interval.getCrawlerName(), interval.getCrawlerVersion()
                         ));
             }
-            return Interval.copyWith(interval, interval.getRecoveryState(), dateTime, interval.isProcessed());
+            return Interval.copyWith(interval, interval.getRecoveryStateJson(), dateTime, interval.isProcessed());
         });
     }
 
     @Override
-    public Interval updateRecoveryState(Interval interval, RecoveryState recoveryState) throws IOException
+    public Interval updateRecoveryState(Interval interval, String recoveryStateJson) throws IOException
     {
         try
         {
-            return updateRecoveryStateAsync(interval, recoveryState).get();
+            return updateRecoveryStateAsync(interval, recoveryStateJson).get();
         }
         catch (Exception e)
         {
@@ -251,7 +250,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     }
 
     @Override
-    public CompletableFuture<Interval> updateRecoveryStateAsync(Interval interval, RecoveryState recoveryState)
+    public CompletableFuture<Interval> updateRecoveryStateAsync(Interval interval, String recoveryStateJson)
     {
         LocalDateTime newLastUpdateDateTime = LocalDateTime.ofInstant(Instant.now(), TIMEZONE_OFFSET);
 
@@ -262,8 +261,8 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                 .getFuture(() -> intervalOperator.updateRecoveryState(instanceUuid,
                         LocalDate.from(interval.getStartTime().atOffset(TIMEZONE_OFFSET)),
                         LocalTime.from(interval.getStartTime().atOffset(TIMEZONE_OFFSET)),
-                        newLastUpdateTime, newLastUpdateDate, recoveryState.convertToJson(),
-                        interval.getRecoveryState().convertToJson(),
+                        newLastUpdateTime, newLastUpdateDate, recoveryStateJson,
+                        interval.getRecoveryStateJson(),
                         LocalTime.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET)),
                         LocalDate.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET)),
                         interval.getCrawlerName(), interval.getCrawlerVersion(), interval.getCrawlerType(),
@@ -276,7 +275,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                                 interval.getStartTime(), interval.getEndTime(), interval.getCrawlerName(), interval.getCrawlerVersion()
                         ));
             }
-            return Interval.copyWith(interval, recoveryState, newLastUpdateDateTime, interval.isProcessed());
+            return Interval.copyWith(interval, recoveryStateJson, newLastUpdateDateTime, interval.isProcessed());
         });
     }
 
@@ -323,7 +322,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                                 interval.getStartTime(), interval.getEndTime(), interval.getCrawlerName(), interval.getCrawlerVersion()
                         ));
             }
-            return Interval.copyWith(interval, interval.getRecoveryState(), newLastUpdateDateTime, processed);
+            return Interval.copyWith(interval, interval.getRecoveryStateJson(), newLastUpdateDateTime, processed);
         });
     }
 

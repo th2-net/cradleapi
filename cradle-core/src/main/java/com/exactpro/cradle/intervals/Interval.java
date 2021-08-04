@@ -24,7 +24,7 @@ import java.util.Objects;
 public class Interval {
     private LocalDateTime startDateTime;
     private LocalDateTime endDateTime;
-    private RecoveryState recoveryState;
+    private String recoveryStateJson;
     private LocalDateTime lastUpdateDateTime;
     private String crawlerName;
     private String crawlerVersion;
@@ -43,9 +43,9 @@ public class Interval {
 
     public void setEndTime(Instant endTime) { this.endDateTime = LocalDateTime.ofInstant(endTime, TIMEZONE_OFFSET); }
 
-    public RecoveryState getRecoveryState() { return recoveryState; }
+    public String getRecoveryStateJson() { return recoveryStateJson; }
 
-    public void setRecoveryState(RecoveryState recoveryState) { this.recoveryState = recoveryState; }
+    public void setRecoveryStateJson(String recoveryStateJson) { this.recoveryStateJson = recoveryStateJson; }
 
     public Instant getLastUpdateDateTime() { return lastUpdateDateTime.toInstant(TIMEZONE_OFFSET); }
 
@@ -67,7 +67,7 @@ public class Interval {
 
     public void setProcessed(boolean processed) { this.processed = processed; }
 
-    public static Interval copyWith(Interval original, RecoveryState recoveryState, LocalDateTime lastUpdateDateTime, boolean processed) {
+    public static Interval copyWith(Interval original, String recoveryStateJson, LocalDateTime lastUpdateDateTime, boolean processed) {
         Objects.requireNonNull(lastUpdateDateTime, "'lastUpdateDateTime' parameter");
         Interval interval = new Interval();
         interval.setStartTime(original.getStartTime());
@@ -76,14 +76,14 @@ public class Interval {
         interval.setCrawlerVersion(original.getCrawlerVersion());
         interval.setCrawlerType(original.getCrawlerType());
 
-        interval.setRecoveryState(recoveryState);
+        interval.setRecoveryStateJson(recoveryStateJson);
         interval.lastUpdateDateTime = lastUpdateDateTime;
         interval.setProcessed(processed);
         return interval;
     }
 
-    public static Interval copyWith(Interval original, RecoveryState recoveryState, Instant lastUpdateDateTime, boolean processed) {
-        return copyWith(original, recoveryState, LocalDateTime.ofInstant(lastUpdateDateTime, TIMEZONE_OFFSET), processed);
+    public static Interval copyWith(Interval original, String recoveryStateJson, Instant lastUpdateDateTime, boolean processed) {
+        return copyWith(original, recoveryStateJson, LocalDateTime.ofInstant(lastUpdateDateTime, TIMEZONE_OFFSET), processed);
     }
 
     @Override
@@ -101,7 +101,7 @@ public class Interval {
                 .append("crawlerVersion=").append(crawlerVersion).append(",").append(CompressionUtils.EOL)
                 .append("crawlerType=").append(crawlerType).append(",").append(CompressionUtils.EOL)
                 .append("processed=").append(processed).append(",").append(CompressionUtils.EOL)
-                .append(recoveryState.toString()).append(CompressionUtils.EOL)
+                .append(recoveryStateJson.toString()).append(CompressionUtils.EOL)
                 .append("}").toString();
     }
 }
