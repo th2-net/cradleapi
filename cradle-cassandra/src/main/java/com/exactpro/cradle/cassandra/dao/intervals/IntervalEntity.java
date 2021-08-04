@@ -154,7 +154,7 @@ public class IntervalEntity {
     public Interval asInterval() throws IOException {
         return Interval.builder().startTime(Instant.from(LocalDateTime.of(startDate, startTime).atOffset(TIMEZONE_OFFSET)))
                 .endTime(Instant.from(LocalDateTime.of(endDate, endTime).atOffset(TIMEZONE_OFFSET)))
-                .recoveryState(recoveryStateJson)
+                .recoveryStateJson(recoveryStateJson)
                 .lastUpdateTime(Instant.from(LocalDateTime.of(lastUpdateDate, lastUpdateTime).atOffset(TIMEZONE_OFFSET)))
                 .crawlerName(crawlerName).crawlerVersion(crawlerVersion).crawlerType(crawlerType)
                 .processed(processed).build();
