@@ -47,10 +47,10 @@ public class IntervalBuilder
         return this;
     }
 
-    public IntervalBuilder recoveryState(RecoveryState recoveryState)
+    public IntervalBuilder recoveryStateJson(String recoveryStateJson)
     {
         initIfNeeded();
-        interval.setRecoveryState(recoveryState);
+        interval.setRecoveryStateJson(recoveryStateJson);
         return this;
     }
 
@@ -92,6 +92,13 @@ public class IntervalBuilder
     public Interval build()
     {
         initIfNeeded();
+
+        if (interval.getStartTime().isAfter(interval.getEndTime()))
+            throw new IllegalArgumentException("Start time of interval cannot be after end time");
+
+        if (interval.getLastUpdateDateTime().isBefore(interval.getStartTime()))
+            throw new IllegalArgumentException("Time of last update of interval cannot be before start time");
+
         Interval result = interval;
         interval = null;
         return result;
