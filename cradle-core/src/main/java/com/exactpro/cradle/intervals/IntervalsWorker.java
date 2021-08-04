@@ -96,22 +96,22 @@ public interface IntervalsWorker
     /**
      * Updates RecoveryState, also sets lastUpdateTime and lastUpdateDate as current time and date
      * @param interval interval in which Recovery State will be updated
-     * @param recoveryStateJson information for recovering of Crawler
-     * @return the new instance of {@link Interval} with updated recoveryStateJson. This operation is successful
+     * @param recoveryState information for recovering of Crawler
+     * @return the new instance of {@link Interval} with updated recoveryState. This operation is successful
      * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
      * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      */
-    Interval updateRecoveryState(Interval interval, String recoveryStateJson) throws IOException;
+    Interval updateRecoveryState(Interval interval, String recoveryState) throws IOException;
 
     /**
      * Asynchronously updates RecoveryState, also sets lastUpdateTime and lastUpdateDate as current time and date
      * @param interval interval in which Recovery State will be updated
-     * @param recoveryStateJson information for recovering of Crawler
-     * @return CompletableFuture with the new instance of {@link Interval} with updated recoveryStateJson. This operation is successful
+     * @param recoveryState information for recovering of Crawler
+     * @return CompletableFuture with the new instance of {@link Interval} with updated recoveryState. This operation is successful
      * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
      * If it was not successful throws an {@link java.util.concurrent.ExecutionException} with cause {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      */
-    CompletableFuture<Interval> updateRecoveryStateAsync(Interval interval, String recoveryStateJson);
+    CompletableFuture<Interval> updateRecoveryStateAsync(Interval interval, String recoveryState);
 
     /**
      * Sets flag that indicates if interval was processed completely, also sets lastUpdateTime and lastUpdateDate as current time and date

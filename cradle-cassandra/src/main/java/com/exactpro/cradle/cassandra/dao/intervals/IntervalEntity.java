@@ -89,7 +89,7 @@ public class IntervalEntity {
         this.endDate = LocalDate.from(interval.getEndTime().atOffset(TIMEZONE_OFFSET));
         this.lastUpdateTime = LocalTime.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET));
         this.lastUpdateDate = LocalDate.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET));
-        this.recoveryStateJson = interval.getRecoveryStateJson();
+        this.recoveryStateJson = interval.getRecoveryState();
         this.instanceId = instanceId;
         this.crawlerName = interval.getCrawlerName();
         this.crawlerVersion = interval.getCrawlerVersion();
@@ -154,7 +154,7 @@ public class IntervalEntity {
     public Interval asInterval() throws IOException {
         return Interval.builder().startTime(Instant.from(LocalDateTime.of(startDate, startTime).atOffset(TIMEZONE_OFFSET)))
                 .endTime(Instant.from(LocalDateTime.of(endDate, endTime).atOffset(TIMEZONE_OFFSET)))
-                .recoveryStateJson(recoveryStateJson)
+                .recoveryState(recoveryStateJson)
                 .lastUpdateTime(Instant.from(LocalDateTime.of(lastUpdateDate, lastUpdateTime).atOffset(TIMEZONE_OFFSET)))
                 .crawlerName(crawlerName).crawlerVersion(crawlerVersion).crawlerType(crawlerType)
                 .processed(processed).build();

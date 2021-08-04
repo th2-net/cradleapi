@@ -47,10 +47,10 @@ public class IntervalBuilder
         return this;
     }
 
-    public IntervalBuilder recoveryStateJson(String recoveryStateJson)
+    public IntervalBuilder recoveryState(String recoveryState)
     {
         initIfNeeded();
-        interval.setRecoveryStateJson(recoveryStateJson);
+        interval.setRecoveryState(recoveryState);
         return this;
     }
 

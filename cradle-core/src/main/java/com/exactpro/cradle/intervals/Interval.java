@@ -24,7 +24,7 @@ import java.util.Objects;
 public class Interval {
     private LocalDateTime startDateTime;
     private LocalDateTime endDateTime;
-    private String recoveryStateJson;
+    private String recoveryState;
     private LocalDateTime lastUpdateDateTime;
     private String crawlerName;
     private String crawlerVersion;
@@ -43,9 +43,9 @@ public class Interval {
 
     public void setEndTime(Instant endTime) { this.endDateTime = LocalDateTime.ofInstant(endTime, TIMEZONE_OFFSET); }
 
-    public String getRecoveryStateJson() { return recoveryStateJson; }
+    public String getRecoveryState() { return recoveryState; }
 
-    public void setRecoveryStateJson(String recoveryStateJson) { this.recoveryStateJson = recoveryStateJson; }
+    public void setRecoveryState(String recoveryState) { this.recoveryState = recoveryState; }
 
     public Instant getLastUpdateDateTime() { return lastUpdateDateTime.toInstant(TIMEZONE_OFFSET); }
 
@@ -76,7 +76,7 @@ public class Interval {
         interval.setCrawlerVersion(original.getCrawlerVersion());
         interval.setCrawlerType(original.getCrawlerType());
 
-        interval.setRecoveryStateJson(recoveryStateJson);
+        interval.setRecoveryState(recoveryStateJson);
         interval.lastUpdateDateTime = lastUpdateDateTime;
         interval.setProcessed(processed);
         return interval;
@@ -101,7 +101,7 @@ public class Interval {
                 .append("crawlerVersion=").append(crawlerVersion).append(",").append(CompressionUtils.EOL)
                 .append("crawlerType=").append(crawlerType).append(",").append(CompressionUtils.EOL)
                 .append("processed=").append(processed).append(",").append(CompressionUtils.EOL)
-                .append(recoveryStateJson.toString()).append(CompressionUtils.EOL)
+                .append(recoveryState.toString()).append(CompressionUtils.EOL)
                 .append("}").toString();
     }
 }
