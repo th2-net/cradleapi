@@ -18,14 +18,10 @@ package com.exactpro.cradle;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
-import com.exactpro.cradle.intervals.Interval;
 import com.exactpro.cradle.intervals.IntervalsWorker;
-import com.exactpro.cradle.intervals.RecoveryState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
