@@ -33,17 +33,19 @@ public abstract class CradleManager implements AutoCloseable
 	private static final Logger logger = LoggerFactory.getLogger(CradleManager.class);
 	
 	private final Map<String, CradleStorage> storages = new ConcurrentHashMap<>();
+	private final boolean prepareStorage;
 	private volatile boolean closed = false;
 	
-	public CradleManager()
+	public CradleManager(boolean prepareStorage)
 	{
+		this.prepareStorage = prepareStorage;
 	}
 	
 	/**
 	 * Creates {@link CradleStorage} object to work with given Cradle book
 	 * @return instance of CradleStorage to read/write data
 	 */
-	protected abstract CradleStorage createStorage(String book);
+	protected abstract CradleStorage createStorage(String book, boolean prepareStorage) throws CradleStorageException;
 	
 	
 	/**
@@ -67,7 +69,7 @@ public abstract class CradleManager implements AutoCloseable
 				if (result == null || result.isDisposed())
 				{
 					logger.info("Storage for book '{}' is absent, creating it", book);
-					result = createStorage(book);
+					result = createStorage(book, prepareStorage);
 					storages.put(book, result);
 				}
 			}

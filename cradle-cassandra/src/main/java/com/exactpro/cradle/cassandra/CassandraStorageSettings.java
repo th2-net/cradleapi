@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,221 +18,183 @@ package com.exactpro.cradle.cassandra;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.exactpro.cradle.cassandra.connection.NetworkTopologyStrategy;
-import com.exactpro.cradle.messages.StoredMessageBatch;
-import com.exactpro.cradle.testevents.StoredTestEventBatch;
 
 public class CassandraStorageSettings
 {
-	public static final int MESSAGE_BATCH_SIZE_LIMIT_BYTES = 5000,
-			TEST_EVENT_BATCH_SIZE_LIMIT_BYTES = 5000;
-	public static final String DEFAULT_KEYSPACE = "cradle",
-			INSTANCES_TABLE_DEFAULT_NAME = "instances",
-			MESSAGES_TABLE_DEFAULT_NAME = "messages",
-			PROCESSED_MESSAGES_TABLE_DEFAULT_NAME = "processed_messages",
-			TIME_MESSAGES_TABLE_DEFAULT_NAME = "time_messages",
-			TEST_EVENTS_TABLE_DEFAULT_NAME = "test_events",
-			TIME_TEST_EVENTS_TABLE_DEFAULT_NAME = "time_test_events",
-			ROOT_TEST_EVENTS_TABLE_DEFAULT_NAME = "root_test_events",
-			TEST_EVENTS_CHILDREN_TABLE_DEFAULT_NAME = "test_events_children",
-			TEST_EVENTS_CHILDREN_DATES_TABLE_DEFAULT_NAME = "test_events_children_dates",
-			TEST_EVENTS_MESSAGES_TABLE_DEFAULT_NAME = "test_events_messages",
-			MESSAGES_TEST_EVENTS_TABLE_DEFAULT_NAME = "messages_test_events",
-			INTERVALS_TABLE_DEFAULT_NAME = "intervals";
-	public static final long DEFAULT_TIMEOUT = 5000,
-			DEFAULT_MAX_MESSAGE_BATCH_SIZE = StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE,
-			DEFAULT_MAX_EVENT_BATCH_SIZE = StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE;
+	public static final String PAGES_TABLE = "pages",
+			MESSAGES_TABLE = "messages",
+			SESSION_TABLE = "sessions",
+			TEST_EVENTS_TABLE = "test_events",
+			TEST_EVENTS_DATES_TABLE = "test_events_dates",
+			LABELS_TABLE = "labels",
+			INTERVALS_TABLE = "intervals";
+	public static final long DEFAULT_TIMEOUT = 5000;
 	public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
-	public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1;
-	public static final int TEST_EVENTS_MSGS_LINK_MAX_MSGS = 10;
+	public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1,
+			DEFAULT_MAX_PARALLEL_QUERIES = 500,
+			DEFAULT_RESULT_PAGE_SIZE = 0;  //Driver default will be used in this case.
 	
-	private final String keyspace;
-	private String messagesTableName,
-			timeMessagesTableName,
-			processedMessagesTableName,
-			testEventsTableName,
-			timeTestEventsTableName,
-			rootTestEventsTableName,
-			testEventsChildrenTableName,
-			testEventsChildrenDatesTableName,
-			testEventsMessagesTableName,
-			messagesTestEventsTableName,
-			timeIntervalsTableName,
-			intervalsTableName;
+	
 	private final NetworkTopologyStrategy networkTopologyStrategy;
-	private long timeout;
-	private ConsistencyLevel writeConsistencyLevel,
+	private final long timeout;
+	private final ConsistencyLevel writeConsistencyLevel,
 			readConsistencyLevel;
-	private int keyspaceReplicationFactor;
-	private long maxMessageBatchSize,
-			maxTestEventBatchSize;
+	private String pagesTable,
+			messagesTable,
+			sessionsTable,
+			testEventsTable,
+			testEventsDatesTable,
+			labelsTable,
+			intervalsTable;
+  private int keyspaceReplicationFactor;
 	
-	public CassandraStorageSettings(String keyspace, NetworkTopologyStrategy networkTopologyStrategy, 
-			long timeout, ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel)
+	private int maxParallelQueries,
+			resultPageSize;
+	
+	public CassandraStorageSettings()
 	{
-		this.messagesTableName = MESSAGES_TABLE_DEFAULT_NAME;
-		this.processedMessagesTableName = PROCESSED_MESSAGES_TABLE_DEFAULT_NAME;
-		this.timeMessagesTableName = TIME_MESSAGES_TABLE_DEFAULT_NAME;
-		this.testEventsTableName = TEST_EVENTS_TABLE_DEFAULT_NAME;
-		this.timeTestEventsTableName = TIME_TEST_EVENTS_TABLE_DEFAULT_NAME;
-		this.rootTestEventsTableName = ROOT_TEST_EVENTS_TABLE_DEFAULT_NAME;
-		this.testEventsChildrenTableName = TEST_EVENTS_CHILDREN_TABLE_DEFAULT_NAME;
-		this.testEventsChildrenDatesTableName = TEST_EVENTS_CHILDREN_DATES_TABLE_DEFAULT_NAME;
-		this.testEventsMessagesTableName = TEST_EVENTS_MESSAGES_TABLE_DEFAULT_NAME;
-		this.messagesTestEventsTableName = MESSAGES_TEST_EVENTS_TABLE_DEFAULT_NAME;
-		this.intervalsTableName = INTERVALS_TABLE_DEFAULT_NAME;
-		this.keyspace = keyspace;
+		this(null, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
+	}
+	
+	public CassandraStorageSettings(NetworkTopologyStrategy networkTopologyStrategy, long timeout, 
+			ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel)
+	{
 		this.networkTopologyStrategy = networkTopologyStrategy;
 		this.timeout = timeout;
 		this.writeConsistencyLevel = writeConsistencyLevel;
 		this.readConsistencyLevel = readConsistencyLevel;
+		
+		this.pagesTable = PAGES_TABLE;
+		this.messagesTable = MESSAGES_TABLE;
+		this.sessionsTable = SESSION_TABLE;
+		this.testEventsTable = TEST_EVENTS_TABLE;
+		this.testEventsDatesTable = TEST_EVENTS_DATES_TABLE;
+		this.labelsTable = LABELS_TABLE;
+		this.intervalsTable = INTERVALS_TABLE;
+		
 		this.keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
-		this.maxMessageBatchSize = DEFAULT_MAX_MESSAGE_BATCH_SIZE;
-		this.maxTestEventBatchSize = DEFAULT_MAX_EVENT_BATCH_SIZE;
+		this.maxParallelQueries = DEFAULT_MAX_PARALLEL_QUERIES;
+		this.resultPageSize = DEFAULT_RESULT_PAGE_SIZE;
 	}
-
-	public CassandraStorageSettings(String keyspace, NetworkTopologyStrategy networkTopology)
+	
+	public CassandraStorageSettings(CassandraStorageSettings settings)
 	{
-		this(keyspace, networkTopology, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
+		this.networkTopologyStrategy = settings.getNetworkTopologyStrategy();
+		this.timeout = settings.getTimeout();
+		this.writeConsistencyLevel = settings.getWriteConsistencyLevel();
+		this.readConsistencyLevel = settings.getReadConsistencyLevel();
+		
+		this.pagesTable = settings.getPagesTable();
+		this.messagesTable = settings.getMessagesTable();
+		this.sessionsTable = settings.getSessionsTable();
+		this.testEventsTable = settings.getTestEventsTable();
+		this.testEventsDatesTable = settings.getTestEventsDatesTable();
+		this.labelsTable = settings.getLabelsTable();
+		this.intervalsTable = settings.getIntervalsTable();
+		
+		this.keyspaceReplicationFactor = settings.getKeyspaceReplicationFactor();
+		this.maxParallelQueries = settings.getMaxParallelQueries();
+		this.resultPageSize = settings.getResultPageSize();
 	}
-
-	public CassandraStorageSettings(String keyspace)
-	{
-		this(keyspace, null, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
-	}
-
-	public CassandraStorageSettings()
-	{
-		this(DEFAULT_KEYSPACE, null, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
-	}
-
-	public String getKeyspace()
-	{
-		return keyspace;
-	}
+	
 	
 	public NetworkTopologyStrategy getNetworkTopologyStrategy()
 	{
 		return networkTopologyStrategy;
 	}
 	
-	
-	public String getMessagesTableName()
+	public long getTimeout()
 	{
-		return messagesTableName;
+		return timeout;
 	}
 	
-	public void setMessagesTableName(String messagesTableName)
+	public ConsistencyLevel getWriteConsistencyLevel()
 	{
-		this.messagesTableName = messagesTableName;
+		return writeConsistencyLevel;
 	}
 	
-	
-	public String getProcessedMessagesTableName()
+	public ConsistencyLevel getReadConsistencyLevel()
 	{
-		return processedMessagesTableName;
-	}
-	
-	public void setProcessedMessagesTableName(String processedMessagesTableName)
-	{
-		this.processedMessagesTableName = processedMessagesTableName;
+		return readConsistencyLevel;
 	}
 	
 	
-	public String getTimeMessagesTableName()
+	public String getPagesTable()
 	{
-		return timeMessagesTableName;
+		return pagesTable;
 	}
 	
-	public void setTimeMessagesTableName(String timeMessagesTableName)
+	public void setPagesTable(String pagesTable)
 	{
-		this.timeMessagesTableName = timeMessagesTableName;
-	}
-	
-	
-	public String getTestEventsTableName()
-	{
-		return testEventsTableName;
-	}
-	
-	public void setTestEventsTableName(String testEventsTableName)
-	{
-		this.testEventsTableName = testEventsTableName;
+		this.pagesTable = pagesTable;
 	}
 	
 	
-	public String getTimeTestEventsTableName()
+	public String getMessagesTable()
 	{
-		return timeTestEventsTableName;
+		return messagesTable;
 	}
 	
-	public void setTimeTestEventsTableName(String timeTestEventsTableName)
+	public void setMessagesTable(String messagesTable)
 	{
-		this.timeTestEventsTableName = timeTestEventsTableName;
-	}
-	
-	
-	public String getRootTestEventsTableName()
-	{
-		return rootTestEventsTableName;
-	}
-	
-	public void setRootTestEventsTableName(String rootTestEventsTableName)
-	{
-		this.rootTestEventsTableName = rootTestEventsTableName;
+		this.messagesTable = messagesTable;
 	}
 	
 	
-	public String getTestEventsChildrenTableName()
+	public String getSessionsTable()
 	{
-		return testEventsChildrenTableName;
+		return sessionsTable;
 	}
 	
-	public void setTestEventsChildrenTableName(String testEventsChildrenTableName)
+	public void setSessionsTable(String sessionsTable)
 	{
-		this.testEventsChildrenTableName = testEventsChildrenTableName;
-	}
-	
-	
-	public String getTestEventsChildrenDatesTableName()
-	{
-		return testEventsChildrenDatesTableName;
-	}
-	
-	public void setTestEventsChildrenDatesTableName(String testEventsChildrenDatesTableName)
-	{
-		this.testEventsChildrenDatesTableName = testEventsChildrenDatesTableName;
+		this.sessionsTable = sessionsTable;
 	}
 	
 	
-	public String getTestEventsMessagesTableName()
+	public String getTestEventsTable()
 	{
-		return testEventsMessagesTableName;
+		return testEventsTable;
 	}
 	
-	public void setTestEventsMessagesTableName(String testEventsMessagesTableName)
+	public void setTestEventsTable(String testEventsTable)
 	{
-		this.testEventsMessagesTableName = testEventsMessagesTableName;
+		this.testEventsTable = testEventsTable;
 	}
 	
 	
-	public String getMessagesTestEventsTableName()
+	public String getTestEventsDatesTable()
 	{
-		return messagesTestEventsTableName;
+		return testEventsDatesTable;
 	}
 	
-	public void setMessagesTestEventsTableName(String messagesTestEventsTableName)
+	public void setTestEventsDatesTable(String testEventsDatesTable)
 	{
-		this.messagesTestEventsTableName = messagesTestEventsTableName;
+		this.testEventsDatesTable = testEventsDatesTable;
 	}
-
-	public String getIntervalsTableName() { return intervalsTableName; }
-
-	public String getTimeIntervalsTableName() { return timeIntervalsTableName; }
-
-	public void setIntervalsTableName(String intervalsTableName)
+	
+	
+	public String getLabelsTable()
 	{
-		this.intervalsTableName = intervalsTableName;
+		return labelsTable;
 	}
+	
+	public void setLabelsTable(String labelsTable)
+	{
+		this.labelsTable = labelsTable;
+	}
+	
+	
+	public String getIntervalsTable()
+	{
+		return intervalsTable;
+	}
+	
+	public void setIntervalsTable(String intervalsTable)
+	{
+		this.intervalsTable = intervalsTable;
+	}
+	
 	
 	public int getKeyspaceReplicationFactor()
 	{
@@ -243,58 +205,26 @@ public class CassandraStorageSettings
 	{
 		this.keyspaceReplicationFactor = keyspaceReplicationFactor;
 	}
-
-	public long getTimeout()
+	
+	
+	public int getMaxParallelQueries()
 	{
-		return timeout;
+		return maxParallelQueries;
 	}
 	
-	public void setTimeout(long timeout)
+	public void setMaxParallelQueries(int maxParallelQueries)
 	{
-		this.timeout = timeout;
-	}
-	
-	
-	public ConsistencyLevel getWriteConsistencyLevel()
-	{
-		return writeConsistencyLevel;
-	}
-	
-	public void setWriteConsistencyLevel(ConsistencyLevel writeConsistencyLevel)
-	{
-		this.writeConsistencyLevel = writeConsistencyLevel;
+		this.maxParallelQueries = maxParallelQueries;
 	}
 	
 	
-	public ConsistencyLevel getReadConsistencyLevel()
+	public int getResultPageSize()
 	{
-		return readConsistencyLevel;
+		return resultPageSize;
 	}
 	
-	public void setReadConsistencyLevel(ConsistencyLevel readConsistencyLevel)
+	public void setResultPageSize(int resultPageSize)
 	{
-		this.readConsistencyLevel = readConsistencyLevel;
-	}
-	
-	
-	public long getMaxMessageBatchSize()
-	{
-		return maxMessageBatchSize;
-	}
-	
-	public void setMaxMessageBatchSize(long maxMessageBatchSize)
-	{
-		this.maxMessageBatchSize = maxMessageBatchSize;
-	}
-	
-	
-	public long getMaxTestEventBatchSize()
-	{
-		return maxTestEventBatchSize;
-	}
-	
-	public void setMaxTestEventBatchSize(long maxTestEventBatchSize)
-	{
-		this.maxTestEventBatchSize = maxTestEventBatchSize;
+		this.resultPageSize = resultPageSize;
 	}
 }

@@ -23,7 +23,7 @@ import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Date;
+import java.time.Instant;
 
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import org.apache.commons.lang3.StringUtils;
@@ -32,9 +32,10 @@ public class CassandraConnection
 {
 	public static final String DRIVER_CONFIG_FILE_NAME = "application.conf";
 	private static final Path DRIVER_CONFIG = Paths.get(System.getProperty("user.dir"), DRIVER_CONFIG_FILE_NAME);
-	private CassandraConnectionSettings settings;
-	private CqlSession session;
-	private Date started,
+	
+	private final CassandraConnectionSettings settings;
+	private volatile CqlSession session;
+	private volatile Instant started,
 			stopped;
 
 	public CassandraConnection()
@@ -60,14 +61,15 @@ public class CassandraConnection
 		if (!StringUtils.isEmpty(settings.getUsername()))
 			sessionBuilder = sessionBuilder.withAuthCredentials(settings.getUsername(), settings.getPassword());
 		session = sessionBuilder.build();
-		started = new Date();
+		started = Instant.now();
+		stopped = null;
 	}
 
 	public void stop() throws Exception
 	{
 		if (session != null)
 			session.close();
-		stopped = new Date();
+		stopped = Instant.now();
 	}
 	
 	
@@ -76,25 +78,24 @@ public class CassandraConnection
 		return settings;
 	}
 	
-	public void setSettings(CassandraConnectionSettings settings)
-	{
-		this.settings = settings;
-	}
-	
-	
 	public CqlSession getSession()
 	{
 		return session;
 	}
 	
-	public Date getStarted()
+	public Instant getStarted()
 	{
 		return started;
 	}
 	
-	public Date getStopped()
+	public Instant getStopped()
 	{
 		return stopped;
+	}
+	
+	public boolean isRunning()
+	{
+		return started != null && stopped == null;
 	}
 	
 	

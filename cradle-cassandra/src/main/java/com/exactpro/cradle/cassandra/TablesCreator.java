@@ -22,14 +22,11 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
-import com.datastax.oss.driver.api.querybuilder.schema.AlterTableAddColumnEnd;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
-import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
@@ -38,12 +35,15 @@ public class TablesCreator
 {
 	private static final Logger logger = LoggerFactory.getLogger(TablesCreator.class);
 	
+	private final String keyspace;
 	private final QueryExecutor exec;
-	private KeyspaceMetadata keyspaceMetadata;
 	private final CassandraStorageSettings settings;
 	
-	public TablesCreator(QueryExecutor exec, CassandraStorageSettings settings)
+	private KeyspaceMetadata keyspaceMetadata;
+	
+	public TablesCreator(String keyspace, QueryExecutor exec, CassandraStorageSettings settings)
 	{
+		this.keyspace = keyspace;
 		this.exec = exec;
 		this.settings = settings;
 	}
@@ -51,289 +51,136 @@ public class TablesCreator
 	public void createAll() throws IOException
 	{
 		createKeyspace();
-		createInstancesTable();
+		createPagesTable();
 		createMessagesTable();
-		createProcessedMessagesTable();
-		createTimeMessagesTable();
+		createSessionsTable();
 		createTestEventsTable();
-		createTimeTestEventsTable();
-		createRootTestEventsTable();
-		createTestEventsChildrenTable();
-		createTestEventsChildrenDatesTable();
-		createTestEventsMessagesTable();
-		createMessagesTestEventsTable();
+		createTestEventsDatesTable();
+		createLabelsTable();
 		createIntervalsTable();
 	}
 	
 	public void createKeyspace()
 	{
-		Optional<KeyspaceMetadata> keyspaceExists = getKeyspaceMetadata();
-		if (!keyspaceExists.isPresent())
+		Optional<KeyspaceMetadata> meta = obtainKeyspaceMetadata();
+		if (!meta.isPresent())
 		{
 			CreateKeyspace createKs = settings.getNetworkTopologyStrategy() != null 
-					? SchemaBuilder.createKeyspace(settings.getKeyspace()).withNetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap()) 
-					: SchemaBuilder.createKeyspace(settings.getKeyspace()).withSimpleStrategy(settings.getKeyspaceReplicationFactor());
+					? SchemaBuilder.createKeyspace(keyspace).withNetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap()) 
+					: SchemaBuilder.createKeyspace(keyspace).withSimpleStrategy(settings.getKeyspaceReplicationFactor());
 			exec.getSession().execute(createKs.build());
-			logger.info("Keyspace '{}' has been created", settings.getKeyspace());
-			this.keyspaceMetadata = getKeyspaceMetadata().get();
+			logger.info("Keyspace '{}' has been created", keyspace);
+			this.keyspaceMetadata = obtainKeyspaceMetadata().get();  //FIXME: keyspace creation may take etime and won't be available immediately
 		}
 		else
-			this.keyspaceMetadata = keyspaceExists.get();
+			this.keyspaceMetadata = meta.get();
 	}
 
-	public void createInstancesTable() throws IOException
+	public void createPagesTable() throws IOException
 	{
-		String tableName = CassandraStorageSettings.INSTANCES_TABLE_DEFAULT_NAME;
-		if (isTableExists(tableName))
-			return;
-		
-		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(NAME, DataTypes.TEXT)  //Name is a key for faster ID obtaining by name
-				.withColumn(ID, DataTypes.UUID);
-		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
+		String tableName = settings.getPagesTable();
+		createTable(tableName, SchemaBuilder.createTable(keyspace, tableName).ifNotExists()
+				.withPartitionKey(BOOK, DataTypes.TEXT)
+				.withClusteringColumn(PAGE, DataTypes.TEXT)
+				.withColumn(START_DATE, DataTypes.DATE)
+				.withColumn(START_TIME, DataTypes.TIME)
+				.withColumn(END_DATE, DataTypes.DATE)
+				.withColumn(END_TIME, DataTypes.TIME));
 	}
 	
 	public void createMessagesTable() throws IOException
 	{
-		createMessagesTable(settings.getMessagesTableName());
-	}
-	
-	public void createProcessedMessagesTable() throws IOException
-	{
-		createMessagesTable(settings.getProcessedMessagesTableName());
-	}
-	
-	public void createTimeMessagesTable() throws IOException
-	{
-		String tableName = settings.getTimeMessagesTableName();
-		if (isTableExists(tableName))
-			return;
-		
-		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(STREAM_NAME, DataTypes.TEXT)
-				.withPartitionKey(DIRECTION, DataTypes.TEXT)
+		String tableName = settings.getMessagesTable();
+		createTable(tableName, SchemaBuilder.createTable(keyspace, tableName).ifNotExists()
+				.withPartitionKey(PAGE, DataTypes.TEXT)
 				.withPartitionKey(MESSAGE_DATE, DataTypes.DATE)
+				.withPartitionKey(SESSION_ALIAS, DataTypes.TEXT)
+				.withPartitionKey(DIRECTION, DataTypes.TEXT)
+				.withPartitionKey(PART, DataTypes.TEXT)
+				
 				.withClusteringColumn(MESSAGE_TIME, DataTypes.TIME)
-				.withClusteringColumn(MESSAGE_INDEX, DataTypes.BIGINT)
-				.withClusteringOrder(MESSAGE_TIME, ClusteringOrder.ASC)
-				.withClusteringOrder(MESSAGE_INDEX, ClusteringOrder.ASC);
-		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
-	}
-	
-
-	public void createTestEventsTable() throws IOException
-	{
-		String tableName = settings.getTestEventsTableName();
-		if (isTableExists(tableName))
-			return;
-		
-		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(ID, DataTypes.TEXT)
-				.withColumn(NAME, DataTypes.TEXT)
-				.withColumn(TYPE, DataTypes.TEXT)
-				.withColumn(ROOT, DataTypes.BOOLEAN)
-				.withColumn(PARENT_ID, DataTypes.TEXT)
-				.withColumn(EVENT_BATCH, DataTypes.BOOLEAN)
+				.withClusteringColumn(SEQUENCE, DataTypes.BIGINT)
+				.withClusteringColumn(CHUNK, DataTypes.INT)
+				
 				.withColumn(STORED_DATE, DataTypes.DATE)
 				.withColumn(STORED_TIME, DataTypes.TIME)
-				.withColumn(START_DATE, DataTypes.DATE)
-				.withColumn(START_TIME, DataTypes.TIME)
-				.withColumn(END_DATE, DataTypes.DATE)
-				.withColumn(END_TIME, DataTypes.TIME)
-				.withColumn(SUCCESS, DataTypes.BOOLEAN)
-				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
-				.withColumn(CONTENT, DataTypes.BLOB)
-				.withColumn(EVENT_COUNT, DataTypes.INT);
-		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
-	}
-	
-	public void createTimeTestEventsTable() throws IOException
-	{
-		String tableName = settings.getTimeTestEventsTableName();
-		if (isTableExists(tableName))
-		{
-			if (!isColumnExists(tableName, EVENT_BATCH_METADATA))
-			{
-				AlterTableAddColumnEnd alter = SchemaBuilder.alterTable(settings.getKeyspace(), tableName).addColumn(EVENT_BATCH_METADATA, DataTypes.BLOB);
-				exec.executeQuery(alter.asCql(), true);
-				logger.info("Table '{}' has been altered with column '{}'", tableName, EVENT_BATCH_METADATA);
-			}
-			return;
-		}
-		
-		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(START_DATE, DataTypes.DATE)
-				.withClusteringColumn(START_TIME, DataTypes.TIME)
-				.withClusteringColumn(ID, DataTypes.TEXT)
-				.withColumn(ROOT, DataTypes.BOOLEAN)
-				.withColumn(NAME, DataTypes.TEXT)
-				.withColumn(TYPE, DataTypes.TEXT)
-				.withColumn(PARENT_ID, DataTypes.TEXT)
-				.withColumn(EVENT_BATCH, DataTypes.BOOLEAN)
-				.withColumn(END_DATE, DataTypes.DATE)
-				.withColumn(END_TIME, DataTypes.TIME)
-				.withColumn(SUCCESS, DataTypes.BOOLEAN)
-				.withColumn(EVENT_COUNT, DataTypes.INT)
-				.withColumn(EVENT_BATCH_METADATA, DataTypes.BLOB)
-				.withClusteringOrder(START_TIME, ClusteringOrder.ASC)
-				.withClusteringOrder(ID, ClusteringOrder.ASC);
-		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
-	}
-	
-	public void createRootTestEventsTable() throws IOException
-	{
-		String tableName = settings.getRootTestEventsTableName();
-		if (isTableExists(tableName))
-			return;
-		
-		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(START_DATE, DataTypes.DATE)
-				.withClusteringColumn(START_TIME, DataTypes.TIME)
-				.withClusteringColumn(ID, DataTypes.TEXT)
-				.withColumn(NAME, DataTypes.TEXT)
-				.withColumn(TYPE, DataTypes.TEXT)
-				.withColumn(EVENT_BATCH, DataTypes.BOOLEAN)
-				.withColumn(END_DATE, DataTypes.DATE)
-				.withColumn(END_TIME, DataTypes.TIME)
-				.withColumn(SUCCESS, DataTypes.BOOLEAN)
-				.withColumn(EVENT_COUNT, DataTypes.INT)
-				.withClusteringOrder(START_TIME, ClusteringOrder.ASC)
-				.withClusteringOrder(ID, ClusteringOrder.ASC);
-		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
-	}
-	
-	public void createTestEventsChildrenTable() throws IOException
-	{
-		String tableName = settings.getTestEventsChildrenTableName();
-		if (isTableExists(tableName))
-		{
-			if (!isColumnExists(tableName, EVENT_BATCH_METADATA))
-			{
-				AlterTableAddColumnEnd alter = SchemaBuilder.alterTable(settings.getKeyspace(), tableName).addColumn(EVENT_BATCH_METADATA, DataTypes.BLOB);
-				exec.executeQuery(alter.asCql(), true);
-				logger.info("Table '{}' has been altered with column '{}'", tableName, EVENT_BATCH_METADATA);
-			}
-			return;
-		}
-		
-		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(PARENT_ID, DataTypes.TEXT)
-				.withPartitionKey(START_DATE, DataTypes.DATE)
-				.withClusteringColumn(START_TIME, DataTypes.TIME)
-				.withClusteringColumn(ID, DataTypes.TEXT)
-				.withColumn(ROOT, DataTypes.BOOLEAN)
-				.withColumn(NAME, DataTypes.TEXT)
-				.withColumn(TYPE, DataTypes.TEXT)
-				.withColumn(EVENT_BATCH, DataTypes.BOOLEAN)
-				.withColumn(END_DATE, DataTypes.DATE)
-				.withColumn(END_TIME, DataTypes.TIME)
-				.withColumn(SUCCESS, DataTypes.BOOLEAN)
-				.withColumn(EVENT_COUNT, DataTypes.INT)
-				.withColumn(EVENT_BATCH_METADATA, DataTypes.BLOB)
-				.withClusteringOrder(START_TIME, ClusteringOrder.ASC)
-				.withClusteringOrder(ID, ClusteringOrder.ASC);
-		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
-	}
-	
-	public void createTestEventsChildrenDatesTable() throws IOException
-	{
-		String tableName = settings.getTestEventsChildrenDatesTableName();
-		if (isTableExists(tableName))
-			return;
-		
-		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(PARENT_ID, DataTypes.TEXT)
-				.withClusteringColumn(START_DATE, DataTypes.DATE)
-				.withClusteringOrder(START_DATE, ClusteringOrder.ASC);
-		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
-	}
-	
-	public void createTestEventsMessagesTable() throws IOException
-	{
-		String tableName = settings.getTestEventsMessagesTableName();
-		if (isTableExists(tableName))
-			return;
-		
-		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(TEST_EVENT_ID, DataTypes.TEXT)
-				.withClusteringColumn(MESSAGE_IDS, DataTypes.frozenSetOf(DataTypes.TEXT));
-		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
-	}
-	
-	public void createMessagesTestEventsTable() throws IOException
-	{
-		String tableName = settings.getMessagesTestEventsTableName();
-		if (isTableExists(tableName))
-			return;
-		
-		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(MESSAGE_ID, DataTypes.TEXT)
-				.withClusteringColumn(TEST_EVENT_ID, DataTypes.TEXT)
-				.withColumn(BATCH_ID, DataTypes.TEXT);
-		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
-	}
-	
-	protected void createMessagesTable(String name) throws IOException
-	{
-		if (isTableExists(name))
-			return;
-		
-		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), name).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(STREAM_NAME, DataTypes.TEXT)
-				.withClusteringColumn(DIRECTION, DataTypes.TEXT)
-				.withClusteringColumn(MESSAGE_INDEX, DataTypes.BIGINT)
-				.withColumn(STORED_DATE, DataTypes.DATE)
-				.withColumn(STORED_TIME, DataTypes.TIME)
-				.withColumn(FIRST_MESSAGE_DATE, DataTypes.DATE)
-				.withColumn(FIRST_MESSAGE_TIME, DataTypes.TIME)
 				.withColumn(LAST_MESSAGE_DATE, DataTypes.DATE)
 				.withColumn(LAST_MESSAGE_TIME, DataTypes.TIME)
-				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
-				.withColumn(CONTENT, DataTypes.BLOB)
+				.withColumn(LAST_SEQUENCE, DataTypes.BIGINT)
 				.withColumn(MESSAGE_COUNT, DataTypes.INT)
-				.withColumn(LAST_MESSAGE_INDEX, DataTypes.BIGINT)
-				.withClusteringOrder(DIRECTION, ClusteringOrder.ASC)
-				.withClusteringOrder(MESSAGE_INDEX, ClusteringOrder.ASC);
-		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", name);
+				.withColumn(LAST_CHUNK, DataTypes.BOOLEAN)
+				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
+				.withColumn(LABELS, DataTypes.setOf(DataTypes.TEXT))
+				.withColumn(CONTENT, DataTypes.BLOB));
 	}
-
+	
+	public void createSessionsTable() throws IOException
+	{
+		String tableName = settings.getSessionsTable();
+		createTable(tableName, SchemaBuilder.createTable(keyspace, tableName).ifNotExists()
+				.withPartitionKey(PAGE, DataTypes.TEXT)
+				.withPartitionKey(MESSAGE_DATE, DataTypes.DATE)
+				
+				.withClusteringColumn(SESSION_ALIAS, DataTypes.TEXT)
+				.withClusteringColumn(DIRECTION, DataTypes.TEXT)
+				.withClusteringColumn(PART, DataTypes.TEXT));
+	}
+	
+	public void createTestEventsTable() throws IOException
+	{
+		String tableName = settings.getTestEventsTable();
+		createTable(tableName, SchemaBuilder.createTable(keyspace, tableName).ifNotExists()
+				.withPartitionKey(PAGE, DataTypes.TEXT)
+				.withPartitionKey(SCOPE, DataTypes.TEXT)
+				.withPartitionKey(START_DATE, DataTypes.DATE)
+				.withPartitionKey(PART, DataTypes.TEXT)
+				
+				.withClusteringColumn(START_TIME, DataTypes.TIME)
+				.withClusteringColumn(ID, DataTypes.TEXT)
+				.withClusteringColumn(CHUNK, DataTypes.INT)
+				
+				.withColumn(NAME, DataTypes.TEXT)
+				.withColumn(TYPE, DataTypes.TEXT)
+				.withColumn(SUCCESS, DataTypes.BOOLEAN)
+				.withColumn(ROOT, DataTypes.BOOLEAN)
+				.withColumn(PARENT_ID, DataTypes.TEXT)
+				.withColumn(EVENT_BATCH, DataTypes.BOOLEAN)
+				.withColumn(EVENT_COUNT, DataTypes.INT)
+				.withColumn(STORED_DATE, DataTypes.DATE)
+				.withColumn(STORED_TIME, DataTypes.TIME)
+				.withColumn(END_DATE, DataTypes.DATE)
+				.withColumn(END_TIME, DataTypes.TIME)
+				.withColumn(LAST_CHUNK, DataTypes.BOOLEAN)
+				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
+        .withColumn(MESSAGES, DataTypes.setOf(DataTypes.TEXT))
+        .withColumn(MESSAGES_PAGE, DataTypes.TEXT)
+        .withColumn(LABELS, DataTypes.setOf(DataTypes.TEXT))
+				.withColumn(CONTENT, DataTypes.BLOB));
+	}
+	
+	public void createTestEventsDatesTable() throws IOException
+	{
+		String tableName = settings.getTestEventsDatesTable();
+		createTable(tableName, SchemaBuilder.createTable(keyspace, tableName).ifNotExists()
+				.withPartitionKey(PAGE, DataTypes.TEXT)
+				.withPartitionKey(SCOPE, DataTypes.TEXT)
+				.withPartitionKey(START_DATE, DataTypes.DATE)
+				.withClusteringColumn(PART, DataTypes.TEXT));
+	}
+	
+	public void createLabelsTable() throws IOException
+	{
+		String tableName = settings.getLabelsTable();
+		createTable(tableName, SchemaBuilder.createTable(keyspace, tableName).ifNotExists()
+				.withPartitionKey(BOOK, DataTypes.TEXT)
+				.withClusteringColumn(NAME, DataTypes.TEXT));
+	}
+	
 	public void createIntervalsTable() throws IOException
 	{
-		String tableName = settings.getIntervalsTableName();
-		if (isTableExists(tableName))
-			return;
-
-		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+		String tableName = settings.getIntervalsTable();
+		createTable(tableName, SchemaBuilder.createTable(keyspace, tableName).ifNotExists()
+				.withPartitionKey(PAGE, DataTypes.TEXT)
 				.withPartitionKey(INTERVAL_START_DATE, DataTypes.DATE)
 				.withClusteringColumn(CRAWLER_NAME, DataTypes.TEXT)
 				.withClusteringColumn(CRAWLER_VERSION, DataTypes.TEXT)
@@ -344,25 +191,42 @@ public class TablesCreator
 				.withColumn(INTERVAL_LAST_UPDATE_DATE, DataTypes.DATE)
 				.withColumn(INTERVAL_LAST_UPDATE_TIME, DataTypes.TIME)
 				.withColumn(RECOVERY_STATE_JSON, DataTypes.TEXT)
-				.withColumn(INTERVAL_PROCESSED, DataTypes.BOOLEAN);
-
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
+				.withColumn(INTERVAL_PROCESSED, DataTypes.BOOLEAN));
 	}
-
 	
-	private boolean isTableExists(String tableName)
+	
+	protected boolean isTableExists(String tableName)
 	{
 		return keyspaceMetadata.getTable(tableName).isPresent();
 	}
 	
-	private Optional<KeyspaceMetadata> getKeyspaceMetadata()
+	protected KeyspaceMetadata getKeyspaceMetadata()
 	{
-		return exec.getSession().getMetadata().getKeyspace(settings.getKeyspace());
+		if (keyspaceMetadata != null)
+			return keyspaceMetadata;
+		
+		Optional<KeyspaceMetadata> metadata = obtainKeyspaceMetadata();
+		if (metadata.isPresent())
+			keyspaceMetadata = metadata.get();
+		return keyspaceMetadata;
 	}
 	
-	private boolean isColumnExists(String tableName, String columnName)
+	private Optional<KeyspaceMetadata> obtainKeyspaceMetadata()
 	{
-		return keyspaceMetadata.getTable(tableName).get().getColumn(EVENT_BATCH_METADATA).isPresent();
+		return exec.getSession().getMetadata().getKeyspace(keyspace);
+	}
+	
+	protected boolean isColumnExists(String tableName, String columnName)
+	{
+		return keyspaceMetadata.getTable(tableName).get().getColumn(columnName).isPresent();
+	}
+	
+	private void createTable(String tableName, CreateTable query) throws IOException
+	{
+		if (isTableExists(tableName))
+			return;
+		
+		exec.executeQuery(query.asCql(), true);
+		logger.info("Table '{}' has been created", tableName);
 	}
 }
