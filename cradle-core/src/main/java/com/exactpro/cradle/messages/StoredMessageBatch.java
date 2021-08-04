@@ -35,8 +35,6 @@ public class StoredMessageBatch
 {
 	private static final Logger logger = LoggerFactory.getLogger(StoredMessageBatch.class);
 	
-	public static final int DEFAULT_MAX_BATCH_SIZE = 1024*1024;  //1 Mb
-	
 	private StoredMessageId id;
 	private long batchSize = 0;
 	private final List<StoredMessage> messages;
@@ -64,19 +62,19 @@ public class StoredMessageBatch
 	}
 	
 	/**
-	 * @return directions of messages in the batch
-	 */
-	public Direction getDirection()
-	{
-		return id != null ? id.getDirection() : null;
-	}
-	
-	/**
 	 * @return alias of session all messages in the batch are related to
 	 */
 	public String getSessionAlias()
 	{
 		return id != null ? id.getSessionAlias() : null;
+	}
+	
+	/**
+	 * @return directions of messages in the batch
+	 */
+	public Direction getDirection()
+	{
+		return id != null ? id.getDirection() : null;
 	}
 	
 	/**
@@ -250,7 +248,7 @@ public class StoredMessageBatch
 		Instant currentLastTimestamp = lastMsg.getTimestamp(),
 				otherFirstTimestamp = otherFirstMsg.getTimestamp();
 		if (currentLastTimestamp.isAfter(otherFirstTimestamp))
-			throw new CradleStorageException(String.format("Batches are not ordered. Current last timestamp: %d; Other first timestamp: %d", 
+			throw new CradleStorageException(String.format("Batches are not ordered. Current last timestamp: %s; Other first timestamp: %s", 
 					currentLastTimestamp, otherFirstTimestamp));
 		
 		long currentLastIndex = lastMsg.getSequence();
