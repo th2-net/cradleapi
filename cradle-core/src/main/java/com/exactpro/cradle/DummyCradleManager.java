@@ -21,8 +21,13 @@ package com.exactpro.cradle;
  */
 public class DummyCradleManager extends CradleManager
 {
+	public DummyCradleManager(boolean prepareStorage)
+	{
+		super(prepareStorage);
+	}
+
 	@Override
-	protected CradleStorage createStorage(String book)
+	protected CradleStorage createStorage(String book, boolean prepareStorage)
 	{
 		return new DummyCradleStorage(book);
 	}

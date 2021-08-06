@@ -50,9 +50,10 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     private final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs, readAttrs;
     private final IntervalOperator intervalOperator;
 
-    public CassandraIntervalsWorker(CassandraSemaphore semaphore, UUID instanceUuid, Function<BoundStatementBuilder,
-            BoundStatementBuilder> writeAttrs, Function<BoundStatementBuilder,
-            BoundStatementBuilder> readAttrs, IntervalOperator intervalOperator)
+    public CassandraIntervalsWorker(CassandraSemaphore semaphore, UUID instanceUuid, 
+        Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs, 
+        Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs, 
+        IntervalOperator intervalOperator)
     {
         this.semaphore = semaphore;
         this.instanceUuid = instanceUuid;

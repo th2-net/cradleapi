@@ -25,7 +25,7 @@ import com.exactpro.cradle.utils.CradleIdException;
 
 /**
  * Holds ID of a message stored in Cradle.
- * All messages have sequenced index, scoped by timestamp, direction and session related to the message.
+ * All messages have sequence number, scoped by direction and session the message is related to.
  * Message sequence in conjunction with session alias, direction of the message and its timestamp form the message ID
  */
 public class StoredMessageId implements Serializable

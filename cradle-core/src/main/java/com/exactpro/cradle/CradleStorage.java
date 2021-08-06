@@ -17,7 +17,6 @@
 package com.exactpro.cradle;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -32,6 +31,7 @@ import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
+import com.exactpro.cradle.testevents.StoredTestEventFilter;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
@@ -53,6 +53,10 @@ public abstract class CradleStorage
 		this.book = book;
 	}
 	
+	/**
+	 * @return currently active page of the book the storage is bound to
+	 */
+	public abstract PageInfo getCurrentPage();
 	
 	protected abstract void doDispose() throws CradleStorageException;
 	
@@ -69,35 +73,25 @@ public abstract class CradleStorage
 	protected abstract CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEvent event, boolean success);
 	
 	
-	protected abstract StoredMessage doGetMessage(StoredMessageId id) throws IOException;
-	protected abstract CompletableFuture<StoredMessage> doGetMessageAsync(StoredMessageId id);
-	protected abstract Collection<StoredMessage> doGetMessageBatch(StoredMessageId id) throws IOException;
-	protected abstract CompletableFuture<Collection<StoredMessage>> doGetMessageBatchAsync(StoredMessageId id);
+	protected abstract StoredMessage doGetMessage(StoredMessageId id, PageId pageId) throws IOException;
+	protected abstract CompletableFuture<StoredMessage> doGetMessageAsync(StoredMessageId id, PageId pageId);
+	protected abstract Collection<StoredMessage> doGetMessageBatch(StoredMessageId id, PageId pageId) throws IOException;
+	protected abstract CompletableFuture<Collection<StoredMessage>> doGetMessageBatchAsync(StoredMessageId id, PageId pageId);
 	
 	protected abstract Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException;
 	protected abstract CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter);
 	protected abstract Iterable<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException;
 	protected abstract CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter);
 	
-	protected abstract long doGetLastMessageIndex(String streamName, Direction direction) throws IOException;
-	protected abstract Collection<String> doGetStreams() throws IOException;
+	protected abstract long doGetLastSequence(String sessionAlias, Direction direction, PageId pageId) throws IOException;
+	protected abstract Collection<String> doGetSessionAliases(PageId pageId) throws IOException;
 	
 	
-	protected abstract StoredTestEvent doGetTestEvent(StoredTestEventId id) throws IOException;
-	protected abstract CompletableFuture<StoredTestEvent> doGetTestEventAsync(StoredTestEventId ids);
+	protected abstract StoredTestEvent doGetTestEvent(StoredTestEventId id, PageId pageId) throws IOException;
+	protected abstract CompletableFuture<StoredTestEvent> doGetTestEventAsync(StoredTestEventId ids, PageId pageId);
 	
-	protected abstract Iterable<StoredTestEvent> doGetRootTestEvents(Instant from, Instant to, Order order) 
-			throws CradleStorageException, IOException;
-	protected abstract CompletableFuture<Iterable<StoredTestEvent>> doGetRootTestEventsAsync(Instant from, Instant to, Order order)
-			throws CradleStorageException;
-	protected abstract Iterable<StoredTestEvent> doGetTestEvents(StoredTestEventId parentId, Instant from, Instant to, Order order) 
-			throws CradleStorageException, IOException;
-	protected abstract CompletableFuture<Iterable<StoredTestEvent>> doGetTestEventsAsync(StoredTestEventId parentId, 
-			Instant from, Instant to, Order order) throws CradleStorageException;
-	protected abstract Iterable<StoredTestEvent> doGetTestEvents(Instant from, Instant to, Order order) 
-			throws CradleStorageException, IOException;
-	protected abstract CompletableFuture<Iterable<StoredTestEvent>> doGetTestEventsAsync(Instant from, Instant to, Order order)
-			throws CradleStorageException;
+	protected abstract Iterable<StoredTestEvent> doGetTestEvents(StoredTestEventFilter filter) throws CradleStorageException, IOException;
+	protected abstract CompletableFuture<Iterable<StoredTestEvent>> doGetTestEventsAsync(StoredTestEventFilter filter) throws CradleStorageException, IOException;
 	
 	
 	/**
@@ -138,7 +132,7 @@ public abstract class CradleStorage
 	
 	
 	/**
-	 * Writes data about given message batch to storage.
+	 * Writes data about given message batch to current page
 	 * @param batch data to write
 	 * @throws IOException if data writing failed
 	 */
@@ -151,7 +145,7 @@ public abstract class CradleStorage
 	
 	
 	/**
-	 * Asynchronously writes data about given message batch to storage.
+	 * Asynchronously writes data about given message batch to current page
 	 * @param batch data to write
 	 * @return future to get know if storing was successful
 	 */
@@ -169,7 +163,7 @@ public abstract class CradleStorage
 	
 	
 	/**
-	 * Writes data about given test event to storage
+	 * Writes data about given test event to current page
 	 * @param event data to write
 	 * @throws IOException if data writing failed
 	 */
@@ -195,7 +189,7 @@ public abstract class CradleStorage
 	}
 	
 	/**
-	 * Asynchronously writes data about given test event to storage
+	 * Asynchronously writes data about given test event to current page
 	 * @param event data to write
 	 * @throws IOException if data is invalid
 	 * @return future to get know if storing was successful
@@ -233,122 +227,121 @@ public abstract class CradleStorage
 				});
 		return CompletableFuture.allOf(result1, result2);
 	}
-
+	
+	
 	/**
-	 * Retrieves message data stored under given ID
+	 * Retrieves message data stored under given ID in given page
+	 * @param id of stored message to retrieve
+	 * @param pageId to get message from
+	 * @return data of stored message
+	 * @throws IOException if message data retrieval failed
+	 */
+	public final StoredMessage getMessage(StoredMessageId id, PageId pageId) throws IOException
+	{
+		logger.debug("Getting message {} from page {}", id, pageId);
+		StoredMessage result = doGetMessage(id, pageId);
+		logger.debug("Message {} from page {} got", id, pageId);
+		return result;
+	}
+	
+	/**
+	 * Retrieves message data stored under given ID in current page
 	 * @param id of stored message to retrieve
 	 * @return data of stored message
 	 * @throws IOException if message data retrieval failed
 	 */
 	public final StoredMessage getMessage(StoredMessageId id) throws IOException
 	{
-		logger.debug("Getting message {}", id);
-		StoredMessage result = doGetMessage(id);
-		logger.debug("Message {} got", id);
-		return result;
+		return getMessage(id, getCurrentPage().getId());
 	}
 	
 	/**
-	 * Asynchronously retrieves message data stored under given ID
+	 * Asynchronously retrieves message data stored under given ID in given page
+	 * @param id of stored message to retrieve
+	 * @param pageId to get message from
+	 * @return future to obtain data of stored message
+	 */
+	public final CompletableFuture<StoredMessage> getMessageAsync(StoredMessageId id, PageId pageId)
+	{
+		logger.debug("Getting message {} from page {} asynchronously", id, pageId);
+		return doGetMessageAsync(id, pageId)
+				.whenComplete((r, error) -> {
+					if (error != null)
+						logger.error("Error while getting message "+id+" from page "+pageId+" asynchronously", error);
+					else
+						logger.debug("Message {} from page {} got asynchronously", id, pageId);
+				});
+	}
+	
+	/**
+	 * Asynchronously retrieves message data stored under given ID in current page
 	 * @param id of stored message to retrieve
 	 * @return future to obtain data of stored message
 	 */
 	public final CompletableFuture<StoredMessage> getMessageAsync(StoredMessageId id)
 	{
-		logger.debug("Getting message {} asynchronously", id);
-		return doGetMessageAsync(id)
-				.whenComplete((r, error) -> {
-					if (error != null)
-						logger.error("Error while getting message "+id+" asynchronously", error);
-					else
-						logger.debug("Message {} got asynchronously", id);
-				});
+		return getMessageAsync(id, getCurrentPage().getId());
+	}
+	
+	
+	/**
+	 * Retrieves from given page the batch of messages where message with given ID is stored
+	 * @param id of stored message whose batch to retrieve
+	 * @param pageId to get batch from
+	 * @return collection with messages stored in batch
+	 * @throws IOException if batch data retrieval failed
+	 */
+	public final Collection<StoredMessage> getMessageBatch(StoredMessageId id, PageId pageId) throws IOException
+	{
+		logger.debug("Getting message batch by message ID {} from page {}", id, pageId);
+		Collection<StoredMessage> result = doGetMessageBatch(id, pageId);
+		logger.debug("Message batch by message ID {} from page {} got", id, pageId);
+		return result;
 	}
 	
 	/**
-	 * Retrieves batch of messages where message with given ID is stored
+	 * Retrieves from current page the batch of messages where message with given ID is stored
 	 * @param id of stored message whose batch to retrieve
 	 * @return collection with messages stored in batch
 	 * @throws IOException if batch data retrieval failed
 	 */
 	public final Collection<StoredMessage> getMessageBatch(StoredMessageId id) throws IOException
 	{
-		logger.debug("Getting message batch by message ID {}", id);
-		Collection<StoredMessage> result = doGetMessageBatch(id);
-		logger.debug("Message batch by message ID {} got", id);
-		return result;
+		return getMessageBatch(id, getCurrentPage().getId());
 	}
 	
 	/**
-	 * Asynchronously retrieves batch of messages where message with given ID is stored
+	 * Asynchronously retrieves from given page the batch of messages where message with given ID is stored
+	 * @param id of stored message whose batch to retrieve
+	 * @param pageId to get batch from
+	 * @return future to obtain collection with messages stored in batch
+	 */
+	public final CompletableFuture<Collection<StoredMessage>> getMessageBatchAsync(StoredMessageId id, PageId pageId)
+	{
+		logger.debug("Getting message batch by message ID {} from page {} asynchronously", id, pageId);
+		return doGetMessageBatchAsync(id, pageId)
+				.whenComplete((r, error) -> {
+					if (error != null)
+						logger.error("Error while getting message batch by message ID "+id+" from page "+pageId+" asynchronously", error);
+					else
+						logger.debug("Message batch by message ID {} from page {} got asynchronously", id, pageId);
+				});
+	}
+	
+	/**
+	 * Asynchronously retrieves from current page the batch of messages where message with given ID is stored
 	 * @param id of stored message whose batch to retrieve
 	 * @return future to obtain collection with messages stored in batch
 	 */
 	public final CompletableFuture<Collection<StoredMessage>> getMessageBatchAsync(StoredMessageId id)
 	{
-		logger.debug("Getting message batch by message ID {} asynchronously", id);
-		return doGetMessageBatchAsync(id)
-				.whenComplete((r, error) -> {
-					if (error != null)
-						logger.error("Error while getting message batch by message ID "+id+" asynchronously", error);
-					else
-						logger.debug("Message batch by message ID {} got asynchronously", id);
-				});
-	}
-	
-	/**
-	 * Retrieves last stored message index for given stream and direction. Use result of this method to continue sequence of message indices.
-	 * Indices are scoped by stream and direction, so both arguments are required 
-	 * @param streamName to get message index for 
-	 * @param direction to get message index for
-	 * @return last stored message index for given arguments, if it is present, -1 otherwise
-	 * @throws IOException if index retrieval failed
-	 */
-	public final long getLastMessageIndex(String streamName, Direction direction) throws IOException
-	{
-		logger.debug("Getting last stored message index for stream '{}' and direction '{}'", streamName, direction.getLabel());
-		long result = doGetLastMessageIndex(streamName, direction);
-		logger.debug("Message index {} got", result);
-		return result;
+		return getMessageBatchAsync(id, getCurrentPage().getId());
 	}
 	
 	
 	/**
-	 * Retrieves test event data stored under given ID
-	 * @param id of stored test event to retrieve
-	 * @return data of stored test event
-	 * @throws IOException if test event data retrieval failed
-	 */
-	public final StoredTestEvent getTestEvent(StoredTestEventId id) throws IOException
-	{
-		logger.debug("Getting test event {}", id);
-		StoredTestEvent result = doGetTestEvent(id);
-		logger.debug("Test event {} got", id);
-		return result;
-	}
-	
-	/**
-	 * Asynchronously retrieves test event data stored under given ID
-	 * @param id of stored test event to retrieve
-	 * @return future to obtain data of stored test event
-	 */
-	public final CompletableFuture<StoredTestEvent> getTestEventAsync(StoredTestEventId id)
-	{
-		logger.debug("Getting test event {} asynchronously", id);
-		
-		CompletableFuture<StoredTestEvent> result = doGetTestEventAsync(id)
-				.whenComplete((r, error) -> {
-					if (error != null)
-						logger.error("Error while getting test event "+id+" asynchronously", error);
-					else
-						logger.debug("Test event {} got asynchronously", id);
-				});
-		return result;
-	}
-
-	/**
-	 * Allows to enumerate stored messages, optionally filtering them by given conditions
-	 * @param filter defines conditions to filter messages by. Use null if no filtering is needed
+	 * Allows to enumerate stored messages filtering them by given conditions
+	 * @param filter defines conditions to filter messages by
 	 * @return iterable object to enumerate messages
 	 * @throws IOException if data retrieval failed
 	 */
@@ -359,27 +352,10 @@ public abstract class CradleStorage
 		logger.debug("Prepared iterator for messages filtered by {}", filter);
 		return result;
 	}
-
-
-	/**
-	 * Allows to enumerate stored message batches, optionally filtering them by given conditions
-	 * @param filter defines conditions to filter message batches by. Use null if no filtering is needed
-	 * @return iterable object to enumerate message batches
-	 * @throws IOException if data retrieval failed
-	 */
-	public final Iterable<StoredMessageBatch> getMessagesBatches(StoredMessageFilter filter) throws IOException
-	{
-		logger.debug("Filtering message batches by {}", filter);
-		Iterable<StoredMessageBatch> result = doGetMessagesBatches(filter);
-		logger.debug("Prepared iterator for message batches filtered by {}", filter);
-		return result;
-	}
-
 	
 	/**
-	 * Allows to asynchronously obtain iterable object to enumerate stored messages, 
-	 * optionally filtering them by given conditions
-	 * @param filter defines conditions to filter messages by. Use null if no filtering is needed
+	 * Allows to asynchronously obtain iterable object to enumerate stored messages filtering them by given conditions
+	 * @param filter defines conditions to filter messages by
 	 * @return future to obtain iterable object to enumerate messages
 	 */
 	public final CompletableFuture<Iterable<StoredMessage>> getMessagesAsync(StoredMessageFilter filter)
@@ -394,11 +370,25 @@ public abstract class CradleStorage
 				});
 		return result;
 	}
-
+	
+	
 	/**
-	 * Allows to asynchronously obtain iterable object to enumerate stored message batches,
-	 * optionally filtering them by given conditions
-	 * @param filter defines conditions to filter message batches by. Use null if no filtering is needed
+	 * Allows to enumerate stored message batches filtering them by given conditions
+	 * @param filter defines conditions to filter message batches by
+	 * @return iterable object to enumerate message batches
+	 * @throws IOException if data retrieval failed
+	 */
+	public final Iterable<StoredMessageBatch> getMessagesBatches(StoredMessageFilter filter) throws IOException
+	{
+		logger.debug("Filtering message batches by {}", filter);
+		Iterable<StoredMessageBatch> result = doGetMessagesBatches(filter);
+		logger.debug("Prepared iterator for message batches filtered by {}", filter);
+		return result;
+	}
+	
+	/**
+	 * Allows to asynchronously obtain iterable object to enumerate stored message batches filtering them by given conditions
+	 * @param filter defines conditions to filter message batches by
 	 * @return future to obtain iterable object to enumerate message batches
 	 */
 	public final CompletableFuture<Iterable<StoredMessageBatch>> getMessagesBatchesAsync(StoredMessageFilter filter)
@@ -414,259 +404,154 @@ public abstract class CradleStorage
 
 		return result;
 	}
-
+	
+	
 	/**
-	 * Allows to enumerate root test events started in given range of timestamps in direct order. 
-	 * Both boundaries (from and to) should be specified
-	 * @param from left boundary of timestamps range
-	 * @param to right boundary of timestamps range
-	 * @return iterable object to enumerate root test events
-	 * @throws CradleStorageException if given parameters are invalid
-	 * @throws IOException if data retrieval failed
+	 * Retrieves last stored sequence number for given session alias and direction within given page. 
+	 * Use result of this method to continue writing messages.
+	 * @param sessionAlias to get sequence number for 
+	 * @param direction to get sequence number for
+	 * @param pageId to search in
+	 * @return last stored sequence number for given arguments, if it is present, -1 otherwise
+	 * @throws IOException if retrieval failed
 	 */
-	public final Iterable<StoredTestEvent> getRootTestEvents(Instant from, Instant to) throws CradleStorageException, IOException
+	public final long getLastSequence(String sessionAlias, Direction direction, PageId pageId) throws IOException
 	{
-		return getRootTestEvents(from, to, Order.DIRECT);
-	}
-
-	/**
-	 * Allows to enumerate root test events started in given range of timestamps in specified order. 
-	 * Both boundaries (from and to) should be specified
-	 * @param from left boundary of timestamps range
-	 * @param to right boundary of timestamps range
-	 * @param order defines sorting order   
-	 * @return iterable object to enumerate root test events
-	 * @throws CradleStorageException if given parameters are invalid
-	 * @throws IOException if data retrieval failed
-	 */
-	public final Iterable<StoredTestEvent> getRootTestEvents(Instant from, Instant to, Order order) throws CradleStorageException, IOException
-	{
-		if (from == null || to == null)
-			throw new CradleStorageException("Both boundaries (from and to) should be specified");
-
-		logger.debug("Getting root test events from range {}..{} in {} order", from, to, order);
-		Iterable<StoredTestEvent> result = doGetRootTestEvents(from, to, order);
-		logger.debug("Prepared iterator for root test events from range {}..{} in {} order", from, to, order);
+		logger.debug("Getting last stored sequence number for session alias '{}' and direction '{}', page {}", sessionAlias, direction.getLabel(), pageId);
+		long result = doGetLastSequence(sessionAlias, direction, pageId);
+		logger.debug("Sequence number {} got", result);
 		return result;
 	}
 	
 	/**
-	 * Allows to asynchronously obtain iterable object to enumerate root test events started in given range of timestamps
-	 * in direct order. 
-	 * Both boundaries (from and to) should be specified
-	 * @param from left boundary of timestamps range
-	 * @param to right boundary of timestamps range
-	 * @return future to obtain iterable object to enumerate root test events
-	 * @throws CradleStorageException if given parameters are invalid
+	 * Retrieves last stored sequence number for given session alias and direction within current page. 
+	 * Use result of this method to continue writing messages.
+	 * @param sessionAlias to get sequence number for 
+	 * @param direction to get sequence number for
+	 * @return last stored sequence number for given arguments, if it is present, -1 otherwise
+	 * @throws IOException if retrieval failed
 	 */
-	public final CompletableFuture<Iterable<StoredTestEvent>> getRootTestEventsAsync(Instant from, Instant to) throws CradleStorageException
+	public final long getLastSequence(String sessionAlias, Direction direction) throws IOException
 	{
-		return getRootTestEventsAsync(from, to, Order.DIRECT);
+		return getLastSequence(sessionAlias, direction, getCurrentPage().getId());
 	}
-
-
+	
+	
 	/**
-	 * Allows to asynchronously obtain iterable object to enumerate root test events started in given range of timestamps
-	 * in specified order. 
-	 * Both boundaries (from and to) should be specified
-	 * @param from left boundary of timestamps range
-	 * @param to right boundary of timestamps range
-	 * @param order defines sorting order   
-	 * @return future to obtain iterable object to enumerate root test events
-	 * @throws CradleStorageException if given parameters are invalid
+	 * Obtains collection of session aliases whose messages are saved in given page
+	 * @param pageId to get session aliases from
+	 * @return collection of session aliases
+	 * @throws IOException if data retrieval failed
 	 */
-	public final CompletableFuture<Iterable<StoredTestEvent>> getRootTestEventsAsync(Instant from, Instant to, Order order) throws CradleStorageException
+	public final Collection<String> getSessionAliases(PageId pageId) throws IOException
 	{
-		if (from == null || to == null)
-			throw new CradleStorageException("Both boundaries (from and to) should be specified");
-
-		logger.debug("Getting root test events from range {}..{} in {} order asynchronously", from, to, order);
-
-		CompletableFuture<Iterable<StoredTestEvent>> result = doGetRootTestEventsAsync(from, to, order)
+		logger.debug("Getting session aliases");
+		Collection<String> result = doGetSessionAliases(pageId);
+		logger.debug("Session aliases got");
+		return result;
+	}
+	
+	/**
+	 * Obtains collection of session aliases whose messages are saved in current page
+	 * @return collection of session aliases
+	 * @throws IOException if data retrieval failed
+	 */
+	public final Collection<String> getSessionAliases() throws IOException
+	{
+		return getSessionAliases(getCurrentPage().getId());
+	}
+	
+	
+	/**
+	 * Retrieves test event data stored under given ID in given page
+	 * @param id of stored test event to retrieve
+	 * @param pageId to get test event from
+	 * @return data of stored test event
+	 * @throws IOException if test event data retrieval failed
+	 */
+	public final StoredTestEvent getTestEvent(StoredTestEventId id, PageId pageId) throws IOException
+	{
+		logger.debug("Getting test event {} from page {}", id, pageId);
+		StoredTestEvent result = doGetTestEvent(id, pageId);
+		logger.debug("Test event {} from page {} got", id, pageId);
+		return result;
+	}
+	
+	/**
+	 * Retrieves test event data stored under given ID in current page
+	 * @param id of stored test event to retrieve
+	 * @return data of stored test event
+	 * @throws IOException if test event data retrieval failed
+	 */
+	public final StoredTestEvent getTestEvent(StoredTestEventId id) throws IOException
+	{
+		return getTestEvent(id, getCurrentPage().getId());
+	}
+	
+	/**
+	 * Asynchronously retrieves test event data stored under given ID in given page
+	 * @param id of stored test event to retrieve
+	 * @param pageId to get test event from
+	 * @return future to obtain data of stored test event
+	 */
+	public final CompletableFuture<StoredTestEvent> getTestEventAsync(StoredTestEventId id, PageId pageId)
+	{
+		logger.debug("Getting test event {} from page {} asynchronously", id, pageId);
+		
+		CompletableFuture<StoredTestEvent> result = doGetTestEventAsync(id, pageId)
 				.whenComplete((r, error) -> {
 					if (error != null)
-						logger.error("Error while getting root test events from range "+from+".."+to+" asynchronously", error);
+						logger.error("Error while getting test event "+id+" from page "+pageId+" asynchronously", error);
 					else
-						logger.debug("Iterator for root test events from range {}..{} in {} order got asynchronously", from, to, order);
-				});
-		return result;
-	}
-
-
-	/**
-	 * Allows to enumerate children of test event with given ID that started in given range of timestamps ordered by ascending.
-	 * Both boundaries (from and to) should be specified
-	 * @param parentId ID of parent test event
-	 * @param from left boundary of timestamps range
-	 * @param to right boundary of timestamps range
-	 * @return iterable object to enumerate test events
-	 * @throws CradleStorageException if given parameters are invalid
-	 * @throws IOException if data retrieval failed
-	 */
-	public final Iterable<StoredTestEvent> getTestEvents(StoredTestEventId parentId, Instant from, Instant to) 
-			throws CradleStorageException, IOException
-	{
-		return getTestEvents(parentId, from, to, Order.DIRECT);
-	}
-
-
-	/**
-	 * Allows to enumerate children of test event with given ID that started in given range of timestamps in specified order.
-	 * Both boundaries (from and to) should be specified
-	 * @param parentId ID of parent test event
-	 * @param from left boundary of timestamps range
-	 * @param to right boundary of timestamps range
-	 * @param order defines sorting order
-	 * @return iterable object to enumerate test events
-	 * @throws CradleStorageException if given parameters are invalid
-	 * @throws IOException if data retrieval failed
-	 */
-	public final Iterable<StoredTestEvent> getTestEvents(StoredTestEventId parentId, Instant from, Instant to, Order order)
-			throws CradleStorageException, IOException
-	{
-		if (from == null || to == null)
-			throw new CradleStorageException("Both boundaries (from and to) should be specified");
-
-		logger.debug("Getting child test events of {} from range {}..{} in {} order", parentId, from, to, order);
-		Iterable<StoredTestEvent> result = doGetTestEvents(parentId, from, to, order);
-		logger.debug("Prepared iterator for child test events of {} from range {}..{} in {} order", parentId, from, to, order);
-		return result;
-	}
-
-	
-	/**
-	 * Allows to asynchronously obtain iterable object to enumerate children of test event with given ID 
-	 * that started in given range of timestamps in ascending order.
-	 * Both boundaries (from and to) should be specified
-	 * @param parentId ID of parent test event
-	 * @param from left boundary of timestamps range
-	 * @param to right boundary of timestamps range
-	 * @return future to obtain iterable object to enumerate test events
-	 * @throws CradleStorageException if given parameters are invalid
-	 */
-	public final CompletableFuture<Iterable<StoredTestEvent>> getTestEventsAsync(StoredTestEventId parentId, 
-			Instant from, Instant to) throws CradleStorageException
-	{
-		return getTestEventsAsync(parentId, from, to, Order.DIRECT);
-	}
-
-	
-	/**
-	 * Allows to asynchronously obtain iterable object to enumerate children of test event with given ID 
-	 * that started in given range of timestamps in specified order.
-	 * Both boundaries (from and to) should be specified
-	 * @param parentId ID of parent test event
-	 * @param from left boundary of timestamps range
-	 * @param to right boundary of timestamps range
-	 * @param order defines sorting order
-	 * @return future to obtain iterable object to enumerate test events
-	 * @throws CradleStorageException if given parameters are invalid
-	 */
-	public final CompletableFuture<Iterable<StoredTestEvent>> getTestEventsAsync(StoredTestEventId parentId,
-			Instant from, Instant to, Order order) throws CradleStorageException
-	{
-		if (from == null || to == null)
-			throw new CradleStorageException("Both boundaries (from and to) should be specified");
-
-		logger.debug("Getting child test events of {} from range {}..{} in {} order asynchronously", parentId, from, to, order);
-
-		CompletableFuture<Iterable<StoredTestEvent>> result = doGetTestEventsAsync(parentId, from, to, order)
-				.whenComplete((r, error) -> {
-					if (error != null)
-						logger.error("Error while getting child test events of "+parentId+" from range "+from+".."+to+" asynchronously", error);
-					else
-						logger.debug("Iterator for child test events of {} from range {}..{} in {} order got asynchronously", parentId, from, to, order);
+						logger.debug("Test event {} from page {} got asynchronously", id, pageId);
 				});
 		return result;
 	}
 	
+	/**
+	 * Asynchronously retrieves test event data stored under given ID in current page
+	 * @param id of stored test event to retrieve
+	 * @return future to obtain data of stored test event
+	 */
+	public final CompletableFuture<StoredTestEvent> getTestEventAsync(StoredTestEventId id)
+	{
+		return getTestEventAsync(id, getCurrentPage().getId());
+	}
+	
 	
 	/**
-	 * Allows to enumerate test events started in given range of timestamps in ascending order. 
-	 * Both boundaries (from and to) should be specified
-	 * @param from left boundary of timestamps range
-	 * @param to right boundary of timestamps range
+	 * Allows to enumerate test events filtering them by given conditions
+	 * @param filter defines conditions to filter test events by
 	 * @return iterable object to enumerate test events
-	 * @throws CradleStorageException if given parameters are invalid
-	 * @throws IOException if data retrieval failed
+	 * @throws CradleStorageException if provided argument is invalid
+	 * @throws IOException if data retrieval failed 
 	 */
-	public final Iterable<StoredTestEvent> getTestEvents(Instant from, Instant to) throws CradleStorageException, IOException
+	public final Iterable<StoredTestEvent> getTestEvents(StoredTestEventFilter filter) throws CradleStorageException, IOException
 	{
-		return getTestEvents(from, to, Order.DIRECT);
-	}
-
-	/**
-	 * Allows to enumerate test events started in given range of timestamps in specified order. 
-	 * Both boundaries (from and to) should be specified
-	 * @param from left boundary of timestamps range
-	 * @param to right boundary of timestamps range
-	 * @param order defines sorting order
-	 * @return iterable object to enumerate test events
-	 * @throws CradleStorageException if given parameters are invalid
-	 * @throws IOException if data retrieval failed
-	 */
-	public final Iterable<StoredTestEvent> getTestEvents(Instant from, Instant to, Order order) throws CradleStorageException, IOException
-	{
-		if (from == null || to == null)
-			throw new CradleStorageException("Both boundaries (from and to) should be specified");
-
-		logger.debug("Getting test events from range {}..{} in {} order", from, to, order);
-		Iterable<StoredTestEvent> result = doGetTestEvents(from, to, order);
-		logger.debug("Prepared iterator for test events from range {}..{} in {} order", from, to, order);
+		logger.debug("Filtering test events by {}", filter);
+		Iterable<StoredTestEvent> result = doGetTestEvents(filter);
+		logger.debug("Prepared iterator for test events filtered by {}", filter);
 		return result;
 	}
-
-
-	/**
-	 * Allows to asynchronously obtain iterable object to enumerate test events started in given range of timestamps. 
-	 * Both boundaries (from and to) should be specified
-	 * @param from left boundary of timestamps range
-	 * @param to right boundary of timestamps range
-	 * @return future to obtain iterable object to enumerate test events
-	 * @throws CradleStorageException if given parameters are invalid
-	 */
-	public final CompletableFuture<Iterable<StoredTestEvent>> getTestEventsAsync(Instant from, Instant to) throws CradleStorageException
-	{
-		return getTestEventsAsync(from, to, Order.DIRECT);
-	}
-
 	
 	/**
-	 * Allows to asynchronously obtain iterable object to enumerate test events started in given range of timestamps. 
-	 * Both boundaries (from and to) should be specified
-	 * @param from left boundary of timestamps range
-	 * @param to right boundary of timestamps range
+	 * Allows to asynchronously obtain iterable object to enumerate test events filtering them by given conditions
+	 * @param filter defines conditions to filter test events by
 	 * @return future to obtain iterable object to enumerate test events
-	 * @throws CradleStorageException if given parameters are invalid
+	 * @throws CradleStorageException if provided argument is invalid
+	 * @throws IOException if data retrieval failed
 	 */
-	public final CompletableFuture<Iterable<StoredTestEvent>> getTestEventsAsync(Instant from, Instant to, Order order) throws CradleStorageException
+	public final CompletableFuture<Iterable<StoredTestEvent>> getTestEventsAsync(StoredTestEventFilter filter) throws CradleStorageException, IOException
 	{
-		if (from == null || to == null)
-			throw new CradleStorageException("Both boundaries (from and to) should be specified");
-
-		logger.debug("Getting test events from range {}..{} in {} order asynchronously", from, to, order);
-
-		CompletableFuture<Iterable<StoredTestEvent>> result = doGetTestEventsAsync(from, to, order)
+		logger.debug("Asynchronously getting test events filtered by {}", filter);
+		CompletableFuture<Iterable<StoredTestEvent>> result = doGetTestEventsAsync(filter)
 				.whenComplete((r, error) -> {
 					if (error != null)
-						logger.error("Error while getting test events from range "+from+".."+to+" asynchronously", error);
+						logger.error("Error while getting test events filtered by "+filter+" asynchronously", error);
 					else
-						logger.debug("Iterator for test events from range {}..{} in {} order got asynchronously", from, to, order);
+						logger.debug("Iterator for test events filtered by {} got asynchronously", filter);
 				});
-		return result;
-	}
-	
-	
-	/**
-	 * Obtains collection of streams whose messages are currently saved in storage
-	 * @return collection of stream names
-	 * @throws IOException if data retrieval failed
-	 */
-	public final Collection<String> getStreams() throws IOException
-	{
-		logger.debug("Getting list of streams");
-		Collection<String> result = doGetStreams();
-		logger.debug("List of streams got");
+
 		return result;
 	}
 	

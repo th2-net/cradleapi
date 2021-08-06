@@ -22,6 +22,7 @@ import java.util.List;
 
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.Order;
+import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.filters.FilterForAny;
 import com.exactpro.cradle.filters.FilterForEquals;
 import com.exactpro.cradle.filters.FilterForGreater;
@@ -36,6 +37,7 @@ public class StoredMessageFilter
 	private FilterForAny<Long> sequence;
 	private int limit;
 	private Order order = Order.DIRECT;
+	private PageId pageId;
 	private long leftBoundIndex = -1;
 	
 	public StoredMessageFilter()
@@ -44,13 +46,14 @@ public class StoredMessageFilter
 	
 	public StoredMessageFilter(StoredMessageFilter copyFrom)
 	{
-		this.order = copyFrom.getOrder();
 		this.sessionAlias = copyFrom.getSessionAlias();
 		this.direction = copyFrom.getDirection();
 		this.timestampFrom = copyFrom.getTimestampFrom();
 		this.timestampTo = copyFrom.getTimestampTo();
 		this.sequence = copyFrom.getSequence();
 		this.limit = copyFrom.getLimit();
+		this.order = copyFrom.getOrder();
+		this.pageId = copyFrom.getPageId();
 	}
 	
 	
@@ -120,17 +123,39 @@ public class StoredMessageFilter
 	}
 	
 	
+	public Order getOrder()
+	{
+		return order;
+	}
+	
+	public void setOrder(Order order)
+	{
+		this.order = order == null ? Order.DIRECT : order;
+	}
+	
+	
+	public PageId getPageId()
+	{
+		return pageId;
+	}
+	
+	public void setPageId(PageId pageId)
+	{
+		this.pageId = pageId;
+	}
+	
+	
 	/**
-	 * @return calculated left bound for message index while filtering by message index with "is less" or "is less or equals" condition and limit involved
+	 * @return calculated left bound for message sequence number while filtering by sequence with "is less" or "is less or equals" condition and limit involved
 	 * This method is for internal use
 	 */
-	public long getLeftBoundIndex()
+	public long getLeftBoundSequence()
 	{
 		return leftBoundIndex;
 	}
 	
 	/**
-	 * Sets calculated left bound for message index. This method is for internal use
+	 * Sets calculated left bound for message sequence number . This method is for internal use
 	 * @param leftBoundIndex calculated for filter
 	 */
 	public void setLeftBoundIndex(long leftBoundIndex)
@@ -138,22 +163,10 @@ public class StoredMessageFilter
 		this.leftBoundIndex = leftBoundIndex;
 	}
 
-	public Order getOrder()
-	{
-		return order;
-	}
-
-	public void setOrder(Order order)
-	{
-		this.order = order == null ? Order.DIRECT : order;
-	}
-
 	@Override
 	public String toString()
 	{
-		List<String> result = new ArrayList<>();
-		if (order !=null)
-			result.add("order=" + order);
+		List<String> result = new ArrayList<>(10);
 		if (sessionAlias != null)
 			result.add("session alias" + sessionAlias);
 		if (direction != null)
@@ -166,6 +179,10 @@ public class StoredMessageFilter
 			result.add("sequence" + sequence);
 		if (limit > 0)
 			result.add("limit=" + limit);
+		if (order != null)
+			result.add("order=" + order);
+		if (pageId != null)
+			result.add("page=" + pageId);
 		return String.join(", ", result);
 	}
 }

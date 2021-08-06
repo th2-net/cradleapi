@@ -20,6 +20,7 @@ import java.time.Instant;
 
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.Order;
+import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.filters.FilterForAny;
 import com.exactpro.cradle.filters.FilterForAnyBuilder;
@@ -104,7 +105,7 @@ public class StoredMessageFilterBuilder
 	
 	/**
 	 * Sets maximum number of messages to get after filtering
-	 * @param limit max number of message to return
+	 * @param limit max number of messages to return
 	 * @return the same builder instance to continue building chain
 	 */
 	public StoredMessageFilterBuilder limit(int limit)
@@ -118,6 +119,13 @@ public class StoredMessageFilterBuilder
 	{
 		initIfNeeded();
 		msgFilter.setOrder(order);
+		return this;
+	}
+	
+	public StoredMessageFilterBuilder pageId(PageId pageId)
+	{
+		initIfNeeded();
+		msgFilter.setPageId(pageId);
 		return this;
 	}
 	

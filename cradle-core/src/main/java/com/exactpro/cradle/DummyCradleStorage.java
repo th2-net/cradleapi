@@ -27,6 +27,7 @@ import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEvent;
+import com.exactpro.cradle.testevents.StoredTestEventFilter;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.utils.CradleStorageException;
 
@@ -35,176 +36,158 @@ import com.exactpro.cradle.utils.CradleStorageException;
  */
 public class DummyCradleStorage extends CradleStorage
 {
+	private final PageInfo currentPage;
+	
 	public DummyCradleStorage(String book)
 	{
 		super(book);
+		currentPage = new PageInfo(new PageId("DummyPage"), Instant.now(), null);
 	}
-
+	
+	@Override
+	public PageInfo getCurrentPage()
+	{
+		return currentPage;
+	}
+	
 	@Override
 	protected void doDispose() throws CradleStorageException
 	{
 	}
-
+	
 	@Override
 	protected void doStoreMessageBatch(StoredMessageBatch batch) throws IOException
 	{
 	}
-
+	
 	@Override
 	protected CompletableFuture<Void> doStoreMessageBatchAsync(StoredMessageBatch batch)
 	{
-		return null;
+		return CompletableFuture.completedFuture(null);
 	}
-
+	
 	@Override
 	protected void doStoreTestEvent(StoredTestEvent event) throws IOException
 	{
 	}
-
+	
 	@Override
 	protected CompletableFuture<Void> doStoreTestEventAsync(StoredTestEvent event)
 	{
-		return null;
+		return CompletableFuture.completedFuture(null);
 	}
-
+	
 	@Override
 	protected void doUpdateParentTestEvents(StoredTestEvent event) throws IOException
 	{
 	}
-
+	
 	@Override
 	protected CompletableFuture<Void> doUpdateParentTestEventsAsync(StoredTestEvent event)
 	{
-		return null;
+		return CompletableFuture.completedFuture(null);
 	}
-
+	
 	@Override
 	protected void doUpdateEventStatus(StoredTestEvent event, boolean success) throws IOException
 	{
 	}
-
+	
 	@Override
 	protected CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEvent event, boolean success)
 	{
-		return null;
+		return CompletableFuture.completedFuture(null);
 	}
-
+	
+	
 	@Override
-	protected StoredMessage doGetMessage(StoredMessageId id) throws IOException
-	{
-		return null;
-	}
-
-	@Override
-	protected CompletableFuture<StoredMessage> doGetMessageAsync(StoredMessageId id)
-	{
-		return null;
-	}
-
-	@Override
-	protected Collection<StoredMessage> doGetMessageBatch(StoredMessageId id) throws IOException
-	{
-		return null;
-	}
-
-	@Override
-	protected CompletableFuture<Collection<StoredMessage>> doGetMessageBatchAsync(StoredMessageId id)
-	{
-		return null;
-	}
-
-	@Override
-	protected long doGetLastMessageIndex(String streamName, Direction direction) throws IOException
-	{
-		return 0;
-	}
-
-	@Override
-	protected Collection<String> doGetStreams() throws IOException
-	{
-		return null;
-	}
-
-	@Override
-	protected StoredTestEvent doGetTestEvent(StoredTestEventId id) throws IOException
-	{
-		return null;
-	}
-
-	@Override
-	protected CompletableFuture<StoredTestEvent> doGetTestEventAsync(StoredTestEventId ids)
-	{
-		return null;
-	}
-
-	@Override
-	public IntervalsWorker getIntervalsWorker()
-	{
-		return null;
-	}
-
-	@Override
-	protected Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException
-	{
-		return null;
-	}
-
-	@Override
-	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter)
-	{
-		return null;
-	}
-
-	@Override
-	protected Iterable<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException
-	{
-		return null;
-	}
-
-	@Override
-	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter)
+	protected StoredMessage doGetMessage(StoredMessageId id, PageId pageId) throws IOException
 	{
 		return null;
 	}
 	
 	@Override
-	protected Iterable<StoredTestEvent> doGetRootTestEvents(Instant from, Instant to, Order order)
-			throws CradleStorageException, IOException
+	protected CompletableFuture<StoredMessage> doGetMessageAsync(StoredMessageId id, PageId pageId)
+	{
+		return CompletableFuture.completedFuture(null);
+	}
+	
+	@Override
+	protected Collection<StoredMessage> doGetMessageBatch(StoredMessageId id, PageId pageId) throws IOException
 	{
 		return null;
 	}
-
+	
 	@Override
-	protected CompletableFuture<Iterable<StoredTestEvent>> doGetRootTestEventsAsync(Instant from, Instant to,
-			Order order) throws CradleStorageException
+	protected CompletableFuture<Collection<StoredMessage>> doGetMessageBatchAsync(StoredMessageId id, PageId pageId)
+	{
+		return CompletableFuture.completedFuture(null);
+	}
+	
+	@Override
+	protected Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException
 	{
 		return null;
 	}
-
+	
 	@Override
-	protected Iterable<StoredTestEvent> doGetTestEvents(StoredTestEventId parentId, Instant from,
-			Instant to, Order order) throws CradleStorageException, IOException
+	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter)
+	{
+		return CompletableFuture.completedFuture(null);
+	}
+	
+	@Override
+	protected Iterable<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException
 	{
 		return null;
 	}
-
+	
 	@Override
-	protected CompletableFuture<Iterable<StoredTestEvent>> doGetTestEventsAsync(StoredTestEventId parentId,
-			Instant from, Instant to, Order order) throws CradleStorageException
+	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter)
+	{
+		return CompletableFuture.completedFuture(null);
+	}
+	
+	
+	@Override
+	protected long doGetLastSequence(String sessionAlias, Direction direction, PageId pageId) throws IOException
+	{
+		return 0;
+	}
+	
+	@Override
+	protected Collection<String> doGetSessionAliases(PageId pageId) throws IOException
 	{
 		return null;
 	}
-
+	
+	
 	@Override
-	protected Iterable<StoredTestEvent> doGetTestEvents(Instant from, Instant to, Order order)
-			throws CradleStorageException, IOException
+	protected StoredTestEvent doGetTestEvent(StoredTestEventId id, PageId pageId) throws IOException
 	{
 		return null;
 	}
-
+	
 	@Override
-	protected CompletableFuture<Iterable<StoredTestEvent>> doGetTestEventsAsync(Instant from, Instant to,
-			Order order) throws CradleStorageException
+	protected CompletableFuture<StoredTestEvent> doGetTestEventAsync(StoredTestEventId ids, PageId pageId)
+	{
+		return CompletableFuture.completedFuture(null);
+	}
+	
+	@Override
+	protected Iterable<StoredTestEvent> doGetTestEvents(StoredTestEventFilter filter) throws CradleStorageException, IOException
+	{
+		return null;
+	}
+	
+	@Override
+	protected CompletableFuture<Iterable<StoredTestEvent>> doGetTestEventsAsync(StoredTestEventFilter filter) throws CradleStorageException, IOException
+	{
+		return CompletableFuture.completedFuture(null);
+	}
+	
+	@Override
+	public IntervalsWorker getIntervalsWorker()
 	{
 		return null;
 	}
