@@ -25,7 +25,6 @@ import com.exactpro.cradle.cassandra.dao.AsyncOperator;
 import com.exactpro.cradle.cassandra.iterators.IntervalsIteratorAdapter;
 import com.exactpro.cradle.intervals.Interval;
 import com.exactpro.cradle.intervals.IntervalsWorker;
-import com.exactpro.cradle.intervals.RecoveryState;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.UpdateNotAppliedException;
 
@@ -233,7 +232,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     }
 
     @Override
-    public Interval updateRecoveryState(Interval interval, RecoveryState recoveryState) throws IOException
+    public Interval updateRecoveryState(Interval interval, String recoveryState) throws IOException
     {
         try
         {
@@ -251,7 +250,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     }
 
     @Override
-    public CompletableFuture<Interval> updateRecoveryStateAsync(Interval interval, RecoveryState recoveryState)
+    public CompletableFuture<Interval> updateRecoveryStateAsync(Interval interval, String recoveryState)
     {
         LocalDateTime newLastUpdateDateTime = LocalDateTime.ofInstant(Instant.now(), TIMEZONE_OFFSET);
 
@@ -262,8 +261,8 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                 .getFuture(() -> intervalOperator.updateRecoveryState(instanceUuid,
                         LocalDate.from(interval.getStartTime().atOffset(TIMEZONE_OFFSET)),
                         LocalTime.from(interval.getStartTime().atOffset(TIMEZONE_OFFSET)),
-                        newLastUpdateTime, newLastUpdateDate, recoveryState.convertToJson(),
-                        interval.getRecoveryState().convertToJson(),
+                        newLastUpdateTime, newLastUpdateDate, recoveryState,
+                        interval.getRecoveryState(),
                         LocalTime.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET)),
                         LocalDate.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET)),
                         interval.getCrawlerName(), interval.getCrawlerVersion(), interval.getCrawlerType(),
