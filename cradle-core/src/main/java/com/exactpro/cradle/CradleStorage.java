@@ -152,13 +152,14 @@ public abstract class CradleStorage
 	public final CompletableFuture<Void> storeMessageBatchAsync(StoredMessageBatch batch)
 	{
 		logger.debug("Storing message batch {} asynchronously", batch.getId());
-		return doStoreMessageBatchAsync(batch)
-				.whenComplete((r, error) -> {
-					if (error != null)
-						logger.error("Error while storing message batch "+batch.getId()+" asynchronously", error);
-					else
-						logger.debug("Message batch {} has been stored asynchronously", batch.getId());
-				});
+		CompletableFuture<Void> result = doStoreMessageBatchAsync(batch);
+		result.whenComplete((r, error) -> {
+				if (error != null)
+					logger.error("Error while storing message batch "+batch.getId()+" asynchronously", error);
+				else
+					logger.debug("Message batch {} has been stored asynchronously", batch.getId());
+			});
+		return result;
 	}
 	
 	
@@ -206,26 +207,28 @@ public abstract class CradleStorage
 			throw new IOException("Invalid test event", e);
 		}
 		
-		CompletableFuture<Void> result1 = doStoreTestEventAsync(event)
-				.whenComplete((r, error) -> {
-					if (error != null)
-						logger.error("Error while storing test event "+event.getId()+" asynchronously", error);
-					else
-						logger.debug("Test event {} has been stored asynchronously", event.getId());
-				});
+		CompletableFuture<Void> result = doStoreTestEventAsync(event);
+		result.whenComplete((r, error) -> {
+				if (error != null)
+					logger.error("Error while storing test event "+event.getId()+" asynchronously", error);
+				else
+					logger.debug("Test event {} has been stored asynchronously", event.getId());
+			});
 		
 		if (event.getParentId() == null)
-			return result1;
+			return result;
 		
-		logger.debug("Updating parents of test event {} asynchronously", event.getId());
-		CompletableFuture<Void> result2 = doUpdateParentTestEventsAsync(event)
-				.whenComplete((r, error) -> {
+		return result.thenComposeAsync(r -> {
+			logger.debug("Updating parents of test event {} asynchronously", event.getId());
+			CompletableFuture<Void> result2 = doUpdateParentTestEventsAsync(event);
+			result2.whenComplete((r2, error) -> {
 					if (error != null)
 						logger.error("Error while updating parent of test event "+event.getId()+" asynchronously", error);
 					else
 						logger.debug("Parents of test event {} have been updated asynchronously", event.getId());
 				});
-		return CompletableFuture.allOf(result1, result2);
+			return result2;
+		});
 	}
 	
 	
@@ -264,13 +267,14 @@ public abstract class CradleStorage
 	public final CompletableFuture<StoredMessage> getMessageAsync(StoredMessageId id, PageId pageId)
 	{
 		logger.debug("Getting message {} from page {} asynchronously", id, pageId);
-		return doGetMessageAsync(id, pageId)
-				.whenComplete((r, error) -> {
-					if (error != null)
-						logger.error("Error while getting message "+id+" from page "+pageId+" asynchronously", error);
-					else
-						logger.debug("Message {} from page {} got asynchronously", id, pageId);
-				});
+		CompletableFuture<StoredMessage> result = doGetMessageAsync(id, pageId);
+		result.whenComplete((r, error) -> {
+				if (error != null)
+					logger.error("Error while getting message "+id+" from page "+pageId+" asynchronously", error);
+				else
+					logger.debug("Message {} from page {} got asynchronously", id, pageId);
+			});
+		return result;
 	}
 	
 	/**
@@ -319,13 +323,14 @@ public abstract class CradleStorage
 	public final CompletableFuture<Collection<StoredMessage>> getMessageBatchAsync(StoredMessageId id, PageId pageId)
 	{
 		logger.debug("Getting message batch by message ID {} from page {} asynchronously", id, pageId);
-		return doGetMessageBatchAsync(id, pageId)
-				.whenComplete((r, error) -> {
-					if (error != null)
-						logger.error("Error while getting message batch by message ID "+id+" from page "+pageId+" asynchronously", error);
-					else
-						logger.debug("Message batch by message ID {} from page {} got asynchronously", id, pageId);
-				});
+		CompletableFuture<Collection<StoredMessage>> result = doGetMessageBatchAsync(id, pageId);
+		result.whenComplete((r, error) -> {
+				if (error != null)
+					logger.error("Error while getting message batch by message ID "+id+" from page "+pageId+" asynchronously", error);
+				else
+					logger.debug("Message batch by message ID {} from page {} got asynchronously", id, pageId);
+			});
+		return result;
 	}
 	
 	/**
@@ -361,13 +366,13 @@ public abstract class CradleStorage
 	public final CompletableFuture<Iterable<StoredMessage>> getMessagesAsync(StoredMessageFilter filter)
 	{
 		logger.debug("Asynchronously getting messages filtered by {}", filter);
-		CompletableFuture<Iterable<StoredMessage>> result = doGetMessagesAsync(filter)
-				.whenComplete((r, error) -> {
-					if (error != null)
-						logger.error("Error while getting messages filtered by "+filter+" asynchronously", error);
-					else
-						logger.debug("Iterator for messages filtered by {} got asynchronously", filter);
-				});
+		CompletableFuture<Iterable<StoredMessage>> result = doGetMessagesAsync(filter);
+		result.whenComplete((r, error) -> {
+				if (error != null)
+					logger.error("Error while getting messages filtered by "+filter+" asynchronously", error);
+				else
+					logger.debug("Iterator for messages filtered by {} got asynchronously", filter);
+			});
 		return result;
 	}
 	
@@ -394,14 +399,13 @@ public abstract class CradleStorage
 	public final CompletableFuture<Iterable<StoredMessageBatch>> getMessagesBatchesAsync(StoredMessageFilter filter)
 	{
 		logger.debug("Asynchronously getting message batches filtered by {}", filter);
-		CompletableFuture<Iterable<StoredMessageBatch>> result = doGetMessagesBatchesAsync(filter)
-				.whenComplete((r, error) -> {
-					if (error != null)
-						logger.error("Error while getting message batches filtered by "+filter+" asynchronously", error);
-					else
-						logger.debug("Iterator for message batches filtered by {} got asynchronously", filter);
-				});
-
+		CompletableFuture<Iterable<StoredMessageBatch>> result = doGetMessagesBatchesAsync(filter);
+		result.whenComplete((r, error) -> {
+				if (error != null)
+					logger.error("Error while getting message batches filtered by "+filter+" asynchronously", error);
+				else
+					logger.debug("Iterator for message batches filtered by {} got asynchronously", filter);
+			});
 		return result;
 	}
 	
@@ -497,14 +501,13 @@ public abstract class CradleStorage
 	public final CompletableFuture<StoredTestEvent> getTestEventAsync(StoredTestEventId id, PageId pageId)
 	{
 		logger.debug("Getting test event {} from page {} asynchronously", id, pageId);
-		
-		CompletableFuture<StoredTestEvent> result = doGetTestEventAsync(id, pageId)
-				.whenComplete((r, error) -> {
-					if (error != null)
-						logger.error("Error while getting test event "+id+" from page "+pageId+" asynchronously", error);
-					else
-						logger.debug("Test event {} from page {} got asynchronously", id, pageId);
-				});
+		CompletableFuture<StoredTestEvent> result = doGetTestEventAsync(id, pageId);
+		result.whenComplete((r, error) -> {
+				if (error != null)
+					logger.error("Error while getting test event "+id+" from page "+pageId+" asynchronously", error);
+				else
+					logger.debug("Test event {} from page {} got asynchronously", id, pageId);
+			});
 		return result;
 	}
 	
@@ -544,14 +547,13 @@ public abstract class CradleStorage
 	public final CompletableFuture<Iterable<StoredTestEvent>> getTestEventsAsync(StoredTestEventFilter filter) throws CradleStorageException, IOException
 	{
 		logger.debug("Asynchronously getting test events filtered by {}", filter);
-		CompletableFuture<Iterable<StoredTestEvent>> result = doGetTestEventsAsync(filter)
-				.whenComplete((r, error) -> {
-					if (error != null)
-						logger.error("Error while getting test events filtered by "+filter+" asynchronously", error);
-					else
-						logger.debug("Iterator for test events filtered by {} got asynchronously", filter);
-				});
-
+		CompletableFuture<Iterable<StoredTestEvent>> result = doGetTestEventsAsync(filter);
+		result.whenComplete((r, error) -> {
+				if (error != null)
+					logger.error("Error while getting test events filtered by "+filter+" asynchronously", error);
+				else
+					logger.debug("Iterator for test events filtered by {} got asynchronously", filter);
+			});
 		return result;
 	}
 	
@@ -566,13 +568,13 @@ public abstract class CradleStorage
 	public final CompletableFuture<Void> updateEventStatusAsync(StoredTestEvent event, boolean success)
 	{
 		logger.debug("Asynchronously updating status of event {}", event.getId());
-		CompletableFuture<Void> result = doUpdateEventStatusAsync(event, success)
-				.whenComplete((r, error) -> {
-					if (error != null)
-						logger.error("Error while asynchronously updating status of event "+event.getId());
-					else
-						logger.debug("Status of event {} updated asynchronously", event.getId());
-				});
+		CompletableFuture<Void> result = doUpdateEventStatusAsync(event, success);
+		result.whenComplete((r, error) -> {
+				if (error != null)
+					logger.error("Error while asynchronously updating status of event "+event.getId());
+				else
+					logger.debug("Status of event {} updated asynchronously", event.getId());
+			});
 		return result;
 	}
 }
