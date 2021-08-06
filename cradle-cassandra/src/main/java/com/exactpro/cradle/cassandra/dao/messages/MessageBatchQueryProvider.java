@@ -16,37 +16,39 @@
 
 package com.exactpro.cradle.cassandra.dao.messages;
 
-import java.io.IOException;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.function.Function;
-
-import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
-import com.exactpro.cradle.Order;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.mapper.MapperContext;
 import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
+import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.Order;
 import com.exactpro.cradle.cassandra.CassandraSemaphore;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
 import com.exactpro.cradle.filters.ComparisonOperation;
+import com.exactpro.cradle.filters.FilterForEquals;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
+
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
+import static com.exactpro.cradle.cassandra.CassandraCradleStorage.TIMEZONE_OFFSET;
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
-import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
 
 public class MessageBatchQueryProvider
 {
@@ -68,8 +70,8 @@ public class MessageBatchQueryProvider
 	}
 	
 	public CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> filterMessages(UUID instanceId, 
-			StoredMessageFilter filter, CassandraSemaphore semaphore, MessageBatchOperator operator,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
+			StoredMessageFilter filter, CassandraSemaphore semaphore, MessageBatchOperator mbOperator,
+			TimeMessageOperator tmOperator, Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 	{
 		Select select = selectStart;
 		Order order = null;
@@ -83,7 +85,7 @@ public class MessageBatchQueryProvider
 		BoundStatement bs;
 		try
 		{
-			bs = bindParameters(ps, instanceId, filter, semaphore, operator, attributes);
+			bs = bindParameters(ps, instanceId, filter, semaphore, mbOperator, tmOperator, attributes);
 		}
 		catch (CradleStorageException e)
 		{
@@ -104,11 +106,13 @@ public class MessageBatchQueryProvider
 
 	private Select addFilter(Select select, StoredMessageFilter filter)
 	{
-		if (filter.getStreamName() != null)
-			select = FilterUtils.filterToWhere(filter.getStreamName().getOperation(), select.whereColumn(STREAM_NAME), null);
-		
-		if (filter.getDirection() != null)
-			select = FilterUtils.filterToWhere(filter.getDirection().getOperation(), select.whereColumn(DIRECTION), null);
+		FilterForEquals<String> streamName = filter.getStreamName();
+		if (streamName != null)
+			select = FilterUtils.filterToWhere(streamName.getOperation(), select.whereColumn(STREAM_NAME), null);
+
+		FilterForEquals<Direction> direction = filter.getDirection();
+		if (direction != null)
+			select = FilterUtils.filterToWhere(direction.getOperation(), select.whereColumn(DIRECTION), null);
 		
 		if (filter.getIndex() != null)
 		{
@@ -126,43 +130,27 @@ public class MessageBatchQueryProvider
 			select = FilterUtils.filterToWhere(operation, select.whereColumn(MESSAGE_INDEX), RIGHT_MESSAGE_INDEX);
 		}
 		
-		//For both timestamp comparisons overriding operation with GreaterOrEquals/LessOrEquals for date portion to not skip date of timestamp 
-		//when Greater/Less (not GreaterOrEquals/LessOrEquals) is defined for condition timestamp
-		//E.g. in batch first_message_date=2020-05-26, first_message_time=20:23:00
-		//condition timestampFrom>2020-05-26 15:00:00
-		//condition to use will be first_message_date>2020-05-26, first_message_time>15:00:00
-		//Without override of operation for date portion this batch will be skipped
-		//So, override makes the condition the following:
-		//first_message_date>=2020-05-26, first_message_time>15:00:00
 		if (filter.getTimestampFrom() != null)
-		{
-			ComparisonOperation op = filter.getTimestampFrom().getOperation();
-			select = FilterUtils.filterToWhere(ComparisonOperation.GREATER_OR_EQUALS, select.whereColumn(FIRST_MESSAGE_DATE), null);
-			select = FilterUtils.filterToWhere(op, select.whereColumn(FIRST_MESSAGE_TIME), null);
-		}
+			select = FilterUtils.filterToWhere(ComparisonOperation.GREATER_OR_EQUALS, select.whereColumn(MESSAGE_INDEX), LEFT_MESSAGE_INDEX);
 		
 		if (filter.getTimestampTo() != null)
-		{
-			ComparisonOperation op = filter.getTimestampTo().getOperation();
-			select = FilterUtils.filterToWhere(ComparisonOperation.LESS_OR_EQUALS, select.whereColumn(LAST_MESSAGE_DATE), null);
-			select = FilterUtils.filterToWhere(op, select.whereColumn(LAST_MESSAGE_TIME), null);
-		}
+			select = FilterUtils.filterToWhere(ComparisonOperation.LESS_OR_EQUALS, select.whereColumn(MESSAGE_INDEX), RIGHT_MESSAGE_INDEX);
 		
 		if (filter.getLimit() > 0)
 			select.limit(filter.getLimit());
 		
 		return select;
 	}
-	
-	private BoundStatement bindParameters(PreparedStatement ps, UUID instanceId, StoredMessageFilter filter, 
-			CassandraSemaphore semaphore, MessageBatchOperator operator,
+
+	private BoundStatement bindParameters(PreparedStatement ps, UUID instanceId, StoredMessageFilter filter,
+			CassandraSemaphore semaphore, MessageBatchOperator mbOperator, TimeMessageOperator tmOperator,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes) throws CradleStorageException
 	{
 		BoundStatementBuilder builder = ps.boundStatementBuilder()
 				.setUuid(INSTANCE_ID, instanceId);
 		builder = attributes.apply(builder);
 		if (filter != null)
-			builder = bindFilterParameters(builder, instanceId, filter, semaphore, operator, attributes);
+			builder = bindFilterParameters(builder, instanceId, filter, semaphore, mbOperator, tmOperator, attributes);
 		return builder.build();
 	}
 	
@@ -173,8 +161,7 @@ public class MessageBatchQueryProvider
 		if (filter.getStreamName() == null || filter.getDirection() == null)
 		{
 			//FIXME: throw exception to require stream name and direction to filter by message index
-			//throw new CradleStorageException("Both streamName and direction are required when filtering by message index");
-			return null;
+			throw new CradleStorageException("Both streamName and direction are required when filtering by message index");
 		}
 		
 		StoredMessageId id = new StoredMessageId(filter.getStreamName().getValue(), 
@@ -189,16 +176,23 @@ public class MessageBatchQueryProvider
 			throw new CradleStorageException("Error while getting message batch for ID "+id, e);
 		}
 	}
-	
-	private BoundStatementBuilder bindFilterParameters(BoundStatementBuilder builder, UUID instanceId, StoredMessageFilter filter, 
-			CassandraSemaphore semaphore, MessageBatchOperator operator,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes) throws CradleStorageException
+
+	private BoundStatementBuilder bindFilterParameters(BoundStatementBuilder builder, UUID instanceId,
+			StoredMessageFilter filter, CassandraSemaphore semaphore, MessageBatchOperator operator,
+			TimeMessageOperator tmOperator, Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
+			throws CradleStorageException
 	{
-		if (filter.getStreamName() != null)
-			builder = builder.setString(STREAM_NAME, filter.getStreamName().getValue());
+		if (filter.getStreamName() == null)
+			throw new CradleStorageException("Stream name is a mandatory filter field and can't be empty");
 		
-		if (filter.getDirection() != null)
-			builder = builder.setString(DIRECTION, filter.getDirection().getValue().getLabel());
+		builder = builder.setString(STREAM_NAME, filter.getStreamName().getValue());
+
+		FilterForEquals<Direction> directionFilter = filter.getDirection();
+		if ((filter.getTimestampFrom() != null || filter.getTimestampTo() != null) && filter.getDirection() == null)
+			throw new CradleStorageException("Direction is a mandatory filter field for filtering by timestamp or index");
+
+		if (directionFilter != null)
+			builder = builder.setString(DIRECTION, directionFilter.getValue().getLabel());
 		
 		if (filter.getIndex() != null)
 		{
@@ -224,24 +218,56 @@ public class MessageBatchQueryProvider
 			builder = builder.setLong(RIGHT_MESSAGE_INDEX, batch != null ? batch.getMessageIndex() : filter.getIndex().getValue());
 		}
 		
-		//Both filters for timestamp are adjusted to get more batches than we will get in case of strict comparison.
-		//This is to cover the case when messages that meet condition timestamp are in the middle of the batch and the batch is long in terms of time.
-		//E.g. in batch first_message_time=15:00:00, last_message_time=15:05:00, 
-		//condition timestampFrom>15:01:00
-		//Without condition adjustment we'll skip such batch thus not showing messages that actually met the condition
-		//FIXME: This doesn't guarantee that batches longer than 10 minutes will be not skipped! Anyway, such batches are bad.
 		if (filter.getTimestampFrom() != null)
 		{
 			Instant ts = filter.getTimestampFrom().getValue();
-			builder = FilterUtils.bindTimestamp(ts.minus(10, ChronoUnit.MINUTES), builder, FIRST_MESSAGE_DATE, FIRST_MESSAGE_TIME);
+			try
+			{
+				long leftBatchIndex = getNearestMessageIndexBefore(tmOperator, instanceId,
+						filter.getStreamName().getValue(), directionFilter.getValue(), ts, attributes);
+				builder = builder.setLong(LEFT_MESSAGE_INDEX, leftBatchIndex);
+			}
+			catch (ExecutionException | InterruptedException e)
+			{
+				throw new CradleStorageException("Error getting message batch index for timestamp 'From'", e);
+			}
 		}
-		
+
 		if (filter.getTimestampTo() != null)
 		{
 			Instant ts = filter.getTimestampTo().getValue();
-			builder = FilterUtils.bindTimestamp(ts.plus(10, ChronoUnit.MINUTES), builder, LAST_MESSAGE_DATE, LAST_MESSAGE_TIME);
+			try
+			{
+				long rightBatchIndex = getNearestMessageIndexAfter(tmOperator, instanceId,
+						filter.getStreamName().getValue(), directionFilter.getValue(), ts, attributes);
+				builder = builder.setLong(RIGHT_MESSAGE_INDEX, rightBatchIndex);
+			}
+			catch (ExecutionException | InterruptedException e)
+			{
+				throw new CradleStorageException("Error getting message batch index for timestamp 'To'", e);
+			}
 		}
 		
 		return builder;
+	}
+
+	private long getNearestMessageIndexBefore(TimeMessageOperator tmOperator, UUID instanceId, String streamName,
+			Direction direction, Instant instant, Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
+			throws ExecutionException, InterruptedException
+	{
+		LocalDateTime ldt = LocalDateTime.ofInstant(instant, TIMEZONE_OFFSET);
+		TimeMessageEntity entity = tmOperator.getNearestMessageBefore(instanceId, streamName, ldt.toLocalDate(),
+				direction.getLabel(), ldt.toLocalTime(), attributes).get();
+		return entity == null ? 0 : entity.getMessageIndex();
+	}
+	
+	private long getNearestMessageIndexAfter(TimeMessageOperator tmOperator, UUID instanceId, String streamName,
+			Direction direction, Instant instant, Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
+			throws ExecutionException, InterruptedException
+	{
+		LocalDateTime ldt = LocalDateTime.ofInstant(instant, TIMEZONE_OFFSET);
+		TimeMessageEntity entity = tmOperator.getNearestMessageAfter(instanceId, streamName, ldt.toLocalDate(),
+				direction.getLabel(), ldt.toLocalTime(), attributes).get();
+		return entity == null ? Long.MAX_VALUE : entity.getMessageIndex();
 	}
 }
