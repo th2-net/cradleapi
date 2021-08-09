@@ -23,8 +23,10 @@ public class CassandraStorageSettings
 {
 	public static final String PAGES_TABLE = "pages",
 			MESSAGES_TABLE = "messages",
-			SESSION_TABLE = "sessions",
+			SESSIONS_TABLE = "sessions",
+			SESSIONS_DATES_TABLE = "sessions_dates",
 			TEST_EVENTS_TABLE = "test_events",
+			SCOPES_TABLE = "scopes",
 			TEST_EVENTS_DATES_TABLE = "test_events_dates",
 			LABELS_TABLE = "labels",
 			INTERVALS_TABLE = "intervals";
@@ -42,7 +44,9 @@ public class CassandraStorageSettings
 	private String pagesTable,
 			messagesTable,
 			sessionsTable,
+			sessionsDatesTable,
 			testEventsTable,
+			scopesTable,
 			testEventsDatesTable,
 			labelsTable,
 			intervalsTable;
@@ -66,8 +70,10 @@ public class CassandraStorageSettings
 		
 		this.pagesTable = PAGES_TABLE;
 		this.messagesTable = MESSAGES_TABLE;
-		this.sessionsTable = SESSION_TABLE;
+		this.sessionsTable = SESSIONS_TABLE;
+		this.sessionsDatesTable = SESSIONS_DATES_TABLE;
 		this.testEventsTable = TEST_EVENTS_TABLE;
+		this.scopesTable = SCOPES_TABLE;
 		this.testEventsDatesTable = TEST_EVENTS_DATES_TABLE;
 		this.labelsTable = LABELS_TABLE;
 		this.intervalsTable = INTERVALS_TABLE;
@@ -87,7 +93,9 @@ public class CassandraStorageSettings
 		this.pagesTable = settings.getPagesTable();
 		this.messagesTable = settings.getMessagesTable();
 		this.sessionsTable = settings.getSessionsTable();
+		this.sessionsDatesTable = settings.getSessionsDatesTable();
 		this.testEventsTable = settings.getTestEventsTable();
+		this.scopesTable = settings.getScopesTable();
 		this.testEventsDatesTable = settings.getTestEventsDatesTable();
 		this.labelsTable = settings.getLabelsTable();
 		this.intervalsTable = settings.getIntervalsTable();
@@ -152,6 +160,17 @@ public class CassandraStorageSettings
 	}
 	
 	
+	public String getSessionsDatesTable()
+	{
+		return sessionsDatesTable;
+	}
+	
+	public void setSessionsDatesTable(String sessionsDatesTable)
+	{
+		this.sessionsDatesTable = sessionsDatesTable;
+	}
+	
+	
 	public String getTestEventsTable()
 	{
 		return testEventsTable;
@@ -160,6 +179,17 @@ public class CassandraStorageSettings
 	public void setTestEventsTable(String testEventsTable)
 	{
 		this.testEventsTable = testEventsTable;
+	}
+	
+	
+	public String getScopesTable()
+	{
+		return scopesTable;
+	}
+	
+	public void setScopesTable(String scopesTable)
+	{
+		this.scopesTable = scopesTable;
 	}
 	
 	

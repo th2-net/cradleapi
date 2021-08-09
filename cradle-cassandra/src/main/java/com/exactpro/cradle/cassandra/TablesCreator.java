@@ -18,6 +18,7 @@ package com.exactpro.cradle.cassandra;
 
 import java.io.IOException;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +55,9 @@ public class TablesCreator
 		createPagesTable();
 		createMessagesTable();
 		createSessionsTable();
+		createSessionsDatesTable();
 		createTestEventsTable();
+		createScopesTable();
 		createTestEventsDatesTable();
 		createLabelsTable();
 		createIntervalsTable();
@@ -79,11 +82,11 @@ public class TablesCreator
 	public void createPagesTable() throws IOException
 	{
 		String tableName = settings.getPagesTable();
-		createTable(tableName, SchemaBuilder.createTable(keyspace, tableName).ifNotExists()
-				.withPartitionKey(BOOK, DataTypes.TEXT)
-				.withClusteringColumn(PAGE, DataTypes.TEXT)
-				.withColumn(START_DATE, DataTypes.DATE)
-				.withColumn(START_TIME, DataTypes.TIME)
+		createTable(tableName, () -> SchemaBuilder.createTable(keyspace, tableName).ifNotExists()
+				.withPartitionKey(PART, DataTypes.TEXT)
+				.withClusteringColumn(START_DATE, DataTypes.DATE)
+				.withClusteringColumn(START_TIME, DataTypes.TIME)
+				.withColumn(NAME, DataTypes.TEXT)
 				.withColumn(END_DATE, DataTypes.DATE)
 				.withColumn(END_TIME, DataTypes.TIME));
 	}
@@ -91,7 +94,7 @@ public class TablesCreator
 	public void createMessagesTable() throws IOException
 	{
 		String tableName = settings.getMessagesTable();
-		createTable(tableName, SchemaBuilder.createTable(keyspace, tableName).ifNotExists()
+		createTable(tableName, () -> SchemaBuilder.createTable(keyspace, tableName).ifNotExists()
 				.withPartitionKey(PAGE, DataTypes.TEXT)
 				.withPartitionKey(MESSAGE_DATE, DataTypes.DATE)
 				.withPartitionKey(SESSION_ALIAS, DataTypes.TEXT)
@@ -117,7 +120,15 @@ public class TablesCreator
 	public void createSessionsTable() throws IOException
 	{
 		String tableName = settings.getSessionsTable();
-		createTable(tableName, SchemaBuilder.createTable(keyspace, tableName).ifNotExists()
+		createTable(tableName, () -> SchemaBuilder.createTable(keyspace, tableName).ifNotExists()
+				.withPartitionKey(PAGE, DataTypes.TEXT)
+				.withClusteringColumn(SESSION_ALIAS, DataTypes.TEXT));
+	}
+	
+	public void createSessionsDatesTable() throws IOException
+	{
+		String tableName = settings.getSessionsDatesTable();
+		createTable(tableName, () -> SchemaBuilder.createTable(keyspace, tableName).ifNotExists()
 				.withPartitionKey(PAGE, DataTypes.TEXT)
 				.withPartitionKey(MESSAGE_DATE, DataTypes.DATE)
 				
@@ -129,10 +140,10 @@ public class TablesCreator
 	public void createTestEventsTable() throws IOException
 	{
 		String tableName = settings.getTestEventsTable();
-		createTable(tableName, SchemaBuilder.createTable(keyspace, tableName).ifNotExists()
+		createTable(tableName, () -> SchemaBuilder.createTable(keyspace, tableName).ifNotExists()
 				.withPartitionKey(PAGE, DataTypes.TEXT)
-				.withPartitionKey(SCOPE, DataTypes.TEXT)
 				.withPartitionKey(START_DATE, DataTypes.DATE)
+				.withPartitionKey(SCOPE, DataTypes.TEXT)
 				.withPartitionKey(PART, DataTypes.TEXT)
 				
 				.withClusteringColumn(START_TIME, DataTypes.TIME)
@@ -152,34 +163,41 @@ public class TablesCreator
 				.withColumn(END_TIME, DataTypes.TIME)
 				.withColumn(LAST_CHUNK, DataTypes.BOOLEAN)
 				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
-        .withColumn(MESSAGES, DataTypes.setOf(DataTypes.TEXT))
-        .withColumn(MESSAGES_PAGE, DataTypes.TEXT)
-        .withColumn(LABELS, DataTypes.setOf(DataTypes.TEXT))
+				.withColumn(MESSAGES, DataTypes.setOf(DataTypes.TEXT))
+				.withColumn(LABELS, DataTypes.setOf(DataTypes.TEXT))
 				.withColumn(CONTENT, DataTypes.BLOB));
+	}
+	
+	public void createScopesTable() throws IOException
+	{
+		String tableName = settings.getTestEventsDatesTable();
+		createTable(tableName, () -> SchemaBuilder.createTable(keyspace, tableName).ifNotExists()
+				.withPartitionKey(PAGE, DataTypes.TEXT)
+				.withClusteringColumn(SCOPE, DataTypes.TEXT));
 	}
 	
 	public void createTestEventsDatesTable() throws IOException
 	{
 		String tableName = settings.getTestEventsDatesTable();
-		createTable(tableName, SchemaBuilder.createTable(keyspace, tableName).ifNotExists()
+		createTable(tableName, () -> SchemaBuilder.createTable(keyspace, tableName).ifNotExists()
 				.withPartitionKey(PAGE, DataTypes.TEXT)
-				.withPartitionKey(SCOPE, DataTypes.TEXT)
 				.withPartitionKey(START_DATE, DataTypes.DATE)
+				.withClusteringColumn(SCOPE, DataTypes.TEXT)
 				.withClusteringColumn(PART, DataTypes.TEXT));
 	}
 	
 	public void createLabelsTable() throws IOException
 	{
 		String tableName = settings.getLabelsTable();
-		createTable(tableName, SchemaBuilder.createTable(keyspace, tableName).ifNotExists()
-				.withPartitionKey(BOOK, DataTypes.TEXT)
+		createTable(tableName, () -> SchemaBuilder.createTable(keyspace, tableName).ifNotExists()
+				.withPartitionKey(PAGE, DataTypes.TEXT)
 				.withClusteringColumn(NAME, DataTypes.TEXT));
 	}
 	
 	public void createIntervalsTable() throws IOException
 	{
 		String tableName = settings.getIntervalsTable();
-		createTable(tableName, SchemaBuilder.createTable(keyspace, tableName).ifNotExists()
+		createTable(tableName, () -> SchemaBuilder.createTable(keyspace, tableName).ifNotExists()
 				.withPartitionKey(PAGE, DataTypes.TEXT)
 				.withPartitionKey(INTERVAL_START_DATE, DataTypes.DATE)
 				.withClusteringColumn(CRAWLER_NAME, DataTypes.TEXT)
@@ -221,12 +239,12 @@ public class TablesCreator
 		return keyspaceMetadata.getTable(tableName).get().getColumn(columnName).isPresent();
 	}
 	
-	private void createTable(String tableName, CreateTable query) throws IOException
+	private void createTable(String tableName, Supplier<CreateTable> query) throws IOException
 	{
 		if (isTableExists(tableName))
 			return;
 		
-		exec.executeQuery(query.asCql(), true);
+		exec.executeQuery(query.get().asCql(), true);
 		logger.info("Table '{}' has been created", tableName);
 	}
 }
