@@ -44,6 +44,8 @@ public class MessageUtils
 	 */
 	public static void validateMessage(MessageToStore message) throws CradleStorageException
 	{
+		if (message.getBookId() == null)
+			throw new CradleStorageException("Message must have book ID");
 		if (StringUtils.isEmpty(message.getSessionAlias()))
 			throw new CradleStorageException("Message must have session alias");
 		if (message.getDirection() == null)

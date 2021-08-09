@@ -20,6 +20,8 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.Collection;
 
+import com.exactpro.cradle.BookId;
+
 /**
  * Holds information about one test event stored in batch of events ({@link StoredTestEventBatch})
  */
@@ -73,6 +75,12 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 	public StoredTestEventId getParentId()
 	{
 		return parentId;
+	}
+	
+	@Override
+	public final BookId getBookId()
+	{
+		return TestEvent.bookId(this);
 	}
 	
 	@Override

@@ -16,13 +16,6 @@
 
 package com.exactpro.cradle;
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
@@ -30,79 +23,22 @@ import com.exactpro.cradle.utils.CradleStorageException;
  */
 public abstract class CradleManager implements AutoCloseable
 {
-	private static final Logger logger = LoggerFactory.getLogger(CradleManager.class);
+	private final CradleStorage storage;
 	
-	private final Map<String, CradleStorage> storages = new ConcurrentHashMap<>();
-	private final boolean prepareStorage;
-	private volatile boolean closed = false;
-	
-	public CradleManager(boolean prepareStorage)
+	public CradleManager() throws CradleStorageException
 	{
-		this.prepareStorage = prepareStorage;
+		storage = createStorage();
 	}
 	
 	/**
-	 * Creates {@link CradleStorage} object to work with given Cradle book
+	 * Creates {@link CradleStorage} object to work with Cradle
 	 * @return instance of CradleStorage to read/write data
 	 */
-	protected abstract CradleStorage createStorage(String book, boolean prepareStorage) throws CradleStorageException;
+	protected abstract CradleStorage createStorage() throws CradleStorageException;
 	
 	
-	/**
-	 * Returns {@link CradleStorage} to work with given Cradle book. Creates connections and facilities to access the book, if needed
-	 * @param book to work with
-	 * @return instance of {@link CradleStorage} bound to given book to read/write data
-	 * @throws CradleStorageException if access to Cradle storage cannot be established
-	 */
-	public CradleStorage getStorage(String book) throws CradleStorageException
+	public CradleStorage getStorage() throws CradleStorageException
 	{
-		checkClosed();
-		
-		CradleStorage result = storages.get(book);
-		if (result == null || result.isDisposed())
-		{
-			synchronized (storages)
-			{
-				checkClosed();
-				
-				result = storages.get(book);
-				if (result == null || result.isDisposed())
-				{
-					logger.info("Storage for book '{}' is absent, creating it", book);
-					result = createStorage(book, prepareStorage);
-					storages.put(book, result);
-				}
-			}
-		}
-		return result;
-	}
-	
-	/**
-	 * Disposes access to Cradle, closing all related connections, flushing buffers, etc.
-	 * @throws IOException if there was error during Cradle storage disposal, which may mean issue with data flushing, unexpected connection break, etc.
-	 */
-	@Override
-	public void close() throws CradleStorageException
-	{
-		logger.info("Closing manager");
-		closed = true;
-		synchronized (storages)
-		{
-			for (CradleStorage st : storages.values())
-			{
-				if (!st.isDisposed())
-					st.dispose();
-			}
-			
-			storages.clear();
-		}
-		logger.info("Manager closed");
-	}
-	
-	
-	private void checkClosed() throws CradleStorageException
-	{
-		if (closed)
-			throw new CradleStorageException("Manager is closed");
+		return storage;
 	}
 }

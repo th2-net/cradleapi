@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.UUID;
 
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
@@ -44,7 +43,7 @@ public class StoredTestEventBatch extends StoredTestEvent
 	
 	public StoredTestEventBatch(TestEventBatchToStore batchData) throws CradleStorageException
 	{
-		super(batchData.getId() != null ? batchData.getId() : new StoredTestEventId(Instant.now(), UUID.randomUUID().toString()),
+		super(batchData.getId(),
 				batchData.getName(),
 				batchData.getType(),
 				batchData.getParentId());
@@ -157,6 +156,12 @@ public class StoredTestEventBatch extends StoredTestEvent
 	private BatchedStoredTestEvent addStoredTestEvent(TestEventSingle event) throws CradleStorageException
 	{
 		TestEventUtils.validateTestEvent(event, true);
+		
+		if (!getBookId().equals(event.getBookId()))
+			throw new CradleStorageException("Batch contains events of book '"+getBookId()+"', "
+					+ "but in your event it is '"+event.getBookId()+"'");
+		if (event.getStartTimestamp().isBefore(this.getStartTimestamp()))
+			throw new CradleStorageException("Start timestamp of event being added is before the batch start timestamp");
 		
 		if (events.containsKey(event.getId()))
 			throw new CradleStorageException("Test event with ID '"+event.getId()+"' is already present in batch");

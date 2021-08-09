@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.Objects;
 
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.utils.CradleIdException;
 
 /**
@@ -31,11 +32,13 @@ public class StoredTestEventId implements Serializable
 	
 	public static final String ID_PARTS_DELIMITER = ":";
 	
+	private final BookId bookId;
 	private final Instant startTimestamp;
 	private final String id;
 	
-	public StoredTestEventId(Instant startTimestamp, String id)
+	public StoredTestEventId(BookId bookId, Instant startTimestamp, String id)
 	{
+		this.bookId = bookId;
 		this.startTimestamp = startTimestamp;
 		this.id = id;
 	}
@@ -43,15 +46,18 @@ public class StoredTestEventId implements Serializable
 	public static StoredTestEventId fromString(String id) throws CradleIdException
 	{
 		String[] parts = StoredTestEventIdUtils.splitParts(id);
-		if (parts.length < 2)
-			throw new CradleIdException("Test Event ID ("+id+") should contain timestamp and unique ID "
-					+ "delimited with '"+ID_PARTS_DELIMITER+"'");
 		
 		String uniqueId = StoredTestEventIdUtils.getId(parts);
 		Instant timestamp = StoredTestEventIdUtils.getTimestamp(parts);
-		return new StoredTestEventId(timestamp, uniqueId);
+		BookId book = StoredTestEventIdUtils.getBook(parts);
+		return new StoredTestEventId(book, timestamp, uniqueId);
 	}
 	
+	
+	public BookId getBookId()
+	{
+		return bookId;
+	}
 	
 	public Instant getStartTimestamp()
 	{
@@ -67,13 +73,13 @@ public class StoredTestEventId implements Serializable
 	@Override
 	public String toString()
 	{
-		return StoredTestEventIdUtils.timestampToString(startTimestamp)+ID_PARTS_DELIMITER+id;
+		return bookId+ID_PARTS_DELIMITER+StoredTestEventIdUtils.timestampToString(startTimestamp)+ID_PARTS_DELIMITER+id;
 	}
 	
 	@Override
 	public int hashCode()
 	{
-		return Objects.hash(startTimestamp, id);
+		return Objects.hash(bookId, startTimestamp, id);
 	}
 	
 	@Override
@@ -86,6 +92,8 @@ public class StoredTestEventId implements Serializable
 		if (getClass() != obj.getClass())
 			return false;
 		StoredTestEventId other = (StoredTestEventId) obj;
-		return Objects.equals(startTimestamp, other.startTimestamp) && Objects.equals(id, other.id);
+		return Objects.equals(bookId, other.bookId)
+				&& Objects.equals(startTimestamp, other.startTimestamp)
+				&& Objects.equals(id, other.id);
 	}
 }

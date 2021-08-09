@@ -21,6 +21,7 @@ import java.time.format.DateTimeParseException;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.TimeUtils;
@@ -30,9 +31,13 @@ import com.exactpro.cradle.utils.TimeUtils;
  */
 public class StoredMessageIdUtils
 {
-	public static String[] splitParts(String id)
+	public static String[] splitParts(String id) throws CradleIdException
 	{
-		return id.split(StoredMessageId.ID_PARTS_DELIMITER);
+		String[] parts = id.split(StoredMessageId.ID_PARTS_DELIMITER);
+		if (parts.length < 5)
+			throw new CradleIdException("Message ID ("+id+") should contain book ID, session alias, direction, timestamp and sequence number "
+					+ "delimited with '"+StoredMessageId.ID_PARTS_DELIMITER+"'");
+		return parts;
 	}
 	
 	public static long getSequence(String[] parts) throws CradleIdException
@@ -73,13 +78,18 @@ public class StoredMessageIdUtils
 	public static String getSessionAlias(String[] parts)
 	{
 		StringBuilder session = new StringBuilder();
-		for (int i = 0; i < parts.length-3; i++)
+		for (int i = 1; i < parts.length-3; i++)
 		{
 			if (session.length() > 0)
 				session = session.append(StoredMessageId.ID_PARTS_DELIMITER);
 			session = session.append(parts[i]);
 		}
 		return session.toString();
+	}
+	
+	public static BookId getBookId(String[] parts)
+	{
+		return new BookId(parts[0]);
 	}
 	
 	

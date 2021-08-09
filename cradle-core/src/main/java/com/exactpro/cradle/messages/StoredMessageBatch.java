@@ -121,7 +121,7 @@ public class StoredMessageBatch
 	 */
 	public StoredMessage addMessage(MessageToStore message) throws CradleStorageException
 	{
-		MessageUtils.validateMessage(message);  //Checking if session alias, direction, timestamp and content are set
+		MessageUtils.validateMessage(message);  //Checking if book, session alias, direction, timestamp and content are set
 		
 		long messageSeq;
 		if (id == null)
@@ -130,11 +130,14 @@ public class StoredMessageBatch
 			if (i < 0)
 				throw new CradleStorageException("Message sequence number for first message in batch cannot be negative");
 			
-			id = new StoredMessageId(message.getSessionAlias(), message.getDirection(), message.getTimestamp(), i);
+			id = new StoredMessageId(message.getBookId(), message.getSessionAlias(), message.getDirection(), message.getTimestamp(), i);
 			messageSeq = message.getSequence();
 		}
 		else
 		{
+			if (!id.getBookId().equals(message.getBookId()))
+				throw new CradleStorageException("Batch contains messages of book '"+id.getBookId()+"', "
+						+ "but in your message it is '"+message.getBookId()+"'");
 			if (!id.getSessionAlias().equals(message.getSessionAlias()))
 				throw new CradleStorageException("Batch contains messages of session '"+id.getSessionAlias()+"', "
 						+ "but in your message it is '"+message.getSessionAlias()+"'");
@@ -162,7 +165,8 @@ public class StoredMessageBatch
 				messageSeq = lastMsg.getSequence()+1;
 		}
 		
-		StoredMessage msg = new StoredMessage(message, new StoredMessageId(message.getSessionAlias(), message.getDirection(), 
+		StoredMessage msg = new StoredMessage(message, new StoredMessageId(message.getBookId(), 
+				message.getSessionAlias(), message.getDirection(), 
 				message.getTimestamp(), messageSeq));
 		messages.add(msg);
 		batchSize += msg.getContent().length;
@@ -237,7 +241,8 @@ public class StoredMessageBatch
 	
 	private void verifyBatch(StoredMessageBatch otherBatch) throws CradleStorageException {
 		StoredMessageId otherId = otherBatch.id;
-		if (!Objects.equals(id.getSessionAlias(), otherId.getSessionAlias())
+		if (!Objects.equals(id.getBookId(), otherId.getBookId())
+				|| !Objects.equals(id.getSessionAlias(), otherId.getSessionAlias())
 				|| id.getDirection() != otherId.getDirection()) {
 			throw new CradleStorageException(String.format("IDs are not compatible. Current id: %s, Other id: %s", id, otherId));
 		}

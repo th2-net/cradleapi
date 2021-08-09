@@ -19,6 +19,8 @@ package com.exactpro.cradle.testevents;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.exactpro.cradle.BookId;
+
 /**
  * Builder for {@link TestEventBatchToStore} object. After calling {@link #build()} method, the builder can be reused to build new test event
  */
@@ -51,10 +53,10 @@ public class TestEventBatchToStoreBuilder
 		return this;
 	}
 	
-	public TestEventBatchToStoreBuilder idRandom()
+	public TestEventBatchToStoreBuilder idRandom(BookId book)
 	{
 		initIfNeeded();
-		event.setId(new StoredTestEventId(Instant.now(), UUID.randomUUID().toString()));
+		event.setId(new StoredTestEventId(book, Instant.now(), UUID.randomUUID().toString()));
 		return this;
 	}
 	

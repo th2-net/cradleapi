@@ -19,6 +19,7 @@ package com.exactpro.cradle.messages;
 import java.time.Instant;
 import java.util.Arrays;
 
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.utils.CompressionUtils;
 
@@ -27,6 +28,7 @@ import com.exactpro.cradle.utils.CompressionUtils;
  */
 public class MessageToStore
 {
+	private BookId bookId;
 	private String sessionAlias;
 	private Direction direction;
 	private Instant timestamp;
@@ -41,12 +43,27 @@ public class MessageToStore
 	
 	public MessageToStore(MessageToStore copyFrom)
 	{
+		this.bookId = copyFrom.getBookId();
 		this.sessionAlias = copyFrom.getSessionAlias();
 		this.direction = copyFrom.getDirection();
 		this.sequence = copyFrom.getSequence();
 		this.timestamp = copyFrom.getTimestamp();
 		this.metadata = copyFrom.getMetadata() != null ? new MessageMetadata(copyFrom.getMetadata()) : null;
 		this.content = copyFrom.getContent();
+	}
+	
+	
+	/**
+	 * @return book the message is related to
+	 */
+	public BookId getBookId()
+	{
+		return bookId;
+	}
+	
+	public void setBook(BookId book)
+	{
+		this.bookId = book;
 	}
 	
 	
@@ -143,6 +160,7 @@ public class MessageToStore
 	{
 		return new StringBuilder()
 				.append("MessageToStore{").append(CompressionUtils.EOL)
+				.append("bookId=").append(bookId).append(",").append(CompressionUtils.EOL)
 				.append("sessionAlias=").append(sessionAlias).append(",").append(CompressionUtils.EOL)
 				.append("direction=").append(direction).append(",").append(CompressionUtils.EOL)
 				.append("sequence=").append(sequence).append(",").append(CompressionUtils.EOL)

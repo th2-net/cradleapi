@@ -16,40 +16,33 @@
 
 package com.exactpro.cradle;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * Identifier of the page within a book
+ * Identifier of the book
  */
-public class PageId
+public class BookId implements Serializable
 {
-	public static final String DELIMITER = ":";
-	
-	private final BookId bookId;
+	private static final long serialVersionUID = -8051161407486679704L;
 	private final String name;
 	
-	public PageId(BookId bookId, String pageName)
+	public BookId(String name)
 	{
-		this.bookId = bookId;
-		this.name = pageName;
+		this.name = name;
 	}
 	
-	
-	public BookId getBookId()
-	{
-		return bookId;
-	}
 	
 	public String getName()
 	{
 		return name;
 	}
-	
-	
+
+
 	@Override
 	public int hashCode()
 	{
-		return Objects.hash(bookId, name);
+		return Objects.hash(name);
 	}
 	
 	@Override
@@ -61,14 +54,13 @@ public class PageId
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		PageId other = (PageId) obj;
-		return Objects.equals(bookId, other.bookId) && Objects.equals(name, other.name);
+		BookId other = (BookId) obj;
+		return Objects.equals(name, other.name);
 	}
-	
 	
 	@Override
 	public String toString()
 	{
-		return bookId+DELIMITER+name;
+		return name;
 	}
 }

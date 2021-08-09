@@ -18,6 +18,7 @@ package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
 
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
@@ -74,6 +75,12 @@ public abstract class StoredTestEvent implements TestEvent
 	public StoredTestEventId getParentId()
 	{
 		return parentId;
+	}
+	
+	@Override
+	public final BookId getBookId()
+	{
+		return TestEvent.bookId(this);
 	}
 	
 	@Override

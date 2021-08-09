@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.Objects;
 
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.utils.CradleIdException;
 
@@ -30,16 +31,18 @@ import com.exactpro.cradle.utils.CradleIdException;
  */
 public class StoredMessageId implements Serializable
 {
-	private static final long serialVersionUID = -1962956491991274031L;
+	private static final long serialVersionUID = -6014720618704186254L;
 	public static final String ID_PARTS_DELIMITER = ":";
 	
+	private final BookId bookId;
 	private final String sessionAlias;
 	private final Direction direction;
 	private final Instant timestamp;
 	private final long sequence;
 	
-	public StoredMessageId(String sessionAlias, Direction direction, Instant timestamp, long sequence)
+	public StoredMessageId(BookId bookId, String sessionAlias, Direction direction, Instant timestamp, long sequence)
 	{
+		this.bookId = bookId;
 		this.sessionAlias = sessionAlias;
 		this.direction = direction;
 		this.timestamp = timestamp;
@@ -50,17 +53,20 @@ public class StoredMessageId implements Serializable
 	public static StoredMessageId fromString(String id) throws CradleIdException
 	{
 		String[] parts = StoredMessageIdUtils.splitParts(id);
-		if (parts.length < 4)
-			throw new CradleIdException("Message ID ("+id+") should contain session alias, direction, timestamp and sequence number "
-					+ "delimited with '"+ID_PARTS_DELIMITER+"'");
 		
 		long seq = StoredMessageIdUtils.getSequence(parts);
 		Instant timestamp = StoredMessageIdUtils.getTimestamp(parts);
 		Direction direction = StoredMessageIdUtils.getDirection(parts);
 		String session = StoredMessageIdUtils.getSessionAlias(parts);
-		return new StoredMessageId(session, direction, timestamp, seq);
+		BookId book = StoredMessageIdUtils.getBookId(parts);
+		return new StoredMessageId(book, session, direction, timestamp, seq);
 	}
 	
+	
+	public BookId getBookId()
+	{
+		return bookId;
+	}
 	
 	public String getSessionAlias()
 	{
@@ -86,18 +92,21 @@ public class StoredMessageId implements Serializable
 	@Override
 	public String toString()
 	{
-		return sessionAlias+ID_PARTS_DELIMITER
+		return bookId+ID_PARTS_DELIMITER
+				+sessionAlias+ID_PARTS_DELIMITER
 				+direction.getLabel()+ID_PARTS_DELIMITER
 				+StoredMessageIdUtils.timestampToString(timestamp)+ID_PARTS_DELIMITER
 				+sequence;
 	}
-	
+
+
 	@Override
 	public int hashCode()
 	{
-		return Objects.hash(sessionAlias, direction, timestamp, sequence);
+		return Objects.hash(bookId, sessionAlias, direction, timestamp, sequence);
 	}
-	
+
+
 	@Override
 	public boolean equals(Object obj)
 	{
@@ -108,7 +117,8 @@ public class StoredMessageId implements Serializable
 		if (getClass() != obj.getClass())
 			return false;
 		StoredMessageId other = (StoredMessageId) obj;
-		return Objects.equals(sessionAlias, other.sessionAlias) && direction == other.direction 
-				&& Objects.equals(timestamp, other.timestamp) && sequence == other.sequence;
+		return Objects.equals(bookId, other.bookId) && Objects.equals(sessionAlias, other.sessionAlias)
+				&& direction == other.direction && Objects.equals(timestamp, other.timestamp)
+				&& sequence == other.sequence;
 	}
 }

@@ -30,6 +30,7 @@ import com.exactpro.cradle.filters.FilterForLess;
 
 public class StoredMessageFilter
 {
+	private final PageId pageId;
 	private FilterForEquals<String> sessionAlias;
 	private FilterForEquals<Direction> direction;
 	private FilterForGreater<Instant> timestampFrom;
@@ -37,15 +38,16 @@ public class StoredMessageFilter
 	private FilterForAny<Long> sequence;
 	private int limit;
 	private Order order = Order.DIRECT;
-	private PageId pageId;
 	private long leftBoundIndex = -1;
 	
-	public StoredMessageFilter()
+	public StoredMessageFilter(PageId pageId)
 	{
+		this.pageId = pageId;
 	}
 	
 	public StoredMessageFilter(StoredMessageFilter copyFrom)
 	{
+		this.pageId = copyFrom.getPageId();
 		this.sessionAlias = copyFrom.getSessionAlias();
 		this.direction = copyFrom.getDirection();
 		this.timestampFrom = copyFrom.getTimestampFrom();
@@ -53,7 +55,12 @@ public class StoredMessageFilter
 		this.sequence = copyFrom.getSequence();
 		this.limit = copyFrom.getLimit();
 		this.order = copyFrom.getOrder();
-		this.pageId = copyFrom.getPageId();
+	}
+	
+	
+	public PageId getPageId()
+	{
+		return pageId;
 	}
 	
 	
@@ -134,17 +141,6 @@ public class StoredMessageFilter
 	}
 	
 	
-	public PageId getPageId()
-	{
-		return pageId;
-	}
-	
-	public void setPageId(PageId pageId)
-	{
-		this.pageId = pageId;
-	}
-	
-	
 	/**
 	 * @return calculated left bound for message sequence number while filtering by sequence with "is less" or "is less or equals" condition and limit involved
 	 * This method is for internal use
@@ -167,6 +163,7 @@ public class StoredMessageFilter
 	public String toString()
 	{
 		List<String> result = new ArrayList<>(10);
+		result.add("pageId=" + pageId);
 		if (sessionAlias != null)
 			result.add("session alias" + sessionAlias);
 		if (direction != null)
@@ -181,8 +178,6 @@ public class StoredMessageFilter
 			result.add("limit=" + limit);
 		if (order != null)
 			result.add("order=" + order);
-		if (pageId != null)
-			result.add("page=" + pageId);
 		return String.join(", ", result);
 	}
 }

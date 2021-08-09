@@ -50,7 +50,7 @@ public class PageInfo
 		return ended;
 	}
 	
-	public boolean isCurrent()
+	public boolean isActive()
 	{
 		return ended == null;
 	}

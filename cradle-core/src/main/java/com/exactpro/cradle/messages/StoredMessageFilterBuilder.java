@@ -37,7 +37,14 @@ import com.exactpro.cradle.filters.FilterForLessBuilder;
  */
 public class StoredMessageFilterBuilder
 {
+	private final PageId pageId;
 	private StoredMessageFilter msgFilter;
+	
+	public StoredMessageFilterBuilder(PageId pageId)
+	{
+		this.pageId = pageId;
+	}
+	
 	
 	public FilterForEqualsBuilder<String, StoredMessageFilterBuilder> sessionAlias()
 	{
@@ -122,13 +129,6 @@ public class StoredMessageFilterBuilder
 		return this;
 	}
 	
-	public StoredMessageFilterBuilder pageId(PageId pageId)
-	{
-		initIfNeeded();
-		msgFilter.setPageId(pageId);
-		return this;
-	}
-	
 	public StoredMessageFilter build()
 	{
 		initIfNeeded();
@@ -146,6 +146,6 @@ public class StoredMessageFilterBuilder
 	
 	protected StoredMessageFilter createStoredMessageFilter()
 	{
-		return new StoredMessageFilter();
+		return new StoredMessageFilter(pageId);
 	}
 }

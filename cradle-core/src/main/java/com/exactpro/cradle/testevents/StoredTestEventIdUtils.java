@@ -21,6 +21,7 @@ import java.time.format.DateTimeParseException;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.TimeUtils;
 
@@ -29,9 +30,13 @@ import com.exactpro.cradle.utils.TimeUtils;
  */
 public class StoredTestEventIdUtils
 {
-	public static String[] splitParts(String id)
+	public static String[] splitParts(String id) throws CradleIdException
 	{
-		return id.split(StoredTestEventId.ID_PARTS_DELIMITER);
+		String[] parts = id.split(StoredTestEventId.ID_PARTS_DELIMITER);
+		if (parts.length < 3)
+			throw new CradleIdException("Test Event ID ("+id+") should contain book ID, timestamp and unique ID "
+					+ "delimited with '"+StoredTestEventId.ID_PARTS_DELIMITER+"'");
+		return parts;
 	}
 	
 	public static String getId(String[] parts) throws CradleIdException
@@ -50,6 +55,11 @@ public class StoredTestEventIdUtils
 		{
 			throw new CradleIdException("Invalid timstamp ("+timeString+") in ID '"+restoreId(parts)+"'");
 		}
+	}
+	
+	public static BookId getBook(String[] parts)
+	{
+		return new BookId(parts[0]);
 	}
 	
 	public static String timestampToString(Instant timestamp)

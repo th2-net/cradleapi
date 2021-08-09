@@ -30,24 +30,39 @@ import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventFilter;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.NoStorageException;
 
 /**
  * Dummy implementation of CradleStorage that does nothing and serves as a stub
  */
 public class DummyCradleStorage extends CradleStorage
 {
-	private final PageInfo currentPage;
-	
-	public DummyCradleStorage(String book)
+	public DummyCradleStorage() throws CradleStorageException
 	{
-		super(book);
-		currentPage = new PageInfo(new PageId("DummyPage"), Instant.now(), null);
+		super();
+	}
+	
+	
+	@Override
+	public void createStorage() throws CradleStorageException
+	{
+	}
+	
+	
+	@Override
+	protected Collection<BookInfo> loadBooks() throws NoStorageException, CradleStorageException
+	{
+		return null;
+	}
+
+	@Override
+	protected void writeBook(BookInfo newBook) throws NoStorageException, CradleStorageException
+	{
 	}
 	
 	@Override
-	public PageInfo getCurrentPage()
+	protected void doSwitchToNextPage(BookId bookId, String pageName, Instant timestamp) throws CradleStorageException
 	{
-		return currentPage;
 	}
 	
 	@Override

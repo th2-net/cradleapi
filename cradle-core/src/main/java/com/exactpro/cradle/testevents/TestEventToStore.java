@@ -18,6 +18,8 @@ package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
 
+import com.exactpro.cradle.BookId;
+
 /**
  * Holds basic information about test event prepared to be stored in Cradle. Events extend this class with additional data
  */
@@ -76,6 +78,12 @@ public abstract class TestEventToStore implements BasicTestEvent
 		this.parentId = parentId;
 	}
 	
+	
+	@Override
+	public final BookId getBookId()
+	{
+		return TestEvent.bookId(this);
+	}
 	
 	@Override
 	public final Instant getStartTimestamp()

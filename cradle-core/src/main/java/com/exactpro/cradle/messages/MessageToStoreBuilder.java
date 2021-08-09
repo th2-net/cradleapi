@@ -18,6 +18,7 @@ package com.exactpro.cradle.messages;
 
 import java.time.Instant;
 
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 
 /**
@@ -44,6 +45,13 @@ public class MessageToStoreBuilder
 			msg = createMessageToStore();
 	}
 	
+	
+	public MessageToStoreBuilder bookId(BookId book)
+	{
+		initIfNeeded();
+		msg.setBook(book);
+		return this;
+	}
 	
 	public MessageToStoreBuilder sessionAlias(String sessionAlias)
 	{

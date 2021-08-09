@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,17 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.testevents;
-
-import java.time.Instant;
-
-import com.exactpro.cradle.BookId;
+package com.exactpro.cradle.utils;
 
 /**
- * Interface to access basic metadata fields of test event
+ * Exception to throw if internal storage is not initialized but attempt to work with it was made
  */
-public interface BasicTestEvent
+public class NoStorageException extends CradleStorageException
 {
-	StoredTestEventId getId();
-	String getName();
-	String getType();
-	StoredTestEventId getParentId();
-	BookId getBookId();
-	Instant getStartTimestamp();
+	private static final long serialVersionUID = 7745538024814706328L;
+	
+	public NoStorageException(String message)
+	{
+		super(message);
+	}
 }

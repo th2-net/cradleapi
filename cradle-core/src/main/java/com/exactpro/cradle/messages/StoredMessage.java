@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.Arrays;
 
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.utils.CompressionUtils;
 
@@ -28,7 +29,7 @@ import com.exactpro.cradle.utils.CompressionUtils;
  */
 public class StoredMessage implements Serializable
 {
-	private static final long serialVersionUID = 200983136307497672L;
+	private static final long serialVersionUID = 5602557739148866986L;
 	
 	private final StoredMessageId id;
 	private final StoredMessageMetadata metadata;
@@ -61,6 +62,14 @@ public class StoredMessage implements Serializable
 	public StoredMessageId getId()
 	{
 		return id;
+	}
+	
+	/**
+	 * @return ID of book the message is related to
+	 */
+	public BookId getBookId()
+	{
+		return id.getBookId();
 	}
 	
 	/**
