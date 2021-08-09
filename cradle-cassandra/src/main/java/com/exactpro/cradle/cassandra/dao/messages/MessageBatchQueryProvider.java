@@ -53,9 +53,11 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 public class MessageBatchQueryProvider
 {
 	private static final Logger logger = LoggerFactory.getLogger(MessageBatchQueryProvider.class);
-	
-	private static final String LEFT_MESSAGE_INDEX = "left_"+MESSAGE_INDEX,
-			RIGHT_MESSAGE_INDEX = "right_"+MESSAGE_INDEX;
+
+	private static final String LEFT_MESSAGE_INDEX = "left_" + MESSAGE_INDEX,
+			RIGHT_MESSAGE_INDEX = "right_" + MESSAGE_INDEX,
+			FROM_MESSAGE_INDEX = "from_" + MESSAGE_INDEX,
+			TO_MESSAGE_INDEX = "to_" + MESSAGE_INDEX;
 	private final CqlSession session;
 	private final EntityHelper<DetailedMessageBatchEntity> helper;
 	private final Select selectStart;
@@ -131,10 +133,12 @@ public class MessageBatchQueryProvider
 		}
 		
 		if (filter.getTimestampFrom() != null)
-			select = FilterUtils.filterToWhere(ComparisonOperation.GREATER_OR_EQUALS, select.whereColumn(MESSAGE_INDEX), LEFT_MESSAGE_INDEX);
+			select = FilterUtils.filterToWhere(ComparisonOperation.GREATER_OR_EQUALS, select.whereColumn(MESSAGE_INDEX),
+					FROM_MESSAGE_INDEX);
 		
 		if (filter.getTimestampTo() != null)
-			select = FilterUtils.filterToWhere(ComparisonOperation.LESS_OR_EQUALS, select.whereColumn(MESSAGE_INDEX), RIGHT_MESSAGE_INDEX);
+			select = FilterUtils.filterToWhere(ComparisonOperation.LESS_OR_EQUALS, select.whereColumn(MESSAGE_INDEX),
+					TO_MESSAGE_INDEX);
 		
 		if (filter.getLimit() > 0)
 			select.limit(filter.getLimit());
@@ -146,8 +150,7 @@ public class MessageBatchQueryProvider
 			CassandraSemaphore semaphore, MessageBatchOperator mbOperator, TimeMessageOperator tmOperator,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes) throws CradleStorageException
 	{
-		BoundStatementBuilder builder = ps.boundStatementBuilder()
-				.setUuid(INSTANCE_ID, instanceId);
+		BoundStatementBuilder builder = ps.boundStatementBuilder().setUuid(INSTANCE_ID, instanceId);
 		builder = attributes.apply(builder);
 		if (filter != null)
 			builder = bindFilterParameters(builder, instanceId, filter, semaphore, mbOperator, tmOperator, attributes);
@@ -188,7 +191,7 @@ public class MessageBatchQueryProvider
 		builder = builder.setString(STREAM_NAME, filter.getStreamName().getValue());
 
 		FilterForEquals<Direction> directionFilter = filter.getDirection();
-		if ((filter.getTimestampFrom() != null || filter.getTimestampTo() != null) && filter.getDirection() == null)
+		if ((filter.getTimestampFrom() != null || filter.getTimestampTo() != null) && directionFilter == null)
 			throw new CradleStorageException("Direction is a mandatory filter field for filtering by timestamp or index");
 
 		if (directionFilter != null)
@@ -225,11 +228,11 @@ public class MessageBatchQueryProvider
 			{
 				long leftBatchIndex = getNearestMessageIndexBefore(tmOperator, instanceId,
 						filter.getStreamName().getValue(), directionFilter.getValue(), ts, attributes);
-				builder = builder.setLong(LEFT_MESSAGE_INDEX, leftBatchIndex);
+				builder = builder.setLong(FROM_MESSAGE_INDEX, leftBatchIndex);
 			}
 			catch (ExecutionException | InterruptedException e)
 			{
-				throw new CradleStorageException("Error getting message batch index for timestamp 'From'", e);
+				throw new CradleStorageException("Error getting message batch index for timestamp 'From=" + ts + '\'', e);
 			}
 		}
 
@@ -240,11 +243,11 @@ public class MessageBatchQueryProvider
 			{
 				long rightBatchIndex = getNearestMessageIndexAfter(tmOperator, instanceId,
 						filter.getStreamName().getValue(), directionFilter.getValue(), ts, attributes);
-				builder = builder.setLong(RIGHT_MESSAGE_INDEX, rightBatchIndex);
+				builder = builder.setLong(TO_MESSAGE_INDEX, rightBatchIndex);
 			}
 			catch (ExecutionException | InterruptedException e)
 			{
-				throw new CradleStorageException("Error getting message batch index for timestamp 'To'", e);
+				throw new CradleStorageException("Error getting message batch index for timestamp 'To=" + ts + '\'', e);
 			}
 		}
 		
