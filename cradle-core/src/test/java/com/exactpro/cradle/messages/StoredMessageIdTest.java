@@ -21,6 +21,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.utils.CradleIdException;
 
@@ -30,6 +31,7 @@ import java.time.Instant;
 
 public class StoredMessageIdTest
 {
+	private BookId book;
 	private String sessionAlias,
 			sessionAliasWithColon;
 	private Direction direction;
@@ -42,17 +44,20 @@ public class StoredMessageIdTest
 	@BeforeClass
 	public void prepare()
 	{
+		book = new BookId("book1");
 		sessionAlias = "Session1";
 		sessionAliasWithColon = "10.20.30.40:8080-10:20:30:42:9000";
 		direction = Direction.FIRST;
 		timestamp = Instant.EPOCH;
 		seq = 100;
 		messageSeq = seq+3;
-		stringId = sessionAlias+ID_PARTS_DELIMITER
+		stringId = book+ID_PARTS_DELIMITER
+				+sessionAlias+ID_PARTS_DELIMITER
 				+direction.getLabel()+ID_PARTS_DELIMITER
 				+StoredMessageIdUtils.timestampToString(timestamp)+ID_PARTS_DELIMITER
 				+messageSeq;
-		stringIdWithColon = sessionAliasWithColon+ID_PARTS_DELIMITER
+		stringIdWithColon = book+ID_PARTS_DELIMITER
+				+sessionAliasWithColon+ID_PARTS_DELIMITER
 				+direction.getLabel()+ID_PARTS_DELIMITER
 				+StoredMessageIdUtils.timestampToString(timestamp)+ID_PARTS_DELIMITER
 				+messageSeq;
@@ -64,15 +69,17 @@ public class StoredMessageIdTest
 		return new Object[][]
 				{
 					{""},
-					{sessionAlias},
-					{sessionAlias+ID_PARTS_DELIMITER},
-					{sessionAlias+ID_PARTS_DELIMITER+"XXX"},
-					{sessionAlias+ID_PARTS_DELIMITER+"XXX"+ID_PARTS_DELIMITER},
-					{sessionAlias+ID_PARTS_DELIMITER+"XXX"+ID_PARTS_DELIMITER+"NNN"},
-					{sessionAlias+ID_PARTS_DELIMITER+"XXX"+ID_PARTS_DELIMITER+seq},
-					{sessionAlias+ID_PARTS_DELIMITER+direction.getLabel()},
-					{sessionAlias+ID_PARTS_DELIMITER+direction.getLabel()+ID_PARTS_DELIMITER},
-					{sessionAlias+ID_PARTS_DELIMITER+direction.getLabel()+ID_PARTS_DELIMITER+"NNN"}
+					{book.toString()},
+					{book+ID_PARTS_DELIMITER},
+					{book+ID_PARTS_DELIMITER+sessionAlias},
+					{book+ID_PARTS_DELIMITER+sessionAlias+ID_PARTS_DELIMITER},
+					{book+ID_PARTS_DELIMITER+sessionAlias+ID_PARTS_DELIMITER+"XXX"},
+					{book+ID_PARTS_DELIMITER+sessionAlias+ID_PARTS_DELIMITER+"XXX"+ID_PARTS_DELIMITER},
+					{book+ID_PARTS_DELIMITER+sessionAlias+ID_PARTS_DELIMITER+"XXX"+ID_PARTS_DELIMITER+"NNN"},
+					{book+ID_PARTS_DELIMITER+sessionAlias+ID_PARTS_DELIMITER+"XXX"+ID_PARTS_DELIMITER+seq},
+					{book+ID_PARTS_DELIMITER+sessionAlias+ID_PARTS_DELIMITER+direction.getLabel()},
+					{book+ID_PARTS_DELIMITER+sessionAlias+ID_PARTS_DELIMITER+direction.getLabel()+ID_PARTS_DELIMITER},
+					{book+ID_PARTS_DELIMITER+sessionAlias+ID_PARTS_DELIMITER+direction.getLabel()+ID_PARTS_DELIMITER+"NNN"}
 				};
 	}
 	
@@ -80,14 +87,14 @@ public class StoredMessageIdTest
 	@Test
 	public void idToString()
 	{
-		StoredMessageId id = new StoredMessageId(sessionAlias, direction, timestamp, messageSeq);
+		StoredMessageId id = new StoredMessageId(book, sessionAlias, direction, timestamp, messageSeq);
 		Assert.assertEquals(id.toString(), stringId);
 	}
 	
 	@Test
 	public void idFromString() throws CradleIdException
 	{
-		StoredMessageId id = new StoredMessageId(sessionAlias, direction, timestamp, messageSeq),
+		StoredMessageId id = new StoredMessageId(book, sessionAlias, direction, timestamp, messageSeq),
 				fromString = StoredMessageId.fromString(stringId);
 		Assert.assertEquals(fromString, id);
 	}
@@ -95,7 +102,7 @@ public class StoredMessageIdTest
 	@Test
 	public void idFromStringWithColon() throws CradleIdException
 	{
-		StoredMessageId id = new StoredMessageId(sessionAliasWithColon, direction, timestamp, messageSeq),
+		StoredMessageId id = new StoredMessageId(book, sessionAliasWithColon, direction, timestamp, messageSeq),
 				fromString = StoredMessageId.fromString(stringIdWithColon);
 		Assert.assertEquals(fromString, id);
 	}

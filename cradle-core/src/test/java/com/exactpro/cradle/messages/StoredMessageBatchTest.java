@@ -26,6 +26,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.MessageUtils;
@@ -33,6 +34,7 @@ import com.exactpro.cradle.utils.MessageUtils;
 public class StoredMessageBatchTest
 {
 	private MessageToStoreBuilder builder;
+	private BookId book;
 	private String sessionAlias;
 	private Direction direction;
 	private Instant timestamp;
@@ -42,6 +44,7 @@ public class StoredMessageBatchTest
 	public void prepare()
 	{
 		builder = new MessageToStoreBuilder();
+		book = new BookId("book1");
 		sessionAlias = "Session1";
 		direction = Direction.FIRST;
 		timestamp = Instant.now();
@@ -55,15 +58,17 @@ public class StoredMessageBatchTest
 		long seq = 10;
 		return new Object[][]
 				{
-					{Arrays.asList(new IdData(sessionAlias, d, timestamp, seq), 
-							new IdData(sessionAlias+"X", d, timestamp, seq+1))},             //Different sessions
-					{Arrays.asList(new IdData(sessionAlias, d, timestamp, seq), 
-							new IdData(sessionAlias, Direction.SECOND, timestamp, seq+1))},  //Different directions
-					{Arrays.asList(new IdData(sessionAlias, d, timestamp, seq), 
-							new IdData(sessionAlias, d, timestamp.minusMillis(1), seq))},    //Timestamp is less than previous
-					{Arrays.asList(new IdData(sessionAlias, d, timestamp, seq), 
-							new IdData(sessionAlias, d, timestamp, seq),                     //Sequence is not incremented
-							new IdData(sessionAlias, d, timestamp, seq-1))}                  //Sequence is less than previous
+					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
+							new IdData(new BookId(book.getName()+"X"), sessionAlias, d, timestamp, seq+1))},             //Different books
+					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
+							new IdData(book, sessionAlias+"X", d, timestamp, seq+1))},             //Different sessions
+					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
+							new IdData(book, sessionAlias, Direction.SECOND, timestamp, seq+1))},  //Different directions
+					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
+							new IdData(book, sessionAlias, d, timestamp.minusMillis(1), seq))},    //Timestamp is less than previous
+					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
+							new IdData(book, sessionAlias, d, timestamp, seq),                     //Sequence is not incremented
+							new IdData(book, sessionAlias, d, timestamp, seq-1))}                  //Sequence is less than previous
 				};
 	}
 	
@@ -72,10 +77,11 @@ public class StoredMessageBatchTest
 	{
 		return new Object[][]
 				{
-					{builder.build()},                                                                          //Empty message
-					{builder.sessionAlias(sessionAlias).direction(null).timestamp(null).build()},               //Only session is set
-					{builder.sessionAlias(sessionAlias).direction(direction).timestamp(null).build()},          //Only session and direction are set
-					{builder.sessionAlias(sessionAlias).direction(direction).timestamp(Instant.now()).build()}  //Content is not set
+					{builder.build()},                                                                                       //Empty message
+					{builder.bookId(book).build()},                                                                          //Only book is set
+					{builder.bookId(book).sessionAlias(sessionAlias).direction(null).timestamp(null).build()},               //Only book and session are set
+					{builder.bookId(book).sessionAlias(sessionAlias).direction(direction).timestamp(null).build()},          //Only book, session and direction are set
+					{builder.bookId(book).sessionAlias(sessionAlias).direction(direction).timestamp(Instant.now()).build()}  //Content is not set
 				};
 	}
 	
@@ -85,6 +91,7 @@ public class StoredMessageBatchTest
 	public void batchChecksFirstMessage() throws CradleStorageException
 	{
 		StoredMessageBatch.singleton(builder
+				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.sequence(-1)
@@ -102,6 +109,7 @@ public class StoredMessageBatchTest
 		for (IdData id : ids)
 		{
 			batch.addMessage(builder
+					.bookId(id.book)
 					.sessionAlias(id.sessionAlias)
 					.direction(id.direction)
 					.sequence(id.sequence)
@@ -125,6 +133,7 @@ public class StoredMessageBatchTest
 	{
 		long seq = 10;
 		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
+				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.sequence(seq)
@@ -133,6 +142,7 @@ public class StoredMessageBatchTest
 				.build());
 		
 		StoredMessage msg1 = batch.addMessage(builder
+				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.timestamp(timestamp)
@@ -140,6 +150,7 @@ public class StoredMessageBatchTest
 				.build());
 		
 		StoredMessage msg2 = batch.addMessage(builder
+				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.timestamp(timestamp)
@@ -155,6 +166,7 @@ public class StoredMessageBatchTest
 	{
 		long seq = 10;
 		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
+				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.sequence(seq)
@@ -163,6 +175,7 @@ public class StoredMessageBatchTest
 				.build());
 		
 		batch.addMessage(builder
+				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.sequence(seq+10)
@@ -176,6 +189,7 @@ public class StoredMessageBatchTest
 	{
 		long seq = 10;
 		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
+				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.sequence(seq)
@@ -183,12 +197,13 @@ public class StoredMessageBatchTest
 				.content(messageContent)
 				.build());
 		StoredMessage msg = batch.addMessage(builder
+				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.timestamp(timestamp)
 				.content(messageContent)
 				.build());
-		Assert.assertEquals(msg.getId(), new StoredMessageId(sessionAlias, direction, timestamp, seq+1));
+		Assert.assertEquals(msg.getId(), new StoredMessageId(book, sessionAlias, direction, timestamp, seq+1));
 	}
 	
 	@Test
@@ -196,6 +211,7 @@ public class StoredMessageBatchTest
 	{
 		Instant timestamp = Instant.ofEpochSecond(1000);
 		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
+				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.sequence(1)
@@ -204,6 +220,7 @@ public class StoredMessageBatchTest
 				.build());
 		
 		batch.addMessage(builder
+				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.timestamp(timestamp.plusSeconds(10))
@@ -213,6 +230,7 @@ public class StoredMessageBatchTest
 		Instant lastTimestamp = batch.getLastTimestamp();
 		
 		batch.addMessage(builder
+				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.timestamp(timestamp.plusSeconds(20))
@@ -226,6 +244,7 @@ public class StoredMessageBatchTest
 	public void batchSerialization() throws CradleStorageException, IOException
 	{
 		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
+				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.sequence(0)
@@ -242,13 +261,15 @@ public class StoredMessageBatchTest
 	
 	class IdData
 	{
+		final BookId book;
 		final String sessionAlias;
 		final Direction direction;
 		final Instant timestamp;
 		final long sequence;
 		
-		public IdData(String sessionAlias, Direction direction, Instant timestamp, long sequence)
+		public IdData(BookId book, String sessionAlias, Direction direction, Instant timestamp, long sequence)
 		{
+			this.book = book;
 			this.sessionAlias = sessionAlias;
 			this.direction = direction;
 			this.timestamp = timestamp;
@@ -258,7 +279,8 @@ public class StoredMessageBatchTest
 		@Override
 		public String toString()
 		{
-			return sessionAlias+StoredMessageId.ID_PARTS_DELIMITER
+			return book+StoredMessageId.ID_PARTS_DELIMITER
+					+sessionAlias+StoredMessageId.ID_PARTS_DELIMITER
 					+direction.getLabel()+StoredMessageId.ID_PARTS_DELIMITER
 					+StoredMessageIdUtils.timestampToString(timestamp)+StoredMessageId.ID_PARTS_DELIMITER
 					+sequence;

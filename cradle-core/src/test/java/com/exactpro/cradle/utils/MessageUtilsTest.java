@@ -25,6 +25,7 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.messages.MessageToStoreBuilder;
 import com.exactpro.cradle.messages.StoredMessage;
@@ -40,6 +41,7 @@ public class MessageUtilsTest
 	public void prepare() throws CradleStorageException
 	{
 		MessageToStoreBuilder builder = new MessageToStoreBuilder();
+		BookId bookId = new BookId("book1");
 		String sessionAlias = "Session1";
 		Direction direction = Direction.FIRST;
 		Instant timestamp = Instant.now();
@@ -48,6 +50,7 @@ public class MessageUtilsTest
 		long seq = 10;
 		batch = new StoredMessageBatch();
 		msg1 = batch.addMessage(builder
+				.bookId(bookId)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.sequence(10)
@@ -56,6 +59,7 @@ public class MessageUtilsTest
 				.build());
 		
 		msg2 = batch.addMessage(builder
+				.bookId(bookId)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.sequence(seq+10)  //Need to have a gap between sequence numbers to verify that messages are written/read correctly

@@ -22,6 +22,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
@@ -30,8 +31,9 @@ import com.exactpro.cradle.testevents.TestEventSingleToStoreBuilder;
 
 public class TestEventUtilsTest
 {
-	private static final StoredTestEventId DUMMY_ID = new StoredTestEventId(Instant.EPOCH, "123"),
-			BROKEN_ID = new StoredTestEventId(null, "123");
+	private static final BookId DUMMY_BOOK = new BookId("book1");
+	private static final StoredTestEventId DUMMY_ID = new StoredTestEventId(DUMMY_BOOK, Instant.EPOCH, "123"),
+			BROKEN_ID = new StoredTestEventId(null, null, "123");
 	private static final String DUMMY_NAME = "TestEvent";
 	
 	private TestEventSingleToStoreBuilder eventBuilder;
@@ -74,7 +76,8 @@ public class TestEventUtilsTest
 	@Test
 	public void validBatchEvent() throws CradleStorageException
 	{
-		StoredTestEventId parentId = new StoredTestEventId(Instant.EPOCH, "ParentID");
+		StoredTestEventId batchId = new StoredTestEventId(DUMMY_BOOK, Instant.EPOCH, "BatchID"),
+				parentId = new StoredTestEventId(DUMMY_BOOK, Instant.EPOCH, "ParentID");
 		TestEventSingleToStore event = eventBuilder.id(DUMMY_ID)
 				.name(DUMMY_NAME)
 				.parentId(parentId)
@@ -82,6 +85,7 @@ public class TestEventUtilsTest
 				.build();
 		
 		TestEventBatchToStore batchToStore = new TestEventBatchToStore();
+		batchToStore.setId(batchId);
 		batchToStore.setParentId(parentId);
 		
 		StoredTestEventBatch batch = new StoredTestEventBatch(batchToStore);
