@@ -55,13 +55,11 @@ public class MessageBatchQueryProvider
 	private static final Logger logger = LoggerFactory.getLogger(MessageBatchQueryProvider.class);
 
 	private static final String LEFT_MESSAGE_INDEX = "left_" + MESSAGE_INDEX,
-			RIGHT_MESSAGE_INDEX = "right_" + MESSAGE_INDEX,
-			FROM_MESSAGE_INDEX = "from_" + MESSAGE_INDEX,
-			TO_MESSAGE_INDEX = "to_" + MESSAGE_INDEX;
+			RIGHT_MESSAGE_INDEX = "right_" + MESSAGE_INDEX;
 	private final CqlSession session;
 	private final EntityHelper<DetailedMessageBatchEntity> helper;
 	private final Select selectStart;
-	
+
 	public MessageBatchQueryProvider(MapperContext context, EntityHelper<DetailedMessageBatchEntity> helper)
 	{
 		this.session = context.getSession();
@@ -115,30 +113,54 @@ public class MessageBatchQueryProvider
 		FilterForEquals<Direction> direction = filter.getDirection();
 		if (direction != null)
 			select = FilterUtils.filterToWhere(direction.getOperation(), select.whereColumn(DIRECTION), null);
-		
+
+		boolean isLeftIndexSelected = false;
+		boolean isRightIndexSelected = false;
 		if (filter.getIndex() != null)
 		{
-			ComparisonOperation operation = filter.getIndex().getOperation();
+			ComparisonOperation op = filter.getIndex().getOperation();
+			if (op == ComparisonOperation.EQUALS)
+			{
+				select = FilterUtils.filterToWhere(ComparisonOperation.GREATER_OR_EQUALS,
+						select.whereColumn(MESSAGE_INDEX), LEFT_MESSAGE_INDEX);
+				select = FilterUtils.filterToWhere(ComparisonOperation.LESS_OR_EQUALS,
+						select.whereColumn(MESSAGE_INDEX), RIGHT_MESSAGE_INDEX);
+				return select;
+			}
+			
 			//This is for case when need to return "previous X messages, i.e. X messages whose index is less than Y"
-			if (filter.getLimit() > 0 && (operation == ComparisonOperation.LESS || operation == ComparisonOperation.LESS_OR_EQUALS))
-				select = FilterUtils.filterToWhere(ComparisonOperation.GREATER_OR_EQUALS, select.whereColumn(MESSAGE_INDEX), LEFT_MESSAGE_INDEX);
+			if (filter.getLimit() > 0 && (op == ComparisonOperation.LESS || op == ComparisonOperation.LESS_OR_EQUALS))
+			{
+				select = FilterUtils.filterToWhere(ComparisonOperation.GREATER_OR_EQUALS,
+						select.whereColumn(MESSAGE_INDEX), LEFT_MESSAGE_INDEX);
+			}
 			
 			//Overriding operation to include message's batch while selecting by query
-			//While iterating through query results original operation will be used
-			if (operation == ComparisonOperation.GREATER)
-				operation = ComparisonOperation.GREATER_OR_EQUALS;
-			else if (operation == ComparisonOperation.LESS)
-				operation = ComparisonOperation.LESS_OR_EQUALS;
-			select = FilterUtils.filterToWhere(operation, select.whereColumn(MESSAGE_INDEX), RIGHT_MESSAGE_INDEX);
+			//While iterating through query results original op will be used
+			switch (op)
+			{
+				case GREATER:
+					op = ComparisonOperation.GREATER_OR_EQUALS;
+				case GREATER_OR_EQUALS:
+					isLeftIndexSelected = true;
+					select = FilterUtils.filterToWhere(op, select.whereColumn(MESSAGE_INDEX), LEFT_MESSAGE_INDEX);
+					break;
+				case LESS:
+					op = ComparisonOperation.LESS_OR_EQUALS;
+				case LESS_OR_EQUALS:
+				default:
+					isRightIndexSelected = true;
+					select = FilterUtils.filterToWhere(op, select.whereColumn(MESSAGE_INDEX), RIGHT_MESSAGE_INDEX);
+			}
 		}
 		
-		if (filter.getTimestampFrom() != null)
+		if (!isLeftIndexSelected && filter.getTimestampFrom() != null)
 			select = FilterUtils.filterToWhere(ComparisonOperation.GREATER_OR_EQUALS, select.whereColumn(MESSAGE_INDEX),
-					FROM_MESSAGE_INDEX);
+					LEFT_MESSAGE_INDEX);
 		
-		if (filter.getTimestampTo() != null)
+		if (!isRightIndexSelected && filter.getTimestampTo() != null)
 			select = FilterUtils.filterToWhere(ComparisonOperation.LESS_OR_EQUALS, select.whereColumn(MESSAGE_INDEX),
-					TO_MESSAGE_INDEX);
+					RIGHT_MESSAGE_INDEX);
 		
 		if (filter.getLimit() > 0)
 			select.limit(filter.getLimit());
@@ -196,29 +218,46 @@ public class MessageBatchQueryProvider
 
 		if (directionFilter != null)
 			builder = builder.setString(DIRECTION, directionFilter.getValue().getLabel());
-		
+
+		long leftIndex = 0L;
+		long rightIndex = Long.MAX_VALUE;
 		if (filter.getIndex() != null)
 		{
+			ComparisonOperation op = filter.getIndex().getOperation();
 			DetailedMessageBatchEntity batch = getMessageBatch(instanceId, filter, semaphore, operator, attributes);
 			
-			ComparisonOperation op = filter.getIndex().getOperation();
 			if (filter.getLimit() > 0 && (op == ComparisonOperation.LESS || op == ComparisonOperation.LESS_OR_EQUALS))
 			{
-				long leftBatchIndex;
 				try
 				{
-  				//Finding left bound for filter (will use it in iterator) and batch index (will use it in query)
-					leftBatchIndex = CassandraMessageUtils.findLeftMessageIndex(batch, filter, instanceId, operator, attributes);
+					//Finding left bound for filter (will use it in iterator) and batch index (will use it in query)
+					leftIndex = CassandraMessageUtils.findLeftMessageIndex(batch, filter, instanceId, operator, attributes);
 				}
 				catch (IOException e)
 				{
 					logger.warn("Error while finding left batch index for stream "
 							+ "'"+batch.getStreamName()+"', direction '"+batch.getDirection()+"' and index "+batch.getMessageIndex(), e);
-					leftBatchIndex = batch.getMessageIndex();
+					leftIndex = batch.getMessageIndex();
 				}
-				builder = builder.setLong(LEFT_MESSAGE_INDEX, leftBatchIndex); 
+				builder = builder.setLong(LEFT_MESSAGE_INDEX, leftIndex); 
 			}
-			builder = builder.setLong(RIGHT_MESSAGE_INDEX, batch != null ? batch.getMessageIndex() : filter.getIndex().getValue());
+			long leftBatchIndex = batch != null ? batch.getMessageIndex() : filter.getIndex().getValue();
+			long rightBatchIndex = batch != null ? batch.getLastMessageIndex() : filter.getIndex().getValue();
+			switch (op)
+			{
+				case GREATER:
+				case GREATER_OR_EQUALS:
+					builder = builder.setLong(LEFT_MESSAGE_INDEX, leftIndex = leftBatchIndex);
+					break;
+				case LESS:
+				case LESS_OR_EQUALS:
+					builder = builder.setLong(RIGHT_MESSAGE_INDEX, rightIndex = rightBatchIndex);
+					break;
+				case EQUALS:
+					builder = builder.setLong(LEFT_MESSAGE_INDEX, leftBatchIndex);
+					builder = builder.setLong(RIGHT_MESSAGE_INDEX, rightBatchIndex); 
+				return builder;	
+			}
 		}
 		
 		if (filter.getTimestampFrom() != null)
@@ -226,9 +265,10 @@ public class MessageBatchQueryProvider
 			Instant ts = filter.getTimestampFrom().getValue();
 			try
 			{
-				long leftBatchIndex = getNearestMessageIndexBefore(tmOperator, instanceId,
+				long fromIndex = getNearestMessageIndexBefore(tmOperator, instanceId,
 						filter.getStreamName().getValue(), directionFilter.getValue(), ts, attributes);
-				builder = builder.setLong(FROM_MESSAGE_INDEX, leftBatchIndex);
+				if (fromIndex > leftIndex)
+					builder = builder.setLong(LEFT_MESSAGE_INDEX, fromIndex);
 			}
 			catch (ExecutionException | InterruptedException e)
 			{
@@ -241,9 +281,10 @@ public class MessageBatchQueryProvider
 			Instant ts = filter.getTimestampTo().getValue();
 			try
 			{
-				long rightBatchIndex = getNearestMessageIndexAfter(tmOperator, instanceId,
+				long toIndex = getNearestMessageIndexAfter(tmOperator, instanceId,
 						filter.getStreamName().getValue(), directionFilter.getValue(), ts, attributes);
-				builder = builder.setLong(TO_MESSAGE_INDEX, rightBatchIndex);
+				if (toIndex < rightIndex)
+					builder = builder.setLong(RIGHT_MESSAGE_INDEX, toIndex);
 			}
 			catch (ExecutionException | InterruptedException e)
 			{
