@@ -26,6 +26,7 @@ import com.datastax.oss.driver.api.querybuilder.insert.Insert;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
+import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
 import com.exactpro.cradle.cassandra.dao.AsyncOperator;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
@@ -52,6 +53,7 @@ import com.exactpro.cradle.testevents.StoredTestEventFilter;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.MessageUtils;
+import com.exactpro.cradle.utils.NoStorageException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +76,6 @@ public class CassandraCradleStorage extends CradleStorage
 {
 	private Logger logger = LoggerFactory.getLogger(CassandraCradleStorage.class);
 	
-	private final String keyspace;
 	private final CassandraConnection connection;
 	private final CassandraStorageSettings settings;
 	private final CassandraSemaphore semaphore;
@@ -88,41 +89,25 @@ public class CassandraCradleStorage extends CradleStorage
 	private QueryExecutor exec;
 	
 	private IntervalsWorker intervalsWorker;
-	private PageInfo currentPage;
 	
-	public CassandraCradleStorage(String book, String keyspace, CassandraConnection connection, CassandraStorageSettings settings)
+	public CassandraCradleStorage(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings)
 	{
-		super(book);
-		this.keyspace = keyspace;
-		this.connection = connection;
-		this.settings = settings;
-		this.semaphore = new CassandraSemaphore(settings.getMaxParallelQueries());
+		this.connection = new CassandraConnection(connectionSettings);
+		this.settings = storageSettings;
+		this.semaphore = new CassandraSemaphore(storageSettings.getMaxParallelQueries());
 	}
 	
 	
-	public String getKeyspace()
-	{
-		return keyspace;
-	}
-	
-	String init(boolean prepareStorage) throws CradleStorageException
+	@Override
+	protected void doInit() throws CradleStorageException
 	{
 		connectToCassandra();
-
+		
 		try
 		{
 			exec = new QueryExecutor(connection.getSession(),
 					settings.getTimeout(), settings.getWriteConsistencyLevel(), settings.getReadConsistencyLevel());
-
-			if (prepareStorage)
-			{
-				logger.info("Creating/updating schema...");
-				createTables();
-				logger.info("All needed tables created");
-			}
-			else
-				logger.info("Schema creation/update skipped");
-
+			
 			CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(connection.getSession()).build();
 			ops = createOperators(dataMapper, settings);
 			
@@ -138,8 +123,6 @@ public class CassandraCradleStorage extends CradleStorage
 					.setPageSize(resultPageSize);
 			
 			intervalsWorker = new CassandraIntervalsWorker(semaphore, null, writeAttrs, readAttrs, ops.getIntervalOperator());
-			
-			currentPage = findCurrentPage();
 		}
 		catch (IOException e)
 		{
@@ -147,31 +130,51 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 	}
 	
-	
-	@Override
-	public PageInfo getCurrentPage()
-	{
-		return currentPage;
-	}
-	
-	
 	@Override
 	protected void doDispose() throws CradleStorageException
 	{
 		if (connection.isRunning())
 		{
-  		logger.info("Disconnecting from Cassandra...");
-  		try
-  		{
-  			connection.stop();
-  		}
-  		catch (Exception e)
-  		{
-  			throw new CradleStorageException("Error while closing Cassandra connection", e);
-  		}
+			logger.info("Disconnecting from Cassandra...");
+			try
+			{
+				connection.stop();
+			}
+			catch (Exception e)
+			{
+				throw new CradleStorageException("Error while closing Cassandra connection", e);
+			}
 		}
 		else
 			logger.info("Already disconnected from Cassandra");
+	}
+	
+	@Override
+	public void createStorage() throws CradleStorageException
+	{
+		logger.info("Creating Cradle keyspace...");
+		new CradleKeyspaceCreator(exec, settings).createAll();
+		logger.info("Cradle keyspace created");
+	}
+	
+	@Override
+	protected Collection<BookInfo> loadBooks() throws NoStorageException, CradleStorageException
+	{
+		//TODO: implement
+		return null;
+	}
+	
+	@Override
+	protected void writeBook(BookInfo newBook) throws NoStorageException, CradleStorageException
+	{
+		//TODO: implement
+	}
+	
+	@Override
+	protected void doSwitchToNextPage(BookId bookId, String pageName, Instant timestamp) throws CradleStorageException
+	{
+		// TODO Auto-generated method stub
+		
 	}
 
 
@@ -463,7 +466,7 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	protected void createTables() throws IOException
 	{
-		new TablesCreator(keyspace, exec, settings).createAll();
+		new BookKeyspaceCreator(keyspace, exec, settings).createAll();
 	}
 	
 	protected CassandraOperators createOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings)

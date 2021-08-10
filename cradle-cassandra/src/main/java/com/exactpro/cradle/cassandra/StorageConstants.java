@@ -20,6 +20,7 @@ public class StorageConstants
 {
 	public static final String BOOK = "book",
 			PAGE = "page",
+			NAME = "name",
 			PART = "part",
 			CHUNK = "chunk",
 			LAST_CHUNK = "last_chunk",
@@ -28,6 +29,11 @@ public class StorageConstants
 			COMPRESSED = "compressed",
 			LABELS = "labels",
 			CONTENT = "z_content",  //"z_" to make this column the last one in columns list and thus faster read meta-data
+			
+			FULLNAME = "fullname",
+			KEYSPACE_NAME = "keyspace_name",
+			DESCRIPTION = "description",
+			CREATED = "created",
 			
 			MESSAGE_DATE = "message_date",
 			MESSAGE_TIME = "message_time",
@@ -40,7 +46,6 @@ public class StorageConstants
 			MESSAGE_COUNT = "message_count",
 			
 			ID = "id",
-			NAME = "name",
 			SCOPE = "scope",
 			START_DATE = "start_date",
 			START_TIME = "start_time",
