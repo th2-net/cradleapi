@@ -23,12 +23,7 @@ import com.exactpro.cradle.utils.CradleStorageException;
  */
 public abstract class CradleManager implements AutoCloseable
 {
-	private final CradleStorage storage;
-	
-	public CradleManager() throws CradleStorageException
-	{
-		storage = createStorage();
-	}
+	private CradleStorage storage;
 	
 	/**
 	 * Creates {@link CradleStorage} object to work with Cradle
@@ -36,6 +31,33 @@ public abstract class CradleManager implements AutoCloseable
 	 */
 	protected abstract CradleStorage createStorage() throws CradleStorageException;
 	
+	
+	/**
+	 * Initializes manager to get access to Cradle storage.
+	 * @throws CradleStorageException if access to Cradle storage cannot be established
+	 */
+	public void init() throws CradleStorageException
+	{
+		if (storage == null)
+		{
+			storage = createStorage();
+			storage.init();
+		}
+	}
+	
+	/**
+	 * Closes access to Cradle storage, disposing all related connections, flushing buffers, etc.
+	 * @throws Exception if there was error during Cradle storage disposal, which may mean issue with data flushing, unexpected connection break, etc.
+	 */
+	@Override
+	public void close() throws Exception
+	{
+		if (storage != null)
+		{
+			storage.dispose();
+			storage = null;
+		}
+	}
 	
 	public CradleStorage getStorage() throws CradleStorageException
 	{

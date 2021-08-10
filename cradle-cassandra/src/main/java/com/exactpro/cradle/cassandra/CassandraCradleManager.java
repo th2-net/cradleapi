@@ -17,27 +17,23 @@
 package com.exactpro.cradle.cassandra;
 
 import com.exactpro.cradle.CradleManager;
-import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 public class CassandraCradleManager extends CradleManager
 {
-	private final CassandraConnection connection;
+	private final CassandraConnectionSettings connectionSettings;
 	private final CassandraStorageSettings storageSettings;
 	
 	public CassandraCradleManager(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings, boolean prepareStorage)
 	{
-		super(prepareStorage);
-		this.connection = new CassandraConnection(connectionSettings);
+		this.connectionSettings = new CassandraConnectionSettings(connectionSettings);
 		this.storageSettings = new CassandraStorageSettings(storageSettings);
 	}
 
 	@Override
-	protected CassandraCradleStorage createStorage(String book, boolean prepareStorage) throws CradleStorageException
+	protected CassandraCradleStorage createStorage() throws CradleStorageException
 	{
-		CassandraCradleStorage storage = new CassandraCradleStorage(book, book, connection, storageSettings);
-		storage.init(prepareStorage);
-		return storage;
+		return new CassandraCradleStorage(connectionSettings, storageSettings);
 	}
 }

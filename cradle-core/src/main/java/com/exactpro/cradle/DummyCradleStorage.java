@@ -44,10 +44,20 @@ public class DummyCradleStorage extends CradleStorage
 	
 	
 	@Override
-	public void createStorage() throws CradleStorageException
+	protected void doInit() throws CradleStorageException
 	{
 	}
 	
+	@Override
+	protected void doDispose() throws CradleStorageException
+	{
+	}
+	
+	
+	@Override
+	public void createStorage() throws CradleStorageException
+	{
+	}
 	
 	@Override
 	protected Collection<BookInfo> loadBooks() throws NoStorageException, CradleStorageException
@@ -62,11 +72,6 @@ public class DummyCradleStorage extends CradleStorage
 	
 	@Override
 	protected void doSwitchToNextPage(BookId bookId, String pageName, Instant timestamp) throws CradleStorageException
-	{
-	}
-	
-	@Override
-	protected void doDispose() throws CradleStorageException
 	{
 	}
 	

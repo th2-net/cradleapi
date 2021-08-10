@@ -23,19 +23,9 @@ import com.exactpro.cradle.utils.CradleStorageException;
  */
 public class DummyCradleManager extends CradleManager
 {
-	public DummyCradleManager() throws CradleStorageException
-	{
-		super();
-	}
-
 	@Override
 	protected CradleStorage createStorage() throws CradleStorageException
 	{
 		return new DummyCradleStorage();
-	}
-
-	@Override
-	public void close() throws Exception
-	{
 	}
 }

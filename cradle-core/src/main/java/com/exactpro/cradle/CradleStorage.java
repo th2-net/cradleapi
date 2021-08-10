@@ -49,30 +49,28 @@ public abstract class CradleStorage
 	
 	private final Map<BookId, BookInfo> books;
 	private final BookAndPageChecker bpc;
-	private volatile boolean disposed = false;
+	private volatile boolean initialized = false,
+			disposed = false;
 	
 	public CradleStorage() throws CradleStorageException
 	{
 		books = new ConcurrentHashMap<>();
-		try
-		{
-			Collection<BookInfo> loaded = loadBooks();
-			if (loaded != null)
-				loaded.forEach((b) -> books.put(b.getId(), b));
-		}
-		catch (NoStorageException e)
-		{
-			logger.warn("Could not load books. Internal storage is not initialized. Call createStorage and createBook methods", e);
-		}
-		
 		bpc = new BookAndPageChecker(books);
 	}
 	
 	
+	/**
+	 * Initializes phisical storage, i.e. creates database, file, etc. depending on implementation
+	 * @throws CradleStorageException
+	 */
+	public abstract void createStorage() throws CradleStorageException;
+	
+	protected abstract void doInit() throws CradleStorageException;
+	protected abstract void doDispose() throws CradleStorageException;
+	
 	protected abstract Collection<BookInfo> loadBooks() throws NoStorageException, CradleStorageException;
 	protected abstract void writeBook(BookInfo newBook) throws NoStorageException, CradleStorageException;
 	protected abstract void doSwitchToNextPage(BookId bookId, String pageName, Instant timestamp) throws CradleStorageException;
-	protected abstract void doDispose() throws CradleStorageException;
 	
 	
 	protected abstract void doStoreMessageBatch(StoredMessageBatch batch) throws IOException;
@@ -107,11 +105,33 @@ public abstract class CradleStorage
 	protected abstract Iterable<StoredTestEvent> doGetTestEvents(StoredTestEventFilter filter) throws CradleStorageException, IOException;
 	protected abstract CompletableFuture<Iterable<StoredTestEvent>> doGetTestEventsAsync(StoredTestEventFilter filter) throws CradleStorageException, IOException;
 	
+	
 	/**
-	 * Initializes internal storage, i.e. creates database, file, etc. depending on implementation
-	 * @throws CradleStorageException
+	 * Initializes internal objects of storage, i.e. creates needed connections and facilities.
+	 * @throws CradleStorageException if storage initialization failed
 	 */
-	public abstract void createStorage() throws CradleStorageException;
+	public void init() throws CradleStorageException
+	{
+		if (initialized)
+			return;
+		
+		logger.info("Initializing storage");
+		
+		doInit();
+		
+		try
+		{
+			Collection<BookInfo> loaded = loadBooks();
+			if (loaded != null)
+				loaded.forEach((b) -> books.put(b.getId(), b));
+		}
+		catch (NoStorageException e)
+		{
+			logger.warn("Could not load books. Internal storage is not initialized. Call createStorage and createBook methods", e);
+		}
+		
+		logger.info("Storage initialized");
+	}
 	
 	/**
 	 * IntervalsWorker is used to work with Crawler intervals
