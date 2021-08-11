@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.cassandra.dao.messages;
+package com.exactpro.cradle.cassandra.dao.testevents.converters;
 
-import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
-import com.datastax.oss.driver.api.mapper.annotations.GetEntity;
+import com.exactpro.cradle.cassandra.dao.EntityConverter;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildEntity;
 
 @Dao
-public interface DetailedMessageBatchConverter
+public interface TestEventChildConverter extends EntityConverter<TestEventChildEntity>
 {
-	@GetEntity
-	DetailedMessageBatchEntity asMessageBatchEntity(Row row);
 }

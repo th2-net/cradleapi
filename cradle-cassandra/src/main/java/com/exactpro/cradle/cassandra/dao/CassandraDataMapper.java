@@ -21,18 +21,22 @@ import com.datastax.oss.driver.api.mapper.annotations.DaoKeyspace;
 import com.datastax.oss.driver.api.mapper.annotations.DaoTable;
 import com.datastax.oss.driver.api.mapper.annotations.Mapper;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
-import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchConverter;
-import com.exactpro.cradle.cassandra.dao.messages.MessageBatchConverter;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
+import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventConverter;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
+import com.exactpro.cradle.cassandra.dao.messages.converters.DetailedMessageBatchConverter;
 import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenDatesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventConverter;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventOperator;
+import com.exactpro.cradle.cassandra.dao.testevents.converters.RootTestEventConverter;
+import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventChildConverter;
+import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventConverter;
+import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventMessagesConverter;
+import com.exactpro.cradle.cassandra.dao.testevents.converters.TimeTestEventConverter;
 
 @Mapper
 public interface CassandraDataMapper
@@ -42,9 +46,6 @@ public interface CassandraDataMapper
 	
 	@DaoFactory
 	DetailedMessageBatchConverter detailedMessageBatchConverter();
-	
-	@DaoFactory
-	MessageBatchConverter messageBatchConverter();
 	
 	@DaoFactory
 	TimeMessageOperator timeMessageOperator(@DaoKeyspace String keyspace, @DaoTable String timeMessagesTable);
@@ -72,6 +73,16 @@ public interface CassandraDataMapper
 	
 	@DaoFactory
 	TestEventConverter testEventConverter();
+	@DaoFactory
+	RootTestEventConverter rootTestEventConverter();
+	@DaoFactory
+	TestEventChildConverter testEventChildConverter();
+	@DaoFactory
+	TimeTestEventConverter timeTestEventConverter();
+	@DaoFactory
+	TestEventMessagesConverter testEventMessagesConverter();
+	@DaoFactory
+	MessageTestEventConverter messageTestEventConverter();
 
 	@DaoFactory
 	IntervalOperator intervalOperator(@DaoKeyspace String keyspace, @DaoTable String intervalsTable);

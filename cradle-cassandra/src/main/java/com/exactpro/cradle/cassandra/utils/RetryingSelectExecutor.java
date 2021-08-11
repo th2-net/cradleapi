@@ -30,6 +30,7 @@ import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.internal.core.AsyncPagingIterableWrapper;
+import com.exactpro.cradle.cassandra.dao.EntityConverter;
 import com.exactpro.cradle.cassandra.retries.CannotRetryException;
 import com.exactpro.cradle.cassandra.retries.SelectRetryPolicy;
 
@@ -47,15 +48,15 @@ public class RetryingSelectExecutor
 	}
 	
 	public <T> CompletableFuture<MappedAsyncPagingIterable<T>> executeQuery(Supplier<CompletableFuture<MappedAsyncPagingIterable<T>>> query,
-			Function<Row, T> mapper)
+			EntityConverter<T> converter)
 	{
 		CompletableFuture<MappedAsyncPagingIterable<T>> f = new CompletableFuture<>();
-		query.get().whenCompleteAsync((result, error) -> onComplete(result, error, f, mapper));
+		query.get().whenCompleteAsync((result, error) -> onComplete(result, error, f, converter));
 		return f;
 	}
 	
 	private <T> void onComplete(MappedAsyncPagingIterable<T> result, Throwable error, 
-			CompletableFuture<MappedAsyncPagingIterable<T>> f, Function<Row, T> mapper)
+			CompletableFuture<MappedAsyncPagingIterable<T>> f, EntityConverter<T> converter)
 	{
 		if (error == null)
 		{
@@ -84,8 +85,10 @@ public class RetryingSelectExecutor
 		
 		logger.debug("Retrying request with page size {} after error: '{}'", newSize, error.getMessage());
 		stmt = stmt.setPageSize(newSize);
+		
+		Function<Row, T> mapper = row -> converter.convert(row);
 		session.executeAsync(stmt).thenApply(row -> new AsyncPagingIterableWrapper<Row, T>(row, mapper))
-				.whenCompleteAsync((retryResult, retryError) -> onComplete(retryResult, retryError, f, mapper));
+				.whenCompleteAsync((retryResult, retryError) -> onComplete(retryResult, retryError, f, converter));
 	}
 	
 	private DriverException getDriverException(Throwable e)

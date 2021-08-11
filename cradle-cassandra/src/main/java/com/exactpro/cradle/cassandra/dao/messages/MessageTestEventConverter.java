@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,10 @@
 
 package com.exactpro.cradle.cassandra.dao.messages;
 
-import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
-import com.datastax.oss.driver.api.mapper.annotations.GetEntity;
+import com.exactpro.cradle.cassandra.dao.EntityConverter;
 
 @Dao
-public interface MessageBatchConverter
+public interface MessageTestEventConverter extends EntityConverter<MessageTestEventEntity>
 {
-	@GetEntity
-	MessageBatchEntity asMessageBatchEntity(Row row);
 }
