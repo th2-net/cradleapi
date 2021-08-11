@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,26 +16,31 @@
 
 package com.exactpro.cradle.cassandra.iterators;
 
-import java.io.IOException;
 import java.util.Iterator;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
-import com.datastax.oss.driver.api.core.PagingIterable;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.converters.TimeTestEventConverter;
+import com.exactpro.cradle.cassandra.retries.RetrySupplies;
 import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 
 public class TimeTestEventsMetadataIteratorAdapter implements Iterable<StoredTestEventMetadata>
 {
 	private final MappedAsyncPagingIterable<TimeTestEventEntity> rows;
+	private final RetrySupplies retrySupplies;
+	private final TimeTestEventConverter converter;
 	
-	public TimeTestEventsMetadataIteratorAdapter(MappedAsyncPagingIterable<TimeTestEventEntity> rows)
+	public TimeTestEventsMetadataIteratorAdapter(MappedAsyncPagingIterable<TimeTestEventEntity> rows,
+			RetrySupplies retrySupplies, TimeTestEventConverter converter)
 	{
 		this.rows = rows;
+		this.retrySupplies = retrySupplies;
+		this.converter = converter;
 	}
 	
 	@Override
 	public Iterator<StoredTestEventMetadata> iterator()
 	{
-		return new TimeTestEventsMetadataIterator(rows);
+		return new TimeTestEventsMetadataIterator(rows, retrySupplies, converter);
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,37 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.cassandra.iterators;
+package com.exactpro.cradle.cassandra.dao.intervals;
 
-import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
-import com.exactpro.cradle.cassandra.dao.intervals.IntervalEntity;
 import com.exactpro.cradle.cassandra.dao.intervals.converters.IntervalConverter;
 import com.exactpro.cradle.cassandra.retries.RetrySupplies;
-import com.exactpro.cradle.intervals.Interval;
 
-import java.io.IOException;
-
-public class IntervalsIterator extends ConvertingPagedIterator<Interval, IntervalEntity>
+public class IntervalSupplies
 {
-	public IntervalsIterator(MappedAsyncPagingIterable<IntervalEntity> rows, RetrySupplies retrySupplies, IntervalConverter converter)
+	private final IntervalOperator operator;
+	private final IntervalConverter converter;
+	private final RetrySupplies retrySupplies;
+	
+	public IntervalSupplies(IntervalOperator operator, IntervalConverter converter, RetrySupplies retrySupplies)
 	{
-		super(rows, retrySupplies, converter);
+		this.operator = operator;
+		this.converter = converter;
+		this.retrySupplies = retrySupplies;
 	}
-
-	@Override
-	protected Interval convertEntity(IntervalEntity entity) throws IOException
+	
+	
+	public IntervalOperator getOperator()
 	{
-		return entity.asInterval();
+		return operator;
+	}
+	
+	public IntervalConverter getConverter()
+	{
+		return converter;
+	}
+	
+	public RetrySupplies getRetrySupplies()
+	{
+		return retrySupplies;
 	}
 }

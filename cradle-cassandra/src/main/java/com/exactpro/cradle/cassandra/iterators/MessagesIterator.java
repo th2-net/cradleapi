@@ -24,6 +24,8 @@ import org.slf4j.LoggerFactory;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
+import com.exactpro.cradle.cassandra.dao.messages.converters.DetailedMessageBatchConverter;
+import com.exactpro.cradle.cassandra.retries.RetrySupplies;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 
@@ -37,10 +39,12 @@ public class MessagesIterator implements Iterator<StoredMessage>
 	private long returnedMessages;
 	private StoredMessage nextMessage;
 	
-	public MessagesIterator(StoredMessageFilter filter, MappedAsyncPagingIterable<DetailedMessageBatchEntity> rows)
+	public MessagesIterator(StoredMessageFilter filter, MappedAsyncPagingIterable<DetailedMessageBatchEntity> rows,
+			RetrySupplies retrySupplies, DetailedMessageBatchConverter converter)
 	{
 		this.filter = filter;
-		this.entitiesIterator = new MessageBatchIterator(rows, filter == null ? Order.DIRECT : filter.getOrder());
+		this.entitiesIterator = new MessageBatchIterator(rows, filter == null ? Order.DIRECT : filter.getOrder(),
+				retrySupplies, converter);
 	}
 	
 	

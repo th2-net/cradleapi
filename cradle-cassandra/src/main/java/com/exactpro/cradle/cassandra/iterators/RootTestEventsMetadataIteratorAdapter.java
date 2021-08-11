@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,20 +20,27 @@ import java.util.Iterator;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.converters.RootTestEventConverter;
+import com.exactpro.cradle.cassandra.retries.RetrySupplies;
 import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 
 public class RootTestEventsMetadataIteratorAdapter implements Iterable<StoredTestEventMetadata>
 {
 	private final MappedAsyncPagingIterable<RootTestEventEntity> rows;
+	private final RetrySupplies retrySupplies;
+	private final RootTestEventConverter converter;
 	
-	public RootTestEventsMetadataIteratorAdapter(MappedAsyncPagingIterable<RootTestEventEntity> rows)
+	public RootTestEventsMetadataIteratorAdapter(MappedAsyncPagingIterable<RootTestEventEntity> rows,
+			RetrySupplies retrySupplies, RootTestEventConverter converter)
 	{
 		this.rows = rows;
+		this.retrySupplies = retrySupplies;
+		this.converter = converter;
 	}
 	
 	@Override
 	public Iterator<StoredTestEventMetadata> iterator()
 	{
-		return new RootTestEventsMetadataIterator(rows);
+		return new RootTestEventsMetadataIterator(rows, retrySupplies, converter);
 	}
 }

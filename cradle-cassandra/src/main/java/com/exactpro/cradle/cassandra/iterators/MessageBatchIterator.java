@@ -22,15 +22,18 @@ import java.util.Collection;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.Order;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
+import com.exactpro.cradle.cassandra.dao.messages.converters.DetailedMessageBatchConverter;
+import com.exactpro.cradle.cassandra.retries.RetrySupplies;
 import com.exactpro.cradle.messages.StoredMessage;
 
 public class MessageBatchIterator extends ConvertingPagedIterator<Collection<StoredMessage>, DetailedMessageBatchEntity>
 {
 	private final Order order;
 	
-	public MessageBatchIterator(MappedAsyncPagingIterable<DetailedMessageBatchEntity> rows, Order order)
+	public MessageBatchIterator(MappedAsyncPagingIterable<DetailedMessageBatchEntity> rows, Order order, 
+			RetrySupplies retrySupplies, DetailedMessageBatchConverter converter)
 	{
-		super(rows);
+		super(rows, retrySupplies, converter);
 		this.order = order;
 	}
 	

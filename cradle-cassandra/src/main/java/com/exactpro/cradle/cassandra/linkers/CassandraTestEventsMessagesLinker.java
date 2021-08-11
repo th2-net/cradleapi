@@ -36,7 +36,8 @@ import com.exactpro.cradle.cassandra.dao.AsyncOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesEntity;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
-import com.exactpro.cradle.cassandra.utils.RetryingSelectExecutor;
+import com.exactpro.cradle.cassandra.retries.RetrySupplies;
+import com.exactpro.cradle.cassandra.retries.RetryingSelectExecutor;
 
 public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLinker
 {
@@ -45,16 +46,18 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 	private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
 	private final CassandraSemaphore semaphore;
 	private final RetryingSelectExecutor selectExec;
+	private final RetrySupplies retrySupplies;
 	
 	public CassandraTestEventsMessagesLinker(LinkerSupplies supplies, 
 			UUID instanceId, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs, CassandraSemaphore semaphore, 
-			RetryingSelectExecutor selectExec)
+			RetryingSelectExecutor selectExec, RetrySupplies retrySupplies)
 	{
 		this.supplies = supplies;
 		this.instanceId = instanceId;
 		this.readAttrs = readAttrs;
 		this.semaphore = semaphore;
 		this.selectExec = selectExec;
+		this.retrySupplies = retrySupplies;
 	}
 	
 	
@@ -80,7 +83,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 								supplies.getMessageConverter()));
 		
 		return future.thenApplyAsync((rs) -> {
-				PagedIterator<MessageTestEventEntity> it = new PagedIterator<>(rs);
+				PagedIterator<MessageTestEventEntity> it = new PagedIterator<>(rs, retrySupplies, supplies.getMessageConverter());
 				Set<StoredTestEventId> ids = new HashSet<>();
 				while (it.hasNext())
 				{
@@ -119,7 +122,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 								supplies.getTestEventConverter()));
 		
 		return future.thenApplyAsync((rs) -> {
-				PagedIterator<TestEventMessagesEntity> it = new PagedIterator<>(rs);
+				PagedIterator<TestEventMessagesEntity> it = new PagedIterator<>(rs, retrySupplies, supplies.getTestEventConverter());
 				Set<StoredMessageId> ids = new HashSet<>();
 				while (it.hasNext())
 				{
@@ -171,7 +174,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 								supplies.getTestEventConverter()));
 		
 		return future.thenApplyAsync((rs) -> {
-				PagedIterator<TestEventMessagesEntity> it = new PagedIterator<>(rs);
+				PagedIterator<TestEventMessagesEntity> it = new PagedIterator<>(rs, retrySupplies, supplies.getTestEventConverter());
 				boolean result = false;
 				while (it.hasNext())
 				{
@@ -208,7 +211,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 								supplies.getMessageConverter()));
 		
 		return future.thenApply((rs) -> {
-				PagedIterator<MessageTestEventEntity> it = new PagedIterator<>(rs);
+				PagedIterator<MessageTestEventEntity> it = new PagedIterator<>(rs, retrySupplies, supplies.getMessageConverter());
 				return it.hasNext();
 			});
 	}

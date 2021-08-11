@@ -33,7 +33,7 @@ public class CassandraConnectionSettings
 	private NetworkTopologyStrategy networkTopologyStrategy;
 	private int maxParallelQueries,
 			resultPageSize;
-	private SelectRetryPolicy selectExecutionPolicy;
+	private SelectRetryPolicy selectRetryPolicy;
 
 	public CassandraConnectionSettings()
 	{
@@ -49,7 +49,7 @@ public class CassandraConnectionSettings
 		networkTopologyStrategy = null;
 		maxParallelQueries = 500;
 		resultPageSize = 0;  //In this case default page size will be used
-		selectExecutionPolicy = null;
+		selectRetryPolicy = null;
 	}
 
 	public CassandraConnectionSettings(String localDataCenter, String host, int port, String keyspace)
@@ -76,7 +76,7 @@ public class CassandraConnectionSettings
 		this.networkTopologyStrategy = settings.getNetworkTopologyStrategy() != null ? new NetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap()) : null;
 		this.maxParallelQueries = settings.maxParallelQueries;
 		this.resultPageSize = settings.resultPageSize;
-		this.selectExecutionPolicy = settings.selectExecutionPolicy;
+		this.selectRetryPolicy = settings.selectRetryPolicy;
 	}
 
 	
@@ -212,13 +212,13 @@ public class CassandraConnectionSettings
 	}
 	
 	
-	public SelectRetryPolicy getSelectExecutionPolicy()
+	public SelectRetryPolicy getSelectRetryPolicy()
 	{
-		return selectExecutionPolicy;
+		return selectRetryPolicy;
 	}
 	
-	public void setSelectExecutionPolicy(SelectRetryPolicy selectExecutionPolicy)
+	public void setSelectRetryPolicy(SelectRetryPolicy selectRetryPolicy)
 	{
-		this.selectExecutionPolicy = selectExecutionPolicy;
+		this.selectRetryPolicy = selectRetryPolicy;
 	}
 }

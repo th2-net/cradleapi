@@ -33,14 +33,16 @@ import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.intervals.CassandraIntervalsWorker;
+import com.exactpro.cradle.cassandra.dao.intervals.IntervalSupplies;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.iterators.*;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.linkers.LinkerSupplies;
 import com.exactpro.cradle.cassandra.retries.PageSizeDividingPolicy;
+import com.exactpro.cradle.cassandra.retries.RetrySupplies;
+import com.exactpro.cradle.cassandra.retries.RetryingSelectExecutor;
 import com.exactpro.cradle.cassandra.retries.SelectRetryPolicy;
-import com.exactpro.cradle.cassandra.utils.RetryingSelectExecutor;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.intervals.IntervalsWorker;
@@ -94,6 +96,7 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	private QueryExecutor exec;
 	private RetryingSelectExecutor selectExecutor;
+	private RetrySupplies retrySupplies;
 
 	private TestEventsMessagesLinker testEventsMessagesLinker;
 	private IntervalsWorker intervalsWorker;
@@ -108,7 +111,7 @@ public class CassandraCradleStorage extends CradleStorage
 		this.objectsFactory = new CradleObjectsFactory(settings.getMaxMessageBatchSize(), settings.getMaxTestEventBatchSize());
 		this.resultPageSize = conSettings.getResultPageSize();
 		
-		this.selectRetryPolicy = conSettings.getSelectExecutionPolicy();
+		this.selectRetryPolicy = conSettings.getSelectRetryPolicy();
 		if (this.selectRetryPolicy == null)
 			this.selectRetryPolicy = new PageSizeDividingPolicy(2);
 	}
@@ -139,6 +142,7 @@ public class CassandraCradleStorage extends CradleStorage
 			exec = new QueryExecutor(session,
 					settings.getTimeout(), settings.getWriteConsistencyLevel(), settings.getReadConsistencyLevel());
 			selectExecutor = new RetryingSelectExecutor(session, selectRetryPolicy);
+			retrySupplies = new RetrySupplies(session, selectRetryPolicy, resultPageSize);
 			
 			if (prepareStorage)
 			{
@@ -164,9 +168,10 @@ public class CassandraCradleStorage extends CradleStorage
 			
 			LinkerSupplies supplies = new LinkerSupplies(ops.getTestEventMessagesOperator(), ops.getMessageTestEventOperator(),
 					ops.getTestEventMessagesConverter(), ops.getMessageTestEventConverter());
-			testEventsMessagesLinker = new CassandraTestEventsMessagesLinker(supplies, instanceUuid, readAttrs, semaphore, selectExecutor);
+			testEventsMessagesLinker = new CassandraTestEventsMessagesLinker(supplies, instanceUuid, readAttrs, semaphore, selectExecutor, retrySupplies);
 			
-			intervalsWorker = new CassandraIntervalsWorker(semaphore, instanceUuid, writeAttrs, readAttrs, ops.getIntervalOperator());
+			IntervalSupplies intervalSupplies = new IntervalSupplies(ops.getIntervalOperator(), ops.getIntervalConverter(), retrySupplies);
+			intervalsWorker = new CassandraIntervalsWorker(semaphore, instanceUuid, writeAttrs, readAttrs, intervalSupplies);
 			return instanceUuid.toString();
 		}
 		catch (IOException e)
@@ -509,7 +514,7 @@ public class CassandraCradleStorage extends CradleStorage
 								id.stream().map(StoredTestEventId::toString).collect(toList()), readAttrs),
 								ops.getTestEventConverter()));
 		
-		return future.thenApply(TestEventDataIteratorAdapter::new);
+		return future.thenApply(result -> new TestEventDataIteratorAdapter(result, retrySupplies, ops.getTestEventConverter()));
 	}
 
 	@Override
@@ -538,7 +543,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter)
 	{
-		return doGetDetailedMessageBatchEntities(filter).thenApply(it -> new MessagesIteratorAdapter(filter, it));
+		return doGetDetailedMessageBatchEntities(filter).thenApply(it -> new MessagesIteratorAdapter(filter, it, retrySupplies, ops.getMessageBatchConverter()));
 	}
 
 
@@ -559,7 +564,8 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter)
 	{
 		return doGetDetailedMessageBatchEntities(filter)
-				.thenApply(it -> new StoredMessageBatchAdapter(it, objectsFactory, filter == null ? 0 : filter.getLimit()));
+				.thenApply(it -> new StoredMessageBatchAdapter(it, retrySupplies, ops.getMessageBatchConverter(), 
+						objectsFactory, filter == null ? 0 : filter.getLimit()));
 	}
 
 	private CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> doGetDetailedMessageBatchEntities(
@@ -609,7 +615,7 @@ public class CassandraCradleStorage extends CradleStorage
 								? () -> op.getTestEventsDirect(instanceUuid, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
 								: () -> op.getTestEventsReverse(instanceUuid, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs),
 								ops.getRootTestEventConverter()));
-		return future.thenApply(RootTestEventsMetadataIteratorAdapter::new);
+		return future.thenApply(result -> new RootTestEventsMetadataIteratorAdapter(result, retrySupplies, ops.getRootTestEventConverter()));
 	}
 
 
@@ -650,7 +656,7 @@ public class CassandraCradleStorage extends CradleStorage
 								: ops.getTestEventChildrenOperator().getTestEventsReverse(instanceUuid, parentId.toString(),
 									fromDateTime.toLocalDate(), fromTime, toTime, readAttrs),
 								ops.getTestEventChildConverter()));
-		return future.thenApply(TestEventChildrenMetadataIteratorAdapter::new);
+		return future.thenApply(result -> new TestEventChildrenMetadataIteratorAdapter(result, retrySupplies, ops.getTestEventChildConverter()));
 	}
 
 
@@ -690,7 +696,7 @@ public class CassandraCradleStorage extends CradleStorage
 								: ops.getTimeTestEventOperator().getTestEventsReverse(instanceUuid,
 										fromDateTime.toLocalDate(), fromTime, toTime, readAttrs),
 								ops.getTimeTestEventConverter()));
-		return future.thenApply(TimeTestEventsMetadataIteratorAdapter::new);
+		return future.thenApply(result -> new TimeTestEventsMetadataIteratorAdapter(result, retrySupplies, ops.getTimeTestEventConverter()));
 	}
 
 

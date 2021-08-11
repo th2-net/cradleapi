@@ -18,6 +18,7 @@ package com.exactpro.cradle.cassandra.dao;
 
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
+import com.exactpro.cradle.cassandra.dao.intervals.converters.IntervalConverter;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventConverter;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
@@ -55,6 +56,7 @@ public class CassandraOperators
 	private final TimeTestEventConverter timeTestEventConverter;
 	private final TestEventMessagesConverter testEventMessagesConverter;
 	private final MessageTestEventConverter messageTestEventConverter;
+	private final IntervalConverter intervalConverter;
 
 	public CassandraOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings)
 	{
@@ -76,6 +78,7 @@ public class CassandraOperators
 		timeTestEventConverter = dataMapper.timeTestEventConverter();
 		testEventMessagesConverter = dataMapper.testEventMessagesConverter();
 		messageTestEventConverter = dataMapper.messageTestEventConverter();
+		intervalConverter = dataMapper.intervalConverter();
 	}
 
 	public MessageBatchOperator getMessageBatchOperator()
@@ -164,5 +167,10 @@ public class CassandraOperators
 	public MessageTestEventConverter getMessageTestEventConverter()
 	{
 		return messageTestEventConverter;
+	}
+	
+	public IntervalConverter getIntervalConverter()
+	{
+		return intervalConverter;
 	}
 }

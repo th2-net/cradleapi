@@ -22,7 +22,9 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.shaded.guava.common.collect.Iterables;
 import com.exactpro.cradle.cassandra.CassandraSemaphore;
 import com.exactpro.cradle.cassandra.dao.AsyncOperator;
+import com.exactpro.cradle.cassandra.dao.intervals.converters.IntervalConverter;
 import com.exactpro.cradle.cassandra.iterators.IntervalsIteratorAdapter;
+import com.exactpro.cradle.cassandra.retries.RetrySupplies;
 import com.exactpro.cradle.intervals.Interval;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -48,16 +50,21 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     private final UUID instanceUuid;
     private final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs, readAttrs;
     private final IntervalOperator intervalOperator;
+    private final IntervalConverter converter;
+    private final RetrySupplies retrySupplies;
 
-    public CassandraIntervalsWorker(CassandraSemaphore semaphore, UUID instanceUuid, Function<BoundStatementBuilder,
-            BoundStatementBuilder> writeAttrs, Function<BoundStatementBuilder,
-            BoundStatementBuilder> readAttrs, IntervalOperator intervalOperator)
+    public CassandraIntervalsWorker(CassandraSemaphore semaphore, UUID instanceUuid, 
+            Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
+            Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs, 
+            IntervalSupplies supplies)
     {
         this.semaphore = semaphore;
         this.instanceUuid = instanceUuid;
         this.writeAttrs = writeAttrs;
         this.readAttrs = readAttrs;
-        this.intervalOperator = intervalOperator;
+        this.intervalOperator = supplies.getOperator();
+        this.converter = supplies.getConverter();
+        this.retrySupplies = supplies.getRetrySupplies();
     }
 
     @Override
@@ -120,7 +127,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                         .getFuture(() -> intervalOperator
                                 .getIntervals(instanceUuid, date, fromTime, toTime, crawlerName, crawlerVersion, crawlerType, readAttrs));
 
-        return future.thenApply(IntervalsIteratorAdapter::new);
+        return future.thenApply(result -> new IntervalsIteratorAdapter(result, retrySupplies, converter));
     }
 
     private Iterable<Interval> getIntervalsPerDay(LocalDateTime from, LocalDateTime to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException {
@@ -150,7 +157,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                         .getFuture(() -> intervalOperator
                                 .getIntervals(instanceUuid, date, fromTime, toTime, crawlerName, crawlerVersion, crawlerType, readAttrs));
 
-        return future.thenApply(IntervalsIteratorAdapter::new);
+        return future.thenApply(result -> new IntervalsIteratorAdapter(result, retrySupplies, converter));
     }
 
     @Override
