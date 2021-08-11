@@ -17,6 +17,7 @@
 package com.exactpro.cradle.cassandra;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
@@ -26,6 +27,7 @@ import com.datastax.oss.driver.api.querybuilder.insert.Insert;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
+import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
 import com.exactpro.cradle.cassandra.dao.AsyncOperator;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
@@ -35,6 +37,9 @@ import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.iterators.*;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
+import com.exactpro.cradle.cassandra.retries.PageSizeDividingPolicy;
+import com.exactpro.cradle.cassandra.retries.SelectRetryPolicy;
+import com.exactpro.cradle.cassandra.utils.RetryingSelectExecutor;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.intervals.IntervalsWorker;
@@ -84,6 +89,8 @@ public class CassandraCradleStorage extends CradleStorage
 			readAttrs,
 			strictReadAttrs;
 	private int resultPageSize;
+	private SelectRetryPolicy selectRetryPolicy;
+	private RetryingSelectExecutor selectExecutor;
 
 	private QueryExecutor exec;
 
@@ -92,11 +99,17 @@ public class CassandraCradleStorage extends CradleStorage
 
 	public CassandraCradleStorage(CassandraConnection connection, CassandraStorageSettings settings)
 	{
+		CassandraConnectionSettings conSettings = connection.getSettings();
+		
 		this.connection = connection;
 		this.settings = settings;
-		this.semaphore = new CassandraSemaphore(connection.getSettings().getMaxParallelQueries());
+		this.semaphore = new CassandraSemaphore(conSettings.getMaxParallelQueries());
 		this.objectsFactory = new CradleObjectsFactory(settings.getMaxMessageBatchSize(), settings.getMaxTestEventBatchSize());
-		this.resultPageSize = connection.getSettings().getResultPageSize();
+		this.resultPageSize = conSettings.getResultPageSize();
+		
+		this.selectRetryPolicy = conSettings.getSelectExecutionPolicy();
+		if (this.selectRetryPolicy == null)
+			this.selectRetryPolicy = new PageSizeDividingPolicy(2);
 	}
 
 
@@ -121,7 +134,8 @@ public class CassandraCradleStorage extends CradleStorage
 
 		try
 		{
-			exec = new QueryExecutor(connection.getSession(),
+			CqlSession session = connection.getSession();
+			exec = new QueryExecutor(session,
 					settings.getTimeout(), settings.getWriteConsistencyLevel(), settings.getReadConsistencyLevel());
 
 			if (prepareStorage)
@@ -134,7 +148,7 @@ public class CassandraCradleStorage extends CradleStorage
 				logger.info("Schema creation/update skipped");
 
 			instanceUuid = getInstanceId(instanceName);
-			CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(connection.getSession()).build();
+			CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(session).build();
 			ops = createOperators(dataMapper, settings);
 			Duration timeout = Duration.ofMillis(settings.getTimeout());
 			writeAttrs = builder -> builder.setConsistencyLevel(settings.getWriteConsistencyLevel())
@@ -147,10 +161,11 @@ public class CassandraCradleStorage extends CradleStorage
 					.setPageSize(resultPageSize);
 
 			testEventsMessagesLinker = new CassandraTestEventsMessagesLinker(ops.getTestEventMessagesOperator(), ops.getMessageTestEventOperator(),
-					instanceUuid, readAttrs, semaphore);
+					instanceUuid, readAttrs, semaphore, session);
 
 			intervalsWorker = new CassandraIntervalsWorker(semaphore, instanceUuid, writeAttrs, readAttrs, ops.getIntervalOperator());
-
+			selectExecutor = new RetryingSelectExecutor(session, selectRetryPolicy);
+			
 			return instanceUuid.toString();
 		}
 		catch (IOException e)
@@ -551,7 +566,9 @@ public class CassandraCradleStorage extends CradleStorage
 		MessageBatchOperator mbOp = ops.getMessageBatchOperator();
 		TimeMessageOperator tmOp = ops.getTimeMessageOperator();
 		return new AsyncOperator<MappedAsyncPagingIterable<DetailedMessageBatchEntity>>(semaphore)
-						.getFuture(() -> mbOp.filterMessages(instanceUuid, filter, semaphore, mbOp, tmOp, readAttrs));
+						.getFuture(() -> selectExecutor
+								.executeQuery(() -> mbOp.filterMessages(instanceUuid, filter, semaphore, mbOp, tmOp, readAttrs),
+										row -> ops.getMessageBatchConverter().asMessageBatchEntity(row)));
 	}
 
 	@Override

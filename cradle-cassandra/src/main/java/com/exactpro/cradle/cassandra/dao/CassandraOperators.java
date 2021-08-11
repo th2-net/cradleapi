@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.exactpro.cradle.cassandra.dao;
 
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
+import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchConverter;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
@@ -41,6 +42,7 @@ public class CassandraOperators
 	private TestEventMessagesOperator testEventMessagesOperator;
 	private MessageTestEventOperator messageTestEventOperator;
 	private IntervalOperator intervalOperator;
+	private DetailedMessageBatchConverter messageBatchConverter;
 
 	public CassandraOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings)
 	{
@@ -55,6 +57,7 @@ public class CassandraOperators
 		testEventMessagesOperator = dataMapper.testEventMessagesOperator(settings.getKeyspace(), settings.getTestEventsMessagesTableName());
 		messageTestEventOperator = dataMapper.messageTestEventOperator(settings.getKeyspace(), settings.getMessagesTestEventsTableName());
 		intervalOperator = dataMapper.intervalOperator(settings.getKeyspace(), settings.getIntervalsTableName());
+		messageBatchConverter = dataMapper.detailedMessageBatchConverter();
 	}
 
 	public MessageBatchOperator getMessageBatchOperator()
@@ -108,4 +111,10 @@ public class CassandraOperators
 	}
 
 	public IntervalOperator getIntervalOperator() { return intervalOperator; }
+	
+	
+	public DetailedMessageBatchConverter getMessageBatchConverter()
+	{
+		return messageBatchConverter;
+	}
 }
