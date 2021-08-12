@@ -19,17 +19,19 @@ package com.exactpro.cradle.cassandra.retries;
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.DriverException;
 import com.datastax.oss.driver.api.core.DriverTimeoutException;
+import com.datastax.oss.driver.api.core.connection.FrameTooLongException;
 import com.datastax.oss.driver.api.core.cql.Statement;
 
 public class RetryUtils
 {
 	public static DriverException getDriverException(Throwable e)
 	{
-		if (e instanceof DriverTimeoutException)
-			return (DriverTimeoutException)e;
+		if (e instanceof DriverTimeoutException || e instanceof FrameTooLongException)
+			return (DriverException)e;
 		
 		Throwable cause = e.getCause();
-		return cause == null || !(cause instanceof DriverTimeoutException) ? null : (DriverTimeoutException)cause;
+		return cause == null || (!(cause instanceof DriverTimeoutException) && !(cause instanceof FrameTooLongException)) 
+				? null : (DriverException)cause;
 	}
 	
 	public static Statement<?> applyPolicyVerdict(Statement<?> stmt, SelectExecutionVerdict policyVerdict)
