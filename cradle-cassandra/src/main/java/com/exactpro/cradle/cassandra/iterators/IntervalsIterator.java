@@ -19,16 +19,16 @@ package com.exactpro.cradle.cassandra.iterators;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalEntity;
 import com.exactpro.cradle.cassandra.dao.intervals.converters.IntervalConverter;
-import com.exactpro.cradle.cassandra.retries.RetrySupplies;
+import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 import com.exactpro.cradle.intervals.Interval;
 
 import java.io.IOException;
 
 public class IntervalsIterator extends ConvertingPagedIterator<Interval, IntervalEntity>
 {
-	public IntervalsIterator(MappedAsyncPagingIterable<IntervalEntity> rows, RetrySupplies retrySupplies, IntervalConverter converter)
+	public IntervalsIterator(MappedAsyncPagingIterable<IntervalEntity> rows, PagingSupplies pagingSupplies, IntervalConverter converter, String queryInfo)
 	{
-		super(rows, retrySupplies, converter);
+		super(rows, pagingSupplies, converter, queryInfo);
 	}
 
 	@Override

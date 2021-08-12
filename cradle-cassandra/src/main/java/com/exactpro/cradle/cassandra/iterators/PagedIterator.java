@@ -33,7 +33,7 @@ import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.internal.core.AsyncPagingIterableWrapper;
 import com.exactpro.cradle.cassandra.dao.EntityConverter;
 import com.exactpro.cradle.cassandra.retries.CannotRetryException;
-import com.exactpro.cradle.cassandra.retries.RetrySupplies;
+import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 import com.exactpro.cradle.cassandra.retries.RetryUtils;
 
 /**
@@ -46,15 +46,17 @@ public class PagedIterator<E> implements Iterator<E>
 	
 	private MappedAsyncPagingIterable<E> rows;
 	private Iterator<E> rowsIterator;
-	private final RetrySupplies retrySupplies;
+	private final PagingSupplies pagingSupplies;
 	private final Function<Row, E> mapper;
+	private final String queryInfo;
 	
-	public PagedIterator(MappedAsyncPagingIterable<E> rows, RetrySupplies retrySupplies, EntityConverter<E> converter)
+	public PagedIterator(MappedAsyncPagingIterable<E> rows, PagingSupplies pagingSupplies, EntityConverter<E> converter, String queryInfo)
 	{
 		this.rows = rows;
 		this.rowsIterator = rows.currentPage().iterator();
-		this.retrySupplies = retrySupplies;
+		this.pagingSupplies = pagingSupplies;
 		this.mapper = row -> converter.convert(row);
+		this.queryInfo = queryInfo;
 	}
 	
 	
@@ -81,7 +83,7 @@ public class PagedIterator<E> implements Iterator<E>
 	@Override
 	public E next()
 	{
-		logger.trace("Getting next data row");
+		logger.trace("Getting next data row for '{}'", queryInfo);
 		return rowsIterator.next();
 	}
 	
@@ -90,7 +92,7 @@ public class PagedIterator<E> implements Iterator<E>
 	{
 		if (rows.hasMorePages())
 		{
-			logger.debug("Getting next result page");
+			logger.debug("Getting next result page for '{}'", queryInfo);
 			rows = fetchNextPage(rows);
 			return rows.currentPage().iterator();
 		}
@@ -100,13 +102,13 @@ public class PagedIterator<E> implements Iterator<E>
 	private MappedAsyncPagingIterable<E> fetchNextPage(MappedAsyncPagingIterable<E> rows) 
 			throws CannotRetryException, IllegalStateException, InterruptedException, ExecutionException
 	{
-		if (retrySupplies == null)
+		if (pagingSupplies == null)
 		{
-			logger.debug("Fetching next result page with default behavior");
+			logger.debug("Fetching next result page for '{}' with default behavior", queryInfo);
 			return rows.fetchNextPage().toCompletableFuture().get();
 		}
 		
-		int maxSize = retrySupplies.getMaxPageSize();
+		int maxSize = pagingSupplies.getMaxPageSize();
 		
 		ExecutionInfo ei = rows.getExecutionInfo();
 		ByteBuffer newState = ei.getPagingState();
@@ -114,7 +116,7 @@ public class PagedIterator<E> implements Iterator<E>
 		if (stmt.getPageSize() < maxSize)
 			stmt = stmt.setPageSize(maxSize);  //Page size can be smaller than max size if RetryingSelectExecutor reduced it, so restoring it back
 		
-		CqlSession session = retrySupplies.getSession();
+		CqlSession session = pagingSupplies.getSession();
 		do
 		{
 			try
@@ -128,8 +130,8 @@ public class PagedIterator<E> implements Iterator<E>
 				if (driverError == null)
 					throw e;
 				
-				int newSize = retrySupplies.getRetryPolicy().adjustPageSize(stmt.getPageSize(), e);
-				logger.debug("Retrying request with page size {} after error: '{}'", newSize, e.getMessage());
+				int newSize = pagingSupplies.getRetryPolicy().adjustPageSize(stmt.getPageSize(), e);
+				logger.debug("Retrying next page request for '{}' with page size {} after error: '{}'", queryInfo, newSize, e.getMessage());
 				
 				stmt = ei.getStatement().copy(newState).setPageSize(newSize);
 			}

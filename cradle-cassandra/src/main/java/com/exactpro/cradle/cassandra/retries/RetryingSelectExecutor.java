@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.DriverException;
-import com.datastax.oss.driver.api.core.DriverTimeoutException;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.Statement;
@@ -46,16 +45,17 @@ public class RetryingSelectExecutor
 	}
 	
 	public <T> CompletableFuture<MappedAsyncPagingIterable<T>> executeQuery(Supplier<CompletableFuture<MappedAsyncPagingIterable<T>>> query,
-			EntityConverter<T> converter)
+			EntityConverter<T> converter, String queryInfo)
 	{
 		CompletableFuture<MappedAsyncPagingIterable<T>> f = new CompletableFuture<>();
 		Function<Row, T> mapper = row -> converter.convert(row);
-		query.get().whenCompleteAsync((result, error) -> onComplete(result, error, f, mapper));
+		query.get().whenCompleteAsync((result, error) -> onComplete(result, error, f, mapper, queryInfo));
 		return f;
 	}
 	
 	private <T> void onComplete(MappedAsyncPagingIterable<T> result, Throwable error, 
-			CompletableFuture<MappedAsyncPagingIterable<T>> f, Function<Row, T> mapper)
+			CompletableFuture<MappedAsyncPagingIterable<T>> f, Function<Row, T> mapper,
+			String queryInfo)
 	{
 		if (error == null)
 		{
@@ -82,10 +82,10 @@ public class RetryingSelectExecutor
 			return;
 		}
 		
-		logger.debug("Retrying request with page size {} after error: '{}'", newSize, error.getMessage());
+		logger.debug("Retrying request '{}' with page size {} after error: '{}'", queryInfo, newSize, error.getMessage());
 		stmt = stmt.setPageSize(newSize);
 		
 		session.executeAsync(stmt).thenApply(row -> new AsyncPagingIterableWrapper<Row, T>(row, mapper))
-				.whenCompleteAsync((retryResult, retryError) -> onComplete(retryResult, retryError, f, mapper));
+				.whenCompleteAsync((retryResult, retryError) -> onComplete(retryResult, retryError, f, mapper, queryInfo));
 	}
 }

@@ -17,19 +17,19 @@
 package com.exactpro.cradle.cassandra.dao.intervals;
 
 import com.exactpro.cradle.cassandra.dao.intervals.converters.IntervalConverter;
-import com.exactpro.cradle.cassandra.retries.RetrySupplies;
+import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 
 public class IntervalSupplies
 {
 	private final IntervalOperator operator;
 	private final IntervalConverter converter;
-	private final RetrySupplies retrySupplies;
+	private final PagingSupplies pagingSupplies;
 	
-	public IntervalSupplies(IntervalOperator operator, IntervalConverter converter, RetrySupplies retrySupplies)
+	public IntervalSupplies(IntervalOperator operator, IntervalConverter converter, PagingSupplies pagingSupplies)
 	{
 		this.operator = operator;
 		this.converter = converter;
-		this.retrySupplies = retrySupplies;
+		this.pagingSupplies = pagingSupplies;
 	}
 	
 	
@@ -43,8 +43,8 @@ public class IntervalSupplies
 		return converter;
 	}
 	
-	public RetrySupplies getRetrySupplies()
+	public PagingSupplies getpagingSupplies()
 	{
-		return retrySupplies;
+		return pagingSupplies;
 	}
 }

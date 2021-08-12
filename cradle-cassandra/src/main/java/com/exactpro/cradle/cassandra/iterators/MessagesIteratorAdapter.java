@@ -23,7 +23,7 @@ import com.datastax.oss.driver.api.core.PagingIterable;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.converters.DetailedMessageBatchConverter;
-import com.exactpro.cradle.cassandra.retries.RetrySupplies;
+import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 
@@ -36,21 +36,23 @@ public class MessagesIteratorAdapter implements Iterable<StoredMessage>
 {
 	private final StoredMessageFilter filter;
 	private final MappedAsyncPagingIterable<DetailedMessageBatchEntity> entities;
-	private final RetrySupplies retrySupplies;
+	private final PagingSupplies pagingSupplies;
 	private final DetailedMessageBatchConverter converter;
+	private final String queryInfo;
 	
 	public MessagesIteratorAdapter(StoredMessageFilter filter, MappedAsyncPagingIterable<DetailedMessageBatchEntity> entities,
-			RetrySupplies retrySupplies, DetailedMessageBatchConverter converter)
+			PagingSupplies pagingSupplies, DetailedMessageBatchConverter converter, String queryInfo)
 	{
 		this.filter = filter;
 		this.entities = entities;
-		this.retrySupplies = retrySupplies;
+		this.pagingSupplies = pagingSupplies;
 		this.converter = converter;
+		this.queryInfo = queryInfo;
 	}
 	
 	@Override
 	public Iterator<StoredMessage> iterator()
 	{
-		return new MessagesIterator(filter, entities, retrySupplies, converter);
+		return new MessagesIterator(filter, entities, pagingSupplies, converter, queryInfo);
 	}
 }

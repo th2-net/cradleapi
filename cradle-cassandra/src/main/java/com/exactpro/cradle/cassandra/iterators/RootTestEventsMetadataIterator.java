@@ -21,15 +21,15 @@ import java.io.IOException;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.RootTestEventConverter;
-import com.exactpro.cradle.cassandra.retries.RetrySupplies;
+import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 
 public class RootTestEventsMetadataIterator extends ConvertingPagedIterator<StoredTestEventMetadata, RootTestEventEntity>
 {
 	public RootTestEventsMetadataIterator(MappedAsyncPagingIterable<RootTestEventEntity> rows, 
-			RetrySupplies retrySupplies, RootTestEventConverter converter)
+			PagingSupplies pagingSupplies, RootTestEventConverter converter, String queryInfo)
 	{
-		super(rows, retrySupplies, converter);
+		super(rows, pagingSupplies, converter, queryInfo);
 	}
 	
 	@Override

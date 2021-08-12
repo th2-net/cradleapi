@@ -18,13 +18,13 @@ package com.exactpro.cradle.cassandra.retries;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 
-public class RetrySupplies
+public class PagingSupplies
 {
 	private final CqlSession session;
 	private final SelectRetryPolicy retryPolicy;
 	private final int maxPageSize;
 	
-	public RetrySupplies(CqlSession session, SelectRetryPolicy retryPolicy, int maxPageSize)
+	public PagingSupplies(CqlSession session, SelectRetryPolicy retryPolicy, int maxPageSize)
 	{
 		this.session = session;
 		this.retryPolicy = retryPolicy;

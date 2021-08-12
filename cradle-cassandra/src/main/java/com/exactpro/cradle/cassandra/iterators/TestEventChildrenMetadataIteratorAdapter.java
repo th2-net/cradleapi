@@ -21,26 +21,28 @@ import java.util.Iterator;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventChildConverter;
-import com.exactpro.cradle.cassandra.retries.RetrySupplies;
+import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 
 public class TestEventChildrenMetadataIteratorAdapter implements Iterable<StoredTestEventMetadata>
 {
 	private final MappedAsyncPagingIterable<TestEventChildEntity> rows;
-	private final RetrySupplies retrySupplies;
+	private final PagingSupplies pagingSupplies;
 	private final TestEventChildConverter converter;
+	private final String queryInfo;
 	
 	public TestEventChildrenMetadataIteratorAdapter(MappedAsyncPagingIterable<TestEventChildEntity> rows,
-			RetrySupplies retrySupplies, TestEventChildConverter converter)
+			PagingSupplies pagingSupplies, TestEventChildConverter converter, String queryInfo)
 	{
 		this.rows = rows;
-		this.retrySupplies = retrySupplies;
+		this.pagingSupplies = pagingSupplies;
 		this.converter = converter;
+		this.queryInfo = queryInfo;
 	}
 	
 	@Override
 	public Iterator<StoredTestEventMetadata> iterator()
 	{
-		return new TestEventChildrenMetadataIterator(rows, retrySupplies, converter);
+		return new TestEventChildrenMetadataIterator(rows, pagingSupplies, converter, queryInfo);
 	}
 }

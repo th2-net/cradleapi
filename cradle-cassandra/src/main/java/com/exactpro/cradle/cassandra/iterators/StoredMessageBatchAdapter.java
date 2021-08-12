@@ -20,7 +20,7 @@ import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.CradleObjectsFactory;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.converters.DetailedMessageBatchConverter;
-import com.exactpro.cradle.cassandra.retries.RetrySupplies;
+import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 
 import java.util.Iterator;
@@ -28,18 +28,20 @@ import java.util.Iterator;
 public class StoredMessageBatchAdapter implements Iterable<StoredMessageBatch>
 {
 	private final MappedAsyncPagingIterable<DetailedMessageBatchEntity> entities;
-	private final RetrySupplies retrySupplies;
+	private final PagingSupplies pagingSupplies;
 	private final DetailedMessageBatchConverter converter;
+	private final String queryInfo;
 	private final CradleObjectsFactory objectsFactory;
 	private int limit;
 	
 	public StoredMessageBatchAdapter(MappedAsyncPagingIterable<DetailedMessageBatchEntity> entities,
-			RetrySupplies retrySupplies, DetailedMessageBatchConverter converter,
+			PagingSupplies pagingSupplies, DetailedMessageBatchConverter converter, String queryInfo,
 			CradleObjectsFactory objectsFactory, int limit)
 	{
 		this.entities = entities;
-		this.retrySupplies = retrySupplies;
+		this.pagingSupplies = pagingSupplies;
 		this.converter = converter;
+		this.queryInfo = queryInfo;
 		this.objectsFactory = objectsFactory;
 		this.limit = limit;
 	}
@@ -47,6 +49,6 @@ public class StoredMessageBatchAdapter implements Iterable<StoredMessageBatch>
 	@Override
 	public Iterator<StoredMessageBatch> iterator()
 	{
-		return new StoredMessageBatchIterator(entities, retrySupplies, converter, objectsFactory, limit);
+		return new StoredMessageBatchIterator(entities, pagingSupplies, converter, queryInfo, objectsFactory, limit);
 	}
 }

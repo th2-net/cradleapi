@@ -24,7 +24,7 @@ import com.exactpro.cradle.cassandra.CassandraSemaphore;
 import com.exactpro.cradle.cassandra.dao.AsyncOperator;
 import com.exactpro.cradle.cassandra.dao.intervals.converters.IntervalConverter;
 import com.exactpro.cradle.cassandra.iterators.IntervalsIteratorAdapter;
-import com.exactpro.cradle.cassandra.retries.RetrySupplies;
+import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 import com.exactpro.cradle.intervals.Interval;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -51,7 +51,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
     private final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs, readAttrs;
     private final IntervalOperator intervalOperator;
     private final IntervalConverter converter;
-    private final RetrySupplies retrySupplies;
+    private final PagingSupplies pagingSupplies;
 
     public CassandraIntervalsWorker(CassandraSemaphore semaphore, UUID instanceUuid, 
             Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
@@ -64,7 +64,7 @@ public class CassandraIntervalsWorker implements IntervalsWorker
         this.readAttrs = readAttrs;
         this.intervalOperator = supplies.getOperator();
         this.converter = supplies.getConverter();
-        this.retrySupplies = supplies.getRetrySupplies();
+        this.pagingSupplies = supplies.getpagingSupplies();
     }
 
     @Override
@@ -126,8 +126,10 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                 new AsyncOperator<MappedAsyncPagingIterable<IntervalEntity>>(semaphore)
                         .getFuture(() -> intervalOperator
                                 .getIntervals(instanceUuid, date, fromTime, toTime, crawlerName, crawlerVersion, crawlerType, readAttrs));
-
-        return future.thenApply(result -> new IntervalsIteratorAdapter(result, retrySupplies, converter));
+        
+        String queryInfo = "get intervals from: "+from+", to: "+to+" by Crawler with "
+        		+"name: "+crawlerName+", version: "+crawlerVersion+", type: "+crawlerType;
+        return future.thenApply(result -> new IntervalsIteratorAdapter(result, pagingSupplies, converter, queryInfo));
     }
 
     private Iterable<Interval> getIntervalsPerDay(LocalDateTime from, LocalDateTime to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException {
@@ -156,8 +158,10 @@ public class CassandraIntervalsWorker implements IntervalsWorker
                 new AsyncOperator<MappedAsyncPagingIterable<IntervalEntity>>(semaphore)
                         .getFuture(() -> intervalOperator
                                 .getIntervals(instanceUuid, date, fromTime, toTime, crawlerName, crawlerVersion, crawlerType, readAttrs));
-
-        return future.thenApply(result -> new IntervalsIteratorAdapter(result, retrySupplies, converter));
+        
+        String queryInfo = "get intervals from: "+from+", to: "+to+" by Crawler with "
+        		+"name: "+crawlerName+", version: "+crawlerVersion+", type: "+crawlerType;
+        return future.thenApply(result -> new IntervalsIteratorAdapter(result, pagingSupplies, converter, queryInfo));
     }
 
     @Override
