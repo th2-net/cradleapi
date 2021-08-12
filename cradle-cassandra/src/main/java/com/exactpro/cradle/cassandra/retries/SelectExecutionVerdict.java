@@ -16,23 +16,42 @@
 
 package com.exactpro.cradle.cassandra.retries;
 
-public class PageSizeDividingPolicy implements SelectRetryPolicy
-{
-	private final int divider;
-	
-	public PageSizeDividingPolicy(int divider)
-	{
-		this.divider = divider;
-		if (divider < 1)
-			throw new IllegalArgumentException("Divider cannot be less than 1");
-	}
-	
-	@Override
-	public int adjustPageSize(int pageSize, Throwable cause) throws CannotRetryException
-	{
-		if (pageSize <= divider)
-			throw new CannotRetryException("Page size is already too small ("+pageSize+"), cannot adjust it by dividing by "+divider, cause);
-		return pageSize / divider;
-	}
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
 
+public class SelectExecutionVerdict
+{
+	private ConsistencyLevel consistencyLevel;
+	private int pageSize;
+	
+	public SelectExecutionVerdict()
+	{
+	}
+	
+	public SelectExecutionVerdict(ConsistencyLevel consistencyLevel, int pageSize)
+	{
+		this.consistencyLevel = consistencyLevel;
+		this.pageSize = pageSize;
+	}
+	
+	
+	public ConsistencyLevel getConsistencyLevel()
+	{
+		return consistencyLevel;
+	}
+	
+	public void setConsistencyLevel(ConsistencyLevel consistencyLevel)
+	{
+		this.consistencyLevel = consistencyLevel;
+	}
+	
+	
+	public int getPageSize()
+	{
+		return pageSize;
+	}
+	
+	public void setPageSize(int pageSize)
+	{
+		this.pageSize = pageSize;
+	}
 }

@@ -36,12 +36,12 @@ public class RetryingSelectExecutor
 	private static final Logger logger = LoggerFactory.getLogger(RetryingSelectExecutor.class);
 	
 	private final CqlSession session;
-	private final SelectRetryPolicy retryPolicy;
+	private final SelectExecutionPolicy execPolicy;
 	
-	public RetryingSelectExecutor(CqlSession session, SelectRetryPolicy retryPolicy)
+	public RetryingSelectExecutor(CqlSession session, SelectExecutionPolicy execPolicy)
 	{
 		this.session = session;
-		this.retryPolicy = retryPolicy;
+		this.execPolicy = execPolicy;
 	}
 	
 	public <T> CompletableFuture<MappedAsyncPagingIterable<T>> executeQuery(Supplier<CompletableFuture<MappedAsyncPagingIterable<T>>> query,
@@ -49,13 +49,13 @@ public class RetryingSelectExecutor
 	{
 		CompletableFuture<MappedAsyncPagingIterable<T>> f = new CompletableFuture<>();
 		Function<Row, T> mapper = row -> converter.convert(row);
-		query.get().whenCompleteAsync((result, error) -> onComplete(result, error, f, mapper, queryInfo));
+		query.get().whenCompleteAsync((result, error) -> onComplete(result, error, f, mapper, queryInfo, 0));
 		return f;
 	}
 	
 	private <T> void onComplete(MappedAsyncPagingIterable<T> result, Throwable error, 
 			CompletableFuture<MappedAsyncPagingIterable<T>> f, Function<Row, T> mapper,
-			String queryInfo)
+			String queryInfo, int retryCount)
 	{
 		if (error == null)
 		{
@@ -71,10 +71,9 @@ public class RetryingSelectExecutor
 		}
 		
 		Statement<?> stmt = driverError.getExecutionInfo().getStatement();
-		int newSize;
 		try
 		{
-			newSize = retryPolicy.adjustPageSize(stmt.getPageSize(), error);
+			stmt = RetryUtils.applyPolicyVerdict(stmt, execPolicy.onError(stmt, queryInfo, error, retryCount));
 		}
 		catch (CannotRetryException e)
 		{
@@ -82,10 +81,10 @@ public class RetryingSelectExecutor
 			return;
 		}
 		
-		logger.debug("Retrying request '{}' with page size {} after error: '{}'", queryInfo, newSize, error.getMessage());
-		stmt = stmt.setPageSize(newSize);
+		logger.debug("Retrying request ({}) '{}' with page size {} and CL {} after error: '{}'", 
+				retryCount+1, queryInfo, stmt.getPageSize(), stmt.getConsistencyLevel(), error.getMessage());
 		
 		session.executeAsync(stmt).thenApply(row -> new AsyncPagingIterableWrapper<Row, T>(row, mapper))
-				.whenCompleteAsync((retryResult, retryError) -> onComplete(retryResult, retryError, f, mapper, queryInfo));
+				.whenCompleteAsync((retryResult, retryError) -> onComplete(retryResult, retryError, f, mapper, queryInfo, retryCount+1));
 	}
 }

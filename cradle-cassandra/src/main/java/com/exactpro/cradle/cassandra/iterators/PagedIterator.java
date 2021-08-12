@@ -108,15 +108,15 @@ public class PagedIterator<E> implements Iterator<E>
 			return rows.fetchNextPage().toCompletableFuture().get();
 		}
 		
-		int maxSize = pagingSupplies.getMaxPageSize();
-		
 		ExecutionInfo ei = rows.getExecutionInfo();
 		ByteBuffer newState = ei.getPagingState();
 		Statement<?> stmt = ei.getStatement().copy(newState);
-		if (stmt.getPageSize() < maxSize)
-			stmt = stmt.setPageSize(maxSize);  //Page size can be smaller than max size if RetryingSelectExecutor reduced it, so restoring it back
+		
+		//Page size can be smaller than max size if RetryingSelectExecutor reduced it, so policy may restore it back
+		stmt = RetryUtils.applyPolicyVerdict(stmt, pagingSupplies.getExecPolicy().onNextPage(stmt, queryInfo));
 		
 		CqlSession session = pagingSupplies.getSession();
+		int retryCount = 0;
 		do
 		{
 			try
@@ -130,10 +130,11 @@ public class PagedIterator<E> implements Iterator<E>
 				if (driverError == null)
 					throw e;
 				
-				int newSize = pagingSupplies.getRetryPolicy().adjustPageSize(stmt.getPageSize(), e);
-				logger.debug("Retrying next page request for '{}' with page size {} after error: '{}'", queryInfo, newSize, e.getMessage());
-				
-				stmt = ei.getStatement().copy(newState).setPageSize(newSize);
+				stmt = ei.getStatement().copy(newState).setPageSize(stmt.getPageSize()).setConsistencyLevel(stmt.getConsistencyLevel());
+				stmt = RetryUtils.applyPolicyVerdict(stmt, pagingSupplies.getExecPolicy().onError(stmt, queryInfo, e, retryCount));
+				retryCount++;
+				logger.debug("Retrying next page request ({}) for '{}' with page size {} and CL {} after error: '{}'", 
+						retryCount, queryInfo, stmt.getPageSize(), stmt.getConsistencyLevel(), e.getMessage());
 			}
 		}
 		while (true);

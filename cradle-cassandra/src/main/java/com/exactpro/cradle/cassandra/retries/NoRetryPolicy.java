@@ -16,11 +16,20 @@
 
 package com.exactpro.cradle.cassandra.retries;
 
-public class NoRetryPolicy implements SelectRetryPolicy
+import com.datastax.oss.driver.api.core.cql.Statement;
+
+public class NoRetryPolicy implements SelectExecutionPolicy
 {
 	@Override
-	public int adjustPageSize(int pageSize, Throwable cause) throws CannotRetryException
+	public SelectExecutionVerdict onError(Statement<?> statement, String queryInfo, Throwable cause, int retryCount)
+			throws CannotRetryException
 	{
 		throw new CannotRetryException("Retries are not allowed", cause);
+	}
+
+	@Override
+	public SelectExecutionVerdict onNextPage(Statement<?> statement, String queryInfo)
+	{
+		return null;
 	}
 }

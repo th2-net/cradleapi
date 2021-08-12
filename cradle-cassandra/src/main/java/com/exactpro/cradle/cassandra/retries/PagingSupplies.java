@@ -21,13 +21,13 @@ import com.datastax.oss.driver.api.core.CqlSession;
 public class PagingSupplies
 {
 	private final CqlSession session;
-	private final SelectRetryPolicy retryPolicy;
+	private final SelectExecutionPolicy execPolicy;
 	private final int maxPageSize;
 	
-	public PagingSupplies(CqlSession session, SelectRetryPolicy retryPolicy, int maxPageSize)
+	public PagingSupplies(CqlSession session, SelectExecutionPolicy execPolicy, int maxPageSize)
 	{
 		this.session = session;
-		this.retryPolicy = retryPolicy;
+		this.execPolicy = execPolicy;
 		this.maxPageSize = maxPageSize;
 	}
 	
@@ -37,9 +37,9 @@ public class PagingSupplies
 		return session;
 	}
 	
-	public SelectRetryPolicy getRetryPolicy()
+	public SelectExecutionPolicy getExecPolicy()
 	{
-		return retryPolicy;
+		return execPolicy;
 	}
 	
 	public int getMaxPageSize()

@@ -39,10 +39,10 @@ import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.iterators.*;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.linkers.LinkerSupplies;
-import com.exactpro.cradle.cassandra.retries.PageSizeDividingPolicy;
+import com.exactpro.cradle.cassandra.retries.PageSizeAdjustingPolicy;
 import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 import com.exactpro.cradle.cassandra.retries.RetryingSelectExecutor;
-import com.exactpro.cradle.cassandra.retries.SelectRetryPolicy;
+import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.intervals.IntervalsWorker;
@@ -92,7 +92,7 @@ public class CassandraCradleStorage extends CradleStorage
 			readAttrs,
 			strictReadAttrs;
 	private int resultPageSize;
-	private SelectRetryPolicy selectRetryPolicy;
+	private SelectExecutionPolicy selectExecutionPolicy;
 	
 	private QueryExecutor exec;
 	private RetryingSelectExecutor selectExecutor;
@@ -111,9 +111,9 @@ public class CassandraCradleStorage extends CradleStorage
 		this.objectsFactory = new CradleObjectsFactory(settings.getMaxMessageBatchSize(), settings.getMaxTestEventBatchSize());
 		this.resultPageSize = conSettings.getResultPageSize();
 		
-		this.selectRetryPolicy = conSettings.getSelectRetryPolicy();
-		if (this.selectRetryPolicy == null)
-			this.selectRetryPolicy = new PageSizeDividingPolicy(2);
+		this.selectExecutionPolicy = conSettings.getSelectExecutionPolicy();
+		if (this.selectExecutionPolicy == null)
+			this.selectExecutionPolicy = new PageSizeAdjustingPolicy(resultPageSize, 2);
 	}
 
 
@@ -141,8 +141,8 @@ public class CassandraCradleStorage extends CradleStorage
 			CqlSession session = connection.getSession();
 			exec = new QueryExecutor(session,
 					settings.getTimeout(), settings.getWriteConsistencyLevel(), settings.getReadConsistencyLevel());
-			selectExecutor = new RetryingSelectExecutor(session, selectRetryPolicy);
-			pagingSupplies = new PagingSupplies(session, selectRetryPolicy, resultPageSize);
+			selectExecutor = new RetryingSelectExecutor(session, selectExecutionPolicy);
+			pagingSupplies = new PagingSupplies(session, selectExecutionPolicy, resultPageSize);
 			
 			if (prepareStorage)
 			{

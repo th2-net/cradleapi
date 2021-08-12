@@ -17,7 +17,7 @@
 package com.exactpro.cradle.cassandra.connection;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
-import com.exactpro.cradle.cassandra.retries.SelectRetryPolicy;
+import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
 
 public class CassandraConnectionSettings
 {
@@ -33,7 +33,7 @@ public class CassandraConnectionSettings
 	private NetworkTopologyStrategy networkTopologyStrategy;
 	private int maxParallelQueries,
 			resultPageSize;
-	private SelectRetryPolicy selectRetryPolicy;
+	private SelectExecutionPolicy selectExecutionPolicy;
 
 	public CassandraConnectionSettings()
 	{
@@ -49,7 +49,7 @@ public class CassandraConnectionSettings
 		networkTopologyStrategy = null;
 		maxParallelQueries = 500;
 		resultPageSize = 0;  //In this case default page size will be used
-		selectRetryPolicy = null;
+		selectExecutionPolicy = null;
 	}
 
 	public CassandraConnectionSettings(String localDataCenter, String host, int port, String keyspace)
@@ -76,7 +76,7 @@ public class CassandraConnectionSettings
 		this.networkTopologyStrategy = settings.getNetworkTopologyStrategy() != null ? new NetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap()) : null;
 		this.maxParallelQueries = settings.maxParallelQueries;
 		this.resultPageSize = settings.resultPageSize;
-		this.selectRetryPolicy = settings.selectRetryPolicy;
+		this.selectExecutionPolicy = settings.selectExecutionPolicy;
 	}
 
 	
@@ -212,13 +212,13 @@ public class CassandraConnectionSettings
 	}
 	
 	
-	public SelectRetryPolicy getSelectRetryPolicy()
+	public SelectExecutionPolicy getSelectExecutionPolicy()
 	{
-		return selectRetryPolicy;
+		return selectExecutionPolicy;
 	}
 	
-	public void setSelectRetryPolicy(SelectRetryPolicy selectRetryPolicy)
+	public void setSelectExecutionPolicy(SelectExecutionPolicy selectExecutionPolicy)
 	{
-		this.selectRetryPolicy = selectRetryPolicy;
+		this.selectExecutionPolicy = selectExecutionPolicy;
 	}
 }

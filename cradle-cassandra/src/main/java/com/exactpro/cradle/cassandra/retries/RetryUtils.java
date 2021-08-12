@@ -16,8 +16,10 @@
 
 package com.exactpro.cradle.cassandra.retries;
 
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.DriverException;
 import com.datastax.oss.driver.api.core.DriverTimeoutException;
+import com.datastax.oss.driver.api.core.cql.Statement;
 
 public class RetryUtils
 {
@@ -28,5 +30,20 @@ public class RetryUtils
 		
 		Throwable cause = e.getCause();
 		return cause == null || !(cause instanceof DriverTimeoutException) ? null : (DriverTimeoutException)cause;
+	}
+	
+	public static Statement<?> applyPolicyVerdict(Statement<?> stmt, SelectExecutionVerdict policyVerdict)
+	{
+		if (policyVerdict == null)
+			return stmt;
+		
+		ConsistencyLevel cl = policyVerdict.getConsistencyLevel();
+		if (cl != null)
+			stmt = stmt.setConsistencyLevel(cl);
+		
+		int pageSize = policyVerdict.getPageSize();
+		if (pageSize > 0)
+			stmt = stmt.setPageSize(pageSize);
+		return stmt;
 	}
 }
