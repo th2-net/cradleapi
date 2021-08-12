@@ -113,7 +113,7 @@ public class CassandraCradleStorage extends CradleStorage
 		
 		this.selectExecutionPolicy = conSettings.getSelectExecutionPolicy();
 		if (this.selectExecutionPolicy == null)
-			this.selectExecutionPolicy = new PageSizeAdjustingPolicy(resultPageSize, 2);
+			this.selectExecutionPolicy = new PageSizeAdjustingPolicy(resultPageSize == 0 ? 5000 : resultPageSize, 2);
 	}
 
 
@@ -142,7 +142,7 @@ public class CassandraCradleStorage extends CradleStorage
 			exec = new QueryExecutor(session,
 					settings.getTimeout(), settings.getWriteConsistencyLevel(), settings.getReadConsistencyLevel());
 			selectExecutor = new RetryingSelectExecutor(session, selectExecutionPolicy);
-			pagingSupplies = new PagingSupplies(session, selectExecutionPolicy, resultPageSize);
+			pagingSupplies = new PagingSupplies(session, selectExecutionPolicy);
 			
 			if (prepareStorage)
 			{
