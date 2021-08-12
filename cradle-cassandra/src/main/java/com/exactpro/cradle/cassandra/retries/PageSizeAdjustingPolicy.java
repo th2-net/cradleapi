@@ -43,6 +43,9 @@ public class PageSizeAdjustingPolicy implements SelectExecutionPolicy
 	public SelectExecutionVerdict onError(Statement<?> statement, String queryInfo, Throwable cause, int retryCount)
 			throws CannotRetryException
 	{
+		if (!RetryUtils.isRetriableException(cause))
+			throw new CannotRetryException("Cannot retry after this error", cause);
+		
 		int pageSize = statement.getPageSize();
 		if (pageSize <= factor)
 			throw new CannotRetryException("Page size is already too small ("+pageSize+"), cannot adjust it by dividing by "+factor, cause);

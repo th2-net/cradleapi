@@ -26,12 +26,20 @@ public class RetryUtils
 {
 	public static DriverException getDriverException(Throwable e)
 	{
-		if (e instanceof DriverTimeoutException || e instanceof FrameTooLongException)
+		if (e instanceof DriverException)
 			return (DriverException)e;
 		
 		Throwable cause = e.getCause();
-		return cause == null || (!(cause instanceof DriverTimeoutException) && !(cause instanceof FrameTooLongException)) 
-				? null : (DriverException)cause;
+		return cause == null || !(cause instanceof DriverException) ? null : (DriverException)cause;
+	}
+	
+	public static boolean isRetriableException(Throwable e)
+	{
+		if (e instanceof DriverTimeoutException || e instanceof FrameTooLongException)
+			return true;
+		
+		Throwable cause = e.getCause();
+		return cause != null && (cause instanceof DriverTimeoutException || cause instanceof FrameTooLongException);
 	}
 	
 	public static Statement<?> applyPolicyVerdict(Statement<?> stmt, SelectExecutionVerdict policyVerdict)

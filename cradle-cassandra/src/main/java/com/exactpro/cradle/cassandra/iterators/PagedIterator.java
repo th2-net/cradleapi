@@ -126,10 +126,6 @@ public class PagedIterator<E> implements Iterator<E>
 			}
 			catch (Exception e)
 			{
-				DriverException driverError = RetryUtils.getDriverException(e);
-				if (driverError == null)
-					throw e;
-				
 				stmt = ei.getStatement().copy(newState).setPageSize(stmt.getPageSize()).setConsistencyLevel(stmt.getConsistencyLevel());
 				stmt = RetryUtils.applyPolicyVerdict(stmt, pagingSupplies.getExecPolicy().onError(stmt, queryInfo, e, retryCount));
 				retryCount++;
