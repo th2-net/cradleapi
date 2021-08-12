@@ -22,13 +22,11 @@ public class PagingSupplies
 {
 	private final CqlSession session;
 	private final SelectExecutionPolicy execPolicy;
-	private final int maxPageSize;
 	
-	public PagingSupplies(CqlSession session, SelectExecutionPolicy execPolicy, int maxPageSize)
+	public PagingSupplies(CqlSession session, SelectExecutionPolicy execPolicy)
 	{
 		this.session = session;
 		this.execPolicy = execPolicy;
-		this.maxPageSize = maxPageSize;
 	}
 	
 	
@@ -40,10 +38,5 @@ public class PagingSupplies
 	public SelectExecutionPolicy getExecPolicy()
 	{
 		return execPolicy;
-	}
-	
-	public int getMaxPageSize()
-	{
-		return maxPageSize;
 	}
 }
