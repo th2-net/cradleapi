@@ -77,7 +77,7 @@ public interface MessageBatchOperator
 	
 	@QueryProvider(providerClass = MessageBatchQueryProvider.class, entityHelpers = DetailedMessageBatchEntity.class)
 	CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> filterMessages(UUID instanceId,
-			StoredMessageFilter filter, CassandraSemaphore semaphore, MessageBatchOperator mbOperator,
+			StoredMessageFilter filter, MessageBatchOperator mbOperator,
 			TimeMessageOperator tmOperator, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("SELECT DISTINCT "+INSTANCE_ID+", "+STREAM_NAME+" from ${qualifiedTableId}")
