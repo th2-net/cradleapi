@@ -27,7 +27,6 @@ import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.Order;
-import com.exactpro.cradle.cassandra.CassandraSemaphore;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
 import com.exactpro.cradle.filters.ComparisonOperation;
@@ -70,7 +69,7 @@ public class MessageBatchQueryProvider
 	}
 	
 	public CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> filterMessages(UUID instanceId, 
-			StoredMessageFilter filter, CassandraSemaphore semaphore, MessageBatchOperator mbOperator,
+			StoredMessageFilter filter, MessageBatchOperator mbOperator,
 			TimeMessageOperator tmOperator, Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 	{
 		Select select = selectStart;
@@ -85,7 +84,7 @@ public class MessageBatchQueryProvider
 		BoundStatement bs;
 		try
 		{
-			bs = bindParameters(ps, instanceId, filter, semaphore, mbOperator, tmOperator, attributes);
+			bs = bindParameters(ps, instanceId, filter, mbOperator, tmOperator, attributes);
 		}
 		catch (CradleStorageException e)
 		{
@@ -169,18 +168,18 @@ public class MessageBatchQueryProvider
 	}
 
 	private BoundStatement bindParameters(PreparedStatement ps, UUID instanceId, StoredMessageFilter filter,
-			CassandraSemaphore semaphore, MessageBatchOperator mbOperator, TimeMessageOperator tmOperator,
+			MessageBatchOperator mbOperator, TimeMessageOperator tmOperator,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes) throws CradleStorageException
 	{
 		BoundStatementBuilder builder = ps.boundStatementBuilder().setUuid(INSTANCE_ID, instanceId);
 		builder = attributes.apply(builder);
 		if (filter != null)
-			builder = bindFilterParameters(builder, instanceId, filter, semaphore, mbOperator, tmOperator, attributes);
+			builder = bindFilterParameters(builder, instanceId, filter, mbOperator, tmOperator, attributes);
 		return builder.build();
 	}
 	
 	private DetailedMessageBatchEntity getMessageBatch(UUID instanceId, StoredMessageFilter filter, 
-			CassandraSemaphore semaphore, MessageBatchOperator operator, 
+			MessageBatchOperator operator, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes) throws CradleStorageException
 	{
 		if (filter.getStreamName() == null || filter.getDirection() == null)
@@ -195,7 +194,7 @@ public class MessageBatchQueryProvider
 		try
 		{
 			return CassandraMessageUtils.getMessageBatch(id,
-					operator, semaphore, instanceId, attributes).get();
+					operator, instanceId, attributes).get();
 		} catch (InterruptedException | ExecutionException e)
 		{
 			throw new CradleStorageException("Error while getting message batch for ID "+id, e);
@@ -203,7 +202,7 @@ public class MessageBatchQueryProvider
 	}
 
 	private BoundStatementBuilder bindFilterParameters(BoundStatementBuilder builder, UUID instanceId,
-			StoredMessageFilter filter, CassandraSemaphore semaphore, MessageBatchOperator operator,
+			StoredMessageFilter filter, MessageBatchOperator operator,
 			TimeMessageOperator tmOperator, Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 			throws CradleStorageException
 	{
@@ -224,7 +223,7 @@ public class MessageBatchQueryProvider
 		if (filter.getIndex() != null)
 		{
 			ComparisonOperation op = filter.getIndex().getOperation();
-			DetailedMessageBatchEntity batch = getMessageBatch(instanceId, filter, semaphore, operator, attributes);
+			DetailedMessageBatchEntity batch = getMessageBatch(instanceId, filter, operator, attributes);
 			
 			if (filter.getLimit() > 0 && (op == ComparisonOperation.LESS || op == ComparisonOperation.LESS_OR_EQUALS))
 			{

@@ -351,19 +351,18 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Collection<StoredMessage>> doGetMessageBatchAsync(StoredMessageId id)
 	{
 		CompletableFuture<DetailedMessageBatchEntity> entityFuture = readMessageBatchEntity(id, true);
-		return entityFuture.thenCompose((entity) -> {
+		return entityFuture.thenApply(entity -> {
 			if (entity == null)
-				return CompletableFuture.completedFuture(null);
-			Collection<StoredMessage> msgs;
+				return null;
+			
 			try
 			{
-				msgs = MessageUtils.bytesToMessages(entity.getContent(), entity.isCompressed());
+				return MessageUtils.bytesToMessages(entity.getContent(), entity.isCompressed());
 			}
 			catch (IOException e)
 			{
 				throw new CompletionException("Error while reading message batch", e);
 			}
-			return CompletableFuture.completedFuture(msgs);
 		});
 	}
 
@@ -551,7 +550,7 @@ public class CassandraCradleStorage extends CradleStorage
 		MessageBatchOperator mbOp = ops.getMessageBatchOperator();
 		TimeMessageOperator tmOp = ops.getTimeMessageOperator();
 		return new AsyncOperator<MappedAsyncPagingIterable<DetailedMessageBatchEntity>>(semaphore)
-						.getFuture(() -> mbOp.filterMessages(instanceUuid, filter, semaphore, mbOp, tmOp, readAttrs));
+						.getFuture(() -> mbOp.filterMessages(instanceUuid, filter, mbOp, tmOp, readAttrs));
 	}
 
 	@Override
@@ -806,25 +805,25 @@ public class CassandraCradleStorage extends CradleStorage
 	private CompletableFuture<DetailedMessageBatchEntity> readMessageBatchEntity(StoredMessageId messageId, boolean rawMessage)
 	{
 		MessageBatchOperator op = rawMessage ? ops.getMessageBatchOperator() : ops.getProcessedMessageBatchOperator();
-		return CassandraMessageUtils.getMessageBatch(messageId, op, semaphore, instanceUuid, readAttrs);
+		return new AsyncOperator<DetailedMessageBatchEntity>(semaphore)
+				.getFuture(() -> CassandraMessageUtils.getMessageBatch(messageId, op, instanceUuid, readAttrs));
 	}
 
 	private CompletableFuture<StoredMessage> readMessage(StoredMessageId id, boolean rawMessage)
 	{
 		CompletableFuture<DetailedMessageBatchEntity> entityFuture = readMessageBatchEntity(id, rawMessage);
-		return entityFuture.thenCompose((entity) -> {
+		return entityFuture.thenApply(entity -> {
 			if (entity == null)
-				return CompletableFuture.completedFuture(null);
-			StoredMessage msg;
+				return null;
+			
 			try
 			{
-				msg = MessageUtils.bytesToOneMessage(entity.getContent(), entity.isCompressed(), id);
+				return MessageUtils.bytesToOneMessage(entity.getContent(), entity.isCompressed(), id);
 			}
 			catch (IOException e)
 			{
 				throw new CompletionException("Error while reading message", e);
 			}
-			return CompletableFuture.completedFuture(msg);
 		});
 	}
 
