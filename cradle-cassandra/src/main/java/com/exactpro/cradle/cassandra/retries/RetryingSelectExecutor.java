@@ -66,6 +66,7 @@ public class RetryingSelectExecutor
 		DriverException driverError = RetryUtils.getDriverException(error);
 		if (driverError == null)
 		{
+			logger.error("Cannot retry after non-driver exception", error);
 			f.completeExceptionally(error);
 			return;
 		}

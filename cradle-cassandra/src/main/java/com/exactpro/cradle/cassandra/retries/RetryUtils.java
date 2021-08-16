@@ -30,7 +30,7 @@ public class RetryUtils
 			return (DriverException)e;
 		
 		Throwable cause = e.getCause();
-		return cause == null || !(cause instanceof DriverException) ? null : (DriverException)cause;
+		return cause == null ? null : getDriverException(cause);
 	}
 	
 	public static boolean isRetriableException(Throwable e)
@@ -39,7 +39,7 @@ public class RetryUtils
 			return true;
 		
 		Throwable cause = e.getCause();
-		return cause != null && (cause instanceof DriverTimeoutException || cause instanceof FrameTooLongException);
+		return cause == null ? false : isRetriableException(cause);
 	}
 	
 	public static Statement<?> applyPolicyVerdict(Statement<?> stmt, SelectExecutionVerdict policyVerdict)
