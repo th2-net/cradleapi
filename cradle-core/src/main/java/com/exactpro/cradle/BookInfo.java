@@ -34,13 +34,16 @@ public class BookInfo
 	private final Map<PageId, PageInfo> pages;
 	private PageInfo activePage;
 	
-	public BookInfo(BookId id, String fullName, String desc, Instant created)
+	public BookInfo(BookId id, String fullName, String desc, Instant created, Collection<PageInfo> pages)
 	{
 		this.id = id;
 		this.fullName = fullName;
 		this.desc = desc;
 		this.created = created;
 		this.pages = new ConcurrentHashMap<>();
+		
+		if (pages != null)
+			pages.forEach(p -> this.pages.put(p.getId(), p));
 	}
 	
 	
@@ -85,17 +88,17 @@ public class BookInfo
 		pages.put(page.getId(), page);
 	}
 	
-	void nextPage(String pageName, Instant started)
+	void nextPage(String pageName, Instant started, String comment)
 	{
 		//TODO: check and fix this method
 		if (activePage != null)
 		{
 			pages.remove(activePage.getId());
 			pages.put(activePage.getId(), 
-					new PageInfo(activePage.getId(), activePage.getStarted(), started));
+					new PageInfo(activePage.getId(), activePage.getStarted(), started, comment));
 		}
 		
-		activePage = new PageInfo(new PageId(id, pageName), started, null);
+		activePage = new PageInfo(new PageId(id, pageName), started, null, comment);
 		pages.put(activePage.getId(), activePage);
 	}
 }

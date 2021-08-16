@@ -31,10 +31,16 @@ public class TimeUtils
 		return Instant.ofEpochSecond(instant.getEpochSecond());
 	}
 	
+	public static Instant fromLocalTimestamp(LocalDateTime timestamp)
+	{
+		return timestamp.toInstant(CradleStorage.TIMEZONE_OFFSET);
+	}
+	
 	public static LocalDateTime toLocalTimestamp(Instant instant)
 	{
 		return LocalDateTime.ofInstant(instant, CradleStorage.TIMEZONE_OFFSET);
 	}
+	
 	
 	public static Instant fromIdTimestamp(String timestamp)
 	{

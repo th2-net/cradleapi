@@ -20,6 +20,7 @@ import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.intervals.Interval;
 import com.exactpro.cradle.intervals.RecoveryState;
 import org.slf4j.Logger;
@@ -37,8 +38,8 @@ public class IntervalEntity {
     public static final ZoneOffset TIMEZONE_OFFSET = ZoneOffset.UTC;
 
     @PartitionKey(0)
-    @CqlName(INSTANCE_ID)
-    private UUID instanceId;
+    @CqlName(PAGE)
+    private String page;
 
     @PartitionKey(1)
     @CqlName(INTERVAL_START_DATE)
@@ -82,7 +83,7 @@ public class IntervalEntity {
     {
     }
 
-    public IntervalEntity(Interval interval, UUID instanceId)
+    public IntervalEntity(Interval interval, PageId pageId)
     {
         this.startTime = LocalTime.from(interval.getStartTime().atOffset(TIMEZONE_OFFSET));
         this.endTime = LocalTime.from(interval.getEndTime().atOffset(TIMEZONE_OFFSET));
@@ -91,22 +92,22 @@ public class IntervalEntity {
         this.lastUpdateTime = LocalTime.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET));
         this.lastUpdateDate = LocalDate.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET));
         this.recoveryStateJson = interval.getRecoveryState().convertToJson();
-        this.instanceId = instanceId;
+        this.page = pageId.getName();
         this.crawlerName = interval.getCrawlerName();
         this.crawlerVersion = interval.getCrawlerVersion();
         this.crawlerType = interval.getCrawlerType();
         this.processed = interval.isProcessed();
     }
 
-    public UUID getInstanceId()
-    {
-        return instanceId;
-    }
-
-    public void setInstanceId(UUID instanceId)
-    {
-        this.instanceId = instanceId;
-    }
+    public String getPage()
+		{
+			return page;
+		}
+    
+    public void setPage(String page)
+		{
+			this.page = page;
+		}
 
     public LocalDate getStartDate() { return startDate; }
 

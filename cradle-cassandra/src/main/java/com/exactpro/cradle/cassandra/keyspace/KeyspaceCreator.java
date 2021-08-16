@@ -79,6 +79,7 @@ public abstract class KeyspaceCreator
 		Optional<KeyspaceMetadata> meta = obtainKeyspaceMetadata();
 		if (!meta.isPresent())
 		{
+			logger.info("Creating keyspace '{}'", keyspace);
 			CreateKeyspace createKs = settings.getNetworkTopologyStrategy() != null 
 					? SchemaBuilder.createKeyspace(keyspace).withNetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap()) 
 					: SchemaBuilder.createKeyspace(keyspace).withSimpleStrategy(settings.getKeyspaceReplicationFactor());
@@ -87,7 +88,10 @@ public abstract class KeyspaceCreator
 			this.keyspaceMetadata = obtainKeyspaceMetadata().get();  //FIXME: keyspace creation may take time and it won't be available immediately
 		}
 		else
+		{
+			logger.info("Keyspace '{}' already exists", keyspace);
 			this.keyspaceMetadata = meta.get();
+		}
 	}
 	
 	protected boolean isTableExists(String tableName)
@@ -119,8 +123,12 @@ public abstract class KeyspaceCreator
 	protected void createTable(String tableName, Supplier<CreateTable> query) throws IOException
 	{
 		if (isTableExists(tableName))
+		{
+			logger.info("Table '{}' already exists", tableName);
 			return;
+		}
 		
+		logger.info("Creating table '{}'", tableName);
 		queryExecutor.executeQuery(query.get().asCql(), true);
 		logger.info("Table '{}' has been created", tableName);
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,12 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.cassandra.dao.messages;
+package com.exactpro.cradle;
 
-import com.datastax.oss.driver.api.core.cql.Row;
-import com.datastax.oss.driver.api.mapper.annotations.Dao;
-import com.datastax.oss.driver.api.mapper.annotations.GetEntity;
-
-@Dao
-public interface MessageBatchConverter
+/**
+ * Interface for objects that initialize Cradle storage, e.g. create database, files, etc.
+ */
+public interface CradleStorageInitializer extends AutoCloseable
 {
-	@GetEntity
-	MessageBatchEntity asMessageBatchEntity(Row row);
+	void initStorage();
 }

@@ -16,51 +16,15 @@
 
 package com.exactpro.cradle;
 
-import com.exactpro.cradle.utils.CradleStorageException;
-
 /**
- * Class to manage access to Cradle storage and its features.
+ * Interface for class that manage access to Cradle storage and its features.
  */
-public abstract class CradleManager implements AutoCloseable
+public interface CradleManager extends AutoCloseable
 {
-	private CradleStorage storage;
-	
-	/**
-	 * Creates {@link CradleStorage} object to work with Cradle
-	 * @return instance of CradleStorage to read/write data
-	 */
-	protected abstract CradleStorage createStorage() throws CradleStorageException;
-	
-	
-	/**
-	 * Initializes manager to get access to Cradle storage.
-	 * @throws CradleStorageException if access to Cradle storage cannot be established
-	 */
-	public void init() throws CradleStorageException
-	{
-		if (storage == null)
-		{
-			storage = createStorage();
-			storage.init();
-		}
-	}
-	
 	/**
 	 * Closes access to Cradle storage, disposing all related connections, flushing buffers, etc.
 	 * @throws Exception if there was error during Cradle storage disposal, which may mean issue with data flushing, unexpected connection break, etc.
 	 */
-	@Override
-	public void close() throws Exception
-	{
-		if (storage != null)
-		{
-			storage.dispose();
-			storage = null;
-		}
-	}
-	
-	public CradleStorage getStorage() throws CradleStorageException
-	{
-		return storage;
-	}
+	void close() throws Exception;
+	CradleStorage getStorage();
 }

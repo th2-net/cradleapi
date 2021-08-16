@@ -30,7 +30,6 @@ import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventFilter;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.NoStorageException;
 
 /**
  * Dummy implementation of CradleStorage that does nothing and serves as a stub
@@ -44,7 +43,7 @@ public class DummyCradleStorage extends CradleStorage
 	
 	
 	@Override
-	protected void doInit() throws CradleStorageException
+	protected void doInit(boolean prepareStorage) throws CradleStorageException
 	{
 	}
 	
@@ -55,18 +54,13 @@ public class DummyCradleStorage extends CradleStorage
 	
 	
 	@Override
-	public void createStorage() throws CradleStorageException
-	{
-	}
-	
-	@Override
-	protected Collection<BookInfo> loadBooks() throws NoStorageException, CradleStorageException
+	protected Collection<BookInfo> loadBooks() throws CradleStorageException
 	{
 		return null;
 	}
 
 	@Override
-	protected void writeBook(BookInfo newBook) throws NoStorageException, CradleStorageException
+	protected void doAddBook(BookInfo newBook) throws CradleStorageException
 	{
 	}
 	
@@ -207,7 +201,7 @@ public class DummyCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	public IntervalsWorker getIntervalsWorker()
+	public IntervalsWorker getIntervalsWorker(PageId pageId)
 	{
 		return null;
 	}

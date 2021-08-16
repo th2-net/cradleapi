@@ -140,7 +140,6 @@ public class StoredTestEventBatch extends StoredTestEvent
 	
 	/**
 	 * Adds test event to the batch. Batch will verify the event to match batch conditions.
-	 * Events can be added to batch until {@link #isFull()} returns true.
 	 * Result of this method should be used for all further operations on the event
 	 * @param event to add to the batch
 	 * @return immutable test event object

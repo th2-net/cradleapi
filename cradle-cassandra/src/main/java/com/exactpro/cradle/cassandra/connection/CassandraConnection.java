@@ -68,7 +68,10 @@ public class CassandraConnection
 	public void stop() throws Exception
 	{
 		if (session != null)
+		{
 			session.close();
+			session = null;
+		}
 		stopped = Instant.now();
 	}
 	

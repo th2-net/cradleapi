@@ -21,11 +21,24 @@ import com.exactpro.cradle.utils.CradleStorageException;
 /**
  * Dummy implementation of CradleManager that does nothing and serves as a stub
  */
-public class DummyCradleManager extends CradleManager
+public class DummyCradleManager implements CradleManager
 {
-	@Override
-	protected CradleStorage createStorage() throws CradleStorageException
+	private final DummyCradleStorage storage;
+	
+	public DummyCradleManager() throws CradleStorageException
 	{
-		return new DummyCradleStorage();
+		storage = new DummyCradleStorage();
+		storage.init(false);
+	}
+	
+	@Override
+	public void close() throws Exception
+	{
+	}
+	
+	@Override
+	public CradleStorage getStorage()
+	{
+		return storage;
 	}
 }

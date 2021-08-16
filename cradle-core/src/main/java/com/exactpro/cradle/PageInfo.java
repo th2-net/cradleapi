@@ -26,12 +26,14 @@ public class PageInfo
 	private final PageId id;
 	private final Instant started,
 			ended;
+	private final String comment;
 	
-	public PageInfo(PageId id, Instant started, Instant ended)
+	public PageInfo(PageId id, Instant started, Instant ended, String comment)
 	{
 		this.id = id;
 		this.started = started;
 		this.ended = ended;
+		this.comment = comment;
 	}
 	
 	
@@ -48,6 +50,11 @@ public class PageInfo
 	public Instant getEnded()
 	{
 		return ended;
+	}
+	
+	public String getComment()
+	{
+		return comment;
 	}
 	
 	public boolean isActive()

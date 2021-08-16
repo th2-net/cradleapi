@@ -43,8 +43,7 @@ public class CradleKeyspaceCreator extends KeyspaceCreator
 	{
 		String tableName = getSettings().getBooksTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(BOOK, DataTypes.TEXT)
-				.withColumn(NAME, DataTypes.TEXT)
+				.withPartitionKey(NAME, DataTypes.TEXT)
 				.withColumn(FULLNAME, DataTypes.TEXT)
 				.withColumn(KEYSPACE_NAME, DataTypes.TEXT)
 				.withColumn(DESCRIPTION, DataTypes.TEXT)

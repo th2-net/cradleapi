@@ -55,6 +55,7 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withClusteringColumn(START_DATE, DataTypes.DATE)
 				.withClusteringColumn(START_TIME, DataTypes.TIME)
 				.withColumn(NAME, DataTypes.TEXT)
+				.withColumn(COMMENT, DataTypes.TEXT)
 				.withColumn(END_DATE, DataTypes.DATE)
 				.withColumn(END_TIME, DataTypes.TIME));
 	}

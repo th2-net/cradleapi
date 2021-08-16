@@ -36,7 +36,6 @@ import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventFilter;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.NoStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
 
 /**
@@ -59,17 +58,11 @@ public abstract class CradleStorage
 	}
 	
 	
-	/**
-	 * Initializes phisical storage, i.e. creates database, file, etc. depending on implementation
-	 * @throws CradleStorageException
-	 */
-	public abstract void createStorage() throws CradleStorageException;
-	
-	protected abstract void doInit() throws CradleStorageException;
+	protected abstract void doInit(boolean prepareStorage) throws CradleStorageException;
 	protected abstract void doDispose() throws CradleStorageException;
 	
-	protected abstract Collection<BookInfo> loadBooks() throws NoStorageException, CradleStorageException;
-	protected abstract void writeBook(BookInfo newBook) throws NoStorageException, CradleStorageException;
+	protected abstract Collection<BookInfo> loadBooks() throws CradleStorageException;
+	protected abstract void doAddBook(BookInfo newBook) throws CradleStorageException;
 	protected abstract void doSwitchToNextPage(BookId bookId, String pageName, Instant timestamp) throws CradleStorageException;
 	
 	
@@ -107,37 +100,33 @@ public abstract class CradleStorage
 	
 	
 	/**
-	 * Initializes internal objects of storage, i.e. creates needed connections and facilities.
+	 * Initializes internal objects of storage and prepares it to access data, i.e. creates needed connections and facilities.
+	 * @param prepareStorage if underlying physical storage should be created, if absent
 	 * @throws CradleStorageException if storage initialization failed
 	 */
-	public void init() throws CradleStorageException
+	public void init(boolean prepareStorage) throws CradleStorageException
 	{
 		if (initialized)
 			return;
 		
 		logger.info("Initializing storage");
 		
-		doInit();
+		doInit(prepareStorage);
 		
-		try
-		{
-			Collection<BookInfo> loaded = loadBooks();
-			if (loaded != null)
-				loaded.forEach((b) -> books.put(b.getId(), b));
-		}
-		catch (NoStorageException e)
-		{
-			logger.warn("Could not load books. Internal storage is not initialized. Call createStorage and createBook methods", e);
-		}
+		Collection<BookInfo> loaded = loadBooks();
+		if (loaded != null)
+			loaded.forEach((b) -> books.put(b.getId(), b));
 		
+		initialized = true;
 		logger.info("Storage initialized");
 	}
 	
 	/**
 	 * IntervalsWorker is used to work with Crawler intervals
+	 * @param pageId page to get worker for
 	 * @return instance of IntervalsWorker
 	 */
-	public abstract IntervalsWorker getIntervalsWorker();
+	public abstract IntervalsWorker getIntervalsWorker(PageId pageId);
 	
 	
 	/**
@@ -146,9 +135,12 @@ public abstract class CradleStorage
 	 */
 	public final void dispose() throws CradleStorageException
 	{
+		if (disposed)
+			return;
+		
 		logger.info("Disposing storage");
-		disposed = true;
 		doDispose();
+		disposed = true;
 		logger.info("Storage disposed");
 	}
 	
@@ -162,27 +154,27 @@ public abstract class CradleStorage
 	
 	
 	/**
-	 * Creates book in storage, adding page with given name to newly created book
+	 * Creates new book and adds it to storage, adding page with given name to newly created book
 	 * @param name short name of book to create
 	 * @param fullName long name
 	 * @param desc description of the book
 	 * @param firstPageName name of first page to add to new book
+	 * @param firstPageComment comment for first page
 	 * @return {@link BookInfo} containing all information about created book
-	 * @throws NoStorageException if no storage is available
 	 * @throws CradleStorageException if error occurred while creating new book
 	 */
-	public BookInfo createBook(String name, String fullName, String desc, String firstPageName) throws NoStorageException, CradleStorageException
+	public BookInfo addBook(String name, String fullName, String desc, String firstPageName, String firstPageComment) throws CradleStorageException
 	{
 		BookId id = new BookId(name);
 		logger.info("Adding book '{}' to storage", id);
 		if (books.containsKey(id))
 			throw new CradleStorageException("Book '"+id+"' is already present in storage");
 		
-		BookInfo newBook = new BookInfo(id, fullName, desc, Instant.now());
-		writeBook(newBook);
+		BookInfo newBook = new BookInfo(id, fullName, desc, Instant.now(), null);
+		doAddBook(newBook);
 		books.put(newBook.getId(), newBook);
 		logger.info("Book '{}' has been added to storage", id);
-		switchToNextPage(id, firstPageName);
+		switchToNextPage(id, firstPageName, firstPageComment);
 		return newBook;
 	}
 	
@@ -194,14 +186,14 @@ public abstract class CradleStorage
 		return Collections.unmodifiableCollection(books.values());
 	}
 	
-	public void switchToNextPage(BookId bookId, String pageName) throws CradleStorageException
+	public void switchToNextPage(BookId bookId, String pageName, String pageComment) throws CradleStorageException
 	{
 		//TODO: check and fix this method
 		logger.info("Switching to page '{}' of book '{}'", pageName, bookId);
 		BookInfo book = bpc.getBook(bookId);
 		Instant now = Instant.now();
 		doSwitchToNextPage(bookId, pageName, now);
-		book.nextPage(pageName, now);
+		book.nextPage(pageName, now, pageComment);
 	}
 	
 	

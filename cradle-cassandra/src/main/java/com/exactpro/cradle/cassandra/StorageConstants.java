@@ -18,8 +18,7 @@ package com.exactpro.cradle.cassandra;
 
 public class StorageConstants
 {
-	public static final String BOOK = "book",
-			PAGE = "page",
+	public static final String PAGE = "page",
 			NAME = "name",
 			PART = "part",
 			CHUNK = "chunk",
@@ -28,6 +27,7 @@ public class StorageConstants
 			STORED_TIME = "stored_time",
 			COMPRESSED = "compressed",
 			LABELS = "labels",
+			COMMENT = "comment",
 			CONTENT = "z_content",  //"z_" to make this column the last one in columns list and thus faster read meta-data
 			
 			FULLNAME = "fullname",

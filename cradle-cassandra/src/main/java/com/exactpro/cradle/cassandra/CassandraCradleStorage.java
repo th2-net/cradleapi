@@ -17,60 +17,36 @@
 package com.exactpro.cradle.cassandra;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
-import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.datastax.oss.driver.api.core.cql.Row;
-import com.datastax.oss.driver.api.core.type.reflect.GenericType;
-import com.datastax.oss.driver.api.querybuilder.insert.Insert;
-import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
-import com.exactpro.cradle.cassandra.dao.AsyncOperator;
+import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
-import com.exactpro.cradle.cassandra.dao.CassandraOperators;
-import com.exactpro.cradle.cassandra.dao.intervals.CassandraIntervalsWorker;
-import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
-import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
-import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventEntity;
-import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
-import com.exactpro.cradle.cassandra.dao.messages.StreamEntity;
-import com.exactpro.cradle.cassandra.dao.messages.TimeMessageEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.*;
-import com.exactpro.cradle.cassandra.iterators.*;
-import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
+import com.exactpro.cradle.cassandra.dao.CradleOperators;
+import com.exactpro.cradle.cassandra.dao.books.BookEntity;
+import com.exactpro.cradle.cassandra.dao.books.PageEntity;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
-import com.exactpro.cradle.testevents.TestEvent;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventFilter;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.MessageUtils;
-import com.exactpro.cradle.utils.NoStorageException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.lang.Math.min;
-import static java.util.stream.Collectors.toList;
 
 import java.io.*;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.function.Function;
-
-import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
-import static com.exactpro.cradle.cassandra.CassandraStorageSettings.*;
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 public class CassandraCradleStorage extends CradleStorage
 {
@@ -80,17 +56,13 @@ public class CassandraCradleStorage extends CradleStorage
 	private final CassandraStorageSettings settings;
 	private final CassandraSemaphore semaphore;
 	
-	private CassandraOperators ops;
-	
+	private CradleOperators ops;
+	private QueryExecutor exec;
 	private Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
 			readAttrs,
 			strictReadAttrs;
 	
-	private QueryExecutor exec;
-	
-	private IntervalsWorker intervalsWorker;
-	
-	public CassandraCradleStorage(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings)
+	public CassandraCradleStorage(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings) throws CradleStorageException
 	{
 		this.connection = new CassandraConnection(connectionSettings);
 		this.settings = storageSettings;
@@ -99,7 +71,7 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	protected void doInit() throws CradleStorageException
+	protected void doInit(boolean prepareStorage) throws CradleStorageException
 	{
 		connectToCassandra();
 		
@@ -108,8 +80,12 @@ public class CassandraCradleStorage extends CradleStorage
 			exec = new QueryExecutor(connection.getSession(),
 					settings.getTimeout(), settings.getWriteConsistencyLevel(), settings.getReadConsistencyLevel());
 			
-			CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(connection.getSession()).build();
-			ops = createOperators(dataMapper, settings);
+			if (prepareStorage)
+				createStorage();
+			else
+				logger.info("Storage creation skipped");
+			
+			ops = createOperators(connection.getSession(), settings);
 			
 			Duration timeout = Duration.ofMillis(settings.getTimeout());
 			int resultPageSize = settings.getResultPageSize();
@@ -121,12 +97,10 @@ public class CassandraCradleStorage extends CradleStorage
 			strictReadAttrs = builder -> builder.setConsistencyLevel(ConsistencyLevel.ALL)
 					.setTimeout(timeout)
 					.setPageSize(resultPageSize);
-			
-			intervalsWorker = new CassandraIntervalsWorker(semaphore, null, writeAttrs, readAttrs, ops.getIntervalOperator());
 		}
-		catch (IOException e)
+		catch (Exception e)
 		{
-			throw new CradleStorageException("Could not initialize storage", e);
+			throw new CradleStorageException("Could not initialize Cassandra storage", e);
 		}
 	}
 	
@@ -150,31 +124,37 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	public void createStorage() throws CradleStorageException
+	protected Collection<BookInfo> loadBooks() throws CradleStorageException
 	{
-		logger.info("Creating Cradle keyspace...");
-		new CradleKeyspaceCreator(exec, settings).createAll();
-		logger.info("Cradle keyspace created");
+		Collection<BookInfo> result = new ArrayList<>();
+		for (BookEntity bookEntity : ops.getCradleBookOperator().getAll(readAttrs))
+		{
+			BookId bookId = new BookId(bookEntity.getName());
+			BookOperators bookOp = ops.addOperators(bookId, bookEntity.getKeyspaceName());
+			
+			Collection<PageInfo> pages = new ArrayList<>();
+			for (PageEntity pageEntity : bookOp.getPageOperator().getAll(readAttrs))
+				pages.add(pageEntity.toPageInfo(bookId));
+			
+			result.add(bookEntity.toBookInfo(pages));
+		}
+		return result;
 	}
 	
 	@Override
-	protected Collection<BookInfo> loadBooks() throws NoStorageException, CradleStorageException
+	protected void doAddBook(BookInfo newBook) throws CradleStorageException
 	{
-		//TODO: implement
-		return null;
-	}
-	
-	@Override
-	protected void writeBook(BookInfo newBook) throws NoStorageException, CradleStorageException
-	{
-		//TODO: implement
+		BookEntity bookEntity = new BookEntity(newBook);
+		createBookKeyspace(bookEntity);
+		ops.getCradleBookOperator().write(bookEntity, writeAttrs);
+		ops.addOperators(newBook.getId(), bookEntity.getKeyspaceName());
 	}
 	
 	@Override
 	protected void doSwitchToNextPage(BookId bookId, String pageName, Instant timestamp) throws CradleStorageException
 	{
-		// TODO Auto-generated method stub
-		
+		PageEntity entity = new PageEntity(pageName, timestamp, null);
+		ops.getOperators(bookId).getPageOperator().write(entity, writeAttrs);
 	}
 
 
@@ -259,24 +239,8 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEvent event, boolean success)
 	{
-		String id = event.getId().toString(),
-				parentId = event.getParentId() != null ? event.getParentId().toString() : null;
-		LocalDateTime ldt = LocalDateTime.ofInstant(event.getStartTimestamp(), TIMEZONE_OFFSET);
-		LocalDate ld = ldt.toLocalDate();
-		LocalTime lt = ldt.toLocalTime();
-
-		CompletableFuture<AsyncResultSet> result1 = new AsyncOperator<AsyncResultSet>(semaphore)
-				.getFuture(() -> ops.getTestEventOperator().updateStatus(null, id, success, writeAttrs)),
-				result2 = new AsyncOperator<AsyncResultSet>(semaphore)
-						.getFuture(() -> ops.getTimeTestEventOperator().updateStatus(null, ld, lt, id, success, writeAttrs));
-		CompletableFuture<AsyncResultSet> result3;
-		if (parentId != null)
-			result3 = new AsyncOperator<AsyncResultSet>(semaphore)
-					.getFuture(() -> ops.getTestEventChildrenOperator().updateStatus(null, parentId, ld, lt, id, success, writeAttrs));
-		else
-			result3 = new AsyncOperator<AsyncResultSet>(semaphore)
-					.getFuture(() -> ops.getRootTestEventOperator().updateStatus(null, ld, lt, id, success, writeAttrs));
-		return CompletableFuture.allOf(result1, result2, result3);
+		//TODO: implement
+		return null;
 	}
 	
 
@@ -296,7 +260,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected CompletableFuture<StoredMessage> doGetMessageAsync(StoredMessageId id, PageId pageId)
 	{
-		return readMessage(id, true);
+		return null; //TODO: implement readMessage(id, true);
 	}
 
 	@Override
@@ -315,21 +279,23 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected CompletableFuture<Collection<StoredMessage>> doGetMessageBatchAsync(StoredMessageId id, PageId pageId)
 	{
-		CompletableFuture<DetailedMessageBatchEntity> entityFuture = readMessageBatchEntity(id, true);
-		return entityFuture.thenCompose((entity) -> {
-			if (entity == null)
-				return CompletableFuture.completedFuture(null);
-			Collection<StoredMessage> msgs;
-			try
-			{
-				msgs = MessageUtils.bytesToMessages(entity.getContent(), entity.isCompressed());
-			}
-			catch (IOException e)
-			{
-				throw new CompletionException("Error while reading message batch", e);
-			}
-			return CompletableFuture.completedFuture(msgs);
-		});
+		return null;
+		//TOOD: implement
+//		CompletableFuture<DetailedMessageBatchEntity> entityFuture = readMessageBatchEntity(id, true);
+//		return entityFuture.thenCompose((entity) -> {
+//			if (entity == null)
+//				return CompletableFuture.completedFuture(null);
+//			Collection<StoredMessage> msgs;
+//			try
+//			{
+//				msgs = MessageUtils.bytesToMessages(entity.getContent(), entity.isCompressed());
+//			}
+//			catch (IOException e)
+//			{
+//				throw new CompletionException("Error while reading message batch", e);
+//			}
+//			return CompletableFuture.completedFuture(msgs);
+//		});
 	}
 	
 	
@@ -349,7 +315,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter)
 	{
-		return doGetDetailedMessageBatchEntities(filter).thenApply(it -> new MessagesIteratorAdapter(filter, it));
+		return null;  //TODO: implement
 	}
 	
 	@Override
@@ -368,8 +334,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter)
 	{
-		return doGetDetailedMessageBatchEntities(filter)
-				.thenApply(it -> new StoredMessageBatchAdapter(it, objectsFactory, filter == null ? 0 : filter.getLimit()));
+		return null; //TODO: implement
 	}
 	
 	
@@ -384,12 +349,13 @@ public class CassandraCradleStorage extends CradleStorage
 	protected Collection<String> doGetSessionAliases(PageId pageId) throws IOException
 	{
 		List<String> result = new ArrayList<>();
-		for (StreamEntity entity : ops.getMessageBatchOperator().getStreams(readAttrs))
-		{
-			//if (instanceUuid.equals(entity.getInstanceId()))
-				result.add(entity.getStreamName());
-		}
-		result.sort(null);
+		//TODO: implement
+//		for (StreamEntity entity : ops.getMessageBatchOperator().getStreams(readAttrs))
+//		{
+//			//if (instanceUuid.equals(entity.getInstanceId()))
+//				result.add(entity.getStreamName());
+//		}
+//		result.sort(null);
 		return result;
 	}
 	
@@ -439,13 +405,13 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	public IntervalsWorker getIntervalsWorker()
+	public IntervalsWorker getIntervalsWorker(PageId pageId)
 	{
-		return intervalsWorker;
+		return null; //TODO: implement
 	}
 	
 	
-	protected void connectToCassandra()
+	protected void connectToCassandra() throws CradleStorageException
 	{
 		if (!connection.isRunning())
 		{
@@ -464,14 +430,39 @@ public class CassandraCradleStorage extends CradleStorage
 			logger.info("Already connected to Cassandra");
 	}
 	
-	protected void createTables() throws IOException
+	protected CradleOperators createOperators(CqlSession session, CassandraStorageSettings settings)
 	{
-		new BookKeyspaceCreator(keyspace, exec, settings).createAll();
+		CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(session).build();
+		return new CradleOperators(dataMapper, settings);
 	}
 	
-	protected CassandraOperators createOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings)
+	protected void createStorage() throws CradleStorageException
 	{
-		return new CassandraOperators(dataMapper, settings);
+		try
+		{
+			logger.info("Creating storage");
+			new CradleKeyspaceCreator(exec, settings).createAll();
+			logger.info("Storage creation finished");
+		}
+		catch (IOException e)
+		{
+			throw new CradleStorageException("Error while creating storage", e);
+		}
+	}
+	
+	protected void createBookKeyspace(BookEntity bookEntity) throws CradleStorageException
+	{
+		String name = bookEntity.getName();
+		try
+		{
+			logger.info("Creating storage for book '{}'", name);
+			new BookKeyspaceCreator(bookEntity.getKeyspaceName(), exec, settings).createAll();;
+			logger.info("Storage creation for book '{}' finished", name);
+		}
+		catch (IOException e)
+		{
+			throw new CradleStorageException("Error while creating storage for book '"+name+"'", e);
+		}
 	}
 	
 	protected PageInfo findCurrentPage()
@@ -512,51 +503,55 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	private CompletableFuture<Void> writeMessage(StoredMessageBatch batch, boolean rawMessage)
 	{
-		CompletableFuture<DetailedMessageBatchEntity> future = new AsyncOperator<DetailedMessageBatchEntity>(semaphore)
-				.getFuture(() -> {
-					DetailedMessageBatchEntity entity;
-					try
-					{
-						entity = new DetailedMessageBatchEntity(batch, instanceUuid);
-					}
-					catch (IOException e)
-					{
-						CompletableFuture<DetailedMessageBatchEntity> error = new CompletableFuture<>();
-						error.completeExceptionally(e);
-						return error;
-					}
-
-					logger.trace("Executing message batch storing query");
-					MessageBatchOperator op = rawMessage ? ops.getMessageBatchOperator() : ops.getProcessedMessageBatchOperator();
-					return op.writeMessageBatch(entity, writeAttrs);
-				});
-		return future.thenAccept(e -> {});
+		return null;
+		//TODO: implement
+//		CompletableFuture<DetailedMessageBatchEntity> future = new AsyncOperator<DetailedMessageBatchEntity>(semaphore)
+//				.getFuture(() -> {
+//					DetailedMessageBatchEntity entity;
+//					try
+//					{
+//						entity = new DetailedMessageBatchEntity(batch, instanceUuid);
+//					}
+//					catch (IOException e)
+//					{
+//						CompletableFuture<DetailedMessageBatchEntity> error = new CompletableFuture<>();
+//						error.completeExceptionally(e);
+//						return error;
+//					}
+//
+//					logger.trace("Executing message batch storing query");
+//					MessageBatchOperator op = rawMessage ? ops.getMessageBatchOperator() : ops.getProcessedMessageBatchOperator();
+//					return op.writeMessageBatch(entity, writeAttrs);
+//				});
+//		return future.thenAccept(e -> {});
 	}
+	
+//TODO: implement
+//	private CompletableFuture<DetailedMessageBatchEntity> readMessageBatchEntity(StoredMessageId messageId, boolean rawMessage)
+//	{
+//		MessageBatchOperator op = rawMessage ? ops.getMessageBatchOperator() : ops.getProcessedMessageBatchOperator();
+//		return CassandraMessageUtils.getMessageBatch(messageId, op, semaphore, instanceUuid, readAttrs);
+//	}
 
-	private CompletableFuture<DetailedMessageBatchEntity> readMessageBatchEntity(StoredMessageId messageId, boolean rawMessage)
-	{
-		MessageBatchOperator op = rawMessage ? ops.getMessageBatchOperator() : ops.getProcessedMessageBatchOperator();
-		return CassandraMessageUtils.getMessageBatch(messageId, op, semaphore, instanceUuid, readAttrs);
-	}
-
-	private CompletableFuture<StoredMessage> readMessage(StoredMessageId id, boolean rawMessage)
-	{
-		CompletableFuture<DetailedMessageBatchEntity> entityFuture = readMessageBatchEntity(id, rawMessage);
-		return entityFuture.thenCompose((entity) -> {
-			if (entity == null)
-				return CompletableFuture.completedFuture(null);
-			StoredMessage msg;
-			try
-			{
-				msg = MessageUtils.bytesToOneMessage(entity.getContent(), entity.isCompressed(), id);
-			}
-			catch (IOException e)
-			{
-				throw new CompletionException("Error while reading message", e);
-			}
-			return CompletableFuture.completedFuture(msg);
-		});
-	}
+//TODO: implement
+//	private CompletableFuture<StoredMessage> readMessage(StoredMessageId id, boolean rawMessage)
+//	{
+//		CompletableFuture<DetailedMessageBatchEntity> entityFuture = readMessageBatchEntity(id, rawMessage);
+//		return entityFuture.thenCompose((entity) -> {
+//			if (entity == null)
+//				return CompletableFuture.completedFuture(null);
+//			StoredMessage msg;
+//			try
+//			{
+//				msg = MessageUtils.bytesToOneMessage(entity.getContent(), entity.isCompressed(), id);
+//			}
+//			catch (IOException e)
+//			{
+//				throw new CompletionException("Error while reading message", e);
+//			}
+//			return CompletableFuture.completedFuture(msg);
+//		});
+//	}
 
 	private void checkTimeBoundaries(LocalDateTime fromDateTime, LocalDateTime toDateTime, Instant originalFrom, Instant originalTo)
 			throws CradleStorageException
@@ -571,15 +566,17 @@ public class CassandraCradleStorage extends CradleStorage
 
 	protected CompletableFuture<Void> failEventAndParents(StoredTestEventId eventId)
 	{
-		return getTestEventAsync(eventId)
-				.thenComposeAsync((event) -> {
-					if (event == null || !event.isSuccess())  //Invalid event ID or event is already failed, which means that its parents are already updated
-						return CompletableFuture.completedFuture(null);
-
-					CompletableFuture<Void> update = doUpdateEventStatusAsync(event, false);
-					if (event.getParentId() != null)
-						return update.thenComposeAsync((u) -> failEventAndParents(event.getParentId()));
-					return update;
-				});
+		return null;
+		//TODO: implement
+//		return getTestEventAsync(eventId)
+//				.thenComposeAsync((event) -> {
+//					if (event == null || !event.isSuccess())  //Invalid event ID or event is already failed, which means that its parents are already updated
+//						return CompletableFuture.completedFuture(null);
+//
+//					CompletableFuture<Void> update = doUpdateEventStatusAsync(event, false);
+//					if (event.getParentId() != null)
+//						return update.thenComposeAsync((u) -> failEventAndParents(event.getParentId()));
+//					return update;
+//				});
 	}
 }
