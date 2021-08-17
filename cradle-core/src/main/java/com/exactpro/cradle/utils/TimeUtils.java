@@ -24,7 +24,8 @@ import com.exactpro.cradle.CradleStorage;
 
 public class TimeUtils
 {
-	private static final DateTimeFormatter ID_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmssnnnnnnnnn").withZone(CradleStorage.TIMEZONE_OFFSET);
+	private static final DateTimeFormatter ID_TIMESTAMP_FORMAT = DateTimeFormatter
+			.ofPattern("yyyyMMddHHmmssSSSSSSSSS").withZone(CradleStorage.TIMEZONE_OFFSET);
 	
 	public static Instant cutNanos(Instant instant)
 	{
