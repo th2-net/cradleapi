@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.cassandra.keyspace;
+package com.exactpro.cradle.cassandra.keyspaces;
 
 import java.io.IOException;
 import java.util.Optional;

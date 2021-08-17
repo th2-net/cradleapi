@@ -28,6 +28,8 @@ import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.CradleOperators;
 import com.exactpro.cradle.cassandra.dao.books.BookEntity;
 import com.exactpro.cradle.cassandra.dao.books.PageEntity;
+import com.exactpro.cradle.cassandra.keyspaces.BookKeyspaceCreator;
+import com.exactpro.cradle.cassandra.keyspaces.CradleKeyspaceCreator;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.StoredMessage;

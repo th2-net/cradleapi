@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.cassandra;
+package com.exactpro.cradle.cassandra.keyspaces;
 
 import java.io.IOException;
 
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
-import com.exactpro.cradle.cassandra.keyspace.KeyspaceCreator;
+import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
