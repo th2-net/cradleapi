@@ -49,7 +49,7 @@ public class StoredMessageIdUtils
 		}
 		catch (NumberFormatException e)
 		{
-			throw new CradleIdException("Invalid sequence number ("+seqString+") in ID '"+restoreId(parts)+"'");
+			throw new CradleIdException("Invalid sequence number ("+seqString+") in ID '"+restoreId(parts)+"'", e);
 		}
 	}
 	
@@ -62,7 +62,7 @@ public class StoredMessageIdUtils
 		}
 		catch (DateTimeParseException e)
 		{
-			throw new CradleIdException("Invalid timstamp ("+timeString+") in ID '"+restoreId(parts)+"'");
+			throw new CradleIdException("Invalid timstamp ("+timeString+") in ID '"+restoreId(parts)+"'", e);
 		}
 	}
 	

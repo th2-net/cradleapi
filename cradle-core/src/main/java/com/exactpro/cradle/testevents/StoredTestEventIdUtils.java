@@ -48,12 +48,12 @@ public class StoredTestEventIdUtils
 	{
 		String timeString = parts[parts.length-2];
 		try
-		
-		{	return TimeUtils.fromIdTimestamp(timeString);
+		{
+			return TimeUtils.fromIdTimestamp(timeString);
 		}
 		catch (DateTimeParseException e)
 		{
-			throw new CradleIdException("Invalid timstamp ("+timeString+") in ID '"+restoreId(parts)+"'");
+			throw new CradleIdException("Invalid timstamp ("+timeString+") in ID '"+restoreId(parts)+"'", e);
 		}
 	}
 	
