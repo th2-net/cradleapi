@@ -139,7 +139,7 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 	
 	private void createScopesTable() throws IOException
 	{
-		String tableName = getSettings().getTestEventsDatesTable();
+		String tableName = getSettings().getScopesTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(PAGE, DataTypes.TEXT)
 				.withClusteringColumn(SCOPE, DataTypes.TEXT));
