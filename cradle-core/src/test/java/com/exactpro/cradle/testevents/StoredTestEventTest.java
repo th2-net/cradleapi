@@ -31,15 +31,17 @@ import com.exactpro.cradle.utils.CradleStorageException;
 
 public class StoredTestEventTest
 {
-	private static final BookId DUMMY_BOOK = new BookId("book1");
-	private static final String DUMMY_NAME = "TestEvent";
-	private static final Instant DUMMY_START_TIMESTAMP = Instant.now();
-	private static final StoredTestEventId DUMMY_ID = new StoredTestEventId(DUMMY_BOOK, DUMMY_START_TIMESTAMP, "123"),
-			BROKEN_ID = new StoredTestEventId(null, null, "123");
+	private static final BookId BOOK = new BookId("book1");
+	private static final String SCOPE = "default",
+			DUMMY_NAME = "TestEvent",
+			ID_VALUE = "Event_ID";
+	private static final Instant START_TIMESTAMP = Instant.now();
+	private static final StoredTestEventId DUMMY_ID = new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, ID_VALUE);
 	
 	private TestEventBatchToStoreBuilder batchSettingsBuilder;
 	private TestEventSingleToStoreBuilder eventBuilder;
-	private StoredTestEventId batchId;
+	private StoredTestEventId batchId,
+			batchParentId;
 	private TestEventBatchToStore batchSettings;
 	private StoredTestEventBatch batch;
 	
@@ -48,10 +50,11 @@ public class StoredTestEventTest
 	{
 		batchSettingsBuilder = TestEventBatchToStore.builder();
 		eventBuilder = new TestEventSingleToStoreBuilder();
-		batchId = new StoredTestEventId(DUMMY_BOOK, DUMMY_START_TIMESTAMP, UUID.randomUUID().toString());
+		batchId = new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, UUID.randomUUID().toString());
+		batchParentId = new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "BatchParentID");
 		batchSettings = batchSettingsBuilder
 				.id(batchId)
-				.parentId(new StoredTestEventId(DUMMY_BOOK, DUMMY_START_TIMESTAMP, "BatchID"))
+				.parentId(batchParentId)
 				.build();
 	}
 	
@@ -66,14 +69,41 @@ public class StoredTestEventTest
 	{
 		return new Object[][]
 				{
-					{eventBuilder.build()},  //Empty event
-					{eventBuilder.id(new StoredTestEventId(new BookId(DUMMY_BOOK.getName()+""), DUMMY_START_TIMESTAMP, DUMMY_NAME)).build()},  //Different book
-					{eventBuilder.id(new StoredTestEventId(DUMMY_BOOK, DUMMY_START_TIMESTAMP.minusMillis(5000), DUMMY_NAME)).build()},          //Early timestamp
-					{eventBuilder.id(DUMMY_ID).build()},
-					{eventBuilder.name(DUMMY_NAME).build()},
-					{eventBuilder.id(BROKEN_ID).name(DUMMY_NAME).build()},
-					{eventBuilder.id(DUMMY_ID).name(DUMMY_NAME).build()}
+					{new TestEventSingleToStoreBuilder().build(),                                                    //Empty event
+							"ID cannot be null"},
+					{validEvent().id(null).build(),                                                                  //No ID
+							"ID cannot be null"},
+					{validEvent().id(new StoredTestEventId(null, SCOPE, START_TIMESTAMP, ID_VALUE)).build(),         //No book
+							"must have a book"},
+					{validEvent().id(new StoredTestEventId(BOOK, null, START_TIMESTAMP, ID_VALUE)).build(),          //No scope
+							"must have a scope"},
+					{validEvent().id(new StoredTestEventId(BOOK, SCOPE, null, ID_VALUE)).build(),                    //No timestamp
+							"must have a start timestamp"},
+					{validEvent().name(null).build(),                                                                //No name
+							"must have a name"},
+					{validEvent().parentId(null).build(),                                                            //No parent ID
+								"must have a parent"},
+					{validEvent().id(new StoredTestEventId(new BookId(BOOK.getName()+"1"),                           //Different book
+							SCOPE, START_TIMESTAMP, DUMMY_NAME)).build(), 
+							"events of book"},
+					{validEvent().id(new StoredTestEventId(BOOK, SCOPE+"1", START_TIMESTAMP, DUMMY_NAME)).build(),  //Different scope
+							"events of scope"},
+					{validEvent().id(new StoredTestEventId(BOOK, SCOPE,                                             //Early timestamp
+							START_TIMESTAMP.minusMillis(5000), DUMMY_NAME)).build(),
+							"start timestamp"},
+					{validEvent().parentId(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "wrong_parent"))     //Different parent ID
+								.build(), "parent"}
 				};
+	}
+	
+	
+	private TestEventSingleToStoreBuilder validEvent()
+	{
+			//Preparing valid event that corresponds to the batch. It will be made invalid in "invalid events"
+			return new TestEventSingleToStoreBuilder()
+					.id(DUMMY_ID)
+					.parentId(batchParentId)
+					.name(DUMMY_NAME);
 	}
 	
 	
@@ -86,7 +116,7 @@ public class StoredTestEventTest
 	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Test event cannot reference itself")
 	public void selfReference() throws CradleStorageException
 	{
-		StoredTestEventId eventId = new StoredTestEventId(DUMMY_BOOK, DUMMY_START_TIMESTAMP, "A");
+		StoredTestEventId eventId = new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "A");
 		new StoredTestEventSingle(new TestEventSingleToStoreBuilder().id(eventId).parentId(eventId).build());
 	}
 	
@@ -110,7 +140,7 @@ public class StoredTestEventTest
 	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Test event with ID .* is already present in batch")
 	public void duplicateIds() throws CradleIdException, CradleStorageException
 	{
-		StoredTestEventId eventId = new StoredTestEventId(DUMMY_BOOK, DUMMY_START_TIMESTAMP, "AAA");
+		StoredTestEventId eventId = new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "AAA");
 		batch.addTestEvent(eventBuilder.id(eventId).name(DUMMY_NAME).parentId(batch.getParentId()).build());
 		batch.addTestEvent(eventBuilder.id(eventId).name(DUMMY_NAME).parentId(batch.getParentId()).build());
 	}
@@ -118,34 +148,34 @@ public class StoredTestEventTest
 	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = ".* '.*\\:XXX' .* stored in this batch .*")
 	public void externalReferences() throws CradleIdException, CradleStorageException
 	{
-		StoredTestEventId parentId = new StoredTestEventId(DUMMY_BOOK, DUMMY_START_TIMESTAMP, "1");
+		StoredTestEventId parentId = new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "1");
 		batch.addTestEvent(eventBuilder.id(parentId)
 				.name(DUMMY_NAME)
 				.parentId(batch.getParentId())
 				.build());
-		batch.addTestEvent(eventBuilder.id(new StoredTestEventId(DUMMY_BOOK, DUMMY_START_TIMESTAMP, "2"))
+		batch.addTestEvent(eventBuilder.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "2"))
 				.name(DUMMY_NAME)
 				.parentId(batch.getParentId())
 				.build());
-		batch.addTestEvent(eventBuilder.id(new StoredTestEventId(DUMMY_BOOK, DUMMY_START_TIMESTAMP, "3"))
+		batch.addTestEvent(eventBuilder.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "3"))
 				.name(DUMMY_NAME)
 				.parentId(parentId)
 				.build());
-		batch.addTestEvent(eventBuilder.id(new StoredTestEventId(DUMMY_BOOK, DUMMY_START_TIMESTAMP, "4"))
+		batch.addTestEvent(eventBuilder.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "4"))
 				.name(DUMMY_NAME)
-				.parentId(new StoredTestEventId(DUMMY_BOOK, DUMMY_START_TIMESTAMP, "XXX"))
+				.parentId(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "XXX"))
 				.build());
 	}
 	
 	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = ".* stored in this batch .*")
 	public void referenceToBatch() throws CradleIdException, CradleStorageException
 	{
-		StoredTestEventId parentId = new StoredTestEventId(DUMMY_BOOK, DUMMY_START_TIMESTAMP, "1");
+		StoredTestEventId parentId = new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "1");
 		batch.addTestEvent(eventBuilder.id(parentId)
 				.name(DUMMY_NAME)
 				.parentId(batch.getParentId())
 				.build());
-		batch.addTestEvent(eventBuilder.id(new StoredTestEventId(DUMMY_BOOK, DUMMY_START_TIMESTAMP, "2"))
+		batch.addTestEvent(eventBuilder.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "2"))
 				.name(DUMMY_NAME)
 				.parentId(batch.getId())
 				.build());
@@ -154,7 +184,7 @@ public class StoredTestEventTest
 	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Test event cannot reference itself")
 	public void selfReferenceInBatch() throws CradleIdException, CradleStorageException
 	{
-		StoredTestEventId eventId = new StoredTestEventId(DUMMY_BOOK, DUMMY_START_TIMESTAMP, "1");
+		StoredTestEventId eventId = new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "1");
 		batch.addTestEvent(eventBuilder.id(eventId).parentId(eventId).build());
 	}
 	
@@ -162,12 +192,12 @@ public class StoredTestEventTest
 	public void childrenAligned() throws CradleStorageException
 	{
 		BatchedStoredTestEvent parentEvent = batch.addTestEvent(eventBuilder
-						.id(new StoredTestEventId(DUMMY_BOOK, DUMMY_START_TIMESTAMP, "1"))
+						.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "1"))
 						.name(DUMMY_NAME)
 						.parentId(batch.getParentId())
 						.build()),
 				childEvent = batch.addTestEvent(eventBuilder
-						.id(new StoredTestEventId(DUMMY_BOOK, DUMMY_START_TIMESTAMP, "2"))
+						.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "2"))
 						.name(DUMMY_NAME)
 						.parentId(parentEvent.getId())
 						.build());
@@ -190,12 +220,12 @@ public class StoredTestEventTest
 	public void childIsNotRoot() throws CradleStorageException
 	{
 		BatchedStoredTestEvent parentEvent = batch.addTestEvent(eventBuilder
-						.id(new StoredTestEventId(DUMMY_BOOK, DUMMY_START_TIMESTAMP, "1"))
+						.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "1"))
 						.name(DUMMY_NAME)
 						.parentId(batch.getParentId())
 						.build()),
 				childEvent = batch.addTestEvent(eventBuilder
-						.id(new StoredTestEventId(DUMMY_BOOK, DUMMY_START_TIMESTAMP, "2"))
+						.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "2"))
 						.name(DUMMY_NAME)
 						.parentId(parentEvent.getId())
 						.build());
@@ -205,8 +235,16 @@ public class StoredTestEventTest
 	
 	@Test(dataProvider = "invalid events",
 			expectedExceptions = {CradleStorageException.class})
-	public void eventValidation(TestEventSingleToStore event) throws CradleStorageException
+	public void eventValidation(TestEventSingleToStore event, String errorMessage) throws CradleStorageException
 	{
-		batch.addTestEvent(event);
+		try
+		{
+			batch.addTestEvent(event);
+		}
+		catch (CradleStorageException e)
+		{
+			Assert.assertTrue(e.getMessage().contains(errorMessage), "error contains '"+errorMessage+"'");
+			throw e;
+		}
 	}
 }

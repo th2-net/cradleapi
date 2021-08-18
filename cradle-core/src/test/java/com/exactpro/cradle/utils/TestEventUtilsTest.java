@@ -18,7 +18,7 @@ package com.exactpro.cradle.utils;
 
 import java.time.Instant;
 
-import org.testng.annotations.BeforeClass;
+import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -31,42 +31,61 @@ import com.exactpro.cradle.testevents.TestEventSingleToStoreBuilder;
 
 public class TestEventUtilsTest
 {
-	private static final BookId DUMMY_BOOK = new BookId("book1");
-	private static final StoredTestEventId DUMMY_ID = new StoredTestEventId(DUMMY_BOOK, Instant.EPOCH, "123"),
-			BROKEN_ID = new StoredTestEventId(null, null, "123");
+	private static final BookId BOOK = new BookId("book1");
+	private static final String SCOPE = "default",
+			ID_VALUE = "123";
+	private static final Instant START_TIMESTAMP = Instant.EPOCH;
+	private static final StoredTestEventId DUMMY_ID = new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, ID_VALUE);
 	private static final String DUMMY_NAME = "TestEvent";
-	
-	private TestEventSingleToStoreBuilder eventBuilder;
-	
-	@BeforeClass
-	public void prepare() throws CradleStorageException
-	{
-		eventBuilder = new TestEventSingleToStoreBuilder();
-	}
 	
 	@DataProvider(name = "invalid events")
 	public Object[][] invalidEvents()
 	{
 		return new Object[][]
 				{
-					{eventBuilder.build()},  //Empty event
-					{eventBuilder.id(DUMMY_ID).build()},
-					{eventBuilder.name(DUMMY_NAME).build()},
-					{eventBuilder.id(BROKEN_ID).name(DUMMY_NAME).build()}
+					{new TestEventSingleToStoreBuilder().build(),                                        //Empty event
+							"ID cannot be null"},
+					{event().name(null).build(),                                                         //No name
+							"must have a name"},
+        	{event().id(null).build(),                                                           //No ID
+        			"ID cannot be null"},
+        	{event().id(new StoredTestEventId(null, SCOPE, START_TIMESTAMP, ID_VALUE)).build(),  //No book
+        			"must have a book"},
+        	{event().id(new StoredTestEventId(BOOK, null, START_TIMESTAMP, ID_VALUE)).build(),   //No scope
+        			"must have a scope"},
+        	{event().id(new StoredTestEventId(BOOK, SCOPE, null, ID_VALUE)).build(),             //No timestamp
+        			"must have a start timestamp"}
 				};
 	}
 	
+	private TestEventSingleToStoreBuilder event()
+	{
+		//Preparing valid event. It will be made invalid in "invalid events"
+		return new TestEventSingleToStoreBuilder()
+				.id(DUMMY_ID)
+				.name(DUMMY_NAME);
+	}
+	
+	
 	@Test(dataProvider = "invalid events",
 			expectedExceptions = CradleStorageException.class)
-	public void eventValidation(TestEventSingleToStore event) throws CradleStorageException
+	public void eventValidation(TestEventSingleToStore event, String errorMessage) throws CradleStorageException
 	{
-		TestEventUtils.validateTestEvent(event, true);
+		try
+		{
+			TestEventUtils.validateTestEvent(event, true);
+		}
+		catch (CradleStorageException e)
+		{
+			Assert.assertTrue(e.getMessage().contains(errorMessage), "error contains '"+errorMessage+"'");
+			throw e;
+		}
 	}
 	
 	@Test
 	public void validEvent() throws CradleStorageException
 	{
-		TestEventSingleToStore event = eventBuilder.id(DUMMY_ID)
+		TestEventSingleToStore event = new TestEventSingleToStoreBuilder().id(DUMMY_ID)
 				.name(DUMMY_NAME)
 				.content("Test content".getBytes())
 				.build();
@@ -76,9 +95,9 @@ public class TestEventUtilsTest
 	@Test
 	public void validBatchEvent() throws CradleStorageException
 	{
-		StoredTestEventId batchId = new StoredTestEventId(DUMMY_BOOK, Instant.EPOCH, "BatchID"),
-				parentId = new StoredTestEventId(DUMMY_BOOK, Instant.EPOCH, "ParentID");
-		TestEventSingleToStore event = eventBuilder.id(DUMMY_ID)
+		StoredTestEventId batchId = new StoredTestEventId(BOOK, SCOPE, Instant.EPOCH, "BatchID"),
+				parentId = new StoredTestEventId(BOOK, SCOPE, Instant.EPOCH, "ParentID");
+		TestEventSingleToStore event = new TestEventSingleToStoreBuilder().id(DUMMY_ID)
 				.name(DUMMY_NAME)
 				.parentId(parentId)
 				.content("Test content".getBytes())

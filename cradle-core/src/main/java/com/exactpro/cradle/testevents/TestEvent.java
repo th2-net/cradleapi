@@ -34,6 +34,12 @@ public interface TestEvent extends BasicTestEvent
 		return id != null ? id.getBookId() : null;
 	}
 	
+	public static String scope(BasicTestEvent event)
+	{
+		StoredTestEventId id = event.getId();
+		return id != null ? id.getScope() : null;
+	}
+	
 	public static Instant startTimestamp(BasicTestEvent event)
 	{
 		StoredTestEventId id = event.getId();

@@ -30,5 +30,6 @@ public interface BasicTestEvent
 	String getType();
 	StoredTestEventId getParentId();
 	BookId getBookId();
+	String getScope();
 	Instant getStartTimestamp();
 }

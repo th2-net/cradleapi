@@ -53,10 +53,10 @@ public class TestEventBatchToStoreBuilder
 		return this;
 	}
 	
-	public TestEventBatchToStoreBuilder idRandom(BookId book)
+	public TestEventBatchToStoreBuilder idRandom(BookId book, String scope)
 	{
 		initIfNeeded();
-		event.setId(new StoredTestEventId(book, Instant.now(), UUID.randomUUID().toString()));
+		event.setId(new StoredTestEventId(book, scope, Instant.now(), UUID.randomUUID().toString()));
 		return this;
 	}
 	

@@ -86,6 +86,12 @@ public abstract class TestEventToStore implements BasicTestEvent
 	}
 	
 	@Override
+	public final String getScope()
+	{
+		return TestEvent.scope(this);
+	}
+	
+	@Override
 	public final Instant getStartTimestamp()
 	{
 		return TestEvent.startTimestamp(this);

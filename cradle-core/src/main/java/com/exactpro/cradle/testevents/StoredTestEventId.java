@@ -33,12 +33,14 @@ public class StoredTestEventId implements Serializable
 	public static final String ID_PARTS_DELIMITER = ":";
 	
 	private final BookId bookId;
+	private final String scope;
 	private final Instant startTimestamp;
 	private final String id;
 	
-	public StoredTestEventId(BookId bookId, Instant startTimestamp, String id)
+	public StoredTestEventId(BookId bookId, String scope, Instant startTimestamp, String id)
 	{
 		this.bookId = bookId;
+		this.scope = scope;
 		this.startTimestamp = startTimestamp;
 		this.id = id;
 	}
@@ -49,14 +51,20 @@ public class StoredTestEventId implements Serializable
 		
 		String uniqueId = StoredTestEventIdUtils.getId(parts);
 		Instant timestamp = StoredTestEventIdUtils.getTimestamp(parts);
+		String scope = StoredTestEventIdUtils.getScope(parts);
 		BookId book = StoredTestEventIdUtils.getBook(parts);
-		return new StoredTestEventId(book, timestamp, uniqueId);
+		return new StoredTestEventId(book, scope, timestamp, uniqueId);
 	}
 	
 	
 	public BookId getBookId()
 	{
 		return bookId;
+	}
+	
+	public String getScope()
+	{
+		return scope;
 	}
 	
 	public Instant getStartTimestamp()
@@ -73,15 +81,15 @@ public class StoredTestEventId implements Serializable
 	@Override
 	public String toString()
 	{
-		return bookId+ID_PARTS_DELIMITER+StoredTestEventIdUtils.timestampToString(startTimestamp)+ID_PARTS_DELIMITER+id;
+		return bookId+ID_PARTS_DELIMITER+scope+ID_PARTS_DELIMITER+StoredTestEventIdUtils.timestampToString(startTimestamp)+ID_PARTS_DELIMITER+id;
 	}
-	
+
 	@Override
 	public int hashCode()
 	{
-		return Objects.hash(bookId, startTimestamp, id);
+		return Objects.hash(bookId, scope, startTimestamp, id);
 	}
-	
+
 	@Override
 	public boolean equals(Object obj)
 	{
@@ -93,6 +101,7 @@ public class StoredTestEventId implements Serializable
 			return false;
 		StoredTestEventId other = (StoredTestEventId) obj;
 		return Objects.equals(bookId, other.bookId)
+				&& Objects.equals(scope, other.scope)
 				&& Objects.equals(startTimestamp, other.startTimestamp)
 				&& Objects.equals(id, other.id);
 	}

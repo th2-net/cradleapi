@@ -51,6 +51,10 @@ public class TestEventUtils
 			throw new CradleStorageException("Test event cannot reference itself");
 		if (checkName && StringUtils.isEmpty(event.getName()))
 			throw new CradleStorageException("Test event must have a name");
+		if (event.getBookId() == null)
+			throw new CradleStorageException("Test event must have a book");
+		if (event.getScope() == null)
+			throw new CradleStorageException("Test event must have a scope");
 		if (event.getStartTimestamp() == null)
 			throw new CradleStorageException("Test event must have a start timestamp");
 	}

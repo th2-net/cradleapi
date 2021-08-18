@@ -57,6 +57,11 @@ public class StoredTestEventIdUtils
 		}
 	}
 	
+	public static String getScope(String[] parts) throws CradleIdException
+	{
+		return parts[parts.length-3];
+	}
+	
 	public static BookId getBook(String[] parts)
 	{
 		return new BookId(parts[0]);

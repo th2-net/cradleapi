@@ -156,14 +156,7 @@ public class StoredTestEventBatch extends StoredTestEvent
 	{
 		TestEventUtils.validateTestEvent(event, true);
 		
-		if (!getBookId().equals(event.getBookId()))
-			throw new CradleStorageException("Batch contains events of book '"+getBookId()+"', "
-					+ "but in your event it is '"+event.getBookId()+"'");
-		if (event.getStartTimestamp().isBefore(this.getStartTimestamp()))
-			throw new CradleStorageException("Start timestamp of event being added is before the batch start timestamp");
-		
-		if (events.containsKey(event.getId()))
-			throw new CradleStorageException("Test event with ID '"+event.getId()+"' is already present in batch");
+		checkEvent(event);
 		
 		StoredTestEventId parentId = event.getParentId();
 		if (parentId == null)
@@ -207,5 +200,20 @@ public class StoredTestEventBatch extends StoredTestEvent
 		if (!event.isSuccess()) {
 			success = false;
 		}
+	}
+	
+	private void checkEvent(TestEventSingle event) throws CradleStorageException
+	{
+		if (!getBookId().equals(event.getBookId()))
+			throw new CradleStorageException("Batch contains events of book '"+getBookId()+"', "
+					+ "but in your event it is '"+event.getBookId()+"'");
+		if (!getScope().equals(event.getScope()))
+			throw new CradleStorageException("Batch contains events of scope '"+getScope()+"', "
+					+ "but in your event it is '"+event.getScope()+"'");
+		if (event.getStartTimestamp().isBefore(this.getStartTimestamp()))
+			throw new CradleStorageException("Start timestamp of event being added is before the batch start timestamp");
+		
+		if (events.containsKey(event.getId()))
+			throw new CradleStorageException("Test event with ID '"+event.getId()+"' is already present in batch");
 	}
 }
