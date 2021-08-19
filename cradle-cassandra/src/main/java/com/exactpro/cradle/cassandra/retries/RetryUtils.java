@@ -16,6 +16,10 @@
 
 package com.exactpro.cradle.cassandra.retries;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.DriverException;
 import com.datastax.oss.driver.api.core.DriverTimeoutException;
@@ -55,5 +59,30 @@ public class RetryUtils
 		if (pageSize > 0)
 			stmt = stmt.setPageSize(pageSize);
 		return stmt;
+	}
+	
+	public static List<List<String>> applyPolicyVerdict(List<String> ids, SelectExecutionVerdict policyVerdict)
+	{
+		if (policyVerdict == null)
+			return Collections.singletonList(ids);
+		
+		int pageSize = policyVerdict.getPageSize();
+		if (pageSize <= 0)
+			return Collections.singletonList(ids);
+		
+		List<List<String>> result = new ArrayList<>();
+		
+		int length = ids.size();
+		for (int i = 0; i < length/pageSize; i++)
+		{
+			int index = i*pageSize;
+			result.add(ids.subList(index, index+pageSize));
+		}
+		
+		int tail = length%pageSize;
+		if (tail > 0)
+			result.add(ids.subList(length-tail, length));
+		
+		return result;
 	}
 }

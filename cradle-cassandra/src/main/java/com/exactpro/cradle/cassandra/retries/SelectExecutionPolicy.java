@@ -16,6 +16,8 @@
 
 package com.exactpro.cradle.cassandra.retries;
 
+import java.util.Collection;
+
 import com.datastax.oss.driver.api.core.cql.Statement;
 
 /**
@@ -34,6 +36,16 @@ public interface SelectExecutionPolicy
 	 * @throws CannotRetryException if retry cannot be performed
 	 */
 	SelectExecutionVerdict onError(Statement<?> statement, String queryInfo, Throwable cause, int retryCount) throws CannotRetryException;
+	/**
+	 * Defines behavior in case of error for queries that fetch multiple separate rows by ID
+	 * @param ids for which the query was executed and resulted in error
+	 * @param queryInfo description of query being executed
+	 * @param cause error that failed the query
+	 * @param retryCount number of retries already made
+	 * @return object with changes for statement execution to perform a retry
+	 * @throws CannotRetryException if retry cannot be performed
+	 */
+	SelectExecutionVerdict onError(Collection<String> ids, String queryInfo, Throwable cause, int retryCount) throws CannotRetryException;
 	/**
 	 * Defines behavior to fetch next result page
 	 * @param statement whose execution will fetch next result page

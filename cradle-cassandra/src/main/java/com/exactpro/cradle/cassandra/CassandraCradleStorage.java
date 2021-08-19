@@ -39,6 +39,7 @@ import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.iterators.*;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.linkers.LinkerSupplies;
+import com.exactpro.cradle.cassandra.retries.CompleteEventsGetter;
 import com.exactpro.cradle.cassandra.retries.PageSizeAdjustingPolicy;
 import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 import com.exactpro.cradle.cassandra.retries.RetryingSelectExecutor;
@@ -96,6 +97,7 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	private QueryExecutor exec;
 	private RetryingSelectExecutor selectExecutor;
+	private CompleteEventsGetter completeEventsGetter;
 	private PagingSupplies pagingSupplies;
 
 	private TestEventsMessagesLinker testEventsMessagesLinker;
@@ -169,6 +171,8 @@ public class CassandraCradleStorage extends CradleStorage
 			LinkerSupplies supplies = new LinkerSupplies(ops.getTestEventMessagesOperator(), ops.getMessageTestEventOperator(),
 					ops.getTestEventMessagesConverter(), ops.getMessageTestEventConverter());
 			testEventsMessagesLinker = new CassandraTestEventsMessagesLinker(supplies, instanceUuid, readAttrs, semaphore, selectExecutor, pagingSupplies);
+			completeEventsGetter = new CompleteEventsGetter(instanceUuid, readAttrs, selectExecutionPolicy, 
+					ops.getTestEventOperator(), ops.getTestEventConverter(), pagingSupplies);
 			
 			IntervalSupplies intervalSupplies = new IntervalSupplies(ops.getIntervalOperator(), ops.getIntervalConverter(), pagingSupplies);
 			intervalsWorker = new CassandraIntervalsWorker(semaphore, instanceUuid, writeAttrs, readAttrs, intervalSupplies);
@@ -507,15 +511,8 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetCompleteTestEventsAsync(Set<StoredTestEventId> id)
 	{
-		String queryInfo = "get test events "+id;
-		CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> future =
-				new AsyncOperator<MappedAsyncPagingIterable<TestEventEntity>>(semaphore)
-						.getFuture(() -> selectExecutor.executeQuery(() -> ops.getTestEventOperator().getComplete(instanceUuid,
-								id.stream().map(StoredTestEventId::toString).collect(toList()), readAttrs),
-								ops.getTestEventConverter(),
-								queryInfo));
-		
-		return future.thenApply(result -> new TestEventDataIteratorAdapter(result, pagingSupplies, ops.getTestEventConverter(), queryInfo));
+		return new AsyncOperator<Iterable<StoredTestEventWrapper>>(semaphore)
+						.getFuture(() -> completeEventsGetter.get(id, "get test events "+id));
 	}
 
 	@Override

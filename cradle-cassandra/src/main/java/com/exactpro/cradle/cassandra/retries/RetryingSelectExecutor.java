@@ -66,7 +66,7 @@ public class RetryingSelectExecutor
 		DriverException driverError = RetryUtils.getDriverException(error);
 		if (driverError == null)
 		{
-			logger.error("Cannot retry after non-driver exception", error);
+			logger.error("Cannot retry '"+queryInfo+"' after non-driver exception", error);
 			f.completeExceptionally(error);
 			return;
 		}
@@ -82,10 +82,18 @@ public class RetryingSelectExecutor
 			return;
 		}
 		
-		logger.debug("Retrying request ({}) '{}' with page size {} and CL {} after error: '{}'", 
-				retryCount+1, queryInfo, stmt.getPageSize(), stmt.getConsistencyLevel(), error.getMessage());
-		
-		session.executeAsync(stmt).thenApply(row -> new AsyncPagingIterableWrapper<Row, T>(row, mapper))
-				.whenCompleteAsync((retryResult, retryError) -> onComplete(retryResult, retryError, f, mapper, queryInfo, retryCount+1));
+		try
+		{
+			logger.debug("Retrying request ({}) '{}' with page size {} and CL {} after error: '{}'", 
+					retryCount+1, queryInfo, stmt.getPageSize(), stmt.getConsistencyLevel(), error.getMessage());
+			
+			session.executeAsync(stmt).thenApply(row -> new AsyncPagingIterableWrapper<Row, T>(row, mapper))
+					.whenCompleteAsync((retryResult, retryError) -> onComplete(retryResult, retryError, f, mapper, queryInfo, retryCount+1));
+		}
+		catch (Exception e)
+		{
+			logger.error("Error while retrying '"+queryInfo+"'", e);
+			f.completeExceptionally(e);
+		}
 	}
 }

@@ -16,6 +16,8 @@
 
 package com.exactpro.cradle.cassandra.retries;
 
+import java.util.Collection;
+
 import com.datastax.oss.driver.api.core.cql.Statement;
 
 /**
@@ -50,6 +52,19 @@ public class PageSizeAdjustingPolicy implements SelectExecutionPolicy
 		if (pageSize <= factor)
 			throw new CannotRetryException("Page size is already too small ("+pageSize+"), cannot adjust it by dividing by "+factor, cause);
 		return new SelectExecutionVerdict(null, pageSize / factor);
+	}
+	
+	@Override
+	public SelectExecutionVerdict onError(Collection<String> ids, String queryInfo, Throwable cause, int retryCount)
+			throws CannotRetryException
+	{
+		if (!RetryUtils.isRetriableException(cause))
+			throw new CannotRetryException("Cannot retry after this error", cause);
+		
+		int divider = (retryCount+1)*factor;
+		if (ids.size() <= divider)
+			throw new CannotRetryException("List size is already too small ("+ids.size()+"), cannot adjust it by dividing by "+divider, cause);
+		return new SelectExecutionVerdict(null, ids.size() / divider);
 	}
 	
 	@Override
