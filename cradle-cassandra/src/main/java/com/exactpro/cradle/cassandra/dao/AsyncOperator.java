@@ -44,6 +44,6 @@ public class AsyncOperator<T>
 		}
 		
 		return worker.get()
-				.whenComplete((t, error) -> semaphore.releaseSemaphore());
+				.whenCompleteAsync((t, error) -> semaphore.releaseSemaphore());
 	}
 }
