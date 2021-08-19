@@ -42,8 +42,15 @@ public class BookInfo
 		this.created = created;
 		this.pages = new ConcurrentHashMap<>();
 		
-		if (pages != null)
-			pages.forEach(p -> this.pages.put(p.getId(), p));
+		if (pages == null)
+			return;
+		
+		for (PageInfo p : pages)
+		{
+			this.pages.put(p.getId(), p);
+			if (p.isActive())
+				activePage = p;
+		}
 	}
 	
 	

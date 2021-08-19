@@ -63,11 +63,12 @@ public class BookAndPageChecker
 			throw new CradleStorageException("Page '"+pageId+"' is unknown");
 	}
 	
-	public void checkActivePage(BookId book, Instant timestamp) throws CradleStorageException
+	public PageInfo checkActivePage(BookId book, Instant timestamp) throws CradleStorageException
 	{
 		PageInfo activePage = getActivePage(book);
 		if (activePage.getStarted().isAfter(timestamp))
 			throw new CradleStorageException("Active page '"+activePage.getId()+"' was started after given timestamp ("+timestamp+")");
+		return activePage;
 	}
 	
 	public void checkPage(PageId pageId) throws CradleStorageException
