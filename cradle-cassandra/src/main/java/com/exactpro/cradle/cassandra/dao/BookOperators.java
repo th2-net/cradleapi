@@ -20,17 +20,20 @@ import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.books.PageOperator;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
 //import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 
 public class BookOperators
 {
 	private final PageOperator pageOperator;
 //	private final MessageBatchOperator messageBatchOperator;
+	private final TestEventOperator testEventOperator;
 	private final IntervalOperator intervalOperator;
 
 	public BookOperators(CassandraDataMapper dataMapper, String keyspace, CassandraStorageSettings settings)
 	{
 		pageOperator = dataMapper.pageOperator(keyspace, settings.getPagesTable());
 //		messageBatchOperator = dataMapper.messageBatchOperator(keyspace, settings.getMessagesTable());
+		testEventOperator = dataMapper.testEventOperator(keyspace, settings.getTestEventsTable());
 		intervalOperator = dataMapper.intervalOperator(keyspace, settings.getIntervalsTable());
 	}
 	
@@ -43,7 +46,12 @@ public class BookOperators
 //	{
 //		return messageBatchOperator;
 //	}
-//	
+	
+	public TestEventOperator getTestEventOperator()
+	{
+		return testEventOperator;
+	}
+	
 	public IntervalOperator getIntervalOperator()
 	{
 		return intervalOperator;

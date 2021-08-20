@@ -23,6 +23,7 @@ import com.datastax.oss.driver.api.mapper.annotations.Mapper;
 import com.exactpro.cradle.cassandra.dao.books.CradleBookOperator;
 import com.exactpro.cradle.cassandra.dao.books.PageOperator;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 
 @Mapper
 public interface CassandraDataMapper
@@ -32,6 +33,9 @@ public interface CassandraDataMapper
 	
 	@DaoFactory
 	PageOperator pageOperator(@DaoKeyspace String keyspace, @DaoTable String pagesTable);
+	
+	@DaoFactory
+	TestEventOperator testEventOperator(@DaoKeyspace String keyspace, @DaoTable String testEventsTable);
 	
 	@DaoFactory
 	IntervalOperator intervalOperator(@DaoKeyspace String keyspace, @DaoTable String intervalsTable);

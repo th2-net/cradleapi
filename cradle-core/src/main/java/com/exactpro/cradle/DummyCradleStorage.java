@@ -81,12 +81,12 @@ public class DummyCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected void doStoreTestEvent(StoredTestEvent event) throws IOException
+	protected void doStoreTestEvent(StoredTestEvent event, PageInfo page) throws IOException
 	{
 	}
 	
 	@Override
-	protected CompletableFuture<Void> doStoreTestEventAsync(StoredTestEvent event)
+	protected CompletableFuture<Void> doStoreTestEventAsync(StoredTestEvent event, PageInfo page)
 	{
 		return CompletableFuture.completedFuture(null);
 	}

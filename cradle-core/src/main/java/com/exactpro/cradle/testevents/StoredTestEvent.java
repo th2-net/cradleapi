@@ -53,6 +53,17 @@ public abstract class StoredTestEvent implements TestEvent
 	}
 	
 	
+	public static StoredTestEventSingle single(TestEventSingleToStore event) throws CradleStorageException
+	{
+		return new StoredTestEventSingle(event);
+	}
+	
+	public static StoredTestEventBatch batch(TestEventBatchToStore event) throws CradleStorageException
+	{
+		return new StoredTestEventBatch(event);
+	}
+	
+	
 	@Override
 	public StoredTestEventId getId()
 	{
@@ -108,15 +119,11 @@ public abstract class StoredTestEvent implements TestEvent
 	
 	public final StoredTestEventSingle asSingle()
 	{
-		if (isSingle())
-			return (StoredTestEventSingle)this;
-		return null;
+		return (StoredTestEventSingle)this;
 	}
 	
 	public final StoredTestEventBatch asBatch()
 	{
-		if (isBatch())
-			return (StoredTestEventBatch)this;
-		return null;
+		return (StoredTestEventBatch)this;
 	}
 }

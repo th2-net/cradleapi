@@ -28,15 +28,21 @@ import java.util.zip.DataFormatException;
 
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
+import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.TestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.StoredTestEventSingle;
 import com.exactpro.cradle.testevents.TestEventSingleToStore;
 
 public class TestEventUtils
 {
+	private static final Logger logger = LoggerFactory.getLogger(TestEventUtils.class);
+	
 	/**
 	 * Checks that test event has all necessary fields set
 	 * @param event to validate
@@ -144,6 +150,23 @@ public class TestEventUtils
 		{
 			throw new IOException(String.format("Could not decompress content of test event (ID: '%s') from Cradle", eventId), e);
 		}
+	}
+	
+	
+	/**
+	 * Returns content of given test event as bytes. If the event is a batch, child events are serialized and returned as bytes
+	 * @param event whose content to get
+	 * @return bytes of test event content
+	 * @throws IOException if batch children serialization failed
+	 */
+	public static byte[] getTestEventContent(StoredTestEvent event) throws IOException
+	{
+		if (event.isBatch())
+		{
+			logger.trace("Serializing children of test event batch '{}'", event.getId());
+			return serializeTestEvents(event.asBatch().getTestEvents());
+		}
+		return event.asSingle().getContent();
 	}
 	
 	

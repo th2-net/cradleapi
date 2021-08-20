@@ -36,7 +36,11 @@ public class CassandraStorageSettings
 	public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
 	public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1,
 			DEFAULT_MAX_PARALLEL_QUERIES = 500,
-			DEFAULT_RESULT_PAGE_SIZE = 0;  //Driver default will be used in this case.
+			DEFAULT_RESULT_PAGE_SIZE = 0,  //Driver default will be used in this case.
+			DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_SIZE = 5*1024,
+			DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE = 5*1024,
+			DEFAULT_MESSAGE_BATCH_CHUNK_SIZE = 1024*1024,
+			DEFAULT_TEST_EVENT_CHUNK_SIZE = 1024*1024;  
 	
 	
 	private final NetworkTopologyStrategy networkTopologyStrategy;
@@ -57,7 +61,11 @@ public class CassandraStorageSettings
   private int keyspaceReplicationFactor;
 	
 	private int maxParallelQueries,
-			resultPageSize;
+			resultPageSize,
+			maxUncompressedMessageBatchSize,
+			maxUncompressedTestEventSize,
+			messageBatchChunkSize,
+			testEventChunkSize;
 	
 	public CassandraStorageSettings()
 	{
@@ -87,6 +95,10 @@ public class CassandraStorageSettings
 		this.keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
 		this.maxParallelQueries = DEFAULT_MAX_PARALLEL_QUERIES;
 		this.resultPageSize = DEFAULT_RESULT_PAGE_SIZE;
+		this.maxUncompressedMessageBatchSize = DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_SIZE;
+		this.maxUncompressedTestEventSize = DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE;
+		this.messageBatchChunkSize = DEFAULT_MESSAGE_BATCH_CHUNK_SIZE;
+		this.testEventChunkSize = DEFAULT_TEST_EVENT_CHUNK_SIZE;
 	}
 	
 	public CassandraStorageSettings(CassandraStorageSettings settings)
@@ -111,6 +123,10 @@ public class CassandraStorageSettings
 		this.keyspaceReplicationFactor = settings.getKeyspaceReplicationFactor();
 		this.maxParallelQueries = settings.getMaxParallelQueries();
 		this.resultPageSize = settings.getResultPageSize();
+		this.maxUncompressedMessageBatchSize = settings.getMaxUncompressedMessageBatchSize();
+		this.maxUncompressedTestEventSize = settings.getMaxUncompressedTestEventSize();
+		this.messageBatchChunkSize = settings.getMessageBatchChunkSize();
+		this.testEventChunkSize = settings.getTestEventChunkSize();
 	}
 	
 	
@@ -286,5 +302,49 @@ public class CassandraStorageSettings
 	public void setResultPageSize(int resultPageSize)
 	{
 		this.resultPageSize = resultPageSize;
+	}
+	
+	
+	public int getMaxUncompressedMessageBatchSize()
+	{
+		return maxUncompressedMessageBatchSize;
+	}
+	
+	public void setMaxUncompressedMessageBatchSize(int maxUncompressedMessageBatchSize)
+	{
+		this.maxUncompressedMessageBatchSize = maxUncompressedMessageBatchSize;
+	}
+	
+	
+	public int getMaxUncompressedTestEventSize()
+	{
+		return maxUncompressedTestEventSize;
+	}
+	
+	public void setMaxUncompressedTestEventSize(int maxUncompressedTestEventSize)
+	{
+		this.maxUncompressedTestEventSize = maxUncompressedTestEventSize;
+	}
+	
+	
+	public int getMessageBatchChunkSize()
+	{
+		return messageBatchChunkSize;
+	}
+	
+	public void setMessageBatchChunkSize(int messageBatchChunkSize)
+	{
+		this.messageBatchChunkSize = messageBatchChunkSize;
+	}
+	
+	
+	public int getTestEventChunkSize()
+	{
+		return testEventChunkSize;
+	}
+	
+	public void setTestEventChunkSize(int testEventChunkSize)
+	{
+		this.testEventChunkSize = testEventChunkSize;
 	}
 }

@@ -70,8 +70,8 @@ public abstract class CradleStorage
 	protected abstract CompletableFuture<Void> doStoreMessageBatchAsync(StoredMessageBatch batch);
 	
 	
-	protected abstract void doStoreTestEvent(StoredTestEvent event) throws IOException;
-	protected abstract CompletableFuture<Void> doStoreTestEventAsync(StoredTestEvent event);
+	protected abstract void doStoreTestEvent(StoredTestEvent event, PageInfo page) throws IOException, CradleStorageException;
+	protected abstract CompletableFuture<Void> doStoreTestEventAsync(StoredTestEvent event, PageInfo page) throws IOException, CradleStorageException;
 	protected abstract void doUpdateParentTestEvents(StoredTestEvent event) throws IOException;
 	protected abstract CompletableFuture<Void> doUpdateParentTestEventsAsync(StoredTestEvent event);
 	protected abstract void doUpdateEventStatus(StoredTestEvent event, boolean success) throws IOException;
@@ -245,11 +245,11 @@ public abstract class CradleStorage
 	{
 		StoredTestEventId id = event.getId();
 		logger.debug("Storing test event {}", id);
-		bpc.checkActivePage(id.getBookId(), id.getStartTimestamp());
+		PageInfo page = bpc.checkActivePage(id.getBookId(), id.getStartTimestamp());
 		
 		TestEventUtils.validateTestEvent(event, !(event instanceof StoredTestEventBatch));
 		
-		doStoreTestEvent(event);
+		doStoreTestEvent(event, page);
 		logger.debug("Test event {} has been stored", id);
 		if (event.getParentId() != null)
 		{
@@ -270,11 +270,11 @@ public abstract class CradleStorage
 	{
 		StoredTestEventId id = event.getId();
 		logger.debug("Storing test event {} asynchronously", id);
-		bpc.checkActivePage(id.getBookId(), id.getStartTimestamp());
+		PageInfo page = bpc.checkActivePage(id.getBookId(), id.getStartTimestamp());
 		
 		TestEventUtils.validateTestEvent(event, !(event instanceof StoredTestEventBatch));
 		
-		CompletableFuture<Void> result = doStoreTestEventAsync(event);
+		CompletableFuture<Void> result = doStoreTestEventAsync(event, page);
 		result.whenComplete((r, error) -> {
 				if (error != null)
 					logger.error("Error while storing test event "+id+" asynchronously", error);

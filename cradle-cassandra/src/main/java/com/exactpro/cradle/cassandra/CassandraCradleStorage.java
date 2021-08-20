@@ -28,6 +28,9 @@ import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.CradleOperators;
 import com.exactpro.cradle.cassandra.dao.books.BookEntity;
 import com.exactpro.cradle.cassandra.dao.books.PageEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.EventEntityUtils;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.keyspaces.BookKeyspaceCreator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleKeyspaceCreator;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
@@ -39,7 +42,9 @@ import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventFilter;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.utils.CompressionUtils;
 import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.TestEventUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -181,11 +186,11 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	protected void doStoreTestEvent(StoredTestEvent event) throws IOException
+	protected void doStoreTestEvent(StoredTestEvent event, PageInfo page) throws IOException
 	{
 		try
 		{
-			doStoreTestEventAsync(event).get();
+			doStoreTestEventAsync(event, page).get();
 		}
 		catch (Exception e)
 		{
@@ -194,10 +199,22 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Void> doStoreTestEventAsync(StoredTestEvent event)
+	protected CompletableFuture<Void> doStoreTestEventAsync(StoredTestEvent event, PageInfo page) throws IOException, CradleStorageException
 	{
-		//TODO: implement
-		return null;
+		PageId pageId = page.getId();
+		Collection<TestEventEntity> entities = EventEntityUtils.toEntities(event, pageId, 
+				settings.getMaxUncompressedTestEventSize(), settings.getTestEventChunkSize());
+		TestEventOperator op = ops.getOperators(pageId.getBookId()).getTestEventOperator();
+		
+		CompletableFuture<TestEventEntity> result = null;
+		for (TestEventEntity ent : entities)
+		{
+			if (result == null)
+				result = op.write(ent, writeAttrs);
+			else
+				result = result.thenComposeAsync(r -> op.write(ent, writeAttrs));
+		}
+		return result.thenAccept(r -> {});
 	}
 
 	@Override
