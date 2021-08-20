@@ -18,7 +18,7 @@ package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
 
-import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.books.BookId;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 /**

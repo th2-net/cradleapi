@@ -19,7 +19,7 @@ package com.exactpro.cradle.testevents;
 import java.time.Instant;
 
 import com.exactpro.cradle.Order;
-import com.exactpro.cradle.PageId;
+import com.exactpro.cradle.books.PageId;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForGreaterBuilder;
 import com.exactpro.cradle.filters.FilterForLess;

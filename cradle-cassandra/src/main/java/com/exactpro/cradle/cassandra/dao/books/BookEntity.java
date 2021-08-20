@@ -28,9 +28,9 @@ import java.util.Collection;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
-import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.BookInfo;
-import com.exactpro.cradle.PageInfo;
+import com.exactpro.cradle.books.BookId;
+import com.exactpro.cradle.books.BookInfo;
+import com.exactpro.cradle.books.PageInfo;
 
 /**
  * Contains information about book as stored in "cradle" keyspace

@@ -18,7 +18,7 @@ package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
 
-import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.books.BookId;
 
 /**
  * Holds basic information about test event prepared to be stored in Cradle. Events extend this class with additional data

@@ -20,7 +20,7 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.Collection;
 
-import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.books.BookId;
 
 /**
  * Holds information about one test event stored in batch of events ({@link StoredTestEventBatch})

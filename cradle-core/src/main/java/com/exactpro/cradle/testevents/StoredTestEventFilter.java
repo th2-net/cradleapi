@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.exactpro.cradle.Order;
-import com.exactpro.cradle.PageId;
+import com.exactpro.cradle.books.PageId;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
 

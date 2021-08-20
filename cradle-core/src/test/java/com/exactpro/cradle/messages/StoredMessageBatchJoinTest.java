@@ -23,8 +23,8 @@ import java.time.Instant;
 
 import org.testng.annotations.Test;
 
-import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.books.BookId;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 public class StoredMessageBatchJoinTest {

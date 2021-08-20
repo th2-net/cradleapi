@@ -21,8 +21,8 @@ import java.time.format.DateTimeParseException;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.books.BookId;
 import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.TimeUtils;
 
