@@ -20,7 +20,7 @@ import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
-import com.exactpro.cradle.books.PageId;
+import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.intervals.Interval;
 import com.exactpro.cradle.intervals.RecoveryState;
 import org.slf4j.Logger;
@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.*;
-import java.util.UUID;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 

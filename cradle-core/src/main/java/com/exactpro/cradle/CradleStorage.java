@@ -23,11 +23,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.exactpro.cradle.books.BookAndPageChecker;
-import com.exactpro.cradle.books.BookId;
-import com.exactpro.cradle.books.BookInfo;
-import com.exactpro.cradle.books.PageId;
-import com.exactpro.cradle.books.PageInfo;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

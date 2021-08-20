@@ -19,7 +19,7 @@ package com.exactpro.cradle.cassandra.dao;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.exactpro.cradle.books.BookId;
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.books.CradleBookOperator;
 import com.exactpro.cradle.utils.CradleStorageException;

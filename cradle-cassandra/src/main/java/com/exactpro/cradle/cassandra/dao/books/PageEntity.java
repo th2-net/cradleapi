@@ -28,9 +28,9 @@ import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.datastax.oss.driver.api.mapper.annotations.Transient;
-import com.exactpro.cradle.books.BookId;
-import com.exactpro.cradle.books.PageId;
-import com.exactpro.cradle.books.PageInfo;
+import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.PageId;
+import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.utils.TimeUtils;
 
 @Entity

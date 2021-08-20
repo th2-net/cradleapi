@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.books;
+package com.exactpro.cradle;
 
 import java.io.Serializable;
 import java.util.Objects;

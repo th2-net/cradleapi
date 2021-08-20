@@ -20,7 +20,7 @@ import java.time.Instant;
 
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.Order;
-import com.exactpro.cradle.books.PageId;
+import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.filters.FilterForAny;
 import com.exactpro.cradle.filters.FilterForAnyBuilder;

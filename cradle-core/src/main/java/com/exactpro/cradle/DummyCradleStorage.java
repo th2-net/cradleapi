@@ -21,10 +21,6 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
-import com.exactpro.cradle.books.BookId;
-import com.exactpro.cradle.books.BookInfo;
-import com.exactpro.cradle.books.PageId;
-import com.exactpro.cradle.books.PageInfo;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;

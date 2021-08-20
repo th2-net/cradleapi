@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.books;
+package com.exactpro.cradle;
 
 import java.time.Instant;
 import java.util.Map;
