@@ -17,6 +17,9 @@
 package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
+import java.util.Set;
+
+import com.exactpro.cradle.messages.StoredMessageId;
 
 /**
  * Holds information about single (individual) test event prepared to be stored in Cradle
@@ -25,6 +28,7 @@ public class TestEventSingleToStore extends TestEventToStore implements TestEven
 {
 	private Instant endTimestamp;
 	private boolean success;
+	private Set<StoredMessageId> messages;
 	private byte[] content;
 	
 	
@@ -55,6 +59,18 @@ public class TestEventSingleToStore extends TestEventToStore implements TestEven
 	public void setSuccess(boolean success)
 	{
 		this.success = success;
+	}
+	
+	
+	@Override
+	public Set<StoredMessageId> getMessages()
+	{
+		return messages;
+	}
+	
+	public void setMessages(Set<StoredMessageId> messages)
+	{
+		this.messages = messages;
 	}
 	
 	

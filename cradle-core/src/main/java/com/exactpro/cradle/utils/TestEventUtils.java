@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.Set;
 import java.util.zip.DataFormatException;
 
 import org.apache.commons.lang3.SerializationUtils;
@@ -31,12 +32,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.TestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
-import com.exactpro.cradle.testevents.StoredTestEventSingle;
 import com.exactpro.cradle.testevents.TestEventSingleToStore;
 
 public class TestEventUtils
@@ -63,6 +65,10 @@ public class TestEventUtils
 			throw new CradleStorageException("Test event must have a scope");
 		if (event.getStartTimestamp() == null)
 			throw new CradleStorageException("Test event must have a start timestamp");
+		
+		Set<StoredMessageId> messages = event.getMessages();
+		if (messages != null)
+			validateMessages(messages, event.getBookId());
 	}
 	
 	/**
@@ -188,5 +194,15 @@ public class TestEventUtils
 	private static BatchedStoredTestEvent deserializeTestEvent(byte[] bytes)
 	{
 		return (BatchedStoredTestEvent)SerializationUtils.deserialize(bytes);
+	}
+	
+	
+	private static void validateMessages(Set<StoredMessageId> messages, BookId book) throws CradleStorageException
+	{
+		for (StoredMessageId id : messages)
+		{
+			if (!id.getBookId().equals(book))
+				throw new CradleStorageException("Book of message '"+id+"' differs from test event book ("+book+")");
+		}
 	}
 }

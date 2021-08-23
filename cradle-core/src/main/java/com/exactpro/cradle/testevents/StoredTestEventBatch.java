@@ -23,7 +23,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
+import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
 
@@ -188,7 +190,7 @@ public class StoredTestEventBatch extends StoredTestEvent
 		return result;
 	}
 	
-	private void updateBatchData(TestEventSingle event)
+	private void updateBatchData(TestEventSingle event) throws CradleStorageException
 	{
 		Instant eventEnd = event.getEndTimestamp();
 		if (eventEnd != null)
@@ -197,9 +199,12 @@ public class StoredTestEventBatch extends StoredTestEvent
 				endTimestamp = eventEnd;
 		}
 		
-		if (!event.isSuccess()) {
+		if (!event.isSuccess())
 			success = false;
-		}
+		
+		Set<StoredMessageId> eventMessages = event.getMessages();
+		if (eventMessages != null)
+			addMessages(eventMessages);
 	}
 	
 	private void checkEvent(TestEventSingle event) throws CradleStorageException
@@ -215,5 +220,16 @@ public class StoredTestEventBatch extends StoredTestEvent
 		
 		if (events.containsKey(event.getId()))
 			throw new CradleStorageException("Test event with ID '"+event.getId()+"' is already present in batch");
+	}
+	
+	private void addMessages(Set<StoredMessageId> eventMessages) throws CradleStorageException
+	{
+		for (StoredMessageId msgId : eventMessages)  //Batch stores links to all messages of child events
+		{
+			if (!msgId.getBookId().equals(getBookId()))
+				throw new CradleStorageException("Batch contains events of book '"+getBookId()+"', "
+						+ "but in message of event it is '"+msgId.getBookId()+"'");
+			messages.add(msgId);
+		}
 	}
 }

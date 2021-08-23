@@ -17,15 +17,22 @@
 package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
+import org.assertj.core.api.Assertions;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+import org.testng.asserts.SoftAssert;
 
 import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
 
@@ -69,30 +76,32 @@ public class StoredTestEventTest
 	{
 		return new Object[][]
 				{
-					{new TestEventSingleToStoreBuilder().build(),                                                    //Empty event
+					{new TestEventSingleToStoreBuilder().build(),                                                      //Empty event
 							"ID cannot be null"},
-					{validEvent().id(null).build(),                                                                  //No ID
+					{validEvent().id(null).build(),                                                                    //No ID
 							"ID cannot be null"},
-					{validEvent().id(new StoredTestEventId(null, SCOPE, START_TIMESTAMP, ID_VALUE)).build(),         //No book
+					{validEvent().id(new StoredTestEventId(null, SCOPE, START_TIMESTAMP, ID_VALUE)).build(),           //No book
 							"must have a book"},
-					{validEvent().id(new StoredTestEventId(BOOK, null, START_TIMESTAMP, ID_VALUE)).build(),          //No scope
+					{validEvent().id(new StoredTestEventId(BOOK, null, START_TIMESTAMP, ID_VALUE)).build(),            //No scope
 							"must have a scope"},
-					{validEvent().id(new StoredTestEventId(BOOK, SCOPE, null, ID_VALUE)).build(),                    //No timestamp
+					{validEvent().id(new StoredTestEventId(BOOK, SCOPE, null, ID_VALUE)).build(),                      //No timestamp
 							"must have a start timestamp"},
-					{validEvent().name(null).build(),                                                                //No name
+					{validEvent().name(null).build(),                                                                  //No name
 							"must have a name"},
-					{validEvent().parentId(null).build(),                                                            //No parent ID
+					{validEvent().parentId(null).build(),                                                              //No parent ID
 								"must have a parent"},
-					{validEvent().id(new StoredTestEventId(new BookId(BOOK.getName()+"1"),                           //Different book
+					{validEvent().id(new StoredTestEventId(new BookId(BOOK.getName()+"1"),                             //Different book
 							SCOPE, START_TIMESTAMP, DUMMY_NAME)).build(), 
 							"events of book"},
-					{validEvent().id(new StoredTestEventId(BOOK, SCOPE+"1", START_TIMESTAMP, DUMMY_NAME)).build(),  //Different scope
+					{validEvent().id(new StoredTestEventId(BOOK, SCOPE+"1", START_TIMESTAMP, DUMMY_NAME)).build(),    //Different scope
 							"events of scope"},
-					{validEvent().id(new StoredTestEventId(BOOK, SCOPE,                                             //Early timestamp
+					{validEvent().id(new StoredTestEventId(BOOK, SCOPE,                                               //Early timestamp
 							START_TIMESTAMP.minusMillis(5000), DUMMY_NAME)).build(),
 							"start timestamp"},
-					{validEvent().parentId(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "wrong_parent"))     //Different parent ID
-								.build(), "parent"}
+					{validEvent().parentId(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "wrong_parent"))       //Different parent ID
+								.build(), "parent"},
+					{validEvent().messages(Collections.singleton(new StoredMessageId(new BookId(BOOK.getName()+"1"),  //Different book in message
+							"Session1", Direction.FIRST, START_TIMESTAMP, 1))).build(), "Book of message"}
 				};
 	}
 	
@@ -107,6 +116,80 @@ public class StoredTestEventTest
 	}
 	
 	
+	@Test
+	public void eventFields() throws CradleStorageException
+	{
+		Set<StoredMessageId> messages = new HashSet<>();
+		messages.add(new StoredMessageId(BOOK, "Session1", Direction.FIRST, Instant.EPOCH, 1));
+		messages.add(new StoredMessageId(BOOK, "Session2", Direction.SECOND, Instant.EPOCH, 2));
+		
+		TestEventSingleToStore event = StoredTestEvent.singleBuilder()
+				.id(DUMMY_ID)
+				.name("Name1")
+				.parentId(batchParentId)
+				.type("Type1")
+				.success(true)
+				.endTimestamp(Instant.now())
+				.messages(messages)
+				.content("Valid content".getBytes())
+				.build();
+		StoredTestEventSingle stored = StoredTestEvent.single(event);
+		
+		Assertions.assertThat(stored)
+				.usingRecursiveComparison()
+				.isEqualTo(event);
+	}
+	
+	@Test
+	public void batchFields() throws CradleStorageException
+	{
+		TestEventBatchToStore event = StoredTestEvent.batchBuilder()
+				.id(DUMMY_ID)
+				.name("Name1")
+				.parentId(batchParentId)
+				.type("Type1")
+				.build();
+		StoredTestEventBatch stored = StoredTestEvent.batch(event);
+		
+		Set<StoredMessageId> messages1 = Collections.singleton(new StoredMessageId(BOOK, "Session1", Direction.FIRST, Instant.EPOCH, 1));
+		stored.addTestEvent(eventBuilder.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP.plusMillis(3500), ID_VALUE))
+				.name(DUMMY_NAME)
+				.parentId(batch.getParentId())
+				.endTimestamp(START_TIMESTAMP.plusMillis(5000))
+				.messages(messages1)
+				.success(true)
+				.build());
+		
+		Set<StoredMessageId> messages2 = Collections.singleton(new StoredMessageId(BOOK, "Session2", Direction.SECOND, Instant.EPOCH, 2));
+		stored.addTestEvent(eventBuilder.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, ID_VALUE+"1"))
+				.name(DUMMY_NAME)
+				.parentId(batch.getParentId())
+				.messages(messages2)
+				.success(false)
+				.build());
+		
+		stored.addTestEvent(eventBuilder.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, ID_VALUE+"2"))
+				.name(DUMMY_NAME)
+				.parentId(batch.getParentId())
+				.success(false)
+				.build());
+		
+		Set<StoredMessageId> allMessages = new HashSet<>();
+		allMessages.addAll(messages1);
+		allMessages.addAll(messages2);
+		
+		SoftAssert soft = new SoftAssert();
+		soft.assertEquals(stored.getId(), event.getId(), "batch ID");
+		soft.assertEquals(stored.getName(), event.getName(), "batch name");
+		soft.assertEquals(stored.getParentId(), event.getParentId(), "batch parent ID");
+		soft.assertEquals(stored.getType(), event.getType(), "batch type");
+		soft.assertEquals(stored.isSuccess(), false, "batch success");
+		soft.assertEquals(stored.getEndTimestamp(), START_TIMESTAMP.plusMillis(5000), "batch end timestamp is the latest child end timestamp");
+		soft.assertEquals(stored.getMessages(), allMessages, "batch unites messages of all its children");
+		soft.assertEquals(stored.getTestEventsCount(), 3, "child events number");
+		soft.assertAll();
+	}
+	
 	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Test event ID cannot be null")
 	public void eventIdMustBeSet() throws CradleStorageException
 	{
@@ -118,6 +201,15 @@ public class StoredTestEventTest
 	{
 		StoredTestEventId eventId = new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "A");
 		new StoredTestEventSingle(new TestEventSingleToStoreBuilder().id(eventId).parentId(eventId).build());
+	}
+	
+	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Book of message .*")
+	public void wrongMessageBook() throws CradleStorageException
+	{
+		new StoredTestEventSingle(new TestEventSingleToStoreBuilder()
+				.id(DUMMY_ID)
+				.name(DUMMY_NAME)
+				.messages(Collections.singleton(new StoredMessageId(new BookId(BOOK.getName()+"X"), "SessionX", Direction.SECOND, START_TIMESTAMP, 123))).build());
 	}
 	
 	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Batch must have a parent")

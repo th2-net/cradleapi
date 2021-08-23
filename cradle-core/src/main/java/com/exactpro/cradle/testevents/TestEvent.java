@@ -17,8 +17,10 @@
 package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
+import java.util.Set;
 
 import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.messages.StoredMessageId;
 
 /**
  * Interface to access all metadata fields of test event
@@ -27,6 +29,7 @@ public interface TestEvent extends BasicTestEvent
 {
 	Instant getEndTimestamp();
 	boolean isSuccess();
+	Set<StoredMessageId> getMessages();
 	
 	public static BookId bookId(BasicTestEvent event)
 	{

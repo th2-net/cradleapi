@@ -17,6 +17,9 @@
 package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
+import java.util.Set;
+
+import com.exactpro.cradle.messages.StoredMessageId;
 
 /**
  * Builder for {@link TestEventSingleToStore} object. After calling {@link #build()} method, the builder can be reused to build new test event
@@ -68,6 +71,13 @@ public class TestEventSingleToStoreBuilder
 	{
 		initIfNeeded();
 		event.setParentId(parentId);
+		return this;
+	}
+	
+	public TestEventSingleToStoreBuilder messages(Set<StoredMessageId> ids)
+	{
+		initIfNeeded();
+		event.setMessages(ids);
 		return this;
 	}
 	

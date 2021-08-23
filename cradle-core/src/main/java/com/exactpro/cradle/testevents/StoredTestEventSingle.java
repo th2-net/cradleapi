@@ -17,7 +17,9 @@
 package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
+import java.util.Set;
 
+import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
 
@@ -37,6 +39,10 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 		this.endTimestamp = event.getEndTimestamp();
 		this.success = event.isSuccess();
 		this.content = event.getContent();
+		
+		Set<StoredMessageId> eventMessages = event.getMessages();
+		if (eventMessages != null)
+			this.messages.addAll(eventMessages);
 		
 		TestEventUtils.validateTestEvent(this, true);
 	}
