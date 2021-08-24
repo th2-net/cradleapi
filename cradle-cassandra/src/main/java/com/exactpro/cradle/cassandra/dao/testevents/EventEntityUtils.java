@@ -21,6 +21,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.zip.DataFormatException;
 
@@ -29,12 +31,12 @@ import org.slf4j.LoggerFactory;
 
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.PageId;
+import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.StoredTestEventSingle;
 import com.exactpro.cradle.testevents.TestEventBatchToStoreBuilder;
-import com.exactpro.cradle.testevents.TestEventSingleToStoreBuilder;
 import com.exactpro.cradle.utils.CompressionUtils;
 import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -49,11 +51,12 @@ public class EventEntityUtils
 		return content.length > maxChunkSize || (messages != null && messages.size() > maxMessageCount);
 	}
 	
-	public static Collection<TestEventEntity> toEntities(StoredTestEvent event, PageId pageId, int maxUncompressedSize, int chunkSize) throws IOException
+	public static Collection<TestEventEntity> toEntities(StoredTestEvent event, PageId pageId, int maxUncompressedSize, 
+			int contentChunkSize, int messagesPerChunk) throws IOException
 	{
 		byte[] content = TestEventUtils.getTestEventContent(event);
 		boolean compressed;
-		if (content.length > maxUncompressedSize)
+		if (content != null && content.length > maxUncompressedSize)
 		{
 			logger.trace("Compressing content of test event '{}'", event.getId());
 			content = CompressionUtils.compressData(content);
@@ -62,23 +65,55 @@ public class EventEntityUtils
 		else
 			compressed = false;
 		
-		return toEntities(event, pageId, content, compressed, chunkSize);
+		return toEntities(event, pageId, content, compressed, contentChunkSize, messagesPerChunk);
 	}
 	
-	public static Collection<TestEventEntity> toEntities(StoredTestEvent event, PageId pageId, byte[] content, boolean compressed, int chunkSize)
+	public static Collection<TestEventEntity> toEntities(StoredTestEvent event, PageId pageId, byte[] content, boolean compressed, 
+			int contentChunkSize, int messagesPerChunk)
 	{
-		//TODO: Set<String> messages = event.getMessages();
+		Set<StoredMessageId> eventMessages = event.getMessages();
+		List<StoredMessageId> messages = eventMessages != null && eventMessages.size() > 0 ? new ArrayList<>(eventMessages) : null;
 		Collection<TestEventEntity> result = new ArrayList<>();
-		int contentPos = 0;
+		int contentPos = 0,
+				messagesPos = 0;
 		boolean last = false;
 		do
 		{
-			int entityContentSize = Math.min(content.length-contentPos, chunkSize);
-			byte[] entityContent = Arrays.copyOfRange(content, contentPos, contentPos+entityContentSize);
-			contentPos += entityContentSize;
-			last = contentPos >= content.length-1;
+			byte[] entityContent;
+			if (content != null)
+			{
+				int entityContentSize = Math.min(content.length-contentPos, contentChunkSize);
+				if (entityContentSize > 0)  //Will be <=0 if the whole content is already stored, but messages are not
+				{
+					entityContent = Arrays.copyOfRange(content, contentPos, contentPos+entityContentSize);
+					contentPos += entityContentSize;
+				}
+				else
+					entityContent = null;
+			}
+			else
+				entityContent = null;
+			
+			Set<String> entityMessages;
+			if (messages != null)
+			{
+				int entityMessagesSize = Math.min(messages.size()-messagesPos, messagesPerChunk);
+				if (entityMessagesSize > 0)  //Will be <=0 if all messages are already stored, but content is not
+				{
+					entityMessages = new HashSet<String>(entityMessagesSize);
+					for (StoredMessageId id : messages.subList(messagesPos, messagesPos+entityMessagesSize))
+						entityMessages.add(id.toString());
+					messagesPos += entityMessagesSize;
+				}
+				else
+					entityMessages = null;
+			}
+			else
+				entityMessages = null;
+			
+			last = (entityContent == null || contentPos >= content.length-1) && (entityMessages == null || messagesPos >= messages.size()-1);
 			TestEventEntity entity = new TestEventEntity(new EventEntityData(event, pageId, result.size(), last, 
-					entityContent, compressed, null));  //TODO: messages
+					entityContent, compressed, entityMessages));
 			result.add(entity);
 		}
 		while (!last);
@@ -93,14 +128,15 @@ public class EventEntityUtils
 		
 		StoredTestEventId eventId = createId(entity, bookId);
 		byte[] eventContent = getContent(entities, eventId);
-		return new StoredTestEventSingle(new TestEventSingleToStoreBuilder()
+		Set<StoredMessageId> messages = getMessages(entities);
+		return StoredTestEvent.single(StoredTestEvent.singleBuilder()
 				.id(eventId)
 				.name(entity.getName())
 				.type(entity.getType())
 				.parentId(createParentId(entity))
 				.endTimestamp(entity.getEndTimestamp())
 				.success(entity.isSuccess())
-				//TODO: .setMessages()
+				.messages(messages)
 				.content(eventContent)
 				.build());
 	}
@@ -112,6 +148,7 @@ public class EventEntityUtils
 		
 		StoredTestEventId eventId = createId(entity, bookId);
 		byte[] eventContent = getContent(entities, eventId);
+		//Test event batch doesn't contain messages, they are got from child events. In Cassandra messages are stored for batch to build index
 		StoredTestEventBatch result = new StoredTestEventBatch(new TestEventBatchToStoreBuilder()
 				.id(eventId)
 				.name(entity.getName())
@@ -146,6 +183,9 @@ public class EventEntityUtils
 				.mapToInt(e -> e.getContent() != null ? e.getContent().limit() : 0)
 				.sum();
 		
+		if (size == 0)
+			return null;
+		
 		ByteBuffer buffer = ByteBuffer.allocate(size);
 		for (TestEventEntity e : entities)
 		{
@@ -164,6 +204,23 @@ public class EventEntityUtils
 		{
 			logger.trace("Decompressing content of test event '{}'", eventId);
 			return CompressionUtils.decompressData(result);
+		}
+		return result;
+	}
+	
+	private static Set<StoredMessageId> getMessages(Collection<TestEventEntity> entities) throws IOException, DataFormatException, CradleIdException
+	{
+		Set<StoredMessageId> result = null;
+		for (TestEventEntity e : entities)
+		{
+			Set<String> messages = e.getMessages();
+			if (messages == null)
+				continue;
+			
+			if (result == null)
+				result = new HashSet<>();
+			for (String id : messages)
+				result.add(StoredMessageId.fromString(id));
 		}
 		return result;
 	}

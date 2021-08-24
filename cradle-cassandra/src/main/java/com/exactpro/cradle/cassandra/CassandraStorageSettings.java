@@ -40,7 +40,8 @@ public class CassandraStorageSettings
 			DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_SIZE = 5*1024,
 			DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE = 5*1024,
 			DEFAULT_MESSAGE_BATCH_CHUNK_SIZE = 1024*1024,
-			DEFAULT_TEST_EVENT_CHUNK_SIZE = 1024*1024;  
+			DEFAULT_TEST_EVENT_CHUNK_SIZE = 1024*1024,
+			DEFAULT_TEST_EVENT_MESSAGES_PER_CHUNK = 10;
 	
 	
 	private final NetworkTopologyStrategy networkTopologyStrategy;
@@ -65,7 +66,8 @@ public class CassandraStorageSettings
 			maxUncompressedMessageBatchSize,
 			maxUncompressedTestEventSize,
 			messageBatchChunkSize,
-			testEventChunkSize;
+			testEventChunkSize,
+			testEventMessagesPerChunk;
 	
 	public CassandraStorageSettings()
 	{
@@ -99,6 +101,7 @@ public class CassandraStorageSettings
 		this.maxUncompressedTestEventSize = DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE;
 		this.messageBatchChunkSize = DEFAULT_MESSAGE_BATCH_CHUNK_SIZE;
 		this.testEventChunkSize = DEFAULT_TEST_EVENT_CHUNK_SIZE;
+		this.testEventMessagesPerChunk = DEFAULT_TEST_EVENT_MESSAGES_PER_CHUNK;
 	}
 	
 	public CassandraStorageSettings(CassandraStorageSettings settings)
@@ -127,6 +130,7 @@ public class CassandraStorageSettings
 		this.maxUncompressedTestEventSize = settings.getMaxUncompressedTestEventSize();
 		this.messageBatchChunkSize = settings.getMessageBatchChunkSize();
 		this.testEventChunkSize = settings.getTestEventChunkSize();
+		this.testEventMessagesPerChunk = settings.getTestEventMessagesPerChunk();
 	}
 	
 	
@@ -346,5 +350,16 @@ public class CassandraStorageSettings
 	public void setTestEventChunkSize(int testEventChunkSize)
 	{
 		this.testEventChunkSize = testEventChunkSize;
+	}
+	
+	
+	public int getTestEventMessagesPerChunk()
+	{
+		return testEventMessagesPerChunk;
+	}
+	
+	public void setTestEventMessagesPerChunk(int testEventMessagesPerChunk)
+	{
+		this.testEventMessagesPerChunk = testEventMessagesPerChunk;
 	}
 }

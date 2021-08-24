@@ -203,7 +203,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		PageId pageId = page.getId();
 		Collection<TestEventEntity> entities = EventEntityUtils.toEntities(event, pageId, 
-				settings.getMaxUncompressedTestEventSize(), settings.getTestEventChunkSize());
+				settings.getMaxUncompressedTestEventSize(), settings.getTestEventChunkSize(), settings.getTestEventMessagesPerChunk());
 		TestEventOperator op = ops.getOperators(pageId.getBookId()).getTestEventOperator();
 		
 		CompletableFuture<TestEventEntity> result = null;

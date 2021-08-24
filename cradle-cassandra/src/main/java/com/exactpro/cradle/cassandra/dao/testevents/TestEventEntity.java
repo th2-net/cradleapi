@@ -18,7 +18,6 @@ package com.exactpro.cradle.cassandra.dao.testevents;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.LocalDate;

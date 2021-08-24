@@ -18,3 +18,4 @@
 # IntelliJ Idea
 .idea
 out
+/cradle-cassandra/test-output

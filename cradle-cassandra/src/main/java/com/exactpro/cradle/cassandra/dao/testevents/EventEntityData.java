@@ -16,9 +16,11 @@
 
 package com.exactpro.cradle.cassandra.dao.testevents;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import com.exactpro.cradle.PageId;
+import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 
 public class EventEntityData
@@ -43,7 +45,14 @@ public class EventEntityData
 		this.lastChunk = true;
 		this.content = content;
 		this.compressed = compressed;
-		//TODO: this.messages = event.getMessages();
+		
+		Set<StoredMessageId> eventMessages = event.getMessages();
+		if (eventMessages != null && eventMessages.size() > 0)
+		{
+			this.messages = new HashSet<>();
+			for (StoredMessageId msgId : eventMessages)
+				this.messages.add(msgId.toString());
+		}
 	}
 	
 	public EventEntityData(StoredTestEvent event, PageId pageId, int chunk, boolean lastChunk, byte[] content, boolean compressed, Set<String> messages)

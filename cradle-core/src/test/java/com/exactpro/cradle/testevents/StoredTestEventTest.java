@@ -108,11 +108,11 @@ public class StoredTestEventTest
 	
 	private TestEventSingleToStoreBuilder validEvent()
 	{
-			//Preparing valid event that corresponds to the batch. It will be made invalid in "invalid events"
-			return new TestEventSingleToStoreBuilder()
-					.id(DUMMY_ID)
-					.parentId(batchParentId)
-					.name(DUMMY_NAME);
+		//Preparing valid event that corresponds to the batch. It will be made invalid in "invalid events"
+		return new TestEventSingleToStoreBuilder()
+				.id(DUMMY_ID)
+				.parentId(batchParentId)
+				.name(DUMMY_NAME);
 	}
 	
 	
