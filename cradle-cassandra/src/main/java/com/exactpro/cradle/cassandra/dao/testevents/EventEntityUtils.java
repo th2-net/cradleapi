@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.zip.DataFormatException;
@@ -29,8 +30,10 @@ import java.util.zip.DataFormatException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.PageId;
+import com.exactpro.cradle.cassandra.dao.DaoUtils;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
@@ -121,49 +124,29 @@ public class EventEntityUtils
 	}
 	
 	
-	public static StoredTestEventSingle toStoredTestEventSingle(Collection<TestEventEntity> entities, BookId bookId) 
-			throws IOException, CradleStorageException, DataFormatException, CradleIdException
-	{
-		TestEventEntity entity = entities.iterator().next();
-		
-		StoredTestEventId eventId = createId(entity, bookId);
-		byte[] eventContent = getContent(entities, eventId);
-		Set<StoredMessageId> messages = getMessages(entities);
-		return StoredTestEvent.single(StoredTestEvent.singleBuilder()
-				.id(eventId)
-				.name(entity.getName())
-				.type(entity.getType())
-				.parentId(createParentId(entity))
-				.endTimestamp(entity.getEndTimestamp())
-				.success(entity.isSuccess())
-				.messages(messages)
-				.content(eventContent)
-				.build());
-	}
-	
-	public static StoredTestEventBatch toStoredTestEventBatch(Collection<TestEventEntity> entities, BookId bookId) 
-			throws IOException, CradleStorageException, DataFormatException, CradleIdException
-	{
-		TestEventEntity entity = entities.iterator().next();
-		
-		StoredTestEventId eventId = createId(entity, bookId);
-		byte[] eventContent = getContent(entities, eventId);
-		//Test event batch doesn't contain messages, they are got from child events. In Cassandra messages are stored for batch to build index
-		StoredTestEventBatch result = new StoredTestEventBatch(new TestEventBatchToStoreBuilder()
-				.id(eventId)
-				.name(entity.getName())
-				.type(entity.getType())
-				.parentId(createParentId(entity))
-				.build());
-		TestEventUtils.deserializeTestEvents(eventContent, result);
-		return result;
-	}
-	
 	public static StoredTestEvent toStoredTestEvent(Collection<TestEventEntity> entities, BookId bookId) 
 			throws IOException, CradleStorageException, DataFormatException, CradleIdException
 	{
-		TestEventEntity entity = entities.iterator().next();
+		Iterator<TestEventEntity> it = entities.iterator();
+		if (!it.hasNext())
+			return null;
+		TestEventEntity entity = it.next();
 		return entity.isEventBatch() ? toStoredTestEventBatch(entities, bookId) : toStoredTestEventSingle(entities, bookId);
+	}
+	
+	public static StoredTestEvent toStoredTestEvent(MappedAsyncPagingIterable<TestEventEntity> resultSet, BookId bookId) 
+			throws IOException, CradleStorageException, DataFormatException, CradleIdException
+	{
+		Collection<TestEventEntity> entities;
+		try
+		{
+			entities = DaoUtils.toCollection(resultSet);
+		}
+		catch (Exception e)
+		{
+			throw new CradleStorageException("Error while converting result to collection", e);
+		}
+		return toStoredTestEvent(entities, bookId);
 	}
 	
 	
@@ -222,6 +205,44 @@ public class EventEntityUtils
 			for (String id : messages)
 				result.add(StoredMessageId.fromString(id));
 		}
+		return result;
+	}
+	
+	private static StoredTestEventSingle toStoredTestEventSingle(Collection<TestEventEntity> entities, BookId bookId) 
+			throws IOException, CradleStorageException, DataFormatException, CradleIdException
+	{
+		TestEventEntity entity = entities.iterator().next();
+		
+		StoredTestEventId eventId = createId(entity, bookId);
+		byte[] eventContent = getContent(entities, eventId);
+		Set<StoredMessageId> messages = getMessages(entities);
+		return StoredTestEvent.single(StoredTestEvent.singleBuilder()
+				.id(eventId)
+				.name(entity.getName())
+				.type(entity.getType())
+				.parentId(createParentId(entity))
+				.endTimestamp(entity.getEndTimestamp())
+				.success(entity.isSuccess())
+				.messages(messages)
+				.content(eventContent)
+				.build());
+	}
+	
+	private static StoredTestEventBatch toStoredTestEventBatch(Collection<TestEventEntity> entities, BookId bookId) 
+			throws IOException, CradleStorageException, DataFormatException, CradleIdException
+	{
+		TestEventEntity entity = entities.iterator().next();
+		
+		StoredTestEventId eventId = createId(entity, bookId);
+		byte[] eventContent = getContent(entities, eventId);
+		//Test event batch doesn't contain messages, they are got from child events. In Cassandra messages are stored for batch to build index
+		StoredTestEventBatch result = new StoredTestEventBatch(new TestEventBatchToStoreBuilder()
+				.id(eventId)
+				.name(entity.getName())
+				.type(entity.getType())
+				.parentId(createParentId(entity))
+				.build());
+		TestEventUtils.deserializeTestEvents(eventContent, result);
 		return result;
 	}
 }

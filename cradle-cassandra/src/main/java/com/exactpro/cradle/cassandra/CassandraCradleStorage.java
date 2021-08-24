@@ -33,6 +33,7 @@ import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.keyspaces.BookKeyspaceCreator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleKeyspaceCreator;
+import com.exactpro.cradle.cassandra.utils.CassandraTimeUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.StoredMessage;
@@ -42,9 +43,8 @@ import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventFilter;
 import com.exactpro.cradle.testevents.StoredTestEventId;
-import com.exactpro.cradle.utils.CompressionUtils;
 import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.TestEventUtils;
+import com.exactpro.cradle.utils.TimeUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +53,7 @@ import java.io.*;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 
 public class CassandraCradleStorage extends CradleStorage
@@ -382,7 +383,6 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected StoredTestEvent doGetTestEvent(StoredTestEventId id, PageId pageId) throws IOException
 	{
-		//TODO: implement
 		try
 		{
 			return doGetTestEventAsync(id, pageId).get();
@@ -394,10 +394,23 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<StoredTestEvent> doGetTestEventAsync(StoredTestEventId id, PageId pageId)
+	protected CompletableFuture<StoredTestEvent> doGetTestEventAsync(StoredTestEventId id, PageId pageId) throws CradleStorageException
 	{
-		//TODO: implement
-		return null;
+		LocalDateTime ldt = TimeUtils.toLocalTimestamp(id.getStartTimestamp());
+		LocalTime lt = ldt.toLocalTime();
+		BookId bookId = pageId.getBookId();
+		return ops.getOperators(bookId).getTestEventOperator().get(pageId.getName(), ldt.toLocalDate(), id.getScope(), CassandraTimeUtils.getPart(ldt), 
+						lt, id.getId(), readAttrs)
+				.thenApplyAsync(r -> {
+					try
+					{
+						return EventEntityUtils.toStoredTestEvent(r, bookId);
+					}
+					catch (Exception e)
+					{
+						throw new CompletionException("Error while converting data of event "+id+" into test event", e);
+					}
+				});
 	}
 	
 	

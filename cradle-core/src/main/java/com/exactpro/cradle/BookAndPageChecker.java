@@ -53,6 +53,15 @@ public class BookAndPageChecker
 		return getActivePage(bookId).getId();
 	}
 	
+	public PageInfo findPage(BookId bookId, Instant timestamp) throws CradleStorageException
+	{
+		BookInfo book = getBook(bookId);
+		PageInfo page = book.findPage(timestamp);
+		if (page == null)
+			throw new CradleStorageException("Book '"+bookId+"' has no page for timestamp "+timestamp);
+		return page;
+	}
+	
 	
 	public void checkPage(PageId pageId, BookId bookFromId) throws CradleStorageException
 	{

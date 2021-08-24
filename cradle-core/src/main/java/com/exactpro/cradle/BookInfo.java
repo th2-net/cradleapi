@@ -89,6 +89,20 @@ public class BookInfo
 		return activePage;
 	}
 	
+	public PageInfo findPage(Instant timestamp)
+	{
+		for (PageInfo p : pages.values())
+		{
+			if (p.getStarted().isAfter(timestamp))
+				continue;
+			
+			Instant ended = p.getEnded();
+			if (ended == null || ended.isAfter(timestamp))
+				return p;
+		}
+		return null;
+	}
+	
 	
 	void addPage(PageInfo page)
 	{

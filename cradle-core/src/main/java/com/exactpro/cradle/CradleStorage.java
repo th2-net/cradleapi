@@ -92,8 +92,8 @@ public abstract class CradleStorage
 	protected abstract Collection<String> doGetSessionAliases(PageId pageId) throws IOException;
 	
 	
-	protected abstract StoredTestEvent doGetTestEvent(StoredTestEventId id, PageId pageId) throws IOException;
-	protected abstract CompletableFuture<StoredTestEvent> doGetTestEventAsync(StoredTestEventId ids, PageId pageId);
+	protected abstract StoredTestEvent doGetTestEvent(StoredTestEventId id, PageId pageId) throws IOException, CradleStorageException;
+	protected abstract CompletableFuture<StoredTestEvent> doGetTestEventAsync(StoredTestEventId ids, PageId pageId) throws CradleStorageException;
 	
 	protected abstract Iterable<StoredTestEvent> doGetTestEvents(StoredTestEventFilter filter) throws CradleStorageException, IOException;
 	protected abstract CompletableFuture<Iterable<StoredTestEvent>> doGetTestEventsAsync(StoredTestEventFilter filter) throws CradleStorageException, IOException;
@@ -535,24 +535,7 @@ public abstract class CradleStorage
 	
 	
 	/**
-	 * Retrieves test event data stored under given ID in given page
-	 * @param id of stored test event to retrieve
-	 * @param pageId to get test event from
-	 * @return data of stored test event
-	 * @throws IOException if test event data retrieval failed
-	 * @throws CradleStorageException if given parameters are invalid
-	 */
-	public final StoredTestEvent getTestEvent(StoredTestEventId id, PageId pageId) throws IOException, CradleStorageException
-	{
-		logger.debug("Getting test event {} from page {}", id, pageId);
-		bpc.checkPage(pageId, id.getBookId());
-		StoredTestEvent result = doGetTestEvent(id, pageId);
-		logger.debug("Test event {} from page {} got", id, pageId);
-		return result;
-	}
-	
-	/**
-	 * Retrieves test event data stored under given ID in current page
+	 * Retrieves test event data stored under given ID
 	 * @param id of stored test event to retrieve
 	 * @return data of stored test event
 	 * @throws IOException if test event data retrieval failed
@@ -560,7 +543,11 @@ public abstract class CradleStorage
 	 */
 	public final StoredTestEvent getTestEvent(StoredTestEventId id) throws IOException, CradleStorageException
 	{
-		return getTestEvent(id, bpc.getActivePageId(id.getBookId()));
+		logger.debug("Getting test event {}", id);
+		PageId pageId = bpc.findPage(id.getBookId(), id.getStartTimestamp()).getId();
+		StoredTestEvent result = doGetTestEvent(id, pageId);
+		logger.debug("Test event {} got from page {}", id, pageId);
+		return result;
 	}
 	
 	/**
