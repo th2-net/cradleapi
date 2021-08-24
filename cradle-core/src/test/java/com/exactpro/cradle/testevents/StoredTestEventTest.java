@@ -91,7 +91,9 @@ public class StoredTestEventTest
 					{validEvent().parentId(null).build(),                                                              //No parent ID
 								"must have a parent"},
 					{validEvent().id(new StoredTestEventId(new BookId(BOOK.getName()+"1"),                             //Different book
-							SCOPE, START_TIMESTAMP, DUMMY_NAME)).build(), 
+									SCOPE, START_TIMESTAMP, DUMMY_NAME))
+							.parentId(new StoredTestEventId(new BookId(BOOK.getName()+"1"), 
+									SCOPE, START_TIMESTAMP, "Parent_"+DUMMY_NAME)).build(), 
 							"events of book"},
 					{validEvent().id(new StoredTestEventId(BOOK, SCOPE+"1", START_TIMESTAMP, DUMMY_NAME)).build(),    //Different scope
 							"events of scope"},
