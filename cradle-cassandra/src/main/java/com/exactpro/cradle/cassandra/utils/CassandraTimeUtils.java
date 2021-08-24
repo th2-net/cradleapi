@@ -22,6 +22,6 @@ public class CassandraTimeUtils
 {
 	public static String getPart(LocalDateTime timestamp)
 	{
-		return Integer.toString(timestamp.getYear());
+		return Integer.toString(timestamp.getHour());
 	}
 }
