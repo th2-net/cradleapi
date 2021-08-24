@@ -47,14 +47,17 @@ public class TestEventUtilsTest
 							"ID cannot be null"},
 					{event().name(null).build(),                                                         //No name
 							"must have a name"},
-        	{event().id(null).build(),                                                           //No ID
-        			"ID cannot be null"},
-        	{event().id(new StoredTestEventId(null, SCOPE, START_TIMESTAMP, ID_VALUE)).build(),  //No book
-        			"must have a book"},
-        	{event().id(new StoredTestEventId(BOOK, null, START_TIMESTAMP, ID_VALUE)).build(),   //No scope
-        			"must have a scope"},
-        	{event().id(new StoredTestEventId(BOOK, SCOPE, null, ID_VALUE)).build(),             //No timestamp
-        			"must have a start timestamp"}
+					{event().id(null).build(),                                                           //No ID
+							"ID cannot be null"},
+					{event().id(new StoredTestEventId(null, SCOPE, START_TIMESTAMP, ID_VALUE)).build(),  //No book
+							"must have a book"},
+					{event().id(new StoredTestEventId(BOOK, null, START_TIMESTAMP, ID_VALUE)).build(),   //No scope
+							"must have a scope"},
+					{event().id(new StoredTestEventId(BOOK, SCOPE, null, ID_VALUE)).build(),             //No timestamp
+							"must have a start timestamp"},
+					{event().id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, ID_VALUE))           //Different book in parent
+							.parentId(new StoredTestEventId(new BookId(BOOK.getName()+"X"), SCOPE, START_TIMESTAMP, ID_VALUE)).build(),  
+							"same book"}
 				};
 	}
 	

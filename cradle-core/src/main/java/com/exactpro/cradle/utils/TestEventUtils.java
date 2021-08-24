@@ -65,6 +65,8 @@ public class TestEventUtils
 			throw new CradleStorageException("Test event must have a scope");
 		if (event.getStartTimestamp() == null)
 			throw new CradleStorageException("Test event must have a start timestamp");
+		if (event.getParentId() != null && !event.getBookId().equals(event.getParentId().getBookId()))
+			throw new CradleStorageException("Test event and its parent must be from the same book");
 		
 		Set<StoredMessageId> messages = event.getMessages();
 		if (messages != null)
