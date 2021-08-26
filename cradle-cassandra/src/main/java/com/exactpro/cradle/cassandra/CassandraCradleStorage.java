@@ -18,6 +18,7 @@ package com.exactpro.cradle.cassandra;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
@@ -28,9 +29,12 @@ import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.CradleOperators;
 import com.exactpro.cradle.cassandra.dao.books.BookEntity;
 import com.exactpro.cradle.cassandra.dao.books.PageEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.EventDateEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.EventEntityUtils;
+import com.exactpro.cradle.cassandra.dao.testevents.ScopeEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
+import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.BookKeyspaceCreator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleKeyspaceCreator;
 import com.exactpro.cradle.cassandra.utils.CassandraTimeUtils;
@@ -206,7 +210,8 @@ public class CassandraCradleStorage extends CradleStorage
 		PageId pageId = page.getId();
 		Collection<TestEventEntity> entities = EventEntityUtils.toEntities(event, pageId, 
 				settings.getMaxUncompressedTestEventSize(), settings.getTestEventChunkSize(), settings.getTestEventMessagesPerChunk());
-		TestEventOperator op = ops.getOperators(pageId.getBookId()).getTestEventOperator();
+		BookOperators bookOps = ops.getOperators(pageId.getBookId());
+		TestEventOperator op = bookOps.getTestEventOperator();
 		
 		CompletableFuture<TestEventEntity> result = null;
 		for (TestEventEntity ent : entities)
@@ -216,7 +221,19 @@ public class CassandraCradleStorage extends CradleStorage
 			else
 				result = result.thenComposeAsync(r -> op.write(ent, writeAttrs));
 		}
-		return result.thenAccept(r -> {});
+		return result
+				.thenComposeAsync(r -> {
+					logger.debug("Writing scope of event '"+event.getId()+"'");
+					return bookOps.getScopeOperator()
+							.write(new ScopeEntity(pageId.getName(), event.getScope()), writeAttrs);
+				})
+				.thenComposeAsync(r -> {
+					logger.debug("Writing start date of event '"+event.getId()+"'");
+					LocalDateTime ldt = TimeUtils.toLocalTimestamp(event.getStartTimestamp());
+					return bookOps.getEventDateOperator()
+							.write(new EventDateEntity(pageId.getName(), ldt.toLocalDate(), event.getScope(), CassandraTimeUtils.getPart(ldt)), writeAttrs);
+				})
+				.thenAccept(r -> {});
 	}
 
 	@Override
@@ -438,6 +455,30 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
+	protected Collection<String> doGetScopes(BookId bookId) throws IOException, CradleStorageException
+	{
+		MappedAsyncPagingIterable<ScopeEntity> entities;
+		try
+		{
+			entities = ops.getOperators(bookId).getScopeOperator().all(readAttrs).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting scopes for book '"+bookId+"'", e);
+		}
+		
+		if (entities == null)
+			return Collections.emptySet();
+		
+		Collection<String> result = new HashSet<>();
+		PagedIterator<ScopeEntity> it = new PagedIterator<>(entities);
+		while (it.hasNext())
+			result.add(it.next().getScope());
+		return result;
+	}
+	
+	
+	@Override
 	public IntervalsWorker getIntervalsWorker(PageId pageId)
 	{
 		return null; //TODO: implement
@@ -448,16 +489,16 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		if (!connection.isRunning())
 		{
-  		logger.info("Connecting to Cassandra...");
-  		try
-  		{
-  			connection.start();
-  			logger.info("Connected to Cassandra");
-  		}
-  		catch (Exception e)
-  		{
-  			throw new CradleStorageException("Could not open Cassandra connection", e);
-  		}
+			logger.info("Connecting to Cassandra...");
+			try
+			{
+				connection.start();
+				logger.info("Connected to Cassandra");
+			}
+			catch (Exception e)
+			{
+				throw new CradleStorageException("Could not open Cassandra connection", e);
+			}
 		}
 		else
 			logger.info("Already connected to Cassandra");
