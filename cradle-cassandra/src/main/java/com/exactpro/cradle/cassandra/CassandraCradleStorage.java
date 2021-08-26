@@ -43,6 +43,7 @@ import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventFilter;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TimeUtils;
 
@@ -187,7 +188,7 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	protected void doStoreTestEvent(StoredTestEvent event, PageInfo page) throws IOException
+	protected void doStoreTestEvent(TestEventToStore event, PageInfo page) throws IOException
 	{
 		try
 		{
@@ -200,7 +201,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Void> doStoreTestEventAsync(StoredTestEvent event, PageInfo page) throws IOException, CradleStorageException
+	protected CompletableFuture<Void> doStoreTestEventAsync(TestEventToStore event, PageInfo page) throws IOException, CradleStorageException
 	{
 		PageId pageId = page.getId();
 		Collection<TestEventEntity> entities = EventEntityUtils.toEntities(event, pageId, 
@@ -219,11 +220,11 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected void doUpdateParentTestEvents(StoredTestEvent event) throws IOException
+	protected void doUpdateParentTestEvents(TestEventToStore event) throws IOException
 	{
 		if (event.isSuccess())
 			return;
-
+		
 		try
 		{
 			doUpdateParentTestEventsAsync(event).get();
@@ -235,11 +236,11 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Void> doUpdateParentTestEventsAsync(StoredTestEvent event)
+	protected CompletableFuture<Void> doUpdateParentTestEventsAsync(TestEventToStore event)
 	{
 		if (event.isSuccess())
 			return CompletableFuture.completedFuture(null);
-
+		
 		return failEventAndParents(event.getParentId());
 	}
 	
@@ -404,7 +405,7 @@ public class CassandraCradleStorage extends CradleStorage
 				.thenApplyAsync(r -> {
 					try
 					{
-						return EventEntityUtils.toStoredTestEvent(r, bookId);
+						return EventEntityUtils.toStoredTestEvent(r, pageId);
 					}
 					catch (Exception e)
 					{
@@ -598,7 +599,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 	protected CompletableFuture<Void> failEventAndParents(StoredTestEventId eventId)
 	{
-		return null;
+		return CompletableFuture.completedFuture(null);
 		//TODO: implement
 //		return getTestEventAsync(eventId)
 //				.thenComposeAsync((event) -> {

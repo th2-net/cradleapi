@@ -35,11 +35,12 @@ import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.DaoUtils;
 import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.StoredTestEventSingle;
-import com.exactpro.cradle.testevents.TestEventBatchToStoreBuilder;
+import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CompressionUtils;
 import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -54,7 +55,7 @@ public class EventEntityUtils
 		return content.length > maxChunkSize || (messages != null && messages.size() > maxMessageCount);
 	}
 	
-	public static Collection<TestEventEntity> toEntities(StoredTestEvent event, PageId pageId, int maxUncompressedSize, 
+	public static Collection<TestEventEntity> toEntities(TestEventToStore event, PageId pageId, int maxUncompressedSize, 
 			int contentChunkSize, int messagesPerChunk) throws IOException
 	{
 		byte[] content = TestEventUtils.getTestEventContent(event);
@@ -71,7 +72,7 @@ public class EventEntityUtils
 		return toEntities(event, pageId, content, compressed, contentChunkSize, messagesPerChunk);
 	}
 	
-	public static Collection<TestEventEntity> toEntities(StoredTestEvent event, PageId pageId, byte[] content, boolean compressed, 
+	public static Collection<TestEventEntity> toEntities(TestEventToStore event, PageId pageId, byte[] content, boolean compressed, 
 			int contentChunkSize, int messagesPerChunk)
 	{
 		Set<StoredMessageId> eventMessages = event.getMessages();
@@ -124,17 +125,17 @@ public class EventEntityUtils
 	}
 	
 	
-	public static StoredTestEvent toStoredTestEvent(Collection<TestEventEntity> entities, BookId bookId) 
+	public static StoredTestEvent toStoredTestEvent(Collection<TestEventEntity> entities, PageId pageId) 
 			throws IOException, CradleStorageException, DataFormatException, CradleIdException
 	{
 		Iterator<TestEventEntity> it = entities.iterator();
 		if (!it.hasNext())
 			return null;
 		TestEventEntity entity = it.next();
-		return entity.isEventBatch() ? toStoredTestEventBatch(entities, bookId) : toStoredTestEventSingle(entities, bookId);
+		return entity.isEventBatch() ? toStoredTestEventBatch(entities, pageId) : toStoredTestEventSingle(entities, pageId);
 	}
 	
-	public static StoredTestEvent toStoredTestEvent(MappedAsyncPagingIterable<TestEventEntity> resultSet, BookId bookId) 
+	public static StoredTestEvent toStoredTestEvent(MappedAsyncPagingIterable<TestEventEntity> resultSet, PageId pageId) 
 			throws IOException, CradleStorageException, DataFormatException, CradleIdException
 	{
 		Collection<TestEventEntity> entities;
@@ -146,7 +147,7 @@ public class EventEntityUtils
 		{
 			throw new CradleStorageException("Error while converting result to collection", e);
 		}
-		return toStoredTestEvent(entities, bookId);
+		return toStoredTestEvent(entities, pageId);
 	}
 	
 	
@@ -208,41 +209,28 @@ public class EventEntityUtils
 		return result;
 	}
 	
-	private static StoredTestEventSingle toStoredTestEventSingle(Collection<TestEventEntity> entities, BookId bookId) 
+	private static StoredTestEventSingle toStoredTestEventSingle(Collection<TestEventEntity> entities, PageId pageId) 
 			throws IOException, CradleStorageException, DataFormatException, CradleIdException
 	{
 		TestEventEntity entity = entities.iterator().next();
 		
-		StoredTestEventId eventId = createId(entity, bookId);
+		StoredTestEventId eventId = createId(entity, pageId.getBookId());
 		byte[] eventContent = getContent(entities, eventId);
 		Set<StoredMessageId> messages = getMessages(entities);
-		return StoredTestEvent.single(StoredTestEvent.singleBuilder()
-				.id(eventId)
-				.name(entity.getName())
-				.type(entity.getType())
-				.parentId(createParentId(entity))
-				.endTimestamp(entity.getEndTimestamp())
-				.success(entity.isSuccess())
-				.messages(messages)
-				.content(eventContent)
-				.build());
+		return new StoredTestEventSingle(eventId, entity.getName(), entity.getType(), createParentId(entity),
+				entity.getEndTimestamp(), entity.isSuccess(), eventContent, messages, pageId);
 	}
 	
-	private static StoredTestEventBatch toStoredTestEventBatch(Collection<TestEventEntity> entities, BookId bookId) 
+	private static StoredTestEventBatch toStoredTestEventBatch(Collection<TestEventEntity> entities, PageId pageId) 
 			throws IOException, CradleStorageException, DataFormatException, CradleIdException
 	{
 		TestEventEntity entity = entities.iterator().next();
 		
-		StoredTestEventId eventId = createId(entity, bookId);
+		StoredTestEventId eventId = createId(entity, pageId.getBookId());
 		byte[] eventContent = getContent(entities, eventId);
-		//Test event batch doesn't contain messages, they are got from child events. In Cassandra messages are stored for batch to build index
-		StoredTestEventBatch result = new StoredTestEventBatch(new TestEventBatchToStoreBuilder()
-				.id(eventId)
-				.name(entity.getName())
-				.type(entity.getType())
-				.parentId(createParentId(entity))
-				.build());
-		TestEventUtils.deserializeTestEvents(eventContent, result);
-		return result;
+		//Test event batch doesn't have it own messages, they are got from child events. In Cassandra messages are stored for batch to build index
+		Collection<BatchedStoredTestEvent> children = TestEventUtils.deserializeTestEvents(eventContent);
+		return new StoredTestEventBatch(eventId, entity.getName(), entity.getType(), createParentId(entity),
+				children, pageId);
 	}
 }

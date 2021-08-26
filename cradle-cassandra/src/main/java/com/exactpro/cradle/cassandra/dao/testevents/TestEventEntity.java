@@ -35,9 +35,9 @@ import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.datastax.oss.driver.api.mapper.annotations.Transient;
 import com.exactpro.cradle.cassandra.dao.CradleEntity;
 import com.exactpro.cradle.cassandra.utils.CassandraTimeUtils;
-import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.TimeUtils;
 
 /**
@@ -114,7 +114,7 @@ public class TestEventEntity extends CradleEntity
 	{
 		logger.debug("Creating Entity from test event");
 		
-		StoredTestEvent event = eventData.getEvent();
+		TestEventToStore event = eventData.getEvent();
 		StoredTestEventId parentId = event.getParentId();
 		LocalDateTime start = TimeUtils.toLocalTimestamp(event.getStartTimestamp());
 		
@@ -127,14 +127,14 @@ public class TestEventEntity extends CradleEntity
 		
 		this.setSuccess(event.isSuccess());
 		this.setRoot(parentId == null);
-		this.setEventBatch(event instanceof StoredTestEventBatch);
+		this.setEventBatch(event.isBatch());
 		if (eventData.getChunk() == 0)
 		{
 			this.setName(event.getName());
 			this.setType(event.getType());
 			this.setParentId(parentId != null ? parentId.toString() : null);
-			if (event instanceof StoredTestEventBatch)
-				this.setEventCount(((StoredTestEventBatch)event).getTestEventsCount());
+			if (event.isBatch())
+				this.setEventCount(event.asBatch().getTestEventsCount());
 			this.setEndTimestamp(event.getEndTimestamp());
 			//TODO: this.setLabels(event.getLabels());
 		}

@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.zip.DataFormatException;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -33,9 +34,8 @@ import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
-import com.exactpro.cradle.testevents.StoredTestEventSingle;
+import com.exactpro.cradle.testevents.TestEventBatchToStore;
 import com.exactpro.cradle.testevents.TestEventSingleToStore;
 import com.exactpro.cradle.testevents.TestEventSingleToStoreBuilder;
 import com.exactpro.cradle.testevents.TestEventToStore;
@@ -63,8 +63,13 @@ public class EventEntityUtilsTest
 			messages2 = 20;
 	
 	@DataProvider(name = "events")
-	public Object[][] events()
+	public Object[][] events() throws CradleStorageException
 	{
+		TestEventBatchToStore batch = TestEventBatchToStore.builder()
+				.id(new StoredTestEventId(book, scope, startTimestamp, "BatchId"))
+				.parentId(parentId)
+				.build();
+		batch.addTestEvent(prepareSingle().content(createContent(content0_5)).build());
 		return new Object[][]
 				{
 					{prepareSingle().content(createContent(content0_5)).build()},
@@ -76,7 +81,8 @@ public class EventEntityUtilsTest
 					{prepareSingle().content(createContent(content0_5)).messages(createMessageIds(messages0_5)).build()},
 					{prepareSingle().content(createContent(content2)).messages(createMessageIds(messages2)).build()},
 					{prepareSingle().content(createContent(content0_5)).messages(createMessageIds(messages1_5)).build()},
-					{prepareSingle().content(createContent(content1_5)).messages(createMessageIds(messages0_5)).build()}
+					{prepareSingle().content(createContent(content1_5)).messages(createMessageIds(messages0_5)).build()},
+					{batch}
 				};
 	}
 	
@@ -107,14 +113,16 @@ public class EventEntityUtilsTest
 	
 	
 	@Test(dataProvider = "events")
-	public void eventEntity(TestEventSingleToStore event) throws CradleStorageException, IOException, DataFormatException, CradleIdException
+	public void eventEntity(TestEventToStore event) throws CradleStorageException, IOException, DataFormatException, CradleIdException
 	{
-		StoredTestEvent storedEvent = new StoredTestEventSingle(event);
-		Collection<TestEventEntity> entities = EventEntityUtils.toEntities(storedEvent, page, 2000, contentChunk, messagesChunk);
-		StoredTestEvent newEvent = EventEntityUtils.toStoredTestEvent(entities, book);
+		Collection<TestEventEntity> entities = EventEntityUtils.toEntities(event, page, 2000, contentChunk, messagesChunk);
+		StoredTestEvent newEvent = EventEntityUtils.toStoredTestEvent(entities, page);
+		
+		RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
+		config.ignoreFieldsMatchingRegexes("pageId", ".*\\.pageId");
 		
 		Assertions.assertThat(newEvent)
-				.usingRecursiveComparison()
-				.isEqualTo(storedEvent);
+				.usingRecursiveComparison(config)
+				.isEqualTo(event);
 	}
 }

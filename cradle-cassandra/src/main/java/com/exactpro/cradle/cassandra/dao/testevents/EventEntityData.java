@@ -21,11 +21,11 @@ import java.util.Set;
 
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.messages.StoredMessageId;
-import com.exactpro.cradle.testevents.StoredTestEvent;
+import com.exactpro.cradle.testevents.TestEventToStore;
 
 public class EventEntityData
 {
-	private StoredTestEvent event;
+	private TestEventToStore event;
 	private PageId pageId;
 	private int chunk;
 	private boolean lastChunk,
@@ -37,7 +37,7 @@ public class EventEntityData
 	{
 	}
 	
-	public EventEntityData(StoredTestEvent event, PageId pageId, byte[] content, boolean compressed)
+	public EventEntityData(TestEventToStore event, PageId pageId, byte[] content, boolean compressed)
 	{
 		this.event = event;
 		this.pageId = pageId;
@@ -55,7 +55,7 @@ public class EventEntityData
 		}
 	}
 	
-	public EventEntityData(StoredTestEvent event, PageId pageId, int chunk, boolean lastChunk, byte[] content, boolean compressed, Set<String> messages)
+	public EventEntityData(TestEventToStore event, PageId pageId, int chunk, boolean lastChunk, byte[] content, boolean compressed, Set<String> messages)
 	{
 		this.event = event;
 		this.pageId = pageId;
@@ -67,12 +67,12 @@ public class EventEntityData
 	}
 	
 	
-	public StoredTestEvent getEvent()
+	public TestEventToStore getEvent()
 	{
 		return event;
 	}
 	
-	public void setEvent(StoredTestEvent event)
+	public void setEvent(TestEventToStore event)
 	{
 		this.event = event;
 	}
