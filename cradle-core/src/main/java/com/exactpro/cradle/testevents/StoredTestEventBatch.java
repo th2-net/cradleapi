@@ -45,7 +45,7 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 	private final Set<StoredMessageId> messages;
 	
 	public StoredTestEventBatch(StoredTestEventId id, String name, String type, StoredTestEventId parentId,
-			Instant endTimestamp, boolean success, Collection<BatchedStoredTestEvent> batchEvents, PageId pageId) throws CradleStorageException
+			Collection<BatchedStoredTestEvent> batchEvents, PageId pageId) throws CradleStorageException
 	{
 		super(id, name, type, parentId, pageId);
 		
@@ -53,6 +53,8 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 		Collection<BatchedStoredTestEvent> roots = new ArrayList<>();
 		Map<StoredTestEventId, Collection<BatchedStoredTestEvent>> childrenPerEvent = new LinkedHashMap<>();
 		Set<StoredMessageId> batchMessages = new HashSet<>();
+		Instant end = null;
+		boolean success = true;
 		for (BatchedStoredTestEvent event : batchEvents)
 		{
 			StoredTestEventId eventParentId = event.getParentId();
@@ -71,12 +73,22 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 			Set<StoredMessageId> eventMessages = child.getMessages();
 			if (eventMessages != null)
 				batchMessages.addAll(eventMessages);
+			
+			Instant eventEnd = child.getEndTimestamp();
+			if (eventEnd != null)
+			{
+				if (end == null || end.isBefore(eventEnd))
+					end = eventEnd;
+			}
+			
+			if (!child.isSuccess())
+				success = false;
 		}
 		
 		this.events = Collections.unmodifiableMap(allEvents);
 		this.rootEvents = Collections.unmodifiableCollection(roots);
 		this.children = Collections.unmodifiableMap(childrenPerEvent);
-		this.endTimestamp = endTimestamp;
+		this.endTimestamp = end;
 		this.success = success;
 		
 		this.messages = batchMessages != null && batchMessages.size() > 0 ? Collections.unmodifiableSet(batchMessages) : null;
@@ -85,7 +97,7 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 	public StoredTestEventBatch(TestEventBatch batch, PageId pageId) throws CradleStorageException
 	{
 		this(batch.getId(), batch.getName(), batch.getType(), batch.getParentId(),
-				batch.getEndTimestamp(), batch.isSuccess(), batch.getTestEvents(), pageId);
+				batch.getTestEvents(), pageId);
 	}
 	
 	@Override
