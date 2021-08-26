@@ -44,6 +44,7 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 	public TestEventBatchToStore(StoredTestEventId id, String name, StoredTestEventId parentId) throws CradleStorageException
 	{
 		super(id, name, parentId);
+		success = true;
 	}
 	
 	
