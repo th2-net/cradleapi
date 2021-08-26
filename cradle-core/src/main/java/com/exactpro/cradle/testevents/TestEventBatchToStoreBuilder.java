@@ -20,73 +20,74 @@ import java.time.Instant;
 import java.util.UUID;
 
 import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
  * Builder for {@link TestEventBatchToStore} object. After calling {@link #build()} method, the builder can be reused to build new test event
  */
 public class TestEventBatchToStoreBuilder
 {
-	private TestEventBatchToStore event;
-	
-	public TestEventBatchToStoreBuilder()
-	{
-		event = createTestEventToStore();
-	}
-	
-	
-	protected TestEventBatchToStore createTestEventToStore()
-	{
-		return new TestEventBatchToStore();
-	}
-	
-	private void initIfNeeded()
-	{
-		if (event == null)
-			event = createTestEventToStore();
-	}
-	
+	private StoredTestEventId id;
+	private String name;
+	private StoredTestEventId parentId;
+	private String type;
 	
 	public TestEventBatchToStoreBuilder id(StoredTestEventId id)
 	{
-		initIfNeeded();
-		event.setId(id);
+		this.id = id;
 		return this;
 	}
 	
 	public TestEventBatchToStoreBuilder idRandom(BookId book, String scope)
 	{
-		initIfNeeded();
-		event.setId(new StoredTestEventId(book, scope, Instant.now(), UUID.randomUUID().toString()));
+		this.id = new StoredTestEventId(book, scope, Instant.now(), UUID.randomUUID().toString());
 		return this;
 	}
 	
 	public TestEventBatchToStoreBuilder name(String name)
 	{
-		initIfNeeded();
-		event.setName(name);
-		return this;
-	}
-	
-	public TestEventBatchToStoreBuilder type(String type)
-	{
-		initIfNeeded();
-		event.setType(type);
+		this.name = name;
 		return this;
 	}
 	
 	public TestEventBatchToStoreBuilder parentId(StoredTestEventId parentId)
 	{
-		initIfNeeded();
-		event.setParentId(parentId);
+		this.parentId = parentId;
+		return this;
+	}
+	
+	public TestEventBatchToStoreBuilder type(String type)
+	{
+		this.type = type;
 		return this;
 	}
 	
 	
-	public TestEventBatchToStore build()
+	public TestEventBatchToStore build() throws CradleStorageException
 	{
-		initIfNeeded();
-		TestEventBatchToStore result = event;
-		event = null;
-		return result;
+		try
+		{
+			TestEventBatchToStore result = createTestEventToStore(id, name, parentId);
+			result.setType(type);
+			return result;
+		}
+		finally
+		{
+			reset();
+		}
+	}
+	
+	
+	protected TestEventBatchToStore createTestEventToStore(StoredTestEventId id, String name, StoredTestEventId parentId) throws CradleStorageException
+	{
+		return new TestEventBatchToStore(id, name, parentId);
+	}
+	
+	protected void reset()
+	{
+		id = null;
+		name = null;
+		parentId = null;
+		type = null;
 	}
 }

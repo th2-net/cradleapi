@@ -17,114 +17,22 @@
 package com.exactpro.cradle.testevents;
 
 import java.io.Serializable;
-import java.time.Instant;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
-import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.messages.StoredMessageId;
 
 /**
- * Holds information about one test event stored in batch of events ({@link StoredTestEventBatch})
+ * Holds information about one test event stored in batch of events ({@link TestEventBatch})
  */
-public class BatchedStoredTestEvent implements TestEventSingle, Serializable
+public class BatchedStoredTestEvent extends StoredTestEventSingle implements Serializable
 {
 	private static final long serialVersionUID = -1350827714114261304L;
 	
-	private final StoredTestEventId id;
-	private final String name,
-			type;
-	private final StoredTestEventId parentId;
-	private final Instant endTimestamp;
-	private final boolean success;
-	private final Set<StoredMessageId> messages;
-	private final byte[] content;
+	private final transient TestEventBatch batch;
 	
-	private final transient StoredTestEventBatch batch;
-	
-	public BatchedStoredTestEvent(TestEventSingle event, StoredTestEventBatch batch)
+	public BatchedStoredTestEvent(TestEventSingle event, TestEventBatch batch)
 	{
-		this.id = event.getId();
-		this.name = event.getName();
-		this.type = event.getType();
-		this.parentId = event.getParentId();
-		this.endTimestamp = event.getEndTimestamp();
-		this.success = event.isSuccess();
-		
-		Set<StoredMessageId> eventMessages = event.getMessages();
-		this.messages = eventMessages != null ? Collections.unmodifiableSet(new HashSet<>(eventMessages)) : null;
-		this.content = event.getContent();
+		super(event);
 		
 		this.batch = batch;
-	}
-	
-	
-	@Override
-	public StoredTestEventId getId()
-	{
-		return id;
-	}
-	
-	@Override
-	public String getName()
-	{
-		return name;
-	}
-	
-	@Override
-	public String getType()
-	{
-		return type;
-	}
-	
-	@Override
-	public StoredTestEventId getParentId()
-	{
-		return parentId;
-	}
-	
-	@Override
-	public final BookId getBookId()
-	{
-		return TestEvent.bookId(this);
-	}
-	
-	@Override
-	public final String getScope()
-	{
-		return TestEvent.scope(this);
-	}
-	
-	@Override
-	public final Instant getStartTimestamp()
-	{
-		return TestEvent.startTimestamp(this);
-	}
-	
-	@Override
-	public Instant getEndTimestamp()
-	{
-		return endTimestamp;
-	}
-	
-	@Override
-	public boolean isSuccess()
-	{
-		return success;
-	}
-	
-	@Override
-	public final Set<StoredMessageId> getMessages()
-	{
-		return messages;
-	}
-	
-	@Override
-	public byte[] getContent()
-	{
-		return content;
 	}
 	
 	

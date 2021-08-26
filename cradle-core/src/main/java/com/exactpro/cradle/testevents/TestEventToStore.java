@@ -17,18 +17,43 @@
 package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
+import java.util.Set;
 
-import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.TestEventUtils;
 
 /**
  * Holds basic information about test event prepared to be stored in Cradle. Events extend this class with additional data
  */
-public abstract class TestEventToStore implements BasicTestEvent
+public abstract class TestEventToStore implements TestEvent
 {
-	private StoredTestEventId id;
-	private String name,
-			type;
-	private StoredTestEventId parentId;
+	protected final StoredTestEventId id;
+	protected final String name;
+	protected final StoredTestEventId parentId;
+	protected String type;
+	protected Instant endTimestamp;
+	protected boolean success;
+	protected Set<StoredMessageId> messages;
+	
+	public TestEventToStore(StoredTestEventId id, String name, StoredTestEventId parentId) throws CradleStorageException
+	{
+		this.id = id;
+		this.name = name;
+		this.parentId = parentId;
+		TestEventUtils.validateTestEvent(this);
+	}
+	
+	
+	public static TestEventSingleToStoreBuilder singleBuilder()
+	{
+		return new TestEventSingleToStoreBuilder();
+	}
+	
+	public static TestEventBatchToStoreBuilder batchBuilder()
+	{
+		return new TestEventBatchToStoreBuilder();
+	}
 	
 	
 	@Override
@@ -37,21 +62,16 @@ public abstract class TestEventToStore implements BasicTestEvent
 		return id;
 	}
 	
-	public void setId(StoredTestEventId id)
-	{
-		this.id = id;
-	}
-	
-	
 	@Override
 	public String getName()
 	{
 		return name;
 	}
 	
-	public void setName(String name)
+	@Override
+	public StoredTestEventId getParentId()
 	{
-		this.name = name;
+		return parentId;
 	}
 	
 	
@@ -68,32 +88,41 @@ public abstract class TestEventToStore implements BasicTestEvent
 	
 	
 	@Override
-	public StoredTestEventId getParentId()
+	public Instant getEndTimestamp()
 	{
-		return parentId;
-	}
-	
-	public void setParentId(StoredTestEventId parentId)
-	{
-		this.parentId = parentId;
-	}
-	
-	
-	@Override
-	public final BookId getBookId()
-	{
-		return TestEvent.bookId(this);
+		return endTimestamp;
 	}
 	
 	@Override
-	public final String getScope()
+	public boolean isSuccess()
 	{
-		return TestEvent.scope(this);
+		return success;
 	}
 	
 	@Override
-	public final Instant getStartTimestamp()
+	public Set<StoredMessageId> getMessages()
 	{
-		return TestEvent.startTimestamp(this);
+		return messages;
+	}
+	
+	
+	public final boolean isSingle()
+	{
+		return this instanceof TestEventSingleToStore;
+	}
+	
+	public final boolean isBatch()
+	{
+		return this instanceof TestEventBatchToStore;
+	}
+	
+	public final TestEventSingleToStore asSingle()
+	{
+		return (TestEventSingleToStore)this;
+	}
+	
+	public final TestEventBatchToStore asBatch()
+	{
+		return (TestEventBatchToStore)this;
 	}
 }

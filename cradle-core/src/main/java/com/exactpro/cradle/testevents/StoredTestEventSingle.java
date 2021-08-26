@@ -17,11 +17,11 @@
 package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 import com.exactpro.cradle.messages.StoredMessageId;
-import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.TestEventUtils;
 
 /**
  * Holds information about single (individual) test event stored in Cradle
@@ -30,21 +30,32 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 {
 	private final Instant endTimestamp;
 	private final boolean success;
+	private final Set<StoredMessageId> messages;
 	private final byte[] content;
 	
-	public StoredTestEventSingle(TestEventSingle event) throws CradleStorageException
+	public StoredTestEventSingle(StoredTestEventId id, String name, String type, StoredTestEventId parentId,
+			Instant endTimestamp, boolean success, byte[] eventContent, Set<StoredMessageId> eventMessages)
 	{
-		super(event);
+		super(id, name, type, parentId);
 		
-		this.endTimestamp = event.getEndTimestamp();
-		this.success = event.isSuccess();
-		this.content = event.getContent();
+		this.endTimestamp = endTimestamp;
+		this.success = success;
 		
-		Set<StoredMessageId> eventMessages = event.getMessages();
-		if (eventMessages != null)
-			this.messages.addAll(eventMessages);
+		if (eventContent == null)
+			this.content = null;
+		else
+		{
+			this.content = new byte[eventContent.length];
+			System.arraycopy(eventContent, 0, this.content, 0, this.content.length);
+		}
 		
-		TestEventUtils.validateTestEvent(this, true);
+		this.messages = eventMessages != null && eventMessages.size() > 0 ? Collections.unmodifiableSet(new HashSet<>(eventMessages)) : null;
+	}
+	
+	public StoredTestEventSingle(TestEventSingle event)
+	{
+		this(event.getId(), event.getName(), event.getType(), event.getParentId(),
+				event.getEndTimestamp(), event.isSuccess(), event.getContent(), event.getMessages());
 	}
 	
 	
@@ -58,6 +69,12 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 	public boolean isSuccess()
 	{
 		return success;
+	}
+	
+	@Override
+	public Set<StoredMessageId> getMessages()
+	{
+		return messages;
 	}
 	
 	@Override

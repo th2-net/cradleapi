@@ -25,27 +25,31 @@ import com.exactpro.cradle.messages.StoredMessageId;
 /**
  * Interface to access all metadata fields of test event
  */
-public interface TestEvent extends BasicTestEvent
+public interface TestEvent
 {
+	StoredTestEventId getId();
+	String getName();
+	String getType();
+	StoredTestEventId getParentId();
 	Instant getEndTimestamp();
 	boolean isSuccess();
 	Set<StoredMessageId> getMessages();
 	
-	public static BookId bookId(BasicTestEvent event)
+	public default BookId getBookId()
 	{
-		StoredTestEventId id = event.getId();
+		StoredTestEventId id = getId();
 		return id != null ? id.getBookId() : null;
 	}
 	
-	public static String scope(BasicTestEvent event)
+	public default String getScope()
 	{
-		StoredTestEventId id = event.getId();
+		StoredTestEventId id = getId();
 		return id != null ? id.getScope() : null;
 	}
 	
-	public static Instant startTimestamp(BasicTestEvent event)
+	public default Instant getStartTimestamp()
 	{
-		StoredTestEventId id = event.getId();
+		StoredTestEventId id = getId();
 		return id != null ? id.getStartTimestamp() : null;
 	}
 }

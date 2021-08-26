@@ -20,57 +20,24 @@ import java.time.Instant;
 import java.util.Set;
 
 import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
  * Holds information about single (individual) test event prepared to be stored in Cradle
  */
 public class TestEventSingleToStore extends TestEventToStore implements TestEventSingle
 {
-	private Instant endTimestamp;
-	private boolean success;
-	private Set<StoredMessageId> messages;
 	private byte[] content;
+	
+	public TestEventSingleToStore(StoredTestEventId id, String name, StoredTestEventId parentId) throws CradleStorageException
+	{
+		super(id, name, parentId);
+	}
 	
 	
 	public static TestEventSingleToStoreBuilder builder()
 	{
 		return new TestEventSingleToStoreBuilder();
-	}
-	
-	
-	@Override
-	public Instant getEndTimestamp()
-	{
-		return endTimestamp;
-	}
-	
-	public void setEndTimestamp(Instant endTimestamp)
-	{
-		this.endTimestamp = endTimestamp;
-	}
-	
-	
-	@Override
-	public boolean isSuccess()
-	{
-		return success;
-	}
-	
-	public void setSuccess(boolean success)
-	{
-		this.success = success;
-	}
-	
-	
-	@Override
-	public Set<StoredMessageId> getMessages()
-	{
-		return messages;
-	}
-	
-	public void setMessages(Set<StoredMessageId> messages)
-	{
-		this.messages = messages;
 	}
 	
 	
@@ -83,5 +50,21 @@ public class TestEventSingleToStore extends TestEventToStore implements TestEven
 	public void setContent(byte[] content)
 	{
 		this.content = content;
+	}
+	
+	
+	public void setEndTimestamp(Instant endTimestamp)
+	{
+		this.endTimestamp = endTimestamp;
+	}
+	
+	public void setSuccess(boolean success)
+	{
+		this.success = success;
+	}
+	
+	public void setMessages(Set<StoredMessageId> messages)
+	{
+		this.messages = messages;
 	}
 }

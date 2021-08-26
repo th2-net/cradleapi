@@ -32,9 +32,9 @@ import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventFilter;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
 
@@ -70,10 +70,10 @@ public abstract class CradleStorage
 	protected abstract CompletableFuture<Void> doStoreMessageBatchAsync(StoredMessageBatch batch);
 	
 	
-	protected abstract void doStoreTestEvent(StoredTestEvent event, PageInfo page) throws IOException, CradleStorageException;
-	protected abstract CompletableFuture<Void> doStoreTestEventAsync(StoredTestEvent event, PageInfo page) throws IOException, CradleStorageException;
-	protected abstract void doUpdateParentTestEvents(StoredTestEvent event) throws IOException;
-	protected abstract CompletableFuture<Void> doUpdateParentTestEventsAsync(StoredTestEvent event);
+	protected abstract void doStoreTestEvent(TestEventToStore event, PageInfo page) throws IOException, CradleStorageException;
+	protected abstract CompletableFuture<Void> doStoreTestEventAsync(TestEventToStore event, PageInfo page) throws IOException, CradleStorageException;
+	protected abstract void doUpdateParentTestEvents(TestEventToStore event) throws IOException;
+	protected abstract CompletableFuture<Void> doUpdateParentTestEventsAsync(TestEventToStore event);
 	protected abstract void doUpdateEventStatus(StoredTestEvent event, boolean success) throws IOException;
 	protected abstract CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEvent event, boolean success);
 	
@@ -241,13 +241,13 @@ public abstract class CradleStorage
 	 * @throws IOException if data writing failed
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final void storeTestEvent(StoredTestEvent event) throws IOException, CradleStorageException
+	public final void storeTestEvent(TestEventToStore event) throws IOException, CradleStorageException
 	{
 		StoredTestEventId id = event.getId();
 		logger.debug("Storing test event {}", id);
 		PageInfo page = bpc.checkActivePage(id.getBookId(), id.getStartTimestamp());
 		
-		TestEventUtils.validateTestEvent(event, !(event instanceof StoredTestEventBatch));
+		TestEventUtils.validateTestEvent(event);
 		
 		doStoreTestEvent(event, page);
 		logger.debug("Test event {} has been stored", id);
@@ -266,13 +266,13 @@ public abstract class CradleStorage
 	 * @return future to get know if storing was successful
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final CompletableFuture<Void> storeTestEventAsync(StoredTestEvent event) throws IOException, CradleStorageException
+	public final CompletableFuture<Void> storeTestEventAsync(TestEventToStore event) throws IOException, CradleStorageException
 	{
 		StoredTestEventId id = event.getId();
 		logger.debug("Storing test event {} asynchronously", id);
 		PageInfo page = bpc.checkActivePage(id.getBookId(), id.getStartTimestamp());
 		
-		TestEventUtils.validateTestEvent(event, !(event instanceof StoredTestEventBatch));
+		TestEventUtils.validateTestEvent(event);
 		
 		CompletableFuture<Void> result = doStoreTestEventAsync(event, page);
 		result.whenComplete((r, error) -> {

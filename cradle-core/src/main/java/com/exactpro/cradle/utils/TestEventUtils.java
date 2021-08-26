@@ -23,6 +23,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
 import java.util.zip.DataFormatException;
@@ -37,9 +38,8 @@ import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.TestEvent;
-import com.exactpro.cradle.testevents.StoredTestEventBatch;
-import com.exactpro.cradle.testevents.StoredTestEventId;
-import com.exactpro.cradle.testevents.TestEventSingleToStore;
+import com.exactpro.cradle.testevents.TestEventBatch;
+import com.exactpro.cradle.testevents.TestEventSingle;
 
 public class TestEventUtils
 {
@@ -48,23 +48,31 @@ public class TestEventUtils
 	/**
 	 * Checks that test event has all necessary fields set
 	 * @param event to validate
-	 * @param checkName indicates whether event name should be validated. For some events name is optional and thus shouldn't be checked
 	 * @throws CradleStorageException if validation failed
 	 */
-	public static void validateTestEvent(TestEvent event, boolean checkName) throws CradleStorageException
+	public static void validateTestEvent(TestEvent event) throws CradleStorageException
 	{
 		if (event.getId() == null)
 			throw new CradleStorageException("Test event ID cannot be null");
+		
 		if (event.getId().equals(event.getParentId()))
 			throw new CradleStorageException("Test event cannot reference itself");
-		if (checkName && StringUtils.isEmpty(event.getName()))
-			throw new CradleStorageException("Test event must have a name");
+		
+		if (event instanceof TestEventSingle && StringUtils.isEmpty(event.getName()))
+			throw new CradleStorageException("Single test event must have a name");
+		if (event instanceof TestEventBatch && event.getParentId() == null)
+			throw new CradleStorageException("Batch must have a parent");
+		
 		if (event.getBookId() == null)
 			throw new CradleStorageException("Test event must have a book");
 		if (event.getScope() == null)
 			throw new CradleStorageException("Test event must have a scope");
 		if (event.getStartTimestamp() == null)
 			throw new CradleStorageException("Test event must have a start timestamp");
+		
+		if (event.getEndTimestamp() != null && event.getEndTimestamp().isBefore(event.getStartTimestamp()))
+			throw new CradleStorageException("Test event cannot end sooner than it started");
+		
 		if (event.getParentId() != null && !event.getBookId().equals(event.getParentId().getBookId()))
 			throw new CradleStorageException("Test event and its parent must be from the same book");
 		
@@ -94,57 +102,44 @@ public class TestEventUtils
 	}
 	
 	/**
-	 * Deserializes all test events, adding them to given batch
+	 * Deserializes test events from given bytes
 	 * @param contentBytes to deserialize events from
-	 * @param batch to add events to
+	 * @return collection of deserialized test events
 	 * @throws IOException if deserialization failed
-	 * @throws CradleStorageException if deserialized event doesn't match batch conditions
 	 */
-	public static void deserializeTestEvents(byte[] contentBytes, StoredTestEventBatch batch) 
+	public static Collection<BatchedStoredTestEvent> deserializeTestEvents(byte[] contentBytes)
 			throws IOException, CradleStorageException
 	{
 		try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(contentBytes)))
 		{
+			Collection<BatchedStoredTestEvent> result = new ArrayList<>();
 			while (dis.available() != 0)
 			{
 				byte[] teBytes = readNextData(dis);
 				BatchedStoredTestEvent tempTe = deserializeTestEvent(teBytes);
-				if (tempTe.getParentId() == null)  //Workaround to fix events stored before commit f71b224e6f4dc0c8c99512de6a8f2034a1c3badc. TODO: remove it in future
-				{
-					TestEventSingleToStore te = TestEventSingleToStore.builder()
-							.id(tempTe.getId())
-							.name(tempTe.getName())
-							.type(tempTe.getType())
-							.parentId(batch.getParentId())
-							.endTimestamp(tempTe.getEndTimestamp())
-							.success(tempTe.isSuccess())
-							.content(tempTe.getContent())
-							.build();
-					StoredTestEventBatch.addTestEvent(te, batch);
-				}
-				else
-					StoredTestEventBatch.addTestEvent(tempTe, batch);
+				result.add(tempTe);
 			}
+			return result;
 		}
 	}
 	
 	
 	/**
-	 * Decompresses given ByteBuffer and deserializes all test events, adding them to given batch
+	 * Decompresses given ByteBuffer and deserializes test events
 	 * @param content to deserialize events from
 	 * @param compressed flag that indicates if content needs to be decompressed first
-	 * @param batch to add events to
+	 * @return collection of deserialized test events
 	 * @throws IOException if deserialization failed
 	 * @throws CradleStorageException if deserialized event doesn't match batch conditions
 	 */
-	public static void bytesToTestEvents(ByteBuffer content, boolean compressed, StoredTestEventBatch batch) 
+	public static Collection<BatchedStoredTestEvent> bytesToTestEvents(ByteBuffer content, boolean compressed)
 			throws IOException, CradleStorageException
 	{
-		byte[] contentBytes = getTestEventContentBytes(content, compressed, batch.getId());
-		deserializeTestEvents(contentBytes, batch);
+		byte[] contentBytes = getTestEventContentBytes(content, compressed);
+		return deserializeTestEvents(contentBytes);
 	}
 	
-	public static byte[] getTestEventContentBytes(ByteBuffer content, boolean compressed, StoredTestEventId eventId) throws IOException
+	public static byte[] getTestEventContentBytes(ByteBuffer content, boolean compressed) throws IOException
 	{
 		byte[] contentBytes = content.array();
 		if (!compressed)
@@ -156,7 +151,7 @@ public class TestEventUtils
 		}
 		catch (IOException | DataFormatException e)
 		{
-			throw new IOException(String.format("Could not decompress content of test event (ID: '%s') from Cradle", eventId), e);
+			throw new IOException("Could not decompress content of test event", e);
 		}
 	}
 	

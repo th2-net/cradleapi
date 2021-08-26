@@ -29,6 +29,7 @@ import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventFilter;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
@@ -81,23 +82,23 @@ public class DummyCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected void doStoreTestEvent(StoredTestEvent event, PageInfo page) throws IOException
+	protected void doStoreTestEvent(TestEventToStore event, PageInfo page) throws IOException
 	{
 	}
 	
 	@Override
-	protected CompletableFuture<Void> doStoreTestEventAsync(StoredTestEvent event, PageInfo page)
+	protected CompletableFuture<Void> doStoreTestEventAsync(TestEventToStore event, PageInfo page)
 	{
 		return CompletableFuture.completedFuture(null);
 	}
 	
 	@Override
-	protected void doUpdateParentTestEvents(StoredTestEvent event) throws IOException
+	protected void doUpdateParentTestEvents(TestEventToStore event) throws IOException
 	{
 	}
 	
 	@Override
-	protected CompletableFuture<Void> doUpdateParentTestEventsAsync(StoredTestEvent event)
+	protected CompletableFuture<Void> doUpdateParentTestEventsAsync(TestEventToStore event)
 	{
 		return CompletableFuture.completedFuture(null);
 	}
