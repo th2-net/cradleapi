@@ -36,10 +36,10 @@ import org.slf4j.LoggerFactory;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
-import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.TestEvent;
 import com.exactpro.cradle.testevents.TestEventBatch;
 import com.exactpro.cradle.testevents.TestEventSingle;
+import com.exactpro.cradle.testevents.TestEventToStore;
 
 public class TestEventUtils
 {
@@ -108,7 +108,7 @@ public class TestEventUtils
 	 * @throws IOException if deserialization failed
 	 */
 	public static Collection<BatchedStoredTestEvent> deserializeTestEvents(byte[] contentBytes)
-			throws IOException, CradleStorageException
+			throws IOException
 	{
 		try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(contentBytes)))
 		{
@@ -162,7 +162,7 @@ public class TestEventUtils
 	 * @return bytes of test event content
 	 * @throws IOException if batch children serialization failed
 	 */
-	public static byte[] getTestEventContent(StoredTestEvent event) throws IOException
+	public static byte[] getTestEventContent(TestEventToStore event) throws IOException
 	{
 		if (event.isBatch())
 		{
