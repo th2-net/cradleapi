@@ -26,7 +26,7 @@ import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
 
-public class TestEventBuilderTest
+public class EventBuilderTest
 {
 	private final BookId bookId = new BookId("Book1");
 	

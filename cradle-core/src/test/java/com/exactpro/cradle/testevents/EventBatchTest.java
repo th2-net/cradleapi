@@ -16,15 +16,13 @@
 
 package com.exactpro.cradle.testevents;
 
-import org.assertj.core.api.Assertions;
-import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import org.testng.asserts.SoftAssert;
 
-import static com.exactpro.cradle.testevents.TestEventSingleTest.*;
+import static com.exactpro.cradle.testevents.EventSingleTest.*;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -41,7 +39,7 @@ import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
 
-public class TestEventBatchTest
+public class EventBatchTest
 {
 	private TestEventSingleToStoreBuilder eventBuilder = TestEventToStore.singleBuilder();
 	private TestEventBatchToStoreBuilder batchBuilder = TestEventToStore.batchBuilder();
@@ -80,7 +78,7 @@ public class TestEventBatchTest
 							"must have a parent"}
 				};
 		
-		return Stream.of(new TestEventSingleTest().invalidEvents(), batchEvents)
+		return Stream.of(new EventSingleTest().invalidEvents(), batchEvents)
 				.flatMap(Arrays::stream)
 				.toArray(Object[][]::new);
 	}
@@ -121,12 +119,7 @@ public class TestEventBatchTest
 		
 		StoredTestEventBatch stored = new StoredTestEventBatch(event, null);
 		
-		RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
-		config.ignoreFieldsMatchingRegexes("pageId");  //Is present only in StoredTestEvent and will fail comparison with TestEventToStore
-		
-		Assertions.assertThat(stored)
-				.usingRecursiveComparison(config)
-				.isEqualTo(event);
+		EventTestUtils.assertEvents(stored, event);
 	}
 	
 	@Test

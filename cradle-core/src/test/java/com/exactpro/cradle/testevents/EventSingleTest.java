@@ -21,8 +21,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.assertj.core.api.Assertions;
-import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -34,7 +32,7 @@ import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
 
-public class TestEventSingleTest
+public class EventSingleTest
 {
 	public static final BookId BOOK = new BookId("book1");
 	public static final String SCOPE = "default",
@@ -102,12 +100,7 @@ public class TestEventSingleTest
 				.build();
 		StoredTestEventSingle stored = new StoredTestEventSingle(event, null);
 		
-		RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
-		config.ignoreFieldsMatchingRegexes("pageId");  //Is present only in StoredTestEvent and will fail comparison with TestEventToStore
-		
-		Assertions.assertThat(stored)
-				.usingRecursiveComparison(config)
-				.isEqualTo(event);
+		EventTestUtils.assertEvents(stored, event);
 	}
 	
 	@Test(dataProvider = "invalid events",
