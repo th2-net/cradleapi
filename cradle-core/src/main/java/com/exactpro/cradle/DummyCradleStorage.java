@@ -201,6 +201,14 @@ public class DummyCradleStorage extends CradleStorage
 		return CompletableFuture.completedFuture(null);
 	}
 	
+	
+	@Override
+	protected Collection<String> doGetScopes(BookId bookId) throws IOException, CradleStorageException
+	{
+		return null;
+	}
+	
+	
 	@Override
 	public IntervalsWorker getIntervalsWorker(PageId pageId)
 	{

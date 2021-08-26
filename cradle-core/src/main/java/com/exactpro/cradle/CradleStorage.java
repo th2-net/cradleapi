@@ -98,6 +98,8 @@ public abstract class CradleStorage
 	protected abstract Iterable<StoredTestEvent> doGetTestEvents(StoredTestEventFilter filter) throws CradleStorageException, IOException;
 	protected abstract CompletableFuture<Iterable<StoredTestEvent>> doGetTestEventsAsync(StoredTestEventFilter filter) throws CradleStorageException, IOException;
 	
+	protected abstract Collection<String> doGetScopes(BookId bookId) throws IOException, CradleStorageException;
+	
 	
 	/**
 	 * Initializes internal objects of storage and prepares it to access data, i.e. creates needed connections and facilities.
@@ -619,6 +621,22 @@ public abstract class CradleStorage
 				else
 					logger.debug("Iterator for test events filtered by {} got asynchronously", filter);
 			});
+		return result;
+	}
+	
+	/**
+	 * Obtains collection of scope names whose test events are saved in Cradle
+	 * @param bookId to get scopes from
+	 * @return collection of scope names
+	 * @throws IOException if data retrieval failed
+	 * @throws CradleStorageException if given book ID is invalid
+	 */
+	public final Collection<String> getScopes(BookId bookId) throws IOException, CradleStorageException
+	{
+		logger.debug("Getting scopes for book '{}'", bookId);
+		bpc.getBook(bookId);
+		Collection<String> result = doGetScopes(bookId);
+		logger.debug("Scopes for book '{}' got", bookId);
 		return result;
 	}
 	
