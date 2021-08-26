@@ -19,6 +19,8 @@ package com.exactpro.cradle.testevents;
 import java.io.Serializable;
 import java.util.Collection;
 
+import com.exactpro.cradle.PageId;
+
 /**
  * Holds information about one test event stored in batch of events ({@link TestEventBatch})
  */
@@ -28,9 +30,9 @@ public class BatchedStoredTestEvent extends StoredTestEventSingle implements Ser
 	
 	private final transient TestEventBatch batch;
 	
-	public BatchedStoredTestEvent(TestEventSingle event, TestEventBatch batch)
+	public BatchedStoredTestEvent(TestEventSingle event, TestEventBatch batch, PageId pageId)
 	{
-		super(event);
+		super(event, pageId);
 		
 		this.batch = batch;
 	}

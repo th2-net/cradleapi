@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
 
@@ -44,13 +45,14 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 	private final Set<StoredMessageId> messages;
 	
 	public StoredTestEventBatch(StoredTestEventId id, String name, String type, StoredTestEventId parentId,
-			Instant endTimestamp, boolean success, Collection<BatchedStoredTestEvent> batchEvents, Set<StoredMessageId> batchMessages) throws CradleStorageException
+			Instant endTimestamp, boolean success, Collection<BatchedStoredTestEvent> batchEvents, PageId pageId) throws CradleStorageException
 	{
-		super(id, name, type, parentId);
+		super(id, name, type, parentId, pageId);
 		
 		Map<StoredTestEventId, BatchedStoredTestEvent> allEvents = new LinkedHashMap<>();
 		Collection<BatchedStoredTestEvent> roots = new ArrayList<>();
 		Map<StoredTestEventId, Collection<BatchedStoredTestEvent>> childrenPerEvent = new LinkedHashMap<>();
+		Set<StoredMessageId> batchMessages = new HashSet<>();
 		for (BatchedStoredTestEvent event : batchEvents)
 		{
 			StoredTestEventId eventParentId = event.getParentId();
@@ -59,12 +61,16 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 			
 			boolean isRoot = Objects.equals(eventParentId, getParentId());
 			
-			BatchedStoredTestEvent child = new BatchedStoredTestEvent(event, this);
+			BatchedStoredTestEvent child = new BatchedStoredTestEvent(event, this, pageId);
 			allEvents.put(child.getId(), child);
 			if (!isRoot)
 				childrenPerEvent.computeIfAbsent(eventParentId, k -> new ArrayList<>()).add(child);
 			else
 				roots.add(child);
+			
+			Set<StoredMessageId> eventMessages = child.getMessages();
+			if (eventMessages != null)
+				batchMessages.addAll(eventMessages);
 		}
 		
 		this.events = Collections.unmodifiableMap(allEvents);
@@ -73,13 +79,13 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 		this.endTimestamp = endTimestamp;
 		this.success = success;
 		
-		this.messages = batchMessages != null && batchMessages.size() > 0 ? Collections.unmodifiableSet(new HashSet<>(batchMessages)) : null;
+		this.messages = batchMessages != null && batchMessages.size() > 0 ? Collections.unmodifiableSet(batchMessages) : null;
 	}
 	
-	public StoredTestEventBatch(TestEventBatch batch) throws CradleStorageException
+	public StoredTestEventBatch(TestEventBatch batch, PageId pageId) throws CradleStorageException
 	{
 		this(batch.getId(), batch.getName(), batch.getType(), batch.getParentId(),
-				batch.getEndTimestamp(), batch.isSuccess(), batch.getTestEvents(), batch.getMessages());
+				batch.getEndTimestamp(), batch.isSuccess(), batch.getTestEvents(), pageId);
 	}
 	
 	@Override

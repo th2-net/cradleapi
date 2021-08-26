@@ -123,7 +123,7 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 		
 		updateBatchData(event);
 		
-		BatchedStoredTestEvent result = new BatchedStoredTestEvent(event, this);
+		BatchedStoredTestEvent result = new BatchedStoredTestEvent(event, this, null);
 		events.put(result.getId(), result);
 		if (!isRoot)
 			children.computeIfAbsent(parentId, k -> new ArrayList<>()).add(result);

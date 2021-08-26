@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle.testevents;
 
+import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
@@ -30,29 +31,31 @@ public abstract class StoredTestEvent implements TestEvent
 	private final String name,
 			type;
 	private final StoredTestEventId parentId;
+	private final PageId pageId;
 	
-	public StoredTestEvent(StoredTestEventId id, String name, String type, StoredTestEventId parentId)
+	public StoredTestEvent(StoredTestEventId id, String name, String type, StoredTestEventId parentId, PageId pageId)
 	{
 		this.id = id;
 		this.name = name;
 		this.type = type;
 		this.parentId = parentId;
+		this.pageId = pageId;
 	}
 	
-	public StoredTestEvent(TestEvent event)
+	public StoredTestEvent(TestEvent event, PageId pageId)
 	{
-		this(event.getId(), event.getName(), event.getType(), event.getParentId());
+		this(event.getId(), event.getName(), event.getType(), event.getParentId(), pageId);
 	}
 	
 	
-	public static StoredTestEventSingle single(TestEventSingleToStore event) throws CradleStorageException
+	public static StoredTestEventSingle single(TestEventSingleToStore event, PageId pageId) throws CradleStorageException
 	{
-		return new StoredTestEventSingle(event);
+		return new StoredTestEventSingle(event, pageId);
 	}
 	
-	public static StoredTestEventBatch batch(TestEventBatchToStore event) throws CradleStorageException
+	public static StoredTestEventBatch batch(TestEventBatchToStore event, PageId pageId) throws CradleStorageException
 	{
-		return new StoredTestEventBatch(event);
+		return new StoredTestEventBatch(event, pageId);
 	}
 	
 	
@@ -78,6 +81,12 @@ public abstract class StoredTestEvent implements TestEvent
 	public StoredTestEventId getParentId()
 	{
 		return parentId;
+	}
+	
+	
+	public PageId getPageId()
+	{
+		return pageId;
 	}
 	
 	

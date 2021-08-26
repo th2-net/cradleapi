@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -143,10 +144,13 @@ public class TestEventTest
 				.messages(messages)
 				.content("Valid content".getBytes())
 				.build();
-		StoredTestEventSingle stored = new StoredTestEventSingle(event);
+		StoredTestEventSingle stored = new StoredTestEventSingle(event, null);
+		
+		RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
+		config.ignoreFieldsMatchingRegexes("pageId");  //Is present only in StoredTestEvent and will fail comparison with TestEventToStore
 		
 		Assertions.assertThat(stored)
-				.usingRecursiveComparison()
+				.usingRecursiveComparison(config)
 				.isEqualTo(event);
 	}
 	
@@ -183,10 +187,13 @@ public class TestEventTest
 				.success(false)
 				.build());
 		
-		StoredTestEventBatch stored = new StoredTestEventBatch(event);
+		StoredTestEventBatch stored = new StoredTestEventBatch(event, null);
+		
+		RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
+		config.ignoreFieldsMatchingRegexes("pageId");  //Is present only in StoredTestEvent and will fail comparison with TestEventToStore
 		
 		Assertions.assertThat(stored)
-				.usingRecursiveComparison()
+				.usingRecursiveComparison(config)
 				.isEqualTo(event);
 	}
 	

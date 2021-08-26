@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.messages.StoredMessageId;
 
 /**
@@ -34,9 +35,9 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 	private final byte[] content;
 	
 	public StoredTestEventSingle(StoredTestEventId id, String name, String type, StoredTestEventId parentId,
-			Instant endTimestamp, boolean success, byte[] eventContent, Set<StoredMessageId> eventMessages)
+			Instant endTimestamp, boolean success, byte[] eventContent, Set<StoredMessageId> eventMessages, PageId pageId)
 	{
-		super(id, name, type, parentId);
+		super(id, name, type, parentId, pageId);
 		
 		this.endTimestamp = endTimestamp;
 		this.success = success;
@@ -52,10 +53,10 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 		this.messages = eventMessages != null && eventMessages.size() > 0 ? Collections.unmodifiableSet(new HashSet<>(eventMessages)) : null;
 	}
 	
-	public StoredTestEventSingle(TestEventSingle event)
+	public StoredTestEventSingle(TestEventSingle event, PageId pageId)
 	{
 		this(event.getId(), event.getName(), event.getType(), event.getParentId(),
-				event.getEndTimestamp(), event.isSuccess(), event.getContent(), event.getMessages());
+				event.getEndTimestamp(), event.isSuccess(), event.getContent(), event.getMessages(), pageId);
 	}
 	
 	
