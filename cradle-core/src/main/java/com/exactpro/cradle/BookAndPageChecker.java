@@ -67,7 +67,7 @@ public class BookAndPageChecker
 	{
 		BookInfo book = getBook(bookFromId);
 		if (!bookFromId.equals(pageId.getBookId()))
-			throw new CradleStorageException("Book in ID ("+bookFromId+") doesn't match book of requested page ("+pageId.getBookId()+")");
+			throw new CradleStorageException("Requested book ("+bookFromId+") doesn't match book of requested page ("+pageId.getBookId()+")");
 		if (book.getPage(pageId) == null)
 			throw new CradleStorageException("Page '"+pageId+"' is unknown");
 	}

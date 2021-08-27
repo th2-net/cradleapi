@@ -32,8 +32,9 @@ import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.resultset.CradleResultSet;
+import com.exactpro.cradle.resultset.EmptyResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.StoredTestEventFilter;
+import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -96,8 +97,8 @@ public abstract class CradleStorage
 	protected abstract StoredTestEvent doGetTestEvent(StoredTestEventId id, PageId pageId) throws IOException, CradleStorageException;
 	protected abstract CompletableFuture<StoredTestEvent> doGetTestEventAsync(StoredTestEventId ids, PageId pageId) throws CradleStorageException;
 	
-	protected abstract CradleResultSet<StoredTestEvent> doGetTestEvents(StoredTestEventFilter filter) throws CradleStorageException, IOException;
-	protected abstract CompletableFuture<CradleResultSet<StoredTestEvent>> doGetTestEventsAsync(StoredTestEventFilter filter) throws CradleStorageException, IOException;
+	protected abstract CradleResultSet<StoredTestEvent> doGetTestEvents(TestEventFilter filter) throws CradleStorageException, IOException;
+	protected abstract CompletableFuture<CradleResultSet<StoredTestEvent>> doGetTestEventsAsync(TestEventFilter filter) throws CradleStorageException, IOException;
 	
 	protected abstract Collection<String> doGetScopes(BookId bookId) throws IOException, CradleStorageException;
 	
@@ -593,10 +594,12 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if filter is invalid
 	 * @throws IOException if data retrieval failed
 	 */
-	public final CradleResultSet<StoredTestEvent> getTestEvents(StoredTestEventFilter filter) throws CradleStorageException, IOException
+	public final CradleResultSet<StoredTestEvent> getTestEvents(TestEventFilter filter) throws CradleStorageException, IOException
 	{
 		logger.debug("Filtering test events by {}", filter);
 		bpc.checkPage(filter.getPageId());
+		if (!checkFilter(filter))
+			return new EmptyResultSet<>();
 		CradleResultSet<StoredTestEvent> result = doGetTestEvents(filter);
 		logger.debug("Got result set with test events filtered by {}", filter);
 		return result;
@@ -609,10 +612,12 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if filter is invalid
 	 * @throws IOException if data retrieval failed
 	 */
-	public final CompletableFuture<CradleResultSet<StoredTestEvent>> getTestEventsAsync(StoredTestEventFilter filter) throws CradleStorageException, IOException
+	public final CompletableFuture<CradleResultSet<StoredTestEvent>> getTestEventsAsync(TestEventFilter filter) throws CradleStorageException, IOException
 	{
 		logger.debug("Asynchronously getting test events filtered by {}", filter);
 		bpc.checkPage(filter.getPageId());
+		if (!checkFilter(filter))
+			return CompletableFuture.completedFuture(new EmptyResultSet<>());
 		CompletableFuture<CradleResultSet<StoredTestEvent>> result = doGetTestEventsAsync(filter);
 		result.whenComplete((r, error) -> {
 				if (error != null)
@@ -658,5 +663,47 @@ public abstract class CradleStorage
 					logger.debug("Status of event {} updated asynchronously", event.getId());
 			});
 		return result;
+	}
+	
+	
+	private boolean checkFilter(TestEventFilter filter) throws CradleStorageException
+	{
+		if (filter.getBookId() == null)
+			throw new CradleStorageException("bookId is mandatory");
+		
+		BookInfo book = bpc.getBook(filter.getBookId());
+		
+		if (filter.getPageId() != null)
+			bpc.checkPage(filter.getPageId(), book.getId());
+		
+		if (filter.getScope() == null)
+			throw new CradleStorageException("scope is mandatory");
+		
+		if (filter.getParentId() != null && !book.getId().equals(filter.getParentId().getBookId()))
+			throw new CradleStorageException("Requested book ("+book.getId()+") doesn't match book of requested parent ("+filter.getParentId()+")");
+		
+		Instant timeFrom = filter.getStartTimestampFrom() != null ? filter.getStartTimestampFrom().getValue() : null,
+				timeTo = filter.getStartTimestampTo() != null ? filter.getStartTimestampTo().getValue() : null;
+		if (timeFrom != null && timeTo != null 
+				&& timeFrom.isAfter(timeTo))
+			throw new CradleStorageException("Left bound for start timestamp ("+timeFrom+") "
+					+ "is after the right bound ("+timeTo+")");
+		
+		if (timeTo != null && timeTo.isBefore(book.getCreated()))
+			return false;
+		
+		if (filter.getPageId() != null)
+		{
+			PageInfo page = book.getPage(filter.getPageId());
+			Instant pageStarted = page.getStarted(),
+					pageEnded = page.getEnded();
+			
+			if (timeFrom != null && pageEnded != null && timeFrom.isAfter(pageEnded))
+				return false;
+			if (timeTo != null && timeTo.isBefore(pageStarted))
+				return false;
+		}
+		
+		return true;
 	}
 }

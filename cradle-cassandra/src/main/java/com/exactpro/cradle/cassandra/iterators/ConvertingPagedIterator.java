@@ -16,8 +16,8 @@
 
 package com.exactpro.cradle.cassandra.iterators;
 
-import java.io.IOException;
 import java.util.Iterator;
+import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,19 +29,18 @@ import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
  * @param <R> - class of objects to get while using the wrapper
  * @param <E> - class of entities obtained from Cassandra
  */
-public abstract class ConvertingPagedIterator<R, E> implements Iterator<R>
+public class ConvertingPagedIterator<R, E> implements Iterator<R>
 {
 	private static final Logger logger = LoggerFactory.getLogger(ConvertingPagedIterator.class);
 	
 	private final PagedIterator<E> it;
+	private final Function<E, R> converter;
 	
-	public ConvertingPagedIterator(MappedAsyncPagingIterable<E> rows)
+	public ConvertingPagedIterator(MappedAsyncPagingIterable<E> rows, Function<E, R> converter)
 	{
 		this.it = new PagedIterator<>(rows);
+		this.converter = converter;
 	}
-	
-	
-	protected abstract R convertEntity(E entity) throws IOException;
 	
 	
 	@Override
@@ -55,14 +54,9 @@ public abstract class ConvertingPagedIterator<R, E> implements Iterator<R>
 	{
 		E entity = it.next();
 		
+		//TODO: implement handling of multi-chunked entities
+		
 		logger.trace("Converting entity");
-		try
-		{
-			return convertEntity(entity);
-		}
-		catch (IOException e)
-		{
-			throw new RuntimeException("Error while getting next data row", e);
-		}
+		return converter.apply(entity);
 	}
 }

@@ -33,10 +33,12 @@ import com.exactpro.cradle.cassandra.dao.testevents.EventDateEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.EventEntityUtils;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventIteratorProvider;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.BookKeyspaceCreator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleKeyspaceCreator;
+import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
 import com.exactpro.cradle.cassandra.utils.CassandraTimeUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.intervals.IntervalsWorker;
@@ -46,7 +48,7 @@ import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.StoredTestEventFilter;
+import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -434,7 +436,7 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	protected CradleResultSet<StoredTestEvent> doGetTestEvents(StoredTestEventFilter filter) throws CradleStorageException, IOException
+	protected CradleResultSet<StoredTestEvent> doGetTestEvents(TestEventFilter filter) throws CradleStorageException, IOException
 	{
 		try
 		{
@@ -447,10 +449,12 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected CompletableFuture<CradleResultSet<StoredTestEvent>> doGetTestEventsAsync(StoredTestEventFilter filter) throws CradleStorageException, IOException
+	protected CompletableFuture<CradleResultSet<StoredTestEvent>> doGetTestEventsAsync(TestEventFilter filter) throws CradleStorageException, IOException
 	{
-		//TODO: implement
-		return null;
+		TestEventIteratorProvider provider = new TestEventIteratorProvider("get test events filtered by "+filter, 
+				filter, ops.getOperators(filter.getBookId()), readAttrs);
+		return provider.nextIterator()
+				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, provider));
 	}
 	
 	

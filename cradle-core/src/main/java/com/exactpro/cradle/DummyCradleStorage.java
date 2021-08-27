@@ -28,7 +28,7 @@ import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.StoredTestEventFilter;
+import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -191,13 +191,13 @@ public class DummyCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected CradleResultSet<StoredTestEvent> doGetTestEvents(StoredTestEventFilter filter) throws CradleStorageException, IOException
+	protected CradleResultSet<StoredTestEvent> doGetTestEvents(TestEventFilter filter) throws CradleStorageException, IOException
 	{
 		return null;
 	}
 	
 	@Override
-	protected CompletableFuture<CradleResultSet<StoredTestEvent>> doGetTestEventsAsync(StoredTestEventFilter filter) throws CradleStorageException, IOException
+	protected CompletableFuture<CradleResultSet<StoredTestEvent>> doGetTestEventsAsync(TestEventFilter filter) throws CradleStorageException, IOException
 	{
 		return CompletableFuture.completedFuture(null);
 	}

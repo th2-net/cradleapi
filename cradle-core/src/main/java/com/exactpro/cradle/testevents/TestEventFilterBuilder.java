@@ -18,6 +18,7 @@ package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
 
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Order;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.filters.FilterForGreater;
@@ -26,30 +27,44 @@ import com.exactpro.cradle.filters.FilterForLess;
 import com.exactpro.cradle.filters.FilterForLessBuilder;
 
 /**
- * Builder of filter for stored test events.
+ * Builder of filter for test events.
  * Various combinations of filter conditions may have different performance because some operations are done on client side.
  */
-public class StoredTestEventFilterBuilder
+public class TestEventFilterBuilder
 {
-	private StoredTestEventFilter eventFilter;
+	private TestEventFilter eventFilter;
 	
-	public FilterForGreaterBuilder<Instant, StoredTestEventFilterBuilder> timestampFrom()
+	public TestEventFilterBuilder bookId(BookId bookId)
+	{
+		initIfNeeded();
+		eventFilter.setBookId(bookId);
+		return this;
+	}
+	
+	public TestEventFilterBuilder scope(String scope)
+	{
+		initIfNeeded();
+		eventFilter.setScope(scope);
+		return this;
+	}
+	
+	public FilterForGreaterBuilder<Instant, TestEventFilterBuilder> startTimestampFrom()
 	{
 		initIfNeeded();
 		FilterForGreater<Instant> f = new FilterForGreater<>();
-		eventFilter.setTimestampFrom(f);
-		return new FilterForGreaterBuilder<Instant, StoredTestEventFilterBuilder>(f, this);
+		eventFilter.setStartTimestampFrom(f);
+		return new FilterForGreaterBuilder<Instant, TestEventFilterBuilder>(f, this);
 	}
 	
-	public FilterForLessBuilder<Instant, StoredTestEventFilterBuilder> timestampTo()
+	public FilterForLessBuilder<Instant, TestEventFilterBuilder> startTimestampTo()
 	{
 		initIfNeeded();
 		FilterForLess<Instant> f = new FilterForLess<>();
-		eventFilter.setTimestampTo(f);
-		return new FilterForLessBuilder<Instant, StoredTestEventFilterBuilder>(f, this);
+		eventFilter.setStartTimestampTo(f);
+		return new FilterForLessBuilder<Instant, TestEventFilterBuilder>(f, this);
 	}
 	
-	public StoredTestEventFilterBuilder sequence(StoredTestEventId parentId)
+	public TestEventFilterBuilder sequence(StoredTestEventId parentId)
 	{
 		initIfNeeded();
 		eventFilter.setParentId(parentId);
@@ -61,31 +76,31 @@ public class StoredTestEventFilterBuilder
 	 * @param limit max number of test events to return
 	 * @return the same builder instance to continue building chain
 	 */
-	public StoredTestEventFilterBuilder limit(int limit)
+	public TestEventFilterBuilder limit(int limit)
 	{
 		initIfNeeded();
 		eventFilter.setLimit(limit);
 		return this;
 	}
 
-	public StoredTestEventFilterBuilder order(Order order)
+	public TestEventFilterBuilder order(Order order)
 	{
 		initIfNeeded();
 		eventFilter.setOrder(order);
 		return this;
 	}
 	
-	public StoredTestEventFilterBuilder pageId(PageId pageId)
+	public TestEventFilterBuilder pageId(PageId pageId)
 	{
 		initIfNeeded();
 		eventFilter.setPageId(pageId);
 		return this;
 	}
 	
-	public StoredTestEventFilter build()
+	public TestEventFilter build()
 	{
 		initIfNeeded();
-		StoredTestEventFilter result = eventFilter;
+		TestEventFilter result = eventFilter;
 		eventFilter = null;
 		return result;
 	}
@@ -97,8 +112,8 @@ public class StoredTestEventFilterBuilder
 			eventFilter = createStoredTestEventFilter();
 	}
 	
-	protected StoredTestEventFilter createStoredTestEventFilter()
+	protected TestEventFilter createStoredTestEventFilter()
 	{
-		return new StoredTestEventFilter();
+		return new TestEventFilter();
 	}
 }

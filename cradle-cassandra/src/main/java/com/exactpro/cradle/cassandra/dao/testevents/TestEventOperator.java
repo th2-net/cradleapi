@@ -27,6 +27,8 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
+import com.datastax.oss.driver.api.mapper.annotations.QueryProvider;
+import com.exactpro.cradle.cassandra.dao.CommonQueryProvider;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
@@ -39,6 +41,10 @@ public interface TestEventOperator
 	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> get(String page, LocalDate startDate, 
 			String scope, String part,
 			LocalTime startTime, String id, 
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
+	@QueryProvider(providerClass = CommonQueryProvider.class, entityHelpers = TestEventEntity.class)
+	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getByFilter(CassandraTestEventFilter filter,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert

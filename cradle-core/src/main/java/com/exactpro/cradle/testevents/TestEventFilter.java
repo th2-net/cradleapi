@@ -20,28 +20,33 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Order;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
 
-public class StoredTestEventFilter
+public class TestEventFilter
 {
-	private FilterForGreater<Instant> timestampFrom;
-	private FilterForLess<Instant> timestampTo;
+	private BookId bookId;
+	private String scope;
+	private FilterForGreater<Instant> startTimestampFrom;
+	private FilterForLess<Instant> startTimestampTo;
 	private StoredTestEventId parentId;
 	private int limit;
 	private Order order = Order.DIRECT;
 	private PageId pageId;
 	
-	public StoredTestEventFilter()
+	public TestEventFilter()
 	{
 	}
 	
-	public StoredTestEventFilter(StoredTestEventFilter copyFrom)
+	public TestEventFilter(TestEventFilter copyFrom)
 	{
-		this.timestampFrom = copyFrom.getTimestampFrom();
-		this.timestampTo = copyFrom.getTimestampTo();
+		this.bookId = copyFrom.getBookId();
+		this.scope = copyFrom.getScope();
+		this.startTimestampFrom = copyFrom.getStartTimestampFrom();
+		this.startTimestampTo = copyFrom.getStartTimestampTo();
 		this.parentId = copyFrom.getParentId();
 		this.limit = copyFrom.getLimit();
 		this.order = copyFrom.getOrder();
@@ -49,25 +54,53 @@ public class StoredTestEventFilter
 	}
 	
 	
-	public FilterForGreater<Instant> getTimestampFrom()
+	public static TestEventFilterBuilder builder()
 	{
-		return timestampFrom;
-	}
-	
-	public void setTimestampFrom(FilterForGreater<Instant> timestampFrom)
-	{
-		this.timestampFrom = timestampFrom;
+		return new TestEventFilterBuilder();
 	}
 	
 	
-	public FilterForLess<Instant> getTimestampTo()
+	public BookId getBookId()
 	{
-		return timestampTo;
+		return bookId;
 	}
 	
-	public void setTimestampTo(FilterForLess<Instant> timestampTo)
+	public void setBookId(BookId bookId)
 	{
-		this.timestampTo = timestampTo;
+		this.bookId = bookId;
+	}
+	
+	
+	public String getScope()
+	{
+		return scope;
+	}
+	
+	public void setScope(String scope)
+	{
+		this.scope = scope;
+	}
+	
+	
+	public FilterForGreater<Instant> getStartTimestampFrom()
+	{
+		return startTimestampFrom;
+	}
+	
+	public void setStartTimestampFrom(FilterForGreater<Instant> startTimestampFrom)
+	{
+		this.startTimestampFrom = startTimestampFrom;
+	}
+	
+	
+	public FilterForLess<Instant> getStartTimestampTo()
+	{
+		return startTimestampTo;
+	}
+	
+	public void setStartTimestampTo(FilterForLess<Instant> startTimestampTo)
+	{
+		this.startTimestampTo = startTimestampTo;
 	}
 	
 	
@@ -119,10 +152,14 @@ public class StoredTestEventFilter
 	public String toString()
 	{
 		List<String> result = new ArrayList<>(10);
-		if (timestampFrom != null)
-			result.add("timestamp" + timestampFrom);
-		if (timestampTo != null)
-			result.add("timestamp" + timestampTo);
+		if (bookId != null)
+			result.add("book=" + bookId);
+		if (scope != null)
+			result.add("scope=" + scope);
+		if (startTimestampFrom != null)
+			result.add("timestamp" + startTimestampFrom);
+		if (startTimestampTo != null)
+			result.add("timestamp" + startTimestampTo);
 		if (parentId != null)
 			result.add("parent ID=" + parentId);
 		if (limit > 0)
