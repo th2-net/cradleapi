@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
 
@@ -40,6 +41,12 @@ public class TestEventSingleToStoreBuilder
 	public TestEventSingleToStoreBuilder id(StoredTestEventId id)
 	{
 		this.id = id;
+		return this;
+	}
+	
+	public TestEventSingleToStoreBuilder id(BookId book, String scope, Instant startTimestamp, String id)
+	{
+		this.id = new StoredTestEventId(book, scope, startTimestamp, id);
 		return this;
 	}
 	

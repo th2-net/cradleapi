@@ -34,7 +34,7 @@ public class EventBuilderTest
 	public void singleBuilderIsReset() throws CradleStorageException
 	{
 		TestEventSingleToStoreBuilder builder = new TestEventSingleToStoreBuilder();
-		builder.id(new StoredTestEventId(bookId, "Scope1", Instant.now(), "123"))
+		builder.id(bookId, "Scope1", Instant.now(), "123")
 				.name("Event1")
 				.parentId(new StoredTestEventId(bookId, "Scope2", Instant.EPOCH, "234"))
 				.type("Type1")
@@ -53,7 +53,7 @@ public class EventBuilderTest
 	public void batchBuilderIsReset() throws CradleStorageException
 	{
 		TestEventBatchToStoreBuilder builder = new TestEventBatchToStoreBuilder();
-		builder.id(new StoredTestEventId(bookId, "Scope1", Instant.now(), "123"))
+		builder.id(bookId, "Scope1", Instant.now(), "123")
 				.name("Event1")
 				.parentId(new StoredTestEventId(bookId, "Scope2", Instant.EPOCH, "234"))
 				.type("Type1")

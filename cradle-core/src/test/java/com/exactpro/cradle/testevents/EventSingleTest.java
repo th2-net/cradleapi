@@ -53,11 +53,11 @@ public class EventSingleTest
 							"ID cannot be null"},
 					{validEvent().id(null),                                                                           //No ID
 							"ID cannot be null"},
-					{validEvent().id(new StoredTestEventId(null, SCOPE, START_TIMESTAMP, ID_VALUE)),                  //No book
+					{validEvent().id(null, SCOPE, START_TIMESTAMP, ID_VALUE),                                         //No book
 							"must have a book"},
-					{validEvent().id(new StoredTestEventId(BOOK, null, START_TIMESTAMP, ID_VALUE)),                   //No scope
+					{validEvent().id(BOOK, null, START_TIMESTAMP, ID_VALUE),                                          //No scope
 							"must have a scope"},
-					{validEvent().id(new StoredTestEventId(BOOK, SCOPE, null, ID_VALUE)),                             //No timestamp
+					{validEvent().id(BOOK, SCOPE, null, ID_VALUE),                                                    //No timestamp
 							"must have a start timestamp"},
 					{validEvent().name(null),                                                                         //No name
 							"must have a name"},

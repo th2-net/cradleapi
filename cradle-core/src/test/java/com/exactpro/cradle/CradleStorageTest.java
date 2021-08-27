@@ -53,12 +53,12 @@ public class CradleStorageTest
 		return new Object[][]
 				{
 					{validEvent()
-							.id(new StoredTestEventId(new BookId(BOOK+"_X"), SCOPE, START_TIMESTAMP, EVENT_ID)),          //Unknown book
+							.id(new BookId(BOOK+"_X"), SCOPE, START_TIMESTAMP, EVENT_ID),          //Unknown book
 							"unknown"},
 					{validEvent()
-							.id(new StoredTestEventId(new BookId(BOOK), SCOPE, Instant.EPOCH, EVENT_ID)),                 //Too early
+							.id(new BookId(BOOK), SCOPE, Instant.EPOCH, EVENT_ID),                 //Too early
 							"started after"},
-					{validEvent().endTimestamp(START_TIMESTAMP.minusMillis(5000)),                                    //End before start
+					{validEvent().endTimestamp(START_TIMESTAMP.minusMillis(5000)),                 //End before start
 							"cannot end sooner than it started"}
 				};
 	}

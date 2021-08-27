@@ -62,15 +62,13 @@ public class EventBatchTest
 				{
 					{validEvent().parentId(null),                                                                      //No parent ID
 								"must have a parent"},
-					{validEvent().id(new StoredTestEventId(new BookId(BOOK.getName()+"1"),                             //Different book
-									SCOPE, START_TIMESTAMP, DUMMY_NAME))
+					{validEvent().id(new BookId(BOOK.getName()+"1"), SCOPE, START_TIMESTAMP, DUMMY_NAME)               //Different book
 							.parentId(new StoredTestEventId(new BookId(BOOK.getName()+"1"), 
 									SCOPE, START_TIMESTAMP, "Parent_"+DUMMY_NAME)), 
 							"events of book"},
-					{validEvent().id(new StoredTestEventId(BOOK, SCOPE+"1", START_TIMESTAMP, DUMMY_NAME)),             //Different scope
+					{validEvent().id(BOOK, SCOPE+"1", START_TIMESTAMP, DUMMY_NAME),                                    //Different scope
 							"events of scope"},
-					{validEvent().id(new StoredTestEventId(BOOK, SCOPE,                                                //Early timestamp
-							START_TIMESTAMP.minusMillis(5000), DUMMY_NAME)),
+					{validEvent().id(BOOK, SCOPE, START_TIMESTAMP.minusMillis(5000), DUMMY_NAME),                      //Early timestamp
 							"start timestamp"},
 					{validEvent().parentId(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "wrong_parent")),       //Different parent ID
 							"parent"},
@@ -95,7 +93,7 @@ public class EventBatchTest
 				.build();
 		
 		Set<StoredMessageId> messages1 = Collections.singleton(new StoredMessageId(BOOK, "Session1", Direction.FIRST, Instant.EPOCH, 1));
-		event.addTestEvent(eventBuilder.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP.plusMillis(3500), ID_VALUE))
+		event.addTestEvent(eventBuilder.id(BOOK, SCOPE, START_TIMESTAMP.plusMillis(3500), ID_VALUE)
 				.name(DUMMY_NAME)
 				.parentId(batch.getParentId())
 				.endTimestamp(START_TIMESTAMP.plusMillis(5000))
@@ -104,14 +102,14 @@ public class EventBatchTest
 				.build());
 		
 		Set<StoredMessageId> messages2 = Collections.singleton(new StoredMessageId(BOOK, "Session2", Direction.SECOND, Instant.EPOCH, 2));
-		event.addTestEvent(eventBuilder.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, ID_VALUE+"1"))
+		event.addTestEvent(eventBuilder.id(BOOK, SCOPE, START_TIMESTAMP, ID_VALUE+"1")
 				.name(DUMMY_NAME)
 				.parentId(batch.getParentId())
 				.messages(messages2)
 				.success(false)
 				.build());
 		
-		event.addTestEvent(eventBuilder.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, ID_VALUE+"2"))
+		event.addTestEvent(eventBuilder.id(BOOK, SCOPE, START_TIMESTAMP, ID_VALUE+"2")
 				.name(DUMMY_NAME)
 				.parentId(batch.getParentId())
 				.success(false)
@@ -161,15 +159,15 @@ public class EventBatchTest
 				.name(DUMMY_NAME)
 				.parentId(batch.getParentId())
 				.build());
-		batch.addTestEvent(eventBuilder.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "2"))
+		batch.addTestEvent(eventBuilder.id(BOOK, SCOPE, START_TIMESTAMP, "2")
 				.name(DUMMY_NAME)
 				.parentId(batch.getParentId())
 				.build());
-		batch.addTestEvent(eventBuilder.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "3"))
+		batch.addTestEvent(eventBuilder.id(BOOK, SCOPE, START_TIMESTAMP, "3")
 				.name(DUMMY_NAME)
 				.parentId(parentId)
 				.build());
-		batch.addTestEvent(eventBuilder.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "4"))
+		batch.addTestEvent(eventBuilder.id(BOOK, SCOPE, START_TIMESTAMP, "4")
 				.name(DUMMY_NAME)
 				.parentId(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "XXX"))
 				.build());
@@ -183,7 +181,7 @@ public class EventBatchTest
 				.name(DUMMY_NAME)
 				.parentId(batch.getParentId())
 				.build());
-		batch.addTestEvent(eventBuilder.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "2"))
+		batch.addTestEvent(eventBuilder.id(BOOK, SCOPE, START_TIMESTAMP, "2")
 				.name(DUMMY_NAME)
 				.parentId(batch.getId())
 				.build());
@@ -193,12 +191,12 @@ public class EventBatchTest
 	public void childrenAligned() throws CradleStorageException
 	{
 		BatchedStoredTestEvent parentEvent = batch.addTestEvent(eventBuilder
-						.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "1"))
+						.id(BOOK, SCOPE, START_TIMESTAMP, "1")
 						.name(DUMMY_NAME)
 						.parentId(batch.getParentId())
 						.build()),
 				childEvent = batch.addTestEvent(eventBuilder
-						.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "2"))
+						.id(BOOK, SCOPE, START_TIMESTAMP, "2")
 						.name(DUMMY_NAME)
 						.parentId(parentEvent.getId())
 						.build());
@@ -221,12 +219,12 @@ public class EventBatchTest
 	public void childIsNotRoot() throws CradleStorageException
 	{
 		BatchedStoredTestEvent parentEvent = batch.addTestEvent(eventBuilder
-						.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "1"))
+						.id(BOOK, SCOPE, START_TIMESTAMP, "1")
 						.name(DUMMY_NAME)
 						.parentId(batch.getParentId())
 						.build()),
 				childEvent = batch.addTestEvent(eventBuilder
-						.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "2"))
+						.id(BOOK, SCOPE, START_TIMESTAMP, "2")
 						.name(DUMMY_NAME)
 						.parentId(parentEvent.getId())
 						.build());
@@ -277,7 +275,7 @@ public class EventBatchTest
 		
 		StoredMessageId newMessage2 = new StoredMessageId(BOOK, "Session3", Direction.FIRST, START_TIMESTAMP, 3);
 		TestEventSingleToStore event2 = validEvent()
-				.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, ID_VALUE+"_2"))
+				.id(BOOK, SCOPE, START_TIMESTAMP, ID_VALUE+"_2")
 				.success(false)
 				.endTimestamp(end.plusMillis(1000))
 				.message(newMessage2)

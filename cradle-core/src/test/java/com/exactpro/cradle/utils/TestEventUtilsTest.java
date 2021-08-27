@@ -39,7 +39,7 @@ public class TestEventUtilsTest
 				parentId);
 		
 		batch.addTestEvent(TestEventToStore.singleBuilder()
-				.id(new StoredTestEventId(book, scope, Instant.now(), "EventID"))
+				.id(book, scope, Instant.now(), "EventID")
 				.name("Event1")
 				.parentId(parentId)
 				.build());

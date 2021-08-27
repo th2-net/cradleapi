@@ -38,6 +38,12 @@ public class TestEventBatchToStoreBuilder
 		return this;
 	}
 	
+	public TestEventBatchToStoreBuilder id(BookId book, String scope, Instant startTimestamp, String id)
+	{
+		this.id = new StoredTestEventId(book, scope, startTimestamp, id);
+		return this;
+	}
+	
 	public TestEventBatchToStoreBuilder idRandom(BookId book, String scope)
 	{
 		this.id = new StoredTestEventId(book, scope, Instant.now(), UUID.randomUUID().toString());
