@@ -14,12 +14,19 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle;
+package com.exactpro.cradle.resultset;
 
-/**
- * Interface for objects that initialize Cradle storage, e.g. create database, files, etc.
- */
-public interface CradleStorageInitializer extends AutoCloseable
+public class EmptyResultSet<T> implements CradleResultSet<T>
 {
-	void initStorage();
+	@Override
+	public boolean hasNext()
+	{
+		return false;
+	}
+	
+	@Override
+	public T next()
+	{
+		return null;
+	}
 }

@@ -31,6 +31,7 @@ import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventFilter;
 import com.exactpro.cradle.testevents.StoredTestEventId;
@@ -95,8 +96,8 @@ public abstract class CradleStorage
 	protected abstract StoredTestEvent doGetTestEvent(StoredTestEventId id, PageId pageId) throws IOException, CradleStorageException;
 	protected abstract CompletableFuture<StoredTestEvent> doGetTestEventAsync(StoredTestEventId ids, PageId pageId) throws CradleStorageException;
 	
-	protected abstract Iterable<StoredTestEvent> doGetTestEvents(StoredTestEventFilter filter) throws CradleStorageException, IOException;
-	protected abstract CompletableFuture<Iterable<StoredTestEvent>> doGetTestEventsAsync(StoredTestEventFilter filter) throws CradleStorageException, IOException;
+	protected abstract CradleResultSet<StoredTestEvent> doGetTestEvents(TestEventFilter filter) throws CradleStorageException, IOException;
+	protected abstract CompletableFuture<CradleResultSet<StoredTestEvent>> doGetTestEventsAsync(TestEventFilter filter) throws CradleStorageException, IOException;
 	
 	protected abstract Collection<String> doGetScopes(BookId bookId) throws IOException, CradleStorageException;
 	
@@ -586,40 +587,38 @@ public abstract class CradleStorage
 	
 	
 	/**
-	 * Allows to enumerate test events filtering them by given conditions
+	 * Allows to enumerate test events, filtering them by given conditions
 	 * @param filter defines conditions to filter test events by
-	 * @return iterable object to enumerate test events
-	 * @throws CradleStorageException if provided argument is invalid
+	 * @return result set to enumerate test events
+	 * @throws CradleStorageException if filter is invalid
 	 * @throws IOException if data retrieval failed
-	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final Iterable<StoredTestEvent> getTestEvents(StoredTestEventFilter filter) throws CradleStorageException, IOException
+	public final CradleResultSet<StoredTestEvent> getTestEvents(StoredTestEventFilter filter) throws CradleStorageException, IOException
 	{
 		logger.debug("Filtering test events by {}", filter);
 		bpc.checkPage(filter.getPageId());
-		Iterable<StoredTestEvent> result = doGetTestEvents(filter);
-		logger.debug("Prepared iterator for test events filtered by {}", filter);
+		CradleResultSet<StoredTestEvent> result = doGetTestEvents(filter);
+		logger.debug("Got result set with test events filtered by {}", filter);
 		return result;
 	}
 	
 	/**
-	 * Allows to asynchronously obtain iterable object to enumerate test events filtering them by given conditions
+	 * Allows to asynchronously obtain result set to enumerate test events, filtering them by given conditions
 	 * @param filter defines conditions to filter test events by
-	 * @return future to obtain iterable object to enumerate test events
-	 * @throws CradleStorageException if provided argument is invalid
+	 * @return future to obtain result set to enumerate test events
+	 * @throws CradleStorageException if filter is invalid
 	 * @throws IOException if data retrieval failed
-	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final CompletableFuture<Iterable<StoredTestEvent>> getTestEventsAsync(StoredTestEventFilter filter) throws CradleStorageException, IOException
+	public final CompletableFuture<CradleResultSet<StoredTestEvent>> getTestEventsAsync(StoredTestEventFilter filter) throws CradleStorageException, IOException
 	{
 		logger.debug("Asynchronously getting test events filtered by {}", filter);
 		bpc.checkPage(filter.getPageId());
-		CompletableFuture<Iterable<StoredTestEvent>> result = doGetTestEventsAsync(filter);
+		CompletableFuture<CradleResultSet<StoredTestEvent>> result = doGetTestEventsAsync(filter);
 		result.whenComplete((r, error) -> {
 				if (error != null)
 					logger.error("Error while getting test events filtered by "+filter+" asynchronously", error);
 				else
-					logger.debug("Iterator for test events filtered by {} got asynchronously", filter);
+					logger.debug("Result set with test events filtered by {} got asynchronously", filter);
 			});
 		return result;
 	}

@@ -44,8 +44,9 @@ import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.StoredTestEventFilter;
+import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -433,9 +434,8 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	protected Iterable<StoredTestEvent> doGetTestEvents(StoredTestEventFilter filter) throws CradleStorageException, IOException
+	protected CradleResultSet<StoredTestEvent> doGetTestEvents(TestEventFilter filter) throws CradleStorageException, IOException
 	{
-		//TODO: implement
 		try
 		{
 			return doGetTestEventsAsync(filter).get();
@@ -447,7 +447,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected CompletableFuture<Iterable<StoredTestEvent>> doGetTestEventsAsync(StoredTestEventFilter filter) throws CradleStorageException, IOException
+	protected CompletableFuture<CradleResultSet<StoredTestEvent>> doGetTestEventsAsync(TestEventFilter filter) throws CradleStorageException, IOException
 	{
 		//TODO: implement
 		return null;
