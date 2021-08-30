@@ -191,13 +191,15 @@ public class DummyCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected CradleResultSet<StoredTestEvent> doGetTestEvents(TestEventFilter filter) throws CradleStorageException, IOException
+	protected CradleResultSet<StoredTestEvent> doGetTestEvents(TestEventFilter filter, BookInfo book) 
+			throws CradleStorageException, IOException
 	{
 		return null;
 	}
 	
 	@Override
-	protected CompletableFuture<CradleResultSet<StoredTestEvent>> doGetTestEventsAsync(TestEventFilter filter) throws CradleStorageException, IOException
+	protected CompletableFuture<CradleResultSet<StoredTestEvent>> doGetTestEventsAsync(TestEventFilter filter, BookInfo book) 
+			throws CradleStorageException, IOException
 	{
 		return CompletableFuture.completedFuture(null);
 	}

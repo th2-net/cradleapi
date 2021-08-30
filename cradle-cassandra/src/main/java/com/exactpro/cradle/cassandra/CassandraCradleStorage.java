@@ -436,11 +436,11 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	protected CradleResultSet<StoredTestEvent> doGetTestEvents(TestEventFilter filter) throws CradleStorageException, IOException
+	protected CradleResultSet<StoredTestEvent> doGetTestEvents(TestEventFilter filter, BookInfo book) throws CradleStorageException, IOException
 	{
 		try
 		{
-			return doGetTestEventsAsync(filter).get();
+			return doGetTestEventsAsync(filter, book).get();
 		}
 		catch (Exception e)
 		{
@@ -449,10 +449,11 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected CompletableFuture<CradleResultSet<StoredTestEvent>> doGetTestEventsAsync(TestEventFilter filter) throws CradleStorageException, IOException
+	protected CompletableFuture<CradleResultSet<StoredTestEvent>> doGetTestEventsAsync(TestEventFilter filter, BookInfo book) 
+			throws CradleStorageException, IOException
 	{
 		TestEventIteratorProvider provider = new TestEventIteratorProvider("get test events filtered by "+filter, 
-				filter, ops.getOperators(filter.getBookId()), readAttrs);
+				filter, ops.getOperators(filter.getBookId()), book, readAttrs);
 		return provider.nextIterator()
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, provider));
 	}

@@ -97,8 +97,10 @@ public abstract class CradleStorage
 	protected abstract StoredTestEvent doGetTestEvent(StoredTestEventId id, PageId pageId) throws IOException, CradleStorageException;
 	protected abstract CompletableFuture<StoredTestEvent> doGetTestEventAsync(StoredTestEventId ids, PageId pageId) throws CradleStorageException;
 	
-	protected abstract CradleResultSet<StoredTestEvent> doGetTestEvents(TestEventFilter filter) throws CradleStorageException, IOException;
-	protected abstract CompletableFuture<CradleResultSet<StoredTestEvent>> doGetTestEventsAsync(TestEventFilter filter) throws CradleStorageException, IOException;
+	protected abstract CradleResultSet<StoredTestEvent> doGetTestEvents(TestEventFilter filter, BookInfo book) 
+			throws CradleStorageException, IOException;
+	protected abstract CompletableFuture<CradleResultSet<StoredTestEvent>> doGetTestEventsAsync(TestEventFilter filter, BookInfo book) 
+			throws CradleStorageException, IOException;
 	
 	protected abstract Collection<String> doGetScopes(BookId bookId) throws IOException, CradleStorageException;
 	
@@ -597,10 +599,12 @@ public abstract class CradleStorage
 	public final CradleResultSet<StoredTestEvent> getTestEvents(TestEventFilter filter) throws CradleStorageException, IOException
 	{
 		logger.debug("Filtering test events by {}", filter);
-		bpc.checkPage(filter.getPageId());
 		if (!checkFilter(filter))
 			return new EmptyResultSet<>();
-		CradleResultSet<StoredTestEvent> result = doGetTestEvents(filter);
+		
+		BookInfo book = bpc.getBook(filter.getBookId());
+		bpc.checkPage(filter.getPageId());
+		CradleResultSet<StoredTestEvent> result = doGetTestEvents(filter, book);
 		logger.debug("Got result set with test events filtered by {}", filter);
 		return result;
 	}
@@ -615,10 +619,12 @@ public abstract class CradleStorage
 	public final CompletableFuture<CradleResultSet<StoredTestEvent>> getTestEventsAsync(TestEventFilter filter) throws CradleStorageException, IOException
 	{
 		logger.debug("Asynchronously getting test events filtered by {}", filter);
-		bpc.checkPage(filter.getPageId());
 		if (!checkFilter(filter))
 			return CompletableFuture.completedFuture(new EmptyResultSet<>());
-		CompletableFuture<CradleResultSet<StoredTestEvent>> result = doGetTestEventsAsync(filter);
+		
+		BookInfo book = bpc.getBook(filter.getBookId());
+		bpc.checkPage(filter.getPageId());
+		CompletableFuture<CradleResultSet<StoredTestEvent>> result = doGetTestEventsAsync(filter, book);
 		result.whenComplete((r, error) -> {
 				if (error != null)
 					logger.error("Error while getting test events filtered by "+filter+" asynchronously", error);
