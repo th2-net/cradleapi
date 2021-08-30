@@ -17,10 +17,14 @@
 package com.exactpro.cradle;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Information about a book
@@ -32,6 +36,7 @@ public class BookInfo
 			desc;
 	private final Instant created;
 	private final Map<PageId, PageInfo> pages;
+	private final List<PageInfo> orderedPages;
 	private PageInfo activePage;
 	
 	public BookInfo(BookId id, String fullName, String desc, Instant created, Collection<PageInfo> pages)
@@ -41,16 +46,21 @@ public class BookInfo
 		this.desc = desc;
 		this.created = created;
 		this.pages = new ConcurrentHashMap<>();
+		this.orderedPages = new CopyOnWriteArrayList<>();
 		
 		if (pages == null)
 			return;
 		
+		List<PageInfo> pagesList = new ArrayList<>();
 		for (PageInfo p : pages)
 		{
 			this.pages.put(p.getId(), p);
+			pagesList.add(p);
 			if (p.isActive())
 				activePage = p;
 		}
+		pagesList.sort(Comparator.comparing(PageInfo::getStarted));
+		this.orderedPages.addAll(pagesList);
 	}
 	
 	
@@ -76,7 +86,12 @@ public class BookInfo
 	
 	public Collection<PageInfo> getPages()
 	{
-		return Collections.unmodifiableCollection(pages.values());
+		return Collections.unmodifiableCollection(orderedPages);
+	}
+	
+	public PageInfo getFirstPage()
+	{
+		return orderedPages.size() > 0 ? orderedPages.get(0) : null;
 	}
 	
 	public PageInfo getPage(PageId pageId)
