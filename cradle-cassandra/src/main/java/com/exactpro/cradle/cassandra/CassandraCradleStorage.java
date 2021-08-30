@@ -37,7 +37,7 @@ import com.exactpro.cradle.cassandra.dao.testevents.TestEventIteratorProvider;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.BookKeyspaceCreator;
-import com.exactpro.cradle.cassandra.keyspaces.CradleKeyspaceCreator;
+import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
 import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
 import com.exactpro.cradle.cassandra.utils.CassandraTimeUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
@@ -519,7 +519,7 @@ public class CassandraCradleStorage extends CradleStorage
 		try
 		{
 			logger.info("Creating storage");
-			new CradleKeyspaceCreator(exec, settings).createAll();
+			new CradleInfoKeyspaceCreator(exec, settings).createAll();
 			logger.info("Storage creation finished");
 		}
 		catch (IOException e)

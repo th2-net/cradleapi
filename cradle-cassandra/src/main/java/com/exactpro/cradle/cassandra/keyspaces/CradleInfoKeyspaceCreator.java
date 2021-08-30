@@ -25,11 +25,11 @@ import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 
-public class CradleKeyspaceCreator extends KeyspaceCreator
+public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 {
-	public CradleKeyspaceCreator(QueryExecutor exec, CassandraStorageSettings settings)
+	public CradleInfoKeyspaceCreator(QueryExecutor exec, CassandraStorageSettings settings)
 	{
-		super(settings.getCradleKeyspace(), exec, settings);
+		super(settings.getCradleInfoKeyspace(), exec, settings);
 	}
 	
 	@Override

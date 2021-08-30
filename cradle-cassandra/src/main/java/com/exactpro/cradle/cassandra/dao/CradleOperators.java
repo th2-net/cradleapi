@@ -36,7 +36,7 @@ public class CradleOperators
 		bookOps = new ConcurrentHashMap<>();
 		this.dataMapper = dataMapper;
 		this.settings = settings;
-		this.cradleBookOp = dataMapper.cradleBookOperator(settings.getCradleKeyspace(), settings.getBooksTable());
+		this.cradleBookOp = dataMapper.cradleBookOperator(settings.getCradleInfoKeyspace(), settings.getBooksTable());
 	}
 	
 	public BookOperators getOperators(BookId bookId) throws CradleStorageException

@@ -21,7 +21,7 @@ import com.exactpro.cradle.cassandra.connection.NetworkTopologyStrategy;
 
 public class CassandraStorageSettings
 {
-	public static final String CRADLE_KEYSPACE = "cradle",
+	public static final String CRADLE_INFO_KEYSPACE = "cradle_info",
 			BOOKS_TABLE = "books",
 			PAGES_TABLE = "pages",
 			MESSAGES_TABLE = "messages",
@@ -48,7 +48,7 @@ public class CassandraStorageSettings
 	private final long timeout;
 	private final ConsistencyLevel writeConsistencyLevel,
 			readConsistencyLevel;
-	private String cradleKeyspace,
+	private String cradleInfoKeyspace,
 			booksTable,
 			pagesTable,
 			messagesTable,
@@ -82,7 +82,7 @@ public class CassandraStorageSettings
 		this.writeConsistencyLevel = writeConsistencyLevel;
 		this.readConsistencyLevel = readConsistencyLevel;
 		
-		this.cradleKeyspace = CRADLE_KEYSPACE;
+		this.cradleInfoKeyspace = CRADLE_INFO_KEYSPACE;
 		this.booksTable = BOOKS_TABLE;
 		this.pagesTable = PAGES_TABLE;
 		this.messagesTable = MESSAGES_TABLE;
@@ -111,7 +111,7 @@ public class CassandraStorageSettings
 		this.writeConsistencyLevel = settings.getWriteConsistencyLevel();
 		this.readConsistencyLevel = settings.getReadConsistencyLevel();
 		
-		this.cradleKeyspace = settings.getCradleKeyspace();
+		this.cradleInfoKeyspace = settings.getCradleInfoKeyspace();
 		this.booksTable = settings.getBooksTable();
 		this.pagesTable = settings.getPagesTable();
 		this.messagesTable = settings.getMessagesTable();
@@ -155,14 +155,14 @@ public class CassandraStorageSettings
 	}
 	
 	
-	public String getCradleKeyspace()
+	public String getCradleInfoKeyspace()
 	{
-		return cradleKeyspace;
+		return cradleInfoKeyspace;
 	}
 	
-	public void setCradleKeyspace(String cradleKeyspace)
+	public void setCradleInfoKeyspace(String cradleInfoKeyspace)
 	{
-		this.cradleKeyspace = cradleKeyspace;
+		this.cradleInfoKeyspace = cradleInfoKeyspace;
 	}
 	
 	
