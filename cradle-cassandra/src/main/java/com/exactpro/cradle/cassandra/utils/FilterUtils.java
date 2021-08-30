@@ -20,6 +20,7 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.querybuilder.BindMarker;
@@ -30,6 +31,9 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.cassandra.CassandraCradleStorage;
 import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.filters.FilterByField;
+import com.exactpro.cradle.filters.FilterForGreater;
+import com.exactpro.cradle.filters.FilterForLess;
+import com.exactpro.cradle.utils.TimeUtils;
 
 public class FilterUtils
 {
@@ -115,5 +119,37 @@ public class FilterUtils
 		builder = builder.setLocalDate(dateColumn, ldt.toLocalDate());
 		builder = builder.setLocalTime(timeColumn, ldt.toLocalTime());
 		return builder;
+	}
+	
+	/**
+	 * Converts given filter by Instant with "&gt;" or "&gt;=" operation into filter by LocalTime
+	 * @param filterTimeFrom to convert
+	 * @return filter with the same operation but using LocalTime
+	 */
+	public static FilterForGreater<LocalTime> filterTimeFrom(FilterForGreater<Instant> filterTimeFrom)
+	{
+		if (filterTimeFrom == null)
+			return null;
+		
+		LocalDateTime ldt = TimeUtils.toLocalTimestamp(filterTimeFrom.getValue());
+		return filterTimeFrom.getOperation() == ComparisonOperation.GREATER
+				? FilterForGreater.forGreater(ldt.toLocalTime())
+				: FilterForGreater.forGreaterOrEquals(ldt.toLocalTime());
+	}
+	
+	/**
+	 * Converts given filter by Instant with "&lt;" or "&lt;=" operation into filter by LocalTime
+	 * @param filterTimeTo to convert
+	 * @return filter with the same operation but using LocalTime
+	 */
+	public static FilterForLess<LocalTime> filterTimeTo(FilterForLess<Instant> filterTimeTo)
+	{
+		if (filterTimeTo == null)
+			return null;
+		
+		LocalDateTime ldt = TimeUtils.toLocalTimestamp(filterTimeTo.getValue());
+		return filterTimeTo.getOperation() == ComparisonOperation.LESS
+				? FilterForLess.forLess(ldt.toLocalTime())
+				: FilterForLess.forLessOrEquals(ldt.toLocalTime());
 	}
 }

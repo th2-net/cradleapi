@@ -18,6 +18,9 @@ package com.exactpro.cradle.cassandra.resultset;
 
 import java.util.Iterator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.exactpro.cradle.resultset.CradleResultSet;
 
 /**
@@ -26,6 +29,8 @@ import com.exactpro.cradle.resultset.CradleResultSet;
  */
 public class CassandraCradleResultSet<T> implements CradleResultSet<T>
 {
+	private static final Logger logger = LoggerFactory.getLogger(CassandraCradleResultSet.class);
+	
 	private final IteratorProvider<T> provider;
 	private Iterator<T> it;
 	
@@ -59,10 +64,17 @@ public class CassandraCradleResultSet<T> implements CradleResultSet<T>
 			}
 			
 			if (it == null)
+			{
+				logger.debug("No more results for '{}'", provider.getRequestInfo());
 				return false;
+			}
+			
+			if (it.hasNext())
+				return true;
+			
+			logger.debug("Iterator for '{}' is empty, getting next one", provider.getRequestInfo());
 		}
-		while (!it.hasNext());
-		return true;
+		while (true);
 	}
 
 	@Override

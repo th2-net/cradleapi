@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,21 @@ public class FilterForGreater<V extends Comparable<V>> extends FilterByField<V>
 	public FilterForGreater(V value)
 	{
 		setValue(value);
+	}
+	
+	
+	public static <V extends Comparable<V>> FilterForGreater<V> forGreater(V value)
+	{
+		FilterForGreater<V> result = new FilterForGreater<V>(value);
+		result.setGreater();
+		return result;
+	}
+	
+	public static <V extends Comparable<V>> FilterForGreater<V> forGreaterOrEquals(V value)
+	{
+		FilterForGreater<V> result = new FilterForGreater<V>(value);
+		result.setGreaterOrEquals();
+		return result;
 	}
 	
 	

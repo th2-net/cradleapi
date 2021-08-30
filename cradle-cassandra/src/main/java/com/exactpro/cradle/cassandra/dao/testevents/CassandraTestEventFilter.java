@@ -25,6 +25,8 @@ import static com.exactpro.cradle.cassandra.StorageConstants.START_TIME;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
@@ -118,5 +120,25 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
 	public FilterForLess<LocalTime> getStartTimeTo()
 	{
 		return startTimeTo;
+	}
+	
+	
+	@Override
+	public String toString()
+	{
+		List<String> result = new ArrayList<>(10);
+		if (page != null)
+			result.add("page=" + page);
+		if (startDate != null)
+			result.add("start date="+startDate);
+		if (scope != null)
+			result.add("scope=" + scope);
+		if (part != null)
+			result.add("part=" + part);
+		if (startTimeFrom != null)
+			result.add("timestamp" + startTimeFrom);
+		if (startTimeTo != null)
+			result.add("timestamp" + startTimeTo);
+		return String.join(", ", result);
 	}
 }
