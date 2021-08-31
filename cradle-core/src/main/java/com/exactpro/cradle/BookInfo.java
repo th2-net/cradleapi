@@ -136,5 +136,10 @@ public class BookInfo
 		
 		activePage = new PageInfo(new PageId(id, pageName), started, null, comment);
 		pages.put(activePage.getId(), activePage);
+		
+		List<PageInfo> pagesList = new ArrayList<PageInfo>(pages.values());
+		pagesList.sort(Comparator.comparing(PageInfo::getStarted));
+		orderedPages.clear();
+		orderedPages.addAll(pagesList);
 	}
 }
