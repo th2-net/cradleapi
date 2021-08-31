@@ -25,9 +25,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
@@ -46,8 +43,6 @@ import com.exactpro.cradle.utils.TimeUtils;
 @Entity
 public class TestEventEntity extends CradleEntity
 {
-	private static final Logger logger = LoggerFactory.getLogger(TestEventEntity.class);
-	
 	@PartitionKey(0)
 	@CqlName(PAGE)
 	private String page;
@@ -112,8 +107,6 @@ public class TestEventEntity extends CradleEntity
 	
 	public TestEventEntity(EventEntityData eventData)
 	{
-		logger.debug("Creating Entity from test event");
-		
 		TestEventToStore event = eventData.getEvent();
 		StoredTestEventId parentId = event.getParentId();
 		LocalDateTime start = TimeUtils.toLocalTimestamp(event.getStartTimestamp());
@@ -145,6 +138,18 @@ public class TestEventEntity extends CradleEntity
 		this.setMessages(eventData.getMessages());
 		if (eventData.getContent() != null)
 			this.setContent(ByteBuffer.wrap(eventData.getContent()));
+	}
+	
+	
+	@Override
+	public String getEntityId()
+	{
+		return page+StoredTestEventId.ID_PARTS_DELIMITER
+				+startDate+StoredTestEventId.ID_PARTS_DELIMITER
+				+scope+StoredTestEventId.ID_PARTS_DELIMITER
+				+part+StoredTestEventId.ID_PARTS_DELIMITER
+				+startTime+StoredTestEventId.ID_PARTS_DELIMITER
+				+id;
 	}
 	
 	
