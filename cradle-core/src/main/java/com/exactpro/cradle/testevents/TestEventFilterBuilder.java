@@ -64,7 +64,7 @@ public class TestEventFilterBuilder
 		return new FilterForLessBuilder<Instant, TestEventFilterBuilder>(f, this);
 	}
 	
-	public TestEventFilterBuilder sequence(StoredTestEventId parentId)
+	public TestEventFilterBuilder parent(StoredTestEventId parentId)
 	{
 		initIfNeeded();
 		eventFilter.setParentId(parentId);

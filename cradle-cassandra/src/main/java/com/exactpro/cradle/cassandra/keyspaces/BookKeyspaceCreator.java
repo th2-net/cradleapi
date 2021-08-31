@@ -42,6 +42,7 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 		createTestEventsTable();
 		createScopesTable();
 		createTestEventsDatesTable();
+		createTestEventParentIndex();
 		createLabelsTable();
 		createIntervalsTable();
 	}
@@ -153,6 +154,12 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withPartitionKey(START_DATE, DataTypes.DATE)
 				.withClusteringColumn(SCOPE, DataTypes.TEXT)
 				.withClusteringColumn(PART, DataTypes.TEXT));
+	}
+	
+	private void createTestEventParentIndex() throws IOException
+	{
+		CassandraStorageSettings settings = getSettings();
+		createIndex(settings.getTestEventParentIndex(), settings.getTestEventsTable(), PARENT_ID);
 	}
 	
 	private void createLabelsTable() throws IOException

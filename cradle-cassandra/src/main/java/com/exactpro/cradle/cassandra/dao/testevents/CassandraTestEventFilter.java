@@ -22,6 +22,7 @@ import static com.exactpro.cradle.cassandra.StorageConstants.PART;
 import static com.exactpro.cradle.cassandra.StorageConstants.SCOPE;
 import static com.exactpro.cradle.cassandra.StorageConstants.START_DATE;
 import static com.exactpro.cradle.cassandra.StorageConstants.START_TIME;
+import static com.exactpro.cradle.cassandra.StorageConstants.PARENT_ID;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -46,9 +47,11 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
 	private final LocalDate startDate;
 	private final FilterForGreater<LocalTime> startTimeFrom;
 	private final FilterForLess<LocalTime> startTimeTo;
+	private final String parentId;
 	
 	public CassandraTestEventFilter(String page, LocalDate startDate, String scope, String part, 
-			FilterForGreater<LocalTime> startTimeFrom, FilterForLess<LocalTime> startTimeTo)
+			FilterForGreater<LocalTime> startTimeFrom, FilterForLess<LocalTime> startTimeTo,
+			String parentId)
 	{
 		this.page = page;
 		this.startDate = startDate;
@@ -56,6 +59,7 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
 		this.part = part;
 		this.startTimeFrom = startTimeFrom;
 		this.startTimeTo = startTimeTo;
+		this.parentId = parentId;
 	}
 	
 	
@@ -71,6 +75,8 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
 			select = FilterUtils.filterToWhere(startTimeFrom.getOperation(), select.whereColumn(START_TIME), START_TIME_FROM);
 		if (startTimeTo != null)
 			select = FilterUtils.filterToWhere(startTimeTo.getOperation(), select.whereColumn(START_TIME), START_TIME_TO);
+		if (parentId != null)
+			select = select.whereColumn(PARENT_ID).isEqualTo(bindMarker());
 		
 		return select;
 	}
@@ -87,6 +93,8 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
 			builder = builder.setLocalTime(START_TIME_FROM, startTimeFrom.getValue());
 		if (startTimeTo != null)
 			builder = builder.setLocalTime(START_TIME_TO, startTimeTo.getValue());
+		if (parentId != null)
+			builder = builder.setString(PARENT_ID, parentId);
 		
 		return builder;
 	}
@@ -122,6 +130,11 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
 		return startTimeTo;
 	}
 	
+	public String getParentId()
+	{
+		return parentId;
+	}
+	
 	
 	@Override
 	public String toString()
@@ -139,6 +152,8 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
 			result.add("timestamp" + startTimeFrom);
 		if (startTimeTo != null)
 			result.add("timestamp" + startTimeTo);
+		if (parentId != null)
+			result.add("parentId=" + parentId);
 		return String.join(", ", result);
 	}
 }
