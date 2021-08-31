@@ -76,6 +76,12 @@ public class CassandraStorageSettings
 		this(null, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
 	}
 	
+	public CassandraStorageSettings(long timeout, 
+			ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel)
+	{
+		this(null, timeout, writeConsistencyLevel, readConsistencyLevel);
+	}
+	
 	public CassandraStorageSettings(NetworkTopologyStrategy networkTopologyStrategy, long timeout, 
 			ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel)
 	{
