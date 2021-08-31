@@ -44,7 +44,7 @@ public class CradleStorageTest
 	{
 		storage = new DummyCradleStorage();
 		storage.init(false);
-		storage.addBook(BOOK, null, null, PAGE, null);
+		storage.addBook(BOOK, Instant.now(), null, null, PAGE, null);
 	}
 	
 	@DataProvider(name = "invalid events")
