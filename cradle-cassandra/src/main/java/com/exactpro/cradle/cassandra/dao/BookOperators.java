@@ -21,13 +21,13 @@ import com.exactpro.cradle.cassandra.dao.books.PageOperator;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.EventDateOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeOperator;
-//import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 
 public class BookOperators
 {
 	private final PageOperator pageOperator;
-//	private final MessageBatchOperator messageBatchOperator;
+	private final MessageBatchOperator messageBatchOperator;
 	private final TestEventOperator testEventOperator;
 	private final ScopeOperator scopeOperator;
 	private final EventDateOperator eventDateOperator;
@@ -36,7 +36,7 @@ public class BookOperators
 	public BookOperators(CassandraDataMapper dataMapper, String keyspace, CassandraStorageSettings settings)
 	{
 		pageOperator = dataMapper.pageOperator(keyspace, settings.getPagesTable());
-//		messageBatchOperator = dataMapper.messageBatchOperator(keyspace, settings.getMessagesTable());
+		messageBatchOperator = dataMapper.messageBatchOperator(keyspace, settings.getMessagesTable());
 		testEventOperator = dataMapper.testEventOperator(keyspace, settings.getTestEventsTable());
 		scopeOperator = dataMapper.scopeOperator(keyspace, settings.getScopesTable());
 		eventDateOperator = dataMapper.eventDateOperator(keyspace, settings.getTestEventsDatesTable());
@@ -48,10 +48,10 @@ public class BookOperators
 		return pageOperator;
 	}
 	
-//	public MessageBatchOperator getMessageBatchOperator()
-//	{
-//		return messageBatchOperator;
-//	}
+	public MessageBatchOperator getMessageBatchOperator()
+	{
+		return messageBatchOperator;
+	}
 	
 	public TestEventOperator getTestEventOperator()
 	{

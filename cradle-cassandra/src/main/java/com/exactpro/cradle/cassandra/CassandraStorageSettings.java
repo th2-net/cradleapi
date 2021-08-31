@@ -37,7 +37,7 @@ public class CassandraStorageSettings
 	public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1,
 			DEFAULT_MAX_PARALLEL_QUERIES = 500,
 			DEFAULT_RESULT_PAGE_SIZE = 0,  //Driver default will be used in this case.
-			DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_SIZE = 5*1024,
+			DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_BYTE_SIZE = 5*1024,
 			DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE = 5*1024,
 			DEFAULT_MESSAGE_BATCH_CHUNK_SIZE = 1024*1024,
 			DEFAULT_TEST_EVENT_CHUNK_SIZE = 1024*1024,
@@ -97,7 +97,7 @@ public class CassandraStorageSettings
 		this.keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
 		this.maxParallelQueries = DEFAULT_MAX_PARALLEL_QUERIES;
 		this.resultPageSize = DEFAULT_RESULT_PAGE_SIZE;
-		this.maxUncompressedMessageBatchSize = DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_SIZE;
+		this.maxUncompressedMessageBatchSize = DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_BYTE_SIZE;
 		this.maxUncompressedTestEventSize = DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE;
 		this.messageBatchChunkSize = DEFAULT_MESSAGE_BATCH_CHUNK_SIZE;
 		this.testEventChunkSize = DEFAULT_TEST_EVENT_CHUNK_SIZE;

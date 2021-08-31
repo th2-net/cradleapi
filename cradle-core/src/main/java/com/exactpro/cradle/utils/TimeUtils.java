@@ -17,7 +17,9 @@
 package com.exactpro.cradle.utils;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
 import com.exactpro.cradle.CradleStorage;
@@ -51,5 +53,10 @@ public class TimeUtils
 	public static String toIdTimestamp(Instant instant)
 	{
 		return ID_TIMESTAMP_FORMAT.format(toLocalTimestamp(instant));
+	}
+
+	public static Instant toInstant(LocalDate localDate, LocalTime localTime)
+	{
+		return localTime.atDate(localDate).toInstant(CradleStorage.TIMEZONE_OFFSET);
 	}
 }
