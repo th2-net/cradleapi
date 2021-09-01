@@ -47,6 +47,9 @@ public abstract class CradleEntity
 	@CqlName(CONTENT)
 	private ByteBuffer content;
 	
+	@Transient
+	public abstract String getEntityId();
+	
 	
 	public LocalDate getStoredDate()
 	{

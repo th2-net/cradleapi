@@ -23,7 +23,9 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
@@ -99,6 +101,12 @@ public abstract class KeyspaceCreator
 		return keyspaceMetadata.getTable(tableName).isPresent();
 	}
 	
+	protected boolean isIndexExists(String indexName, String tableName)
+	{
+		Optional<TableMetadata> tableMetadata = keyspaceMetadata.getTable(tableName);
+		return tableMetadata.isPresent() && tableMetadata.get().getIndexes().containsKey(CqlIdentifier.fromCql(indexName));
+	}
+	
 	protected KeyspaceMetadata getKeyspaceMetadata()
 	{
 		if (keyspaceMetadata != null)
@@ -131,5 +139,19 @@ public abstract class KeyspaceCreator
 		logger.info("Creating table '{}'", tableName);
 		queryExecutor.executeQuery(query.get().asCql(), true);
 		logger.info("Table '{}' has been created", tableName);
+	}
+	
+	protected void createIndex(String indexName, String tableName, String columnName) throws IOException
+	{
+		if (isIndexExists(indexName, tableName))
+		{
+			logger.info("Index '{}' already exists", indexName);
+			return;
+		}
+		
+		logger.info("Creating index '{}' for {}.{}", indexName, tableName, columnName);
+		queryExecutor.executeQuery(SchemaBuilder.createIndex(indexName)
+				.onTable(keyspace, tableName).andColumn(columnName).asCql(), true);
+		logger.info("Index '{}' for {}.{} has been created", indexName, tableName, columnName);
 	}
 }

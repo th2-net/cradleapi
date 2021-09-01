@@ -80,6 +80,7 @@ public class EventEntityUtils
 		Collection<TestEventEntity> result = new ArrayList<>();
 		int contentPos = 0,
 				messagesPos = 0;
+		logger.debug("Creating chunks from test event '{}'", event.getId());
 		boolean last = false;
 		do
 		{
@@ -116,6 +117,11 @@ public class EventEntityUtils
 				entityMessages = null;
 			
 			last = (entityContent == null || contentPos >= content.length-1) && (entityMessages == null || messagesPos >= messages.size()-1);
+			if (logger.isDebugEnabled())
+				logger.debug("Creating chunk #{}{} from test event '{}'", 
+						result.size()+1, 
+						last ? " (last one)" : "", 
+						event.getId());
 			TestEventEntity entity = new TestEventEntity(new EventEntityData(event, pageId, result.size(), last, 
 					entityContent, compressed, entityMessages));
 			result.add(entity);
@@ -128,6 +134,7 @@ public class EventEntityUtils
 	public static StoredTestEvent toStoredTestEvent(Collection<TestEventEntity> entities, PageId pageId) 
 			throws IOException, CradleStorageException, DataFormatException, CradleIdException
 	{
+		logger.debug("Creating test event from {} chunk(s)", entities.size());
 		Iterator<TestEventEntity> it = entities.iterator();
 		if (!it.hasNext())
 			return null;
@@ -145,7 +152,7 @@ public class EventEntityUtils
 		}
 		catch (Exception e)
 		{
-			throw new CradleStorageException("Error while converting result to collection", e);
+			throw new CradleStorageException("Error while converting result set to collection", e);
 		}
 		return toStoredTestEvent(entities, pageId);
 	}
@@ -176,6 +183,7 @@ public class EventEntityUtils
 			if (e.getContent() == null)
 				continue;
 			buffer.put(e.getContent());
+			//TODO: handle case when last entity is not last chunk, i.e. test event is incomplete
 		}
 		return buffer.array();
 	}
@@ -228,7 +236,7 @@ public class EventEntityUtils
 		
 		StoredTestEventId eventId = createId(entity, pageId.getBookId());
 		byte[] eventContent = getContent(entities, eventId);
-		//Test event batch doesn't have it own messages, they are got from child events. In Cassandra messages are stored for batch to build index
+		//Test event batch doesn't have it own messages, they are got from child events. In Cassandra messages are stored for batch to create index
 		Collection<BatchedStoredTestEvent> children = TestEventUtils.deserializeTestEvents(eventContent);
 		return new StoredTestEventBatch(eventId, entity.getName(), entity.getType(), createParentId(entity),
 				children, pageId);

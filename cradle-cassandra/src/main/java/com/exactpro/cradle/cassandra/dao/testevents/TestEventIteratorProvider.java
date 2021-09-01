@@ -20,7 +20,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -41,6 +40,7 @@ import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
 import com.exactpro.cradle.testevents.StoredTestEvent;
+import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.utils.TimeUtils;
 
@@ -76,10 +76,10 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 				.thenApplyAsync(resultSet -> {
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
 					cassandraFilter = createNextFilter(cassandraFilter);
-					return new ConvertingPagedIterator<>(resultSet, entity -> {
+					return new ConvertingPagedIterator<>(resultSet, entities -> {
 						try
 						{
-							return EventEntityUtils.toStoredTestEvent(Collections.singleton(entity), pageId);
+							return EventEntityUtils.toStoredTestEvent(entities, pageId);
 						}
 						catch (Exception e)
 						{
@@ -100,7 +100,10 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 		String part = CassandraTimeUtils.getPart(dateTimeFrom);
 		FilterForGreater<LocalTime> timeFrom = filter.getStartTimestampFrom() != null ? FilterUtils.filterTimeFrom(filter.getStartTimestampFrom()) : null;
 		FilterForLess<LocalTime> timeTo = getStartTimestampRightBound(date, part);
-		return new CassandraTestEventFilter(page.getId().getName(), date, filter.getScope(), part, timeFrom, timeTo);
+		
+		StoredTestEventId parentId = filter.getParentId();
+		return new CassandraTestEventFilter(page.getId().getName(), date, filter.getScope(), part, timeFrom, timeTo, 
+				parentId != null ? parentId.toString() : null);
 	}
 	
 	private CassandraTestEventFilter createNextFilter(CassandraTestEventFilter prevFilter)
@@ -120,7 +123,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 		
 		String part = Integer.toString(partNumber);
 		FilterForLess<LocalTime> timeTo = getStartTimestampRightBound(startDate, part);
-		return new CassandraTestEventFilter(prevFilter.getPage(), startDate, prevFilter.getScope(), part, null, timeTo);
+		return new CassandraTestEventFilter(prevFilter.getPage(), startDate, prevFilter.getScope(), part, null, timeTo, prevFilter.getParentId());
 	}
 	
 	

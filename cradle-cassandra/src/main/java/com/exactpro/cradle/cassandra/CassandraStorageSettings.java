@@ -30,6 +30,7 @@ public class CassandraStorageSettings
 			TEST_EVENTS_TABLE = "test_events",
 			SCOPES_TABLE = "scopes",
 			TEST_EVENTS_DATES_TABLE = "test_events_dates",
+			TEST_EVENT_PARENT_INDEX = "test_event_parent_index",
 			LABELS_TABLE = "labels",
 			INTERVALS_TABLE = "intervals";
 	public static final long DEFAULT_TIMEOUT = 5000;
@@ -57,6 +58,7 @@ public class CassandraStorageSettings
 			testEventsTable,
 			scopesTable,
 			testEventsDatesTable,
+			testEventParentIndex,
 			labelsTable,
 			intervalsTable;
   private int keyspaceReplicationFactor;
@@ -72,6 +74,12 @@ public class CassandraStorageSettings
 	public CassandraStorageSettings()
 	{
 		this(null, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
+	}
+	
+	public CassandraStorageSettings(long timeout, 
+			ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel)
+	{
+		this(null, timeout, writeConsistencyLevel, readConsistencyLevel);
 	}
 	
 	public CassandraStorageSettings(NetworkTopologyStrategy networkTopologyStrategy, long timeout, 
@@ -91,6 +99,7 @@ public class CassandraStorageSettings
 		this.testEventsTable = TEST_EVENTS_TABLE;
 		this.scopesTable = SCOPES_TABLE;
 		this.testEventsDatesTable = TEST_EVENTS_DATES_TABLE;
+		this.testEventParentIndex = TEST_EVENT_PARENT_INDEX;
 		this.labelsTable = LABELS_TABLE;
 		this.intervalsTable = INTERVALS_TABLE;
 		
@@ -120,6 +129,7 @@ public class CassandraStorageSettings
 		this.testEventsTable = settings.getTestEventsTable();
 		this.scopesTable = settings.getScopesTable();
 		this.testEventsDatesTable = settings.getTestEventsDatesTable();
+		this.testEventParentIndex = settings.getTestEventParentIndex();
 		this.labelsTable = settings.getLabelsTable();
 		this.intervalsTable = settings.getIntervalsTable();
 		
@@ -251,6 +261,17 @@ public class CassandraStorageSettings
 	public void setTestEventsDatesTable(String testEventsDatesTable)
 	{
 		this.testEventsDatesTable = testEventsDatesTable;
+	}
+	
+	
+	public String getTestEventParentIndex()
+	{
+		return testEventParentIndex;
+	}
+	
+	public void setTestEventParentIndex(String testEventParentIndex)
+	{
+		this.testEventParentIndex = testEventParentIndex;
 	}
 	
 	

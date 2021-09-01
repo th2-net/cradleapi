@@ -169,18 +169,19 @@ public abstract class CradleStorage
 	 * @return {@link BookInfo} containing all information about created book
 	 * @throws CradleStorageException if error occurred while creating new book
 	 */
-	public BookInfo addBook(String name, String fullName, String desc, String firstPageName, String firstPageComment) throws CradleStorageException
+	public BookInfo addBook(String name, Instant created, String fullName, String desc, 
+			String firstPageName, String firstPageComment) throws CradleStorageException
 	{
 		BookId id = new BookId(name);
 		logger.info("Adding book '{}' to storage", id);
 		if (books.containsKey(id))
 			throw new CradleStorageException("Book '"+id+"' is already present in storage");
 		
-		BookInfo newBook = new BookInfo(id, fullName, desc, Instant.now(), null);
+		BookInfo newBook = new BookInfo(id, fullName, desc, created, null);
 		doAddBook(newBook);
 		books.put(newBook.getId(), newBook);
 		logger.info("Book '{}' has been added to storage", id);
-		switchToNextPage(id, firstPageName, firstPageComment);
+		switchToNextPage(id, firstPageName, created, firstPageComment);
 		return newBook;
 	}
 	
@@ -194,12 +195,7 @@ public abstract class CradleStorage
 	
 	public void switchToNextPage(BookId bookId, String pageName, String pageComment) throws CradleStorageException
 	{
-		//TODO: check and fix this method
-		logger.info("Switching to page '{}' of book '{}'", pageName, bookId);
-		BookInfo book = bpc.getBook(bookId);
-		Instant now = Instant.now();
-		doSwitchToNextPage(bookId, pageName, now);
-		book.nextPage(pageName, now, pageComment);
+		switchToNextPage(bookId, pageName, Instant.now(), pageComment);
 	}
 	
 	
@@ -557,16 +553,15 @@ public abstract class CradleStorage
 	}
 	
 	/**
-	 * Asynchronously retrieves test event data stored under given ID in given page
+	 * Asynchronously retrieves test event data stored under given ID
 	 * @param id of stored test event to retrieve
-	 * @param pageId to get test event from
 	 * @return future to obtain data of stored test event
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final CompletableFuture<StoredTestEvent> getTestEventAsync(StoredTestEventId id, PageId pageId) throws CradleStorageException
+	public final CompletableFuture<StoredTestEvent> getTestEventAsync(StoredTestEventId id) throws CradleStorageException
 	{
-		logger.debug("Getting test event {} from page {} asynchronously", id, pageId);
-		bpc.checkPage(pageId, id.getBookId());
+		logger.debug("Getting test event {} asynchronously", id);
+		PageId pageId = bpc.findPage(id.getBookId(), id.getStartTimestamp()).getId();
 		CompletableFuture<StoredTestEvent> result = doGetTestEventAsync(id, pageId);
 		result.whenComplete((r, error) -> {
 				if (error != null)
@@ -575,17 +570,6 @@ public abstract class CradleStorage
 					logger.debug("Test event {} from page {} got asynchronously", id, pageId);
 			});
 		return result;
-	}
-	
-	/**
-	 * Asynchronously retrieves test event data stored under given ID in current page
-	 * @param id of stored test event to retrieve
-	 * @return future to obtain data of stored test event
-	 * @throws CradleStorageException if given parameters are invalid
-	 */
-	public final CompletableFuture<StoredTestEvent> getTestEventAsync(StoredTestEventId id) throws CradleStorageException
-	{
-		return getTestEventAsync(id, bpc.getActivePageId(id.getBookId()));
 	}
 	
 	
@@ -603,7 +587,8 @@ public abstract class CradleStorage
 			return new EmptyResultSet<>();
 		
 		BookInfo book = bpc.getBook(filter.getBookId());
-		bpc.checkPage(filter.getPageId());
+		if (filter.getPageId() != null)
+			bpc.checkPage(filter.getPageId());
 		CradleResultSet<StoredTestEvent> result = doGetTestEvents(filter, book);
 		logger.debug("Got result set with test events filtered by {}", filter);
 		return result;
@@ -623,7 +608,8 @@ public abstract class CradleStorage
 			return CompletableFuture.completedFuture(new EmptyResultSet<>());
 		
 		BookInfo book = bpc.getBook(filter.getBookId());
-		bpc.checkPage(filter.getPageId());
+		if (filter.getPageId() != null)
+			bpc.checkPage(filter.getPageId());
 		CompletableFuture<CradleResultSet<StoredTestEvent>> result = doGetTestEventsAsync(filter, book);
 		result.whenComplete((r, error) -> {
 				if (error != null)
@@ -671,6 +657,15 @@ public abstract class CradleStorage
 		return result;
 	}
 	
+	
+	private void switchToNextPage(BookId bookId, String pageName, Instant started, String pageComment) throws CradleStorageException
+	{
+		//TODO: check and fix this method
+		logger.info("Switching to page '{}' of book '{}'", pageName, bookId);
+		BookInfo book = bpc.getBook(bookId);
+		doSwitchToNextPage(bookId, pageName, started);
+		book.nextPage(pageName, started, pageComment);
+	}
 	
 	private boolean checkFilter(TestEventFilter filter) throws CradleStorageException
 	{
