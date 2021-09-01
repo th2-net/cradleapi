@@ -32,19 +32,21 @@ public abstract class StoredTestEvent implements TestEvent
 			type;
 	private final StoredTestEventId parentId;
 	private final PageId pageId;
+	private final String error;
 	
-	public StoredTestEvent(StoredTestEventId id, String name, String type, StoredTestEventId parentId, PageId pageId)
+	public StoredTestEvent(StoredTestEventId id, String name, String type, StoredTestEventId parentId, PageId pageId, String error)
 	{
 		this.id = id;
 		this.name = name;
 		this.type = type;
 		this.parentId = parentId;
 		this.pageId = pageId;
+		this.error = error;
 	}
 	
 	public StoredTestEvent(TestEvent event, PageId pageId)
 	{
-		this(event.getId(), event.getName(), event.getType(), event.getParentId(), pageId);
+		this(event.getId(), event.getName(), event.getType(), event.getParentId(), pageId, null);
 	}
 	
 	
@@ -87,6 +89,11 @@ public abstract class StoredTestEvent implements TestEvent
 	public PageId getPageId()
 	{
 		return pageId;
+	}
+	
+	public String getError()
+	{
+		return error;
 	}
 	
 	

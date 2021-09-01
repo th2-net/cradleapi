@@ -24,7 +24,8 @@ public class EventTestUtils
 	public static void assertEvents(StoredTestEvent stored, TestEventToStore event)
 	{
 		RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
-		config.ignoreFieldsMatchingRegexes("pageId", ".*\\.pageId");  //Is present only in StoredTestEvent and will fail comparison with TestEventToStore
+	  //These fields are present only in StoredTestEvent and will fail comparison with TestEventToStore
+		config.ignoreFieldsMatchingRegexes("pageId", ".*\\.pageId", "error", ".*\\.error");
 		
 		Assertions.assertThat(stored)
 				.usingRecursiveComparison(config)

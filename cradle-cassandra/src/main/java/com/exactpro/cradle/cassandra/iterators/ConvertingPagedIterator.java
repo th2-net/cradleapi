@@ -17,9 +17,9 @@
 package com.exactpro.cradle.cassandra.iterators;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
@@ -38,10 +38,10 @@ public class ConvertingPagedIterator<R, E> implements Iterator<R>
 	private static final Logger logger = LoggerFactory.getLogger(ConvertingPagedIterator.class);
 	
 	private final PagedIterator<E> it;
-	private final Function<Collection<E>, R> converter;
+	private final Function<List<E>, R> converter;
 	private E bufferedNext;
 	
-	public ConvertingPagedIterator(MappedAsyncPagingIterable<E> rows, Function<Collection<E>, R> converter)
+	public ConvertingPagedIterator(MappedAsyncPagingIterable<E> rows, Function<List<E>, R> converter)
 	{
 		this.it = new PagedIterator<>(rows);
 		this.converter = converter;
@@ -66,23 +66,23 @@ public class ConvertingPagedIterator<R, E> implements Iterator<R>
 		else
 			entity = it.next();
 		
-		Collection<E> chunks = getChunks(entity);
+		List<E> chunks = getChunks(entity);
 		
 		logger.trace("Converting {} chunk(s)", chunks.size());
 		return converter.apply(chunks);
 	}
 	
 	
-	private Collection<E> getChunks(E entity)
+	private List<E> getChunks(E entity)
 	{
 		if (!(entity instanceof CradleEntity))
-			return Collections.singleton(entity);
+			return Collections.singletonList(entity);
 		
 		CradleEntity ce = (CradleEntity)entity;
 		if (ce.isLastChunk())
-			return Collections.singleton(entity);
+			return Collections.singletonList(entity);
 		
-		Collection<E> result = new ArrayList<>();
+		List<E> result = new ArrayList<>();
 		result.add(entity);
 		
 		String id = ce.getEntityId();
@@ -112,6 +112,6 @@ public class ConvertingPagedIterator<R, E> implements Iterator<R>
 		}
 		
 		logger.warn("Entity '{}' is incomplete", id);
-		return Collections.emptyList();
+		return result;
 	}
 }

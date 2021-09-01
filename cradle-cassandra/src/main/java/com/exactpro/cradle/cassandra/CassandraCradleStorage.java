@@ -211,7 +211,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Void> doStoreTestEventAsync(TestEventToStore event, PageInfo page) throws IOException, CradleStorageException
 	{
 		PageId pageId = page.getId();
-		Collection<TestEventEntity> entities = EventEntityUtils.toEntities(event, pageId, 
+		List<TestEventEntity> entities = EventEntityUtils.toEntities(event, pageId, 
 				settings.getMaxUncompressedTestEventSize(), settings.getTestEventChunkSize(), settings.getTestEventMessagesPerChunk());
 		BookOperators bookOps = ops.getOperators(pageId.getBookId());
 		TestEventOperator op = bookOps.getTestEventOperator();

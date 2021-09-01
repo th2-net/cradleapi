@@ -17,7 +17,6 @@
 package com.exactpro.cradle.cassandra.dao;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -25,7 +24,7 @@ import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 
 public class DaoUtils
 {
-	public static <T> Collection<T> toCollection(MappedAsyncPagingIterable<T> resultSet) throws IllegalStateException, InterruptedException, ExecutionException
+	public static <T> List<T> toList(MappedAsyncPagingIterable<T> resultSet) throws IllegalStateException, InterruptedException, ExecutionException
 	{
 		List<T> result = new ArrayList<>();
 		do
