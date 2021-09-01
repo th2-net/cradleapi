@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.zip.DataFormatException;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -167,7 +168,7 @@ public class EventEntityUtils
 	
 	private static StoredTestEventId createParentId(TestEventEntity entity) throws CradleIdException
 	{
-		return entity.getParentId() != null ? StoredTestEventId.fromString(entity.getParentId()) : null;
+		return StringUtils.isEmpty(entity.getParentId()) ? null : StoredTestEventId.fromString(entity.getParentId());
 	}
 	
 	private static byte[] uniteContents(Collection<TestEventEntity> entities)

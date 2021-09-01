@@ -71,6 +71,13 @@ public class TestEventFilterBuilder
 		return this;
 	}
 	
+	public TestEventFilterBuilder root()
+	{
+		initIfNeeded();
+		eventFilter.setRoot();
+		return this;
+	}
+	
 	/**
 	 * Sets maximum number of test events to get after filtering
 	 * @param limit max number of test events to return
