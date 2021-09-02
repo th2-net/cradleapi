@@ -74,11 +74,7 @@ public abstract class CradleEntity
 	@Transient
 	public Instant getStoredTimestamp()
 	{
-		LocalDate sd = getStoredDate();
-		LocalTime st = getStoredTime();
-		if (sd == null || st == null)
-			return null;
-		return TimeUtils.toInstant(sd, st);
+		return TimeUtils.toInstant(getStoredDate(), getStoredTime());
 	}
 	
 	@Transient

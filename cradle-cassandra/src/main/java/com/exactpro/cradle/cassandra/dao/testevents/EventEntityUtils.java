@@ -122,8 +122,8 @@ public class EventEntityUtils
 						result.size()+1, 
 						last ? " (last one)" : "", 
 						event.getId());
-			TestEventEntity entity = new TestEventEntity(new EventEntityData(event, pageId, result.size(), last, 
-					entityContent, compressed, entityMessages));
+			TestEventEntity entity = new TestEventEntity(event, pageId, result.size(), last, 
+					entityContent, compressed, entityMessages);
 			result.add(entity);
 		}
 		while (!last);

@@ -57,6 +57,8 @@ public class TimeUtils
 
 	public static Instant toInstant(LocalDate localDate, LocalTime localTime)
 	{
+		if (localDate == null || localTime == null)
+			return null;
 		return localTime.atDate(localDate).toInstant(CradleStorage.TIMEZONE_OFFSET);
 	}
 }
