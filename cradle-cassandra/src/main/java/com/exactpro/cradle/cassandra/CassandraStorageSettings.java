@@ -42,7 +42,9 @@ public class CassandraStorageSettings
 			DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE = 5*1024,
 			DEFAULT_MESSAGE_BATCH_CHUNK_SIZE = 1024*1024,
 			DEFAULT_TEST_EVENT_CHUNK_SIZE = 1024*1024,
-			DEFAULT_TEST_EVENT_MESSAGES_PER_CHUNK = 10;
+			DEFAULT_TEST_EVENT_MESSAGES_PER_CHUNK = 10,
+			DEFAULT_SCOPES_CACHE_SIZE = 10,
+			DEFAULT_TEST_EVENT_DATES_CACHE_SIZE = 100;
 	
 	
 	private final NetworkTopologyStrategy networkTopologyStrategy;
@@ -69,7 +71,10 @@ public class CassandraStorageSettings
 			maxUncompressedTestEventSize,
 			messageBatchChunkSize,
 			testEventChunkSize,
-			testEventMessagesPerChunk;
+			testEventMessagesPerChunk,
+			
+			scopesCacheSize,
+			testEventDatesCacheSize;
 	
 	public CassandraStorageSettings()
 	{
@@ -111,6 +116,9 @@ public class CassandraStorageSettings
 		this.messageBatchChunkSize = DEFAULT_MESSAGE_BATCH_CHUNK_SIZE;
 		this.testEventChunkSize = DEFAULT_TEST_EVENT_CHUNK_SIZE;
 		this.testEventMessagesPerChunk = DEFAULT_TEST_EVENT_MESSAGES_PER_CHUNK;
+		
+		this.scopesCacheSize = DEFAULT_SCOPES_CACHE_SIZE;
+		this.testEventDatesCacheSize = DEFAULT_TEST_EVENT_DATES_CACHE_SIZE;
 	}
 	
 	public CassandraStorageSettings(CassandraStorageSettings settings)
@@ -141,6 +149,9 @@ public class CassandraStorageSettings
 		this.messageBatchChunkSize = settings.getMessageBatchChunkSize();
 		this.testEventChunkSize = settings.getTestEventChunkSize();
 		this.testEventMessagesPerChunk = settings.getTestEventMessagesPerChunk();
+		
+		this.scopesCacheSize = settings.getScopesCacheSize();
+		this.testEventDatesCacheSize = settings.getTestEventDatesCacheSize();
 	}
 	
 	
@@ -382,5 +393,27 @@ public class CassandraStorageSettings
 	public void setTestEventMessagesPerChunk(int testEventMessagesPerChunk)
 	{
 		this.testEventMessagesPerChunk = testEventMessagesPerChunk;
+	}
+	
+	
+	public int getScopesCacheSize()
+	{
+		return scopesCacheSize;
+	}
+	
+	public void setScopesCacheSize(int scopesCacheSize)
+	{
+		this.scopesCacheSize = scopesCacheSize;
+	}
+	
+	
+	public int getTestEventDatesCacheSize()
+	{
+		return testEventDatesCacheSize;
+	}
+	
+	public void setTestEventDatesCacheSize(int testEventDatesCacheSize)
+	{
+		this.testEventDatesCacheSize = testEventDatesCacheSize;
 	}
 }

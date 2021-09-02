@@ -18,11 +18,14 @@ package com.exactpro.cradle.cassandra.dao;
 
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.books.PageOperator;
+import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
+import com.exactpro.cradle.cassandra.dao.cache.CachedTestEventDate;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.EventDateOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeOperator;
 //import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
+import com.exactpro.cradle.cassandra.utils.LimitedCache;
 
 public class BookOperators
 {
@@ -32,7 +35,10 @@ public class BookOperators
 	private final ScopeOperator scopeOperator;
 	private final EventDateOperator eventDateOperator;
 	private final IntervalOperator intervalOperator;
-
+	
+	private final LimitedCache<CachedScope> scopesCache;
+	private final LimitedCache<CachedTestEventDate> eventDatesCache;
+	
 	public BookOperators(CassandraDataMapper dataMapper, String keyspace, CassandraStorageSettings settings)
 	{
 		pageOperator = dataMapper.pageOperator(keyspace, settings.getPagesTable());
@@ -41,6 +47,9 @@ public class BookOperators
 		scopeOperator = dataMapper.scopeOperator(keyspace, settings.getScopesTable());
 		eventDateOperator = dataMapper.eventDateOperator(keyspace, settings.getTestEventsDatesTable());
 		intervalOperator = dataMapper.intervalOperator(keyspace, settings.getIntervalsTable());
+		
+		scopesCache = new LimitedCache<>(settings.getScopesCacheSize());
+		eventDatesCache = new LimitedCache<>(settings.getTestEventDatesCacheSize());
 	}
 	
 	public PageOperator getPageOperator()
@@ -71,5 +80,16 @@ public class BookOperators
 	public IntervalOperator getIntervalOperator()
 	{
 		return intervalOperator;
+	}
+	
+	
+	public LimitedCache<CachedScope> getScopesCache()
+	{
+		return scopesCache;
+	}
+	
+	public LimitedCache<CachedTestEventDate> getEventDatesCache()
+	{
+		return eventDatesCache;
 	}
 }
