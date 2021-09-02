@@ -211,7 +211,7 @@ public class CassandraCradleStorage extends CradleStorage
 				result = result.thenComposeAsync(r -> op.write(entity, writeAttrs));
 		}
 		
-		return result.thenAccept(NOOP);
+		return result == null ? CompletableFuture.completedFuture(null) : result.thenAccept(NOOP);
 	}
 	
 	

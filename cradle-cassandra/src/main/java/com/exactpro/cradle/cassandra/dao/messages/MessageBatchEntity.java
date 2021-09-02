@@ -107,6 +107,7 @@ public class MessageBatchEntity extends CradleEntity
 		setMessageTime(ldt.toLocalTime());
 		setSessionAlias(id.getSessionAlias());
 		setDirection(id.getDirection().getLabel());
+		setPart(String.valueOf(ldt.getHour()));
 		setSequence(id.getSequence());
 
 		//All timestamps should be created from UTC, not simply by using LocalTime.now()!
@@ -117,6 +118,7 @@ public class MessageBatchEntity extends CradleEntity
 		setLastSequence(batch.getLastMessage().getSequence());
 		
 		//Content related data
+		setChunk(chunk);
 		setLastChunk(lastChunk);
 		setCompressed(compressed);
 		setContent(ByteBuffer.wrap(content));
