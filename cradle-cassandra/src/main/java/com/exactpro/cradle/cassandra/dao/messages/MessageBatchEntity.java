@@ -16,34 +16,273 @@
 
 package com.exactpro.cradle.cassandra.dao.messages;
 
-import static com.exactpro.cradle.cassandra.CassandraStorageSettings.DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_BYTE_SIZE;
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
-
-import java.nio.ByteBuffer;
-
-import com.exactpro.cradle.messages.*;
+import com.datastax.oss.driver.api.mapper.annotations.*;
+import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.PageId;
+import com.exactpro.cradle.cassandra.dao.CradleEntity;
+import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.utils.TimeUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.oss.driver.api.mapper.annotations.CqlName;
-import com.datastax.oss.driver.api.mapper.annotations.Entity;
+import java.nio.ByteBuffer;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 /**
  * Contains all data about {@link StoredMessageBatch} to store in Cassandra
  */
 @Entity
-public class MessageBatchEntity extends MessageBatchMetadataEntity
+public class MessageBatchEntity extends CradleEntity
 {
 	private static final Logger logger = LoggerFactory.getLogger(MessageBatchEntity.class);
-	
-	@CqlName(CONTENT)
-	private ByteBuffer content;
+
+	@PartitionKey(0)
+	@CqlName(PAGE)
+	private String page;
+
+	@PartitionKey(1)
+	@CqlName(MESSAGE_DATE)
+	private LocalDate messageDate;
+
+	@PartitionKey(2)
+	@CqlName(SESSION_ALIAS)
+	private String sessionAlias;
+
+	@PartitionKey(3)
+	@CqlName(DIRECTION)
+	private String direction;
+
+	@PartitionKey(4)
+	@CqlName(PART)
+	private String part;
+
+	@ClusteringColumn(0)
+	@CqlName(MESSAGE_TIME)
+	private LocalTime messageTime;
+
+	@ClusteringColumn(1)
+	@CqlName(SEQUENCE)
+	private long sequence;
+
+	@ClusteringColumn(2)
+	@CqlName(CHUNK)
+	private int chunk;
+
+	@CqlName(LAST_MESSAGE_DATE)
+	private LocalDate lastMessageDate;
+
+	@CqlName(LAST_MESSAGE_TIME)
+	private LocalTime lastMessageTime;
+
+	@CqlName(MESSAGE_COUNT)
+	private int messageCount;
+
+	@CqlName(LAST_SEQUENCE)
+	private long lastSequence;
 	
 	
 	public MessageBatchEntity()
 	{
 	}
 	
+	public MessageBatchEntity(StoredMessageBatch batch, PageId pageId, byte[] content, boolean compressed)
+	{
+		this(batch, pageId, content, compressed, 0, true);
+	}
+
+	public MessageBatchEntity(StoredMessageBatch batch, PageId pageId, byte[] content, boolean compressed, int chunk, boolean lastChunk)
+	{
+		setPage(pageId.getName());
+		StoredMessageId id = batch.getId();
+		LocalDateTime ldt = TimeUtils.toLocalTimestamp(id.getTimestamp());
+		setMessageDate(ldt.toLocalDate());
+		setMessageTime(ldt.toLocalTime());
+		setSessionAlias(id.getSessionAlias());
+		setDirection(id.getDirection().getLabel());
+		setSequence(id.getSequence());
+
+		//All timestamps should be created from UTC, not simply by using LocalTime.now()!
+		//TODO		setStoredTimestamp(Instant.now());
+		setFirstMessageTimestamp(batch.getFirstTimestamp());
+		setLastMessageTimestamp(batch.getLastTimestamp());
+		setMessageCount(batch.getMessageCount());
+		setLastSequence(batch.getLastMessage().getSequence());
+		
+		//Content related data
+		setLastChunk(lastChunk);
+		setCompressed(compressed);
+		setContent(ByteBuffer.wrap(content));
+	}
+
+		public String getPage()
+	{
+		return page;
+	}
+
+	public void setPage(String page)
+	{
+		this.page = page;
+	}
+
+	public LocalDate getMessageDate()
+	{
+		return messageDate;
+	}
+
+	public void setMessageDate(LocalDate messageDate)
+	{
+		this.messageDate = messageDate;
+	}
+
+	public String getSessionAlias()
+	{
+		return sessionAlias;
+	}
+
+	public void setSessionAlias(String sessionAlias)
+	{
+		this.sessionAlias = sessionAlias;
+	}
+
+	public String getPart()
+	{
+		return part;
+	}
+
+	public void setPart(String part)
+	{
+		this.part = part;
+	}
+
+	public LocalTime getMessageTime()
+	{
+		return messageTime;
+	}
+
+	public void setMessageTime(LocalTime messageTime)
+	{
+		this.messageTime = messageTime;
+	}
+
+	public long getSequence()
+	{
+		return sequence;
+	}
+
+	public void setSequence(long sequence)
+	{
+		this.sequence = sequence;
+	}
+
+	public int getChunk()
+	{
+		return chunk;
+	}
+
+	public void setChunk(int chunk)
+	{
+		this.chunk = chunk;
+	}
+
+	public String getDirection()
+	{
+		return direction;
+	}
+
+	public void setDirection(String direction)
+	{
+		this.direction = direction;
+	}
+
+	public StoredMessageId createBatchId(BookId bookId)
+	{
+		return new StoredMessageId(bookId, getSessionAlias(), Direction.byLabel(getDirection()),
+				TimeUtils.toInstant(messageDate, messageTime), getSequence());
+	}
+
+	public LocalDate getLastMessageDate()
+	{
+		return lastMessageDate;
+	}
+
+	public void setLastMessageDate(LocalDate lastMessageDate)
+	{
+		this.lastMessageDate = lastMessageDate;
+	}
+
+	public LocalTime getLastMessageTime()
+	{
+		return lastMessageTime;
+	}
+
+	public void setLastMessageTime(LocalTime lastMessageTime)
+	{
+		this.lastMessageTime = lastMessageTime;
+	}
+
+	public int getMessageCount()
+	{
+		return messageCount;
+	}
+
+	public void setMessageCount(int messageCount)
+	{
+		this.messageCount = messageCount;
+	}
+
+	public long getLastSequence()
+	{
+		return lastSequence;
+	}
+
+	public void setLastSequence(long lastSequence)
+	{
+		this.lastSequence = lastSequence;
+	}
+
+	@Override
+	public String getEntityId()
+	{
+		return StringUtils.joinWith(StoredMessageId.ID_PARTS_DELIMITER, page, sessionAlias, direction, sequence);
+	}
+
+	@Transient
+	public Instant getFirstMessageTimestamp()
+	{
+		return TimeUtils.toInstant(getMessageDate(), getMessageTime());
+	}
+
+	@Transient
+	public void setFirstMessageTimestamp(Instant timestamp)
+	{
+		LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
+		setMessageDate(ldt.toLocalDate());
+		setMessageTime(ldt.toLocalTime());
+	}
+
+	@Transient
+	public Instant getLastMessageTimestamp()
+	{
+		return TimeUtils.toInstant(getLastMessageDate(), getLastMessageTime());
+	}
+
+	@Transient
+	public void setLastMessageTimestamp(Instant timestamp)
+	{
+		LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
+		setLastMessageDate(ldt.toLocalDate());
+		setLastMessageTime(ldt.toLocalTime());
+	}
+
+
 //	public MessageBatchEntity(StoredMessageBatch batch, String page) throws IOException
 //	{
 //		super(batch, page);
@@ -93,21 +332,12 @@ public class MessageBatchEntity extends MessageBatchMetadataEntity
 //	}
 //
 //
-	protected boolean isNeedToCompress(byte[] contentBytes)
-	{
-		return contentBytes.length > DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_BYTE_SIZE;
-	}
+//	protected boolean isNeedToCompress(byte[] contentBytes)
+//	{
+//		return contentBytes.length > DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_BYTE_SIZE;
+//	}
 
 
-	public ByteBuffer getContent()
-	{
-		return content;
-	}
-
-	public void setContent(ByteBuffer content)
-	{
-		this.content = content;
-	}
 //	
 //	
 //	public Collection<StoredMessage> toStoredMessages() throws IOException

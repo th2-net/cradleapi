@@ -72,12 +72,13 @@ public class DummyCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected void doStoreMessageBatch(StoredMessageBatch batch) throws IOException
+	protected void doStoreMessageBatch(StoredMessageBatch batch, PageInfo page) throws IOException
 	{
 	}
 	
 	@Override
-	protected CompletableFuture<Void> doStoreMessageBatchAsync(StoredMessageBatch batch)
+	protected CompletableFuture<Void> doStoreMessageBatchAsync(StoredMessageBatch batch,
+			PageInfo page)
 	{
 		return CompletableFuture.completedFuture(null);
 	}

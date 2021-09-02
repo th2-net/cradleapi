@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.zip.DataFormatException;
 
+import com.exactpro.cradle.messages.StoredMessageBatch;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.StringUtils;

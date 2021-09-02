@@ -68,8 +68,9 @@ public abstract class CradleStorage
 	protected abstract void doSwitchToNextPage(BookId bookId, String pageName, Instant timestamp) throws CradleStorageException;
 	
 	
-	protected abstract void doStoreMessageBatch(StoredMessageBatch batch) throws IOException;
-	protected abstract CompletableFuture<Void> doStoreMessageBatchAsync(StoredMessageBatch batch);
+	protected abstract void doStoreMessageBatch(StoredMessageBatch batch, PageInfo page) throws IOException;
+	protected abstract CompletableFuture<Void> doStoreMessageBatchAsync(StoredMessageBatch batch,
+			PageInfo page) throws IOException, CradleStorageException;
 	
 	
 	protected abstract void doStoreTestEvent(TestEventToStore event, PageInfo page) throws IOException, CradleStorageException;
@@ -209,8 +210,8 @@ public abstract class CradleStorage
 	{
 		StoredMessageId id = batch.getId();
 		logger.debug("Storing message batch {}", id);
-		bpc.checkActivePage(id.getBookId(), id.getTimestamp());
-		doStoreMessageBatch(batch);
+		PageInfo page = bpc.checkActivePage(id.getBookId(), id.getTimestamp());
+		doStoreMessageBatch(batch, page);
 		logger.debug("Message batch {} has been stored", id);
 	}
 	
@@ -221,12 +222,13 @@ public abstract class CradleStorage
 	 * @return future to get know if storing was successful
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final CompletableFuture<Void> storeMessageBatchAsync(StoredMessageBatch batch) throws CradleStorageException
+	public final CompletableFuture<Void> storeMessageBatchAsync(StoredMessageBatch batch)
+			throws CradleStorageException, IOException
 	{
 		StoredMessageId id = batch.getId();
 		logger.debug("Storing message batch {} asynchronously", id);
-		bpc.checkActivePage(id.getBookId(), id.getTimestamp());
-		CompletableFuture<Void> result = doStoreMessageBatchAsync(batch);
+		PageInfo page = bpc.checkActivePage(id.getBookId(), id.getTimestamp());
+		CompletableFuture<Void> result = doStoreMessageBatchAsync(batch, page);
 		result.whenComplete((r, error) -> {
 				if (error != null)
 					logger.error("Error while storing message batch "+id+" asynchronously", error);

@@ -29,6 +29,9 @@ import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.CradleOperators;
 import com.exactpro.cradle.cassandra.dao.books.BookEntity;
 import com.exactpro.cradle.cassandra.dao.books.PageEntity;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
+import com.exactpro.cradle.cassandra.dao.messages.MessageEntityUtils;
 import com.exactpro.cradle.cassandra.dao.testevents.EventDateEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.EventEntityUtils;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeEntity;
@@ -62,6 +65,7 @@ import java.time.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class CassandraCradleStorage extends CradleStorage
@@ -84,7 +88,8 @@ public class CassandraCradleStorage extends CradleStorage
 		this.settings = storageSettings;
 		this.semaphore = new CassandraSemaphore(storageSettings.getMaxParallelQueries());
 	}
-	
+
+	private static final Consumer<Object> NOOP = whatever -> {};
 	
 	@Override
 	protected void doInit(boolean prepareStorage) throws CradleStorageException
@@ -175,11 +180,11 @@ public class CassandraCradleStorage extends CradleStorage
 
 
 	@Override
-	protected void doStoreMessageBatch(StoredMessageBatch batch) throws IOException
+	protected void doStoreMessageBatch(StoredMessageBatch batch, PageInfo page) throws IOException
 	{
 		try
 		{
-			doStoreMessageBatchAsync(batch).get();
+			doStoreMessageBatchAsync(batch, page).get();
 		}
 		catch (Exception e)
 		{
@@ -188,9 +193,25 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Void> doStoreMessageBatchAsync(StoredMessageBatch batch)
+	protected CompletableFuture<Void> doStoreMessageBatchAsync(StoredMessageBatch batch, PageInfo page)
+			throws IOException, CradleStorageException
 	{
-		return writeMessage(batch, true);
+		PageId pageId = page.getId();
+		Collection<MessageBatchEntity> entities = MessageEntityUtils.toEntities(batch, pageId,
+				settings.getMaxUncompressedMessageBatchSize(), settings.getMessageBatchChunkSize());
+		BookOperators bookOps = ops.getOperators(pageId.getBookId());
+		MessageBatchOperator op = bookOps.getMessageBatchOperator();
+
+		CompletableFuture<MessageBatchEntity> result = null;
+		for (MessageBatchEntity entity : entities)
+		{
+			if (result == null)
+				result = op.write(entity, writeAttrs);
+			else
+				result = result.thenComposeAsync(r -> op.write(entity, writeAttrs));
+		}
+		
+		return result.thenAccept(NOOP);
 	}
 	
 	
@@ -236,7 +257,7 @@ public class CassandraCradleStorage extends CradleStorage
 					return bookOps.getEventDateOperator()
 							.write(new EventDateEntity(pageId.getName(), ldt.toLocalDate(), event.getScope(), CassandraTimeUtils.getPart(ldt)), writeAttrs);
 				})
-				.thenAccept(r -> {});
+				.thenAccept(NOOP);
 	}
 
 	@Override
@@ -580,30 +601,6 @@ public class CassandraCradleStorage extends CradleStorage
 		return strictReadAttrs;
 	}
 	
-	private CompletableFuture<Void> writeMessage(StoredMessageBatch batch, boolean rawMessage)
-	{
-		return null;
-		//TODO: implement
-//		CompletableFuture<DetailedMessageBatchEntity> future = new AsyncOperator<DetailedMessageBatchEntity>(semaphore)
-//				.getFuture(() -> {
-//					DetailedMessageBatchEntity entity;
-//					try
-//					{
-//						entity = new DetailedMessageBatchEntity(batch, instanceUuid);
-//					}
-//					catch (IOException e)
-//					{
-//						CompletableFuture<DetailedMessageBatchEntity> error = new CompletableFuture<>();
-//						error.completeExceptionally(e);
-//						return error;
-//					}
-//
-//					logger.trace("Executing message batch storing query");
-//					MessageBatchOperator op = rawMessage ? ops.getMessageBatchOperator() : ops.getProcessedMessageBatchOperator();
-//					return op.writeMessageBatch(entity, writeAttrs);
-//				});
-//		return future.thenAccept(e -> {});
-	}
 	
 //TODO: implement
 //	private CompletableFuture<DetailedMessageBatchEntity> readMessageBatchEntity(StoredMessageId messageId, boolean rawMessage)

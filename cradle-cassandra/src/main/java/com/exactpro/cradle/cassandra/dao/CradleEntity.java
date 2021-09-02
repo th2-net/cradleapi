@@ -78,7 +78,7 @@ public abstract class CradleEntity
 		LocalTime st = getStoredTime();
 		if (sd == null || st == null)
 			return null;
-		return TimeUtils.fromLocalTimestamp(LocalDateTime.of(sd, st));
+		return TimeUtils.toInstant(sd, st);
 	}
 	
 	@Transient

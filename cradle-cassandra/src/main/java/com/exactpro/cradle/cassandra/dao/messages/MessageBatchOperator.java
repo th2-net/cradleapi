@@ -19,6 +19,7 @@ package com.exactpro.cradle.cassandra.dao.messages;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
+import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
 
 import java.time.LocalDate;
@@ -38,7 +39,7 @@ public interface MessageBatchOperator
 			String sessionAlias, String direction, String part, LocalTime messageTime, long sequence,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-//	@Insert
-//	CompletableFuture<DetailedMessageBatchEntity> writeMessageBatch(DetailedMessageBatchEntity message, 
-//			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	@Insert
+	CompletableFuture<MessageBatchEntity> write(MessageBatchEntity batch,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }
