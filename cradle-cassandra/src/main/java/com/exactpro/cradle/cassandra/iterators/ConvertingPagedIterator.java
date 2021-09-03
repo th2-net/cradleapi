@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
@@ -38,12 +39,16 @@ public class ConvertingPagedIterator<R, E> implements Iterator<R>
 	private static final Logger logger = LoggerFactory.getLogger(ConvertingPagedIterator.class);
 	
 	private final PagedIterator<E> it;
+	private final int limit;
+	private final AtomicInteger returned;
 	private final Function<List<E>, R> converter;
 	private E bufferedNext;
 	
-	public ConvertingPagedIterator(MappedAsyncPagingIterable<E> rows, Function<List<E>, R> converter)
+	public ConvertingPagedIterator(MappedAsyncPagingIterable<E> rows, int limit, AtomicInteger returned, Function<List<E>, R> converter)
 	{
 		this.it = new PagedIterator<>(rows);
+		this.limit = limit;
+		this.returned = returned;
 		this.converter = converter;
 	}
 	
@@ -51,12 +56,15 @@ public class ConvertingPagedIterator<R, E> implements Iterator<R>
 	@Override
 	public boolean hasNext()
 	{
-		return bufferedNext != null || it.hasNext();
+		return (limit <= 0 || returned.get() < limit) && (bufferedNext != null || it.hasNext());
 	}
 	
 	@Override
 	public R next()
 	{
+		if (limit > 0 && returned.get() >= limit)
+			return null;
+		
 		E entity;
 		if (bufferedNext != null)
 		{
@@ -69,6 +77,7 @@ public class ConvertingPagedIterator<R, E> implements Iterator<R>
 		List<E> chunks = getChunks(entity);
 		
 		logger.trace("Converting {} chunk(s)", chunks.size());
+		returned.incrementAndGet();
 		return converter.apply(chunks);
 	}
 	

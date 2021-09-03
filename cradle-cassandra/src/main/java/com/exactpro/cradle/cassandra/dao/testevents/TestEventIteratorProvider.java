@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
@@ -67,16 +68,21 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 	private final BookInfo book;
 	private final TimestampBound startTimestampEndingBound;
 	private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
+	private final int limit;
+	private final AtomicInteger returned;
 	private CassandraTestEventFilter cassandraFilter;
 	
 	public TestEventIteratorProvider(String requestInfo, TestEventFilter filter, BookOperators ops, BookInfo book,
 			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
 	{
+		//TODO: implement filtering in reversed order
 		super(requestInfo);
 		this.op = ops.getTestEventOperator();
 		this.book = book;
 		this.startTimestampEndingBound = FilterUtils.calcEndingTimeRightBound(filter.getPageId(), filter.getStartTimestampTo(), book);
 		this.readAttrs = readAttrs;
+		this.limit = filter.getLimit();
+		this.returned = new AtomicInteger();
 		cassandraFilter = createInitialFilter(filter);
 	}
 	
@@ -85,13 +91,18 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 	{
 		if (cassandraFilter == null)
 			return CompletableFuture.completedFuture(null);
+		if (limit > 0 && returned.get() >= limit)
+		{
+			logger.debug("Filtering interrupted because limit for records to return ({}) is reached ({})", limit, returned);
+			return CompletableFuture.completedFuture(null);
+		}
 		
 		logger.debug("Getting next iterator for '{}' by filter {}", getRequestInfo(), cassandraFilter);
 		return op.getByFilter(cassandraFilter, readAttrs)
 				.thenApplyAsync(resultSet -> {
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
 					cassandraFilter = createNextFilter(cassandraFilter);
-					return new ConvertingPagedIterator<>(resultSet, entities -> {
+					return new ConvertingPagedIterator<>(resultSet, limit, returned, entities -> {
 						try
 						{
 							return EventEntityUtils.toStoredTestEvent(entities, pageId);
