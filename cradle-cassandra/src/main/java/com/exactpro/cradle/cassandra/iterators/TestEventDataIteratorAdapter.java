@@ -18,6 +18,8 @@ package com.exactpro.cradle.cassandra.iterators;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventConverter;
+import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 import com.exactpro.cradle.testevents.StoredTestEventWrapper;
 
 import java.util.Iterator;
@@ -25,15 +27,22 @@ import java.util.Iterator;
 public class TestEventDataIteratorAdapter implements Iterable<StoredTestEventWrapper>
 {
 	private final MappedAsyncPagingIterable<TestEventEntity> rows;
+	private final PagingSupplies pagingSupplies;
+	private final TestEventConverter converter;
+	private final String queryInfo;
 
-	public TestEventDataIteratorAdapter(MappedAsyncPagingIterable<TestEventEntity> rows)
+	public TestEventDataIteratorAdapter(MappedAsyncPagingIterable<TestEventEntity> rows, 
+			PagingSupplies pagingSupplies, TestEventConverter converter, String queryInfo)
 	{
 		this.rows = rows;
+		this.pagingSupplies = pagingSupplies;
+		this.converter = converter;
+		this.queryInfo = queryInfo;
 	}
 
 	@Override
 	public Iterator<StoredTestEventWrapper> iterator()
 	{
-		return new TestEventsDataIterator(rows);
+		return new TestEventsDataIterator(rows, pagingSupplies, converter, queryInfo);
 	}
 }

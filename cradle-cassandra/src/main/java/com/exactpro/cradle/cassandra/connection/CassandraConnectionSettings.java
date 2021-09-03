@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.exactpro.cradle.cassandra.connection;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
 
 public class CassandraConnectionSettings
 {
@@ -32,6 +33,7 @@ public class CassandraConnectionSettings
 	private NetworkTopologyStrategy networkTopologyStrategy;
 	private int maxParallelQueries,
 			resultPageSize;
+	private SelectExecutionPolicy selectExecutionPolicy;
 
 	public CassandraConnectionSettings()
 	{
@@ -47,6 +49,7 @@ public class CassandraConnectionSettings
 		networkTopologyStrategy = null;
 		maxParallelQueries = 500;
 		resultPageSize = 0;  //In this case default page size will be used
+		selectExecutionPolicy = null;
 	}
 
 	public CassandraConnectionSettings(String localDataCenter, String host, int port, String keyspace)
@@ -73,6 +76,7 @@ public class CassandraConnectionSettings
 		this.networkTopologyStrategy = settings.getNetworkTopologyStrategy() != null ? new NetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap()) : null;
 		this.maxParallelQueries = settings.maxParallelQueries;
 		this.resultPageSize = settings.resultPageSize;
+		this.selectExecutionPolicy = settings.selectExecutionPolicy;
 	}
 
 	
@@ -205,5 +209,16 @@ public class CassandraConnectionSettings
 	public void setResultPageSize(int resultPageSize)
 	{
 		this.resultPageSize = resultPageSize;
+	}
+	
+	
+	public SelectExecutionPolicy getSelectExecutionPolicy()
+	{
+		return selectExecutionPolicy;
+	}
+	
+	public void setSelectExecutionPolicy(SelectExecutionPolicy selectExecutionPolicy)
+	{
+		this.selectExecutionPolicy = selectExecutionPolicy;
 	}
 }

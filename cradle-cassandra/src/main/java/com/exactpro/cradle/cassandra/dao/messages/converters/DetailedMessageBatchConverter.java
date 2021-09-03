@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.cassandra.dao.testevents;
+package com.exactpro.cradle.cassandra.dao.messages.converters;
 
-import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
-import com.datastax.oss.driver.api.mapper.annotations.GetEntity;
+import com.exactpro.cradle.cassandra.dao.EntityConverter;
+import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 
 @Dao
-public interface TestEventConverter
+public interface DetailedMessageBatchConverter extends EntityConverter<DetailedMessageBatchEntity>
 {
-	@GetEntity
-	TestEventEntity asTestEventEntity(Row row);
 }

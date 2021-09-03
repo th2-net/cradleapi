@@ -23,6 +23,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
+import com.exactpro.cradle.cassandra.dao.EntityConverter;
+import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 
 /**
  * Wrapper for asynchronous paging iterable that converts retrieved entities into Cradle objects
@@ -35,9 +37,9 @@ public abstract class ConvertingPagedIterator<R, E> implements Iterator<R>
 	
 	private final PagedIterator<E> it;
 	
-	public ConvertingPagedIterator(MappedAsyncPagingIterable<E> rows)
+	public ConvertingPagedIterator(MappedAsyncPagingIterable<E> rows, PagingSupplies pagingSupplies, EntityConverter<E> converter, String queryInfo)
 	{
-		this.it = new PagedIterator<>(rows);
+		this.it = new PagedIterator<>(rows, pagingSupplies, converter, queryInfo);
 	}
 	
 	

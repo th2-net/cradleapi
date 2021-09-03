@@ -18,18 +18,30 @@ package com.exactpro.cradle.cassandra.iterators;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalEntity;
+import com.exactpro.cradle.cassandra.dao.intervals.converters.IntervalConverter;
+import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 import com.exactpro.cradle.intervals.Interval;
 
 import java.util.Iterator;
 
 public class IntervalsIteratorAdapter implements Iterable<Interval>
 {
-    private final MappedAsyncPagingIterable<IntervalEntity> rows;
+	private final MappedAsyncPagingIterable<IntervalEntity> rows;
+	private final PagingSupplies pagingSupplies;
+	private final IntervalConverter converter;
+	private final String queryInfo;
 
-    public IntervalsIteratorAdapter(MappedAsyncPagingIterable<IntervalEntity> rows) { this.rows = rows; }
+	public IntervalsIteratorAdapter(MappedAsyncPagingIterable<IntervalEntity> rows, PagingSupplies pagingSupplies, IntervalConverter converter, String queryInfo)
+	{
+		this.rows = rows;
+		this.pagingSupplies = pagingSupplies;
+		this.converter = converter;
+		this.queryInfo = queryInfo;
+	}
 
-    @Override
-    public Iterator<Interval> iterator() {
-        return new IntervalsIterator(rows);
-    }
+	@Override
+	public Iterator<Interval> iterator()
+	{
+		return new IntervalsIterator(rows, pagingSupplies, converter, queryInfo);
+	}
 }

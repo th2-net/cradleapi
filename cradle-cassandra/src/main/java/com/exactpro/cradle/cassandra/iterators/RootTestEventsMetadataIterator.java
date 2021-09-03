@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,16 @@ import java.io.IOException;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.converters.RootTestEventConverter;
+import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 
 public class RootTestEventsMetadataIterator extends ConvertingPagedIterator<StoredTestEventMetadata, RootTestEventEntity>
 {
-	public RootTestEventsMetadataIterator(MappedAsyncPagingIterable<RootTestEventEntity> rows)
+	public RootTestEventsMetadataIterator(MappedAsyncPagingIterable<RootTestEventEntity> rows, 
+			PagingSupplies pagingSupplies, RootTestEventConverter converter, String queryInfo)
 	{
-		super(rows);
+		super(rows, pagingSupplies, converter, queryInfo);
 	}
 	
 	@Override

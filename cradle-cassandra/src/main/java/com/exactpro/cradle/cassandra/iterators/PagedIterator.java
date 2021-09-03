@@ -16,13 +16,24 @@
 
 package com.exactpro.cradle.cassandra.iterators;
 
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
+import com.datastax.oss.driver.api.core.cql.ExecutionInfo;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.Statement;
+import com.datastax.oss.driver.internal.core.AsyncPagingIterableWrapper;
+import com.exactpro.cradle.cassandra.dao.EntityConverter;
+import com.exactpro.cradle.cassandra.retries.CannotRetryException;
+import com.exactpro.cradle.cassandra.retries.PagingSupplies;
+import com.exactpro.cradle.cassandra.retries.RetryUtils;
 
 /**
  * Wrapper for asynchronous paging iterable to get entities retrieved from Cassandra
@@ -34,11 +45,17 @@ public class PagedIterator<E> implements Iterator<E>
 	
 	private MappedAsyncPagingIterable<E> rows;
 	private Iterator<E> rowsIterator;
+	private final PagingSupplies pagingSupplies;
+	private final Function<Row, E> mapper;
+	private final String queryInfo;
 	
-	public PagedIterator(MappedAsyncPagingIterable<E> rows)
+	public PagedIterator(MappedAsyncPagingIterable<E> rows, PagingSupplies pagingSupplies, EntityConverter<E> converter, String queryInfo)
 	{
 		this.rows = rows;
 		this.rowsIterator = rows.currentPage().iterator();
+		this.pagingSupplies = pagingSupplies;
+		this.mapper = row -> converter.convert(row);
+		this.queryInfo = queryInfo;
 	}
 	
 	
@@ -65,18 +82,56 @@ public class PagedIterator<E> implements Iterator<E>
 	@Override
 	public E next()
 	{
-		logger.trace("Getting next data row");
+		logger.trace("Getting next data row for '{}'", queryInfo);
 		return rowsIterator.next();
 	}
 	
 	
-	private Iterator<E> fetchNextIterator() throws IllegalStateException, InterruptedException, ExecutionException
+	private Iterator<E> fetchNextIterator() throws IllegalStateException, InterruptedException, ExecutionException, CannotRetryException
 	{
 		if (rows.hasMorePages())
 		{
-			rows = rows.fetchNextPage().toCompletableFuture().get();  //TODO: better to fetch next page in advance, not when current page ended
+			logger.debug("Getting next result page for '{}'", queryInfo);
+			rows = fetchNextPage(rows);
 			return rows.currentPage().iterator();
 		}
 		return null;
+	}
+	
+	private MappedAsyncPagingIterable<E> fetchNextPage(MappedAsyncPagingIterable<E> rows) 
+			throws CannotRetryException, IllegalStateException, InterruptedException, ExecutionException
+	{
+		if (pagingSupplies == null)
+		{
+			logger.debug("Fetching next result page for '{}' with default behavior", queryInfo);
+			return rows.fetchNextPage().toCompletableFuture().get();
+		}
+		
+		ExecutionInfo ei = rows.getExecutionInfo();
+		ByteBuffer newState = ei.getPagingState();
+		Statement<?> stmt = ei.getStatement().copy(newState);
+		
+		//Page size can be smaller than max size if RetryingSelectExecutor reduced it, so policy may restore it back
+		stmt = RetryUtils.applyPolicyVerdict(stmt, pagingSupplies.getExecPolicy().onNextPage(stmt, queryInfo));
+		
+		CqlSession session = pagingSupplies.getSession();
+		int retryCount = 0;
+		do
+		{
+			try
+			{
+				return session.executeAsync(stmt).thenApply(next -> new AsyncPagingIterableWrapper<Row, E>(next, mapper))
+						.toCompletableFuture().get();
+			}
+			catch (Exception e)
+			{
+				stmt = ei.getStatement().copy(newState).setPageSize(stmt.getPageSize()).setConsistencyLevel(stmt.getConsistencyLevel());
+				stmt = RetryUtils.applyPolicyVerdict(stmt, pagingSupplies.getExecPolicy().onError(stmt, queryInfo, e, retryCount));
+				retryCount++;
+				logger.debug("Retrying next page request ({}) for '{}' with page size {} and CL {} after error: '{}'", 
+						retryCount, queryInfo, stmt.getPageSize(), stmt.getConsistencyLevel(), e.getMessage());
+			}
+		}
+		while (true);
 	}
 }

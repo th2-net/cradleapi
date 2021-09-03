@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,27 +34,30 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.cassandra.CassandraSemaphore;
 import com.exactpro.cradle.cassandra.dao.AsyncOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventEntity;
-import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesOperator;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
+import com.exactpro.cradle.cassandra.retries.PagingSupplies;
+import com.exactpro.cradle.cassandra.retries.RetryingSelectExecutor;
 
 public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLinker
 {
-	private final TestEventMessagesOperator testEventsOperator;
-	private final MessageTestEventOperator messagesOperator;
+	private final LinkerSupplies supplies;
 	private final UUID instanceId;
 	private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
 	private final CassandraSemaphore semaphore;
+	private final RetryingSelectExecutor selectExec;
+	private final PagingSupplies pagingSupplies;
 	
-	public CassandraTestEventsMessagesLinker(TestEventMessagesOperator testEventsOperator, MessageTestEventOperator messagesOperator, 
-			UUID instanceId, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs, CassandraSemaphore semaphore)
+	public CassandraTestEventsMessagesLinker(LinkerSupplies supplies, 
+			UUID instanceId, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs, CassandraSemaphore semaphore, 
+			RetryingSelectExecutor selectExec, PagingSupplies pagingSupplies)
 	{
-		this.testEventsOperator = testEventsOperator;
-		this.messagesOperator = messagesOperator;
+		this.supplies = supplies;
 		this.instanceId = instanceId;
 		this.readAttrs = readAttrs;
 		this.semaphore = semaphore;
+		this.selectExec = selectExec;
+		this.pagingSupplies = pagingSupplies;
 	}
 	
 	
@@ -74,11 +77,15 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 	@Override
 	public CompletableFuture<Collection<StoredTestEventId>> getTestEventIdsByMessageIdAsync(StoredMessageId messageId)
 	{
+		String queryInfo = "get test events for messageId="+messageId;
 		CompletableFuture<MappedAsyncPagingIterable<MessageTestEventEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<MessageTestEventEntity>>(semaphore)
-				.getFuture(() -> messagesOperator.getTestEvents(instanceId, messageId.toString(), readAttrs));
+				.getFuture(() -> selectExec
+						.executeQuery(() -> supplies.getMessagesOperator().getTestEvents(instanceId, messageId.toString(), readAttrs),
+								supplies.getMessageConverter(),
+								queryInfo));
 		
-		return future.thenCompose((rs) -> {
-				PagedIterator<MessageTestEventEntity> it = new PagedIterator<>(rs);
+		return future.thenApplyAsync((rs) -> {
+				PagedIterator<MessageTestEventEntity> it = new PagedIterator<>(rs, pagingSupplies, supplies.getMessageConverter(), queryInfo);
 				Set<StoredTestEventId> ids = new HashSet<>();
 				while (it.hasNext())
 				{
@@ -90,7 +97,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 				if (ids.isEmpty())
 					ids = null;
 				
-				return CompletableFuture.completedFuture(ids);
+				return ids;
 			});
 	}
 	
@@ -111,11 +118,15 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 	@Override
 	public CompletableFuture<Collection<StoredMessageId>> getMessageIdsByTestEventIdAsync(StoredTestEventId eventId)
 	{
+		String queryInfo = "get messages for eventId="+eventId;
 		CompletableFuture<MappedAsyncPagingIterable<TestEventMessagesEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<TestEventMessagesEntity>>(semaphore)
-				.getFuture(() -> testEventsOperator.getMessages(instanceId, eventId.toString(), readAttrs));
+				.getFuture(() -> selectExec
+						.executeQuery(() -> supplies.getTestEventsOperator().getMessages(instanceId, eventId.toString(), readAttrs),
+								supplies.getTestEventConverter(),
+								queryInfo));
 		
-		return future.thenCompose((rs) -> {
-				PagedIterator<TestEventMessagesEntity> it = new PagedIterator<>(rs);
+		return future.thenApplyAsync((rs) -> {
+				PagedIterator<TestEventMessagesEntity> it = new PagedIterator<>(rs, pagingSupplies, supplies.getTestEventConverter(), queryInfo);
 				Set<StoredMessageId> ids = new HashSet<>();
 				while (it.hasNext())
 				{
@@ -140,7 +151,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 				if (ids.isEmpty())
 					ids = null;
 				
-				return CompletableFuture.completedFuture(ids);
+				return ids;
 			});
 	}
 	
@@ -161,11 +172,15 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 	@Override
 	public CompletableFuture<Boolean> isTestEventLinkedToMessagesAsync(StoredTestEventId eventId)
 	{
+		String queryInfo = "get messages for eventId="+eventId+" to check links";
 		CompletableFuture<MappedAsyncPagingIterable<TestEventMessagesEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<TestEventMessagesEntity>>(semaphore)
-				.getFuture(() -> testEventsOperator.getMessages(instanceId, eventId.toString(), readAttrs));
+				.getFuture(() -> selectExec
+						.executeQuery(() -> supplies.getTestEventsOperator().getMessages(instanceId, eventId.toString(), readAttrs),
+								supplies.getTestEventConverter(),
+								queryInfo));
 		
-		return future.thenCompose((rs) -> {
-				PagedIterator<TestEventMessagesEntity> it = new PagedIterator<>(rs);
+		return future.thenApplyAsync((rs) -> {
+				PagedIterator<TestEventMessagesEntity> it = new PagedIterator<>(rs, pagingSupplies, supplies.getTestEventConverter(), queryInfo);
 				boolean result = false;
 				while (it.hasNext())
 				{
@@ -176,7 +191,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 						break;
 					}
 				}
-				return CompletableFuture.completedFuture(result);
+				return result;
 			});
 	}
 	
@@ -196,12 +211,16 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 	@Override
 	public CompletableFuture<Boolean> isMessageLinkedToTestEventsAsync(StoredMessageId messageId)
 	{
+		String queryInfo = "get test events for messageId="+messageId+" to check links";
 		CompletableFuture<MappedAsyncPagingIterable<MessageTestEventEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<MessageTestEventEntity>>(semaphore)
-				.getFuture(() -> messagesOperator.getTestEvents(instanceId, messageId.toString(), readAttrs));
+				.getFuture(() -> selectExec
+						.executeQuery(() -> supplies.getMessagesOperator().getTestEvents(instanceId, messageId.toString(), readAttrs),
+								supplies.getMessageConverter(),
+								queryInfo));
 		
-		return future.thenCompose((rs) -> {
-				PagedIterator<MessageTestEventEntity> it = new PagedIterator<>(rs);
-				return CompletableFuture.completedFuture(it.hasNext());
+		return future.thenApply((rs) -> {
+				PagedIterator<MessageTestEventEntity> it = new PagedIterator<>(rs, pagingSupplies, supplies.getMessageConverter(), queryInfo);
+				return it.hasNext();
 			});
 	}
 }

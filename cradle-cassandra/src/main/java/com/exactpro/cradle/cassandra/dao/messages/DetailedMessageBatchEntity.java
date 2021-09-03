@@ -25,7 +25,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
-import com.exactpro.cradle.Order;
 import com.exactpro.cradle.messages.MessageToStoreBuilder;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageMetadata;
