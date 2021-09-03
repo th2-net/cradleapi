@@ -14,27 +14,35 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.cassandra.dao.testevents;
+package com.exactpro.cradle.cassandra.utils;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
-import com.exactpro.cradle.cassandra.utils.CassandraTimeUtils;
 import com.exactpro.cradle.filters.ComparisonOperation;
+import com.exactpro.cradle.filters.FilterForGreater;
+import com.exactpro.cradle.filters.FilterForLess;
+import com.exactpro.cradle.utils.TimeUtils;
 
 public class TimestampBound
 {
 	private final LocalDateTime timestamp;
 	private final ComparisonOperation operation;
 	private final String part;
-	private final boolean useTime;
 	
-	public TimestampBound(LocalDateTime timestamp, ComparisonOperation operation, boolean useTime)
+	public TimestampBound(LocalDateTime timestamp, ComparisonOperation operation)
 	{
 		this.timestamp = timestamp;
 		this.operation = operation;
 		this.part = CassandraTimeUtils.getPart(timestamp);
-		this.useTime = useTime;
 	}
+	
+	public TimestampBound(Instant timestamp, ComparisonOperation operation)
+	{
+		this(TimeUtils.toLocalTimestamp(timestamp), operation);
+	}
+	
 	
 	public LocalDateTime getTimestamp()
 	{
@@ -51,8 +59,18 @@ public class TimestampBound
 		return part;
 	}
 	
-	public boolean isUseTime()
+	
+	public FilterForLess<LocalTime> toFilterForLess()
 	{
-		return useTime;
+		return operation == ComparisonOperation.LESS
+				? FilterForLess.forLess(timestamp.toLocalTime())
+				: FilterForLess.forLessOrEquals(timestamp.toLocalTime());
+	}
+	
+	public FilterForGreater<LocalTime> toFilterForGreater()
+	{
+		return operation == ComparisonOperation.GREATER
+				? FilterForGreater.forGreater(timestamp.toLocalTime())
+				: FilterForGreater.forGreaterOrEquals(timestamp.toLocalTime());
 	}
 }

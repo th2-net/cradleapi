@@ -19,6 +19,7 @@ package com.exactpro.cradle.cassandra.utils;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
@@ -28,6 +29,9 @@ import com.datastax.oss.driver.api.querybuilder.Literal;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.relation.ColumnRelationBuilder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
+import com.exactpro.cradle.BookInfo;
+import com.exactpro.cradle.PageId;
+import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.CassandraCradleStorage;
 import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.filters.FilterByField;
@@ -151,5 +155,101 @@ public class FilterUtils
 		return filterTimeTo.getOperation() == ComparisonOperation.LESS
 				? FilterForLess.forLess(ldt.toLocalTime())
 				: FilterForLess.forLessOrEquals(ldt.toLocalTime());
+	}
+	
+	
+	/**
+	 * Calculates left time bound based on value specified in filter and actually available minimum
+	 * @param filterFrom left time bound specified in filter
+	 * @param minimumFrom actually available minimum
+	 * @return left bound to be used
+	 */
+	public static TimestampBound calcLeftTimeBound(FilterForGreater<Instant> filterFrom, Instant minimumFrom)
+	{
+		if (filterFrom == null || filterFrom.getValue().isBefore(minimumFrom))
+			return new TimestampBound(minimumFrom, ComparisonOperation.GREATER_OR_EQUALS);
+		return new TimestampBound(filterFrom.getValue(), filterFrom.getOperation());
+	}
+	
+	/**
+	 * Calculates right time bound based on value specified in filter and actually available maximum
+	 * @param filterTo right time bound specified in filter
+	 * @param maximumTo actually available maximum
+	 * @return right bound to be used
+	 */
+	public static TimestampBound calcRightTimeBound(FilterForLess<Instant> filterTo, Instant maximumTo)
+	{
+		if (filterTo == null || filterTo.getValue().isAfter(maximumTo))
+			return new TimestampBound(maximumTo, ComparisonOperation.LESS_OR_EQUALS);
+		return new TimestampBound(filterTo.getValue(), filterTo.getOperation());
+	}
+	
+	/**
+	 * Finds page to start filtering from
+	 * @param pageId specified in filter. Can be null
+	 * @param timestampFrom specified in filter. Can be null
+	 * @param book to filter data from
+	 * @return page to start filtering from. If pageId is specified, it will be that page. 
+	 * If timestampFrom is specified, it will be page that contains data for that timestamp.
+	 * Else it will be the first page of the book
+	 */
+	public static PageInfo findPage(PageId pageId, FilterForGreater<Instant> timestampFrom, BookInfo book)
+	{
+		if (pageId != null)
+			return book.getPage(pageId);
+		
+		if (timestampFrom != null)
+		{
+			PageInfo page = book.findPage(timestampFrom.getValue());
+			if (page != null)
+				return page;
+		}
+		return book.getFirstPage();
+	}
+	
+	/**
+	 * Calculates right time bound when filtering ends
+	 * @param pageId specified in filter. Can be null
+	 * @param timestampTo specified in filter. Can be null
+	 * @param book to filter data from
+	 * @return right time bound to be used as condition to end filtering
+	 */
+	public static TimestampBound calcEndingTimeRightBound(PageId pageId, FilterForLess<Instant> timestampTo, BookInfo book)
+	{
+		if (pageId != null)
+		{
+			PageInfo page = book.getPage(pageId);
+			return calcRightTimeBound(timestampTo,
+					page.isActive() ? Instant.now() : page.getEnded());
+		}
+		
+		return calcRightTimeBound(timestampTo, Instant.now());
+	}
+	
+	/**
+	 * Calculates filter condition for right time bound for current filtering request
+	 * @param date used in current filtering request
+	 * @param part part used in current filtering request
+	 * @param pageEnd ending timestamp for page used in current filtering request
+	 * @param endingBound right time bound to end filtering, previously calculated with {@link #calcEndingTimeRightBound(PageId, FilterForLess, BookInfo)}
+	 * @return filter condition for right time bound to be used in current filtering request. 
+	 * If endingBound is beyond pageEnd, filter condition will be null meaning that filtering will be done till partition end and 
+	 * additional filtering request should be generated after that
+	 */
+	public static FilterForLess<LocalTime> calcCurrentTimeRightBound(LocalDate date, String part, Instant pageEnd, TimestampBound endingBound)
+	{
+		if (pageEnd != null)
+		{
+			LocalDateTime pageEndDateTime = TimeUtils.toLocalTimestamp(pageEnd);
+			if (endingBound.getTimestamp().isAfter(pageEndDateTime))
+				return null;  //Not setting the right bound to query till the end of last partition of the page. Next page will be queried using the same partition
+		}
+		
+		LocalDate lastDate = endingBound.getTimestamp().toLocalDate();
+		if (date.equals(lastDate) && part.equals(endingBound.getPart()))
+			return endingBound.toFilterForLess();
+		if (date.isAfter(lastDate))
+			return FilterForLess.forLessOrEquals(LocalTime.of(23, 59, 59, 999999));  //For case of wrong right bound calculation
+		return null;  //Will query till the end of part
 	}
 }

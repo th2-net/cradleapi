@@ -17,14 +17,13 @@
 package com.exactpro.cradle;
 
 import java.time.Instant;
-import java.util.ArrayList;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Information about a book
@@ -36,7 +35,7 @@ public class BookInfo
 			desc;
 	private final Instant created;
 	private final Map<PageId, PageInfo> pages;
-	private final List<PageInfo> orderedPages;
+	private final TreeMap<Instant, PageInfo> orderedPages;
 	private PageInfo activePage;
 	
 	public BookInfo(BookId id, String fullName, String desc, Instant created, Collection<PageInfo> pages)
@@ -46,21 +45,18 @@ public class BookInfo
 		this.desc = desc;
 		this.created = created;
 		this.pages = new ConcurrentHashMap<>();
-		this.orderedPages = new CopyOnWriteArrayList<>();
+		this.orderedPages = new TreeMap<>();
 		
 		if (pages == null)
 			return;
 		
-		List<PageInfo> pagesList = new ArrayList<>();
 		for (PageInfo p : pages)
 		{
 			this.pages.put(p.getId(), p);
-			pagesList.add(p);
+			this.orderedPages.put(p.getStarted(), p);
 			if (p.isActive())
 				activePage = p;
 		}
-		pagesList.sort(Comparator.comparing(PageInfo::getStarted));
-		this.orderedPages.addAll(pagesList);
 	}
 	
 	
@@ -86,12 +82,12 @@ public class BookInfo
 	
 	public Collection<PageInfo> getPages()
 	{
-		return Collections.unmodifiableCollection(orderedPages);
+		return Collections.unmodifiableCollection(orderedPages.values());
 	}
 	
 	public PageInfo getFirstPage()
 	{
-		return orderedPages.size() > 0 ? orderedPages.get(0) : null;
+		return orderedPages.size() > 0 ? orderedPages.firstEntry().getValue() : null;
 	}
 	
 	public PageInfo getPage(PageId pageId)
@@ -106,16 +102,20 @@ public class BookInfo
 	
 	public PageInfo findPage(Instant timestamp)
 	{
-		for (PageInfo p : pages.values())
-		{
-			if (p.getStarted().isAfter(timestamp))
-				continue;
-			
-			Instant ended = p.getEnded();
-			if (ended == null || ended.isAfter(timestamp))
-				return p;
-		}
-		return null;
+		Entry<Instant, PageInfo> result = orderedPages.floorEntry(timestamp);
+		return result != null ? result.getValue() : null;
+	}
+	
+	public PageInfo getNextPage(Instant startTimestamp)
+	{
+		Entry<Instant, PageInfo> result = orderedPages.ceilingEntry(startTimestamp.plus(1, ChronoUnit.NANOS));
+		return result != null ? result.getValue() : null;
+	}
+	
+	public PageInfo getPreviousPage(Instant startTimestamp)
+	{
+		Entry<Instant, PageInfo> result = orderedPages.floorEntry(startTimestamp.minus(1, ChronoUnit.NANOS));
+		return result != null ? result.getValue() : null;
 	}
 	
 	
@@ -129,17 +129,14 @@ public class BookInfo
 		//TODO: check and fix this method
 		if (activePage != null)
 		{
-			pages.remove(activePage.getId());
-			pages.put(activePage.getId(), 
-					new PageInfo(activePage.getId(), activePage.getStarted(), started, comment));
+			//Replacing old active page with ended one
+			PageInfo endedPage = new PageInfo(activePage.getId(), activePage.getStarted(), started, comment);
+			pages.put(activePage.getId(), endedPage);
+			orderedPages.put(activePage.getStarted(), endedPage);
 		}
 		
 		activePage = new PageInfo(new PageId(id, pageName), started, null, comment);
 		pages.put(activePage.getId(), activePage);
-		
-		List<PageInfo> pagesList = new ArrayList<PageInfo>(pages.values());
-		pagesList.sort(Comparator.comparing(PageInfo::getStarted));
-		orderedPages.clear();
-		orderedPages.addAll(pagesList);
+		orderedPages.put(activePage.getStarted(), activePage);
 	}
 }
