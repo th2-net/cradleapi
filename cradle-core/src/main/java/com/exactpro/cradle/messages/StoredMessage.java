@@ -27,7 +27,7 @@ import com.exactpro.cradle.utils.CompressionUtils;
 /**
  * Holds information about one message stored in Cradle.
  */
-public class StoredMessage implements Serializable
+public class StoredMessage implements Serializable, CradleMessage
 {
 	private static final long serialVersionUID = 5602557739148866986L;
 	
@@ -53,8 +53,8 @@ public class StoredMessage implements Serializable
 	{
 		this(copyFrom, copyFrom.getId());
 	}
-	
-	
+
+
 	/**
 	 * @return unique message ID as stored in Cradle.
 	 * Result of this method should be used for referencing stored messages to obtain them from Cradle
@@ -63,58 +63,44 @@ public class StoredMessage implements Serializable
 	{
 		return id;
 	}
-	
-	/**
-	 * @return ID of book the message is related to
-	 */
+
+	@Override
 	public BookId getBookId()
 	{
 		return id.getBookId();
 	}
-	
-	/**
-	 * @return alias of session the message is related to
-	 */
+
+	@Override
 	public String getSessionAlias()
 	{
 		return id.getSessionAlias();
 	}
-	
-	/**
-	 * @return direction in which the message went through the stream
-	 */
+
+	@Override
 	public Direction getDirection()
 	{
 		return id.getDirection();
 	}
-	
-	/**
-	 * @return timestamp of message creation
-	 */
+
+	@Override
 	public Instant getTimestamp()
 	{
 		return id.getTimestamp();
 	}
-	
-	/**
-	 * @return sequence number the message has for its session, direction and timestamp
-	 */
+
+	@Override
 	public long getSequence()
 	{
 		return id.getSequence();
 	}
-	
-	/**
-	 * @return metadata attached to message
-	 */
+
+	@Override
 	public StoredMessageMetadata getMetadata()
 	{
 		return metadata;
 	}
-	
-	/**
-	 * @return message content
-	 */
+
+	@Override
 	public byte[] getContent()
 	{
 		return content;

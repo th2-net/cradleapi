@@ -43,6 +43,8 @@ import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
 
+import static com.exactpro.cradle.cassandra.dao.TestUtils.createContent;
+
 public class EventEntityUtilsTest
 {
 	private final BookId book = new BookId("Book1");
@@ -53,7 +55,6 @@ public class EventEntityUtilsTest
 			parentId = new StoredTestEventId(book, scope, startTimestamp, "ParentEventId");
 	
 	private TestEventSingleToStoreBuilder singleBuilder = TestEventSingleToStore.builder();
-	private final Random random = new Random();
 	private final int contentChunk = 20,
 			content0_5 = 10,
 			content1_5 = 35,
@@ -107,13 +108,6 @@ public class EventEntityUtilsTest
 				.parentId(parentId)
 				.name("TestEvent1")
 				.type("Type1");
-	}
-	private byte[] createContent(int size)
-	{
-		StringBuilder sb = new StringBuilder(size);
-		for (int i = 0; i < size; i++)
-			sb.append((char)(random.nextInt(10)+48));
-		return sb.toString().getBytes();
 	}
 	
 	private Set<StoredMessageId> createMessageIds(int size)

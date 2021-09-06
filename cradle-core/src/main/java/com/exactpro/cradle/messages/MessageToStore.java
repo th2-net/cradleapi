@@ -26,14 +26,14 @@ import com.exactpro.cradle.utils.CompressionUtils;
 /**
  * Object to hold information about one message prepared to be stored in Cradle
  */
-public class MessageToStore
+public class MessageToStore implements CradleMessage
 {
 	private BookId bookId;
 	private String sessionAlias;
 	private Direction direction;
 	private Instant timestamp;
 	private long sequence;
-	private MessageMetadata metadata = null;
+	private MessageMetadata metadata;
 	private byte[] content;
 	
 	public MessageToStore()
@@ -51,11 +51,13 @@ public class MessageToStore
 		this.metadata = copyFrom.getMetadata() != null ? new MessageMetadata(copyFrom.getMetadata()) : null;
 		this.content = copyFrom.getContent();
 	}
+
+	public static MessageToStoreBuilder builder()
+	{
+		return new MessageToStoreBuilder();
+	}
 	
-	
-	/**
-	 * @return book the message is related to
-	 */
+	@Override
 	public BookId getBookId()
 	{
 		return bookId;
@@ -65,11 +67,9 @@ public class MessageToStore
 	{
 		this.bookId = book;
 	}
-	
-	
-	/**
-	 * @return alias of session the message is related to
-	 */
+
+
+	@Override
 	public String getSessionAlias()
 	{
 		return sessionAlias;
@@ -79,11 +79,9 @@ public class MessageToStore
 	{
 		this.sessionAlias = sessionAlias;
 	}
-	
-	
-	/**
-	 * @return direction in which the message went through the session
-	 */
+
+
+	@Override
 	public Direction getDirection()
 	{
 		return direction;
@@ -93,11 +91,9 @@ public class MessageToStore
 	{
 		this.direction = direction;
 	}
-	
-	
-	/**
-	 * @return timestamp of message creation
-	 */
+
+
+	@Override
 	public Instant getTimestamp()
 	{
 		return timestamp;
@@ -107,11 +103,9 @@ public class MessageToStore
 	{
 		this.timestamp = timestamp;
 	}
-	
-	
-	/**
-	 * @return sequence number the message has for its session, direction and timestamp
-	 */
+
+
+	@Override
 	public long getSequence()
 	{
 		return sequence;
@@ -121,8 +115,8 @@ public class MessageToStore
 	{
 		this.sequence = sequence;
 	}
-	
-	
+
+	@Override
 	public MessageMetadata getMetadata()
 	{
 		return metadata;
@@ -139,11 +133,9 @@ public class MessageToStore
 			metadata = new MessageMetadata();
 		metadata.add(key, value);
 	}
-	
-	
-	/**
-	 * @return message content
-	 */
+
+
+	@Override
 	public byte[] getContent()
 	{
 		return content;

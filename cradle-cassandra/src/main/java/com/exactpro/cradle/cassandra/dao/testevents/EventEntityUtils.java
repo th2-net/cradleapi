@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.zip.DataFormatException;
 
+import com.exactpro.cradle.cassandra.dao.EntityUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,11 +136,11 @@ public class EventEntityUtils
 			throws IOException, CradleStorageException, DataFormatException, CradleIdException
 	{
 		logger.debug("Creating test event from {} chunk(s)", entities.size());
-		if (entities.size() == 0)
+		if (entities.isEmpty())
 			return null;
 		
 		TestEventEntity firstEntity = entities.get(0);
-		String error = validateEntities(entities);
+		String error = EntityUtils.validateEntities(entities);
 		if (error != null)
 			return toErrorEvent(firstEntity, pageId, error);
 		return firstEntity.isEventBatch() ? toStoredTestEventBatch(entities, pageId) : toStoredTestEventSingle(entities, pageId);
@@ -171,28 +172,9 @@ public class EventEntityUtils
 		return StringUtils.isEmpty(entity.getParentId()) ? null : StoredTestEventId.fromString(entity.getParentId());
 	}
 	
-	private static byte[] uniteContents(Collection<TestEventEntity> entities)
-	{
-		int size = entities.stream()
-				.mapToInt(e -> e.getContent() != null ? e.getContent().limit() : 0)
-				.sum();
-		
-		if (size == 0)
-			return null;
-		
-		ByteBuffer buffer = ByteBuffer.allocate(size);
-		for (TestEventEntity e : entities)
-		{
-			if (e.getContent() == null)
-				continue;
-			buffer.put(e.getContent());
-		}
-		return buffer.array();
-	}
-	
 	private static byte[] getContent(Collection<TestEventEntity> entities, StoredTestEventId eventId) throws IOException, DataFormatException
 	{
-		byte[] result = uniteContents(entities);
+		byte[] result = EntityUtils.uniteContents(entities);
 		TestEventEntity entity = entities.iterator().next();
 		if (entity.isCompressed())
 		{
@@ -253,21 +235,5 @@ public class EventEntityUtils
 				? new StoredTestEventBatch(id, entity.getName(), entity.getType(), parentId, null, pageId, error)
 				: new StoredTestEventSingle(id, entity.getName(), entity.getType(), parentId,
 						entity.getEndTimestamp(), entity.isSuccess(), null, null, pageId, error);
-	}
-	
-	private static String validateEntities(List<TestEventEntity> entities)
-	{
-		int chunkIndex = 0;
-		for (TestEventEntity entity : entities)
-		{
-			if (entity.getChunk() != chunkIndex)
-				return "Chunk #"+chunkIndex+" is missing";
-			
-			if (chunkIndex == entities.size()-1 && !entity.isLastChunk())
-				return "Last chunk is missing";
-			
-			chunkIndex++;
-		}
-		return null;
 	}
 }

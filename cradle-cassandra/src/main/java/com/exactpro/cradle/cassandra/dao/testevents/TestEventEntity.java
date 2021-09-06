@@ -245,7 +245,7 @@ public class TestEventEntity extends CradleEntity
 		this.id = id;
 	}
 	
-	
+	@Override
 	public int getChunk()
 	{
 		return chunk;
@@ -357,11 +357,7 @@ public class TestEventEntity extends CradleEntity
 	@Transient
 	public Instant getEndTimestamp()
 	{
-		LocalDate ed = getEndDate();
-		LocalTime et = getEndTime();
-		if (ed == null || et == null)
-			return null;
-		return TimeUtils.fromLocalTimestamp(LocalDateTime.of(ed, et));
+		return TimeUtils.toInstant(getEndDate(), getEndTime());
 	}
 	
 	@Transient

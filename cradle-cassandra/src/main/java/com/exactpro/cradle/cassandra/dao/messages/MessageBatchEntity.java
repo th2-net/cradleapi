@@ -21,7 +21,7 @@ import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.CradleEntity;
-import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.messages.MessageBatch;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.TimeUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -37,7 +37,7 @@ import java.time.LocalTime;
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 /**
- * Contains all data about {@link StoredMessageBatch} to store in Cassandra
+ * Contains all data about {@link MessageBatch} to store in Cassandra
  */
 @Entity
 public class MessageBatchEntity extends CradleEntity
@@ -93,12 +93,12 @@ public class MessageBatchEntity extends CradleEntity
 	{
 	}
 	
-	public MessageBatchEntity(StoredMessageBatch batch, PageId pageId, byte[] content, boolean compressed)
+	public MessageBatchEntity(MessageBatch batch, PageId pageId, byte[] content, boolean compressed)
 	{
 		this(batch, pageId, content, compressed, 0, true);
 	}
 
-	public MessageBatchEntity(StoredMessageBatch batch, PageId pageId, byte[] content, boolean compressed, int chunk, boolean lastChunk)
+	public MessageBatchEntity(MessageBatch batch, PageId pageId, byte[] content, boolean compressed, int chunk, boolean lastChunk)
 	{
 		setPage(pageId.getName());
 		StoredMessageId id = batch.getId();
@@ -110,7 +110,6 @@ public class MessageBatchEntity extends CradleEntity
 		setPart(String.valueOf(ldt.getHour()));
 		setSequence(id.getSequence());
 
-		//All timestamps should be created from UTC, not simply by using LocalTime.now()!
 		//TODO		setStoredTimestamp(Instant.now());
 		setFirstMessageTimestamp(batch.getFirstTimestamp());
 		setLastMessageTimestamp(batch.getLastTimestamp());
@@ -124,7 +123,7 @@ public class MessageBatchEntity extends CradleEntity
 		setContent(ByteBuffer.wrap(content));
 	}
 
-		public String getPage()
+	public String getPage()
 	{
 		return page;
 	}
@@ -184,6 +183,7 @@ public class MessageBatchEntity extends CradleEntity
 		this.sequence = sequence;
 	}
 
+	@Override
 	public int getChunk()
 	{
 		return chunk;
@@ -253,7 +253,8 @@ public class MessageBatchEntity extends CradleEntity
 	@Override
 	public String getEntityId()
 	{
-		return StringUtils.joinWith(StoredMessageId.ID_PARTS_DELIMITER, page, sessionAlias, direction, sequence);
+		String idTimestamp = TimeUtils.toIdTimestamp(getFirstMessageTimestamp());
+		return StringUtils.joinWith(StoredMessageId.ID_PARTS_DELIMITER, page, sessionAlias, direction, idTimestamp, sequence);
 	}
 
 	@Transient
@@ -283,82 +284,4 @@ public class MessageBatchEntity extends CradleEntity
 		setLastMessageDate(ldt.toLocalDate());
 		setLastMessageTime(ldt.toLocalTime());
 	}
-
-
-//	public MessageBatchEntity(StoredMessageBatch batch, String page) throws IOException
-//	{
-//		super(batch, page);
-//		logger.debug("Creating Entity with meta-data");
-//		
-//		byte[] batchContent = MessageUtils.serializeMessages(batch.getMessages());
-//		boolean toCompress = this.isNeedToCompress(batchContent);
-//		if (toCompress)
-//		{
-//			StoredMessageId batchId = batch.getId();
-//			try
-//			{
-//				logger.trace("Compressing content of message batch {}", batchId);
-//				batchContent = CompressionUtils.compressData(batchContent);
-//			}
-//			catch (IOException e)
-//			{
-//				throw new IOException(String.format("Could not compress message batch contents (ID: '%s') to save in Cradle",
-//						batchId.toString()), e);
-//			}
-//		}
-//		
-//		this.setCompressed(toCompress);
-//		this.setContent(ByteBuffer.wrap(batchContent));
-//	}
-//
-//	// Parameter messageBatch must be created by CradleObjectFactory to have the correct batchSize
-//	public StoredMessageBatch toStoredMessageBatch(StoredMessageBatch messageBatch)
-//			throws IOException, CradleStorageException
-//	{
-//		for (StoredMessage storedMessage : toStoredMessages())
-//		{
-//			MessageToStoreBuilder builder = new MessageToStoreBuilder()
-//					.content(storedMessage.getContent())
-//					.direction(storedMessage.getDirection())
-//					.sessionAlias(storedMessage.getSessionAlias())
-//					.timestamp(storedMessage.getTimestamp())
-//					.sequence(storedMessage.getSequence());
-//			StoredMessageMetadata metadata = storedMessage.getMetadata();
-//			if (metadata != null)
-//				metadata.toMap().forEach(builder::metadata);
-//
-//			messageBatch.addMessage(builder.build());
-//		}
-//
-//		return messageBatch;
-//	}
-//
-//
-//	protected boolean isNeedToCompress(byte[] contentBytes)
-//	{
-//		return contentBytes.length > DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_BYTE_SIZE;
-//	}
-
-
-//	
-//	
-//	public Collection<StoredMessage> toStoredMessages() throws IOException
-//	{
-//		return toStoredMessages(Order.DIRECT);
-//	}
-//
-//	public Collection<StoredMessage> toStoredMessages(Order order) throws IOException
-//	{
-//		List<StoredMessage> messages = MessageUtils.bytesToMessages(content, isCompressed());
-//		if (order == Order.DIRECT)
-//			return messages;
-//		
-//		Collections.reverse(messages);
-//		return messages;
-//	}
-//	
-//	public StoredMessage toStoredMessage(StoredMessageId id) throws IOException
-//	{
-//		return MessageUtils.bytesToOneMessage(content, isCompressed(), id);
-//	}
 }

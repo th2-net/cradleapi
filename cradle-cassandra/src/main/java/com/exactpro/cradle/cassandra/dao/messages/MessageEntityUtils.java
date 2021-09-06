@@ -17,9 +17,14 @@
 package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.exactpro.cradle.PageId;
+import com.exactpro.cradle.cassandra.dao.EntityUtils;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
+import com.exactpro.cradle.messages.MessageBatch;
+import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CompressionUtils;
+import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.MessageUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,12 +33,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
+import java.util.zip.DataFormatException;
 
 public class MessageEntityUtils
 {
 	private static final Logger logger = LoggerFactory.getLogger(MessageEntityUtils.class);
 
-	public static Collection<MessageBatchEntity> toEntities(StoredMessageBatch batch, PageId pageId, int maxUncompressedSize,
+	public static Collection<MessageBatchEntity> toEntities(MessageBatch batch, PageId pageId, int maxUncompressedSize,
 			int contentChunkSize) throws IOException
 	{
 		byte[] batchContent = MessageUtils.serializeMessages(batch.getMessages());
@@ -55,26 +62,61 @@ public class MessageEntityUtils
 		return toEntities(batch, pageId, batchContent, compressed, contentChunkSize);
 	}
 
-	public static Collection<MessageBatchEntity> toEntities(StoredMessageBatch batch, PageId pageId, byte[] content,
+	public static Collection<MessageBatchEntity> toEntities(MessageBatch batch, PageId pageId, byte[] content,
 			boolean compressed, int contentChunkSize)
 	{
 		Collection<MessageBatchEntity> result = new ArrayList<>();
 		if (content == null)
 			return result;
 
-		logger.debug("Creating chunks from messages batch '{}'", batch.getId());
 		int length = content.length;
-		for (int i = 0, chunk = 0; i < length; i+=contentChunkSize, chunk++)
+		logger.debug("Creating chunks from messages batch '{}' of {} bytes", batch.getId(), length);
+		for (int i = 0; i < length; i+=contentChunkSize)
 		{
 			int endOfRange = Math.min(length, i + contentChunkSize);
 			byte[] entityContent = Arrays.copyOfRange(content, i, endOfRange);
+			boolean isLastChunk = endOfRange == length;
+			if (logger.isDebugEnabled())
+				logger.debug("Creating chunk #{}{} of {} bytes from messages batch '{}'",
+						result.size()+1,
+						isLastChunk ? " (last one)" : "",
+						entityContent.length,
+						batch.getId());
 			MessageBatchEntity entity =
-					new MessageBatchEntity(batch, pageId, entityContent, compressed, chunk, endOfRange == length);
+					new MessageBatchEntity(batch, pageId, entityContent, compressed, result.size(), isLastChunk);
 			result.add(entity);
 		}
 
 		return result;
 	}
 
+	public static StoredMessageBatch toStoredMessageBatch(Collection<MessageBatchEntity> entities, PageId pageId)
+			throws DataFormatException, IOException
+	{
+		if (entities == null || entities.isEmpty())
+			return null;
+		logger.debug("Creating message batch from {} chunk(s)", entities.size());
+		MessageBatchEntity entity = entities.iterator().next();
+		//TODO Implement error message batch 
+		//String error = EntityUtils.validateEntities(entities);
+		StoredMessageId batchId = entity.createBatchId(pageId.getBookId());
+		byte[] content = getContent(entities, batchId);
+		List<StoredMessage> storedMessages = MessageUtils.deserializeMessages(content);
+		return new StoredMessageBatch(storedMessages);
+	}
 
+	private static byte[] getContent(Collection<MessageBatchEntity> entities, StoredMessageId messageBatchId)
+			throws DataFormatException, IOException
+	{
+		byte[] content = EntityUtils.uniteContents(entities);
+		if (content == null)
+			return null;
+		MessageBatchEntity entity = entities.iterator().next();
+		if (entity.isCompressed())
+		{
+			logger.trace("Decompressing content of message batch '{}'", messageBatchId);
+			return CompressionUtils.decompressData(content);
+		}
+		return content;
+	}
 }

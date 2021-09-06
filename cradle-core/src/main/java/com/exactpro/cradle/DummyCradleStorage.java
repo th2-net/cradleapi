@@ -22,10 +22,7 @@ import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
 import com.exactpro.cradle.intervals.IntervalsWorker;
-import com.exactpro.cradle.messages.StoredMessage;
-import com.exactpro.cradle.messages.StoredMessageBatch;
-import com.exactpro.cradle.messages.StoredMessageFilter;
-import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.TestEventFilter;
@@ -72,12 +69,12 @@ public class DummyCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected void doStoreMessageBatch(StoredMessageBatch batch, PageInfo page) throws IOException
+	protected void doStoreMessageBatch(MessageBatch batch, PageInfo page) throws IOException
 	{
 	}
 	
 	@Override
-	protected CompletableFuture<Void> doStoreMessageBatchAsync(StoredMessageBatch batch,
+	protected CompletableFuture<Void> doStoreMessageBatchAsync(MessageBatch batch,
 			PageInfo page)
 	{
 		return CompletableFuture.completedFuture(null);
@@ -154,13 +151,13 @@ public class DummyCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected Iterable<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException
+	protected Iterable<MessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException
 	{
 		return null;
 	}
 	
 	@Override
-	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter)
+	protected CompletableFuture<Iterable<MessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter)
 	{
 		return CompletableFuture.completedFuture(null);
 	}

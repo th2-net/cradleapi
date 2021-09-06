@@ -49,7 +49,8 @@ public abstract class CradleEntity
 	
 	@Transient
 	public abstract String getEntityId();
-	
+
+	public abstract int getChunk();
 	
 	public LocalDate getStoredDate()
 	{

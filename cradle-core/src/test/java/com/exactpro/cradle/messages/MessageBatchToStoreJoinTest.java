@@ -27,13 +27,14 @@ import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.utils.CradleStorageException;
 
-public class StoredMessageBatchJoinTest {
+public class MessageBatchToStoreJoinTest
+{
     private static final BookId bookId = new BookId("testbook");
     
     @Test
     public void testJoinEmptyBatchWithOther() throws CradleStorageException {
-        StoredMessageBatch emptyBatch = createEmptyBatch();
-        StoredMessageBatch batch = createBatch(bookId, "test", 1, Direction.FIRST, Instant.EPOCH, 5, 5);
+        MessageBatchToStore emptyBatch = createEmptyBatch();
+        MessageBatchToStore batch = createBatch(bookId, "test", 1, Direction.FIRST, Instant.EPOCH, 5, 5);
         assertTrue(emptyBatch.addBatch(batch));
 
         assertEquals(emptyBatch.getMessageCount(), 5);
@@ -44,8 +45,8 @@ public class StoredMessageBatchJoinTest {
 
     @Test
     public void testAddBatch() throws CradleStorageException {
-        StoredMessageBatch first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, 5, 5);
-        StoredMessageBatch second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH.plusMillis(5), 5, 5);
+        MessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, 5, 5);
+        MessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH.plusMillis(5), 5, 5);
 
         assertTrue(first.addBatch(second));
         assertEquals(first.getMessageCount(), 10);
@@ -60,8 +61,9 @@ public class StoredMessageBatchJoinTest {
         expectedExceptionsMessageRegExp = "IDs are not compatible.*"
     )
     public void testThrowExceptionOnDifferentBooks() throws CradleStorageException {
-        StoredMessageBatch first = createBatch(bookId, "testA", 0, Direction.FIRST, Instant.EPOCH, 5, 5);
-        StoredMessageBatch second = createBatch(new BookId(bookId.getName()+"2"), "testA", 5, Direction.FIRST, Instant.EPOCH, 5, 5);
+        MessageBatchToStore first = createBatch(bookId, "testA", 0, Direction.FIRST, Instant.EPOCH, 5, 5);
+        MessageBatchToStore
+				second = createBatch(new BookId(bookId.getName()+"2"), "testA", 5, Direction.FIRST, Instant.EPOCH, 5, 5);
 
         first.addBatch(second);
     }
@@ -71,8 +73,8 @@ public class StoredMessageBatchJoinTest {
             expectedExceptionsMessageRegExp = "IDs are not compatible.*"
     )
     public void testThrowExceptionOnDifferentSessions() throws CradleStorageException {
-        StoredMessageBatch first = createBatch(bookId, "testA", 0, Direction.FIRST, Instant.EPOCH, 5, 5);
-        StoredMessageBatch second = createBatch(bookId, "testB", 5, Direction.FIRST, Instant.EPOCH, 5, 5);
+        MessageBatchToStore first = createBatch(bookId, "testA", 0, Direction.FIRST, Instant.EPOCH, 5, 5);
+        MessageBatchToStore second = createBatch(bookId, "testB", 5, Direction.FIRST, Instant.EPOCH, 5, 5);
 
         first.addBatch(second);
     }
@@ -82,8 +84,8 @@ public class StoredMessageBatchJoinTest {
             expectedExceptionsMessageRegExp = "IDs are not compatible.*"
     )
     public void testThrowExceptionOnDifferentDirections() throws CradleStorageException {
-        StoredMessageBatch first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, 5, 5);
-        StoredMessageBatch second = createBatch(bookId, "test", 5, Direction.SECOND, Instant.EPOCH, 5, 5);
+        MessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, 5, 5);
+        MessageBatchToStore second = createBatch(bookId, "test", 5, Direction.SECOND, Instant.EPOCH, 5, 5);
 
         first.addBatch(second);
     }
@@ -93,8 +95,8 @@ public class StoredMessageBatchJoinTest {
             expectedExceptionsMessageRegExp = "Batches are not ordered.*"
     )
     public void testThrowExceptionOnUnorderedTimestamps() throws CradleStorageException {
-        StoredMessageBatch first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH.plusMillis(5), 5, 5);
-        StoredMessageBatch second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH, 5, 5);
+        MessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH.plusMillis(5), 5, 5);
+        MessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH, 5, 5);
 
         first.addBatch(second);
     }
@@ -104,15 +106,15 @@ public class StoredMessageBatchJoinTest {
             expectedExceptionsMessageRegExp = "Batches are not ordered.*"
     )
     public void testThrowExceptionOnUnorderedSequences() throws CradleStorageException {
-        StoredMessageBatch first = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH, 5, 5);
-        StoredMessageBatch second = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, 5, 5);
+        MessageBatchToStore first = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH, 5, 5);
+        MessageBatchToStore second = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, 5, 5);
 
         first.addBatch(second);
     }
 
-    private StoredMessageBatch createBatch(BookId bookId, String sessionAlias, long startSequence, Direction direction, Instant startTimestamp, 
+    private MessageBatchToStore createBatch(BookId bookId, String sessionAlias, long startSequence, Direction direction, Instant startTimestamp, 
             int messageCount, int contentSizePerMessage) throws CradleStorageException {
-        StoredMessageBatch storedMessageBatch = createEmptyBatch();
+        MessageBatchToStore messageBatchToStore = createEmptyBatch();
         long begin = startSequence;
         Instant timestamp = startTimestamp;
         while (messageCount-- > 0) {
@@ -125,14 +127,14 @@ public class StoredMessageBatchJoinTest {
             if (contentSizePerMessage > 0) {
                 toStore.setContent(new byte[contentSizePerMessage]);
             }
-            storedMessageBatch.addMessage(toStore);
+            messageBatchToStore.addMessage(toStore);
             
             timestamp = timestamp.plusMillis(1);
         }
-        return storedMessageBatch;
+        return messageBatchToStore;
     }
 
-    private StoredMessageBatch createEmptyBatch() {
-        return new StoredMessageBatch();
+    private MessageBatchToStore createEmptyBatch() {
+        return new MessageBatchToStore();
     }
 }

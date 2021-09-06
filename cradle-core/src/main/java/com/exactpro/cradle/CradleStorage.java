@@ -24,13 +24,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.exactpro.cradle.intervals.IntervalsWorker;
+import com.exactpro.cradle.messages.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.exactpro.cradle.messages.StoredMessage;
-import com.exactpro.cradle.messages.StoredMessageBatch;
-import com.exactpro.cradle.messages.StoredMessageFilter;
-import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.resultset.EmptyResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
@@ -68,8 +65,8 @@ public abstract class CradleStorage
 	protected abstract void doSwitchToNextPage(BookId bookId, String pageName, Instant timestamp) throws CradleStorageException;
 	
 	
-	protected abstract void doStoreMessageBatch(StoredMessageBatch batch, PageInfo page) throws IOException;
-	protected abstract CompletableFuture<Void> doStoreMessageBatchAsync(StoredMessageBatch batch,
+	protected abstract void doStoreMessageBatch(MessageBatch batch, PageInfo page) throws IOException;
+	protected abstract CompletableFuture<Void> doStoreMessageBatchAsync(MessageBatch batch,
 			PageInfo page) throws IOException, CradleStorageException;
 	
 	
@@ -88,8 +85,8 @@ public abstract class CradleStorage
 	
 	protected abstract Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException;
 	protected abstract CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter);
-	protected abstract Iterable<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException;
-	protected abstract CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter);
+	protected abstract Iterable<MessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException;
+	protected abstract CompletableFuture<Iterable<MessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter);
 	
 	protected abstract long doGetLastSequence(String sessionAlias, Direction direction, PageId pageId) throws IOException;
 	protected abstract Collection<String> doGetSessionAliases(PageId pageId) throws IOException;
@@ -206,7 +203,7 @@ public abstract class CradleStorage
 	 * @throws IOException if data writing failed
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final void storeMessageBatch(StoredMessageBatch batch) throws IOException, CradleStorageException
+	public final void storeMessageBatch(MessageBatch batch) throws IOException, CradleStorageException
 	{
 		StoredMessageId id = batch.getId();
 		logger.debug("Storing message batch {}", id);
@@ -222,7 +219,7 @@ public abstract class CradleStorage
 	 * @return future to get know if storing was successful
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final CompletableFuture<Void> storeMessageBatchAsync(StoredMessageBatch batch)
+	public final CompletableFuture<Void> storeMessageBatchAsync(MessageBatch batch)
 			throws CradleStorageException, IOException
 	{
 		StoredMessageId id = batch.getId();
@@ -471,11 +468,11 @@ public abstract class CradleStorage
 	 * @throws IOException if data retrieval failed
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final Iterable<StoredMessageBatch> getMessagesBatches(StoredMessageFilter filter) throws IOException, CradleStorageException
+	public final Iterable<MessageBatch> getMessagesBatches(StoredMessageFilter filter) throws IOException, CradleStorageException
 	{
 		logger.debug("Filtering message batches by {}", filter);
 		bpc.checkPage(filter.getPageId());
-		Iterable<StoredMessageBatch> result = doGetMessagesBatches(filter);
+		Iterable<MessageBatch> result = doGetMessagesBatches(filter);
 		logger.debug("Prepared iterator for message batches filtered by {}", filter);
 		return result;
 	}
@@ -486,11 +483,11 @@ public abstract class CradleStorage
 	 * @return future to obtain iterable object to enumerate message batches
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final CompletableFuture<Iterable<StoredMessageBatch>> getMessagesBatchesAsync(StoredMessageFilter filter) throws CradleStorageException
+	public final CompletableFuture<Iterable<MessageBatch>> getMessagesBatchesAsync(StoredMessageFilter filter) throws CradleStorageException
 	{
 		logger.debug("Asynchronously getting message batches filtered by {}", filter);
 		bpc.checkPage(filter.getPageId());
-		CompletableFuture<Iterable<StoredMessageBatch>> result = doGetMessagesBatchesAsync(filter);
+		CompletableFuture<Iterable<MessageBatch>> result = doGetMessagesBatchesAsync(filter);
 		result.whenComplete((r, error) -> {
 				if (error != null)
 					logger.error("Error while getting message batches filtered by "+filter+" asynchronously", error);

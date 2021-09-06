@@ -47,10 +47,7 @@ import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
 import com.exactpro.cradle.cassandra.utils.CassandraTimeUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.intervals.IntervalsWorker;
-import com.exactpro.cradle.messages.StoredMessage;
-import com.exactpro.cradle.messages.StoredMessageBatch;
-import com.exactpro.cradle.messages.StoredMessageFilter;
-import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.TestEventFilter;
@@ -182,7 +179,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 
 	@Override
-	protected void doStoreMessageBatch(StoredMessageBatch batch, PageInfo page) throws IOException
+	protected void doStoreMessageBatch(MessageBatch batch, PageInfo page) throws IOException
 	{
 		try
 		{
@@ -195,7 +192,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Void> doStoreMessageBatchAsync(StoredMessageBatch batch, PageInfo page)
+	protected CompletableFuture<Void> doStoreMessageBatchAsync(MessageBatch batch, PageInfo page)
 			throws IOException, CradleStorageException
 	{
 		PageId pageId = page.getId();
@@ -395,7 +392,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected Iterable<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException
+	protected Iterable<MessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException
 	{
 		try
 		{
@@ -408,7 +405,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter)
+	protected CompletableFuture<Iterable<MessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter)
 	{
 		return null; //TODO: implement
 	}

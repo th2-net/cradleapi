@@ -27,7 +27,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.zip.DataFormatException;
 
-import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.messages.CradleMessage;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -43,7 +43,7 @@ public class MessageUtils
 	 * @param message to validate
 	 * @throws CradleStorageException if validation failed
 	 */
-	public static void validateMessage(MessageToStore message) throws CradleStorageException
+	public static void validateMessage(CradleMessage message) throws CradleStorageException
 	{
 		if (message.getBookId() == null)
 			throw new CradleStorageException("Message must have book ID");
