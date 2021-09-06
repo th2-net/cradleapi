@@ -14,21 +14,26 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.testevents;
+package com.exactpro.cradle.cassandra.connection;
 
 import org.assertj.core.api.Assertions;
-import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
+import org.testng.annotations.Test;
 
-public class EventTestUtils
+public class CassandraConnectionSettingsTest
 {
-	public static void assertEvents(StoredTestEvent stored, TestEventToStore event)
+	@Test
+	public void copy()
 	{
-		RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
-	  //These fields are present only in StoredTestEvent and will fail comparison with TestEventToStore
-		config.ignoreFieldsMatchingRegexes("pageId", ".*\\.pageId", "error", ".*\\.error");
+		CassandraConnectionSettings settings = new CassandraConnectionSettings();
+		settings.setHost("test");
+		settings.setPort(9999);
+		settings.setLocalDataCenter("center12");
+		settings.setUsername("dummy_user");
+		settings.setPassword("test_password_!@#$%");
 		
-		Assertions.assertThat(stored)
-				.usingRecursiveComparison(config)
-				.isEqualTo(event);
+		CassandraConnectionSettings copy = new CassandraConnectionSettings(settings);
+		Assertions.assertThat(copy)
+				.usingRecursiveComparison()
+				.isEqualTo(settings);
 	}
 }

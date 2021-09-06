@@ -33,6 +33,7 @@ public class TestEventFilter
 	private FilterForGreater<Instant> startTimestampFrom;
 	private FilterForLess<Instant> startTimestampTo;
 	private StoredTestEventId parentId;
+	private boolean root;
 	private int limit;
 	private Order order = Order.DIRECT;
 	private PageId pageId;
@@ -47,7 +48,13 @@ public class TestEventFilter
 		this.scope = copyFrom.getScope();
 		this.startTimestampFrom = copyFrom.getStartTimestampFrom();
 		this.startTimestampTo = copyFrom.getStartTimestampTo();
-		this.parentId = copyFrom.getParentId();
+		
+		//User can specify parentId or root=true or omit both to get all events, whatever the parent. No way to filter "all non-root events"
+		if (copyFrom.isRoot())
+			setRoot();
+		else
+			setParentId(copyFrom.getParentId());
+		
 		this.limit = copyFrom.getLimit();
 		this.order = copyFrom.getOrder();
 		this.pageId = copyFrom.getPageId();
@@ -112,6 +119,19 @@ public class TestEventFilter
 	public void setParentId(StoredTestEventId parentId)
 	{
 		this.parentId = parentId;
+		this.root = false;
+	}
+	
+	
+	public boolean isRoot()
+	{
+		return root;
+	}
+	
+	public void setRoot()
+	{
+		this.root = true;
+		this.parentId = null;
 	}
 	
 	

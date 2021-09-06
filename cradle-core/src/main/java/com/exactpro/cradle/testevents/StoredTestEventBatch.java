@@ -45,9 +45,9 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 	private final Set<StoredMessageId> messages;
 	
 	public StoredTestEventBatch(StoredTestEventId id, String name, String type, StoredTestEventId parentId,
-			Collection<BatchedStoredTestEvent> batchEvents, PageId pageId) throws CradleStorageException
+			Collection<BatchedStoredTestEvent> batchEvents, PageId pageId, String error) throws CradleStorageException
 	{
-		super(id, name, type, parentId, pageId);
+		super(id, name, type, parentId, pageId, error);
 		
 		Map<StoredTestEventId, BatchedStoredTestEvent> allEvents = new LinkedHashMap<>();
 		Collection<BatchedStoredTestEvent> roots = new ArrayList<>();
@@ -55,34 +55,37 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 		Set<StoredMessageId> batchMessages = new HashSet<>();
 		Instant end = null;
 		boolean success = true;
-		for (BatchedStoredTestEvent event : batchEvents)
+		if (batchEvents != null)
 		{
-			StoredTestEventId eventParentId = event.getParentId();
-			if (eventParentId == null)
-				throw new CradleStorageException("Child event must have a parent: batch parent or another event from batch");
-			
-			boolean isRoot = Objects.equals(eventParentId, getParentId());
-			
-			BatchedStoredTestEvent child = new BatchedStoredTestEvent(event, this, pageId);
-			allEvents.put(child.getId(), child);
-			if (!isRoot)
-				childrenPerEvent.computeIfAbsent(eventParentId, k -> new ArrayList<>()).add(child);
-			else
-				roots.add(child);
-			
-			Set<StoredMessageId> eventMessages = child.getMessages();
-			if (eventMessages != null)
-				batchMessages.addAll(eventMessages);
-			
-			Instant eventEnd = child.getEndTimestamp();
-			if (eventEnd != null)
+			for (BatchedStoredTestEvent event : batchEvents)
 			{
-				if (end == null || end.isBefore(eventEnd))
-					end = eventEnd;
+				StoredTestEventId eventParentId = event.getParentId();
+				if (eventParentId == null)
+					throw new CradleStorageException("Child event must have a parent: batch parent or another event from batch");
+				
+				boolean isRoot = Objects.equals(eventParentId, getParentId());
+				
+				BatchedStoredTestEvent child = new BatchedStoredTestEvent(event, this, pageId);
+				allEvents.put(child.getId(), child);
+				if (!isRoot)
+					childrenPerEvent.computeIfAbsent(eventParentId, k -> new ArrayList<>()).add(child);
+				else
+					roots.add(child);
+				
+				Set<StoredMessageId> eventMessages = child.getMessages();
+				if (eventMessages != null)
+					batchMessages.addAll(eventMessages);
+				
+				Instant eventEnd = child.getEndTimestamp();
+				if (eventEnd != null)
+				{
+					if (end == null || end.isBefore(eventEnd))
+						end = eventEnd;
+				}
+				
+				if (!child.isSuccess())
+					success = false;
 			}
-			
-			if (!child.isSuccess())
-				success = false;
 		}
 		
 		this.events = Collections.unmodifiableMap(allEvents);
@@ -97,7 +100,7 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 	public StoredTestEventBatch(TestEventBatch batch, PageId pageId) throws CradleStorageException
 	{
 		this(batch.getId(), batch.getName(), batch.getType(), batch.getParentId(),
-				batch.getTestEvents(), pageId);
+				batch.getTestEvents(), pageId, null);
 	}
 	
 	@Override

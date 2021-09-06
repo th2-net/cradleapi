@@ -589,8 +589,6 @@ public abstract class CradleStorage
 			return new EmptyResultSet<>();
 		
 		BookInfo book = bpc.getBook(filter.getBookId());
-		if (filter.getPageId() != null)
-			bpc.checkPage(filter.getPageId());
 		CradleResultSet<StoredTestEvent> result = doGetTestEvents(filter, book);
 		logger.debug("Got result set with test events filtered by {}", filter);
 		return result;
@@ -610,8 +608,6 @@ public abstract class CradleStorage
 			return CompletableFuture.completedFuture(new EmptyResultSet<>());
 		
 		BookInfo book = bpc.getBook(filter.getBookId());
-		if (filter.getPageId() != null)
-			bpc.checkPage(filter.getPageId());
 		CompletableFuture<CradleResultSet<StoredTestEvent>> result = doGetTestEventsAsync(filter, book);
 		result.whenComplete((r, error) -> {
 				if (error != null)

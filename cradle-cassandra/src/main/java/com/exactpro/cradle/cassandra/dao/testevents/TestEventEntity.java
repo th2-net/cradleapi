@@ -126,7 +126,7 @@ public class TestEventEntity extends CradleEntity
 		{
 			setName(event.getName());
 			setType(event.getType());
-			setParentId(parentId != null ? parentId.toString() : null);
+			setParentId(parentId != null ? parentId.toString() : "");  //Empty string for absent parentId allows to use index to get root events
 			if (event.isBatch())
 				setEventCount(event.asBatch().getTestEventsCount());
 			setEndTimestamp(event.getEndTimestamp());

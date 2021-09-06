@@ -29,6 +29,8 @@ import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.CradleOperators;
 import com.exactpro.cradle.cassandra.dao.books.BookEntity;
 import com.exactpro.cradle.cassandra.dao.books.PageEntity;
+import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
+import com.exactpro.cradle.cassandra.dao.cache.CachedTestEventDate;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageEntityUtils;
@@ -232,7 +234,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Void> doStoreTestEventAsync(TestEventToStore event, PageInfo page) throws IOException, CradleStorageException
 	{
 		PageId pageId = page.getId();
-		Collection<TestEventEntity> entities = EventEntityUtils.toEntities(event, pageId, 
+		List<TestEventEntity> entities = EventEntityUtils.toEntities(event, pageId, 
 				settings.getMaxUncompressedTestEventSize(), settings.getTestEventChunkSize(), settings.getTestEventMessagesPerChunk());
 		BookOperators bookOps = ops.getOperators(pageId.getBookId());
 		TestEventOperator op = bookOps.getTestEventOperator();
@@ -247,13 +249,25 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		return result
 				.thenComposeAsync(r -> {
-					logger.debug("Writing scope of event '"+event.getId()+"'");
+					if (!bookOps.getScopesCache().store(new CachedScope(pageId.toString(), event.getScope())))
+					{
+						logger.debug("Skipped writing scope of event '{}'", event.getId());
+						return CompletableFuture.completedFuture(null);
+					}
+					
+					logger.debug("Writing scope of event '{}'", event.getId());
 					return bookOps.getScopeOperator()
 							.write(new ScopeEntity(pageId.getName(), event.getScope()), writeAttrs);
 				})
 				.thenComposeAsync(r -> {
-					logger.debug("Writing start date of event '"+event.getId()+"'");
 					LocalDateTime ldt = TimeUtils.toLocalTimestamp(event.getStartTimestamp());
+					if (!bookOps.getEventDatesCache().store(new CachedTestEventDate(pageId.toString(), ldt.toLocalDate(), event.getScope(), CassandraTimeUtils.getPart(ldt))))
+					{
+						logger.debug("Skipped writing start date of event '{}'", event.getId());
+						return CompletableFuture.completedFuture(null);
+					}
+					
+					logger.debug("Writing start date of event '{}'", event.getId());
 					return bookOps.getEventDateOperator()
 							.write(new EventDateEntity(pageId.getName(), ldt.toLocalDate(), event.getScope(), CassandraTimeUtils.getPart(ldt)), writeAttrs);
 				})
