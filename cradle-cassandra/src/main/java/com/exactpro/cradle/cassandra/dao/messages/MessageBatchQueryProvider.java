@@ -92,7 +92,7 @@ public class MessageBatchQueryProvider
 			error.completeExceptionally(e);
 			return error;
 		}
-		return session.executeAsync(bs).thenApply(r -> r.map(helper::get)).toCompletableFuture();
+		return session.executeAsync(bs).thenApplyAsync(r -> r.map(helper::get)).toCompletableFuture();
 	}
 
 	private Select orderBy(Order order, Select select)
