@@ -23,37 +23,24 @@ import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
 import com.datastax.oss.driver.api.mapper.annotations.Select;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 @Dao
-public interface MessageBatchOperator
+public interface SessionDatesOperator
 {
 	@Select
-	CompletableFuture<MappedAsyncPagingIterable<MessageBatchEntity>> get(String page, String sessionAlias,
-			String direction, String part, LocalDate messageDate, LocalTime messageTime, long sequence,
+	CompletableFuture<MappedAsyncPagingIterable<SessionDatesEntity>> get(String page,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + PAGE + "=:page"
-			+ " AND " + SESSION_ALIAS + "=:sessionAlias AND " + DIRECTION + "=:direction AND " + PART + "=:part"
-			+ " AND " + MESSAGE_DATE + "=:messageDate AND (" + MESSAGE_TIME + ", " + SEQUENCE + ")<=(:messageTime, :sequence)"
-			+ " ORDER BY " + MESSAGE_DATE + " DESC, " + MESSAGE_TIME + " DESC, " + SEQUENCE + " DESC LIMIT 1")
-	CompletableFuture<MessageBatchEntity> getNearestSequenceBefore(String page, String sessionAlias,
-			String direction, String part, LocalDate messageDate, LocalTime messageTime, long sequence,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
-//	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + PAGE + "=:page"
-//			+ " AND " + SESSION_ALIAS + "=:sessionAlias AND " + DIRECTION + "=:direction AND " + PART + "=:part"
-//			+ " ORDER BY " + MESSAGE_DATE + " DESC, " + MESSAGE_TIME + " DESC, " + SEQUENCE + " DESC LIMIT 1" )
-//	MessageBatchEntity getLastSequence(String page, String sessionAlias, String direction, String part,
+//	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + PAGE + "=:page AND " + DIRECTION + "=:direction " +
+//			"ORDER BY " + MESSAGE_DATE + " DESC " + PART + " DESC LIMIT 1")
+//	SessionDatesEntity getLast(String page, String direction,
 //			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-
 	@Insert
-	CompletableFuture<MessageBatchEntity> write(MessageBatchEntity batch,
+	CompletableFuture<SessionDatesEntity> write(SessionDatesEntity entity,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

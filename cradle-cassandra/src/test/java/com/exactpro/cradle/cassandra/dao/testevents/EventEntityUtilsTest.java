@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import java.util.zip.DataFormatException;
 
@@ -43,7 +42,7 @@ import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
 
-import static com.exactpro.cradle.cassandra.dao.TestUtils.createContent;
+import static com.exactpro.cradle.cassandra.TestUtils.createContent;
 
 public class EventEntityUtilsTest
 {

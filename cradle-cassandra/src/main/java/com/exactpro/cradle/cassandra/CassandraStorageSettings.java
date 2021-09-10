@@ -44,7 +44,8 @@ public class CassandraStorageSettings
 			DEFAULT_TEST_EVENT_CHUNK_SIZE = 1024*1024,
 			DEFAULT_TEST_EVENT_MESSAGES_PER_CHUNK = 10,
 			DEFAULT_SCOPES_CACHE_SIZE = 10,
-			DEFAULT_TEST_EVENT_DATES_CACHE_SIZE = 100;
+			DEFAULT_TEST_EVENT_DATES_CACHE_SIZE = 100,
+			DEFAULT_SESSION_DATES_CACHE_SIZE = 100;
 	
 	
 	private final NetworkTopologyStrategy networkTopologyStrategy;
@@ -72,9 +73,10 @@ public class CassandraStorageSettings
 			messageBatchChunkSize,
 			testEventChunkSize,
 			testEventMessagesPerChunk,
-			
+
 			scopesCacheSize,
-			testEventDatesCacheSize;
+			testEventDatesCacheSize,
+			sessionDatesCacheSize;
 	
 	public CassandraStorageSettings()
 	{
@@ -119,6 +121,7 @@ public class CassandraStorageSettings
 		
 		this.scopesCacheSize = DEFAULT_SCOPES_CACHE_SIZE;
 		this.testEventDatesCacheSize = DEFAULT_TEST_EVENT_DATES_CACHE_SIZE;
+		this.sessionDatesCacheSize = DEFAULT_SESSION_DATES_CACHE_SIZE;
 	}
 	
 	public CassandraStorageSettings(CassandraStorageSettings settings)
@@ -152,6 +155,7 @@ public class CassandraStorageSettings
 		
 		this.scopesCacheSize = settings.getScopesCacheSize();
 		this.testEventDatesCacheSize = settings.getTestEventDatesCacheSize();
+		this.sessionDatesCacheSize = settings.getSessionDatesCacheSize();
 	}
 	
 	
@@ -415,5 +419,15 @@ public class CassandraStorageSettings
 	public void setTestEventDatesCacheSize(int testEventDatesCacheSize)
 	{
 		this.testEventDatesCacheSize = testEventDatesCacheSize;
+	}
+
+	public int getSessionDatesCacheSize()
+	{
+		return sessionDatesCacheSize;
+	}
+
+	public void setSessionDatesCacheSize(int sessionDatesCacheSize)
+	{
+		this.sessionDatesCacheSize = sessionDatesCacheSize;
 	}
 }

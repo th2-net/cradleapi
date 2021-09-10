@@ -23,6 +23,7 @@ import java.util.Objects;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.utils.CradleIdException;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Holds ID of a message stored in Cradle.
@@ -92,11 +93,8 @@ public class StoredMessageId implements Serializable
 	@Override
 	public String toString()
 	{
-		return bookId+ID_PARTS_DELIMITER
-				+sessionAlias+ID_PARTS_DELIMITER
-				+direction.getLabel()+ID_PARTS_DELIMITER
-				+StoredMessageIdUtils.timestampToString(timestamp)+ID_PARTS_DELIMITER
-				+sequence;
+		return StringUtils.joinWith(ID_PARTS_DELIMITER, bookId, sessionAlias, direction.getLabel(),
+				StoredMessageIdUtils.timestampToString(timestamp), sequence);
 	}
 
 

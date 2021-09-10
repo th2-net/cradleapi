@@ -30,16 +30,10 @@ import com.exactpro.cradle.cassandra.dao.CradleOperators;
 import com.exactpro.cradle.cassandra.dao.books.BookEntity;
 import com.exactpro.cradle.cassandra.dao.books.PageEntity;
 import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
+import com.exactpro.cradle.cassandra.dao.cache.CachedSessionDate;
 import com.exactpro.cradle.cassandra.dao.cache.CachedTestEventDate;
-import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
-import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
-import com.exactpro.cradle.cassandra.dao.messages.MessageEntityUtils;
-import com.exactpro.cradle.cassandra.dao.testevents.EventDateEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.EventEntityUtils;
-import com.exactpro.cradle.cassandra.dao.testevents.ScopeEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventIteratorProvider;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
+import com.exactpro.cradle.cassandra.dao.messages.*;
+import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.BookKeyspaceCreator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
@@ -50,16 +44,15 @@ import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TimeUtils;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.IOException;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -196,21 +189,34 @@ public class CassandraCradleStorage extends CradleStorage
 			throws IOException, CradleStorageException
 	{
 		PageId pageId = page.getId();
+		StoredMessageId batchId = batch.getId();
 		Collection<MessageBatchEntity> entities = MessageEntityUtils.toEntities(batch, pageId,
 				settings.getMaxUncompressedMessageBatchSize(), settings.getMessageBatchChunkSize());
 		BookOperators bookOps = ops.getOperators(pageId.getBookId());
-		MessageBatchOperator op = bookOps.getMessageBatchOperator();
+		MessageBatchOperator mbOperator = bookOps.getMessageBatchOperator();
+		SessionDatesOperator sdOperator = bookOps.getSessionDatesOperator();
 
-		CompletableFuture<MessageBatchEntity> result = null;
+		CompletableFuture<MessageBatchEntity> result = CompletableFuture.completedFuture(null);
 		for (MessageBatchEntity entity : entities)
-		{
-			if (result == null)
-				result = op.write(entity, writeAttrs);
-			else
-				result = result.thenComposeAsync(r -> op.write(entity, writeAttrs));
-		}
-		
-		return result == null ? CompletableFuture.completedFuture(null) : result.thenAccept(NOOP);
+			result = result.thenComposeAsync(r -> mbOperator.write(entity, writeAttrs));
+
+		return result
+				.thenComposeAsync(r ->
+				{
+					LocalDateTime ldt = TimeUtils.toLocalTimestamp(batchId.getTimestamp());
+					CachedSessionDate cachedSessionDate = new CachedSessionDate(pageId.getName(), ldt.toLocalDate(),
+							batchId.getSessionAlias(), batchId.getDirection().getLabel(),
+							CassandraTimeUtils.getPart(ldt));
+					if (!bookOps.getSessionDatesCache().store(cachedSessionDate))
+					{
+						logger.debug("Skipped writing session date of message batch '{}'", batchId);
+						return CompletableFuture.completedFuture(null);
+					}
+
+					logger.debug("Writing session date of batch '{}'", batchId);
+					return sdOperator.write(new SessionDatesEntity(batchId, pageId), writeAttrs);
+				})
+				.thenAccept(NOOP);
 	}
 	
 	
@@ -351,24 +357,43 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<Collection<StoredMessage>> doGetMessageBatchAsync(StoredMessageId id, PageId pageId)
+			throws CradleStorageException
 	{
-		return null;
-		//TOOD: implement
-//		CompletableFuture<DetailedMessageBatchEntity> entityFuture = readMessageBatchEntity(id, true);
-//		return entityFuture.thenCompose((entity) -> {
-//			if (entity == null)
-//				return CompletableFuture.completedFuture(null);
-//			Collection<StoredMessage> msgs;
-//			try
-//			{
-//				msgs = MessageUtils.bytesToMessages(entity.getContent(), entity.isCompressed());
-//			}
-//			catch (IOException e)
-//			{
-//				throw new CompletionException("Error while reading message batch", e);
-//			}
-//			return CompletableFuture.completedFuture(msgs);
-//		});
+		logger.debug("Getting message batch for message with id '{}'", id);
+		BookId bookId = pageId.getBookId();
+		LocalDateTime ldt = TimeUtils.toLocalTimestamp(id.getTimestamp());
+		BookOperators bookOps = ops.getOperators(bookId);
+		return bookOps.getMessageBatchOperator()
+				.getNearestSequenceBefore(pageId.getName(), id.getSessionAlias(), id.getDirection().getLabel(),
+						CassandraTimeUtils.getPart(ldt), ldt.toLocalDate(), ldt.toLocalTime(), id.getSequence(),
+						readAttrs)
+				.thenComposeAsync(entity ->
+				{
+					if (entity == null)
+					{
+						logger.debug("No message batches found by id '{}'", id);
+						return null;
+					}
+					return bookOps
+							.getMessageBatchOperator()
+							.get(pageId.getName(), id.getSessionAlias(), id.getDirection().getLabel(),
+									CassandraTimeUtils.getPart(ldt), ldt.toLocalDate(),
+									entity.getMessageTime(),
+									entity.getSequence(), readAttrs)
+							.thenApplyAsync(e ->
+							{
+								try
+								{
+									StoredMessageBatch batch = MessageEntityUtils.toStoredMessageBatch(e, pageId);
+									logger.debug("Message batch with id '{}' found for message with id '{}'", batch.getId(), id);
+									return batch.getMessages();
+								}
+								catch (Exception ex)
+								{
+									throw new CompletionException(ex);
+								}
+							});
+				});
 	}
 	
 	
@@ -412,9 +437,28 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	protected long doGetLastSequence(String sessionAlias, Direction direction, PageId pageId) throws IOException
+	protected long doGetLastSequence(String sessionAlias, Direction direction, PageId pageId)
+			throws IOException, CradleStorageException
 	{
-		//TODO: implement
+//		TODO
+//		BookId bookId = pageId.getBookId();
+//		BookOperators bookOps = ops.getOperators(bookId);
+//		PageInfo currentPage = findCurrentPage();
+//		return bookOps
+//				.getMessageBatchOperator()
+//				.getLastSequence(pageId.getName(), ldt.toLocalDate(), id.getSessionAlias(), id.getDirection().getLabel(),
+//						CassandraTimeUtils.getPart(ldt), ldt.toLocalTime(), id.getSequence(), readAttrs)
+//				.thenApplyAsync(entity ->
+//				{
+//					try
+//					{
+//						return MessageEntityUtils.toStoredMessageBatch(entity, pageId).getMessages();
+//					}
+//					catch (Exception e)
+//					{
+//						throw new CompletionException(e);
+//					}
+//				});
 		return 0;
 	}
 	
@@ -578,7 +622,6 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	protected PageInfo findCurrentPage()
 	{
-		//TODO: implement
 		return null;
 	}
 	

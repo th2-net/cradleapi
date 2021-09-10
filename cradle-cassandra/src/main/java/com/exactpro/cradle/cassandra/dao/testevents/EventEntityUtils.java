@@ -17,7 +17,6 @@
 package com.exactpro.cradle.cassandra.dao.testevents;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -34,7 +33,6 @@ import org.slf4j.LoggerFactory;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.PageId;
-import com.exactpro.cradle.cassandra.dao.DaoUtils;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEvent;
@@ -149,15 +147,8 @@ public class EventEntityUtils
 	public static StoredTestEvent toStoredTestEvent(MappedAsyncPagingIterable<TestEventEntity> resultSet, PageId pageId) 
 			throws IOException, CradleStorageException, DataFormatException, CradleIdException
 	{
-		List<TestEventEntity> entities;
-		try
-		{
-			entities = DaoUtils.toList(resultSet);
-		}
-		catch (Exception e)
-		{
-			throw new CradleStorageException("Error while converting result set to collection", e);
-		}
+		List<TestEventEntity> entities = EntityUtils.toCompleteEntitiesCollection(resultSet);
+		
 		return toStoredTestEvent(entities, pageId);
 	}
 	

@@ -81,14 +81,16 @@ public abstract class CradleStorage
 	protected abstract StoredMessage doGetMessage(StoredMessageId id, PageId pageId) throws IOException;
 	protected abstract CompletableFuture<StoredMessage> doGetMessageAsync(StoredMessageId id, PageId pageId);
 	protected abstract Collection<StoredMessage> doGetMessageBatch(StoredMessageId id, PageId pageId) throws IOException;
-	protected abstract CompletableFuture<Collection<StoredMessage>> doGetMessageBatchAsync(StoredMessageId id, PageId pageId);
+	protected abstract CompletableFuture<Collection<StoredMessage>> doGetMessageBatchAsync(StoredMessageId id, PageId pageId)
+			throws CradleStorageException;
 	
 	protected abstract Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException;
 	protected abstract CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter);
 	protected abstract Iterable<MessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException;
 	protected abstract CompletableFuture<Iterable<MessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter);
 	
-	protected abstract long doGetLastSequence(String sessionAlias, Direction direction, PageId pageId) throws IOException;
+	protected abstract long doGetLastSequence(String sessionAlias, Direction direction, PageId pageId)
+			throws IOException, CradleStorageException;
 	protected abstract Collection<String> doGetSessionAliases(PageId pageId) throws IOException;
 	
 	

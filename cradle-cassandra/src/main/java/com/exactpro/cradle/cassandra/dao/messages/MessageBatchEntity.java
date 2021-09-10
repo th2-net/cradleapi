@@ -21,6 +21,7 @@ import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.CradleEntity;
+import com.exactpro.cradle.cassandra.utils.CassandraTimeUtils;
 import com.exactpro.cradle.messages.MessageBatch;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.TimeUtils;
@@ -49,30 +50,30 @@ public class MessageBatchEntity extends CradleEntity
 	private String page;
 
 	@PartitionKey(1)
-	@CqlName(MESSAGE_DATE)
-	private LocalDate messageDate;
-
-	@PartitionKey(2)
 	@CqlName(SESSION_ALIAS)
 	private String sessionAlias;
 
-	@PartitionKey(3)
+	@PartitionKey(2)
 	@CqlName(DIRECTION)
 	private String direction;
 
-	@PartitionKey(4)
+	@PartitionKey(3)
 	@CqlName(PART)
 	private String part;
 
 	@ClusteringColumn(0)
+	@CqlName(MESSAGE_DATE)
+	private LocalDate messageDate;
+
+	@ClusteringColumn(1)
 	@CqlName(MESSAGE_TIME)
 	private LocalTime messageTime;
 
-	@ClusteringColumn(1)
+	@ClusteringColumn(2)
 	@CqlName(SEQUENCE)
 	private long sequence;
 
-	@ClusteringColumn(2)
+	@ClusteringColumn(3)
 	@CqlName(CHUNK)
 	private int chunk;
 
@@ -107,7 +108,7 @@ public class MessageBatchEntity extends CradleEntity
 		setMessageTime(ldt.toLocalTime());
 		setSessionAlias(id.getSessionAlias());
 		setDirection(id.getDirection().getLabel());
-		setPart(String.valueOf(ldt.getHour()));
+		setPart(CassandraTimeUtils.getPart(ldt));
 		setSequence(id.getSequence());
 
 		//TODO		setStoredTimestamp(Instant.now());

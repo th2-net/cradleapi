@@ -23,18 +23,15 @@ import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
-import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import org.testng.asserts.Assertion;
 
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.zip.DataFormatException;
 
-import static com.exactpro.cradle.cassandra.dao.TestUtils.createContent;
-import static org.testng.Assert.*;
+import static com.exactpro.cradle.cassandra.TestUtils.createContent;
 
 public class MessageEntityUtilsTest
 {

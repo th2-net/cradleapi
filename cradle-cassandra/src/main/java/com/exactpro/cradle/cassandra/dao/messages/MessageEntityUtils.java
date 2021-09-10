@@ -16,9 +16,9 @@
 
 package com.exactpro.cradle.cassandra.dao.messages;
 
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.EntityUtils;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
 import com.exactpro.cradle.messages.MessageBatch;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
@@ -88,6 +88,13 @@ public class MessageEntityUtils
 		}
 
 		return result;
+	}
+
+	public static StoredMessageBatch toStoredMessageBatch(MappedAsyncPagingIterable<MessageBatchEntity> resultSet,
+			PageId pageId) throws CradleStorageException, DataFormatException, IOException
+	{
+		Collection<MessageBatchEntity> entities = EntityUtils.toCompleteEntitiesCollection(resultSet);
+		return toStoredMessageBatch(entities, pageId);
 	}
 
 	public static StoredMessageBatch toStoredMessageBatch(Collection<MessageBatchEntity> entities, PageId pageId)

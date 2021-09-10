@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.cassandra.dao;
+package com.exactpro.cradle.cassandra;
 
 import java.util.Random;
 

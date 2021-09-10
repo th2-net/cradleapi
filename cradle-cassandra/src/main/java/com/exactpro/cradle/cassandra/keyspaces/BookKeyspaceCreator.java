@@ -66,11 +66,11 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 		String tableName = getSettings().getMessagesTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(PAGE, DataTypes.TEXT)
-				.withPartitionKey(MESSAGE_DATE, DataTypes.DATE)
 				.withPartitionKey(SESSION_ALIAS, DataTypes.TEXT)
 				.withPartitionKey(DIRECTION, DataTypes.TEXT)
 				.withPartitionKey(PART, DataTypes.TEXT)
-				
+
+				.withClusteringColumn(MESSAGE_DATE, DataTypes.DATE)
 				.withClusteringColumn(MESSAGE_TIME, DataTypes.TIME)
 				.withClusteringColumn(SEQUENCE, DataTypes.BIGINT)
 				.withClusteringColumn(CHUNK, DataTypes.INT)
@@ -100,8 +100,8 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 		String tableName = getSettings().getSessionsDatesTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(PAGE, DataTypes.TEXT)
-				.withPartitionKey(MESSAGE_DATE, DataTypes.DATE)
-				
+
+				.withClusteringColumn(MESSAGE_DATE, DataTypes.DATE)
 				.withClusteringColumn(SESSION_ALIAS, DataTypes.TEXT)
 				.withClusteringColumn(DIRECTION, DataTypes.TEXT)
 				.withClusteringColumn(PART, DataTypes.TEXT));

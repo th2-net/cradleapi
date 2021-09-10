@@ -19,8 +19,10 @@ package com.exactpro.cradle.cassandra.dao;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.books.PageOperator;
 import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
+import com.exactpro.cradle.cassandra.dao.cache.CachedSessionDate;
 import com.exactpro.cradle.cassandra.dao.cache.CachedTestEventDate;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
+import com.exactpro.cradle.cassandra.dao.messages.SessionDatesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.EventDateOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
@@ -31,6 +33,7 @@ public class BookOperators
 {
 	private final PageOperator pageOperator;
 	private final MessageBatchOperator messageBatchOperator;
+	private final SessionDatesOperator sessionDatesOperator;
 	private final TestEventOperator testEventOperator;
 	private final ScopeOperator scopeOperator;
 	private final EventDateOperator eventDateOperator;
@@ -38,11 +41,13 @@ public class BookOperators
 	
 	private final LimitedCache<CachedScope> scopesCache;
 	private final LimitedCache<CachedTestEventDate> eventDatesCache;
+	private final LimitedCache<CachedSessionDate> sessionDatesCache; 
 	
 	public BookOperators(CassandraDataMapper dataMapper, String keyspace, CassandraStorageSettings settings)
 	{
 		pageOperator = dataMapper.pageOperator(keyspace, settings.getPagesTable());
 		messageBatchOperator = dataMapper.messageBatchOperator(keyspace, settings.getMessagesTable());
+		sessionDatesOperator = dataMapper.sessionDatesOperator(keyspace, settings.getSessionsDatesTable());
 		testEventOperator = dataMapper.testEventOperator(keyspace, settings.getTestEventsTable());
 		scopeOperator = dataMapper.scopeOperator(keyspace, settings.getScopesTable());
 		eventDateOperator = dataMapper.eventDateOperator(keyspace, settings.getTestEventsDatesTable());
@@ -50,6 +55,7 @@ public class BookOperators
 		
 		scopesCache = new LimitedCache<>(settings.getScopesCacheSize());
 		eventDatesCache = new LimitedCache<>(settings.getTestEventDatesCacheSize());
+		sessionDatesCache = new LimitedCache<>(settings.getSessionDatesCacheSize());
 	}
 	
 	public PageOperator getPageOperator()
@@ -61,7 +67,12 @@ public class BookOperators
 	{
 		return messageBatchOperator;
 	}
-	
+
+	public SessionDatesOperator getSessionDatesOperator()
+	{
+		return sessionDatesOperator;
+	}
+
 	public TestEventOperator getTestEventOperator()
 	{
 		return testEventOperator;
@@ -91,5 +102,10 @@ public class BookOperators
 	public LimitedCache<CachedTestEventDate> getEventDatesCache()
 	{
 		return eventDatesCache;
+	}
+
+	public LimitedCache<CachedSessionDate> getSessionDatesCache()
+	{
+		return sessionDatesCache;
 	}
 }

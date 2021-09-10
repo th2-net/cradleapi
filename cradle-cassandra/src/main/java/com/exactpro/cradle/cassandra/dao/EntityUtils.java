@@ -16,7 +16,8 @@
 
 package com.exactpro.cradle.cassandra.dao;
 
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
+import com.exactpro.cradle.utils.CradleStorageException;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -59,4 +60,16 @@ public class EntityUtils
 		return null;
 	}
 
+	public static <T extends CradleEntity> List<T> toCompleteEntitiesCollection(MappedAsyncPagingIterable<T> resultSet)
+			throws CradleStorageException
+	{
+		try
+		{
+			return DaoUtils.toList(resultSet);
+		}
+		catch (Exception e)
+		{
+			throw new CradleStorageException("Error while converting result set to collection", e);
+		}
+	}
 }
