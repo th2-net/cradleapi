@@ -513,7 +513,7 @@ public abstract class CradleStorage
 		StoredMessageId result = doGetNearestMessageId(streamName, direction, timestamp, timeRelation);
 		logger.debug("First message ID appeared on {} or {} for stream '{}' and direction '{}' got", 
 				timestamp, timeRelation.getLabel(), streamName, direction.getLabel());
-		return result; 
+		return result;
 	}
 
 	/**

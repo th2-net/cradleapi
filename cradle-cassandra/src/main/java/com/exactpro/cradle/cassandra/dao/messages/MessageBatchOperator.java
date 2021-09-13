@@ -23,13 +23,12 @@ import java.util.function.Function;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
 import com.datastax.oss.driver.api.mapper.annotations.QueryProvider;
 import com.datastax.oss.driver.api.mapper.annotations.Select;
-import com.exactpro.cradle.Order;
-import com.exactpro.cradle.cassandra.CassandraSemaphore;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
@@ -70,15 +69,15 @@ public interface MessageBatchOperator
 	@Select
 	PagingIterable<DetailedMessageBatchEntity> getAll(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
+	@Query("SELECT " + MESSAGE_INDEX + " FROM ${qualifiedTableId} WHERE "
 			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction LIMIT 1")
-	DetailedMessageBatchEntity getFirstIndex(UUID instanceId, String streamName, String direction,
+	Row getFirstIndex(UUID instanceId, String streamName, String direction,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
+	@Query("SELECT " +LAST_MESSAGE_INDEX+ " FROM ${qualifiedTableId} WHERE "
 			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction "
 			+ "ORDER BY "+DIRECTION+" DESC, "+MESSAGE_INDEX+" DESC LIMIT 1")
-	DetailedMessageBatchEntity getLastIndex(UUID instanceId, String streamName, String direction,
+	Row getLastIndex(UUID instanceId, String streamName, String direction,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@QueryProvider(providerClass = MessageBatchQueryProvider.class, entityHelpers = DetailedMessageBatchEntity.class)

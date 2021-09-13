@@ -888,14 +888,14 @@ public class CassandraCradleStorage extends CradleStorage
 
 	private long getFirstIndex(MessageBatchOperator op, String streamName, Direction direction)
 	{
-		DetailedMessageBatchEntity result = op.getFirstIndex(instanceUuid, streamName, direction.getLabel(), readAttrs);
-		return result != null ? result.getMessageIndex() : EMPTY_MESSAGE_INDEX;
+		Row row = op.getFirstIndex(instanceUuid, streamName, direction.getLabel(), readAttrs);
+		return row == null ? EMPTY_MESSAGE_INDEX : row.getLong(MESSAGE_INDEX);
 	}
 	
 	private long getLastIndex(MessageBatchOperator op, String streamName, Direction direction)
 	{
-		DetailedMessageBatchEntity result = op.getLastIndex(instanceUuid, streamName, direction.getLabel(), readAttrs);
-		return result != null ? result.getLastMessageIndex() : EMPTY_MESSAGE_INDEX;
+		Row row = op.getLastIndex(instanceUuid, streamName, direction.getLabel(), readAttrs);
+		return row == null ? EMPTY_MESSAGE_INDEX : row.getLong(LAST_MESSAGE_INDEX);
 	}
 	
 	protected CompletableFuture<DetailedTestEventEntity> storeEvent(StoredTestEvent event)
