@@ -18,7 +18,6 @@ package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
-import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.mapper.MapperContext;
@@ -56,11 +55,11 @@ public class TestEventQueryProvider
 	public CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getComplete(UUID instanceId, List<String> id,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 	{
-		BoundStatement bs = session.prepare(ss)
+		BoundStatementBuilder builder = session.prepare(ss)
 				.boundStatementBuilder()
 				.setUuid(0, instanceId)
-				.setList(1, id, String.class)
-				.build();
-		return session.executeAsync(bs).thenApply(result -> result.map(helper::get)).toCompletableFuture();
+				.setList(1, id, String.class);
+		builder = attributes.apply(builder);
+		return session.executeAsync(builder.build()).thenApply(result -> result.map(helper::get)).toCompletableFuture();
 	}
 }
