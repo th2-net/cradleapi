@@ -78,6 +78,7 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 public class CassandraCradleStorage extends CradleStorage
 {
+	public static final long EMPTY_MESSAGE_INDEX = -1L;
 	private Logger logger = LoggerFactory.getLogger(CassandraCradleStorage.class);
 	public static final ZoneOffset TIMEZONE_OFFSET = ZoneOffset.UTC;
 
@@ -411,9 +412,21 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
+	protected long doGetFirstMessageIndex(String streamName, Direction direction) throws IOException
+	{
+		return getFirstIndex(ops.getMessageBatchOperator(), streamName, direction);
+	}
+	
+	@Override
 	protected long doGetLastMessageIndex(String streamName, Direction direction) throws IOException
 	{
 		return getLastIndex(ops.getMessageBatchOperator(), streamName, direction);
+	}
+
+	@Override
+	protected long doGetFirstProcessedMessageIndex(String streamName, Direction direction) throws IOException
+	{
+		return getFirstIndex(ops.getProcessedMessageBatchOperator(), streamName, direction);
 	}
 
 	@Override
@@ -873,12 +886,18 @@ public class CassandraCradleStorage extends CradleStorage
 			throw new CradleStorageException("Left and right boundaries should be of the same date, but got '"+originalFrom+"' and '"+originalTo+"'");
 	}
 
+	private long getFirstIndex(MessageBatchOperator op, String streamName, Direction direction)
+	{
+		DetailedMessageBatchEntity result = op.getFirstIndex(instanceUuid, streamName, direction.getLabel(), readAttrs);
+		return result != null ? result.getMessageIndex() : EMPTY_MESSAGE_INDEX;
+	}
+	
 	private long getLastIndex(MessageBatchOperator op, String streamName, Direction direction)
 	{
 		DetailedMessageBatchEntity result = op.getLastIndex(instanceUuid, streamName, direction.getLabel(), readAttrs);
-		return result != null ? result.getLastMessageIndex() : -1;
+		return result != null ? result.getLastMessageIndex() : EMPTY_MESSAGE_INDEX;
 	}
-
+	
 	protected CompletableFuture<DetailedTestEventEntity> storeEvent(StoredTestEvent event)
 	{
 		return new AsyncOperator<DetailedTestEventEntity>(semaphore).getFuture(() -> {

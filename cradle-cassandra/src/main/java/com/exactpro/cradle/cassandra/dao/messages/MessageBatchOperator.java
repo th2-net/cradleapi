@@ -71,9 +71,15 @@ public interface MessageBatchOperator
 	PagingIterable<DetailedMessageBatchEntity> getAll(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
+			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction LIMIT 1")
+	DetailedMessageBatchEntity getFirstIndex(UUID instanceId, String streamName, String direction,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
 			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction "
 			+ "ORDER BY "+DIRECTION+" DESC, "+MESSAGE_INDEX+" DESC LIMIT 1")
-	DetailedMessageBatchEntity getLastIndex(UUID instanceId, String streamName, String direction, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	DetailedMessageBatchEntity getLastIndex(UUID instanceId, String streamName, String direction,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@QueryProvider(providerClass = MessageBatchQueryProvider.class, entityHelpers = DetailedMessageBatchEntity.class)
 	CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> filterMessages(UUID instanceId,
