@@ -390,7 +390,7 @@ public abstract class CradleStorage
 	 */
 	public final Collection<StoredMessage> getMessageBatch(StoredMessageId id) throws IOException, CradleStorageException
 	{
-		return getMessageBatch(id, bpc.getActivePageId(id.getBookId()));
+		return getMessageBatch(id, bpc.findPage(id.getBookId(), id.getTimestamp()).getId());
 	}
 	
 	/**

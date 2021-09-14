@@ -376,7 +376,7 @@ public class CassandraCradleStorage extends CradleStorage
 					if (row == null)
 					{
 						logger.debug("No message batches found by id '{}'", id);
-						return null;
+						return CompletableFuture.completedFuture(null);
 					}
 					return bookOps
 							.getMessageBatchOperator()
