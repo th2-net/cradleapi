@@ -46,7 +46,7 @@ public abstract class CradleStorage
 	public static final ZoneOffset TIMEZONE_OFFSET = ZoneOffset.UTC;
 	
 	private final Map<BookId, BookInfo> books;
-	private final BookAndPageChecker bpc;
+	protected final BookAndPageChecker bpc;
 	private volatile boolean initialized = false,
 			disposed = false;
 	
@@ -89,7 +89,7 @@ public abstract class CradleStorage
 	protected abstract Iterable<MessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException;
 	protected abstract CompletableFuture<Iterable<MessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter);
 	
-	protected abstract long doGetLastSequence(String sessionAlias, Direction direction, PageId pageId)
+	protected abstract long doGetLastSequence(String sessionAlias, Direction direction, BookId bookId)
 			throws IOException, CradleStorageException;
 	protected abstract Collection<String> doGetSessionAliases(PageId pageId) throws IOException;
 	
@@ -505,16 +505,16 @@ public abstract class CradleStorage
 	 * Use result of this method to continue writing messages.
 	 * @param sessionAlias to get sequence number for 
 	 * @param direction to get sequence number for
-	 * @param pageId to search in
+	 * @param bookId
 	 * @return last stored sequence number for given arguments, if it is present, -1 otherwise
 	 * @throws IOException if retrieval failed
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final long getLastSequence(String sessionAlias, Direction direction, PageId pageId) throws IOException, CradleStorageException
+	public final long getLastSequence(String sessionAlias, Direction direction, BookId bookId) throws IOException, CradleStorageException
 	{
-		logger.debug("Getting last stored sequence number for session alias '{}' and direction '{}', page {}", sessionAlias, direction.getLabel(), pageId);
-		bpc.checkPage(pageId);
-		long result = doGetLastSequence(sessionAlias, direction, pageId);
+		logger.debug("Getting last stored sequence number for book '{}' and session alias '{}' and direction '{}'",
+				bookId, sessionAlias, direction.getLabel());
+		long result = doGetLastSequence(sessionAlias, direction, bookId);
 		logger.debug("Sequence number {} got", result);
 		return result;
 	}

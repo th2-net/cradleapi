@@ -18,6 +18,7 @@ package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
@@ -38,19 +39,19 @@ public interface MessageBatchOperator
 			String direction, String part, LocalDate messageDate, LocalTime messageTime, long sequence,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + PAGE + "=:page"
+	@Query("SELECT " + SEQUENCE + ", " + MESSAGE_TIME + " FROM ${qualifiedTableId} WHERE " + PAGE + "=:page"
 			+ " AND " + SESSION_ALIAS + "=:sessionAlias AND " + DIRECTION + "=:direction AND " + PART + "=:part"
 			+ " AND " + MESSAGE_DATE + "=:messageDate AND (" + MESSAGE_TIME + ", " + SEQUENCE + ")<=(:messageTime, :sequence)"
 			+ " ORDER BY " + MESSAGE_DATE + " DESC, " + MESSAGE_TIME + " DESC, " + SEQUENCE + " DESC LIMIT 1")
-	CompletableFuture<MessageBatchEntity> getNearestSequenceBefore(String page, String sessionAlias,
+	CompletableFuture<Row> getNearestTimeAndSequenceBefore(String page, String sessionAlias,
 			String direction, String part, LocalDate messageDate, LocalTime messageTime, long sequence,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-//	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + PAGE + "=:page"
-//			+ " AND " + SESSION_ALIAS + "=:sessionAlias AND " + DIRECTION + "=:direction AND " + PART + "=:part"
-//			+ " ORDER BY " + MESSAGE_DATE + " DESC, " + MESSAGE_TIME + " DESC, " + SEQUENCE + " DESC LIMIT 1" )
-//	MessageBatchEntity getLastSequence(String page, String sessionAlias, String direction, String part,
-//			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	@Query("SELECT " + LAST_SEQUENCE + " FROM ${qualifiedTableId} WHERE " + PAGE + "=:page"
+			+ " AND " + SESSION_ALIAS + "=:sessionAlias AND " + DIRECTION + "=:direction AND " + PART + "=:part"
+			+ " ORDER BY " + MESSAGE_DATE + " DESC, " + MESSAGE_TIME + " DESC, " + SEQUENCE + " DESC LIMIT 1" )
+	CompletableFuture<Row> getLastSequence(String page, String sessionAlias, String direction, String part,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 
 	@Insert

@@ -164,7 +164,7 @@ public class DummyCradleStorage extends CradleStorage
 	
 	
 	@Override
-	protected long doGetLastSequence(String sessionAlias, Direction direction, PageId pageId) throws IOException
+	protected long doGetLastSequence(String sessionAlias, Direction direction, BookId bookId) throws IOException
 	{
 		return 0;
 	}

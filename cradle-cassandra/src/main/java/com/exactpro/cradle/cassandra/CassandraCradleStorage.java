@@ -20,6 +20,7 @@ import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
@@ -57,8 +58,11 @@ import java.time.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 public class CassandraCradleStorage extends CradleStorage
 {
@@ -364,12 +368,12 @@ public class CassandraCradleStorage extends CradleStorage
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(id.getTimestamp());
 		BookOperators bookOps = ops.getOperators(bookId);
 		return bookOps.getMessageBatchOperator()
-				.getNearestSequenceBefore(pageId.getName(), id.getSessionAlias(), id.getDirection().getLabel(),
+				.getNearestTimeAndSequenceBefore(pageId.getName(), id.getSessionAlias(), id.getDirection().getLabel(),
 						CassandraTimeUtils.getPart(ldt), ldt.toLocalDate(), ldt.toLocalTime(), id.getSequence(),
 						readAttrs)
-				.thenComposeAsync(entity ->
+				.thenComposeAsync(row ->
 				{
-					if (entity == null)
+					if (row == null)
 					{
 						logger.debug("No message batches found by id '{}'", id);
 						return null;
@@ -378,8 +382,8 @@ public class CassandraCradleStorage extends CradleStorage
 							.getMessageBatchOperator()
 							.get(pageId.getName(), id.getSessionAlias(), id.getDirection().getLabel(),
 									CassandraTimeUtils.getPart(ldt), ldt.toLocalDate(),
-									entity.getMessageTime(),
-									entity.getSequence(), readAttrs)
+									row.getLocalTime(MESSAGE_TIME),
+									row.getLong(SEQUENCE), readAttrs)
 							.thenApplyAsync(e ->
 							{
 								try
@@ -437,29 +441,55 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	protected long doGetLastSequence(String sessionAlias, Direction direction, PageId pageId)
+	protected long doGetLastSequence(String sessionAlias, Direction direction, BookId bookId)
 			throws IOException, CradleStorageException
 	{
-//		TODO
-//		BookId bookId = pageId.getBookId();
-//		BookOperators bookOps = ops.getOperators(bookId);
-//		PageInfo currentPage = findCurrentPage();
-//		return bookOps
-//				.getMessageBatchOperator()
-//				.getLastSequence(pageId.getName(), ldt.toLocalDate(), id.getSessionAlias(), id.getDirection().getLabel(),
-//						CassandraTimeUtils.getPart(ldt), ldt.toLocalTime(), id.getSequence(), readAttrs)
-//				.thenApplyAsync(entity ->
-//				{
-//					try
-//					{
-//						return MessageEntityUtils.toStoredMessageBatch(entity, pageId).getMessages();
-//					}
-//					catch (Exception e)
-//					{
-//						throw new CompletionException(e);
-//					}
-//				});
-		return 0;
+		
+		BookOperators bookOps = ops.getOperators(bookId);
+		MessageBatchOperator mbOp = bookOps.getMessageBatchOperator();
+		SessionDatesOperator sdOp = bookOps.getSessionDatesOperator();
+		BookInfo book = bpc.getBook(bookId);
+		PageInfo currentPage = bpc.getActivePage(bookId);
+		String lastPart = null;
+		while (lastPart == null && currentPage != null)
+		{
+			List<LocalDate> localDates = TimeUtils.splitByDate(currentPage.getStarted(), currentPage.getEnded());
+			try
+			{
+				lastPart = sdOp.getLastPart(currentPage.getId().getName(), localDates,
+								sessionAlias, direction.getLabel(), readAttrs).get();
+			}
+			catch (InterruptedException | ExecutionException e)
+			{
+				String msg = String.format(
+						"Error occurs while getting last part for page '%s', message dates %s, session alias '%s', " +
+								"direction '%s'", currentPage.getId().getName(), localDates, sessionAlias, direction);
+				throw new CradleStorageException(msg, e);
+			}
+			
+			if (lastPart == null)
+				currentPage = book.getPreviousPage(currentPage.getStarted());
+		}
+		if (lastPart == null || currentPage == null)
+		{
+			logger.debug("There is no messages yet in book '{}' with session alias '{}' and direction '{}'", bookId,
+					sessionAlias, direction);
+			return 0L;
+		}
+
+		try
+		{
+			Row row = mbOp.getLastSequence(currentPage.getId().getName(), sessionAlias, direction.getLabel(), lastPart,
+					readAttrs).get();
+			return row == null ? 0L : row.getLong(LAST_SEQUENCE);
+		}
+		catch (InterruptedException | ExecutionException e)
+		{
+			String msg = String.format(
+					"Error occurs while getting last sequence for page '%s', session alias '%s', part '%s', " +
+							"direction '%s'", currentPage.getId().getName(), sessionAlias, lastPart, direction);
+			throw new CradleStorageException(msg, e);
+		}
 	}
 	
 	@Override
@@ -618,11 +648,6 @@ public class CassandraCradleStorage extends CradleStorage
 		{
 			throw new CradleStorageException("Error while creating storage for book '"+name+"'", e);
 		}
-	}
-	
-	protected PageInfo findCurrentPage()
-	{
-		return null;
 	}
 	
 	protected CassandraStorageSettings getSettings()

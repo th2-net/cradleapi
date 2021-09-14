@@ -21,6 +21,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 import com.exactpro.cradle.CradleStorage;
 
@@ -60,5 +61,24 @@ public class TimeUtils
 		if (localDate == null || localTime == null)
 			return null;
 		return localTime.atDate(localDate).toInstant(CradleStorage.TIMEZONE_OFFSET);
+	}
+
+	public static List<LocalDate> splitByDate(Instant from, Instant to) throws CradleStorageException
+	{
+		if (from == null)
+			throw new CradleStorageException("'from' is mandatory parameter and can't be null");
+		
+		if (to == null)
+			to = Instant.now();
+		
+		LocalDate fromDate = toLocalTimestamp(from).toLocalDate();
+		LocalDate toDate = toLocalTimestamp(to).toLocalDate();
+
+		int days = fromDate.until(toDate).getDays();
+		List<LocalDate> result = new ArrayList<>();
+		for (int i = 0; i <= days; i++)
+			result.add(fromDate.plusDays(i));
+		
+		return result;
 	}
 }

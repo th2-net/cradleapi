@@ -18,11 +18,10 @@ package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.datastax.oss.driver.api.mapper.annotations.Dao;
-import com.datastax.oss.driver.api.mapper.annotations.Insert;
-import com.datastax.oss.driver.api.mapper.annotations.Query;
-import com.datastax.oss.driver.api.mapper.annotations.Select;
+import com.datastax.oss.driver.api.mapper.annotations.*;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
@@ -35,10 +34,9 @@ public interface SessionDatesOperator
 	CompletableFuture<MappedAsyncPagingIterable<SessionDatesEntity>> get(String page,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-//	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + PAGE + "=:page AND " + DIRECTION + "=:direction " +
-//			"ORDER BY " + MESSAGE_DATE + " DESC " + PART + " DESC LIMIT 1")
-//	SessionDatesEntity getLast(String page, String direction,
-//			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	@QueryProvider(providerClass = SessionDatesQueryProvider.class, entityHelpers = SessionDatesEntity.class, providerMethod = "getLastPart")
+	CompletableFuture<String> getLastPart(String page, List<LocalDate> messagesDates, String sessionAlias, String direction,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Insert
 	CompletableFuture<SessionDatesEntity> write(SessionDatesEntity entity,
