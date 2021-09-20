@@ -19,6 +19,7 @@ package com.exactpro.cradle.cassandra;
 import java.io.IOException;
 import java.util.Optional;
 
+import com.datastax.oss.driver.api.querybuilder.schema.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,10 +27,6 @@ import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
-import com.datastax.oss.driver.api.querybuilder.schema.AlterTableAddColumnEnd;
-import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
-import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
-import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
@@ -57,14 +54,22 @@ public class TablesCreator
 		createTimeMessagesTable();
 		createTestEventsTable();
 		createTimeTestEventsTable();
-		createRootTestEventsTable();
-		createTestEventsChildrenTable();
-		createTestEventsChildrenDatesTable();
 		createTestEventsMessagesTable();
 		createMessagesTestEventsTable();
 		createIntervalsTable();
+		createIndexes();
 	}
-	
+
+	private void createIndexes() throws IOException
+	{
+		String tableName = settings.getTimeTestEventsTableName();
+		String indexName = PARENT_ID + INDEX_NAME_POSTFIX;
+		CreateIndex createIndex =
+				SchemaBuilder.createIndex(indexName).ifNotExists().onTable(tableName).andColumn(PARENT_ID);
+		exec.executeQuery(createIndex.asCql(), true);
+		logger.info("Index '{}' on table '{}' and column '{}' has been created", indexName, tableName, PARENT_ID);
+	}
+
 	public void createKeyspace()
 	{
 		Optional<KeyspaceMetadata> keyspaceExists = getKeyspaceMetadata();
@@ -184,85 +189,12 @@ public class TablesCreator
 				.withColumn(SUCCESS, DataTypes.BOOLEAN)
 				.withColumn(EVENT_COUNT, DataTypes.INT)
 				.withColumn(EVENT_BATCH_METADATA, DataTypes.BLOB)
+				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
+				.withColumn(CONTENT, DataTypes.BLOB)
+				.withColumn(STORED_DATE, DataTypes.DATE)
+				.withColumn(STORED_TIME, DataTypes.TIME)
 				.withClusteringOrder(START_TIME, ClusteringOrder.ASC)
 				.withClusteringOrder(ID, ClusteringOrder.ASC);
-		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
-	}
-	
-	public void createRootTestEventsTable() throws IOException
-	{
-		String tableName = settings.getRootTestEventsTableName();
-		if (isTableExists(tableName))
-			return;
-		
-		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(START_DATE, DataTypes.DATE)
-				.withClusteringColumn(START_TIME, DataTypes.TIME)
-				.withClusteringColumn(ID, DataTypes.TEXT)
-				.withColumn(NAME, DataTypes.TEXT)
-				.withColumn(TYPE, DataTypes.TEXT)
-				.withColumn(EVENT_BATCH, DataTypes.BOOLEAN)
-				.withColumn(END_DATE, DataTypes.DATE)
-				.withColumn(END_TIME, DataTypes.TIME)
-				.withColumn(SUCCESS, DataTypes.BOOLEAN)
-				.withColumn(EVENT_COUNT, DataTypes.INT)
-				.withClusteringOrder(START_TIME, ClusteringOrder.ASC)
-				.withClusteringOrder(ID, ClusteringOrder.ASC);
-		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
-	}
-	
-	public void createTestEventsChildrenTable() throws IOException
-	{
-		String tableName = settings.getTestEventsChildrenTableName();
-		if (isTableExists(tableName))
-		{
-			if (!isColumnExists(tableName, EVENT_BATCH_METADATA))
-			{
-				AlterTableAddColumnEnd alter = SchemaBuilder.alterTable(settings.getKeyspace(), tableName).addColumn(EVENT_BATCH_METADATA, DataTypes.BLOB);
-				exec.executeQuery(alter.asCql(), true);
-				logger.info("Table '{}' has been altered with column '{}'", tableName, EVENT_BATCH_METADATA);
-			}
-			return;
-		}
-		
-		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(PARENT_ID, DataTypes.TEXT)
-				.withPartitionKey(START_DATE, DataTypes.DATE)
-				.withClusteringColumn(START_TIME, DataTypes.TIME)
-				.withClusteringColumn(ID, DataTypes.TEXT)
-				.withColumn(ROOT, DataTypes.BOOLEAN)
-				.withColumn(NAME, DataTypes.TEXT)
-				.withColumn(TYPE, DataTypes.TEXT)
-				.withColumn(EVENT_BATCH, DataTypes.BOOLEAN)
-				.withColumn(END_DATE, DataTypes.DATE)
-				.withColumn(END_TIME, DataTypes.TIME)
-				.withColumn(SUCCESS, DataTypes.BOOLEAN)
-				.withColumn(EVENT_COUNT, DataTypes.INT)
-				.withColumn(EVENT_BATCH_METADATA, DataTypes.BLOB)
-				.withClusteringOrder(START_TIME, ClusteringOrder.ASC)
-				.withClusteringOrder(ID, ClusteringOrder.ASC);
-		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
-	}
-	
-	public void createTestEventsChildrenDatesTable() throws IOException
-	{
-		String tableName = settings.getTestEventsChildrenDatesTableName();
-		if (isTableExists(tableName))
-			return;
-		
-		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(PARENT_ID, DataTypes.TEXT)
-				.withClusteringColumn(START_DATE, DataTypes.DATE)
-				.withClusteringOrder(START_DATE, ClusteringOrder.ASC);
 		
 		exec.executeQuery(create.asCql(), true);
 		logger.info("Table '{}' has been created", tableName);

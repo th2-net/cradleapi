@@ -24,17 +24,11 @@ import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventConverter;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
 import com.exactpro.cradle.cassandra.dao.messages.converters.DetailedMessageBatchConverter;
-import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenDatesOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.converters.RootTestEventConverter;
-import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventChildConverter;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventConverter;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventMessagesConverter;
-import com.exactpro.cradle.cassandra.dao.testevents.converters.TimeTestEventConverter;
 
 public class CassandraOperators
 {
@@ -42,18 +36,12 @@ public class CassandraOperators
 			processedMessageBatchOperator;
 	private final TimeMessageOperator timeMessageOperator;
 	private final TestEventOperator testEventOperator;
-	private final RootTestEventOperator rootTestEventOperator;
-	private final TestEventChildrenOperator testEventChildrenOperator;
 	private final TimeTestEventOperator timeTestEventOperator;
-	private final TestEventChildrenDatesOperator testEventChildrenDatesOperator;
 	private final TestEventMessagesOperator testEventMessagesOperator;
 	private final MessageTestEventOperator messageTestEventOperator;
 	private final IntervalOperator intervalOperator;
 	private final DetailedMessageBatchConverter messageBatchConverter;
 	private final TestEventConverter testEventConverter;
-	private final RootTestEventConverter rootTestEventConverter;
-	private final TestEventChildConverter testEventChildConverter;
-	private final TimeTestEventConverter timeTestEventConverter;
 	private final TestEventMessagesConverter testEventMessagesConverter;
 	private final MessageTestEventConverter messageTestEventConverter;
 	private final IntervalConverter intervalConverter;
@@ -65,17 +53,11 @@ public class CassandraOperators
 		timeMessageOperator = dataMapper.timeMessageOperator(settings.getKeyspace(), settings.getTimeMessagesTableName());
 		testEventOperator = dataMapper.testEventOperator(settings.getKeyspace(), settings.getTestEventsTableName());
 		timeTestEventOperator = dataMapper.timeTestEventOperator(settings.getKeyspace(), settings.getTimeTestEventsTableName());
-		rootTestEventOperator = dataMapper.rootTestEventOperator(settings.getKeyspace(), settings.getRootTestEventsTableName());
-		testEventChildrenOperator = dataMapper.testEventChildrenOperator(settings.getKeyspace(), settings.getTestEventsChildrenTableName());
-		testEventChildrenDatesOperator = dataMapper.testEventChildrenDatesOperator(settings.getKeyspace(), settings.getTestEventsChildrenDatesTableName());
 		testEventMessagesOperator = dataMapper.testEventMessagesOperator(settings.getKeyspace(), settings.getTestEventsMessagesTableName());
 		messageTestEventOperator = dataMapper.messageTestEventOperator(settings.getKeyspace(), settings.getMessagesTestEventsTableName());
 		intervalOperator = dataMapper.intervalOperator(settings.getKeyspace(), settings.getIntervalsTableName());
 		messageBatchConverter = dataMapper.detailedMessageBatchConverter();
 		testEventConverter = dataMapper.testEventConverter();
-		rootTestEventConverter = dataMapper.rootTestEventConverter();
-		testEventChildConverter = dataMapper.testEventChildConverter();
-		timeTestEventConverter = dataMapper.timeTestEventConverter();
 		testEventMessagesConverter = dataMapper.testEventMessagesConverter();
 		messageTestEventConverter = dataMapper.messageTestEventConverter();
 		intervalConverter = dataMapper.intervalConverter();
@@ -100,25 +82,10 @@ public class CassandraOperators
 	{
 		return testEventOperator;
 	}
-	
-	public RootTestEventOperator getRootTestEventOperator()
-	{
-		return rootTestEventOperator;
-	}
-	
-	public TestEventChildrenOperator getTestEventChildrenOperator()
-	{
-		return testEventChildrenOperator;
-	}
-	
+
 	public TimeTestEventOperator getTimeTestEventOperator()
 	{
 		return timeTestEventOperator;
-	}
-	
-	public TestEventChildrenDatesOperator getTestEventChildrenDatesOperator()
-	{
-		return testEventChildrenDatesOperator;
 	}
 	
 	public TestEventMessagesOperator getTestEventMessagesOperator()
@@ -142,21 +109,6 @@ public class CassandraOperators
 	public TestEventConverter getTestEventConverter()
 	{
 		return testEventConverter;
-	}
-	
-	public RootTestEventConverter getRootTestEventConverter()
-	{
-		return rootTestEventConverter;
-	}
-	
-	public TestEventChildConverter getTestEventChildConverter()
-	{
-		return testEventChildConverter;
-	}
-	
-	public TimeTestEventConverter getTimeTestEventConverter()
-	{
-		return timeTestEventConverter;
 	}
 	
 	public TestEventMessagesConverter getTestEventMessagesConverter()

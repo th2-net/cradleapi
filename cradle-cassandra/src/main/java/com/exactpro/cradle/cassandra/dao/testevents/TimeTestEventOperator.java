@@ -19,6 +19,8 @@ package com.exactpro.cradle.cassandra.dao.testevents;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
@@ -36,19 +38,41 @@ public interface TimeTestEventOperator
 {
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " +
 			START_DATE + "=:startDate AND " + START_TIME + ">=:timeFrom AND " + START_TIME + "<=:timeTo")
-	CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> getTestEventsDirect(UUID instanceId,
+	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getTestEventsDirect(UUID instanceId,
+			LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " + PARENT_ID + "=:parentId AND " +
+			START_DATE + "=:startDate AND " + START_TIME + ">=:timeFrom AND " + START_TIME + "<=:timeTo")
+	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getTestEventsDirect(UUID instanceId, String parentId,
 			LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " +
 			START_DATE + "=:startDate AND " + START_TIME + ">=:timeFrom AND " + START_TIME + "<=:timeTo ORDER BY " +
 			START_TIME + " DESC, " + ID + " DESC")
-	CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> getTestEventsReverse(UUID instanceId,
+	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getTestEventsReverse(UUID instanceId,
 			LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " + PARENT_ID + "=:parentId AND " +
+			START_DATE + "=:startDate AND " + START_TIME + ">=:timeFrom AND " + START_TIME + "<=:timeTo ORDER BY " +
+			START_TIME + " DESC, " + ID + " DESC")
+	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getTestEventsReverse(UUID instanceId, String parentId,
+			LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " +
+			START_DATE + "=:startDate AND " + START_TIME + "=:startTime AND " + ID + "=:eventId")
+	CompletableFuture<DetailedTestEventEntity> get(UUID instanceId, LocalDate startDate, LocalTime startTime,
+			String eventId);
+
+	@Query("SELECT " + INSTANCE_ID + ", " + START_DATE + " FROM ${qualifiedTableId} WHERE " + PARENT_ID + ":=parentId")
+	ResultSet getTestEventsDates(String parentId, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
 	@Insert
-	CompletableFuture<TimeTestEventEntity> writeTestEvent(TimeTestEventEntity timeTestEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<DetailedTestEventEntity> writeTestEvent(DetailedTestEventEntity timeTestEvent,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+INSTANCE_ID+"=:instanceId AND "+
 			START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:eventId")

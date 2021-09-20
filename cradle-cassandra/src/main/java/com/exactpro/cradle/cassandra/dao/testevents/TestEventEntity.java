@@ -73,7 +73,7 @@ public class TestEventEntity
 	private boolean root;
 	
 	@CqlName(PARENT_ID)
-	private String parentId;
+	private String parentId = ROOT_EVENT_PARENT_ID;
 
 	@CqlName(EVENT_BATCH)
 	private boolean eventBatch;
@@ -219,7 +219,7 @@ public class TestEventEntity
 	
 	public void setParentId(String parentId)
 	{
-		this.parentId = parentId;
+		this.parentId = parentId == null ? ROOT_EVENT_PARENT_ID : parentId;
 	}
 	
 	

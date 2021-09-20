@@ -16,18 +16,16 @@
 
 package com.exactpro.cradle.cassandra.dao.testevents;
 
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
-import com.datastax.oss.driver.api.mapper.annotations.QueryProvider;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
@@ -38,10 +36,11 @@ public interface TestEventOperator
 	CompletableFuture<TestEventEntity> get(UUID instanceId, String id, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-	@QueryProvider(providerClass = TestEventQueryProvider.class, entityHelpers = TestEventEntity.class)
-	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getComplete(UUID instanceId, List<String> id,
+	@Query("SELECT " + START_DATE + ", " + START_TIME + " FROM ${qualifiedTableId} WHERE "
+			+INSTANCE_ID+"=:instanceId AND "+ID+"=:id LIMIT 1")
+	CompletableFuture<Row> getDateAndTime(UUID instanceId, String id,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
+
 	@Insert
 	CompletableFuture<DetailedTestEventEntity> write(DetailedTestEventEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	

@@ -26,7 +26,7 @@ public class StorageConstants
 			STORED_DATE = "stored_date",
 			STORED_TIME = "stored_time",
 			COMPRESSED = "compressed",
-			
+
 			MESSAGE_INDEX = "message_index",
 			LAST_MESSAGE_INDEX = "last_message_index",
 			FIRST_MESSAGE_DATE = "first_message_date",
@@ -36,7 +36,7 @@ public class StorageConstants
 			MESSAGE_COUNT = "message_count",
 			MESSAGE_DATE = "message_date",
 			MESSAGE_TIME = "message_time",
-			
+
 			START_DATE = "start_date",
 			START_TIME = "start_time",
 			END_DATE = "end_date",
@@ -44,7 +44,7 @@ public class StorageConstants
 			EVENT_COUNT = "event_count",
 			EVENT_BATCH = "event_batch",
 			EVENT_BATCH_METADATA = "event_batch_metadata",
-			
+
 			CONTENT = "z_content",  //To make this column the last one in columns list and thus faster read meta-data
 			SUCCESS = "success",
 			TYPE = "type",
@@ -67,5 +67,8 @@ public class StorageConstants
 			CRAWLER_TYPE = "crawler_type",
 			INTERVAL_PROCESSED = "interval_processed",
 			ROOT = "root",
-			PARENT_ID = "parent_id";
+			PARENT_ID = "parent_id",
+
+			INDEX_NAME_POSTFIX = "_idx",
+			ROOT_EVENT_PARENT_ID = "";
 }

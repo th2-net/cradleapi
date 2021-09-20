@@ -27,17 +27,11 @@ import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventConverter;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
 import com.exactpro.cradle.cassandra.dao.messages.converters.DetailedMessageBatchConverter;
-import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenDatesOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.converters.RootTestEventConverter;
-import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventChildConverter;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventConverter;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventMessagesConverter;
-import com.exactpro.cradle.cassandra.dao.testevents.converters.TimeTestEventConverter;
 
 @Mapper
 public interface CassandraDataMapper
@@ -56,16 +50,7 @@ public interface CassandraDataMapper
 	
 	@DaoFactory
 	TimeTestEventOperator timeTestEventOperator(@DaoKeyspace String keyspace, @DaoTable String timeTestEventsTable);
-	
-	@DaoFactory
-	RootTestEventOperator rootTestEventOperator(@DaoKeyspace String keyspace, @DaoTable String rootTestEventsTable);
-	
-	@DaoFactory
-	TestEventChildrenOperator testEventChildrenOperator(@DaoKeyspace String keyspace, @DaoTable String testEventsChildrenTable);
-	
-	@DaoFactory
-	TestEventChildrenDatesOperator testEventChildrenDatesOperator(@DaoKeyspace String keyspace, @DaoTable String testEventsChildrenDatesTable);
-	
+
 	@DaoFactory
 	TestEventMessagesOperator testEventMessagesOperator(@DaoKeyspace String keyspace, @DaoTable String testEventsChildrenDatesTable);
 	
@@ -74,12 +59,6 @@ public interface CassandraDataMapper
 	
 	@DaoFactory
 	TestEventConverter testEventConverter();
-	@DaoFactory
-	RootTestEventConverter rootTestEventConverter();
-	@DaoFactory
-	TestEventChildConverter testEventChildConverter();
-	@DaoFactory
-	TimeTestEventConverter timeTestEventConverter();
 	@DaoFactory
 	TestEventMessagesConverter testEventMessagesConverter();
 	@DaoFactory
