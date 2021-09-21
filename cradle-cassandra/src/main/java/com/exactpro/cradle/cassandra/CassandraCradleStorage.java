@@ -592,7 +592,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetRootTestEventsAsync(Instant from, Instant to,
 			Order order) throws CradleStorageException
 	{
-		return doGetTestEventsAsync(null, from, to, order);
+		return doGetTestEventsAsync(new StoredTestEventId(ROOT_EVENT_PARENT_ID), from, to, order);
 	}
 
 
@@ -630,14 +630,21 @@ public class CassandraCradleStorage extends CradleStorage
 		String idQueryParam = parentId == null ? null : parentId.toString();
 
 		return new AsyncOperator<MappedAsyncPagingIterable<TestEventEntity>>(semaphore)
-				.getFuture(() -> selectExecutor.executeQuery(() -> order == Order.DIRECT
-								? ops.getTimeTestEventOperator().getTestEventsDirect(instanceUuid,
-										idQueryParam, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
-								: ops.getTimeTestEventOperator().getTestEventsReverse(instanceUuid,
+				.getFuture(() -> selectExecutor.executeQuery(() -> 
+								ops.getTimeTestEventOperator().getTestEventsDirect(instanceUuid,
 										idQueryParam, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs),
 						ops.getTestEventConverter(), queryInfo))
+// TODO When using filtration by index and ORDER BY clause in query, cassandra throws exception 
+//  'ORDER BY with 2ndary indexes is not supported.'
+				
+//				.getFuture(() -> selectExecutor.executeQuery(() -> order == Order.DIRECT
+//								? ops.getTimeTestEventOperator().getTestEventsDirect(instanceUuid,
+//										idQueryParam, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
+//								: ops.getTimeTestEventOperator().getTestEventsReverse(instanceUuid,
+//										idQueryParam, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs),
+//						ops.getTestEventConverter(), queryInfo))
 				.thenApply(r -> new TestEventDataIteratorAdapter(r, pagingSupplies, ops.getTestEventConverter(),
-								queryInfo));
+						queryInfo));
 	}
 
 
@@ -704,7 +711,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected Collection<Instant> doGetTestEventsDates(StoredTestEventId parentId) throws IOException
 	{
-		Collection<Instant> result = new ArrayList<>();
+		Collection<Instant> result = new TreeSet<>();
 
 		ResultSet resultSet = ops.getTimeTestEventOperator().getTestEventsDates(parentId.toString(), readAttrs);
 		resultSet.iterator().forEachRemaining(row ->

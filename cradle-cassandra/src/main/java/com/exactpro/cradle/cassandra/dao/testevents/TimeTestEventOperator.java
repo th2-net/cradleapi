@@ -54,20 +54,22 @@ public interface TimeTestEventOperator
 	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getTestEventsReverse(UUID instanceId,
 			LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " + PARENT_ID + "=:parentId AND " +
-			START_DATE + "=:startDate AND " + START_TIME + ">=:timeFrom AND " + START_TIME + "<=:timeTo ORDER BY " +
-			START_TIME + " DESC, " + ID + " DESC")
-	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getTestEventsReverse(UUID instanceId, String parentId,
-			LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
+// TODO When using filtration by index and ORDER BY clause in query, cassandra throws exception 
+//  'ORDER BY with 2ndary indexes is not supported.'
+//	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " + START_DATE + "=:startDate AND "
+//			+ PARENT_ID + "=:parentId AND "+ START_TIME + ">=:timeFrom AND " + START_TIME + "<=:timeTo ORDER BY " +
+//			START_TIME + " DESC, " + ID + " DESC")
+//	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getTestEventsReverse(UUID instanceId, String parentId,
+//			LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
+//			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " +
 			START_DATE + "=:startDate AND " + START_TIME + "=:startTime AND " + ID + "=:eventId")
 	CompletableFuture<DetailedTestEventEntity> get(UUID instanceId, LocalDate startDate, LocalTime startTime,
 			String eventId);
 
-	@Query("SELECT " + INSTANCE_ID + ", " + START_DATE + " FROM ${qualifiedTableId} WHERE " + PARENT_ID + ":=parentId")
+	@Query("SELECT " + INSTANCE_ID + ", " + START_DATE + " FROM ${qualifiedTableId} WHERE " + PARENT_ID + "=:parentId")
 	ResultSet getTestEventsDates(String parentId, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Insert
