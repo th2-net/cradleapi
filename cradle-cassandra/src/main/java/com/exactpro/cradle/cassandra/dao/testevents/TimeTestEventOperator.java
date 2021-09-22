@@ -67,17 +67,17 @@ public interface TimeTestEventOperator
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " +
 			START_DATE + "=:startDate AND " + START_TIME + "=:startTime AND " + ID + "=:eventId")
 	CompletableFuture<DetailedTestEventEntity> get(UUID instanceId, LocalDate startDate, LocalTime startTime,
-			String eventId);
+			String eventId, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Query("SELECT " + INSTANCE_ID + ", " + START_DATE + " FROM ${qualifiedTableId} WHERE " + PARENT_ID + "=:parentId")
 	ResultSet getTestEventsDates(String parentId, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Insert
-	CompletableFuture<DetailedTestEventEntity> writeTestEvent(DetailedTestEventEntity timeTestEvent,
+	CompletableFuture<Void> writeTestEvent(DetailedTestEventEntity timeTestEvent,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+INSTANCE_ID+"=:instanceId AND "+
 			START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:eventId")
-	CompletableFuture<AsyncResultSet> updateStatus(UUID instanceId, LocalDate startDate, LocalTime startTime,
+	CompletableFuture<Void> updateStatus(UUID instanceId, LocalDate startDate, LocalTime startTime,
 					String eventId, boolean success, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

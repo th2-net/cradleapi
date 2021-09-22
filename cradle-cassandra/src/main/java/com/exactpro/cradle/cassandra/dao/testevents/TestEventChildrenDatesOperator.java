@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,8 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
@@ -30,13 +29,13 @@ import com.datastax.oss.driver.api.mapper.annotations.Query;
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 @Dao
-public interface TestEventOperator
+public interface TestEventChildrenDatesOperator
 {
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " + ID + "=:id LIMIT 1")
-	CompletableFuture<DateTimeEventEntity> get(UUID instanceId, String id,
+	@Insert
+	CompletableFuture<Void> writeTestEventDate(ChildrenDatesEventEntity entity,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-	@Insert
-	CompletableFuture<Void> write(DateTimeEventEntity entity,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	@Query("SELECT " + START_DATE + " FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND "
+			+ PARENT_ID + "=:parentId")
+	ResultSet get(UUID instanceId, String parentId, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

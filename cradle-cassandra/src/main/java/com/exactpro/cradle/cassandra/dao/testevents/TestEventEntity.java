@@ -27,13 +27,10 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
+import com.datastax.oss.driver.api.mapper.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.oss.driver.api.mapper.annotations.CqlName;
-import com.datastax.oss.driver.api.mapper.annotations.Entity;
-import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
-import com.datastax.oss.driver.api.mapper.annotations.Transient;
 import com.exactpro.cradle.cassandra.CassandraCradleStorage;
 import com.exactpro.cradle.testevents.TestEventBatchToStoreBuilder;
 import com.exactpro.cradle.testevents.StoredTestEventWrapper;
@@ -60,6 +57,14 @@ public class TestEventEntity
 	private UUID instanceId;
 	
 	@PartitionKey(1)
+	@CqlName(START_DATE)
+	private LocalDate startDate;
+
+	@ClusteringColumn(0)
+	@CqlName(START_TIME)
+	private LocalTime startTime;
+
+	@ClusteringColumn(1)
 	@CqlName(ID)
 	private String id;
 	
@@ -77,11 +82,6 @@ public class TestEventEntity
 
 	@CqlName(EVENT_BATCH)
 	private boolean eventBatch;
-	
-	@CqlName(START_DATE)
-	private LocalDate startDate;
-	@CqlName(START_TIME)
-	private LocalTime startTime;
 	
 	@CqlName(END_DATE)
 	private LocalDate endDate;
@@ -113,7 +113,7 @@ public class TestEventEntity
 		this.setName(event.getName());
 		this.setType(event.getType());
 		this.setRoot(parentId == null);
-		this.setParentId(parentId != null ? parentId.toString() : null);
+		this.setParentId(parentId != null ? parentId.toString() : ROOT_EVENT_PARENT_ID);
 		
 		byte[] content;
 		if (event instanceof StoredTestEventBatch)

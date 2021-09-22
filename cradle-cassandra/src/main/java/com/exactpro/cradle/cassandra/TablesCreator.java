@@ -53,6 +53,7 @@ public class TablesCreator
 		createProcessedMessagesTable();
 		createTimeMessagesTable();
 		createTestEventsTable();
+		createTestEventsChildrenDatesTable();
 		createTimeTestEventsTable();
 		createTestEventsMessagesTable();
 		createMessagesTestEventsTable();
@@ -140,21 +141,8 @@ public class TablesCreator
 		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
 				.withPartitionKey(ID, DataTypes.TEXT)
-				.withColumn(NAME, DataTypes.TEXT)
-				.withColumn(TYPE, DataTypes.TEXT)
-				.withColumn(ROOT, DataTypes.BOOLEAN)
-				.withColumn(PARENT_ID, DataTypes.TEXT)
-				.withColumn(EVENT_BATCH, DataTypes.BOOLEAN)
-				.withColumn(STORED_DATE, DataTypes.DATE)
-				.withColumn(STORED_TIME, DataTypes.TIME)
 				.withColumn(START_DATE, DataTypes.DATE)
-				.withColumn(START_TIME, DataTypes.TIME)
-				.withColumn(END_DATE, DataTypes.DATE)
-				.withColumn(END_TIME, DataTypes.TIME)
-				.withColumn(SUCCESS, DataTypes.BOOLEAN)
-				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
-				.withColumn(CONTENT, DataTypes.BLOB)
-				.withColumn(EVENT_COUNT, DataTypes.INT);
+				.withColumn(START_TIME, DataTypes.TIME);
 		
 		exec.executeQuery(create.asCql(), true);
 		logger.info("Table '{}' has been created", tableName);
@@ -196,6 +184,22 @@ public class TablesCreator
 				.withClusteringOrder(START_TIME, ClusteringOrder.ASC)
 				.withClusteringOrder(ID, ClusteringOrder.ASC);
 		
+		exec.executeQuery(create.asCql(), true);
+		logger.info("Table '{}' has been created", tableName);
+	}
+
+	public void createTestEventsChildrenDatesTable() throws IOException
+	{
+		String tableName = settings.getTestEventsChildrenDatesTableName();
+		if (isTableExists(tableName))
+			return;
+
+		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				.withPartitionKey(PARENT_ID, DataTypes.TEXT)
+				.withClusteringColumn(START_DATE, DataTypes.DATE)
+				.withClusteringOrder(START_DATE, ClusteringOrder.ASC);
+
 		exec.executeQuery(create.asCql(), true);
 		logger.info("Table '{}' has been created", tableName);
 	}
