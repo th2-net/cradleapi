@@ -24,14 +24,22 @@ import com.exactpro.cradle.cassandra.dao.books.CradleBookOperator;
 import com.exactpro.cradle.cassandra.dao.books.PageOperator;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.EventDateOperator;
+import com.exactpro.cradle.cassandra.dao.testevents.PageScopesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 
 @Mapper
 public interface CassandraDataMapper
-{
+
+	//*** Operators for cradle_info keyspace ***
+	
 	@DaoFactory
 	CradleBookOperator cradleBookOperator(@DaoKeyspace String keyspace, @DaoTable String booksTable);
+	
+	@DaoFactory
+	ScopeOperator scopeOperator(@DaoKeyspace String keyspace, @DaoTable String scopesTable);
+	
+	
+	//*** Operators for book's keyspace ***
 	
 	@DaoFactory
 	PageOperator pageOperator(@DaoKeyspace String keyspace, @DaoTable String pagesTable);
@@ -40,10 +48,7 @@ public interface CassandraDataMapper
 	TestEventOperator testEventOperator(@DaoKeyspace String keyspace, @DaoTable String testEventsTable);
 	
 	@DaoFactory
-	ScopeOperator scopeOperator(@DaoKeyspace String keyspace, @DaoTable String scopesTable);
-	
-	@DaoFactory
-	EventDateOperator eventDateOperator(@DaoKeyspace String keyspace, @DaoTable String eventDatesTable);
+	PageScopesOperator pageScopesOperator(@DaoKeyspace String keyspace, @DaoTable String pageScopesTable);
 	
 	@DaoFactory
 	IntervalOperator intervalOperator(@DaoKeyspace String keyspace, @DaoTable String intervalsTable);

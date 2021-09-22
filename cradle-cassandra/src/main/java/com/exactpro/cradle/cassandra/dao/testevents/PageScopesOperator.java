@@ -16,7 +16,6 @@
 
 package com.exactpro.cradle.cassandra.dao.testevents;
 
-import java.time.LocalDate;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
@@ -27,15 +26,14 @@ import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Select;
 
 @Dao
-public interface EventDateOperator
+public interface PageScopesOperator
 {
 	@Select
-	CompletableFuture<MappedAsyncPagingIterable<EventDateEntity>> all(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<MappedAsyncPagingIterable<PageScopeEntity>> all(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Select
-	CompletableFuture<MappedAsyncPagingIterable<EventDateEntity>> get(String page, LocalDate startDate,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<MappedAsyncPagingIterable<PageScopeEntity>> get(String page, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
-	CompletableFuture<EventDateEntity> write(EventDateEntity testEventDate, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<PageScopeEntity> write(PageScopeEntity pageScope, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

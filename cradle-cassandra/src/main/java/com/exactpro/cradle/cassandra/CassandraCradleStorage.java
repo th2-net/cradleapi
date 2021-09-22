@@ -30,8 +30,8 @@ import com.exactpro.cradle.cassandra.dao.CradleOperators;
 import com.exactpro.cradle.cassandra.dao.books.BookEntity;
 import com.exactpro.cradle.cassandra.dao.books.PageEntity;
 import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
-import com.exactpro.cradle.cassandra.dao.cache.CachedTestEventDate;
-import com.exactpro.cradle.cassandra.dao.testevents.EventDateEntity;
+import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
+import com.exactpro.cradle.cassandra.dao.testevents.PageScopeEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.EventEntityUtils;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
@@ -199,6 +199,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected void doStoreTestEvent(TestEventToStore event, PageInfo page) throws IOException
 	{
+		//TODO: implement as pure synchronous method
 		try
 		{
 			doStoreTestEventAsync(event, page).get();
@@ -212,10 +213,12 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected CompletableFuture<Void> doStoreTestEventAsync(TestEventToStore event, PageInfo page) throws IOException, CradleStorageException
 	{
+		//TODO: return immediately, using supplyAsync to create entities
 		PageId pageId = page.getId();
+		BookId bookId = pageId.getBookId();
 		List<TestEventEntity> entities = EventEntityUtils.toEntities(event, pageId, 
 				settings.getMaxUncompressedTestEventSize(), settings.getTestEventChunkSize(), settings.getTestEventMessagesPerChunk());
-		BookOperators bookOps = ops.getOperators(pageId.getBookId());
+		BookOperators bookOps = ops.getOperators(bookId);
 		TestEventOperator op = bookOps.getTestEventOperator();
 		
 		CompletableFuture<TestEventEntity> result = null;
@@ -228,27 +231,27 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		return result
 				.thenComposeAsync(r -> {
-					if (!bookOps.getScopesCache().store(new CachedScope(pageId.toString(), event.getScope())))
+					if (!ops.getScopesCache().store(new CachedScope(bookId.toString(), event.getScope())))
 					{
 						logger.debug("Skipped writing scope of event '{}'", event.getId());
 						return CompletableFuture.completedFuture(null);
 					}
 					
 					logger.debug("Writing scope of event '{}'", event.getId());
-					return bookOps.getScopeOperator()
-							.write(new ScopeEntity(pageId.getName(), event.getScope()), writeAttrs);
+					return ops.getScopeOperator()
+							.write(new ScopeEntity(bookId.getName(), event.getScope()), writeAttrs);
 				})
 				.thenComposeAsync(r -> {
 					LocalDateTime ldt = TimeUtils.toLocalTimestamp(event.getStartTimestamp());
-					if (!bookOps.getEventDatesCache().store(new CachedTestEventDate(pageId.toString(), ldt.toLocalDate(), event.getScope(), CassandraTimeUtils.getPart(ldt))))
+					if (!bookOps.getPageScopesCache().store(new CachedPageScope(pageId.toString(), event.getScope(), CassandraTimeUtils.getPart(ldt))))
 					{
-						logger.debug("Skipped writing start date of event '{}'", event.getId());
+						logger.debug("Skipped writing scope partition of event '{}'", event.getId());
 						return CompletableFuture.completedFuture(null);
 					}
 					
-					logger.debug("Writing start date of event '{}'", event.getId());
-					return bookOps.getEventDateOperator()
-							.write(new EventDateEntity(pageId.getName(), ldt.toLocalDate(), event.getScope(), CassandraTimeUtils.getPart(ldt)), writeAttrs);
+					logger.debug("Writing scope partition of event '{}'", event.getId());
+					return bookOps.getPageScopesOperator()
+							.write(new PageScopeEntity(pageId.getName(), event.getScope(), CassandraTimeUtils.getPart(ldt)), writeAttrs);
 				})
 				.thenAccept(r -> {});
 	}
@@ -479,7 +482,7 @@ public class CassandraCradleStorage extends CradleStorage
 		MappedAsyncPagingIterable<ScopeEntity> entities;
 		try
 		{
-			entities = ops.getOperators(bookId).getScopeOperator().all(readAttrs).get();
+			entities = ops.getScopeOperator().get(bookId.getName(), readAttrs).get();
 		}
 		catch (Exception e)
 		{

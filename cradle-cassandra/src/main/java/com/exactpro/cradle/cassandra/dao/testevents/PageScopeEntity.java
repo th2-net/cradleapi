@@ -17,10 +17,6 @@
 package com.exactpro.cradle.cassandra.dao.testevents;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.PAGE;
-import static com.exactpro.cradle.cassandra.StorageConstants.START_DATE;
-
-import java.time.LocalDate;
-
 import static com.exactpro.cradle.cassandra.StorageConstants.SCOPE;
 import static com.exactpro.cradle.cassandra.StorageConstants.PART;
 
@@ -30,15 +26,11 @@ import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 
 @Entity
-public class EventDateEntity
+public class PageScopeEntity
 {
 	@PartitionKey(0)
 	@CqlName(PAGE)
 	private String page;
-	
-	@PartitionKey(1)
-	@CqlName(START_DATE)
-	private LocalDate startDate;
 	
 	@ClusteringColumn(0)
 	@CqlName(SCOPE)
@@ -48,14 +40,13 @@ public class EventDateEntity
 	@CqlName(PART)
 	private String part;
 	
-	public EventDateEntity()
+	public PageScopeEntity()
 	{
 	}
 
-	public EventDateEntity(String page, LocalDate startDate, String scope, String part)
+	public PageScopeEntity(String page, String scope, String part)
 	{
 		this.page = page;
-		this.startDate = startDate;
 		this.scope = scope;
 		this.part = part;
 	}
@@ -69,17 +60,6 @@ public class EventDateEntity
 	public void setPage(String page)
 	{
 		this.page = page;
-	}
-	
-	
-	public LocalDate getStartDate()
-	{
-		return startDate;
-	}
-	
-	public void setStartDate(LocalDate startDate)
-	{
-		this.startDate = startDate;
 	}
 	
 	

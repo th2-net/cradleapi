@@ -36,6 +36,7 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 	protected void createTables() throws IOException
 	{
 		createBooksTable();
+		createScopesTable();
 	}
 	
 	
@@ -48,5 +49,13 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 				.withColumn(KEYSPACE_NAME, DataTypes.TEXT)
 				.withColumn(DESCRIPTION, DataTypes.TEXT)
 				.withColumn(CREATED, DataTypes.TIMESTAMP));
+	}
+	
+	private void createScopesTable() throws IOException
+	{
+		String tableName = getSettings().getScopesTable();
+		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(BOOK, DataTypes.TEXT)
+				.withClusteringColumn(SCOPE, DataTypes.TEXT));
 	}
 }

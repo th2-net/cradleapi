@@ -22,6 +22,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.books.CradleBookOperator;
+import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
+import com.exactpro.cradle.cassandra.dao.testevents.ScopeOperator;
+import com.exactpro.cradle.cassandra.utils.LimitedCache;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 public class CradleOperators
@@ -30,13 +33,21 @@ public class CradleOperators
 	private final CassandraDataMapper dataMapper;
 	private final CassandraStorageSettings settings;
 	private final CradleBookOperator cradleBookOp;
+	private final ScopeOperator scopeOp;
+	
+	private final LimitedCache<CachedScope> scopesCache;
 	
 	public CradleOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings)
 	{
 		bookOps = new ConcurrentHashMap<>();
 		this.dataMapper = dataMapper;
 		this.settings = settings;
-		this.cradleBookOp = dataMapper.cradleBookOperator(settings.getCradleInfoKeyspace(), settings.getBooksTable());
+		
+		String infoKeyspace = settings.getCradleInfoKeyspace();
+		this.cradleBookOp = dataMapper.cradleBookOperator(infoKeyspace, settings.getBooksTable());
+		this.scopeOp = dataMapper.scopeOperator(infoKeyspace, settings.getScopesTable());
+		
+		this.scopesCache = new LimitedCache<>(settings.getScopesCacheSize());
 	}
 	
 	public BookOperators getOperators(BookId bookId) throws CradleStorageException
@@ -57,5 +68,15 @@ public class CradleOperators
 	public CradleBookOperator getCradleBookOperator()
 	{
 		return cradleBookOp;
+	}
+	
+	public ScopeOperator getScopeOperator()
+	{
+		return scopeOp;
+	}
+	
+	public LimitedCache<CachedScope> getScopesCache()
+	{
+		return scopesCache;
 	}
 }

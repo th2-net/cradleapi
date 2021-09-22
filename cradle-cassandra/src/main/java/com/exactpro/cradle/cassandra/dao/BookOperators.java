@@ -18,11 +18,9 @@ package com.exactpro.cradle.cassandra.dao;
 
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.books.PageOperator;
-import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
-import com.exactpro.cradle.cassandra.dao.cache.CachedTestEventDate;
+import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.EventDateOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.ScopeOperator;
+import com.exactpro.cradle.cassandra.dao.testevents.PageScopesOperator;
 //import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.utils.LimitedCache;
@@ -32,24 +30,20 @@ public class BookOperators
 	private final PageOperator pageOperator;
 //	private final MessageBatchOperator messageBatchOperator;
 	private final TestEventOperator testEventOperator;
-	private final ScopeOperator scopeOperator;
-	private final EventDateOperator eventDateOperator;
+	private final PageScopesOperator pageScopesOperator;
 	private final IntervalOperator intervalOperator;
 	
-	private final LimitedCache<CachedScope> scopesCache;
-	private final LimitedCache<CachedTestEventDate> eventDatesCache;
+	private final LimitedCache<CachedPageScope> pageScopesCache;
 	
 	public BookOperators(CassandraDataMapper dataMapper, String keyspace, CassandraStorageSettings settings)
 	{
 		pageOperator = dataMapper.pageOperator(keyspace, settings.getPagesTable());
 //		messageBatchOperator = dataMapper.messageBatchOperator(keyspace, settings.getMessagesTable());
 		testEventOperator = dataMapper.testEventOperator(keyspace, settings.getTestEventsTable());
-		scopeOperator = dataMapper.scopeOperator(keyspace, settings.getScopesTable());
-		eventDateOperator = dataMapper.eventDateOperator(keyspace, settings.getTestEventsDatesTable());
+		pageScopesOperator = dataMapper.pageScopesOperator(keyspace, settings.getPageScopesTable());
 		intervalOperator = dataMapper.intervalOperator(keyspace, settings.getIntervalsTable());
 		
-		scopesCache = new LimitedCache<>(settings.getScopesCacheSize());
-		eventDatesCache = new LimitedCache<>(settings.getTestEventDatesCacheSize());
+		pageScopesCache = new LimitedCache<>(settings.getPageScopesCacheSize());
 	}
 	
 	public PageOperator getPageOperator()
@@ -67,14 +61,9 @@ public class BookOperators
 		return testEventOperator;
 	}
 	
-	public ScopeOperator getScopeOperator()
+	public PageScopesOperator getPageScopesOperator()
 	{
-		return scopeOperator;
-	}
-	
-	public EventDateOperator getEventDateOperator()
-	{
-		return eventDateOperator;
+		return pageScopesOperator;
 	}
 	
 	public IntervalOperator getIntervalOperator()
@@ -83,13 +72,8 @@ public class BookOperators
 	}
 	
 	
-	public LimitedCache<CachedScope> getScopesCache()
+	public LimitedCache<CachedPageScope> getPageScopesCache()
 	{
-		return scopesCache;
-	}
-	
-	public LimitedCache<CachedTestEventDate> getEventDatesCache()
-	{
-		return eventDatesCache;
+		return pageScopesCache;
 	}
 }

@@ -29,7 +29,7 @@ public class CassandraStorageSettings
 			SESSIONS_DATES_TABLE = "sessions_dates",
 			TEST_EVENTS_TABLE = "test_events",
 			SCOPES_TABLE = "scopes",
-			TEST_EVENTS_DATES_TABLE = "test_events_dates",
+			PAGE_SCOPES_TABLE = "page_scopes",
 			TEST_EVENT_PARENT_INDEX = "test_event_parent_index",
 			LABELS_TABLE = "labels",
 			INTERVALS_TABLE = "intervals";
@@ -44,7 +44,7 @@ public class CassandraStorageSettings
 			DEFAULT_TEST_EVENT_CHUNK_SIZE = 1024*1024,
 			DEFAULT_TEST_EVENT_MESSAGES_PER_CHUNK = 10,
 			DEFAULT_SCOPES_CACHE_SIZE = 10,
-			DEFAULT_TEST_EVENT_DATES_CACHE_SIZE = 100;
+			DEFAULT_PAGE_SCOPES_CACHE_SIZE = 100;
 	
 	
 	private final NetworkTopologyStrategy networkTopologyStrategy;
@@ -59,7 +59,7 @@ public class CassandraStorageSettings
 			sessionsDatesTable,
 			testEventsTable,
 			scopesTable,
-			testEventsDatesTable,
+			pageScopesTable,
 			testEventParentIndex,
 			labelsTable,
 			intervalsTable;
@@ -74,7 +74,7 @@ public class CassandraStorageSettings
 			testEventMessagesPerChunk,
 			
 			scopesCacheSize,
-			testEventDatesCacheSize;
+			pageScopesCacheSize;
 	
 	public CassandraStorageSettings()
 	{
@@ -103,7 +103,7 @@ public class CassandraStorageSettings
 		this.sessionsDatesTable = SESSIONS_DATES_TABLE;
 		this.testEventsTable = TEST_EVENTS_TABLE;
 		this.scopesTable = SCOPES_TABLE;
-		this.testEventsDatesTable = TEST_EVENTS_DATES_TABLE;
+		this.pageScopesTable = PAGE_SCOPES_TABLE;
 		this.testEventParentIndex = TEST_EVENT_PARENT_INDEX;
 		this.labelsTable = LABELS_TABLE;
 		this.intervalsTable = INTERVALS_TABLE;
@@ -118,7 +118,7 @@ public class CassandraStorageSettings
 		this.testEventMessagesPerChunk = DEFAULT_TEST_EVENT_MESSAGES_PER_CHUNK;
 		
 		this.scopesCacheSize = DEFAULT_SCOPES_CACHE_SIZE;
-		this.testEventDatesCacheSize = DEFAULT_TEST_EVENT_DATES_CACHE_SIZE;
+		this.pageScopesCacheSize = DEFAULT_PAGE_SCOPES_CACHE_SIZE;
 	}
 	
 	public CassandraStorageSettings(CassandraStorageSettings settings)
@@ -136,7 +136,7 @@ public class CassandraStorageSettings
 		this.sessionsDatesTable = settings.getSessionsDatesTable();
 		this.testEventsTable = settings.getTestEventsTable();
 		this.scopesTable = settings.getScopesTable();
-		this.testEventsDatesTable = settings.getTestEventsDatesTable();
+		this.pageScopesTable = settings.getPageScopesTable();
 		this.testEventParentIndex = settings.getTestEventParentIndex();
 		this.labelsTable = settings.getLabelsTable();
 		this.intervalsTable = settings.getIntervalsTable();
@@ -151,7 +151,7 @@ public class CassandraStorageSettings
 		this.testEventMessagesPerChunk = settings.getTestEventMessagesPerChunk();
 		
 		this.scopesCacheSize = settings.getScopesCacheSize();
-		this.testEventDatesCacheSize = settings.getTestEventDatesCacheSize();
+		this.pageScopesCacheSize = settings.getPageScopesCacheSize();
 	}
 	
 	
@@ -264,14 +264,14 @@ public class CassandraStorageSettings
 	}
 	
 	
-	public String getTestEventsDatesTable()
+	public String getPageScopesTable()
 	{
-		return testEventsDatesTable;
+		return pageScopesTable;
 	}
 	
-	public void setTestEventsDatesTable(String testEventsDatesTable)
+	public void setPageScopesTable(String pageScopesTable)
 	{
-		this.testEventsDatesTable = testEventsDatesTable;
+		this.pageScopesTable = pageScopesTable;
 	}
 	
 	
@@ -407,13 +407,13 @@ public class CassandraStorageSettings
 	}
 	
 	
-	public int getTestEventDatesCacheSize()
+	public int getPageScopesCacheSize()
 	{
-		return testEventDatesCacheSize;
+		return pageScopesCacheSize;
 	}
 	
-	public void setTestEventDatesCacheSize(int testEventDatesCacheSize)
+	public void setPageScopesCacheSize(int pageScopesCacheSize)
 	{
-		this.testEventDatesCacheSize = testEventDatesCacheSize;
+		this.pageScopesCacheSize = pageScopesCacheSize;
 	}
 }

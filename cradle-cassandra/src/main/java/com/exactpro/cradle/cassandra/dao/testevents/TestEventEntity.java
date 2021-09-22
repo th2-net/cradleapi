@@ -48,22 +48,22 @@ public class TestEventEntity extends CradleEntity
 	private String page;
 	
 	@PartitionKey(1)
-	@CqlName(START_DATE)
-	private LocalDate startDate;
-	
-	@PartitionKey(2)
 	@CqlName(SCOPE)
 	private String scope;
 	
-	@PartitionKey(4)
+	@PartitionKey(2)
 	@CqlName(PART)
 	private String part;
 	
 	@ClusteringColumn(0)
+	@CqlName(START_DATE)
+	private LocalDate startDate;
+	
+	@ClusteringColumn(1)
 	@CqlName(START_TIME)
 	private LocalTime startTime;
 	
-	@ClusteringColumn(1)
+	@ClusteringColumn(2)
 	@CqlName(ID)
 	private String id;
 	
@@ -112,9 +112,9 @@ public class TestEventEntity extends CradleEntity
 		LocalDateTime start = TimeUtils.toLocalTimestamp(event.getStartTimestamp());
 		
 		this.setPage(eventData.getPageId().getName());
-		this.setStartTimestamp(start);
 		this.setScope(event.getScope());
 		this.setPart(CassandraTimeUtils.getPart(start));
+		this.setStartTimestamp(start);
 		this.setId(event.getId().getId());
 		this.setChunk(eventData.getChunk());
 		
@@ -145,9 +145,9 @@ public class TestEventEntity extends CradleEntity
 	public String getEntityId()
 	{
 		return page+StoredTestEventId.ID_PARTS_DELIMITER
-				+startDate+StoredTestEventId.ID_PARTS_DELIMITER
 				+scope+StoredTestEventId.ID_PARTS_DELIMITER
 				+part+StoredTestEventId.ID_PARTS_DELIMITER
+				+startDate+StoredTestEventId.ID_PARTS_DELIMITER
 				+startTime+StoredTestEventId.ID_PARTS_DELIMITER
 				+id;
 	}
@@ -161,6 +161,28 @@ public class TestEventEntity extends CradleEntity
 	public void setPage(String page)
 	{
 		this.page = page;
+	}
+	
+	
+	public String getScope()
+	{
+		return scope;
+	}
+	
+	public void setScope(String scope)
+	{
+		this.scope = scope;
+	}
+	
+	
+	public String getPart()
+	{
+		return part;
+	}
+	
+	public void setPart(String part)
+	{
+		this.part = part;
 	}
 	
 	
@@ -219,28 +241,6 @@ public class TestEventEntity extends CradleEntity
 			setStartDate(null);
 			setStartTime(null);
 		}
-	}
-	
-	
-	public String getScope()
-	{
-		return scope;
-	}
-	
-	public void setScope(String scope)
-	{
-		this.scope = scope;
-	}
-	
-	
-	public String getPart()
-	{
-		return part;
-	}
-	
-	public void setPart(String part)
-	{
-		this.part = part;
 	}
 	
 	
