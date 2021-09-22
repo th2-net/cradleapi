@@ -81,7 +81,9 @@ public abstract class CradleStorage
 	protected abstract CompletableFuture<Collection<StoredMessage>> doGetMessageBatchAsync(StoredMessageId id);
 	protected abstract StoredMessage doGetProcessedMessage(StoredMessageId id) throws IOException;
 	protected abstract CompletableFuture<StoredMessage> doGetProcessedMessageAsync(StoredMessageId id);
+	protected abstract long doGetFirstMessageIndex(String streamName, Direction direction) throws IOException;
 	protected abstract long doGetLastMessageIndex(String streamName, Direction direction) throws IOException;
+	protected abstract long doGetFirstProcessedMessageIndex(String streamName, Direction direction) throws IOException;
 	protected abstract long doGetLastProcessedMessageIndex(String streamName, Direction direction) throws IOException;
 	protected abstract StoredMessageId doGetNearestMessageId(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation) throws IOException;
 	protected abstract CompletableFuture<StoredMessageId> doGetNearestMessageIdAsync(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation);
@@ -430,6 +432,22 @@ public abstract class CradleStorage
 	}
 	
 	/**
+	 * Retrieves first stored message index for given stream and direction.
+	 * Indices are scoped by stream and direction, so both arguments are required 
+	 * @param streamName to get message index for 
+	 * @param direction to get message index for
+	 * @return first stored message index for given arguments, if it is present, -1 otherwise
+	 * @throws IOException if index retrieval failed
+	 */
+	public final long getFirstMessageIndex(String streamName, Direction direction) throws IOException
+	{
+		logger.debug("Getting first stored message index for stream '{}' and direction '{}'", streamName, direction.getLabel());
+		long result = doGetFirstMessageIndex(streamName, direction);
+		logger.debug("Message index {} got", result);
+		return result;
+	}
+	
+	/**
 	 * Retrieves last stored message index for given stream and direction. Use result of this method to continue sequence of message indices.
 	 * Indices are scoped by stream and direction, so both arguments are required 
 	 * @param streamName to get message index for 
@@ -442,6 +460,22 @@ public abstract class CradleStorage
 		logger.debug("Getting last stored message index for stream '{}' and direction '{}'", streamName, direction.getLabel());
 		long result = doGetLastMessageIndex(streamName, direction);
 		logger.debug("Message index {} got", result);
+		return result;
+	}
+	
+	/**
+	 * Retrieves first processed message index for given stream and direction.
+	 * Indices are scoped by stream and direction, so both arguments are required 
+	 * @param streamName to get message index for 
+	 * @param direction to get message index for
+	 * @return first processed message index for given arguments, if it is present, -1 otherwise
+	 * @throws IOException if index retrieval failed
+	 */
+	public final long getFirstProcessedMessageIndex(String streamName, Direction direction) throws IOException
+	{
+		logger.debug("Getting first processed message index for stream '{}' and direction '{}'", streamName, direction.getLabel());
+		long result = doGetFirstProcessedMessageIndex(streamName, direction);
+		logger.debug("Processed message index {} got", result);
 		return result;
 	}
 	

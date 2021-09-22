@@ -76,6 +76,7 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 public class CassandraCradleStorage extends CradleStorage
 {
+	public static final long EMPTY_MESSAGE_INDEX = -1L;
 	private Logger logger = LoggerFactory.getLogger(CassandraCradleStorage.class);
 	public static final ZoneOffset TIMEZONE_OFFSET = ZoneOffset.UTC;
 
@@ -409,9 +410,21 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
+	protected long doGetFirstMessageIndex(String streamName, Direction direction) throws IOException
+	{
+		return getFirstIndex(ops.getMessageBatchOperator(), streamName, direction);
+	}
+
+	@Override
 	protected long doGetLastMessageIndex(String streamName, Direction direction) throws IOException
 	{
 		return getLastIndex(ops.getMessageBatchOperator(), streamName, direction);
+	}
+
+	@Override
+	protected long doGetFirstProcessedMessageIndex(String streamName, Direction direction) throws IOException
+	{
+		return getFirstIndex(ops.getProcessedMessageBatchOperator(), streamName, direction);
 	}
 
 	@Override
@@ -628,7 +641,7 @@ public class CassandraCradleStorage extends CradleStorage
 		String idQueryParam = parentId == null ? ROOT_EVENT_PARENT_ID : parentId.toString();
 
 		return new AsyncOperator<MappedAsyncPagingIterable<TestEventEntity>>(semaphore)
-				.getFuture(() -> selectExecutor.executeQuery(() -> 
+				.getFuture(() -> selectExecutor.executeQuery(() ->
 								ops.getTimeTestEventOperator().getTestEventsDirect(instanceUuid,
 										idQueryParam, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs),
 						ops.getTestEventConverter(), queryInfo))
@@ -841,10 +854,16 @@ public class CassandraCradleStorage extends CradleStorage
 			throw new CradleStorageException("Left and right boundaries should be of the same date, but got '"+originalFrom+"' and '"+originalTo+"'");
 	}
 
+	private long getFirstIndex(MessageBatchOperator op, String streamName, Direction direction)
+	{
+		Row row = op.getFirstIndex(instanceUuid, streamName, direction.getLabel(), readAttrs);
+		return row == null ? EMPTY_MESSAGE_INDEX : row.getLong(MESSAGE_INDEX);
+	}
+
 	private long getLastIndex(MessageBatchOperator op, String streamName, Direction direction)
 	{
-		DetailedMessageBatchEntity result = op.getLastIndex(instanceUuid, streamName, direction.getLabel(), readAttrs);
-		return result != null ? result.getLastMessageIndex() : -1;
+		Row row = op.getLastIndex(instanceUuid, streamName, direction.getLabel(), readAttrs);
+		return row == null ? EMPTY_MESSAGE_INDEX : row.getLong(LAST_MESSAGE_INDEX);
 	}
 
 	protected CompletableFuture<Void> storeDateTime(DateTimeEventEntity entity)
