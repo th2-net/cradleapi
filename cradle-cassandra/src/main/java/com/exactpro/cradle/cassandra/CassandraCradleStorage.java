@@ -496,7 +496,7 @@ public class CassandraCradleStorage extends CradleStorage
 						}
 						catch (Exception error)
 						{
-							throw new CompletionException("Error while converting data into test even", error);
+							throw new CompletionException("Error while converting data into test event", error);
 						}
 					}));
 		});

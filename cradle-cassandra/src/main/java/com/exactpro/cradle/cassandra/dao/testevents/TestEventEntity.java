@@ -309,7 +309,11 @@ public class TestEventEntity
 	public void setEndTimestamp(Instant timestamp)
 	{
 		if (timestamp == null)
+		{
+			setStartDate(null);
+			setStartTime(null);
 			return;
+		}
 		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, CassandraCradleStorage.TIMEZONE_OFFSET);
 		setEndDate(ldt.toLocalDate());
 		setEndTime(ldt.toLocalTime());

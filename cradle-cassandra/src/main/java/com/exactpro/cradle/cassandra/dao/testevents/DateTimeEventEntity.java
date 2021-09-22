@@ -115,7 +115,11 @@ public class DateTimeEventEntity
 	public void setStartTimestamp(Instant timestamp)
 	{
 		if (timestamp == null)
+		{
+			setStartDate(null);
+			setStartTime(null);
 			return;
+		}
 		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, CassandraCradleStorage.TIMEZONE_OFFSET);
 		setStartDate(ldt.toLocalDate());
 		setStartTime(ldt.toLocalTime());
