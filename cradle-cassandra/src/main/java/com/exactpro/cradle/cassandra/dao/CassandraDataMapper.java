@@ -29,7 +29,7 @@ import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 
 @Mapper
 public interface CassandraDataMapper
-
+{
 	//*** Operators for cradle_info keyspace ***
 	
 	@DaoFactory
