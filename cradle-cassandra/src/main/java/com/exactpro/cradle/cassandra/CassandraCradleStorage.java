@@ -269,7 +269,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		try
 		{
-			doUpdateEventStatusAsync(event, success).get();
+			eventsWorker.updateStatus(event, success).get();
 		}
 		catch (Exception e)
 		{
@@ -280,8 +280,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEvent event, boolean success)
 	{
-		//TODO: implement
-		return null;
+		return eventsWorker.updateStatus(event, success);
 	}
 	
 
@@ -527,12 +526,6 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 	}
 	
-	protected PageInfo findCurrentPage()
-	{
-		//TODO: implement
-		return null;
-	}
-	
 	protected CassandraStorageSettings getSettings()
 	{
 		return settings;
@@ -628,17 +621,22 @@ public class CassandraCradleStorage extends CradleStorage
 
 	protected CompletableFuture<Void> failEventAndParents(StoredTestEventId eventId)
 	{
-		return CompletableFuture.completedFuture(null);
-		//TODO: implement
-//		return getTestEventAsync(eventId)
-//				.thenComposeAsync((event) -> {
-//					if (event == null || !event.isSuccess())  //Invalid event ID or event is already failed, which means that its parents are already updated
-//						return CompletableFuture.completedFuture(null);
-//
-//					CompletableFuture<Void> update = doUpdateEventStatusAsync(event, false);
-//					if (event.getParentId() != null)
-//						return update.thenComposeAsync((u) -> failEventAndParents(event.getParentId()));
-//					return update;
-//				});
+		try
+		{
+			return getTestEventAsync(eventId)
+					.thenComposeAsync((event) -> {
+						if (event == null || !event.isSuccess())  //Invalid event ID or event is already failed, which means that its parents are already updated
+							return CompletableFuture.completedFuture(null);
+						
+						CompletableFuture<Void> update = doUpdateEventStatusAsync(event, false);
+						if (event.getParentId() != null)
+							return update.thenComposeAsync((u) -> failEventAndParents(event.getParentId()));
+						return update;
+					});
+		}
+		catch (CradleStorageException e)
+		{
+			throw new CompletionException("Error while failing test event "+eventId, e);
+		}
 	}
 }

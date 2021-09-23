@@ -17,6 +17,7 @@
 package com.exactpro.cradle.cassandra;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Collection;
@@ -146,6 +147,18 @@ public class EventsWorker
 				filter, getBookOps(filter.getBookId()), book, readAttrs);
 		return provider.nextIterator()
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, provider));
+	}
+	
+	public CompletableFuture<Void> updateStatus(StoredTestEvent event, boolean success)
+	{
+		BookOperators bookOps = getBookOps(event.getBookId());
+		StoredTestEventId id = event.getId();
+		LocalDateTime ldt = TimeUtils.toLocalTimestamp(event.getStartTimestamp());
+		LocalDate ld = ldt.toLocalDate();
+		LocalTime lt = ldt.toLocalTime();
+		
+		return bookOps.getTestEventOperator().updateStatus(event.getPageId().getName(), id.getScope(), CassandraTimeUtils.getPart(ldt),
+				ld, lt, id.getId(), success, writeAttrs);
 	}
 	
 	
