@@ -32,40 +32,34 @@ import java.time.LocalDateTime;
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 @Entity
-public class SessionDatesEntity
+public class PageSessionEntity
 {
 	@PartitionKey(0)
 	@CqlName(PAGE)
 	private String page;
 
 	@ClusteringColumn(0)
-	@CqlName(MESSAGE_DATE)
-	private LocalDate messageDate;
-
-	@ClusteringColumn(1)
 	@CqlName(SESSION_ALIAS)
 	private String sessionAlias;
 
-	@ClusteringColumn(2)
+	@ClusteringColumn(1)
 	@CqlName(DIRECTION)
 	private String direction;
 
-	@ClusteringColumn(3)
+	@ClusteringColumn(2)
 	@CqlName(PART)
 	private String part;
 
-	public SessionDatesEntity()
+	public PageSessionEntity()
 	{
 	}
 	
-	public SessionDatesEntity(StoredMessageId messageId, PageId pageId)
+	public PageSessionEntity(StoredMessageId messageId, PageId pageId)
 	{
 		setPage(pageId.getName());
-		LocalDateTime ldt = TimeUtils.toLocalTimestamp(messageId.getTimestamp());
-		setMessageDate(ldt.toLocalDate());
 		setSessionAlias(messageId.getSessionAlias());
 		setDirection(messageId.getDirection().getLabel());
-		setPart(CassandraTimeUtils.getPart(ldt));
+		setPart(CassandraTimeUtils.getPart(TimeUtils.toLocalTimestamp(messageId.getTimestamp())));
 	}
 	
 	public String getPage()
@@ -76,16 +70,6 @@ public class SessionDatesEntity
 	public void setPage(String page)
 	{
 		this.page = page;
-	}
-
-	public LocalDate getMessageDate()
-	{
-		return messageDate;
-	}
-
-	public void setMessageDate(LocalDate messageDate)
-	{
-		this.messageDate = messageDate;
 	}
 
 	public String getSessionAlias()

@@ -22,7 +22,7 @@ import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
 import com.exactpro.cradle.cassandra.dao.cache.CachedSessionDate;
 import com.exactpro.cradle.cassandra.dao.cache.CachedTestEventDate;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
-import com.exactpro.cradle.cassandra.dao.messages.SessionDatesOperator;
+import com.exactpro.cradle.cassandra.dao.messages.PageSessionsOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.EventDateOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
@@ -33,7 +33,7 @@ public class BookOperators
 {
 	private final PageOperator pageOperator;
 	private final MessageBatchOperator messageBatchOperator;
-	private final SessionDatesOperator sessionDatesOperator;
+	private final PageSessionsOperator pageSessionsOperator;
 	private final TestEventOperator testEventOperator;
 	private final ScopeOperator scopeOperator;
 	private final EventDateOperator eventDateOperator;
@@ -47,7 +47,7 @@ public class BookOperators
 	{
 		pageOperator = dataMapper.pageOperator(keyspace, settings.getPagesTable());
 		messageBatchOperator = dataMapper.messageBatchOperator(keyspace, settings.getMessagesTable());
-		sessionDatesOperator = dataMapper.sessionDatesOperator(keyspace, settings.getSessionsDatesTable());
+		pageSessionsOperator = dataMapper.pageSessionsOperator(keyspace, settings.getPageSessionsTable());
 		testEventOperator = dataMapper.testEventOperator(keyspace, settings.getTestEventsTable());
 		scopeOperator = dataMapper.scopeOperator(keyspace, settings.getScopesTable());
 		eventDateOperator = dataMapper.eventDateOperator(keyspace, settings.getTestEventsDatesTable());
@@ -68,9 +68,9 @@ public class BookOperators
 		return messageBatchOperator;
 	}
 
-	public SessionDatesOperator getSessionDatesOperator()
+	public PageSessionsOperator getPageSessionsOperator()
 	{
-		return sessionDatesOperator;
+		return pageSessionsOperator;
 	}
 
 	public TestEventOperator getTestEventOperator()

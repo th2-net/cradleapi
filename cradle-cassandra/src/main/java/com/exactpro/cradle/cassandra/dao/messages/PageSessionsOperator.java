@@ -28,17 +28,17 @@ import java.util.function.Function;
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 @Dao
-public interface SessionDatesOperator
+public interface PageSessionsOperator
 {
 	@Select
-	CompletableFuture<MappedAsyncPagingIterable<SessionDatesEntity>> get(String page,
+	CompletableFuture<MappedAsyncPagingIterable<PageSessionEntity>> get(String page,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-
-	@QueryProvider(providerClass = SessionDatesQueryProvider.class, entityHelpers = SessionDatesEntity.class, providerMethod = "getLastPart")
-	CompletableFuture<String> getLastPart(String page, List<LocalDate> messagesDates, String sessionAlias, String direction,
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + PAGE + "=:page AND " + SESSION_ALIAS + "=:sessionAlias AND " +
+	DIRECTION + "=:direction ORDER BY " + SESSION_ALIAS + " DESC LIMIT 1")
+	CompletableFuture<PageSessionEntity> getLast(String page, String sessionAlias, String direction,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Insert
-	CompletableFuture<SessionDatesEntity> write(SessionDatesEntity entity,
+	CompletableFuture<PageSessionEntity> write(PageSessionEntity entity,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

@@ -37,8 +37,7 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 	{
 		createPagesTable();
 		createMessagesTable();
-		createSessionsTable();
-		createSessionsDatesTable();
+		createPageSessionsTable();
 		createTestEventsTable();
 		createScopesTable();
 		createTestEventsDatesTable();
@@ -86,22 +85,13 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withColumn(LABELS, DataTypes.setOf(DataTypes.TEXT))
 				.withColumn(CONTENT, DataTypes.BLOB));
 	}
-	
-	private void createSessionsTable() throws IOException
+
+	private void createPageSessionsTable() throws IOException
 	{
-		String tableName = getSettings().getSessionsTable();
-		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(PAGE, DataTypes.TEXT)
-				.withClusteringColumn(SESSION_ALIAS, DataTypes.TEXT));
-	}
-	
-	private void createSessionsDatesTable() throws IOException
-	{
-		String tableName = getSettings().getSessionsDatesTable();
+		String tableName = getSettings().getPageSessionsTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(PAGE, DataTypes.TEXT)
 
-				.withClusteringColumn(MESSAGE_DATE, DataTypes.DATE)
 				.withClusteringColumn(SESSION_ALIAS, DataTypes.TEXT)
 				.withClusteringColumn(DIRECTION, DataTypes.TEXT)
 				.withClusteringColumn(PART, DataTypes.TEXT));

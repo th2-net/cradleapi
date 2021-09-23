@@ -26,7 +26,7 @@ public class CassandraStorageSettings
 			PAGES_TABLE = "pages",
 			MESSAGES_TABLE = "messages",
 			SESSIONS_TABLE = "sessions",
-			SESSIONS_DATES_TABLE = "sessions_dates",
+			PAGE_SESSIONS_TABLE = "page_sessions",
 			TEST_EVENTS_TABLE = "test_events",
 			SCOPES_TABLE = "scopes",
 			TEST_EVENTS_DATES_TABLE = "test_events_dates",
@@ -57,7 +57,7 @@ public class CassandraStorageSettings
 			pagesTable,
 			messagesTable,
 			sessionsTable,
-			sessionsDatesTable,
+			pageSessionsTable,
 			testEventsTable,
 			scopesTable,
 			testEventsDatesTable,
@@ -102,7 +102,7 @@ public class CassandraStorageSettings
 		this.pagesTable = PAGES_TABLE;
 		this.messagesTable = MESSAGES_TABLE;
 		this.sessionsTable = SESSIONS_TABLE;
-		this.sessionsDatesTable = SESSIONS_DATES_TABLE;
+		this.pageSessionsTable = PAGE_SESSIONS_TABLE;
 		this.testEventsTable = TEST_EVENTS_TABLE;
 		this.scopesTable = SCOPES_TABLE;
 		this.testEventsDatesTable = TEST_EVENTS_DATES_TABLE;
@@ -136,7 +136,7 @@ public class CassandraStorageSettings
 		this.pagesTable = settings.getPagesTable();
 		this.messagesTable = settings.getMessagesTable();
 		this.sessionsTable = settings.getSessionsTable();
-		this.sessionsDatesTable = settings.getSessionsDatesTable();
+		this.pageSessionsTable = settings.getPageSessionsTable();
 		this.testEventsTable = settings.getTestEventsTable();
 		this.scopesTable = settings.getScopesTable();
 		this.testEventsDatesTable = settings.getTestEventsDatesTable();
@@ -235,14 +235,14 @@ public class CassandraStorageSettings
 	}
 	
 	
-	public String getSessionsDatesTable()
+	public String getPageSessionsTable()
 	{
-		return sessionsDatesTable;
+		return pageSessionsTable;
 	}
 	
-	public void setSessionsDatesTable(String sessionsDatesTable)
+	public void setPageSessionsTable(String pageSessionsTable)
 	{
-		this.sessionsDatesTable = sessionsDatesTable;
+		this.pageSessionsTable = pageSessionsTable;
 	}
 	
 	

@@ -16,12 +16,20 @@
 
 package com.exactpro.cradle.cassandra.utils;
 
+import com.exactpro.cradle.CradleStorage;
+
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+
 
 public class CassandraTimeUtils
 {
+	private static final DateTimeFormatter PART_FORMAT = DateTimeFormatter
+			.ofPattern("yyyyMMddHHmmss").withZone(CradleStorage.TIMEZONE_OFFSET);
+
 	public static String getPart(LocalDateTime timestamp)
 	{
-		return Integer.toString(timestamp.getHour());
+		return timestamp.truncatedTo(ChronoUnit.HOURS).format(PART_FORMAT);
 	}
 }
