@@ -16,6 +16,8 @@
 
 package com.exactpro.cradle.cassandra;
 
+import java.io.IOException;
+
 import com.exactpro.cradle.CradleManager;
 import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
@@ -26,7 +28,7 @@ public class CassandraCradleManager implements CradleManager
 	private final CassandraCradleStorage storage;
 	
 	public CassandraCradleManager(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings, boolean prepareStorage) 
-			throws CradleStorageException
+			throws CradleStorageException, IOException
 	{
 		storage = new CassandraCradleStorage(new CassandraConnectionSettings(connectionSettings), new CassandraStorageSettings(storageSettings));
 		storage.init(prepareStorage);

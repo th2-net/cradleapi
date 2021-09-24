@@ -30,7 +30,9 @@ import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.BookInfo;
+import com.exactpro.cradle.BookToAdd;
 import com.exactpro.cradle.PageInfo;
+import com.exactpro.cradle.cassandra.CassandraBookToAdd;
 
 /**
  * Contains information about book as stored in "cradle" keyspace
@@ -58,13 +60,13 @@ public class BookEntity
 	{
 	}
 	
-	public BookEntity(BookInfo bookInfo)
+	public BookEntity(BookToAdd book)
 	{
-		name = bookInfo.getId().getName();
-		fullName = bookInfo.getFullName();
-		keyspaceName = toKeyspaceName(name);
-		desc = bookInfo.getDesc();
-		created = bookInfo.getCreated();
+		name = book.getName();
+		fullName = book.getFullName();
+		keyspaceName = book instanceof CassandraBookToAdd ? ((CassandraBookToAdd)book).getKeyspace() : toKeyspaceName(name);
+		desc = book.getDesc();
+		created = book.getCreated();
 	}
 	
 	

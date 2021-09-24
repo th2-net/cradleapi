@@ -65,7 +65,7 @@ public class PageEntity
 	{
 	}
 	
-	public PageEntity(String name, Instant started, Instant ended)
+	public PageEntity(String name, Instant started, String comment, Instant ended)
 	{
 		LocalDateTime startedLdt = TimeUtils.toLocalTimestamp(started);
 		
@@ -73,7 +73,7 @@ public class PageEntity
 		this.startDate = startedLdt.toLocalDate();
 		this.startTime = startedLdt.toLocalTime();
 		this.name = name;
-		this.comment = null;
+		this.comment = comment;
 		
 		if (ended != null)
 		{
@@ -85,7 +85,7 @@ public class PageEntity
 	
 	public PageEntity(PageInfo pageInfo)
 	{
-		this(pageInfo.getId().getName(), pageInfo.getStarted(), pageInfo.getEnded());
+		this(pageInfo.getId().getName(), pageInfo.getStarted(), pageInfo.getComment(), pageInfo.getEnded());
 	}
 	
 	

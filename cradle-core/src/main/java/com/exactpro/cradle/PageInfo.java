@@ -61,4 +61,10 @@ public class PageInfo
 	{
 		return ended == null;
 	}
+	
+	
+	public static PageInfo ended(PageInfo page, Instant endTimestamp)
+	{
+		return page == null || !page.isActive() ? page : new PageInfo(page.getId(), page.getStarted(), endTimestamp, page.getComment());
+	}
 }

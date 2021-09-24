@@ -29,19 +29,12 @@ import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.CradleOperators;
 import com.exactpro.cradle.cassandra.dao.books.BookEntity;
 import com.exactpro.cradle.cassandra.dao.books.PageEntity;
-import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
-import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
-import com.exactpro.cradle.cassandra.dao.testevents.PageScopeEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.EventEntityUtils;
+import com.exactpro.cradle.cassandra.dao.books.PageOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventIteratorProvider;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.BookKeyspaceCreator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
-import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
-import com.exactpro.cradle.cassandra.utils.CassandraTimeUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.StoredMessage;
@@ -54,7 +47,6 @@ import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.TimeUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -145,40 +137,68 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected Collection<BookInfo> loadBooks() throws CradleStorageException
+	protected Collection<BookInfo> loadBooks() throws IOException
 	{
 		Collection<BookInfo> result = new ArrayList<>();
-		for (BookEntity bookEntity : ops.getCradleBookOperator().getAll(readAttrs))
+		try
 		{
-			BookId bookId = new BookId(bookEntity.getName());
-			BookOperators bookOp = ops.addOperators(bookId, bookEntity.getKeyspaceName());
-			
-			Collection<PageInfo> pages = new ArrayList<>();
-			for (PageEntity pageEntity : bookOp.getPageOperator().getAll(readAttrs))
-				pages.add(pageEntity.toPageInfo(bookId));
-			
-			result.add(bookEntity.toBookInfo(pages));
+			for (BookEntity bookEntity : ops.getCradleBookOperator().getAll(readAttrs))
+			{
+				BookId bookId = new BookId(bookEntity.getName());
+				BookOperators bookOp = ops.addOperators(bookId, bookEntity.getKeyspaceName());
+				
+				Collection<PageInfo> pages = loadPageInfo(bookId, bookOp);
+				
+				result.add(bookEntity.toBookInfo(pages));
+			}
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while loading books", e);
 		}
 		return result;
 	}
 	
 	@Override
-	protected void doAddBook(BookInfo newBook) throws CradleStorageException
+	protected void doAddBook(BookToAdd newBook, BookId bookId) throws IOException
 	{
 		BookEntity bookEntity = new BookEntity(newBook);
 		createBookKeyspace(bookEntity);
-		ops.getCradleBookOperator().write(bookEntity, writeAttrs);
-		ops.addOperators(newBook.getId(), bookEntity.getKeyspaceName());
+		
+		try
+		{
+			ops.getCradleBookOperator().write(bookEntity, writeAttrs);
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while writing info of book '"+bookId+"'", e);
+		}
+		ops.addOperators(bookId, bookEntity.getKeyspaceName());
 	}
 	
 	@Override
-	protected void doSwitchToNextPage(BookId bookId, String pageName, Instant timestamp) throws CradleStorageException
+	protected void doSwitchToNewPage(BookId bookId, String pageName, Instant timestamp, String comment, PageInfo prevPage) throws CradleStorageException, IOException
 	{
-		PageEntity entity = new PageEntity(pageName, timestamp, null);
-		ops.getOperators(bookId).getPageOperator().write(entity, writeAttrs);
+		PageOperator op = ops.getOperators(bookId).getPageOperator();
+		try
+		{
+			if (prevPage != null)
+				op.write(new PageEntity(prevPage.getId().getName(), prevPage.getStarted(), prevPage.getComment(), prevPage.getEnded()), writeAttrs);
+			op.write(new PageEntity(pageName, timestamp, comment, null), writeAttrs);
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while writing page info", e);
+		}
 	}
-
-
+	
+	@Override
+	protected Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException, IOException
+	{
+		return loadPageInfo(bookId, ops.getOperators(bookId));
+	}
+	
+	
 	@Override
 	protected void doStoreMessageBatch(StoredMessageBatch batch) throws IOException
 	{
@@ -511,18 +531,18 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 	}
 	
-	protected void createBookKeyspace(BookEntity bookEntity) throws CradleStorageException
+	protected void createBookKeyspace(BookEntity bookEntity) throws IOException
 	{
 		String name = bookEntity.getName();
 		try
 		{
 			logger.info("Creating storage for book '{}'", name);
-			new BookKeyspaceCreator(bookEntity.getKeyspaceName(), exec, settings).createAll();;
+			new BookKeyspaceCreator(bookEntity.getKeyspaceName(), exec, settings).createAll();
 			logger.info("Storage creation for book '{}' finished", name);
 		}
-		catch (IOException e)
+		catch (Exception e)
 		{
-			throw new CradleStorageException("Error while creating storage for book '"+name+"'", e);
+			throw new IOException("Error while creating storage for book '"+name+"'", e);
 		}
 	}
 	
@@ -618,7 +638,21 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	
-
+	private Collection<PageInfo> loadPageInfo(BookId bookId, BookOperators bookOp) throws IOException
+	{
+		Collection<PageInfo> result = new ArrayList<>();
+		try
+		{
+			for (PageEntity pageEntity : bookOp.getPageOperator().getAll(readAttrs))
+				result.add(pageEntity.toPageInfo(bookId));
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while loading pages of book '"+bookId+"'", e);
+		}
+		return result;
+	}
+	
 	protected CompletableFuture<Void> failEventAndParents(StoredTestEventId eventId)
 	{
 		try

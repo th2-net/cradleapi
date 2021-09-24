@@ -63,9 +63,11 @@ public abstract class CradleStorage
 	protected abstract void doInit(boolean prepareStorage) throws CradleStorageException;
 	protected abstract void doDispose() throws CradleStorageException;
 	
-	protected abstract Collection<BookInfo> loadBooks() throws CradleStorageException;
-	protected abstract void doAddBook(BookInfo newBook) throws CradleStorageException;
-	protected abstract void doSwitchToNextPage(BookId bookId, String pageName, Instant timestamp) throws CradleStorageException;
+	protected abstract Collection<BookInfo> loadBooks() throws IOException;
+	protected abstract void doAddBook(BookToAdd newBook, BookId bookId) throws IOException;
+	protected abstract void doSwitchToNewPage(BookId bookId, String pageName, Instant timestamp, String comment, 
+			PageInfo prevPage) throws CradleStorageException, IOException;
+	protected abstract Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException, IOException;
 	
 	
 	protected abstract void doStoreMessageBatch(StoredMessageBatch batch) throws IOException;
@@ -109,8 +111,9 @@ public abstract class CradleStorage
 	 * Initializes internal objects of storage and prepares it to access data, i.e. creates needed connections and facilities.
 	 * @param prepareStorage if underlying physical storage should be created, if absent
 	 * @throws CradleStorageException if storage initialization failed
+	 * @throws IOException if data reading or creation of storage failed
 	 */
-	public void init(boolean prepareStorage) throws CradleStorageException
+	public void init(boolean prepareStorage) throws CradleStorageException, IOException
 	{
 		if (initialized)
 			return;
@@ -161,27 +164,23 @@ public abstract class CradleStorage
 	
 	/**
 	 * Creates new book and adds it to storage, adding page with given name to newly created book
-	 * @param name short name of book to create
-	 * @param fullName long name
-	 * @param desc description of the book
-	 * @param firstPageName name of first page to add to new book
-	 * @param firstPageComment comment for first page
+	 * @param book information about book to add and its first page
 	 * @return {@link BookInfo} containing all information about created book
-	 * @throws CradleStorageException if error occurred while creating new book
+	 * @throws CradleStorageException if the book is already present
+	 * @throws IOException if book data writing failed
 	 */
-	public BookInfo addBook(String name, Instant created, String fullName, String desc, 
-			String firstPageName, String firstPageComment) throws CradleStorageException
+	public BookInfo addBook(BookToAdd book) throws CradleStorageException, IOException
 	{
-		BookId id = new BookId(name);
+		BookId id = new BookId(book.getName());
 		logger.info("Adding book '{}' to storage", id);
 		if (books.containsKey(id))
 			throw new CradleStorageException("Book '"+id+"' is already present in storage");
 		
-		BookInfo newBook = new BookInfo(id, fullName, desc, created, null);
-		doAddBook(newBook);
+		doAddBook(book, id);
+		BookInfo newBook = new BookInfo(id, book.getFullName(), book.getDesc(), book.getCreated(), null);
 		books.put(newBook.getId(), newBook);
 		logger.info("Book '{}' has been added to storage", id);
-		switchToNextPage(id, firstPageName, created, firstPageComment);
+		switchToNewPage(id, book.getFirstPageName(), book.getCreated(), book.getFirstPageComment());
 		return newBook;
 	}
 	
@@ -193,9 +192,35 @@ public abstract class CradleStorage
 		return Collections.unmodifiableCollection(books.values());
 	}
 	
-	public void switchToNextPage(BookId bookId, String pageName, String pageComment) throws CradleStorageException
+	/**
+	 * Changes active page of given book to new one, started at current timestamp
+	 * @param bookId ID of the book whose page to change
+	 * @param pageName name of new page
+	 * @param pageComment optional comment for new page
+	 * @throws CradleStorageException if given bookId is unknown or page with given name already exists in this book
+	 * @throws IOException if page data writing failed
+	 */
+	public void switchToNewPage(BookId bookId, String pageName, String pageComment) throws CradleStorageException, IOException
 	{
-		switchToNextPage(bookId, pageName, Instant.now(), pageComment);
+		switchToNewPage(bookId, pageName, Instant.now(), pageComment);
+	}
+	
+	/**
+	 * Refreshes pages information of given book, loading actual data from storage. 
+	 * Use this method to refresh Cradle API internal book cache when page of the book was switched outside of the application
+	 * @param bookId ID of the book whose pages to refresh
+	 * @return refreshed book information
+	 * @throws CradleStorageException if given bookId is unknown
+	 * @throws IOException if page data reading failed
+	 */
+	public BookInfo refreshPages(BookId bookId) throws CradleStorageException, IOException
+	{
+		logger.info("Refreshing pages of book '{}'", bookId);
+		BookInfo book = bpc.getBook(bookId);
+		Collection<PageInfo> pages = doLoadPages(bookId);
+		book = new BookInfo(book.getId(), book.getFullName(), book.getDesc(), book.getCreated(), pages);
+		books.put(book.getId(), book);
+		return book;
 	}
 	
 	
@@ -654,13 +679,17 @@ public abstract class CradleStorage
 	}
 	
 	
-	private void switchToNextPage(BookId bookId, String pageName, Instant started, String pageComment) throws CradleStorageException
+	private void switchToNewPage(BookId bookId, String pageName, Instant pageStart, String pageComment) throws CradleStorageException, IOException
 	{
-		//TODO: check and fix this method
 		logger.info("Switching to page '{}' of book '{}'", pageName, bookId);
-		BookInfo book = bpc.getBook(bookId);
-		doSwitchToNextPage(bookId, pageName, started);
-		book.nextPage(pageName, started, pageComment);
+		BookInfo book = refreshPages(bookId);
+		if (book.getPage(new PageId(bookId, pageName)) != null)
+			throw new CradleStorageException("Page '"+pageName+"' is already present in book '"+bookId+"'");
+		PageInfo activePage = book.getActivePage();
+		if (activePage != null && !pageStart.isAfter(activePage.getStarted()))
+			throw new CradleStorageException("Timestamp of new page start must be after active page start ("+activePage.getStarted()+")");
+		doSwitchToNewPage(bookId, pageName, pageStart, pageComment, PageInfo.ended(activePage, pageStart));
+		book.nextPage(pageName, pageStart, pageComment);
 	}
 	
 	private boolean checkFilter(TestEventFilter filter) throws CradleStorageException

@@ -16,6 +16,8 @@
 
 package com.exactpro.cradle;
 
+import java.io.IOException;
+
 import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
@@ -25,7 +27,7 @@ public class DummyCradleManager implements CradleManager
 {
 	private final DummyCradleStorage storage;
 	
-	public DummyCradleManager() throws CradleStorageException
+	public DummyCradleManager() throws CradleStorageException, IOException
 	{
 		storage = new DummyCradleStorage();
 		storage.init(false);
