@@ -69,7 +69,7 @@ public class EntityUtils
 		}
 		catch (Exception e)
 		{
-			throw new CradleStorageException("Error while converting result set to collection", e);
+			throw new CradleStorageException("Error while converting result set to list", e);
 		}
 	}
 }

@@ -151,13 +151,14 @@ public class DummyCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected Iterable<MessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException
+	protected CradleResultSet<MessageBatch> doGetMessagesBatches(StoredMessageFilter filter, BookInfo book) throws IOException
 	{
 		return null;
 	}
 	
 	@Override
-	protected CompletableFuture<Iterable<MessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter)
+	protected CompletableFuture<CradleResultSet<MessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter,
+			BookInfo book)
 	{
 		return CompletableFuture.completedFuture(null);
 	}

@@ -19,13 +19,14 @@ package com.exactpro.cradle.cassandra.dao.messages;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
-import com.datastax.oss.driver.api.mapper.annotations.Dao;
-import com.datastax.oss.driver.api.mapper.annotations.Insert;
-import com.datastax.oss.driver.api.mapper.annotations.Query;
-import com.datastax.oss.driver.api.mapper.annotations.Select;
+import com.datastax.oss.driver.api.mapper.annotations.*;
+import com.exactpro.cradle.cassandra.dao.CommonQueryProvider;
+import com.exactpro.cradle.cassandra.dao.testevents.CassandraTestEventFilter;
+import com.exactpro.cradle.messages.StoredMessageFilter;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
@@ -46,13 +47,24 @@ public interface MessageBatchOperator
 	CompletableFuture<Row> getNearestTimeAndSequenceBefore(String page, String sessionAlias,
 			String direction, String part, LocalDate messageDate, LocalTime messageTime, long sequence,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
+
+	@Query("SELECT " + MESSAGE_TIME + " FROM ${qualifiedTableId} WHERE " + PAGE + "=:page"
+			+ " AND " + SESSION_ALIAS + "=:sessionAlias AND " + DIRECTION + "=:direction AND " + PART + "=:part"
+			+ " AND " + MESSAGE_DATE + "=:messageDate AND " + MESSAGE_TIME + "<=:messageTime"
+			+ " ORDER BY " + MESSAGE_DATE + " DESC, " + MESSAGE_TIME + " DESC, " + SEQUENCE + " DESC LIMIT 1")
+	CompletableFuture<Row> getNearestTime(String page, String sessionAlias,
+			String direction, String part, LocalDate messageDate, LocalTime messageTime,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
 	@Query("SELECT " + LAST_SEQUENCE + " FROM ${qualifiedTableId} WHERE " + PAGE + "=:page"
 			+ " AND " + SESSION_ALIAS + "=:sessionAlias AND " + DIRECTION + "=:direction AND " + PART + "=:part"
 			+ " ORDER BY " + MESSAGE_DATE + " DESC, " + MESSAGE_TIME + " DESC, " + SEQUENCE + " DESC LIMIT 1" )
 	CompletableFuture<Row> getLastSequence(String page, String sessionAlias, String direction, String part,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
+	@QueryProvider(providerClass = CommonQueryProvider.class, entityHelpers = MessageBatchEntity.class)
+	CompletableFuture<MappedAsyncPagingIterable<MessageBatchEntity>> getByFilter(CassandraStoredMessageFilter filter,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Insert
 	CompletableFuture<MessageBatchEntity> write(MessageBatchEntity batch,

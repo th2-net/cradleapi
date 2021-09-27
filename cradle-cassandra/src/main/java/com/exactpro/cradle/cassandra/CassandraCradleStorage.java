@@ -421,11 +421,11 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected Iterable<MessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException
+	protected CradleResultSet<MessageBatch> doGetMessagesBatches(StoredMessageFilter filter, BookInfo book) throws IOException
 	{
 		try
 		{
-			return doGetMessagesBatchesAsync(filter).get();
+			return doGetMessagesBatchesAsync(filter, book).get();
 		}
 		catch (Exception e)
 		{
@@ -434,9 +434,14 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected CompletableFuture<Iterable<MessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter)
+	protected CompletableFuture<CradleResultSet<MessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter, BookInfo book)
+			throws CradleStorageException
 	{
-		return null; //TODO: implement
+		MessageBatchIteratorProvider provider =
+				new MessageBatchIteratorProvider("get messages batches filtered by " + filter, filter,
+						ops.getOperators(book.getId()), book, readAttrs);
+		return provider.nextIterator()
+				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, provider));
 	}
 	
 	

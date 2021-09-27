@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.Order;
 import com.exactpro.cradle.PageId;
@@ -30,40 +31,61 @@ import com.exactpro.cradle.filters.FilterForLess;
 
 public class StoredMessageFilter
 {
-	private final PageId pageId;
+	private FilterForEquals<BookId> bookId;
+	private FilterForEquals<PageId> pageId;
 	private FilterForEquals<String> sessionAlias;
 	private FilterForEquals<Direction> direction;
 	private FilterForGreater<Instant> timestampFrom;
 	private FilterForLess<Instant> timestampTo;
-	private FilterForAny<Long> sequence;
+	private FilterForAny<StoredMessageId> messageId;
 	private int limit;
 	private Order order = Order.DIRECT;
-	private long leftBoundIndex = -1;
-	
-	public StoredMessageFilter(PageId pageId)
+
+	public static StoredMessageFilterBuilder builder(BookId bookId, String sessionAlias, Direction direction)
 	{
-		this.pageId = pageId;
+		return new StoredMessageFilterBuilder(bookId, sessionAlias, direction);
 	}
-	
+
+	protected StoredMessageFilter()
+	{
+
+	}
+
 	public StoredMessageFilter(StoredMessageFilter copyFrom)
 	{
+		this.bookId = copyFrom.getBookId();
 		this.pageId = copyFrom.getPageId();
 		this.sessionAlias = copyFrom.getSessionAlias();
 		this.direction = copyFrom.getDirection();
 		this.timestampFrom = copyFrom.getTimestampFrom();
 		this.timestampTo = copyFrom.getTimestampTo();
-		this.sequence = copyFrom.getSequence();
+		this.messageId = copyFrom.getMessageId();
 		this.limit = copyFrom.getLimit();
 		this.order = copyFrom.getOrder();
 	}
-	
-	
-	public PageId getPageId()
+
+	public FilterForEquals<BookId> getBookId()
+	{
+		return bookId;
+	}
+
+	public void setBookId(FilterForEquals<BookId> bookId)
+	{
+		this.bookId = bookId;
+	}
+
+
+	public FilterForEquals<PageId> getPageId()
 	{
 		return pageId;
 	}
-	
-	
+
+	public void setPageId(FilterForEquals<PageId> pageId)
+	{
+		this.pageId = pageId;
+	}
+
+
 	public FilterForEquals<String> getSessionAlias()
 	{
 		return sessionAlias;
@@ -108,14 +130,14 @@ public class StoredMessageFilter
 	}
 	
 	
-	public FilterForAny<Long> getSequence()
+	public FilterForAny<StoredMessageId> getMessageId()
 	{
-		return sequence;
+		return messageId;
 	}
 	
-	public void setSequence(FilterForAny<Long> sequence)
+	public void setMessageId(FilterForAny<StoredMessageId> messageId)
 	{
-		this.sequence = sequence;
+		this.messageId = messageId;
 	}
 	
 	
@@ -141,24 +163,6 @@ public class StoredMessageFilter
 	}
 	
 	
-	/**
-	 * @return calculated left bound for message sequence number while filtering by sequence with "is less" or "is less or equals" condition and limit involved
-	 * This method is for internal use
-	 */
-	public long getLeftBoundSequence()
-	{
-		return leftBoundIndex;
-	}
-	
-	/**
-	 * Sets calculated left bound for message sequence number . This method is for internal use
-	 * @param leftBoundIndex calculated for filter
-	 */
-	public void setLeftBoundIndex(long leftBoundIndex)
-	{
-		this.leftBoundIndex = leftBoundIndex;
-	}
-
 	@Override
 	public String toString()
 	{
@@ -172,8 +176,8 @@ public class StoredMessageFilter
 			result.add("timestamp" + timestampFrom);
 		if (timestampTo != null)
 			result.add("timestamp" + timestampTo);
-		if (sequence != null)
-			result.add("sequence" + sequence);
+		if (messageId != null)
+			result.add("sequence" + messageId);
 		if (limit > 0)
 			result.add("limit=" + limit);
 		if (order != null)

@@ -22,7 +22,7 @@ import java.util.Objects;
 /**
  * Identifier of the book
  */
-public class BookId implements Serializable
+public class BookId implements Serializable, Comparable<BookId>
 {
 	private static final long serialVersionUID = -8051161407486679704L;
 	private final String name;
@@ -62,5 +62,11 @@ public class BookId implements Serializable
 	public String toString()
 	{
 		return name;
+	}
+
+	@Override
+	public int compareTo(BookId o)
+	{
+		return name.compareTo(o.getName());
 	}
 }

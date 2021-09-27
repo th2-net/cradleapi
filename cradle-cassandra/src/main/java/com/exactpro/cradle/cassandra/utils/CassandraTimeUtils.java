@@ -17,7 +17,10 @@
 package com.exactpro.cradle.cassandra.utils;
 
 import com.exactpro.cradle.CradleStorage;
+import com.exactpro.cradle.PageInfo;
+import com.exactpro.cradle.utils.TimeUtils;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -26,10 +29,22 @@ import java.time.temporal.ChronoUnit;
 public class CassandraTimeUtils
 {
 	private static final DateTimeFormatter PART_FORMAT = DateTimeFormatter
-			.ofPattern("yyyyMMddHHmmss").withZone(CradleStorage.TIMEZONE_OFFSET);
+			.ofPattern("yyyyMMddHHmm").withZone(CradleStorage.TIMEZONE_OFFSET);
 
 	public static String getPart(LocalDateTime timestamp)
 	{
 		return timestamp.truncatedTo(ChronoUnit.HOURS).format(PART_FORMAT);
+	}
+
+	public static String getNextPart(String previousPart)
+	{
+		LocalDateTime parsed = LocalDateTime.parse(previousPart, PART_FORMAT);
+		return getPart(parsed.plus(1, ChronoUnit.HOURS));
+	}
+
+	public static String getLastPart(PageInfo pageInfo)
+	{
+		LocalDateTime ldt = TimeUtils.toLocalTimestamp(pageInfo.getEnded() == null ? Instant.now() : pageInfo.getEnded());
+		return getPart(ldt);
 	}
 }
