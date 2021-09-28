@@ -94,7 +94,7 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 				isTimeToBounded = true;
 				break;
 			default:
-				select = mcrBuilder.isGreaterThanOrEqualTo(tuple(bindMarker(DATE_TO), bindMarker(TIME_TO), bindMarker(SEQUENCE)));
+				select = mcrBuilder.isGreaterThanOrEqualTo(tuple(bindMarker(DATE_FROM), bindMarker(TIME_FROM), bindMarker(SEQUENCE)));
 				isTimeFromBounded = true;
 		}
 		return select;
@@ -132,34 +132,19 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 				.setString(DIRECTION, direction)
 				.setString(PART, part);
 
-		Instant timestampFromId = null;
 		if (messageId != null)
 		{
-			timestampFromId = messageId.getValue().getTimestamp();
-			LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestampFromId);
-			if (messageId.getOperation() == LESS || messageId.getOperation() == LESS_OR_EQUALS)
-			{
-
-				builder = builder.setLocalDate(DATE_TO, ldt.toLocalDate());
-				builder = builder.setLocalTime(TIME_TO, ldt.toLocalTime());
-				builder = builder.setLong(SEQUENCE, messageId.getValue().getSequence());
-			}
-			else
-			{
-				builder = builder.setLocalDate(DATE_FROM, ldt.toLocalDate());
-				builder = builder.setLocalTime(TIME_FROM, ldt.toLocalTime());
-				builder = builder.setLong(SEQUENCE, messageId.getValue().getSequence());
-			}
+			builder = builder.setLong(SEQUENCE, messageId.getValue().getSequence());
 		}
 
-		if (messageTimeFrom != null && (timestampFromId == null || messageTimeFrom.getValue().isAfter(timestampFromId)))
+		if (messageTimeFrom != null)
 		{
 			LocalDateTime ldt = TimeUtils.toLocalTimestamp(messageTimeFrom.getValue());
 			builder = builder.setLocalDate(DATE_FROM, ldt.toLocalDate());
 			builder = builder.setLocalTime(TIME_FROM, ldt.toLocalTime());
 		}
 
-		if (messageTimeTo != null && (timestampFromId == null || messageTimeTo.getValue().isBefore(timestampFromId)))
+		if (messageTimeTo != null)
 		{
 			LocalDateTime ldt = TimeUtils.toLocalTimestamp(messageTimeTo.getValue());
 			builder = builder.setLocalDate(DATE_TO, ldt.toLocalDate());
