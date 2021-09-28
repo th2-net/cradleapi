@@ -35,7 +35,6 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 	@Override
 	protected void createTables() throws IOException
 	{
-		createPagesTable();
 		createMessagesTable();
 		createSessionsTable();
 		createSessionsDatesTable();
@@ -46,19 +45,6 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 		createIntervalsTable();
 	}
 	
-	
-	private void createPagesTable() throws IOException
-	{
-		String tableName = getSettings().getPagesTable();
-		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(PART, DataTypes.TEXT)
-				.withClusteringColumn(START_DATE, DataTypes.DATE)
-				.withClusteringColumn(START_TIME, DataTypes.TIME)
-				.withColumn(NAME, DataTypes.TEXT)
-				.withColumn(COMMENT, DataTypes.TEXT)
-				.withColumn(END_DATE, DataTypes.DATE)
-				.withColumn(END_TIME, DataTypes.TIME));
-	}
 	
 	private void createMessagesTable() throws IOException
 	{

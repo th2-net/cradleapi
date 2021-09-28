@@ -22,6 +22,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.books.CradleBookOperator;
+import com.exactpro.cradle.cassandra.dao.books.PageNameOperator;
+import com.exactpro.cradle.cassandra.dao.books.PageOperator;
 import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeOperator;
 import com.exactpro.cradle.cassandra.utils.LimitedCache;
@@ -33,6 +35,8 @@ public class CradleOperators
 	private final CassandraDataMapper dataMapper;
 	private final CassandraStorageSettings settings;
 	private final CradleBookOperator cradleBookOp;
+	private final PageOperator pageOperator;
+	private final PageNameOperator pageNameOperator;
 	private final ScopeOperator scopeOp;
 	
 	private final LimitedCache<CachedScope> scopesCache;
@@ -45,6 +49,8 @@ public class CradleOperators
 		
 		String infoKeyspace = settings.getCradleInfoKeyspace();
 		this.cradleBookOp = dataMapper.cradleBookOperator(infoKeyspace, settings.getBooksTable());
+		this.pageOperator = dataMapper.pageOperator(infoKeyspace, settings.getPagesTable());
+		this.pageNameOperator = dataMapper.pageNameOperator(infoKeyspace, settings.getPagesNamesTable());
 		this.scopeOp = dataMapper.scopeOperator(infoKeyspace, settings.getScopesTable());
 		
 		this.scopesCache = new LimitedCache<>(settings.getScopesCacheSize());
@@ -68,6 +74,16 @@ public class CradleOperators
 	public CradleBookOperator getCradleBookOperator()
 	{
 		return cradleBookOp;
+	}
+	
+	public PageOperator getPageOperator()
+	{
+		return pageOperator;
+	}
+	
+	public PageNameOperator getPageNameOperator()
+	{
+		return pageNameOperator;
 	}
 	
 	public ScopeOperator getScopeOperator()

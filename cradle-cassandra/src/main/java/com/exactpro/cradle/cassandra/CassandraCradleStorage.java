@@ -23,12 +23,13 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
-import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.CradleOperators;
 import com.exactpro.cradle.cassandra.dao.books.BookEntity;
 import com.exactpro.cradle.cassandra.dao.books.PageEntity;
+import com.exactpro.cradle.cassandra.dao.books.PageNameEntity;
+import com.exactpro.cradle.cassandra.dao.books.PageNameOperator;
 import com.exactpro.cradle.cassandra.dao.books.PageOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
@@ -145,9 +146,8 @@ public class CassandraCradleStorage extends CradleStorage
 			for (BookEntity bookEntity : ops.getCradleBookOperator().getAll(readAttrs))
 			{
 				BookId bookId = new BookId(bookEntity.getName());
-				BookOperators bookOp = ops.addOperators(bookId, bookEntity.getKeyspaceName());
-				
-				Collection<PageInfo> pages = loadPageInfo(bookId, bookOp);
+				ops.addOperators(bookId, bookEntity.getKeyspaceName());
+				Collection<PageInfo> pages = loadPageInfo(bookId);
 				
 				result.add(bookEntity.toBookInfo(pages));
 			}
@@ -179,12 +179,21 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected void doSwitchToNewPage(BookId bookId, String pageName, Instant timestamp, String comment, PageInfo prevPage) throws CradleStorageException, IOException
 	{
-		PageOperator op = ops.getOperators(bookId).getPageOperator();
+		PageOperator pageOp = ops.getPageOperator();
+		PageNameOperator pageNameOp = ops.getPageNameOperator();
 		try
 		{
+			PageNameEntity nameEntity = new PageNameEntity(bookId.getName(), pageName, timestamp, comment, null);
+			if (!pageNameOp.writeNew(nameEntity, writeAttrs).wasApplied())
+				throw new IOException("Query to insert page '"+nameEntity.getName()+"' was not applied. Probably, page already exists");
+			PageEntity entity = new PageEntity(bookId.getName(), pageName, timestamp, comment, null);
+			pageOp.write(entity, writeAttrs);
+			
 			if (prevPage != null)
-				op.write(new PageEntity(prevPage.getId().getName(), prevPage.getStarted(), prevPage.getComment(), prevPage.getEnded()), writeAttrs);
-			op.write(new PageEntity(pageName, timestamp, comment, null), writeAttrs);
+			{
+				pageOp.update(new PageEntity(prevPage), writeAttrs);
+				pageNameOp.update(new PageNameEntity(prevPage), writeAttrs);
+			}
 		}
 		catch (Exception e)
 		{
@@ -195,7 +204,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException, IOException
 	{
-		return loadPageInfo(bookId, ops.getOperators(bookId));
+		return loadPageInfo(bookId);
 	}
 	
 	
@@ -242,7 +251,6 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		PageId pageId = page.getId();
 		BookId bookId = pageId.getBookId();
-		BookOperators bookOps = ops.getOperators(bookId);
 		return CompletableFuture.supplyAsync(() -> {
 					try
 					{
@@ -638,13 +646,13 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	
-	private Collection<PageInfo> loadPageInfo(BookId bookId, BookOperators bookOp) throws IOException
+	private Collection<PageInfo> loadPageInfo(BookId bookId) throws IOException
 	{
 		Collection<PageInfo> result = new ArrayList<>();
 		try
 		{
-			for (PageEntity pageEntity : bookOp.getPageOperator().getAll(readAttrs))
-				result.add(pageEntity.toPageInfo(bookId));
+			for (PageEntity pageEntity : ops.getPageOperator().getAll(bookId.getName(), readAttrs))
+				result.add(pageEntity.toPageInfo());
 		}
 		catch (Exception e)
 		{

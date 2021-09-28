@@ -35,12 +35,14 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 	@Override
 	protected void createTables() throws IOException
 	{
-		createBooksTable();
-		createScopesTable();
+		createBooks();
+		createPages();
+		createPagesNames();
+		createScopes();
 	}
 	
 	
-	private void createBooksTable() throws IOException
+	private void createBooks() throws IOException
 	{
 		String tableName = getSettings().getBooksTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
@@ -51,7 +53,33 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 				.withColumn(CREATED, DataTypes.TIMESTAMP));
 	}
 	
-	private void createScopesTable() throws IOException
+	private void createPages() throws IOException
+	{
+		String tableName = getSettings().getPagesTable();
+		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(BOOK, DataTypes.TEXT)
+				.withClusteringColumn(START_DATE, DataTypes.DATE)
+				.withClusteringColumn(START_TIME, DataTypes.TIME)
+				.withColumn(NAME, DataTypes.TEXT)
+				.withColumn(COMMENT, DataTypes.TEXT)
+				.withColumn(END_DATE, DataTypes.DATE)
+				.withColumn(END_TIME, DataTypes.TIME));
+	}
+	
+	private void createPagesNames() throws IOException
+	{
+		String tableName = getSettings().getPagesNamesTable();
+		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(BOOK, DataTypes.TEXT)
+				.withPartitionKey(NAME, DataTypes.TEXT)
+				.withColumn(START_DATE, DataTypes.DATE)
+				.withColumn(START_TIME, DataTypes.TIME)
+				.withColumn(COMMENT, DataTypes.TEXT)
+				.withColumn(END_DATE, DataTypes.DATE)
+				.withColumn(END_TIME, DataTypes.TIME));
+	}
+	
+	private void createScopes() throws IOException
 	{
 		String tableName = getSettings().getScopesTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()

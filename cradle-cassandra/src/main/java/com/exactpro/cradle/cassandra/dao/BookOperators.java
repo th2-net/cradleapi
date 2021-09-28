@@ -17,7 +17,6 @@
 package com.exactpro.cradle.cassandra.dao;
 
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
-import com.exactpro.cradle.cassandra.dao.books.PageOperator;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.PageScopesOperator;
@@ -27,7 +26,6 @@ import com.exactpro.cradle.cassandra.utils.LimitedCache;
 
 public class BookOperators
 {
-	private final PageOperator pageOperator;
 //	private final MessageBatchOperator messageBatchOperator;
 	private final TestEventOperator testEventOperator;
 	private final PageScopesOperator pageScopesOperator;
@@ -37,18 +35,12 @@ public class BookOperators
 	
 	public BookOperators(CassandraDataMapper dataMapper, String keyspace, CassandraStorageSettings settings)
 	{
-		pageOperator = dataMapper.pageOperator(keyspace, settings.getPagesTable());
 //		messageBatchOperator = dataMapper.messageBatchOperator(keyspace, settings.getMessagesTable());
 		testEventOperator = dataMapper.testEventOperator(keyspace, settings.getTestEventsTable());
 		pageScopesOperator = dataMapper.pageScopesOperator(keyspace, settings.getPageScopesTable());
 		intervalOperator = dataMapper.intervalOperator(keyspace, settings.getIntervalsTable());
 		
 		pageScopesCache = new LimitedCache<>(settings.getPageScopesCacheSize());
-	}
-	
-	public PageOperator getPageOperator()
-	{
-		return pageOperator;
 	}
 	
 //	public MessageBatchOperator getMessageBatchOperator()

@@ -24,6 +24,7 @@ public class CassandraStorageSettings
 	public static final String CRADLE_INFO_KEYSPACE = "cradle_info",
 			BOOKS_TABLE = "books",
 			PAGES_TABLE = "pages",
+			PAGES_NAMES_TABLE = "pages_names",
 			MESSAGES_TABLE = "messages",
 			SESSIONS_TABLE = "sessions",
 			SESSIONS_DATES_TABLE = "sessions_dates",
@@ -54,6 +55,7 @@ public class CassandraStorageSettings
 	private String cradleInfoKeyspace,
 			booksTable,
 			pagesTable,
+			pagesNamesTable,
 			messagesTable,
 			sessionsTable,
 			sessionsDatesTable,
@@ -98,6 +100,7 @@ public class CassandraStorageSettings
 		this.cradleInfoKeyspace = CRADLE_INFO_KEYSPACE;
 		this.booksTable = BOOKS_TABLE;
 		this.pagesTable = PAGES_TABLE;
+		this.pagesNamesTable = PAGES_NAMES_TABLE;
 		this.messagesTable = MESSAGES_TABLE;
 		this.sessionsTable = SESSIONS_TABLE;
 		this.sessionsDatesTable = SESSIONS_DATES_TABLE;
@@ -131,6 +134,7 @@ public class CassandraStorageSettings
 		this.cradleInfoKeyspace = settings.getCradleInfoKeyspace();
 		this.booksTable = settings.getBooksTable();
 		this.pagesTable = settings.getPagesTable();
+		this.pagesNamesTable = settings.getPagesNamesTable();
 		this.messagesTable = settings.getMessagesTable();
 		this.sessionsTable = settings.getSessionsTable();
 		this.sessionsDatesTable = settings.getSessionsDatesTable();
@@ -206,6 +210,17 @@ public class CassandraStorageSettings
 	public void setPagesTable(String pagesTable)
 	{
 		this.pagesTable = pagesTable;
+	}
+	
+	
+	public String getPagesNamesTable()
+	{
+		return pagesNamesTable;
+	}
+	
+	public void setPagesNamesTable(String pagesNamesTable)
+	{
+		this.pagesNamesTable = pagesNamesTable;
 	}
 	
 	

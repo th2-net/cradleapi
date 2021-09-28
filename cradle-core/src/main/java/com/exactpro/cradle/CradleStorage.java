@@ -207,7 +207,7 @@ public abstract class CradleStorage
 	
 	/**
 	 * Refreshes pages information of given book, loading actual data from storage. 
-	 * Use this method to refresh Cradle API internal book cache when page of the book was switched outside of the application
+	 * Use this method to refresh Cradle API internal book cache when page of the book was switched or removed outside of the application
 	 * @param bookId ID of the book whose pages to refresh
 	 * @return refreshed book information
 	 * @throws CradleStorageException if given bookId is unknown
@@ -688,7 +688,17 @@ public abstract class CradleStorage
 		PageInfo activePage = book.getActivePage();
 		if (activePage != null && !pageStart.isAfter(activePage.getStarted()))
 			throw new CradleStorageException("Timestamp of new page start must be after active page start ("+activePage.getStarted()+")");
-		doSwitchToNewPage(bookId, pageName, pageStart, pageComment, PageInfo.ended(activePage, pageStart));
+		
+		try
+		{
+			doSwitchToNewPage(bookId, pageName, pageStart, pageComment, PageInfo.ended(activePage, pageStart));
+		}
+		catch (IOException e)
+		{
+			//Need to refresh book's pages to make user able see what was the reason of failure, e.g. new page was actually present
+			refreshPages(bookId);
+			throw e;
+		}
 		book.nextPage(pageName, pageStart, pageComment);
 	}
 	

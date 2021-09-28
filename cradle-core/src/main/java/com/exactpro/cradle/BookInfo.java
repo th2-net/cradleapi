@@ -119,11 +119,6 @@ public class BookInfo
 	}
 	
 	
-	void addPage(PageInfo page)
-	{
-		pages.put(page.getId(), page);
-	}
-	
 	void nextPage(String pageName, Instant started, String comment)
 	{
 		if (activePage != null)
