@@ -19,14 +19,14 @@ package com.exactpro.cradle.cassandra.dao.cache;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-public class CachedPageSessions
+public class CachedPageSession
 {
 	private final String page;
 	private final String sessionAlias,
 			direction,
 			part;
 
-	public CachedPageSessions(String page, String sessionAlias, String direction,
+	public CachedPageSession(String page, String sessionAlias, String direction,
 			String part)
 	{
 		this.page = page;
@@ -50,7 +50,7 @@ public class CachedPageSessions
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		CachedPageSessions other = (CachedPageSessions) obj;
+		CachedPageSession other = (CachedPageSession) obj;
 		return Objects.equals(page, other.page) 
 				&& Objects.equals(part, other.part) 
 				&& Objects.equals(sessionAlias, other.sessionAlias)
@@ -60,7 +60,7 @@ public class CachedPageSessions
 	@Override
 	public String toString()
 	{
-		return new StringJoiner(", ", CachedPageSessions.class.getSimpleName() + "[", "]")
+		return new StringJoiner(", ", CachedPageSession.class.getSimpleName() + "[", "]")
 				.add("page='" + page + "'")
 				.add("sessionAlias='" + sessionAlias + "'")
 				.add("direction='" + direction + "'")

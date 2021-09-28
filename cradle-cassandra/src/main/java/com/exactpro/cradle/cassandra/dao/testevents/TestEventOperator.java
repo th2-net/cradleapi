@@ -50,12 +50,12 @@ public interface TestEventOperator
 	@Insert
 	CompletableFuture<TestEventEntity> write(TestEventEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+PAGE+"=:page AND "+START_DATE+"=:startDate "
+	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+PAGE+"=:page " 
 			+ "AND "+SCOPE+"=:scope AND "+PART+"=:part "
+			+ "AND "+START_DATE+"=:startDate "
 			+ "AND "+START_TIME+"=:startTime AND "+ID+"=:id AND "+CHUNK+"=0")
-	CompletableFuture<AsyncResultSet> updateStatus(String page, LocalDate startDate, 
-			String scope, String part,
-			LocalTime startTime, String id, 
+	CompletableFuture<Void> updateStatus(String page, String scope, String part,
+			LocalDate startDate, LocalTime startTime, String id, 
 			boolean success,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

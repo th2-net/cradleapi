@@ -40,11 +40,11 @@ public class CradleStorageTest
 	private CradleStorage storage;
 	
 	@BeforeMethod
-	public void prepare() throws CradleStorageException
+	public void prepare() throws CradleStorageException, IOException
 	{
 		storage = new DummyCradleStorage();
 		storage.init(false);
-		storage.addBook(BOOK, Instant.now(), null, null, PAGE, null);
+		storage.addBook(new BookToAdd(BOOK, Instant.now(), PAGE));
 	}
 	
 	@DataProvider(name = "invalid events")

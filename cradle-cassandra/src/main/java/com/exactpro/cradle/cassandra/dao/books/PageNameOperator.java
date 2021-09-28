@@ -14,28 +14,22 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.cassandra.dao.testevents;
+package com.exactpro.cradle.cassandra.dao.books;
 
-import java.time.LocalDate;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
-import com.datastax.oss.driver.api.mapper.annotations.Select;
+import com.datastax.oss.driver.api.mapper.annotations.Update;
 
 @Dao
-public interface EventDateOperator
+public interface PageNameOperator
 {
-	@Select
-	CompletableFuture<MappedAsyncPagingIterable<EventDateEntity>> all(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	@Insert(ifNotExists = true)
+	ResultSet writeNew(PageNameEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Select
-	CompletableFuture<MappedAsyncPagingIterable<EventDateEntity>> get(String page, LocalDate startDate,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
-	@Insert
-	CompletableFuture<EventDateEntity> write(EventDateEntity testEventDate, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	@Update
+	ResultSet update(PageNameEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

@@ -16,20 +16,17 @@
 
 package com.exactpro.cradle.cassandra.dao.cache;
 
-import java.time.LocalDate;
 import java.util.Objects;
 
-public class CachedTestEventDate
+public class CachedPageScope
 {
-	private final String page;
-	private final LocalDate startDate;
-	private final String scope,
+	private final String page,
+			scope,
 			part;
 	
-	public CachedTestEventDate(String page, LocalDate startDate, String scope, String part)
+	public CachedPageScope(String page, String scope, String part)
 	{
 		this.page = page;
-		this.startDate = startDate;
 		this.scope = scope;
 		this.part = part;
 	}
@@ -37,7 +34,7 @@ public class CachedTestEventDate
 	@Override
 	public int hashCode()
 	{
-		return Objects.hash(page, part, scope, startDate);
+		return Objects.hash(page, scope, part);
 	}
 	
 	@Override
@@ -49,26 +46,20 @@ public class CachedTestEventDate
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		CachedTestEventDate other = (CachedTestEventDate) obj;
-		return Objects.equals(page, other.page) && Objects.equals(part, other.part) && Objects.equals(scope, other.scope)
-				&& Objects.equals(startDate, other.startDate);
+		CachedPageScope other = (CachedPageScope) obj;
+		return Objects.equals(page, other.page) && Objects.equals(scope, other.scope) && Objects.equals(part, other.part);
 	}
 	
 	@Override
 	public String toString()
 	{
-		return "CachedTestEventDate [page=" + page + ", startDate=" + startDate + ", scope=" + scope + ", part=" + part + "]";
+		return "CachedPageScope [page=" + page + ", scope=" + scope + ", part=" + part + "]";
 	}
 	
 	
 	public String getPage()
 	{
 		return page;
-	}
-	
-	public LocalDate getStartDate()
-	{
-		return startDate;
 	}
 	
 	public String getScope()

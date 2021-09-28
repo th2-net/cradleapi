@@ -129,7 +129,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 		FilterForLess<LocalTime> timeTo = FilterUtils.calcCurrentTimeRightBound(dateFrom, part, page.getEnded(), startTimestampEndingBound);
 		
 		String parentId = getParentIdString(filter);
-		return new CassandraTestEventFilter(page.getId().getName(), dateFrom, filter.getScope(), part, timeFrom, timeTo, parentId);
+		return new CassandraTestEventFilter(page.getId().getName(), filter.getScope(), part, dateFrom, timeFrom, timeTo, parentId);
 	}
 	
 	private CassandraTestEventFilter createNextFilter(CassandraTestEventFilter prevFilter)
@@ -162,7 +162,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 		}
 		
 		FilterForLess<LocalTime> timeTo = FilterUtils.calcCurrentTimeRightBound(startDate, part, page.getEnded(), startTimestampEndingBound);
-		return new CassandraTestEventFilter(page.getId().getName(), startDate, prevFilter.getScope(), part, null, timeTo, prevFilter.getParentId());
+		return new CassandraTestEventFilter(page.getId().getName(), prevFilter.getScope(), part, startDate, null, timeTo, prevFilter.getParentId());
 	}
 	
 	

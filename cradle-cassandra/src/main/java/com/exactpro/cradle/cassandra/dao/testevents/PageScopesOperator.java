@@ -26,15 +26,14 @@ import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Select;
 
 @Dao
-public interface ScopeOperator
+public interface PageScopesOperator
 {
 	@Select
-	CompletableFuture<MappedAsyncPagingIterable<ScopeEntity>> all(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<MappedAsyncPagingIterable<PageScopeEntity>> all(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Select
-	CompletableFuture<MappedAsyncPagingIterable<ScopeEntity>> get(String book, 
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<MappedAsyncPagingIterable<PageScopeEntity>> get(String page, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
-	CompletableFuture<ScopeEntity> write(ScopeEntity scope, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<PageScopeEntity> write(PageScopeEntity pageScope, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

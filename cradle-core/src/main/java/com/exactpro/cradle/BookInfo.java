@@ -119,18 +119,12 @@ public class BookInfo
 	}
 	
 	
-	void addPage(PageInfo page)
-	{
-		pages.put(page.getId(), page);
-	}
-	
 	void nextPage(String pageName, Instant started, String comment)
 	{
-		//TODO: check and fix this method
 		if (activePage != null)
 		{
 			//Replacing old active page with ended one
-			PageInfo endedPage = new PageInfo(activePage.getId(), activePage.getStarted(), started, comment);
+			PageInfo endedPage = PageInfo.ended(activePage, started);
 			pages.put(activePage.getId(), endedPage);
 			orderedPages.put(activePage.getStarted(), endedPage);
 		}

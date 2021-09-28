@@ -18,18 +18,21 @@ package com.exactpro.cradle.cassandra.dao;
 
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.exactpro.cradle.cassandra.dao.books.CradleBookOperator;
+import com.exactpro.cradle.cassandra.dao.books.PageNameOperator;
 import com.exactpro.cradle.cassandra.dao.books.PageOperator;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.PageSessionsOperator;
 import com.exactpro.cradle.cassandra.dao.messages.SessionsOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.EventDateOperator;
+import com.exactpro.cradle.cassandra.dao.testevents.PageScopesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 
 @Mapper
 public interface CassandraDataMapper
 {
+	//*** Operators for cradle_info keyspace ***
+	
 	@DaoFactory
 	CradleBookOperator cradleBookOperator(@DaoKeyspace String keyspace, @DaoTable String booksTable);
 
@@ -37,16 +40,22 @@ public interface CassandraDataMapper
 	SessionsOperator sessionsOperator(@DaoKeyspace String keyspace, @DaoTable String sessionsTable);
 	
 	@DaoFactory
+	ScopeOperator scopeOperator(@DaoKeyspace String keyspace, @DaoTable String scopesTable);
+	
+	
+	//*** Operators for book's keyspace ***
+	
+	@DaoFactory
 	PageOperator pageOperator(@DaoKeyspace String keyspace, @DaoTable String pagesTable);
+	
+	@DaoFactory
+	PageNameOperator pageNameOperator(@DaoKeyspace String keyspace, @DaoTable String pagesNamesTable);
 	
 	@DaoFactory
 	TestEventOperator testEventOperator(@DaoKeyspace String keyspace, @DaoTable String testEventsTable);
 	
 	@DaoFactory
-	ScopeOperator scopeOperator(@DaoKeyspace String keyspace, @DaoTable String scopesTable);
-	
-	@DaoFactory
-	EventDateOperator eventDateOperator(@DaoKeyspace String keyspace, @DaoTable String eventDatesTable);
+	PageScopesOperator pageScopesOperator(@DaoKeyspace String keyspace, @DaoTable String pageScopesTable);
 	
 	@DaoFactory
 	IntervalOperator intervalOperator(@DaoKeyspace String keyspace, @DaoTable String intervalsTable);

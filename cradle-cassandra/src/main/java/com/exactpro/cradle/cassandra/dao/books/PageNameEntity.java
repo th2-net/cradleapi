@@ -23,7 +23,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
@@ -34,22 +33,21 @@ import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.utils.TimeUtils;
 
 @Entity
-public class PageEntity
+public class PageNameEntity
 {
 	@PartitionKey(0)
 	@CqlName(BOOK)
 	private String book;
 	
-	@ClusteringColumn(0)
+	@PartitionKey(1)
+	@CqlName(NAME)
+	private String name;
+	
 	@CqlName(START_DATE)
 	private LocalDate startDate;
 	
-	@ClusteringColumn(1)
 	@CqlName(START_TIME)
 	private LocalTime startTime;
-	
-	@CqlName(NAME)
-	private String name;
 	
 	@CqlName(COMMENT)
 	private String comment;
@@ -61,11 +59,11 @@ public class PageEntity
 	private LocalTime endTime;
 	
 	
-	public PageEntity()
+	public PageNameEntity()
 	{
 	}
 	
-	public PageEntity(String book, String name, Instant started, String comment, Instant ended)
+	public PageNameEntity(String book, String name, Instant started, String comment, Instant ended)
 	{
 		LocalDateTime startedLdt = TimeUtils.toLocalTimestamp(started);
 		
@@ -83,7 +81,7 @@ public class PageEntity
 		}
 	}
 	
-	public PageEntity(PageInfo pageInfo)
+	public PageNameEntity(PageInfo pageInfo)
 	{
 		this(pageInfo.getId().getBookId().getName(), pageInfo.getId().getName(), pageInfo.getStarted(), pageInfo.getComment(), pageInfo.getEnded());
 	}

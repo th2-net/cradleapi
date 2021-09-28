@@ -53,19 +53,26 @@ public class DummyCradleStorage extends CradleStorage
 	
 	
 	@Override
-	protected Collection<BookInfo> loadBooks() throws CradleStorageException
+	protected Collection<BookInfo> loadBooks()
 	{
 		return null;
 	}
 
 	@Override
-	protected void doAddBook(BookInfo newBook) throws CradleStorageException
+	protected void doAddBook(BookToAdd newBook, BookId bookId)
 	{
 	}
 	
 	@Override
-	protected void doSwitchToNextPage(BookId bookId, String pageName, Instant timestamp) throws CradleStorageException
+	protected void doSwitchToNewPage(BookId bookId, String pageName, Instant timestamp, String comment, PageInfo prevPage)
+			throws CradleStorageException, IOException
 	{
+	}
+	
+	@Override
+	protected Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException, IOException
+	{
+		return null;
 	}
 	
 	@Override

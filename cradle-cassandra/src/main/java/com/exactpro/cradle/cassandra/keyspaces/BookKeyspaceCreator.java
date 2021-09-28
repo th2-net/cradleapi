@@ -35,30 +35,15 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 	@Override
 	protected void createTables() throws IOException
 	{
-		createPagesTable();
 		createMessagesTable();
 		createPageSessionsTable();
 		createTestEventsTable();
-		createScopesTable();
-		createTestEventsDatesTable();
+		createPageScopesTable();
 		createTestEventParentIndex();
 		createLabelsTable();
 		createIntervalsTable();
 	}
 	
-	
-	private void createPagesTable() throws IOException
-	{
-		String tableName = getSettings().getPagesTable();
-		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(PART, DataTypes.TEXT)
-				.withClusteringColumn(START_DATE, DataTypes.DATE)
-				.withClusteringColumn(START_TIME, DataTypes.TIME)
-				.withColumn(NAME, DataTypes.TEXT)
-				.withColumn(COMMENT, DataTypes.TEXT)
-				.withColumn(END_DATE, DataTypes.DATE)
-				.withColumn(END_TIME, DataTypes.TIME));
-	}
 	
 	private void createMessagesTable() throws IOException
 	{
@@ -102,10 +87,10 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 		String tableName = getSettings().getTestEventsTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(PAGE, DataTypes.TEXT)
-				.withPartitionKey(START_DATE, DataTypes.DATE)
 				.withPartitionKey(SCOPE, DataTypes.TEXT)
 				.withPartitionKey(PART, DataTypes.TEXT)
 				
+				.withClusteringColumn(START_DATE, DataTypes.DATE)
 				.withClusteringColumn(START_TIME, DataTypes.TIME)
 				.withClusteringColumn(ID, DataTypes.TEXT)
 				.withClusteringColumn(CHUNK, DataTypes.INT)
@@ -128,20 +113,11 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withColumn(CONTENT, DataTypes.BLOB));
 	}
 	
-	private void createScopesTable() throws IOException
+	private void createPageScopesTable() throws IOException
 	{
-		String tableName = getSettings().getScopesTable();
+		String tableName = getSettings().getPageScopesTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(PAGE, DataTypes.TEXT)
-				.withClusteringColumn(SCOPE, DataTypes.TEXT));
-	}
-	
-	private void createTestEventsDatesTable() throws IOException
-	{
-		String tableName = getSettings().getTestEventsDatesTable();
-		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(PAGE, DataTypes.TEXT)
-				.withPartitionKey(START_DATE, DataTypes.DATE)
 				.withClusteringColumn(SCOPE, DataTypes.TEXT)
 				.withClusteringColumn(PART, DataTypes.TEXT));
 	}
