@@ -561,10 +561,10 @@ public abstract class CradleStorage
 	 */
 	public final Collection<String> getSessionAliases(BookId bookId) throws IOException, CradleStorageException
 	{
-		logger.debug("Getting session aliases");
+		logger.debug("Getting session aliases for book '{}'", bookId);
 		bpc.getBook(bookId);
 		Collection<String> result = doGetSessionAliases(bookId);
-		logger.debug("Session aliases got");
+		logger.debug("Session aliases for book '{}' got", bookId);
 		return result;
 	}
 	

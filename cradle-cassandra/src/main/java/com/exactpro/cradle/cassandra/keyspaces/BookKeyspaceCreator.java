@@ -40,7 +40,7 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 		createTestEventsTable();
 		createPageScopesTable();
 		createTestEventParentIndex();
-		createLabelsTable();
+		//createLabelsTable();
 		createIntervalsTable();
 	}
 	
