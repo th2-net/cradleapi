@@ -180,7 +180,9 @@ public abstract class CradleStorage
 		BookInfo newBook = new BookInfo(id, book.getFullName(), book.getDesc(), book.getCreated(), null);
 		books.put(newBook.getId(), newBook);
 		logger.info("Book '{}' has been added to storage", id);
-		switchToNewPage(id, book.getFirstPageName(), book.getCreated(), book.getFirstPageComment());
+		
+		newBook = switchToNewPage(id, book.getFirstPageName(), book.getCreated(), book.getFirstPageComment());
+		books.put(newBook.getId(), newBook);
 		return newBook;
 	}
 	
@@ -197,12 +199,13 @@ public abstract class CradleStorage
 	 * @param bookId ID of the book whose page to change
 	 * @param pageName name of new page
 	 * @param pageComment optional comment for new page
+	 * @return updated book information
 	 * @throws CradleStorageException if given bookId is unknown or page with given name already exists in this book
 	 * @throws IOException if page data writing failed
 	 */
-	public void switchToNewPage(BookId bookId, String pageName, String pageComment) throws CradleStorageException, IOException
+	public BookInfo switchToNewPage(BookId bookId, String pageName, String pageComment) throws CradleStorageException, IOException
 	{
-		switchToNewPage(bookId, pageName, Instant.now(), pageComment);
+		return switchToNewPage(bookId, pageName, Instant.now(), pageComment);
 	}
 	
 	/**
@@ -679,7 +682,7 @@ public abstract class CradleStorage
 	}
 	
 	
-	private void switchToNewPage(BookId bookId, String pageName, Instant pageStart, String pageComment) throws CradleStorageException, IOException
+	private BookInfo switchToNewPage(BookId bookId, String pageName, Instant pageStart, String pageComment) throws CradleStorageException, IOException
 	{
 		logger.info("Switching to page '{}' of book '{}'", pageName, bookId);
 		BookInfo book = refreshPages(bookId);
@@ -700,6 +703,7 @@ public abstract class CradleStorage
 			throw e;
 		}
 		book.nextPage(pageName, pageStart, pageComment);
+		return book;
 	}
 	
 	private boolean checkFilter(TestEventFilter filter) throws CradleStorageException
