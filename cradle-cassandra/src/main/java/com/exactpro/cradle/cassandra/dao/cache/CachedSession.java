@@ -16,32 +16,24 @@
 
 package com.exactpro.cradle.cassandra.dao.cache;
 
-import java.time.LocalDate;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-public class CachedSessionDate
+public class CachedSession
 {
-	private final String page;
-	private final LocalDate messageDate;
-	private final String sessionAlias,
-			direction,
-			part;
+	private final String book;
+	private final String sessionAlias;
 
-	public CachedSessionDate(String page, LocalDate messageDate, String sessionAlias, String direction,
-			String part)
+	public CachedSession(String book, String sessionAlias)
 	{
-		this.page = page;
-		this.messageDate = messageDate;
+		this.book = book;
 		this.sessionAlias = sessionAlias;
-		this.direction = direction;
-		this.part = part;
 	}
 
 	@Override
 	public int hashCode()
 	{
-		return Objects.hash(page, messageDate, sessionAlias, direction, part);
+		return Objects.hash(book, sessionAlias);
 	}
 
 	@Override
@@ -53,23 +45,18 @@ public class CachedSessionDate
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		CachedSessionDate other = (CachedSessionDate) obj;
-		return Objects.equals(page, other.page) 
-				&& Objects.equals(part, other.part) 
-				&& Objects.equals(messageDate, other.messageDate)
-				&& Objects.equals(sessionAlias, other.sessionAlias)
-				&& Objects.equals(direction, other.direction);
+		CachedSession other = (CachedSession) obj;
+		return Objects.equals(book, other.book)
+				&& Objects.equals(sessionAlias, other.sessionAlias);
 	}
 
 	@Override
 	public String toString()
 	{
-		return new StringJoiner(", ", CachedSessionDate.class.getSimpleName() + "[", "]")
-				.add("page='" + page + "'")
-				.add("messageDate=" + messageDate)
+		return new StringJoiner(", ", CachedSession.class.getSimpleName() + "[", "]")
+				.add("book='" + book + "'")
 				.add("sessionAlias='" + sessionAlias + "'")
-				.add("direction='" + direction + "'")
-				.add("part='" + part + "'")
 				.toString();
 	}
+
 }

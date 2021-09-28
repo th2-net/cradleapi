@@ -112,11 +112,14 @@ public class MessageBatchEntity extends CradleEntity
 		setSequence(id.getSequence());
 
 		//TODO		setStoredTimestamp(Instant.now());
-		setFirstMessageTimestamp(batch.getFirstTimestamp());
-		setLastMessageTimestamp(batch.getLastTimestamp());
-		setMessageCount(batch.getMessageCount());
-		setLastSequence(batch.getLastMessage().getSequence());
-		
+		if (chunk == 0) // It's first chunk
+		{
+			setFirstMessageTimestamp(batch.getFirstTimestamp());
+			setLastMessageTimestamp(batch.getLastTimestamp());
+			setMessageCount(batch.getMessageCount());
+			setLastSequence(batch.getLastMessage().getSequence());
+		}
+
 		//Content related data
 		setChunk(chunk);
 		setLastChunk(lastChunk);

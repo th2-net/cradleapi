@@ -69,12 +69,12 @@ public class DummyCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected void doStoreMessageBatch(MessageBatch batch, PageInfo page) throws IOException
+	protected void doStoreMessageBatch(MessageBatchToStore batch, PageInfo page) throws IOException
 	{
 	}
 	
 	@Override
-	protected CompletableFuture<Void> doStoreMessageBatchAsync(MessageBatch batch,
+	protected CompletableFuture<Void> doStoreMessageBatchAsync(MessageBatchToStore batch,
 			PageInfo page)
 	{
 		return CompletableFuture.completedFuture(null);
@@ -139,25 +139,26 @@ public class DummyCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException
+	protected Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter, BookInfo book) throws IOException
 	{
 		return null;
 	}
 	
 	@Override
-	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter)
+	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter,
+			BookInfo book)
 	{
 		return CompletableFuture.completedFuture(null);
 	}
 	
 	@Override
-	protected CradleResultSet<MessageBatch> doGetMessagesBatches(StoredMessageFilter filter, BookInfo book) throws IOException
+	protected CradleResultSet<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter, BookInfo book) throws IOException
 	{
 		return null;
 	}
 	
 	@Override
-	protected CompletableFuture<CradleResultSet<MessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter,
+	protected CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter,
 			BookInfo book)
 	{
 		return CompletableFuture.completedFuture(null);
@@ -171,7 +172,7 @@ public class DummyCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected Collection<String> doGetSessionAliases(PageId pageId) throws IOException
+	protected Collection<String> doGetSessionAliases(BookId bookId) throws IOException
 	{
 		return null;
 	}

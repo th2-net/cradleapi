@@ -18,28 +18,21 @@ package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.datastax.oss.driver.api.mapper.annotations.*;
+import com.datastax.oss.driver.api.mapper.annotations.Dao;
+import com.datastax.oss.driver.api.mapper.annotations.Insert;
+import com.datastax.oss.driver.api.mapper.annotations.Select;
 
-import java.time.LocalDate;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
-
 @Dao
-public interface PageSessionsOperator
+public interface SessionsOperator
 {
 	@Select
-	CompletableFuture<MappedAsyncPagingIterable<PageSessionEntity>> get(String page,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + PAGE + "=:page AND " + SESSION_ALIAS + "=:sessionAlias AND " +
-	DIRECTION + "=:direction ORDER BY " + SESSION_ALIAS + " DESC LIMIT 1")
-	CompletableFuture<PageSessionEntity> getLast(String page, String sessionAlias, String direction,
+	CompletableFuture<MappedAsyncPagingIterable<SessionEntity>> get(String book,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Insert
-	CompletableFuture<PageSessionEntity> write(PageSessionEntity entity,
+	CompletableFuture<SessionEntity> write(SessionEntity entity,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

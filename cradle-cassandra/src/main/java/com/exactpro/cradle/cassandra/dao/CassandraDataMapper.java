@@ -22,6 +22,7 @@ import com.exactpro.cradle.cassandra.dao.books.PageOperator;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.PageSessionsOperator;
+import com.exactpro.cradle.cassandra.dao.messages.SessionsOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.EventDateOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
@@ -31,6 +32,9 @@ public interface CassandraDataMapper
 {
 	@DaoFactory
 	CradleBookOperator cradleBookOperator(@DaoKeyspace String keyspace, @DaoTable String booksTable);
+
+	@DaoFactory
+	SessionsOperator sessionsOperator(@DaoKeyspace String keyspace, @DaoTable String sessionsTable);
 	
 	@DaoFactory
 	PageOperator pageOperator(@DaoKeyspace String keyspace, @DaoTable String pagesTable);

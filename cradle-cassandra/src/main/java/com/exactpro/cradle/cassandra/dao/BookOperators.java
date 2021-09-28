@@ -19,7 +19,7 @@ package com.exactpro.cradle.cassandra.dao;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.books.PageOperator;
 import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
-import com.exactpro.cradle.cassandra.dao.cache.CachedSessionDate;
+import com.exactpro.cradle.cassandra.dao.cache.CachedPageSessions;
 import com.exactpro.cradle.cassandra.dao.cache.CachedTestEventDate;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
 import com.exactpro.cradle.cassandra.dao.messages.PageSessionsOperator;
@@ -41,8 +41,8 @@ public class BookOperators
 	
 	private final LimitedCache<CachedScope> scopesCache;
 	private final LimitedCache<CachedTestEventDate> eventDatesCache;
-	private final LimitedCache<CachedSessionDate> sessionDatesCache; 
-	
+	private final LimitedCache<CachedPageSessions> pageSessionsCache;
+
 	public BookOperators(CassandraDataMapper dataMapper, String keyspace, CassandraStorageSettings settings)
 	{
 		pageOperator = dataMapper.pageOperator(keyspace, settings.getPagesTable());
@@ -55,7 +55,7 @@ public class BookOperators
 		
 		scopesCache = new LimitedCache<>(settings.getScopesCacheSize());
 		eventDatesCache = new LimitedCache<>(settings.getTestEventDatesCacheSize());
-		sessionDatesCache = new LimitedCache<>(settings.getSessionDatesCacheSize());
+		pageSessionsCache = new LimitedCache<>(settings.getPageSessionsCacheSize());
 	}
 	
 	public PageOperator getPageOperator()
@@ -104,8 +104,8 @@ public class BookOperators
 		return eventDatesCache;
 	}
 
-	public LimitedCache<CachedSessionDate> getSessionDatesCache()
+	public LimitedCache<CachedPageSessions> getPageSessionsCache()
 	{
-		return sessionDatesCache;
+		return pageSessionsCache;
 	}
 }

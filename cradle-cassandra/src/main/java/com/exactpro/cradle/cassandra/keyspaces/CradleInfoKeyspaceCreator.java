@@ -36,9 +36,19 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 	protected void createTables() throws IOException
 	{
 		createBooksTable();
+		createSessionsTable();
 	}
-	
-	
+
+	private void createSessionsTable() throws IOException
+	{
+		String tableName = getSettings().getSessionsTable();
+		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(BOOK, DataTypes.TEXT)
+				.withClusteringColumn(SESSION_ALIAS, DataTypes.TEXT));
+
+	}
+
+
 	private void createBooksTable() throws IOException
 	{
 		String tableName = getSettings().getBooksTable();

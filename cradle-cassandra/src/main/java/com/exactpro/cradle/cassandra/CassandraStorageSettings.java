@@ -38,16 +38,17 @@ public class CassandraStorageSettings
 	public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1,
 			DEFAULT_MAX_PARALLEL_QUERIES = 500,
 			DEFAULT_RESULT_PAGE_SIZE = 0,  //Driver default will be used in this case.
-			DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_BYTE_SIZE = 5*1024,
-			DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE = 5*1024,
-			DEFAULT_MESSAGE_BATCH_CHUNK_SIZE = 1024*1024,
-			DEFAULT_TEST_EVENT_CHUNK_SIZE = 1024*1024,
+			DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_BYTE_SIZE = 5 * 1024,
+			DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE = 5 * 1024,
+			DEFAULT_MESSAGE_BATCH_CHUNK_SIZE = 1024 * 1024,
+			DEFAULT_TEST_EVENT_CHUNK_SIZE = 1024 * 1024,
 			DEFAULT_TEST_EVENT_MESSAGES_PER_CHUNK = 10,
 			DEFAULT_SCOPES_CACHE_SIZE = 10,
 			DEFAULT_TEST_EVENT_DATES_CACHE_SIZE = 100,
-			DEFAULT_SESSION_DATES_CACHE_SIZE = 100;
-	
-	
+			DEFAULT_PAGE_SESSION_CACHE_SIZE = 100,
+			DEFAULT_SESSIONS_CACHE_SIZE = 100;
+
+
 	private final NetworkTopologyStrategy networkTopologyStrategy;
 	private final long timeout;
 	private final ConsistencyLevel writeConsistencyLevel,
@@ -64,8 +65,8 @@ public class CassandraStorageSettings
 			testEventParentIndex,
 			labelsTable,
 			intervalsTable;
-  private int keyspaceReplicationFactor;
-	
+	private int keyspaceReplicationFactor;
+
 	private int maxParallelQueries,
 			resultPageSize,
 			maxUncompressedMessageBatchSize,
@@ -76,27 +77,28 @@ public class CassandraStorageSettings
 
 			scopesCacheSize,
 			testEventDatesCacheSize,
-			sessionDatesCacheSize;
-	
+			pageSessionsCacheSize,
+			sessionsCacheSize;
+
 	public CassandraStorageSettings()
 	{
 		this(null, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
 	}
-	
-	public CassandraStorageSettings(long timeout, 
+
+	public CassandraStorageSettings(long timeout,
 			ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel)
 	{
 		this(null, timeout, writeConsistencyLevel, readConsistencyLevel);
 	}
-	
-	public CassandraStorageSettings(NetworkTopologyStrategy networkTopologyStrategy, long timeout, 
+
+	public CassandraStorageSettings(NetworkTopologyStrategy networkTopologyStrategy, long timeout,
 			ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel)
 	{
 		this.networkTopologyStrategy = networkTopologyStrategy;
 		this.timeout = timeout;
 		this.writeConsistencyLevel = writeConsistencyLevel;
 		this.readConsistencyLevel = readConsistencyLevel;
-		
+
 		this.cradleInfoKeyspace = CRADLE_INFO_KEYSPACE;
 		this.booksTable = BOOKS_TABLE;
 		this.pagesTable = PAGES_TABLE;
@@ -109,7 +111,7 @@ public class CassandraStorageSettings
 		this.testEventParentIndex = TEST_EVENT_PARENT_INDEX;
 		this.labelsTable = LABELS_TABLE;
 		this.intervalsTable = INTERVALS_TABLE;
-		
+
 		this.keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
 		this.maxParallelQueries = DEFAULT_MAX_PARALLEL_QUERIES;
 		this.resultPageSize = DEFAULT_RESULT_PAGE_SIZE;
@@ -118,19 +120,20 @@ public class CassandraStorageSettings
 		this.messageBatchChunkSize = DEFAULT_MESSAGE_BATCH_CHUNK_SIZE;
 		this.testEventChunkSize = DEFAULT_TEST_EVENT_CHUNK_SIZE;
 		this.testEventMessagesPerChunk = DEFAULT_TEST_EVENT_MESSAGES_PER_CHUNK;
-		
+
 		this.scopesCacheSize = DEFAULT_SCOPES_CACHE_SIZE;
 		this.testEventDatesCacheSize = DEFAULT_TEST_EVENT_DATES_CACHE_SIZE;
-		this.sessionDatesCacheSize = DEFAULT_SESSION_DATES_CACHE_SIZE;
+		this.pageSessionsCacheSize = DEFAULT_PAGE_SESSION_CACHE_SIZE;
+		this.sessionsCacheSize = DEFAULT_SESSIONS_CACHE_SIZE;
 	}
-	
+
 	public CassandraStorageSettings(CassandraStorageSettings settings)
 	{
 		this.networkTopologyStrategy = settings.getNetworkTopologyStrategy();
 		this.timeout = settings.getTimeout();
 		this.writeConsistencyLevel = settings.getWriteConsistencyLevel();
 		this.readConsistencyLevel = settings.getReadConsistencyLevel();
-		
+
 		this.cradleInfoKeyspace = settings.getCradleInfoKeyspace();
 		this.booksTable = settings.getBooksTable();
 		this.pagesTable = settings.getPagesTable();
@@ -143,7 +146,7 @@ public class CassandraStorageSettings
 		this.testEventParentIndex = settings.getTestEventParentIndex();
 		this.labelsTable = settings.getLabelsTable();
 		this.intervalsTable = settings.getIntervalsTable();
-		
+
 		this.keyspaceReplicationFactor = settings.getKeyspaceReplicationFactor();
 		this.maxParallelQueries = settings.getMaxParallelQueries();
 		this.resultPageSize = settings.getResultPageSize();
@@ -152,282 +155,293 @@ public class CassandraStorageSettings
 		this.messageBatchChunkSize = settings.getMessageBatchChunkSize();
 		this.testEventChunkSize = settings.getTestEventChunkSize();
 		this.testEventMessagesPerChunk = settings.getTestEventMessagesPerChunk();
-		
+
 		this.scopesCacheSize = settings.getScopesCacheSize();
 		this.testEventDatesCacheSize = settings.getTestEventDatesCacheSize();
-		this.sessionDatesCacheSize = settings.getSessionDatesCacheSize();
+		this.pageSessionsCacheSize = settings.getPageSessionsCacheSize();
+		this.sessionsCacheSize = settings.getSessionsCacheSize();
 	}
-	
-	
+
+
 	public NetworkTopologyStrategy getNetworkTopologyStrategy()
 	{
 		return networkTopologyStrategy;
 	}
-	
+
 	public long getTimeout()
 	{
 		return timeout;
 	}
-	
+
 	public ConsistencyLevel getWriteConsistencyLevel()
 	{
 		return writeConsistencyLevel;
 	}
-	
+
 	public ConsistencyLevel getReadConsistencyLevel()
 	{
 		return readConsistencyLevel;
 	}
-	
-	
+
+
 	public String getCradleInfoKeyspace()
 	{
 		return cradleInfoKeyspace;
 	}
-	
+
 	public void setCradleInfoKeyspace(String cradleInfoKeyspace)
 	{
 		this.cradleInfoKeyspace = cradleInfoKeyspace;
 	}
-	
-	
+
+
 	public String getBooksTable()
 	{
 		return booksTable;
 	}
-	
+
 	public void setBooksTable(String booksTable)
 	{
 		this.booksTable = booksTable;
 	}
-	
-	
+
+
 	public String getPagesTable()
 	{
 		return pagesTable;
 	}
-	
+
 	public void setPagesTable(String pagesTable)
 	{
 		this.pagesTable = pagesTable;
 	}
-	
-	
+
+
 	public String getMessagesTable()
 	{
 		return messagesTable;
 	}
-	
+
 	public void setMessagesTable(String messagesTable)
 	{
 		this.messagesTable = messagesTable;
 	}
-	
-	
+
+
 	public String getSessionsTable()
 	{
 		return sessionsTable;
 	}
-	
+
 	public void setSessionsTable(String sessionsTable)
 	{
 		this.sessionsTable = sessionsTable;
 	}
-	
-	
+
+
 	public String getPageSessionsTable()
 	{
 		return pageSessionsTable;
 	}
-	
+
 	public void setPageSessionsTable(String pageSessionsTable)
 	{
 		this.pageSessionsTable = pageSessionsTable;
 	}
-	
-	
+
+
 	public String getTestEventsTable()
 	{
 		return testEventsTable;
 	}
-	
+
 	public void setTestEventsTable(String testEventsTable)
 	{
 		this.testEventsTable = testEventsTable;
 	}
-	
-	
+
+
 	public String getScopesTable()
 	{
 		return scopesTable;
 	}
-	
+
 	public void setScopesTable(String scopesTable)
 	{
 		this.scopesTable = scopesTable;
 	}
-	
-	
+
+
 	public String getTestEventsDatesTable()
 	{
 		return testEventsDatesTable;
 	}
-	
+
 	public void setTestEventsDatesTable(String testEventsDatesTable)
 	{
 		this.testEventsDatesTable = testEventsDatesTable;
 	}
-	
-	
+
+
 	public String getTestEventParentIndex()
 	{
 		return testEventParentIndex;
 	}
-	
+
 	public void setTestEventParentIndex(String testEventParentIndex)
 	{
 		this.testEventParentIndex = testEventParentIndex;
 	}
-	
-	
+
+
 	public String getLabelsTable()
 	{
 		return labelsTable;
 	}
-	
+
 	public void setLabelsTable(String labelsTable)
 	{
 		this.labelsTable = labelsTable;
 	}
-	
-	
+
+
 	public String getIntervalsTable()
 	{
 		return intervalsTable;
 	}
-	
+
 	public void setIntervalsTable(String intervalsTable)
 	{
 		this.intervalsTable = intervalsTable;
 	}
-	
-	
+
+
 	public int getKeyspaceReplicationFactor()
 	{
 		return keyspaceReplicationFactor;
 	}
-	
+
 	public void setKeyspaceReplicationFactor(int keyspaceReplicationFactor)
 	{
 		this.keyspaceReplicationFactor = keyspaceReplicationFactor;
 	}
-	
-	
+
+
 	public int getMaxParallelQueries()
 	{
 		return maxParallelQueries;
 	}
-	
+
 	public void setMaxParallelQueries(int maxParallelQueries)
 	{
 		this.maxParallelQueries = maxParallelQueries;
 	}
-	
-	
+
+
 	public int getResultPageSize()
 	{
 		return resultPageSize;
 	}
-	
+
 	public void setResultPageSize(int resultPageSize)
 	{
 		this.resultPageSize = resultPageSize;
 	}
-	
-	
+
+
 	public int getMaxUncompressedMessageBatchSize()
 	{
 		return maxUncompressedMessageBatchSize;
 	}
-	
+
 	public void setMaxUncompressedMessageBatchSize(int maxUncompressedMessageBatchSize)
 	{
 		this.maxUncompressedMessageBatchSize = maxUncompressedMessageBatchSize;
 	}
-	
-	
+
+
 	public int getMaxUncompressedTestEventSize()
 	{
 		return maxUncompressedTestEventSize;
 	}
-	
+
 	public void setMaxUncompressedTestEventSize(int maxUncompressedTestEventSize)
 	{
 		this.maxUncompressedTestEventSize = maxUncompressedTestEventSize;
 	}
-	
-	
+
+
 	public int getMessageBatchChunkSize()
 	{
 		return messageBatchChunkSize;
 	}
-	
+
 	public void setMessageBatchChunkSize(int messageBatchChunkSize)
 	{
 		this.messageBatchChunkSize = messageBatchChunkSize;
 	}
-	
-	
+
+
 	public int getTestEventChunkSize()
 	{
 		return testEventChunkSize;
 	}
-	
+
 	public void setTestEventChunkSize(int testEventChunkSize)
 	{
 		this.testEventChunkSize = testEventChunkSize;
 	}
-	
-	
+
+
 	public int getTestEventMessagesPerChunk()
 	{
 		return testEventMessagesPerChunk;
 	}
-	
+
 	public void setTestEventMessagesPerChunk(int testEventMessagesPerChunk)
 	{
 		this.testEventMessagesPerChunk = testEventMessagesPerChunk;
 	}
-	
-	
+
+
 	public int getScopesCacheSize()
 	{
 		return scopesCacheSize;
 	}
-	
+
 	public void setScopesCacheSize(int scopesCacheSize)
 	{
 		this.scopesCacheSize = scopesCacheSize;
 	}
-	
-	
+
+
 	public int getTestEventDatesCacheSize()
 	{
 		return testEventDatesCacheSize;
 	}
-	
+
 	public void setTestEventDatesCacheSize(int testEventDatesCacheSize)
 	{
 		this.testEventDatesCacheSize = testEventDatesCacheSize;
 	}
 
-	public int getSessionDatesCacheSize()
+	public int getPageSessionsCacheSize()
 	{
-		return sessionDatesCacheSize;
+		return pageSessionsCacheSize;
 	}
 
-	public void setSessionDatesCacheSize(int sessionDatesCacheSize)
+	public void setPageSessionsCacheSize(int pageSessionsCacheSize)
 	{
-		this.sessionDatesCacheSize = sessionDatesCacheSize;
+		this.pageSessionsCacheSize = pageSessionsCacheSize;
+	}
+
+	public int getSessionsCacheSize()
+	{
+		return sessionsCacheSize;
+	}
+
+	public void setSessionsCacheSize(int sessionsCacheSize)
+	{
+		this.sessionsCacheSize = sessionsCacheSize;
 	}
 }

@@ -18,7 +18,8 @@ package com.exactpro.cradle.cassandra;
 
 public class StorageConstants
 {
-	public static final String PAGE = "page",
+	public static final String BOOK = "book",
+			PAGE = "page",
 			NAME = "name",
 			PART = "part",
 			CHUNK = "chunk",
