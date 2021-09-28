@@ -142,18 +142,9 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 		
 		PageInfo page = book.getPage(new PageId(book.getId(), prevFilter.getPage()));
 		//Was queried partition the last one for current page?
-		if (page.getEnded() == null || !CassandraTimeUtils.getPart(TimeUtils.toLocalTimestamp(page.getEnded())).equals(prevFilter.getPart()))
+		if (page.getEnded() == null || !CassandraTimeUtils.getLastPart(page).equals(prevFilter.getPart()))
 		{
-			int partNumber = Integer.parseInt(prevFilter.getPart());
-			if (partNumber >= 23)
-			{
-				startDate = startDate.plusDays(1);
-				partNumber = 0;
-			}
-			else
-				partNumber++;
-			
-			part = Integer.toString(partNumber);
+			part = CassandraTimeUtils.getNextPart(prevFilter.getPart());
 		}
 		else
 		{

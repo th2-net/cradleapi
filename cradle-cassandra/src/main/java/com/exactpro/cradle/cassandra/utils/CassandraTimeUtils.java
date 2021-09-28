@@ -33,18 +33,20 @@ public class CassandraTimeUtils
 
 	public static String getPart(LocalDateTime timestamp)
 	{
-		return timestamp.truncatedTo(ChronoUnit.HOURS).format(PART_FORMAT);
+		return "";//timestamp.truncatedTo(ChronoUnit.HOURS).format(PART_FORMAT);
 	}
 
 	public static String getNextPart(String previousPart)
 	{
-		LocalDateTime parsed = LocalDateTime.parse(previousPart, PART_FORMAT);
-		return getPart(parsed.plus(1, ChronoUnit.HOURS));
+//		LocalDateTime parsed = LocalDateTime.parse(previousPart, PART_FORMAT);
+//		return getPart(parsed.plus(1, ChronoUnit.HOURS));
+		return "";
 	}
 
 	public static String getLastPart(PageInfo pageInfo)
 	{
-		LocalDateTime ldt = TimeUtils.toLocalTimestamp(pageInfo.getEnded() == null ? Instant.now() : pageInfo.getEnded());
-		return getPart(ldt);
+//		LocalDateTime ldt = TimeUtils.toLocalTimestamp(pageInfo.getEnded() == null ? Instant.now() : pageInfo.getEnded());
+//		return getPart(ldt);
+		return "";
 	}
 }
