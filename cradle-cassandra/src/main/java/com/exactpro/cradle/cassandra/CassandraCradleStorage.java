@@ -168,7 +168,12 @@ public class CassandraCradleStorage extends CradleStorage
 		
 		try
 		{
-			ops.getCradleBookOperator().write(bookEntity, writeAttrs);
+			if (!ops.getCradleBookOperator().write(bookEntity, writeAttrs).wasApplied())
+				throw new IOException("Query to insert book '"+bookEntity.getName()+"' was not applied. Probably, book already exists");
+		}
+		catch (IOException e)
+		{
+			throw e;
 		}
 		catch (Exception e)
 		{
@@ -196,6 +201,10 @@ public class CassandraCradleStorage extends CradleStorage
 				pageOp.update(new PageEntity(prevPage), writeAttrs);
 				pageNameOp.update(new PageNameEntity(prevPage), writeAttrs);
 			}
+		}
+		catch (IOException e)
+		{
+			throw e;
 		}
 		catch (Exception e)
 		{
