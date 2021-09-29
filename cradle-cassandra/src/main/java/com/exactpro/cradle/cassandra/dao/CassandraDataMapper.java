@@ -36,9 +36,6 @@ public interface CassandraDataMapper
 	@DaoFactory
 	CradleBookOperator cradleBookOperator(@DaoKeyspace String keyspace, @DaoTable String booksTable);
 	
-	@DaoFactory
-	ScopeOperator scopeOperator(@DaoKeyspace String keyspace, @DaoTable String scopesTable);
-	
 	
 	//*** Operators for book's keyspace ***
 	
@@ -47,6 +44,10 @@ public interface CassandraDataMapper
 	
 	@DaoFactory
 	PageNameOperator pageNameOperator(@DaoKeyspace String keyspace, @DaoTable String pagesNamesTable);
+	
+	@DaoFactory
+	ScopeOperator scopeOperator(@DaoKeyspace String keyspace, @DaoTable String scopesTable);
+	
 	
 	@DaoFactory
 	TestEventOperator testEventOperator(@DaoKeyspace String keyspace, @DaoTable String testEventsTable);

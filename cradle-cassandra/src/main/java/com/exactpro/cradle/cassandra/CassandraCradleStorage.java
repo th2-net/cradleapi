@@ -23,6 +23,7 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
+import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.CradleOperators;
@@ -179,8 +180,9 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected void doSwitchToNewPage(BookId bookId, String pageName, Instant timestamp, String comment, PageInfo prevPage) throws CradleStorageException, IOException
 	{
-		PageOperator pageOp = ops.getPageOperator();
-		PageNameOperator pageNameOp = ops.getPageNameOperator();
+		BookOperators bookOps = ops.getOperators(bookId);
+		PageOperator pageOp = bookOps.getPageOperator();
+		PageNameOperator pageNameOp = bookOps.getPageNameOperator();
 		try
 		{
 			PageNameEntity nameEntity = new PageNameEntity(bookId.getName(), pageName, timestamp, comment, null);
@@ -229,16 +231,17 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	protected void doStoreTestEvent(TestEventToStore event, PageInfo page) throws IOException
+	protected void doStoreTestEvent(TestEventToStore event, PageInfo page) throws IOException, CradleStorageException
 	{
 		PageId pageId = page.getId();
 		BookId bookId = pageId.getBookId();
+		BookOperators bookOps = ops.getOperators(bookId);
 		try
 		{
 			List<TestEventEntity> entities = eventsWorker.createEntities(event, pageId);
 			eventsWorker.storeEntities(entities, bookId).get();
-			eventsWorker.storeScope(event, bookId).get();
-			eventsWorker.storePageScope(event, pageId).get();
+			eventsWorker.storeScope(event, bookOps).get();
+			eventsWorker.storePageScope(event, pageId, bookOps).get();
 		}
 		catch (Exception e)
 		{
@@ -251,6 +254,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		PageId pageId = page.getId();
 		BookId bookId = pageId.getBookId();
+		BookOperators bookOps = ops.getOperators(bookId);
 		return CompletableFuture.supplyAsync(() -> {
 					try
 					{
@@ -262,8 +266,8 @@ public class CassandraCradleStorage extends CradleStorage
 					}
 				})
 				.thenComposeAsync((entities) -> eventsWorker.storeEntities(entities, bookId))
-				.thenComposeAsync((r) -> eventsWorker.storeScope(event, bookId))
-				.thenComposeAsync((r) -> eventsWorker.storePageScope(event, pageId))
+				.thenComposeAsync((r) -> eventsWorker.storeScope(event, bookOps))
+				.thenComposeAsync((r) -> eventsWorker.storePageScope(event, pageId, bookOps))
 				.thenAccept(r -> {});
 	}
 
@@ -475,7 +479,7 @@ public class CassandraCradleStorage extends CradleStorage
 		MappedAsyncPagingIterable<ScopeEntity> entities;
 		try
 		{
-			entities = ops.getScopeOperator().get(bookId.getName(), readAttrs).get();
+			entities = ops.getOperators(bookId).getScopeOperator().get(bookId.getName(), readAttrs).get();
 		}
 		catch (Exception e)
 		{
@@ -651,7 +655,7 @@ public class CassandraCradleStorage extends CradleStorage
 		Collection<PageInfo> result = new ArrayList<>();
 		try
 		{
-			for (PageEntity pageEntity : ops.getPageOperator().getAll(bookId.getName(), readAttrs))
+			for (PageEntity pageEntity : ops.getOperators(bookId).getPageOperator().getAll(bookId.getName(), readAttrs))
 				result.add(pageEntity.toPageInfo());
 		}
 		catch (Exception e)

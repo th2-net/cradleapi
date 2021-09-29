@@ -35,18 +35,58 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 	@Override
 	protected void createTables() throws IOException
 	{
-		createMessagesTable();
-		createSessionsTable();
-		createSessionsDatesTable();
-		createTestEventsTable();
-		createPageScopesTable();
+		createPages();
+		createPagesNames();
+		createScopes();
+		
+		createMessages();
+		createSessions();
+		createSessionsDates();
+		
+		createTestEvents();
+		createPageScopes();
 		createTestEventParentIndex();
 		createLabelsTable();
-		createIntervalsTable();
+		createIntervals();
 	}
 	
 	
-	private void createMessagesTable() throws IOException
+	private void createPages() throws IOException
+	{
+		String tableName = getSettings().getPagesTable();
+		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(PART, DataTypes.TEXT)
+				.withClusteringColumn(START_DATE, DataTypes.DATE)
+				.withClusteringColumn(START_TIME, DataTypes.TIME)
+				.withColumn(NAME, DataTypes.TEXT)
+				.withColumn(COMMENT, DataTypes.TEXT)
+				.withColumn(END_DATE, DataTypes.DATE)
+				.withColumn(END_TIME, DataTypes.TIME));
+	}
+	
+	private void createPagesNames() throws IOException
+	{
+		String tableName = getSettings().getPagesNamesTable();
+		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(PART, DataTypes.TEXT)
+				.withPartitionKey(NAME, DataTypes.TEXT)
+				.withColumn(START_DATE, DataTypes.DATE)
+				.withColumn(START_TIME, DataTypes.TIME)
+				.withColumn(COMMENT, DataTypes.TEXT)
+				.withColumn(END_DATE, DataTypes.DATE)
+				.withColumn(END_TIME, DataTypes.TIME));
+	}
+	
+	private void createScopes() throws IOException
+	{
+		String tableName = getSettings().getScopesTable();
+		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(PART, DataTypes.TEXT)
+				.withClusteringColumn(SCOPE, DataTypes.TEXT));
+	}
+	
+	
+	private void createMessages() throws IOException
 	{
 		String tableName = getSettings().getMessagesTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
@@ -72,7 +112,7 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withColumn(CONTENT, DataTypes.BLOB));
 	}
 	
-	private void createSessionsTable() throws IOException
+	private void createSessions() throws IOException
 	{
 		String tableName = getSettings().getSessionsTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
@@ -80,7 +120,7 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withClusteringColumn(SESSION_ALIAS, DataTypes.TEXT));
 	}
 	
-	private void createSessionsDatesTable() throws IOException
+	private void createSessionsDates() throws IOException
 	{
 		String tableName = getSettings().getSessionsDatesTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
@@ -92,7 +132,7 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withClusteringColumn(PART, DataTypes.TEXT));
 	}
 	
-	private void createTestEventsTable() throws IOException
+	private void createTestEvents() throws IOException
 	{
 		String tableName = getSettings().getTestEventsTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
@@ -123,7 +163,7 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withColumn(CONTENT, DataTypes.BLOB));
 	}
 	
-	private void createPageScopesTable() throws IOException
+	private void createPageScopes() throws IOException
 	{
 		String tableName = getSettings().getPageScopesTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
@@ -146,7 +186,7 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withClusteringColumn(NAME, DataTypes.TEXT));
 	}
 	
-	private void createIntervalsTable() throws IOException
+	private void createIntervals() throws IOException
 	{
 		String tableName = getSettings().getIntervalsTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
