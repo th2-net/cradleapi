@@ -78,7 +78,7 @@ public class TestEventEntity
 	private boolean root;
 	
 	@CqlName(PARENT_ID)
-	private String parentId = ROOT_EVENT_PARENT_ID;
+	private String parentId;
 
 	@CqlName(EVENT_BATCH)
 	private boolean eventBatch;
@@ -113,7 +113,7 @@ public class TestEventEntity
 		this.setName(event.getName());
 		this.setType(event.getType());
 		this.setRoot(parentId == null);
-		this.setParentId(parentId != null ? parentId.toString() : ROOT_EVENT_PARENT_ID);
+		this.parentId = parentId != null ? parentId.toString() : ROOT_EVENT_PARENT_ID;
 		
 		byte[] content;
 		if (event instanceof StoredTestEventBatch)
@@ -217,9 +217,9 @@ public class TestEventEntity
 		return parentId;
 	}
 	
-	public void setParentId(String parentId)
+	public void setParentId(String parentId)  //This is called by Cassandra Driver and is not supposed to be called explicitly
 	{
-		this.parentId = parentId == null ? ROOT_EVENT_PARENT_ID : parentId;
+		this.parentId = parentId != null && parentId.isEmpty() ? null : parentId;
 	}
 	
 	
