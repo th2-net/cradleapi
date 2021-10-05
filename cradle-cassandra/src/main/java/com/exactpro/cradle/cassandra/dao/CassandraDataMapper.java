@@ -33,6 +33,7 @@ import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventConverter;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventMessagesConverter;
+import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventMetadataConverter;
 
 @Mapper
 public interface CassandraDataMapper
@@ -63,6 +64,8 @@ public interface CassandraDataMapper
 	
 	@DaoFactory
 	TestEventConverter testEventConverter();
+	@DaoFactory
+	TestEventMetadataConverter testEventMetadataConverter();
 	@DaoFactory
 	TestEventMessagesConverter testEventMessagesConverter();
 	@DaoFactory

@@ -30,6 +30,7 @@ import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventConverter;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventMessagesConverter;
+import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventMetadataConverter;
 
 public class CassandraOperators
 {
@@ -44,6 +45,7 @@ public class CassandraOperators
 	private final IntervalOperator intervalOperator;
 	private final DetailedMessageBatchConverter messageBatchConverter;
 	private final TestEventConverter testEventConverter;
+	private final TestEventMetadataConverter testEventMetadataConverter;
 	private final TestEventMessagesConverter testEventMessagesConverter;
 	private final MessageTestEventConverter messageTestEventConverter;
 	private final IntervalConverter intervalConverter;
@@ -59,8 +61,10 @@ public class CassandraOperators
 		testEventMessagesOperator = dataMapper.testEventMessagesOperator(settings.getKeyspace(), settings.getTestEventsMessagesTableName());
 		messageTestEventOperator = dataMapper.messageTestEventOperator(settings.getKeyspace(), settings.getMessagesTestEventsTableName());
 		intervalOperator = dataMapper.intervalOperator(settings.getKeyspace(), settings.getIntervalsTableName());
+
 		messageBatchConverter = dataMapper.detailedMessageBatchConverter();
 		testEventConverter = dataMapper.testEventConverter();
+		testEventMetadataConverter = dataMapper.testEventMetadataConverter();
 		testEventMessagesConverter = dataMapper.testEventMessagesConverter();
 		messageTestEventConverter = dataMapper.messageTestEventConverter();
 		intervalConverter = dataMapper.intervalConverter();
@@ -118,7 +122,12 @@ public class CassandraOperators
 	{
 		return testEventConverter;
 	}
-	
+
+	public TestEventMetadataConverter getTestEventMetadataConverter()
+	{
+		return testEventMetadataConverter;
+	}
+
 	public TestEventMessagesConverter getTestEventMessagesConverter()
 	{
 		return testEventMessagesConverter;

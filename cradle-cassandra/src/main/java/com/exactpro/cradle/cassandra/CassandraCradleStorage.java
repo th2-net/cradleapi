@@ -50,10 +50,7 @@ import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
-import com.exactpro.cradle.testevents.StoredTestEventWrapper;
-import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.StoredTestEventId;
-import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
+import com.exactpro.cradle.testevents.*;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.MessageUtils;
 
@@ -600,10 +597,35 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
+	protected Iterable<StoredTestEventMetadata> doGetRootTestEventsMetadata(Instant from, Instant to)
+			throws CradleStorageException, IOException
+	{
+		try
+		{
+			return doGetRootTestEventsMetadataAsync(from, to).get();
+		}
+		catch (CradleStorageException e)
+		{
+			throw e;
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting root test events' metadata", e);
+		}
+	}
+
+	@Override
 	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetRootTestEventsAsync(Instant from, Instant to)
 			throws CradleStorageException
 	{
 		return doGetTestEventsAsync(null, from, to);
+	}
+
+	@Override
+	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetRootTestEventsMetadataAsync(Instant from,
+			Instant to) throws CradleStorageException
+	{
+		return doGetTestEventsMetadataAsync(null, from, to);
 	}
 
 
@@ -622,6 +644,24 @@ public class CassandraCradleStorage extends CradleStorage
 		catch (Exception e)
 		{
 			throw new IOException("Error while getting child test events", e);
+		}
+	}
+
+	@Override
+	protected Iterable<StoredTestEventMetadata> doGetTestEventsMetadata(StoredTestEventId parentId, Instant from,
+			Instant to) throws CradleStorageException, IOException
+	{
+		try
+		{
+			return doGetTestEventsMetadataAsync(parentId, from, to).get();
+		}
+		catch (CradleStorageException e)
+		{
+			throw e;
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting child test events' metadata", e);
 		}
 	}
 
@@ -649,6 +689,30 @@ public class CassandraCradleStorage extends CradleStorage
 						queryInfo));
 	}
 
+	@Override
+	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsMetadataAsync(
+			StoredTestEventId parentId, Instant from, Instant to) throws CradleStorageException
+	{
+		LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET),
+				toDateTime = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
+		checkTimeBoundaries(fromDateTime, toDateTime, from, to);
+
+		LocalTime fromTime = fromDateTime.toLocalTime(),
+				toTime = toDateTime.toLocalTime();
+
+		String queryInfo = String.format("get %s from range %s..%s",
+				parentId == null ? "root" : "child test events' metadata of '" + parentId + "'", from, to);
+		String idQueryParam = parentId == null ? ROOT_EVENT_PARENT_ID : parentId.toString();
+
+		return new AsyncOperator<MappedAsyncPagingIterable<TestEventMetadataEntity>>(semaphore)
+				.getFuture(() -> selectExecutor.executeQuery(() ->
+								ops.getTimeTestEventOperator().getTestEventsMetadataDirect(instanceUuid,
+										idQueryParam, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs),
+						ops.getTestEventMetadataConverter(), queryInfo))
+				.thenApply(r -> new TestEventMetadataIteratorAdapter(r, pagingSupplies, ops.getTestEventMetadataConverter(),
+						queryInfo));
+	}
+
 
 	@Override
 	protected Iterable<StoredTestEventWrapper> doGetTestEvents(Instant from, Instant to, Order order) throws CradleStorageException, IOException
@@ -664,6 +728,24 @@ public class CassandraCradleStorage extends CradleStorage
 		catch (Exception e)
 		{
 			throw new IOException("Error while getting test events", e);
+		}
+	}
+
+	@Override
+	protected Iterable<StoredTestEventMetadata> doGetTestEventsMetadata(Instant from, Instant to, Order order)
+			throws CradleStorageException, IOException
+	{
+		try
+		{
+			return doGetTestEventsMetadataAsync(from, to, order).get();
+		}
+		catch (CradleStorageException e)
+		{
+			throw e;
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting test events' metadata", e);
 		}
 	}
 
@@ -686,8 +768,31 @@ public class CassandraCradleStorage extends CradleStorage
 								: ops.getTimeTestEventOperator().getTestEventsReverse(instanceUuid,
 										fromDateTime.toLocalDate(), fromTime, toTime, readAttrs),
 						ops.getTestEventConverter(), queryInfo))
-				.thenApply(entity -> new TestEventDataIteratorAdapter(entity, pagingSupplies, ops.getTestEventConverter(),
-								queryInfo));
+				.thenApply(entity -> new TestEventDataIteratorAdapter(entity, pagingSupplies,
+						ops.getTestEventConverter(), queryInfo));
+	}
+
+	@Override
+	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsMetadataAsync(Instant from,
+			Instant to, Order order) throws CradleStorageException
+	{
+		LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET),
+				toDateTime = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
+		checkTimeBoundaries(fromDateTime, toDateTime, from, to);
+
+		LocalTime fromTime = fromDateTime.toLocalTime(),
+				toTime = toDateTime.toLocalTime();
+
+		String queryInfo = String.format("get test events' metadata from range %s..%s in %s order", from, to, order);
+		return new AsyncOperator<MappedAsyncPagingIterable<TestEventMetadataEntity>>(semaphore)
+				.getFuture(() -> selectExecutor.executeQuery(() -> order == Order.DIRECT
+								? ops.getTimeTestEventOperator().getTestEventsMetadataDirect(instanceUuid,
+								fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
+								: ops.getTimeTestEventOperator().getTestEventsMetadataReverse(instanceUuid,
+								fromDateTime.toLocalDate(), fromTime, toTime, readAttrs),
+						ops.getTestEventMetadataConverter(), queryInfo))
+				.thenApply(entity -> new TestEventMetadataIteratorAdapter(entity, pagingSupplies,
+						ops.getTestEventMetadataConverter(), queryInfo));
 	}
 
 
