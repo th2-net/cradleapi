@@ -85,7 +85,7 @@ public class MessageBatchIteratorProvider extends IteratorProvider<StoredMessage
 	{
 		Instant rightBoundFromFilter = getRightBoundFromFilter(filter);
 		FilterForGreater<Instant> result = FilterForGreater.forGreaterOrEquals(rightBoundFromFilter);
-		PageInfo page = FilterUtils.findPage(getPageId(filter), result, book);
+		PageInfo page = FilterUtils.findPage(filter.getPageId(), result, book);
 		Instant endOfPage = page.getEnded() == null ? Instant.now() : page.getEnded();
 
 		return FilterForLess.forLessOrEquals(endOfPage.isBefore(rightBoundFromFilter) ? endOfPage : rightBoundFromFilter);
@@ -96,7 +96,7 @@ public class MessageBatchIteratorProvider extends IteratorProvider<StoredMessage
 		Instant leftBoundFromFilter = getLeftBoundFromFilter(filter);
 		FilterForGreater<Instant> result = leftBoundFromFilter == null ? null : FilterForGreater.forGreaterOrEquals(leftBoundFromFilter);
 
-		firstPage = FilterUtils.findPage(getPageId(filter), result, book);
+		firstPage = FilterUtils.findPage(filter.getPageId(), result, book);
 		Instant leftBoundFromPage = firstPage.getStarted();
 		if (result == null)
 		{
@@ -108,6 +108,8 @@ public class MessageBatchIteratorProvider extends IteratorProvider<StoredMessage
 
 		LocalDateTime leftBoundLocalDate = TimeUtils.toLocalTimestamp(result.getValue());
 		firstPart = CassandraTimeUtils.getPart(leftBoundLocalDate);
+
+		//A batch with a smaller date can contain messages that satisfy the original condition
 		LocalTime nearestBatchTime = getNearestBatchTime(firstPage.getId().getName(), filter.getSessionAlias().getValue(),
 				filter.getDirection().getValue().getLabel(), firstPart, leftBoundLocalDate.toLocalDate(),
 				leftBoundLocalDate.toLocalTime());
@@ -116,10 +118,7 @@ public class MessageBatchIteratorProvider extends IteratorProvider<StoredMessage
 		{
 			Instant nearestBatchInstant = TimeUtils.toInstant(leftBoundLocalDate.toLocalDate(), nearestBatchTime);
 			if (nearestBatchInstant.isBefore(result.getValue()))
-			{
 				result.setValue(nearestBatchInstant);
-				firstPart = CassandraTimeUtils.getPart(leftBoundLocalDate);
-			}
 		}
 
 		return result;
@@ -133,6 +132,9 @@ public class MessageBatchIteratorProvider extends IteratorProvider<StoredMessage
 
 	private Instant getLeftBoundFromFilter(StoredMessageFilter filter)
 	{
+		if (filter == null)
+			return null;
+
 		FilterForAny<StoredMessageId> messageId = filter.getMessageId();
 		Instant result = null;
 		if (messageId != null && (messageId.getOperation() == ComparisonOperation.GREATER_OR_EQUALS
@@ -140,16 +142,20 @@ public class MessageBatchIteratorProvider extends IteratorProvider<StoredMessage
 		{
 			result = messageId.getValue().getTimestamp();
 		}
-		if (filter.getTimestampFrom() != null)
+
+		FilterForGreater<Instant> filterFrom = filter.getTimestampFrom();
+		if (filterFrom != null)
 		{
-			Instant value = filter.getTimestampFrom().getValue();
+			Instant value = filterFrom.getValue();
 			result = (result == null || result.isBefore(value)) ? value : result;
 		}
-		if (filter.getPageId() != null)
+
+		PageId pageId = filter.getPageId();
+		if (pageId != null)
 		{
-			PageId pageId = filter.getPageId().getValue();
 			PageInfo pageInfo = book.getPage(pageId);
-			result = (result == null || result.isBefore(pageInfo.getStarted())) ? pageInfo.getStarted() : result;
+			Instant value = pageInfo.getStarted();
+			result = (result == null || result.isBefore(value)) ? value : result;
 		}
 
 		return result;
@@ -157,6 +163,9 @@ public class MessageBatchIteratorProvider extends IteratorProvider<StoredMessage
 
 	private Instant getRightBoundFromFilter(StoredMessageFilter filter)
 	{
+		if (filter == null)
+			return null;
+
 		FilterForAny<StoredMessageId> messageId = filter.getMessageId();
 		Instant result = null;
 		if (messageId != null && (messageId.getOperation() == ComparisonOperation.LESS_OR_EQUALS
@@ -164,17 +173,20 @@ public class MessageBatchIteratorProvider extends IteratorProvider<StoredMessage
 		{
 			result = messageId.getValue().getTimestamp();
 		}
-		if (filter.getTimestampTo() != null)
+
+		FilterForLess<Instant> filterTo = filter.getTimestampTo();
+		if (filterTo != null)
 		{
-			Instant tsTo = filter.getTimestampTo().getValue();
-			result = result == null ? tsTo : (result.isBefore(tsTo) ? result : tsTo);
+			Instant value = filterTo.getValue();
+			result = result == null ? value : (result.isBefore(value) ? result : value);
 		}
-		if (filter.getPageId() != null)
+
+		PageId pageId = filter.getPageId();
+		if (pageId != null)
 		{
-			PageId pageId = filter.getPageId().getValue();
 			PageInfo pageInfo = book.getPage(pageId);
-			Instant ended = pageInfo.getEnded() == null ? Instant.now() : pageInfo.getEnded();
-			result = result == null ? ended : (result.isBefore(ended) ? result : ended);
+			Instant value = pageInfo.getEnded() == null ? Instant.now() : pageInfo.getEnded();
+			result = result == null ? value : (result.isBefore(value) ? result : value);
 		}
 
 		return result == null ? Instant.now() : result;
@@ -193,13 +205,6 @@ public class MessageBatchIteratorProvider extends IteratorProvider<StoredMessage
 		{
 			throw new CradleStorageException("Error while getting left bound ", e);
 		}
-	}
-
-	private PageId getPageId(StoredMessageFilter filter)
-	{
-		FilterForEquals<PageId> pageIdFilter = filter.getPageId();
-
-		return pageIdFilter == null ? null : pageIdFilter.getValue();
 	}
 
 	@Override

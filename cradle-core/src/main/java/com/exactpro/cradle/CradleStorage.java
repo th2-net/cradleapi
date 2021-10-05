@@ -468,7 +468,7 @@ public abstract class CradleStorage
 	public final Iterable<StoredMessage> getMessages(StoredMessageFilter filter) throws IOException, CradleStorageException
 	{
 		logger.debug("Filtering messages by {}", filter);
-		BookInfo book = bpc.getBook(filter.getBookId().getValue());
+		BookInfo book = bpc.getBook(filter.getBookId());
 		Iterable<StoredMessage> result = doGetMessages(filter, book);
 		logger.debug("Prepared iterator for messages filtered by {}", filter);
 		return result;
@@ -483,7 +483,7 @@ public abstract class CradleStorage
 	public final CompletableFuture<Iterable<StoredMessage>> getMessagesAsync(StoredMessageFilter filter) throws CradleStorageException
 	{
 		logger.debug("Asynchronously getting messages filtered by {}", filter);
-		BookInfo book = bpc.getBook(filter.getBookId().getValue());
+		BookInfo book = bpc.getBook(filter.getBookId());
 		CompletableFuture<Iterable<StoredMessage>> result = doGetMessagesAsync(filter, book);
 		result.whenComplete((r, error) -> {
 				if (error != null)
@@ -505,7 +505,7 @@ public abstract class CradleStorage
 	public final CradleResultSet<StoredMessageBatch> getMessagesBatches(StoredMessageFilter filter) throws IOException, CradleStorageException
 	{
 		logger.debug("Filtering message batches by {}", filter);
-		BookInfo book = bpc.getBook(filter.getBookId().getValue());
+		BookInfo book = bpc.getBook(filter.getBookId());
 		CradleResultSet<StoredMessageBatch> result = doGetMessagesBatches(filter, book);
 		logger.debug("Prepared iterator for message batches filtered by {}", filter);
 		return result;
@@ -520,7 +520,7 @@ public abstract class CradleStorage
 	public final CompletableFuture<CradleResultSet<StoredMessageBatch>> getMessagesBatchesAsync(StoredMessageFilter filter) throws CradleStorageException
 	{
 		logger.debug("Asynchronously getting message batches filtered by {}", filter);
-		BookInfo book = bpc.getBook(filter.getBookId().getValue());
+		BookInfo book = bpc.getBook(filter.getBookId());
 		CompletableFuture<CradleResultSet<StoredMessageBatch>> result = doGetMessagesBatchesAsync(filter, book);
 		result.whenComplete((r, error) -> {
 				if (error != null)

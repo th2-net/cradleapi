@@ -42,22 +42,14 @@ public class StoredMessageFilterBuilder
 	
 	public StoredMessageFilterBuilder(BookId bookId, String sessionAlias, Direction direction)
 	{
-		this.bookId().isEqualTo(bookId);
+		msgFilter = new StoredMessageFilter();
+		msgFilter.setBookId(bookId);
 		this.sessionAlias().isEqualTo(sessionAlias);
 		this.direction().isEqualTo(direction);
 	}
 
-	private FilterForEqualsBuilder<BookId, StoredMessageFilterBuilder> bookId()
-	{
-		initIfNeeded();
-		FilterForEquals<BookId> f = new FilterForEquals<>();
-		msgFilter.setBookId(f);
-		return new FilterForEqualsBuilder<BookId, StoredMessageFilterBuilder>(f, this);
-	}
-	
 	private FilterForEqualsBuilder<String, StoredMessageFilterBuilder> sessionAlias()
 	{
-		initIfNeeded();
 		FilterForEquals<String> f = new FilterForEquals<>();
 		msgFilter.setSessionAlias(f);
 		return new FilterForEqualsBuilder<String, StoredMessageFilterBuilder>(f, this);
@@ -65,23 +57,19 @@ public class StoredMessageFilterBuilder
 	
 	private FilterForEqualsBuilder<Direction, StoredMessageFilterBuilder> direction()
 	{
-		initIfNeeded();
 		FilterForEquals<Direction> f = new FilterForEquals<>();
 		msgFilter.setDirection(f);
 		return new FilterForEqualsBuilder<Direction, StoredMessageFilterBuilder>(f, this);
 	}
 
-	public FilterForEqualsBuilder<PageId, StoredMessageFilterBuilder> pageId()
+	public StoredMessageFilterBuilder pageId(PageId pageId)
 	{
-		initIfNeeded();
-		FilterForEquals<PageId> f = new FilterForEquals<>();
-		msgFilter.setPageId(f);
-		return new FilterForEqualsBuilder<PageId, StoredMessageFilterBuilder>(f, this);
+		msgFilter.setPageId(pageId);
+		return this;
 	}
 	
 	public FilterForGreaterBuilder<Instant, StoredMessageFilterBuilder> timestampFrom()
 	{
-		initIfNeeded();
 		FilterForGreater<Instant> f = new FilterForGreater<>();
 		msgFilter.setTimestampFrom(f);
 		return new FilterForGreaterBuilder<Instant, StoredMessageFilterBuilder>(f, this);
@@ -89,7 +77,6 @@ public class StoredMessageFilterBuilder
 	
 	public FilterForLessBuilder<Instant, StoredMessageFilterBuilder> timestampTo()
 	{
-		initIfNeeded();
 		FilterForLess<Instant> f = new FilterForLess<>();
 		msgFilter.setTimestampTo(f);
 		return new FilterForLessBuilder<Instant, StoredMessageFilterBuilder>(f, this);
@@ -97,7 +84,6 @@ public class StoredMessageFilterBuilder
 	
 	public FilterForAnyBuilder<StoredMessageId, StoredMessageFilterBuilder> storedMessageId()
 	{
-		initIfNeeded();
 		FilterForAny<StoredMessageId> f = new FilterForAny<>();
 		msgFilter.setMessageId(f);
 		return new FilterForAnyBuilder<StoredMessageId, StoredMessageFilterBuilder>(f, this);
@@ -105,7 +91,6 @@ public class StoredMessageFilterBuilder
 	
 	public StoredMessageFilterBuilder next(StoredMessageId fromId, int count)
 	{
-		initIfNeeded();
 		msgFilter.setSessionAlias(new FilterForEquals<String>(fromId.getSessionAlias()));
 		msgFilter.setDirection(new FilterForEquals<Direction>(fromId.getDirection()));
 		msgFilter.setTimestampFrom(new FilterForGreater<Instant>(fromId.getTimestamp()));
@@ -117,7 +102,6 @@ public class StoredMessageFilterBuilder
 	
 	public StoredMessageFilterBuilder previous(StoredMessageId fromId, int count)
 	{
-		initIfNeeded();
 		msgFilter.setSessionAlias(new FilterForEquals<String>(fromId.getSessionAlias()));
 		msgFilter.setDirection(new FilterForEquals<Direction>(fromId.getDirection()));
 		msgFilter.setTimestampFrom(new FilterForGreater<Instant>(fromId.getTimestamp()));
@@ -134,35 +118,20 @@ public class StoredMessageFilterBuilder
 	 */
 	public StoredMessageFilterBuilder limit(int limit)
 	{
-		initIfNeeded();
 		msgFilter.setLimit(limit);
 		return this;
 	}
 
 	public StoredMessageFilterBuilder order(Order order)
 	{
-		initIfNeeded();
 		msgFilter.setOrder(order);
 		return this;
 	}
 	
 	public StoredMessageFilter build()
 	{
-		initIfNeeded();
 		StoredMessageFilter result = msgFilter;
 		msgFilter = null;
 		return result;
-	}
-	
-	
-	private void initIfNeeded()
-	{
-		if (msgFilter == null)
-			msgFilter = createStoredMessageFilter();
-	}
-	
-	protected StoredMessageFilter createStoredMessageFilter()
-	{
-		return new StoredMessageFilter();
 	}
 }

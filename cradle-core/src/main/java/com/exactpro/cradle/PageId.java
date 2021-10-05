@@ -21,7 +21,7 @@ import java.util.Objects;
 /**
  * Identifier of the page within a book
  */
-public class PageId implements Comparable<PageId>
+public class PageId
 {
 	public static final String DELIMITER = ":";
 	
@@ -70,14 +70,5 @@ public class PageId implements Comparable<PageId>
 	public String toString()
 	{
 		return bookId+DELIMITER+name;
-	}
-
-	@Override
-	public int compareTo(PageId o)
-	{
-		int result = bookId.compareTo(o.getBookId());
-		if (result != 0)
-			return result;
-		return name.compareTo(o.getName());
 	}
 }

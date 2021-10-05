@@ -31,8 +31,8 @@ import com.exactpro.cradle.filters.FilterForLess;
 
 public class StoredMessageFilter
 {
-	private FilterForEquals<BookId> bookId;
-	private FilterForEquals<PageId> pageId;
+	private BookId bookId;
+	private PageId pageId;
 	private FilterForEquals<String> sessionAlias;
 	private FilterForEquals<Direction> direction;
 	private FilterForGreater<Instant> timestampFrom;
@@ -64,23 +64,23 @@ public class StoredMessageFilter
 		this.order = copyFrom.getOrder();
 	}
 
-	public FilterForEquals<BookId> getBookId()
+	public BookId getBookId()
 	{
 		return bookId;
 	}
 
-	public void setBookId(FilterForEquals<BookId> bookId)
+	public void setBookId(BookId bookId)
 	{
 		this.bookId = bookId;
 	}
 
 
-	public FilterForEquals<PageId> getPageId()
+	public PageId getPageId()
 	{
 		return pageId;
 	}
 
-	public void setPageId(FilterForEquals<PageId> pageId)
+	public void setPageId(PageId pageId)
 	{
 		this.pageId = pageId;
 	}
