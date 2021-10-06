@@ -40,13 +40,16 @@ public interface IntervalsWorker
     CompletableFuture<Boolean> storeIntervalAsync(Interval interval);
 
     /**
-     * Obtains iterable of intervals with startTime greater than or equal to "from" and less than or equal to "to". Intervals must be within one day
-     * @param from time from which intervals are searched
-     * @param to time to which intervals are searched
-     * @param crawlerName name of Crawler
+     * Obtains iterable of intervals with startTime greater than or equal to "from" and less than or equal to "to".
+     * Intervals must be within one day
+     *
+     * @param from           time from which intervals are searched
+     * @param to             time to which intervals are searched
+     * @param crawlerName    name of Crawler
      * @param crawlerVersion version of Crawler
-     * @param crawlerType type of Crawler
+     * @param crawlerType    type of Crawler
      * @return iterable of intervals
+     * @throws IOException   if something went wrong
      */
     Iterable<Interval> getIntervalsPerDay(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException;
 
@@ -64,22 +67,27 @@ public interface IntervalsWorker
 
     /**
      * Obtains iterable of intervals with startTime greater than or equal to "from" and less than or equal to "to"
-     * @param from time from which intervals are searched
-     * @param to time to which intervals are searched
-     * @param crawlerName name of Crawler
+     *
+     * @param from           time from which intervals are searched
+     * @param to             time to which intervals are searched
+     * @param crawlerName    name of Crawler
      * @param crawlerVersion version of Crawler
-     * @param crawlerType type of Crawler
+     * @param crawlerType    type of Crawler
      * @return iterable of intervals
+     * @throws IOException if something went wrong
      */
     Iterable<Interval> getIntervals(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException;
 
     /**
      * Sets last update time and last update date of interval.
-     * @param interval interval in which last update time and date will be set
+     *
+     * @param interval          interval in which last update time and date will be set
      * @param newLastUpdateTime new time of last update
      * @return the new instance of {@link Interval} with updated newLastUpdateTime. This operation is successful
-     * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
+     * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and
+     * previousLastUpdateDate.
      * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
+     * @throws IOException   if something went wrong
      */
     Interval setIntervalLastUpdateTimeAndDate(Interval interval, Instant newLastUpdateTime) throws IOException;
 
@@ -95,21 +103,28 @@ public interface IntervalsWorker
 
     /**
      * Updates RecoveryState, also sets lastUpdateTime and lastUpdateDate as current time and date
-     * @param interval interval in which Recovery State will be updated
+     *
+     * @param interval      interval in which Recovery State will be updated
      * @param recoveryState information for recovering of Crawler
      * @return the new instance of {@link Interval} with updated recoveryState. This operation is successful
-     * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
+     * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and
+     * previousLastUpdateDate.
      * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
+     * @throws IOException   if something went wrong
      */
     Interval updateRecoveryState(Interval interval, RecoveryState recoveryState) throws IOException;
 
     /**
      * Asynchronously updates RecoveryState, also sets lastUpdateTime and lastUpdateDate as current time and date
-     * @param interval interval in which Recovery State will be updated
+     *
+     * @param interval      interval in which Recovery State will be updated
      * @param recoveryState information for recovering of Crawler
-     * @return CompletableFuture with the new instance of {@link Interval} with updated recoveryState. This operation is successful
-     * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
-     * If it was not successful throws an {@link java.util.concurrent.ExecutionException} with cause {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
+     * @return CompletableFuture with the new instance of {@link Interval} with updated recoveryState. This operation
+     * is successful
+     * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and
+     * previousLastUpdateDate.
+     * If it was not successful throws an {@link java.util.concurrent.ExecutionException} with cause
+     * {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      */
     CompletableFuture<Interval> updateRecoveryStateAsync(Interval interval, RecoveryState recoveryState);
 
@@ -120,6 +135,7 @@ public interface IntervalsWorker
      * @return the new instance of {@link Interval} with updated processed. This operation is successful
      * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
      * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
+     * @throws IOException   if something went wrong
      */
     Interval setIntervalProcessed(Interval interval, boolean processed) throws IOException;
 

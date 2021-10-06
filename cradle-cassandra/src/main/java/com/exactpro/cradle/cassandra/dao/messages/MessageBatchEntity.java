@@ -57,10 +57,6 @@ public class MessageBatchEntity extends CradleEntity
 	@CqlName(DIRECTION)
 	private String direction;
 
-	@PartitionKey(3)
-	@CqlName(PART)
-	private String part;
-
 	@ClusteringColumn(0)
 	@CqlName(MESSAGE_DATE)
 	private LocalDate messageDate;
@@ -108,8 +104,9 @@ public class MessageBatchEntity extends CradleEntity
 		setMessageTime(ldt.toLocalTime());
 		setSessionAlias(id.getSessionAlias());
 		setDirection(id.getDirection().getLabel());
-		setPart(CassandraTimeUtils.getPart(ldt));
 		setSequence(id.getSequence());
+		//Last sequence is used in the getLastSequenceQuery, that returns last chunk
+		setLastSequence(batch.getLastMessage().getSequence());
 
 		//TODO		setStoredTimestamp(Instant.now());
 		if (chunk == 0) // It's first chunk
@@ -117,7 +114,6 @@ public class MessageBatchEntity extends CradleEntity
 			setFirstMessageTimestamp(batch.getFirstTimestamp());
 			setLastMessageTimestamp(batch.getLastTimestamp());
 			setMessageCount(batch.getMessageCount());
-			setLastSequence(batch.getLastMessage().getSequence());
 		}
 
 		//Content related data
@@ -155,16 +151,6 @@ public class MessageBatchEntity extends CradleEntity
 	public void setSessionAlias(String sessionAlias)
 	{
 		this.sessionAlias = sessionAlias;
-	}
-
-	public String getPart()
-	{
-		return part;
-	}
-
-	public void setPart(String part)
-	{
-		this.part = part;
 	}
 
 	public LocalTime getMessageTime()

@@ -42,21 +42,20 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	private static final String DATE_FROM = "dateFrom", DATE_TO = "dateTo",
 			TIME_FROM = "timeFrom", TIME_TO = "timeTo";
 
-	private final String page, sessionAlias, direction, part;
+	private final String page, sessionAlias, direction;
 
 	private final FilterForGreater<Instant> messageTimeFrom;
 	private final FilterForLess<Instant> messageTimeTo;
 	private final FilterForAny<StoredMessageId> messageId;
 	private boolean isTimeFromBounded = false, isTimeToBounded = false;
 
-	public CassandraStoredMessageFilter(String page, String sessionAlias, String direction, String part,
+	public CassandraStoredMessageFilter(String page, String sessionAlias, String direction,
 			FilterForGreater<Instant> messageTimeFrom, FilterForLess<Instant> messageTimeTo,
 			FilterForAny<StoredMessageId> messageId)
 	{
 		this.page = page;
 		this.sessionAlias = sessionAlias;
 		this.direction = direction;
-		this.part = part;
 		this.messageTimeFrom = messageTimeFrom;
 		this.messageTimeTo = messageTimeTo;
 		this.messageId = messageId;
@@ -67,8 +66,7 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	{
 		select = select.whereColumn(PAGE).isEqualTo(bindMarker())
 			.whereColumn(SESSION_ALIAS).isEqualTo(bindMarker())
-			.whereColumn(DIRECTION).isEqualTo(bindMarker())
-			.whereColumn(PART).isEqualTo(bindMarker());
+			.whereColumn(DIRECTION).isEqualTo(bindMarker());
 
 		if (messageId != null)
 			select = addMessageIdCondition(select);
@@ -129,8 +127,7 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	{
 		builder = builder.setString(PAGE, page)
 				.setString(SESSION_ALIAS, sessionAlias)
-				.setString(DIRECTION, direction)
-				.setString(PART, part);
+				.setString(DIRECTION, direction);
 
 		if (messageId != null)
 		{
@@ -167,11 +164,6 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	public String getDirection()
 	{
 		return direction;
-	}
-
-	public String getPart()
-	{
-		return part;
 	}
 
 	public FilterForAny<StoredMessageId> getMessageId()

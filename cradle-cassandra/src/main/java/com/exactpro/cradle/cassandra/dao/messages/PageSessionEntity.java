@@ -42,10 +42,6 @@ public class PageSessionEntity
 	@CqlName(DIRECTION)
 	private String direction;
 
-	@ClusteringColumn(2)
-	@CqlName(PART)
-	private String part;
-
 	public PageSessionEntity()
 	{
 	}
@@ -55,7 +51,6 @@ public class PageSessionEntity
 		setPage(pageId.getName());
 		setSessionAlias(messageId.getSessionAlias());
 		setDirection(messageId.getDirection().getLabel());
-		setPart(CassandraTimeUtils.getPart(TimeUtils.toLocalTimestamp(messageId.getTimestamp())));
 	}
 	
 	public String getPage()
@@ -86,15 +81,5 @@ public class PageSessionEntity
 	public void setDirection(String direction)
 	{
 		this.direction = direction;
-	}
-
-	public String getPart()
-	{
-		return part;
-	}
-
-	public void setPart(String part)
-	{
-		this.part = part;
 	}
 }

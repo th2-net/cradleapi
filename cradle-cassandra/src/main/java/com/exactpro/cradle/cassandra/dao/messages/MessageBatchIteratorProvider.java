@@ -27,7 +27,6 @@ import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.utils.CassandraTimeUtils;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
 import com.exactpro.cradle.filters.*;
-import com.exactpro.cradle.messages.MessageBatch;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
@@ -56,13 +55,10 @@ public class MessageBatchIteratorProvider extends IteratorProvider<StoredMessage
 	private final BookInfo book;
 	private final FilterForGreater<Instant> leftBoundFilter;
 	private final FilterForLess<Instant> rightBoundFilter;
-	private final String lastPart;
-	private PageInfo firstPage;
-	private String firstPart;
+	private PageInfo firstPage, lastPage;
 	private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
 	private final int limit;
 	private final AtomicInteger returned;
-	private final AtomicBoolean isLastPartReached = new AtomicBoolean(false);
 	private CassandraStoredMessageFilter cassandraFilter;
 
 
@@ -78,15 +74,14 @@ public class MessageBatchIteratorProvider extends IteratorProvider<StoredMessage
 		this.leftBoundFilter = createLeftBoundFilter(filter);
 		this.rightBoundFilter = createRightBoundFilter(filter);
 		this.cassandraFilter = createInitialFilter(filter);
-		this.lastPart = CassandraTimeUtils.getPart(TimeUtils.toLocalTimestamp(rightBoundFilter.getValue()));
 	}
 
 	private FilterForLess<Instant> createRightBoundFilter(StoredMessageFilter filter)
 	{
 		Instant rightBoundFromFilter = getRightBoundFromFilter(filter);
 		FilterForGreater<Instant> result = FilterForGreater.forGreaterOrEquals(rightBoundFromFilter);
-		PageInfo page = FilterUtils.findPage(filter.getPageId(), result, book);
-		Instant endOfPage = page.getEnded() == null ? Instant.now() : page.getEnded();
+		lastPage = FilterUtils.findPage(filter.getPageId(), result, book);
+		Instant endOfPage = lastPage.getEnded() == null ? Instant.now() : lastPage.getEnded();
 
 		return FilterForLess.forLessOrEquals(endOfPage.isBefore(rightBoundFromFilter) ? endOfPage : rightBoundFromFilter);
 	}
@@ -99,19 +94,15 @@ public class MessageBatchIteratorProvider extends IteratorProvider<StoredMessage
 		firstPage = FilterUtils.findPage(filter.getPageId(), result, book);
 		Instant leftBoundFromPage = firstPage.getStarted();
 		if (result == null)
-		{
-			firstPart = CassandraTimeUtils.getPart(TimeUtils.toLocalTimestamp(leftBoundFromPage));
 			return FilterForGreater.forGreaterOrEquals(leftBoundFromPage);
-		}
 
 		result.setValue(leftBoundFromFilter.isAfter(leftBoundFromPage) ? leftBoundFromFilter : leftBoundFromPage);
 
 		LocalDateTime leftBoundLocalDate = TimeUtils.toLocalTimestamp(result.getValue());
-		firstPart = CassandraTimeUtils.getPart(leftBoundLocalDate);
 
 		//A batch with a smaller date can contain messages that satisfy the original condition
 		LocalTime nearestBatchTime = getNearestBatchTime(firstPage.getId().getName(), filter.getSessionAlias().getValue(),
-				filter.getDirection().getValue().getLabel(), firstPart, leftBoundLocalDate.toLocalDate(),
+				filter.getDirection().getValue().getLabel(), leftBoundLocalDate.toLocalDate(),
 				leftBoundLocalDate.toLocalTime());
 
 		if (nearestBatchTime != null)
@@ -127,7 +118,7 @@ public class MessageBatchIteratorProvider extends IteratorProvider<StoredMessage
 	private CassandraStoredMessageFilter createInitialFilter(StoredMessageFilter filter)
 	{
 		return new CassandraStoredMessageFilter(firstPage.getId().getName(), filter.getSessionAlias().getValue(),
-				filter.getDirection().getValue().getLabel(), firstPart, leftBoundFilter, rightBoundFilter, filter.getMessageId());
+				filter.getDirection().getValue().getLabel(), leftBoundFilter, rightBoundFilter, filter.getMessageId());
 	}
 
 	private Instant getLeftBoundFromFilter(StoredMessageFilter filter)
@@ -192,10 +183,10 @@ public class MessageBatchIteratorProvider extends IteratorProvider<StoredMessage
 		return result == null ? Instant.now() : result;
 	}
 
-	private LocalTime getNearestBatchTime(String page, String sessionAlias, String direction, String part,
+	private LocalTime getNearestBatchTime(String page, String sessionAlias, String direction,
 			LocalDate messageDate, LocalTime messageTime) throws CradleStorageException
 	{
-		CompletableFuture<Row> future = op.getNearestTime(page, sessionAlias, direction, part, messageDate, messageTime, readAttrs);
+		CompletableFuture<Row> future = op.getNearestTime(page, sessionAlias, direction, messageDate, messageTime, readAttrs);
 		try
 		{
 			Row row = future.get();
@@ -238,26 +229,13 @@ public class MessageBatchIteratorProvider extends IteratorProvider<StoredMessage
 
 	private CassandraStoredMessageFilter createNextFilter(CassandraStoredMessageFilter prevFilter)
 	{
-		if (isLastPartReached.get())
+		PageInfo prevPage = book.getPage(new PageId(book.getId(), prevFilter.getPage()));
+		if (prevPage.equals(lastPage))
 			return null;
 
-		String part = prevFilter.getPart();
-		PageInfo page = book.getPage(new PageId(book.getId(), prevFilter.getPage()));
+		PageInfo nextPage = book.getNextPage(prevPage.getStarted());
 
-		//Was queried partition the last one for current page?
-		if (page.getEnded() == null || !CassandraTimeUtils.getLastPart(page).equals(part))
-		{
-			part = CassandraTimeUtils.getNextPart(prevFilter.getPart());
-		}
-		else
-		{
-			page = book.getNextPage(page.getStarted());
-			part = CassandraTimeUtils.getPart(TimeUtils.toLocalTimestamp(page.getStarted()));
-		}
-
-		isLastPartReached.compareAndSet(false, part.compareTo(lastPart) > -1);
-
-		return new CassandraStoredMessageFilter(page.getId().getName(), prevFilter.getSessionAlias(),
-				prevFilter.getDirection(), part, leftBoundFilter, rightBoundFilter, prevFilter.getMessageId());
+		return new CassandraStoredMessageFilter(nextPage.getId().getName(), prevFilter.getSessionAlias(),
+				prevFilter.getDirection(), leftBoundFilter, rightBoundFilter, prevFilter.getMessageId());
 	}
 }

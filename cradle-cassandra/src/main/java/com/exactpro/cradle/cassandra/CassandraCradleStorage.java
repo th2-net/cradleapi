@@ -406,9 +406,9 @@ public class CassandraCradleStorage extends CradleStorage
 					if (msgs == null)
 						return CompletableFuture.completedFuture(null);
 
-					Optional<StoredMessage> finded = msgs.stream().filter(m -> id.equals(m.getId())).findFirst();
-					if (finded.isPresent())
-						return CompletableFuture.completedFuture(finded.get());
+					Optional<StoredMessage> found = msgs.stream().filter(m -> id.equals(m.getId())).findFirst();
+					if (found.isPresent())
+						return CompletableFuture.completedFuture(found.get());
 
 					logger.debug("There is no message with id '{}' in batch '{}'", id, msgs.iterator().next().getId());
 					return CompletableFuture.completedFuture(null);
@@ -438,8 +438,7 @@ public class CassandraCradleStorage extends CradleStorage
 		BookOperators bookOps = ops.getOperators(bookId);
 		return bookOps.getMessageBatchOperator()
 				.getNearestTimeAndSequenceBefore(pageId.getName(), id.getSessionAlias(), id.getDirection().getLabel(),
-						CassandraTimeUtils.getPart(ldt), ldt.toLocalDate(), ldt.toLocalTime(), id.getSequence(),
-						readAttrs)
+						ldt.toLocalDate(), ldt.toLocalTime(), id.getSequence(), readAttrs)
 				.thenComposeAsync(row ->
 				{
 					if (row == null)
@@ -450,9 +449,7 @@ public class CassandraCradleStorage extends CradleStorage
 					return bookOps
 							.getMessageBatchOperator()
 							.get(pageId.getName(), id.getSessionAlias(), id.getDirection().getLabel(),
-									CassandraTimeUtils.getPart(ldt), ldt.toLocalDate(),
-									row.getLocalTime(MESSAGE_TIME),
-									row.getLong(SEQUENCE), readAttrs)
+									ldt.toLocalDate(), row.getLocalTime(MESSAGE_TIME), row.getLong(SEQUENCE), readAttrs)
 							.thenApplyAsync(e ->
 							{
 								try
@@ -519,50 +516,36 @@ public class CassandraCradleStorage extends CradleStorage
 	protected long doGetLastSequence(String sessionAlias, Direction direction, BookId bookId)
 			throws IOException, CradleStorageException
 	{
-
 		BookOperators bookOps = ops.getOperators(bookId);
 		MessageBatchOperator mbOp = bookOps.getMessageBatchOperator();
-		PageSessionsOperator psOp = bookOps.getPageSessionsOperator();
 		BookInfo book = bpc.getBook(bookId);
 		PageInfo currentPage = bpc.getActivePage(bookId);
-		PageSessionEntity lastEntity = null;
-		while (lastEntity == null && currentPage != null)
+		Row row = null;
+		while (row == null && currentPage != null)
 		{
 			try
 			{
-				lastEntity = psOp.getLast(currentPage.getId().getName(), sessionAlias, direction.getLabel(),
-								readAttrs).get();
+				row = mbOp.getLastSequence(currentPage.getId().getName(), sessionAlias, direction.getLabel(),
+						readAttrs).get();
 			}
 			catch (InterruptedException | ExecutionException e)
 			{
-				String msg = String.format("Error occurs while getting last part for page '%s', session alias '%s', " +
+				String msg = String.format("Error occurs while getting last sequence for page '%s', session alias '%s', " +
 						"direction '%s'", currentPage.getId().getName(), sessionAlias, direction);
 				throw new CradleStorageException(msg, e);
 			}
 
-			if (lastEntity == null)
+			if (row == null)
 				currentPage = book.getPreviousPage(currentPage.getStarted());
 		}
-		if (lastEntity == null || currentPage == null)
+		if (row == null)
 		{
 			logger.debug("There is no messages yet in book '{}' with session alias '{}' and direction '{}'", bookId,
 					sessionAlias, direction);
 			return 0L;
 		}
 
-		try
-		{
-			Row row = mbOp.getLastSequence(currentPage.getId().getName(), sessionAlias, direction.getLabel(),
-					lastEntity.getPart(), readAttrs).get();
-			return row == null ? 0L : row.getLong(LAST_SEQUENCE);
-		}
-		catch (InterruptedException | ExecutionException e)
-		{
-			String msg = String.format(
-					"Error occurs while getting last sequence for page '%s', session alias '%s', part '%s', " +
-							"direction '%s'", currentPage.getId().getName(), sessionAlias, lastEntity, direction);
-			throw new CradleStorageException(msg, e);
-		}
+		return row.getLong(LAST_SEQUENCE);
 	}
 	
 	@Override
@@ -741,34 +724,6 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		return strictReadAttrs;
 	}
-
-	
-//TODO: implement
-//	private CompletableFuture<DetailedMessageBatchEntity> readMessageBatchEntity(StoredMessageId messageId, boolean rawMessage)
-//	{
-//		MessageBatchOperator op = rawMessage ? ops.getMessageBatchOperator() : ops.getProcessedMessageBatchOperator();
-//		return CassandraMessageUtils.getMessageBatch(messageId, op, semaphore, instanceUuid, readAttrs);
-//	}
-
-//TODO: implement
-//	private CompletableFuture<StoredMessage> readMessage(StoredMessageId id, boolean rawMessage)
-//	{
-//		CompletableFuture<DetailedMessageBatchEntity> entityFuture = readMessageBatchEntity(id, rawMessage);
-//		return entityFuture.thenCompose((entity) -> {
-//			if (entity == null)
-//				return CompletableFuture.completedFuture(null);
-//			StoredMessage msg;
-//			try
-//			{
-//				msg = MessageUtils.bytesToOneMessage(entity.getContent(), entity.isCompressed(), id);
-//			}
-//			catch (IOException e)
-//			{
-//				throw new CompletionException("Error while reading message", e);
-//			}
-//			return CompletableFuture.completedFuture(msg);
-//		});
-//	}
 
 	private void checkTimeBoundaries(LocalDateTime fromDateTime, LocalDateTime toDateTime, Instant originalFrom, Instant originalTo)
 			throws CradleStorageException

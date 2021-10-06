@@ -37,29 +37,29 @@ public interface MessageBatchOperator
 {
 	@Select
 	CompletableFuture<MappedAsyncPagingIterable<MessageBatchEntity>> get(String page, String sessionAlias,
-			String direction, String part, LocalDate messageDate, LocalTime messageTime, long sequence,
+			String direction, LocalDate messageDate, LocalTime messageTime, long sequence,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Query("SELECT " + SEQUENCE + ", " + MESSAGE_TIME + " FROM ${qualifiedTableId} WHERE " + PAGE + "=:page"
-			+ " AND " + SESSION_ALIAS + "=:sessionAlias AND " + DIRECTION + "=:direction AND " + PART + "=:part"
+			+ " AND " + SESSION_ALIAS + "=:sessionAlias AND " + DIRECTION + "=:direction AND "
 			+ " AND " + MESSAGE_DATE + "=:messageDate AND (" + MESSAGE_TIME + ", " + SEQUENCE + ")<=(:messageTime, :sequence)"
 			+ " ORDER BY " + MESSAGE_DATE + " DESC, " + MESSAGE_TIME + " DESC, " + SEQUENCE + " DESC LIMIT 1")
 	CompletableFuture<Row> getNearestTimeAndSequenceBefore(String page, String sessionAlias,
-			String direction, String part, LocalDate messageDate, LocalTime messageTime, long sequence,
+			String direction, LocalDate messageDate, LocalTime messageTime, long sequence,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Query("SELECT " + MESSAGE_TIME + " FROM ${qualifiedTableId} WHERE " + PAGE + "=:page"
-			+ " AND " + SESSION_ALIAS + "=:sessionAlias AND " + DIRECTION + "=:direction AND " + PART + "=:part"
+			+ " AND " + SESSION_ALIAS + "=:sessionAlias AND " + DIRECTION + "=:direction AND "
 			+ " AND " + MESSAGE_DATE + "=:messageDate AND " + MESSAGE_TIME + "<=:messageTime"
 			+ " ORDER BY " + MESSAGE_DATE + " DESC, " + MESSAGE_TIME + " DESC, " + SEQUENCE + " DESC LIMIT 1")
 	CompletableFuture<Row> getNearestTime(String page, String sessionAlias,
-			String direction, String part, LocalDate messageDate, LocalTime messageTime,
+			String direction, LocalDate messageDate, LocalTime messageTime,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Query("SELECT " + LAST_SEQUENCE + " FROM ${qualifiedTableId} WHERE " + PAGE + "=:page"
-			+ " AND " + SESSION_ALIAS + "=:sessionAlias AND " + DIRECTION + "=:direction AND " + PART + "=:part"
+			+ " AND " + SESSION_ALIAS + "=:sessionAlias AND " + DIRECTION + "=:direction AND "
 			+ " ORDER BY " + MESSAGE_DATE + " DESC, " + MESSAGE_TIME + " DESC, " + SEQUENCE + " DESC LIMIT 1" )
-	CompletableFuture<Row> getLastSequence(String page, String sessionAlias, String direction, String part,
+	CompletableFuture<Row> getLastSequence(String page, String sessionAlias, String direction,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@QueryProvider(providerClass = CommonQueryProvider.class, entityHelpers = MessageBatchEntity.class)

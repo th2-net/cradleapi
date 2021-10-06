@@ -92,7 +92,6 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withPartitionKey(PAGE, DataTypes.TEXT)
 				.withPartitionKey(SESSION_ALIAS, DataTypes.TEXT)
 				.withPartitionKey(DIRECTION, DataTypes.TEXT)
-				.withPartitionKey(PART, DataTypes.TEXT)
 
 				.withClusteringColumn(MESSAGE_DATE, DataTypes.DATE)
 				.withClusteringColumn(MESSAGE_TIME, DataTypes.TIME)
@@ -126,8 +125,7 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withPartitionKey(PAGE, DataTypes.TEXT)
 
 				.withClusteringColumn(SESSION_ALIAS, DataTypes.TEXT)
-				.withClusteringColumn(DIRECTION, DataTypes.TEXT)
-				.withClusteringColumn(PART, DataTypes.TEXT));
+				.withClusteringColumn(DIRECTION, DataTypes.TEXT));
 	}
 	
 	private void createTestEvents() throws IOException
