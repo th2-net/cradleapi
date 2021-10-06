@@ -94,22 +94,21 @@ public class EventsWorker
 		return result;
 	}
 	
-	public CompletableFuture<ScopeEntity> storeScope(TestEventToStore event, BookId bookId)
+	public CompletableFuture<ScopeEntity> storeScope(TestEventToStore event, BookOperators bookOps)
 	{
-		if (!ops.getScopesCache().store(new CachedScope(bookId.toString(), event.getScope())))
+		if (!bookOps.getScopesCache().store(new CachedScope(bookOps.getBookId().toString(), event.getScope())))
 		{
 			logger.debug("Skipped writing scope of event '{}'", event.getId());
 			return CompletableFuture.completedFuture(null);
 		}
 		
 		logger.debug("Writing scope of event '{}'", event.getId());
-		return ops.getScopeOperator()
-				.write(new ScopeEntity(bookId.getName(), event.getScope()), writeAttrs);
+		return bookOps.getScopeOperator()
+				.write(new ScopeEntity(bookOps.getBookId().getName(), event.getScope()), writeAttrs);
 	}
 	
-	public CompletableFuture<PageScopeEntity> storePageScope(TestEventToStore event, PageId pageId)
+	public CompletableFuture<PageScopeEntity> storePageScope(TestEventToStore event, PageId pageId, BookOperators bookOps)
 	{
-		BookOperators bookOps = getBookOps(pageId.getBookId());
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(event.getStartTimestamp());
 		if (!bookOps.getPageScopesCache().store(new CachedPageScope(pageId.toString(), event.getScope(), CassandraTimeUtils.getPart(ldt))))
 		{

@@ -55,8 +55,8 @@ import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventFilter;
+import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TimeUtils;
@@ -64,7 +64,7 @@ import com.exactpro.cradle.utils.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import java.io.*;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -184,7 +184,12 @@ public class CassandraCradleStorage extends CradleStorage
 		
 		try
 		{
-			ops.getCradleBookOperator().write(bookEntity, writeAttrs);
+			if (!ops.getCradleBookOperator().write(bookEntity, writeAttrs).wasApplied())
+				throw new IOException("Query to insert book '"+bookEntity.getName()+"' was not applied. Probably, book already exists");
+		}
+		catch (IOException e)
+		{
+			throw e;
 		}
 		catch (Exception e)
 		{
@@ -196,8 +201,9 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected void doSwitchToNewPage(BookId bookId, String pageName, Instant timestamp, String comment, PageInfo prevPage) throws CradleStorageException, IOException
 	{
-		PageOperator pageOp = ops.getPageOperator();
-		PageNameOperator pageNameOp = ops.getPageNameOperator();
+		BookOperators bookOps = ops.getOperators(bookId);
+		PageOperator pageOp = bookOps.getPageOperator();
+		PageNameOperator pageNameOp = bookOps.getPageNameOperator();
 		try
 		{
 			PageNameEntity nameEntity = new PageNameEntity(bookId.getName(), pageName, timestamp, comment, null);
@@ -211,6 +217,10 @@ public class CassandraCradleStorage extends CradleStorage
 				pageOp.update(new PageEntity(prevPage), writeAttrs);
 				pageNameOp.update(new PageNameEntity(prevPage), writeAttrs);
 			}
+		}
+		catch (IOException e)
+		{
+			throw e;
 		}
 		catch (Exception e)
 		{
@@ -288,16 +298,17 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	protected void doStoreTestEvent(TestEventToStore event, PageInfo page) throws IOException
+	protected void doStoreTestEvent(TestEventToStore event, PageInfo page) throws IOException, CradleStorageException
 	{
 		PageId pageId = page.getId();
 		BookId bookId = pageId.getBookId();
+		BookOperators bookOps = ops.getOperators(bookId);
 		try
 		{
 			List<TestEventEntity> entities = eventsWorker.createEntities(event, pageId);
 			eventsWorker.storeEntities(entities, bookId).get();
-			eventsWorker.storeScope(event, bookId).get();
-			eventsWorker.storePageScope(event, pageId).get();
+			eventsWorker.storeScope(event, bookOps).get();
+			eventsWorker.storePageScope(event, pageId, bookOps).get();
 		}
 		catch (Exception e)
 		{
@@ -310,6 +321,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		PageId pageId = page.getId();
 		BookId bookId = pageId.getBookId();
+		BookOperators bookOps = ops.getOperators(bookId);
 		return CompletableFuture.supplyAsync(() -> {
 					try
 					{
@@ -321,8 +333,8 @@ public class CassandraCradleStorage extends CradleStorage
 					}
 				})
 				.thenComposeAsync((entities) -> eventsWorker.storeEntities(entities, bookId))
-				.thenComposeAsync((r) -> eventsWorker.storeScope(event, bookId))
-				.thenComposeAsync((r) -> eventsWorker.storePageScope(event, pageId))
+				.thenComposeAsync((r) -> eventsWorker.storeScope(event, bookOps))
+				.thenComposeAsync((r) -> eventsWorker.storePageScope(event, pageId, bookOps))
 				.thenAccept(NOOP);
 	}
 
@@ -507,7 +519,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected long doGetLastSequence(String sessionAlias, Direction direction, BookId bookId)
 			throws IOException, CradleStorageException
 	{
-		
+
 		BookOperators bookOps = ops.getOperators(bookId);
 		MessageBatchOperator mbOp = bookOps.getMessageBatchOperator();
 		PageSessionsOperator psOp = bookOps.getPageSessionsOperator();
@@ -527,7 +539,7 @@ public class CassandraCradleStorage extends CradleStorage
 						"direction '%s'", currentPage.getId().getName(), sessionAlias, direction);
 				throw new CradleStorageException(msg, e);
 			}
-			
+
 			if (lastEntity == null)
 				currentPage = book.getPreviousPage(currentPage.getStarted());
 		}
@@ -621,7 +633,7 @@ public class CassandraCradleStorage extends CradleStorage
 		MappedAsyncPagingIterable<ScopeEntity> entities;
 		try
 		{
-			entities = ops.getScopeOperator().get(bookId.getName(), readAttrs).get();
+			entities = ops.getOperators(bookId).getScopeOperator().get(bookId.getName(), readAttrs).get();
 		}
 		catch (Exception e)
 		{
@@ -729,7 +741,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		return strictReadAttrs;
 	}
-	
+
 	
 //TODO: implement
 //	private CompletableFuture<DetailedMessageBatchEntity> readMessageBatchEntity(StoredMessageId messageId, boolean rawMessage)
@@ -757,14 +769,23 @@ public class CassandraCradleStorage extends CradleStorage
 //			return CompletableFuture.completedFuture(msg);
 //		});
 //	}
-	
+
+	private void checkTimeBoundaries(LocalDateTime fromDateTime, LocalDateTime toDateTime, Instant originalFrom, Instant originalTo)
+			throws CradleStorageException
+	{
+		LocalDate fromDate = fromDateTime.toLocalDate(),
+				toDate = toDateTime.toLocalDate();
+		if (!fromDate.equals(toDate))
+			throw new CradleStorageException("Left and right boundaries should be of the same date, but got '"+originalFrom+"' and '"+originalTo+"'");
+	}
+
 	
 	private Collection<PageInfo> loadPageInfo(BookId bookId) throws IOException
 	{
 		Collection<PageInfo> result = new ArrayList<>();
 		try
 		{
-			for (PageEntity pageEntity : ops.getPageOperator().getAll(bookId.getName(), readAttrs))
+			for (PageEntity pageEntity : ops.getOperators(bookId).getPageOperator().getAll(bookId.getName(), readAttrs))
 				result.add(pageEntity.toPageInfo());
 		}
 		catch (Exception e)

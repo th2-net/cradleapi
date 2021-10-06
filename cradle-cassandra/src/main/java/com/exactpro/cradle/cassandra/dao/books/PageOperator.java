@@ -16,7 +16,7 @@
 
 package com.exactpro.cradle.cassandra.dao.books;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.BOOK;
+import static com.exactpro.cradle.cassandra.StorageConstants.PART;
 import static com.exactpro.cradle.cassandra.StorageConstants.START_DATE;
 import static com.exactpro.cradle.cassandra.StorageConstants.START_TIME;
 
@@ -39,8 +39,8 @@ public interface PageOperator
 	@Select
 	PagingIterable<PageEntity> getAll(String book, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+BOOK+"=:book AND ("+START_DATE+", "+START_TIME+")>(:startDate, :startTime)")
-	PagingIterable<PageEntity> get(String book, LocalDate startDate, LocalTime startTime, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+PART+"=:part AND ("+START_DATE+", "+START_TIME+")>(:startDate, :startTime)")
+	PagingIterable<PageEntity> get(String part, LocalDate startDate, LocalTime startTime, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Update
 	ResultSet update(PageEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);

@@ -41,7 +41,7 @@ public class CradleOperators
 	private final PageNameOperator pageNameOperator;
 	private final SessionsOperator sessionsOperator;
 	private final ScopeOperator scopeOperator;
-	
+
 	private final LimitedCache<CachedSession> sessionsCache;
 	private final LimitedCache<CachedScope> scopesCache;
 	
@@ -57,7 +57,7 @@ public class CradleOperators
 		this.pageNameOperator = dataMapper.pageNameOperator(infoKeyspace, settings.getPagesNamesTable());
 		this.sessionsOperator = dataMapper.sessionsOperator(settings.getCradleInfoKeyspace(), settings.getSessionsTable());
 		this.scopeOperator = dataMapper.scopeOperator(infoKeyspace, settings.getScopesTable());
-		
+
 		this.sessionsCache = new LimitedCache<>(settings.getPageSessionsCacheSize());
 		this.scopesCache = new LimitedCache<>(settings.getScopesCacheSize());
 	}
@@ -72,7 +72,7 @@ public class CradleOperators
 	
 	public BookOperators addOperators(BookId bookId, String keyspace)
 	{
-		BookOperators result = new BookOperators(dataMapper, keyspace, settings);
+		BookOperators result = new BookOperators(bookId, dataMapper, keyspace, settings);
 		bookOps.put(bookId, result);
 		return result;
 	}
@@ -90,19 +90,19 @@ public class CradleOperators
 	public PageNameOperator getPageNameOperator()
 	{
 		return pageNameOperator;
-	}	
-	
+	}
+
 	public SessionsOperator getSessionsOperator()
 	{
 		return sessionsOperator;
 	}
-	
+
 	public ScopeOperator getScopeOperator()
 	{
 		return scopeOperator;
 	}
-	
-	
+
+
 	public LimitedCache<CachedSession> getSessionsCache()
 	{
 		return sessionsCache;

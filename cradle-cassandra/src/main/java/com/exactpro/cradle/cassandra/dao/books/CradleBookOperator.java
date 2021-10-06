@@ -20,6 +20,7 @@ import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Select;
@@ -30,6 +31,6 @@ public interface CradleBookOperator
 	@Select
 	PagingIterable<BookEntity> getAll(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Insert
-	BookEntity write(BookEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	@Insert(ifNotExists = true)
+	ResultSet write(BookEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

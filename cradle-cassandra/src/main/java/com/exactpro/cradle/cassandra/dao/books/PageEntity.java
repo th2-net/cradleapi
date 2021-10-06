@@ -37,8 +37,8 @@ import com.exactpro.cradle.utils.TimeUtils;
 public class PageEntity
 {
 	@PartitionKey(0)
-	@CqlName(BOOK)
-	private String book;
+	@CqlName(PART)
+	private String part;
 	
 	@ClusteringColumn(0)
 	@CqlName(START_DATE)
@@ -65,11 +65,11 @@ public class PageEntity
 	{
 	}
 	
-	public PageEntity(String book, String name, Instant started, String comment, Instant ended)
+	public PageEntity(String part, String name, Instant started, String comment, Instant ended)
 	{
 		LocalDateTime startedLdt = TimeUtils.toLocalTimestamp(started);
 		
-		this.book = book;
+		this.part = part;
 		this.name = name;
 		this.startDate = startedLdt.toLocalDate();
 		this.startTime = startedLdt.toLocalTime();
@@ -89,14 +89,14 @@ public class PageEntity
 	}
 	
 	
-	public String getBook()
+	public String getPart()
 	{
-		return book;
+		return part;
 	}
 	
-	public void setBook(String book)
+	public void setPart(String part)
 	{
-		this.book = book;
+		this.part = part;
 	}
 	
 	
@@ -205,6 +205,6 @@ public class PageEntity
 	
 	public PageInfo toPageInfo()
 	{
-		return new PageInfo(new PageId(new BookId(book), name), getStartTimestamp(), getEndTimestamp(), getComment());
+		return new PageInfo(new PageId(new BookId(part), name), getStartTimestamp(), getEndTimestamp(), getComment());
 	}
 }
