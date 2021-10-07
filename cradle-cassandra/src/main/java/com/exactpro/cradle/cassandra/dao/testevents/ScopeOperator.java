@@ -32,7 +32,7 @@ public interface ScopeOperator
 	CompletableFuture<MappedAsyncPagingIterable<ScopeEntity>> all(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Select
-	CompletableFuture<MappedAsyncPagingIterable<ScopeEntity>> get(String part, 
+	CompletableFuture<MappedAsyncPagingIterable<ScopeEntity>> get(String book,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert

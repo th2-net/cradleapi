@@ -35,14 +35,7 @@ import com.exactpro.cradle.cassandra.dao.books.PageNameOperator;
 import com.exactpro.cradle.cassandra.dao.books.PageOperator;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageSession;
 import com.exactpro.cradle.cassandra.dao.cache.CachedSession;
-import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
-import com.exactpro.cradle.cassandra.dao.messages.MessageBatchIteratorProvider;
-import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
-import com.exactpro.cradle.cassandra.dao.messages.MessageEntityUtils;
-import com.exactpro.cradle.cassandra.dao.messages.PageSessionEntity;
-import com.exactpro.cradle.cassandra.dao.messages.PageSessionsOperator;
-import com.exactpro.cradle.cassandra.dao.messages.SessionEntity;
-import com.exactpro.cradle.cassandra.dao.messages.SessionsOperator;
+import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
@@ -201,9 +194,8 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected void doSwitchToNewPage(BookId bookId, String pageName, Instant timestamp, String comment, PageInfo prevPage) throws CradleStorageException, IOException
 	{
-		BookOperators bookOps = ops.getOperators(bookId);
-		PageOperator pageOp = bookOps.getPageOperator();
-		PageNameOperator pageNameOp = bookOps.getPageNameOperator();
+		PageOperator pageOp = ops.getPageOperator();
+		PageNameOperator pageNameOp = ops.getPageNameOperator();
 		try
 		{
 			PageNameEntity nameEntity = new PageNameEntity(bookId.getName(), pageName, timestamp, comment, null);
@@ -307,7 +299,7 @@ public class CassandraCradleStorage extends CradleStorage
 		{
 			List<TestEventEntity> entities = eventsWorker.createEntities(event, pageId);
 			eventsWorker.storeEntities(entities, bookId).get();
-			eventsWorker.storeScope(event, bookOps).get();
+			eventsWorker.storeScope(event, ops).get();
 			eventsWorker.storePageScope(event, pageId, bookOps).get();
 		}
 		catch (Exception e)
@@ -333,7 +325,7 @@ public class CassandraCradleStorage extends CradleStorage
 					}
 				})
 				.thenComposeAsync((entities) -> eventsWorker.storeEntities(entities, bookId))
-				.thenComposeAsync((r) -> eventsWorker.storeScope(event, bookOps))
+				.thenComposeAsync((r) -> eventsWorker.storeScope(event, ops))
 				.thenComposeAsync((r) -> eventsWorker.storePageScope(event, pageId, bookOps))
 				.thenAccept(NOOP);
 	}
@@ -484,7 +476,11 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter, BookInfo book)
 			throws CradleStorageException
 	{
-		return null;  //TODO: implement
+		StoredMessagesIteratorProvider provider =
+				new StoredMessagesIteratorProvider("get messages filtered by " + filter, filter,
+						ops.getOperators(book.getId()), book, readAttrs);
+		return provider.nextIterator()
+				.thenApplyAsync(r -> () -> new CassandraCradleResultSet<>(r, provider));
 	}
 	
 	@Override
@@ -496,7 +492,7 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		catch (Exception e)
 		{
-			throw new IOException("Error while getting messages filtered by "+filter, e);
+			throw new IOException("Error while getting message batches filtered by "+filter, e);
 		}
 	}
 	
@@ -616,7 +612,7 @@ public class CassandraCradleStorage extends CradleStorage
 		MappedAsyncPagingIterable<ScopeEntity> entities;
 		try
 		{
-			entities = ops.getOperators(bookId).getScopeOperator().get(bookId.getName(), readAttrs).get();
+			entities = ops.getScopeOperator().get(bookId.getName(), readAttrs).get();
 		}
 		catch (Exception e)
 		{
@@ -740,7 +736,7 @@ public class CassandraCradleStorage extends CradleStorage
 		Collection<PageInfo> result = new ArrayList<>();
 		try
 		{
-			for (PageEntity pageEntity : ops.getOperators(bookId).getPageOperator().getAll(bookId.getName(), readAttrs))
+			for (PageEntity pageEntity : ops.getPageOperator().getAll(bookId.getName(), readAttrs))
 				result.add(pageEntity.toPageInfo());
 		}
 		catch (Exception e)
