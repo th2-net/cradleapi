@@ -35,10 +35,6 @@ public class BookOperators
 {
 	private final BookId bookId;
 
-	private final PageOperator pageOperator;
-	private final PageNameOperator pageNameOperator;
-	private final ScopeOperator scopeOp;
-
 	private final MessageBatchOperator messageBatchOperator;
 	private final PageSessionsOperator pageSessionsOperator;
 	private final TestEventOperator testEventOperator;
@@ -46,16 +42,12 @@ public class BookOperators
 	private final IntervalOperator intervalOperator;
 	
 	private final LimitedCache<CachedPageSession> pageSessionsCache;
-	private final LimitedCache<CachedScope> scopesCache;
 	private final LimitedCache<CachedPageScope> pageScopesCache;
 	
 	public BookOperators(BookId bookId, CassandraDataMapper dataMapper, String keyspace, CassandraStorageSettings settings)
 	{
 		this.bookId = bookId;
 
-		pageOperator = dataMapper.pageOperator(keyspace, settings.getPagesTable());
-		pageNameOperator = dataMapper.pageNameOperator(keyspace, settings.getPagesNamesTable());
-		scopeOp = dataMapper.scopeOperator(keyspace, settings.getScopesTable());
 		messageBatchOperator = dataMapper.messageBatchOperator(keyspace, settings.getMessagesTable());
 		pageSessionsOperator = dataMapper.pageSessionsOperator(keyspace, settings.getPageSessionsTable());
 		testEventOperator = dataMapper.testEventOperator(keyspace, settings.getTestEventsTable());
@@ -63,29 +55,12 @@ public class BookOperators
 		intervalOperator = dataMapper.intervalOperator(keyspace, settings.getIntervalsTable());
 		
 		pageSessionsCache = new LimitedCache<>(settings.getPageSessionsCacheSize());
-		scopesCache = new LimitedCache<>(settings.getScopesCacheSize());
 		pageScopesCache = new LimitedCache<>(settings.getPageScopesCacheSize());
 	}
 
 	public BookId getBookId()
 	{
 		return bookId;
-	}
-
-
-	public PageOperator getPageOperator()
-	{
-		return pageOperator;
-	}
-
-	public PageNameOperator getPageNameOperator()
-	{
-		return pageNameOperator;
-	}
-
-	public ScopeOperator getScopeOperator()
-	{
-		return scopeOp;
 	}
 
 	public MessageBatchOperator getMessageBatchOperator()
@@ -117,11 +92,6 @@ public class BookOperators
 	public LimitedCache<CachedPageSession> getPageSessionsCache()
 	{
 		return pageSessionsCache;
-	}
-
-	public LimitedCache<CachedScope> getScopesCache()
-	{
-		return scopesCache;
 	}
 
 	public LimitedCache<CachedPageScope> getPageScopesCache()

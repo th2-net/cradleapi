@@ -20,14 +20,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.Direction;
-import com.exactpro.cradle.Order;
-import com.exactpro.cradle.PageId;
-import com.exactpro.cradle.filters.FilterForAny;
-import com.exactpro.cradle.filters.FilterForEquals;
-import com.exactpro.cradle.filters.FilterForGreater;
-import com.exactpro.cradle.filters.FilterForLess;
+import com.exactpro.cradle.*;
+import com.exactpro.cradle.filters.*;
 
 public class StoredMessageFilter
 {

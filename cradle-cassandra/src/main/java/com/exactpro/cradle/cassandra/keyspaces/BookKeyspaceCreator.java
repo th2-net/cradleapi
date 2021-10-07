@@ -35,13 +35,8 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 	@Override
 	protected void createTables() throws IOException
 	{
-		createPages();
-		createPagesNames();
-		createScopes();
-
 		createMessages();
 		createPageSessions();
-		createSessions();
 
 		createTestEvents();
 		createPageScopes();
@@ -50,40 +45,6 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 		createIntervals();
 	}
 
-
-	private void createPages() throws IOException
-	{
-		String tableName = getSettings().getPagesTable();
-		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(PART, DataTypes.TEXT)
-				.withClusteringColumn(START_DATE, DataTypes.DATE)
-				.withClusteringColumn(START_TIME, DataTypes.TIME)
-				.withColumn(NAME, DataTypes.TEXT)
-				.withColumn(COMMENT, DataTypes.TEXT)
-				.withColumn(END_DATE, DataTypes.DATE)
-				.withColumn(END_TIME, DataTypes.TIME));
-	}
-	
-	private void createPagesNames() throws IOException
-	{
-		String tableName = getSettings().getPagesNamesTable();
-		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(PART, DataTypes.TEXT)
-				.withPartitionKey(NAME, DataTypes.TEXT)
-				.withColumn(START_DATE, DataTypes.DATE)
-				.withColumn(START_TIME, DataTypes.TIME)
-				.withColumn(COMMENT, DataTypes.TEXT)
-				.withColumn(END_DATE, DataTypes.DATE)
-				.withColumn(END_TIME, DataTypes.TIME));
-	}
-
-	private void createScopes() throws IOException
-	{
-		String tableName = getSettings().getScopesTable();
-		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(PART, DataTypes.TEXT)
-				.withClusteringColumn(SCOPE, DataTypes.TEXT));
-	}
 
 	private void createMessages() throws IOException
 	{
@@ -108,14 +69,6 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
 				.withColumn(LABELS, DataTypes.setOf(DataTypes.TEXT))
 				.withColumn(CONTENT, DataTypes.BLOB));
-	}
-
-	private void createSessions() throws IOException
-	{
-		String tableName = getSettings().getSessionsTable();
-		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(PAGE, DataTypes.TEXT)
-				.withClusteringColumn(SESSION_ALIAS, DataTypes.TEXT));
 	}
 
 	private void createPageSessions() throws IOException

@@ -94,17 +94,17 @@ public class EventsWorker
 		return result;
 	}
 	
-	public CompletableFuture<ScopeEntity> storeScope(TestEventToStore event, BookOperators bookOps)
+	public CompletableFuture<ScopeEntity> storeScope(TestEventToStore event, CradleOperators ops)
 	{
-		if (!bookOps.getScopesCache().store(new CachedScope(bookOps.getBookId().toString(), event.getScope())))
+		if (!ops.getScopesCache().store(new CachedScope(event.getBookId().getName(), event.getScope())))
 		{
 			logger.debug("Skipped writing scope of event '{}'", event.getId());
 			return CompletableFuture.completedFuture(null);
 		}
 		
 		logger.debug("Writing scope of event '{}'", event.getId());
-		return bookOps.getScopeOperator()
-				.write(new ScopeEntity(bookOps.getBookId().getName(), event.getScope()), writeAttrs);
+		return ops.getScopeOperator()
+				.write(new ScopeEntity(event.getBookId().getName(), event.getScope()), writeAttrs);
 	}
 	
 	public CompletableFuture<PageScopeEntity> storePageScope(TestEventToStore event, PageId pageId, BookOperators bookOps)

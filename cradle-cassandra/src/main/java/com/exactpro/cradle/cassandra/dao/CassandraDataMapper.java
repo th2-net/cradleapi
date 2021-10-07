@@ -39,9 +39,6 @@ public interface CassandraDataMapper
 	@DaoFactory
 	SessionsOperator sessionsOperator(@DaoKeyspace String keyspace, @DaoTable String sessionsTable);
 	
-	
-	//*** Operators for book's keyspace ***
-	
 	@DaoFactory
 	PageOperator pageOperator(@DaoKeyspace String keyspace, @DaoTable String pagesTable);
 	
@@ -50,7 +47,8 @@ public interface CassandraDataMapper
 	
 	@DaoFactory
 	ScopeOperator scopeOperator(@DaoKeyspace String keyspace, @DaoTable String scopesTable);
-	
+
+	//*** Operators for book's keyspace ***
 	
 	@DaoFactory
 	TestEventOperator testEventOperator(@DaoKeyspace String keyspace, @DaoTable String testEventsTable);

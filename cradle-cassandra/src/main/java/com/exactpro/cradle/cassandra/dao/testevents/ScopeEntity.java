@@ -16,20 +16,19 @@
 
 package com.exactpro.cradle.cassandra.dao.testevents;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.PART;
-import static com.exactpro.cradle.cassandra.StorageConstants.SCOPE;
-
 import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
+
 @Entity
 public class ScopeEntity
 {
 	@PartitionKey(0)
-	@CqlName(PART)
-	private String part;
+	@CqlName(BOOK)
+	private String book;
 	
 	@ClusteringColumn(0)
 	@CqlName(SCOPE)
@@ -39,24 +38,23 @@ public class ScopeEntity
 	{
 	}
 	
-	public ScopeEntity(String part, String scope)
+	public ScopeEntity(String book, String scope)
 	{
-		this.part = part;
+		this.book = book;
 		this.scope = scope;
 	}
-	
-	
-	public String getPart()
+
+
+	public String getBook()
 	{
-		return part;
+		return book;
 	}
-	
-	public void setPart(String part)
+
+	public void setBook(String book)
 	{
-		this.part = part;
+		this.book = book;
 	}
-	
-	
+
 	public String getScope()
 	{
 		return scope;

@@ -20,19 +20,19 @@ import java.util.Objects;
 
 public class CachedScope
 {
-	private final String part,
+	private final String book,
 			scope;
 	
-	public CachedScope(String part, String scope)
+	public CachedScope(String book, String scope)
 	{
-		this.part = part;
+		this.book = book;
 		this.scope = scope;
 	}
 	
 	@Override
 	public int hashCode()
 	{
-		return Objects.hash(part, scope);
+		return Objects.hash(book, scope);
 	}
 	
 	@Override
@@ -45,19 +45,19 @@ public class CachedScope
 		if (getClass() != obj.getClass())
 			return false;
 		CachedScope other = (CachedScope) obj;
-		return Objects.equals(part, other.part) && Objects.equals(scope, other.scope);
+		return Objects.equals(book, other.book) && Objects.equals(scope, other.scope);
 	}
 
 	@Override
 	public String toString()
 	{
-		return "CachedScope [part=" + part + ", scope=" + scope + "]";
+		return "CachedScope [book=" + book + ", scope=" + scope + "]";
 	}
 	
 	
-	public String getPart()
+	public String getBook()
 	{
-		return part;
+		return book;
 	}
 	
 	public String getScope()
