@@ -241,7 +241,8 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 		
 		BatchedStoredTestEvent result = new BatchedStoredTestEvent(event, this);
 		events.put(result.getId(), result);
-		messageIds.addAll(result.getMessageIds());
+		if (result.getMessageIds() != null)
+			messageIds.addAll(result.getMessageIds());
 		if (!isRoot)
 			children.computeIfAbsent(parentId, k -> new ArrayList<>()).add(result);
 		else
