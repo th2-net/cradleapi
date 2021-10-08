@@ -48,48 +48,9 @@ import com.exactpro.cradle.utils.TestEventUtils;
  * This class provides basic set of fields and is parent for classes that write {@link StoredTestEvent} to Cassandra
  */
 @Entity
-public class TestEventEntity
+public class TestEventEntity extends TestEventMetadataEntity
 {
 	private static final Logger logger = LoggerFactory.getLogger(TestEventEntity.class);
-	
-	@PartitionKey(0)
-	@CqlName(INSTANCE_ID)
-	private UUID instanceId;
-	
-	@PartitionKey(1)
-	@CqlName(START_DATE)
-	private LocalDate startDate;
-
-	@ClusteringColumn(0)
-	@CqlName(START_TIME)
-	private LocalTime startTime;
-
-	@ClusteringColumn(1)
-	@CqlName(ID)
-	private String id;
-	
-	@CqlName(NAME)
-	private String name;
-	
-	@CqlName(TYPE)
-	private String type;
-	
-	@CqlName(ROOT)
-	private boolean root;
-	
-	@CqlName(PARENT_ID)
-	private String parentId;
-
-	@CqlName(EVENT_BATCH)
-	private boolean eventBatch;
-	
-	@CqlName(END_DATE)
-	private LocalDate endDate;
-	@CqlName(END_TIME)
-	private LocalTime endTime;
-	
-	@CqlName(SUCCESS)
-	private boolean success;
 	
 	@CqlName(COMPRESSED)
 	private boolean compressed;
@@ -104,39 +65,21 @@ public class TestEventEntity
 	
 	public TestEventEntity(StoredTestEvent event, UUID instanceId) throws IOException
 	{
-		logger.debug("Creating Entity from test event");
-		
-		StoredTestEventId parentId = event.getParentId();
-		
-		this.setInstanceId(instanceId);
-		this.setId(event.getId().toString());
-		this.setName(event.getName());
-		this.setType(event.getType());
-		this.setRoot(parentId == null);
-		this.parentId = parentId != null ? parentId.toString() : ROOT_EVENT_PARENT_ID;
-		
+		super(event, instanceId);
+		logger.debug("Creating TestEventEntity from test event");
+
 		byte[] content;
 		if (event instanceof StoredTestEventBatch)
-		{
 			content = TestEventUtils.serializeTestEvents(((StoredTestEventBatch)event).getTestEvents());
-			this.setEventBatch(true);
-		}
 		else
-		{
 			content = ((StoredTestEventSingle)event).getContent();
-			this.setEventBatch(false);
-		}
-		
-		this.setStartTimestamp(event.getStartTimestamp());
-		this.setEndTimestamp(event.getEndTimestamp());
-		this.setSuccess(event.isSuccess());
-		
+
 		boolean toCompress = this.isNeedToCompress(content);
 		if (toCompress)
 		{
 			try
 			{
-				logger.trace("Compressing content of test event", event.getId());
+				logger.trace("Compressing content of test event '{}'", event.getId());
 				content = CompressionUtils.compressData(content);
 			}
 			catch (IOException e)
@@ -157,184 +100,6 @@ public class TestEventEntity
 	}
 
 
-	public UUID getInstanceId()
-	{
-		return instanceId;
-	}
-	
-	public void setInstanceId(UUID instanceId)
-	{
-		this.instanceId = instanceId;
-	}
-	
-	
-	public String getId()
-	{
-		return id;
-	}
-	
-	public void setId(String id)
-	{
-		this.id = id;
-	}
-	
-	
-	public String getName()
-	{
-		return name;
-	}
-	
-	public void setName(String name)
-	{
-		this.name = name;
-	}
-	
-	
-	public String getType()
-	{
-		return type;
-	}
-	
-	public void setType(String type)
-	{
-		this.type = type;
-	}
-	
-	
-	public boolean isRoot()
-	{
-		return root;
-	}
-	
-	public void setRoot(boolean root)
-	{
-		this.root = root;
-	}
-	
-	
-	public String getParentId()
-	{
-		return parentId;
-	}
-	
-	public void setParentId(String parentId)  //This is called by Cassandra Driver and is not supposed to be called explicitly
-	{
-		this.parentId = parentId != null && parentId.isEmpty() ? null : parentId;
-	}
-	
-	
-	public boolean isEventBatch()
-	{
-		return eventBatch;
-	}
-	
-	public void setEventBatch(boolean eventBatch)
-	{
-		this.eventBatch = eventBatch;
-	}
-	
-	
-	public LocalDate getStartDate()
-	{
-		return startDate;
-	}
-	
-	public void setStartDate(LocalDate startDate)
-	{
-		this.startDate = startDate;
-	}	
-	
-	public LocalTime getStartTime()
-	{
-		return startTime;
-	}
-	
-	public void setStartTime(LocalTime startTime)
-	{
-		this.startTime = startTime;
-	}
-	
-	@Transient
-	public Instant getStartTimestamp()
-	{
-		LocalDate sd = getStartDate();
-		LocalTime st = getStartTime();
-		if (sd == null || st == null)
-			return null;
-		return LocalDateTime.of(sd, st).toInstant(CassandraCradleStorage.TIMEZONE_OFFSET);
-	}
-	
-	@Transient
-	public void setStartTimestamp(Instant timestamp)
-	{
-		if (timestamp == null)
-		{
-			setStartDate(null);
-			setStartTime(null);
-			return;
-		}
-		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, CassandraCradleStorage.TIMEZONE_OFFSET);
-		setStartDate(ldt.toLocalDate());
-		setStartTime(ldt.toLocalTime());
-	}
-	
-	
-	public LocalDate getEndDate()
-	{
-		return endDate;
-	}
-	
-	public void setEndDate(LocalDate endDate)
-	{
-		this.endDate = endDate;
-	}
-	
-	public LocalTime getEndTime()
-	{
-		return endTime;
-	}
-	
-	public void setEndTime(LocalTime endTime)
-	{
-		this.endTime = endTime;
-	}
-	
-	@Transient
-	public Instant getEndTimestamp()
-	{
-		LocalDate ed = getEndDate();
-		LocalTime et = getEndTime();
-		if (ed == null || et == null)
-			return null;
-		return LocalDateTime.of(ed, et).toInstant(CassandraCradleStorage.TIMEZONE_OFFSET);
-	}
-	
-	@Transient
-	public void setEndTimestamp(Instant timestamp)
-	{
-		if (timestamp == null)
-		{
-			setEndDate(null);
-			setEndTime(null);
-			return;
-		}
-		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, CassandraCradleStorage.TIMEZONE_OFFSET);
-		setEndDate(ldt.toLocalDate());
-		setEndTime(ldt.toLocalTime());
-	}
-	
-	
-	public boolean isSuccess()
-	{
-		return success;
-	}
-	
-	public void setSuccess(boolean success)
-	{
-		this.success = success;
-	}
-	
-	
 	public boolean isCompressed()
 	{
 		return compressed;
@@ -363,15 +128,15 @@ public class TestEventEntity
 		if (isEventBatch())
 			return null;
 		
-		StoredTestEventId eventId = new StoredTestEventId(id);
+		StoredTestEventId eventId = new StoredTestEventId(getId());
 		byte[] eventContent = TestEventUtils.getTestEventContentBytes(content, compressed, eventId);
 		return new StoredTestEventSingle(new TestEventToStoreBuilder().id(eventId)
-				.name(name)
-				.type(type)
-				.parentId(parentId != null ? new StoredTestEventId(parentId) : null)
+				.name(getName())
+				.type(getType())
+				.parentId(getParentId() != null ? new StoredTestEventId(getParentId()) : null)
 				.startTimestamp(getStartTimestamp())
 				.endTimestamp(getEndTimestamp())
-				.success(success)
+				.success(isSuccess())
 				.content(eventContent)
 				.build());
 	}
@@ -381,12 +146,12 @@ public class TestEventEntity
 		if (!isEventBatch())
 			return null;
 		
-		StoredTestEventId eventId = new StoredTestEventId(id);
+		StoredTestEventId eventId = new StoredTestEventId(getId());
 		StoredTestEventBatch result = new StoredTestEventBatch(new TestEventBatchToStoreBuilder()
 				.id(eventId)
-				.name(name)
-				.type(type)
-				.parentId(parentId != null ? new StoredTestEventId(parentId) : null)
+				.name(getName())
+				.type(getType())
+				.parentId(getParentId() != null ? new StoredTestEventId(getParentId()) : null)
 				.build());
 		try
 		{

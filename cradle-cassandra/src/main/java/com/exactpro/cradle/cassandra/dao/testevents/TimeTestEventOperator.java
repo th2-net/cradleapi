@@ -17,10 +17,8 @@
 package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
@@ -36,9 +34,21 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 @Dao
 public interface TimeTestEventOperator
 {
+	String METADATA_SELECT_START =
+			"SELECT " + INSTANCE_ID + ',' + START_DATE + ',' + START_TIME + ',' + ID + ',' + NAME + ',' + TYPE +
+					',' + EVENT_BATCH + ',' + END_DATE + ',' + END_TIME + ',' + SUCCESS + ',' + EVENT_COUNT +
+					',' + EVENT_BATCH_METADATA + ',' + ROOT + ',' + PARENT_ID;
+
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " +
 			START_DATE + "=:startDate AND " + START_TIME + ">=:timeFrom AND " + START_TIME + "<=:timeTo")
 	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getTestEventsDirect(UUID instanceId,
+			LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+	@Query(METADATA_SELECT_START +
+			" FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " +
+			START_DATE + "=:startDate AND " + START_TIME + ">=:timeFrom AND " + START_TIME + "<=:timeTo")
+	CompletableFuture<MappedAsyncPagingIterable<TestEventMetadataEntity>> getTestEventsMetadataDirect(UUID instanceId,
 			LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
@@ -48,13 +58,28 @@ public interface TimeTestEventOperator
 			LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
+	@Query(METADATA_SELECT_START +
+			" FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " + PARENT_ID + "=:parentId AND " +
+			START_DATE + "=:startDate AND " + START_TIME + ">=:timeFrom AND " + START_TIME + "<=:timeTo")
+	CompletableFuture<MappedAsyncPagingIterable<TestEventMetadataEntity>> getTestEventsMetadataDirect(UUID instanceId,
+			String parentId, LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " +
 			START_DATE + "=:startDate AND " + START_TIME + ">=:timeFrom AND " + START_TIME + "<=:timeTo ORDER BY " +
 			START_TIME + " DESC, " + ID + " DESC")
 	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getTestEventsReverse(UUID instanceId,
 			LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
+
+	@Query(METADATA_SELECT_START +
+			" FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " +
+			START_DATE + "=:startDate AND " + START_TIME + ">=:timeFrom AND " + START_TIME + "<=:timeTo ORDER BY " +
+			START_TIME + " DESC, " + ID + " DESC")
+	CompletableFuture<MappedAsyncPagingIterable<TestEventMetadataEntity>> getTestEventsMetadataReverse(UUID instanceId,
+			LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
 // TODO When using filtration by index and ORDER BY clause in query, cassandra throws exception 
 //  'ORDER BY with 2ndary indexes is not supported.'
 //	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " + START_DATE + "=:startDate AND "
