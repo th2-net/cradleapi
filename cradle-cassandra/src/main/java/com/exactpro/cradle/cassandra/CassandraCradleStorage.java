@@ -168,7 +168,7 @@ public class CassandraCradleStorage extends CradleStorage
 					.setPageSize(resultPageSize);
 
 			LinkerSupplies supplies =
-					new LinkerSupplies(ops.getTestEventMessagesOperator(), ops.getMessageTestEventOperator(),
+					new LinkerSupplies(ops.getTestEventOperator(), ops.getTimeTestEventOperator(), ops.getMessageTestEventOperator(),
 							ops.getTestEventMessagesConverter(), ops.getMessageTestEventConverter());
 			testEventsMessagesLinker =
 					new CassandraTestEventsMessagesLinker(supplies, instanceUuid, readAttrs, semaphore, selectExecutor,
@@ -324,30 +324,30 @@ public class CassandraCradleStorage extends CradleStorage
 		return failEventAndParents(event.getParentId());
 	}
 
-	@Override
-	protected void doStoreTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId,
-			Collection<StoredMessageId> messageIds) throws IOException
-	{
-		try
-		{
-			doStoreTestEventMessagesLinkAsync(eventId, batchId, messageIds).get();
-		}
-		catch (Exception e)
-		{
-			throw new IOException(
-					"Error while storing link between test event " + eventId + " and " + messageIds.size() +
-							" message(s)", e);
-		}
-	}
-
-	@Override
-	protected CompletableFuture<Void> doStoreTestEventMessagesLinkAsync(StoredTestEventId eventId,
-			StoredTestEventId batchId, Collection<StoredMessageId> messageIds)
-	{
-		List<String> messageIdsStrings = messageIds.stream().map(StoredMessageId::toString).collect(toList());
-		String eventIdString = eventId.toString();
-		return CompletableFuture.allOf(storeMessagesOfTestEvent(eventIdString, messageIdsStrings));
-	}
+//	@Override
+//	protected void doStoreTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId,
+//			Collection<StoredMessageId> messageIds) throws IOException
+//	{
+//		try
+//		{
+//			doStoreTestEventMessagesLinkAsync(eventId, batchId, messageIds).get();
+//		}
+//		catch (Exception e)
+//		{
+//			throw new IOException(
+//					"Error while storing link between test event " + eventId + " and " + messageIds.size() +
+//							" message(s)", e);
+//		}
+//	}
+//
+//	@Override
+//	protected CompletableFuture<Void> doStoreTestEventMessagesLinkAsync(StoredTestEventId eventId,
+//			StoredTestEventId batchId, Collection<StoredMessageId> messageIds)
+//	{
+//		List<String> messageIdsStrings = messageIds.stream().map(StoredMessageId::toString).collect(toList());
+//		String eventIdString = eventId.toString();
+//		return CompletableFuture.allOf(storeMessagesOfTestEvent(eventIdString, messageIdsStrings));
+//	}
 
 	@Override
 	protected StoredMessage doGetMessage(StoredMessageId id) throws IOException
@@ -984,29 +984,29 @@ public class CassandraCradleStorage extends CradleStorage
 		});
 	}
 
-	protected CompletableFuture<Void> storeMessagesOfTestEvent(String eventId, List<String> messageIds)
-	{
-		List<CompletableFuture<TestEventMessagesEntity>> futures = new ArrayList<>();
-		TestEventMessagesOperator op = ops.getTestEventMessagesOperator();
-		int msgsSize = messageIds.size();
-		for (int left = 0; left < msgsSize; left++)
-		{
-			int right = min(left + TEST_EVENTS_MSGS_LINK_MAX_MSGS, msgsSize);
-			Set<String> curMsgsIds = new HashSet<>(messageIds.subList(left, right));
-			logger.trace("Linking {} message(s) to test event {}", curMsgsIds.size(), eventId);
-
-			TestEventMessagesEntity entity = new TestEventMessagesEntity();
-			entity.setInstanceId(getInstanceUuid());
-			entity.setEventId(eventId);
-			entity.setMessageIds(curMsgsIds);
-
-			futures.add(new AsyncOperator<TestEventMessagesEntity>(semaphore)
-					.getFuture(() -> op.writeMessages(entity, writeAttrs)));
-
-			left = right - 1;
-		}
-		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-	}
+//	protected CompletableFuture<Void> storeMessagesOfTestEvent(String eventId, List<String> messageIds)
+//	{
+//		List<CompletableFuture<TestEventMessagesEntity>> futures = new ArrayList<>();
+//		TestEventMessagesOperator op = ops.getTestEventMessagesOperator();
+//		int msgsSize = messageIds.size();
+//		for (int left = 0; left < msgsSize; left++)
+//		{
+//			int right = min(left + TEST_EVENTS_MSGS_LINK_MAX_MSGS, msgsSize);
+//			Set<String> curMsgsIds = new HashSet<>(messageIds.subList(left, right));
+//			logger.trace("Linking {} message(s) to test event {}", curMsgsIds.size(), eventId);
+//
+//			TestEventMessagesEntity entity = new TestEventMessagesEntity();
+//			entity.setInstanceId(getInstanceUuid());
+//			entity.setEventId(eventId);
+//			entity.setMessageIds(curMsgsIds);
+//
+//			futures.add(new AsyncOperator<TestEventMessagesEntity>(semaphore)
+//					.getFuture(() -> op.writeMessages(entity, writeAttrs)));
+//
+//			left = right - 1;
+//		}
+//		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+//	}
 
 	protected CompletableFuture<Void> storeTestEventOfMessages(List<String> messageIds, String eventId,
 			StoredTestEventId batchId)

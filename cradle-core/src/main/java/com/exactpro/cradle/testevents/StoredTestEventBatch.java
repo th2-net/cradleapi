@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import com.exactpro.cradle.messages.StoredMessageId;
 import org.apache.commons.lang3.ArrayUtils;
 
 import com.exactpro.cradle.messages.MessageToStore;
@@ -49,7 +50,8 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 			endTimestamp;
 	private boolean success = true;
 	private long batchSize = 0;
-	
+	private final Collection<StoredMessageId> messageIds = new ArrayList<>();
+
 	public StoredTestEventBatch(TestEventBatchToStore batchData, long maxBatchSize) throws CradleStorageException
 	{
 		super(batchData.getId() != null ? batchData.getId() : new StoredTestEventId(UUID.randomUUID().toString()),
@@ -239,6 +241,7 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 		
 		BatchedStoredTestEvent result = new BatchedStoredTestEvent(event, this);
 		events.put(result.getId(), result);
+		messageIds.addAll(result.getMessageIds());
 		if (!isRoot)
 			children.computeIfAbsent(parentId, k -> new ArrayList<>()).add(result);
 		else
@@ -268,5 +271,10 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 		if (!event.isSuccess()) {
 			success = false;
         }
+	}
+
+	public Collection<StoredMessageId> getMessageIds()
+	{
+		return messageIds;
 	}
 }

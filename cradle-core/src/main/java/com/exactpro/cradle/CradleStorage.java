@@ -72,9 +72,9 @@ public abstract class CradleStorage
 	protected abstract CompletableFuture<Void> doStoreTestEventAsync(StoredTestEvent event);
 	protected abstract void doUpdateParentTestEvents(StoredTestEvent event) throws IOException;
 	protected abstract CompletableFuture<Void> doUpdateParentTestEventsAsync(StoredTestEvent event);
-	protected abstract void doStoreTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messageIds) throws IOException;
-	protected abstract CompletableFuture<Void> doStoreTestEventMessagesLinkAsync(StoredTestEventId eventId, StoredTestEventId batchId, 
-			Collection<StoredMessageId> messageIds);
+//	protected abstract void doStoreTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messageIds) throws IOException;
+//	protected abstract CompletableFuture<Void> doStoreTestEventMessagesLinkAsync(StoredTestEventId eventId, StoredTestEventId batchId,
+//			Collection<StoredMessageId> messageIds);
 	protected abstract StoredMessage doGetMessage(StoredMessageId id) throws IOException;
 	protected abstract CompletableFuture<StoredMessage> doGetMessageAsync(StoredMessageId id);
 	protected abstract Collection<StoredMessage> doGetMessageBatch(StoredMessageId id) throws IOException;
@@ -317,39 +317,39 @@ public abstract class CradleStorage
 		return CompletableFuture.allOf(result1, result2);
 	}
 
-	/**
-	 * Writes to storage the links between given test event and messages
-	 * @param eventId ID of stored test event
-	 * @param batchId ID of batch where event is stored, if applicable
-	 * @param messagesIds collection of stored message IDs
-	 * @throws IOException if data writing failed
-	 */
-	public final void storeTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messagesIds) throws IOException
-	{
-		logger.debug("Storing links between test event {} and {} message(s)", eventId, messagesIds.size());
-		doStoreTestEventMessagesLink(eventId, batchId, messagesIds);
-		logger.debug("Links between test event {} and {} message(s) have been stored", eventId, messagesIds.size());
-	}
+//	/**
+//	 * Writes to storage the links between given test event and messages
+//	 * @param eventId ID of stored test event
+//	 * @param batchId ID of batch where event is stored, if applicable
+//	 * @param messagesIds collection of stored message IDs
+//	 * @throws IOException if data writing failed
+//	 */
+//	public final void storeTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messagesIds) throws IOException
+//	{
+//		logger.debug("Storing links between test event {} and {} message(s)", eventId, messagesIds.size());
+//		doStoreTestEventMessagesLink(eventId, batchId, messagesIds);
+//		logger.debug("Links between test event {} and {} message(s) have been stored", eventId, messagesIds.size());
+//	}
 
-	/**
-	 * Asynchronously writes to storage the links between given test event and messages
-	 * @param eventId ID of stored test event
-	 * @param batchId ID of batch where event is stored, if applicable
-	 * @param messagesIds collection of stored message IDs
-	 * @return future to get know if storing was successful
-	 */
-	public final CompletableFuture<Void> storeTestEventMessagesLinkAsync(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messagesIds)
-	{
-		logger.debug("Storing links between test event {} and {} message(s) asynchronously", eventId, messagesIds.size());
-		return doStoreTestEventMessagesLinkAsync(eventId, batchId, messagesIds)
-				.whenComplete((r, error) -> {
-					if (error != null)
-						logger.error("Error while storing links between test event "+eventId+" and "+messagesIds.size()+" message(s) asynchronously", error);
-					else
-						logger.debug("Links between test event {} and {} message(s) have been stored asynchronously", eventId, messagesIds.size());
-				});
-
-	}
+//	/**
+//	 * Asynchronously writes to storage the links between given test event and messages
+//	 * @param eventId ID of stored test event
+//	 * @param batchId ID of batch where event is stored, if applicable
+//	 * @param messagesIds collection of stored message IDs
+//	 * @return future to get know if storing was successful
+//	 */
+//	public final CompletableFuture<Void> storeTestEventMessagesLinkAsync(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messagesIds)
+//	{
+//		logger.debug("Storing links between test event {} and {} message(s) asynchronously", eventId, messagesIds.size());
+//		return doStoreTestEventMessagesLinkAsync(eventId, batchId, messagesIds)
+//				.whenComplete((r, error) -> {
+//					if (error != null)
+//						logger.error("Error while storing links between test event "+eventId+" and "+messagesIds.size()+" message(s) asynchronously", error);
+//					else
+//						logger.debug("Links between test event {} and {} message(s) have been stored asynchronously", eventId, messagesIds.size());
+//				});
+//
+//	}
 	
 	/**
 	 * Retrieves message data stored under given ID

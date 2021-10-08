@@ -16,7 +16,10 @@
 
 package com.exactpro.cradle.testevents;
 
+import com.exactpro.cradle.messages.StoredMessageId;
+
 import java.time.Instant;
+import java.util.Collection;
 
 /**
  * Object to hold information about one test event prepared to be stored in Cradle
@@ -27,7 +30,7 @@ public class TestEventToStore extends MinimalTestEventToStore implements StoredT
 		endTimestamp;
 	private boolean success;
 	private byte[] content;
-	
+	private Collection<StoredMessageId> messageIds;
 	
 	public static TestEventToStoreBuilder builder()
 	{
@@ -80,5 +83,16 @@ public class TestEventToStore extends MinimalTestEventToStore implements StoredT
 	public void setContent(byte[] content)
 	{
 		this.content = content;
+	}
+
+	@Override
+	public Collection<StoredMessageId> getMessageIds()
+	{
+		return messageIds;
+	}
+
+	public void setMessageIds(Collection<StoredMessageId> messageIds)
+	{
+		this.messageIds = messageIds;
 	}
 }

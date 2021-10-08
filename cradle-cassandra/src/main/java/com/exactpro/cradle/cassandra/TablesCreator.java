@@ -181,6 +181,7 @@ public class TablesCreator
 				.withColumn(CONTENT, DataTypes.BLOB)
 				.withColumn(STORED_DATE, DataTypes.DATE)
 				.withColumn(STORED_TIME, DataTypes.TIME)
+				.withColumn(MESSAGE_IDS, DataTypes.BLOB)
 				.withClusteringOrder(START_TIME, ClusteringOrder.ASC)
 				.withClusteringOrder(ID, ClusteringOrder.ASC);
 		

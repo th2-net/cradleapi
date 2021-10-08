@@ -16,7 +16,10 @@
 
 package com.exactpro.cradle.testevents;
 
+import com.exactpro.cradle.messages.StoredMessageId;
+
 import java.time.Instant;
+import java.util.Collection;
 
 /**
  * Builder for {@link TestEventToStore} object. After calling {@link #build()} method, the builder can be reused to build new test event
@@ -98,7 +101,13 @@ public class TestEventToStoreBuilder
 		event.setContent(content);
 		return this;
 	}
-	
+
+	public TestEventToStoreBuilder messageIds(Collection<StoredMessageId> messageIds)
+	{
+		initIfNeeded();
+		event.setMessageIds(messageIds);
+		return this;
+	}
 	
 	public TestEventToStore build()
 	{

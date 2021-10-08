@@ -16,6 +16,8 @@
 
 package com.exactpro.cradle.testevents;
 
+import com.exactpro.cradle.messages.StoredMessageId;
+
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.Collection;
@@ -35,6 +37,7 @@ public class BatchedStoredTestEvent implements StoredTestEventWithContent, Seria
 			endTimestamp;
 	private final boolean success;
 	private final byte[] content;
+	private final Collection<StoredMessageId> messageIds;
 	
 	private final transient StoredTestEventBatch batch;
 	
@@ -48,6 +51,7 @@ public class BatchedStoredTestEvent implements StoredTestEventWithContent, Seria
 		this.endTimestamp = event.getEndTimestamp();
 		this.success = event.isSuccess();
 		this.content = event.getContent();
+		this.messageIds = event.getMessageIds();
 		
 		this.batch = batch;
 	}
@@ -100,8 +104,13 @@ public class BatchedStoredTestEvent implements StoredTestEventWithContent, Seria
 	{
 		return content;
 	}
-	
-	
+
+	@Override
+	public Collection<StoredMessageId> getMessageIds()
+	{
+		return messageIds;
+	}
+
 	public StoredTestEventId getBatchId()
 	{
 		return batch.getId();

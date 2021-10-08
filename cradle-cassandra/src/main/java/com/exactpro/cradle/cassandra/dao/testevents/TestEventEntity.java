@@ -21,24 +21,14 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.UUID;
+import java.util.*;
 
 import com.datastax.oss.driver.api.mapper.annotations.*;
+import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.testevents.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.exactpro.cradle.cassandra.CassandraCradleStorage;
-import com.exactpro.cradle.testevents.TestEventBatchToStoreBuilder;
-import com.exactpro.cradle.testevents.StoredTestEventWrapper;
-import com.exactpro.cradle.testevents.StoredTestEventBatch;
-import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.StoredTestEventId;
-import com.exactpro.cradle.testevents.StoredTestEventSingle;
-import com.exactpro.cradle.testevents.TestEventToStoreBuilder;
 import com.exactpro.cradle.utils.CompressionUtils;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
@@ -57,6 +47,9 @@ public class TestEventEntity extends TestEventMetadataEntity
 
 	@CqlName(CONTENT)
 	private ByteBuffer content;
+
+	@CqlName(MESSAGE_IDS)
+	private ByteBuffer messageIds;
 	
 	
 	public TestEventEntity()
@@ -68,11 +61,19 @@ public class TestEventEntity extends TestEventMetadataEntity
 		super(event, instanceId);
 		logger.debug("Creating TestEventEntity from test event");
 
-		byte[] content;
+		byte[] content, messageIds=null;
 		if (event instanceof StoredTestEventBatch)
-			content = TestEventUtils.serializeTestEvents(((StoredTestEventBatch)event).getTestEvents());
+		{
+			StoredTestEventBatch batch = (StoredTestEventBatch) event;
+			content = TestEventUtils.serializeTestEvents(batch.getTestEvents());
+			messageIds = TestEventUtils.serializeLinkedMessageIds(batch.getMessageIds());
+		}
 		else
-			content = ((StoredTestEventSingle)event).getContent();
+		{
+			StoredTestEventSingle single = (StoredTestEventSingle) event;
+			content = single.getContent();
+			messageIds = TestEventUtils.serializeLinkedMessageIds(single.getMessageIds());
+		}
 
 		boolean toCompress = this.isNeedToCompress(content);
 		if (toCompress)
@@ -91,6 +92,7 @@ public class TestEventEntity extends TestEventMetadataEntity
 		
 		this.setCompressed(toCompress);
 		this.setContent(ByteBuffer.wrap(content));
+		this.setMessageIds(messageIds != null ? ByteBuffer.wrap(messageIds) : null);
 	}
 	
 	
@@ -130,6 +132,7 @@ public class TestEventEntity extends TestEventMetadataEntity
 		
 		StoredTestEventId eventId = new StoredTestEventId(getId());
 		byte[] eventContent = TestEventUtils.getTestEventContentBytes(content, compressed, eventId);
+		Collection<StoredMessageId> ids = TestEventUtils.deserializeLinkedMessageIds(messageIds);
 		return new StoredTestEventSingle(new TestEventToStoreBuilder().id(eventId)
 				.name(getName())
 				.type(getType())
@@ -138,6 +141,7 @@ public class TestEventEntity extends TestEventMetadataEntity
 				.endTimestamp(getEndTimestamp())
 				.success(isSuccess())
 				.content(eventContent)
+				.messageIds(ids)
 				.build());
 	}
 	
@@ -172,5 +176,15 @@ public class TestEventEntity extends TestEventMetadataEntity
 	public StoredTestEventWrapper toStoredTestEventWrapper() throws IOException, CradleStorageException
 	{
 		return new StoredTestEventWrapper(toStoredTestEvent());
+	}
+
+	public ByteBuffer getMessageIds()
+	{
+		return messageIds;
+	}
+
+	public void setMessageIds(ByteBuffer messageIds)
+	{
+		this.messageIds = messageIds;
 	}
 }

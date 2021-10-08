@@ -25,8 +25,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 
+import com.exactpro.cradle.cassandra.dao.testevents.DateTimeEventEntity;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.StoredTestEventWrapper;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
 import com.exactpro.cradle.utils.CradleIdException;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
@@ -119,40 +121,31 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 	public CompletableFuture<Collection<StoredMessageId>> getMessageIdsByTestEventIdAsync(StoredTestEventId eventId)
 	{
 		String queryInfo = "get messages for eventId="+eventId;
-		CompletableFuture<MappedAsyncPagingIterable<TestEventMessagesEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<TestEventMessagesEntity>>(semaphore)
-				.getFuture(() -> selectExec
-						.executeQuery(() -> supplies.getTestEventsOperator().getMessages(instanceId, eventId.toString(), readAttrs),
-								supplies.getTestEventConverter(),
-								queryInfo));
-		
-		return future.thenApplyAsync((rs) -> {
-				PagedIterator<TestEventMessagesEntity> it = new PagedIterator<>(rs, pagingSupplies, supplies.getTestEventConverter(), queryInfo);
-				Set<StoredMessageId> ids = new HashSet<>();
-				while (it.hasNext())
-				{
-					Set<String> currentMessageIds = it.next().getMessageIds();
-					if (currentMessageIds == null)
-						continue;
-					
-					for (String cid : currentMessageIds)
+
+		CompletableFuture<DateTimeEventEntity> future = new AsyncOperator<DateTimeEventEntity>(semaphore)
+				.getFuture(() -> supplies.getTestEventsOperator().get(instanceId, eventId.toString(), readAttrs));
+		return future.thenCompose(dtEntity ->
+		{
+			if (dtEntity == null)
+				return CompletableFuture.completedFuture(null);
+
+			return new AsyncOperator<Collection<StoredMessageId>>(semaphore).getFuture(() -> supplies.getTimeTestEventsOperator()
+					.get(instanceId, dtEntity.getStartDate(), dtEntity.getStartTime(), eventId.toString(), readAttrs)
+					.thenApply(entity ->
 					{
 						try
 						{
-							StoredMessageId parsedId = StoredMessageId.fromString(cid);
-							ids.add(parsedId);
+							if (entity == null)
+								return null;
+							return entity.isEventBatch() ? entity.toStoredTestEventBatch().getMessageIds()
+									: entity.toStoredTestEventSingle().getMessageIds();
 						}
-						catch (CradleIdException e)
+						catch (Exception error)
 						{
-							throw new CompletionException("Could not parse message ID from '"+cid+"'", e);
+							throw new CompletionException("Error while converting data into test event", error);
 						}
-					}
-				}
-				
-				if (ids.isEmpty())
-					ids = null;
-				
-				return ids;
-			});
+					}));
+		});
 	}
 	
 	
@@ -173,26 +166,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 	public CompletableFuture<Boolean> isTestEventLinkedToMessagesAsync(StoredTestEventId eventId)
 	{
 		String queryInfo = "get messages for eventId="+eventId+" to check links";
-		CompletableFuture<MappedAsyncPagingIterable<TestEventMessagesEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<TestEventMessagesEntity>>(semaphore)
-				.getFuture(() -> selectExec
-						.executeQuery(() -> supplies.getTestEventsOperator().getMessages(instanceId, eventId.toString(), readAttrs),
-								supplies.getTestEventConverter(),
-								queryInfo));
-		
-		return future.thenApplyAsync((rs) -> {
-				PagedIterator<TestEventMessagesEntity> it = new PagedIterator<>(rs, pagingSupplies, supplies.getTestEventConverter(), queryInfo);
-				boolean result = false;
-				while (it.hasNext())
-				{
-					Collection<String> ids = it.next().getMessageIds();
-					if (ids != null && !ids.isEmpty())
-					{
-						result = true;
-						break;
-					}
-				}
-				return result;
-			});
+		return getMessageIdsByTestEventIdAsync(eventId).thenApplyAsync(col -> col != null && !col.isEmpty());
 	}
 	
 	@Override

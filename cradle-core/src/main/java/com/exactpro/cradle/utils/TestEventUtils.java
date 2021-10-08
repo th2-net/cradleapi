@@ -16,26 +16,19 @@
 
 package com.exactpro.cradle.utils;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.zip.DataFormatException;
 
+import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.testevents.*;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.StringUtils;
-
-import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
-import com.exactpro.cradle.testevents.BatchedStoredTestEventMetadata;
-import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.StoredTestEventBatch;
-import com.exactpro.cradle.testevents.StoredTestEventBatchMetadata;
-import com.exactpro.cradle.testevents.StoredTestEventId;
-import com.exactpro.cradle.testevents.TestEventToStore;
 
 public class TestEventUtils
 {
@@ -76,7 +69,42 @@ public class TestEventUtils
 		}
 		return batchContent;
 	}
-	
+
+	public static byte[] serializeLinkedMessageIds(Collection<StoredMessageId> ids)
+			throws IOException
+	{
+		if (ids == null)
+			return null;
+
+		byte[] batchContent;
+		try (ByteArrayOutputStream out = new ByteArrayOutputStream();
+			 DataOutputStream dos = new DataOutputStream(out))
+		{
+			for (StoredMessageId id : ids)
+				serialize(id, dos);
+			dos.flush();
+			batchContent = out.toByteArray();
+		}
+		return batchContent;
+	}
+
+	public static Collection<StoredMessageId> deserializeLinkedMessageIds(ByteBuffer ids) throws IOException
+	{
+		if (ids == null)
+			return null;
+		byte[] contentBytes = ids.array();
+		Collection<StoredMessageId> result = new ArrayList<>();
+		try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(contentBytes)))
+		{
+			while (dis.available() != 0)
+			{
+				byte[] teBytes = readNextData(dis);
+				result.add(SerializationUtils.deserialize(teBytes));
+			}
+		}
+		return result;
+	}
+
 	/**
 	 * Serializes test events metadata, skipping non-meaningful or calculatable fields
 	 * @param testEventsMetadata to serialize
@@ -104,7 +132,7 @@ public class TestEventUtils
 	 * @throws IOException if deserialization failed
 	 * @throws CradleStorageException if deserialized event doesn't match batch conditions
 	 */
-	public static void deserializeTestEvents(byte[] contentBytes, StoredTestEventBatch batch) 
+	public static void deserializeTestEvents(byte[] contentBytes, StoredTestEventBatch batch)
 			throws IOException, CradleStorageException
 	{
 		try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(contentBytes)))
@@ -132,7 +160,7 @@ public class TestEventUtils
 			}
 		}
 	}
-	
+
 	/**
 	 * Deserializes all test events metadata, adding them to given batch for metadata
 	 * @param contentBytes to deserialize events metadata from
@@ -175,7 +203,7 @@ public class TestEventUtils
 	 * @throws IOException if deserialization failed
 	 * @throws CradleStorageException if deserialized event doesn't match batch conditions
 	 */
-	public static void bytesToTestEvents(ByteBuffer content, boolean compressed, StoredTestEventBatch batch) 
+	public static void 	bytesToTestEvents(ByteBuffer content, boolean compressed, StoredTestEventBatch batch)
 			throws IOException, CradleStorageException
 	{
 		byte[] contentBytes = getTestEventContentBytes(content, compressed, batch.getId());
