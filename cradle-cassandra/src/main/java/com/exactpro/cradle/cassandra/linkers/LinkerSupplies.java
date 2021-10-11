@@ -18,26 +18,22 @@ package com.exactpro.cradle.cassandra.linkers;
 
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventConverter;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventMessagesConverter;
 
 public class LinkerSupplies
 {
 	private final TimeTestEventOperator timeTestEventsOperator;
 	private final TestEventOperator testEventsOperator;
 	private final MessageTestEventOperator messagesOperator;
-	private final TestEventMessagesConverter testEventConverter;
 	private final MessageTestEventConverter messageConverter;
 	
-	public LinkerSupplies(TestEventOperator testEventsOperator, TimeTestEventOperator timeTestEventsOperator, MessageTestEventOperator messagesOperator,
-			TestEventMessagesConverter testEventConverter, MessageTestEventConverter messageConverter)
+	public LinkerSupplies(TestEventOperator testEventsOperator, TimeTestEventOperator timeTestEventsOperator,
+			MessageTestEventOperator messagesOperator, MessageTestEventConverter messageConverter)
 	{
 		this.timeTestEventsOperator = timeTestEventsOperator;
 		this.testEventsOperator = testEventsOperator;
 		this.messagesOperator = messagesOperator;
-		this.testEventConverter = testEventConverter;
 		this.messageConverter = messageConverter;
 	}
 	
@@ -55,11 +51,6 @@ public class LinkerSupplies
 	public MessageTestEventOperator getMessagesOperator()
 	{
 		return messagesOperator;
-	}
-	
-	public TestEventMessagesConverter getTestEventConverter()
-	{
-		return testEventConverter;
 	}
 	
 	public MessageTestEventConverter getMessageConverter()

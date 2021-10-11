@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import com.exactpro.cradle.messages.StoredMessageId;
 import org.apache.commons.lang3.ArrayUtils;
@@ -50,9 +51,10 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 			endTimestamp;
 	private boolean success = true;
 	private long batchSize = 0;
-	private final Collection<StoredMessageId> messageIds = new ArrayList<>();
+	private final Map<StoredTestEventId, Collection<StoredMessageId>> messageIds = new HashMap<>();
 
-	public StoredTestEventBatch(TestEventBatchToStore batchData, long maxBatchSize) throws CradleStorageException
+	public StoredTestEventBatch(TestEventBatchToStore batchData, long maxBatchSize,
+			Map<StoredTestEventId, Collection<StoredMessageId>> messageIds) throws CradleStorageException
 	{
 		super(batchData.getId() != null ? batchData.getId() : new StoredTestEventId(UUID.randomUUID().toString()),
 				batchData.getName(),
@@ -61,13 +63,26 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 		if (getParentId() == null)
 			throw new CradleStorageException("Batch must have a parent");
 		this.maxBatchSize = maxBatchSize;
+		if (messageIds != null)
+			this.messageIds.putAll(messageIds);
+	}
+
+	public StoredTestEventBatch(TestEventBatchToStore batchData, long maxBatchSize) throws CradleStorageException
+	{
+		this(batchData, maxBatchSize, null);
 	}
 	
 	public StoredTestEventBatch(TestEventBatchToStore batchData) throws CradleStorageException
 	{
 		this(batchData, DEFAULT_MAX_BATCH_SIZE);
 	}
-	
+
+	public StoredTestEventBatch(TestEventBatchToStore batchData,
+			Map<StoredTestEventId, Collection<StoredMessageId>> messageIds) throws CradleStorageException
+	{
+		this(batchData, DEFAULT_MAX_BATCH_SIZE, messageIds);
+	}
+
 	
 	public static BatchedStoredTestEvent bindTestEvent(BatchedStoredTestEvent event, StoredTestEventBatch batch)
 	{
@@ -241,8 +256,8 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 		
 		BatchedStoredTestEvent result = new BatchedStoredTestEvent(event, this);
 		events.put(result.getId(), result);
-		if (result.getMessageIds() != null)
-			messageIds.addAll(result.getMessageIds());
+		if (event.getMessageIds() != null)
+			messageIds.putIfAbsent(event.getId(), event.getMessageIds());
 		if (!isRoot)
 			children.computeIfAbsent(parentId, k -> new ArrayList<>()).add(result);
 		else
@@ -274,8 +289,18 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
         }
 	}
 
-	public Collection<StoredMessageId> getMessageIds()
+	public Map<StoredTestEventId, Collection<StoredMessageId>> getMessageIdsMap()
 	{
 		return messageIds;
+	}
+
+	public Collection<StoredMessageId> getMessageIdsCollection()
+	{
+		return messageIds.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
+	}
+
+	public Collection<StoredMessageId> getMessageIdsCollection(StoredTestEventId eventId)
+	{
+		return messageIds.get(eventId);
 	}
 }

@@ -70,7 +70,7 @@ public class TestEventUtils
 		return batchContent;
 	}
 
-	public static byte[] serializeLinkedMessageIds(Collection<StoredMessageId> ids)
+	public static byte[] serializeLinkedMessageIds(Object ids)
 			throws IOException
 	{
 		if (ids == null)
@@ -78,29 +78,29 @@ public class TestEventUtils
 
 		byte[] batchContent;
 		try (ByteArrayOutputStream out = new ByteArrayOutputStream();
-			 DataOutputStream dos = new DataOutputStream(out))
+			 ObjectOutputStream oos = new ObjectOutputStream(out))
 		{
-			for (StoredMessageId id : ids)
-				serialize(id, dos);
-			dos.flush();
+			oos.writeObject(ids);
+			oos.flush();
 			batchContent = out.toByteArray();
 		}
 		return batchContent;
 	}
 
-	public static Collection<StoredMessageId> deserializeLinkedMessageIds(ByteBuffer ids) throws IOException
+	@SuppressWarnings("unchecked")
+	public static <T> T deserializeLinkedMessageIds(ByteBuffer ids) throws IOException
 	{
 		if (ids == null)
 			return null;
 		byte[] contentBytes = ids.array();
-		Collection<StoredMessageId> result = new ArrayList<>();
-		try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(contentBytes)))
+		T result = null;
+		try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(contentBytes)))
 		{
-			while (dis.available() != 0)
-			{
-				byte[] teBytes = readNextData(dis);
-				result.add(SerializationUtils.deserialize(teBytes));
-			}
+			result = (T)ois.readObject();
+		}
+		catch (ClassNotFoundException e)
+		{
+			throw new IOException("Error occurred while deserialize linked message ids", e);
 		}
 		return result;
 	}

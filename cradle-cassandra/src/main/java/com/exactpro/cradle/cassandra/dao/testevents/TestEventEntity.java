@@ -66,7 +66,7 @@ public class TestEventEntity extends TestEventMetadataEntity
 		{
 			StoredTestEventBatch batch = (StoredTestEventBatch) event;
 			content = TestEventUtils.serializeTestEvents(batch.getTestEvents());
-			messageIds = TestEventUtils.serializeLinkedMessageIds(batch.getMessageIds());
+			messageIds = TestEventUtils.serializeLinkedMessageIds(batch.getMessageIdsMap());
 		}
 		else
 		{
@@ -149,14 +149,14 @@ public class TestEventEntity extends TestEventMetadataEntity
 	{
 		if (!isEventBatch())
 			return null;
-		
+		Map<StoredTestEventId, Collection<StoredMessageId>> ids = TestEventUtils.deserializeLinkedMessageIds(messageIds);
 		StoredTestEventId eventId = new StoredTestEventId(getId());
 		StoredTestEventBatch result = new StoredTestEventBatch(new TestEventBatchToStoreBuilder()
 				.id(eventId)
 				.name(getName())
 				.type(getType())
 				.parentId(getParentId() != null ? new StoredTestEventId(getParentId()) : null)
-				.build());
+				.build(), ids);
 		try
 		{
 			TestEventUtils.bytesToTestEvents(content, compressed, result);

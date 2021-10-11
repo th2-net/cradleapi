@@ -28,15 +28,12 @@ import java.util.function.Function;
 import com.exactpro.cradle.cassandra.dao.testevents.DateTimeEventEntity;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEventId;
-import com.exactpro.cradle.testevents.StoredTestEventWrapper;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
-import com.exactpro.cradle.utils.CradleIdException;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.cassandra.CassandraSemaphore;
 import com.exactpro.cradle.cassandra.dao.AsyncOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesEntity;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 import com.exactpro.cradle.cassandra.retries.RetryingSelectExecutor;
@@ -137,7 +134,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 						{
 							if (entity == null)
 								return null;
-							return entity.isEventBatch() ? entity.toStoredTestEventBatch().getMessageIds()
+							return entity.isEventBatch() ? entity.toStoredTestEventBatch().getMessageIdsCollection()
 									: entity.toStoredTestEventSingle().getMessageIds();
 						}
 						catch (Exception error)

@@ -17,7 +17,11 @@
 package com.exactpro.cradle.utils;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
 
+import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.messages.StoredMessageId;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -33,10 +37,11 @@ public class TestEventUtilsTest
 {
 	private static final StoredTestEventId DUMMY_ID = new StoredTestEventId("123");
 	private static final String DUMMY_NAME = "TestEvent";
+	private static final String DUMMY_STREAM_NAME = "TestStream";
 	private static final Instant DUMMY_START_TIMESTAMP = Instant.now();
-	
+
 	private TestEventToStoreBuilder eventBuilder;
-	
+
 	@BeforeClass
 	public void prepare() throws CradleStorageException
 	{
@@ -79,19 +84,38 @@ public class TestEventUtilsTest
 	@Test
 	public void validBatchEvent() throws CradleStorageException
 	{
+		StoredTestEventBatch batch = generateBatch();
+		TestEventUtils.validateTestEvent(batch, false);
+	}
+
+	private StoredTestEventBatch generateBatch() throws CradleStorageException
+	{
 		StoredTestEventId parentId = new StoredTestEventId("ParentID");
 		TestEventToStore event = eventBuilder.id(DUMMY_ID)
 				.name(DUMMY_NAME)
 				.startTimestamp(DUMMY_START_TIMESTAMP)
 				.parentId(parentId)
+				.messageIds(generateMessageIds())
 				.content("Test content".getBytes())
 				.build();
-		
+
 		TestEventBatchToStore batchToStore = new TestEventBatchToStore();
 		batchToStore.setParentId(parentId);
-		
+
 		StoredTestEventBatch batch = new StoredTestEventBatch(batchToStore);
 		batch.addTestEvent(event);
-		TestEventUtils.validateTestEvent(batch, false);
+
+		return batch;
 	}
+
+	private Collection<StoredMessageId> generateMessageIds()
+	{
+		Collection<StoredMessageId> result = new ArrayList<>();
+		for (int i = 0; i < 10; i++)
+		{
+			result.add(new StoredMessageId(DUMMY_STREAM_NAME, Direction.FIRST, i));
+		}
+		return result;
+	}
+
 }

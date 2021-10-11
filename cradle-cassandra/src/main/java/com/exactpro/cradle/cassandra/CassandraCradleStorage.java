@@ -168,8 +168,8 @@ public class CassandraCradleStorage extends CradleStorage
 					.setPageSize(resultPageSize);
 
 			LinkerSupplies supplies =
-					new LinkerSupplies(ops.getTestEventOperator(), ops.getTimeTestEventOperator(), ops.getMessageTestEventOperator(),
-							ops.getTestEventMessagesConverter(), ops.getMessageTestEventConverter());
+					new LinkerSupplies(ops.getTestEventOperator(), ops.getTimeTestEventOperator(),
+							ops.getMessageTestEventOperator(),  ops.getMessageTestEventConverter());
 			testEventsMessagesLinker =
 					new CassandraTestEventsMessagesLinker(supplies, instanceUuid, readAttrs, semaphore, selectExecutor,
 							pagingSupplies);
