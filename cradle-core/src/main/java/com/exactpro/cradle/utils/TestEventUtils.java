@@ -129,10 +129,12 @@ public class TestEventUtils
 	 * Deserializes all test events, adding them to given batch
 	 * @param contentBytes to deserialize events from
 	 * @param batch to add events to
+	 * @param ids Map of Collection of messages' id's related with added events
 	 * @throws IOException if deserialization failed
 	 * @throws CradleStorageException if deserialized event doesn't match batch conditions
 	 */
-	public static void deserializeTestEvents(byte[] contentBytes, StoredTestEventBatch batch)
+	public static void deserializeTestEvents(byte[] contentBytes, StoredTestEventBatch batch,
+			Map<StoredTestEventId, Collection<StoredMessageId>> ids)
 			throws IOException, CradleStorageException
 	{
 		try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(contentBytes)))
@@ -141,7 +143,9 @@ public class TestEventUtils
 			{
 				byte[] teBytes = readNextData(dis);
 				BatchedStoredTestEvent tempTe = deserializeTestEvent(teBytes);
-				if (tempTe.getParentId() == null)  //Workaround to fix events stored before commit f71b224e6f4dc0c8c99512de6a8f2034a1c3badc. TODO: remove it in future
+				if (tempTe.getParentId() ==
+						null)  //Workaround to fix events stored before commit
+					// f71b224e6f4dc0c8c99512de6a8f2034a1c3badc. TODO: remove it in future
 				{
 					TestEventToStore te = TestEventToStore.builder()
 							.id(tempTe.getId())
@@ -153,10 +157,18 @@ public class TestEventUtils
 							.success(tempTe.isSuccess())
 							.content(tempTe.getContent())
 							.build();
-					StoredTestEventBatch.addTestEvent(te, batch);
+					if (ids == null)
+						StoredTestEventBatch.addTestEvent(te, batch);
+					else
+						StoredTestEventBatch.addTestEvent(te, batch, ids.get(te.getId()));
 				}
 				else
-					StoredTestEventBatch.addTestEvent(tempTe, batch);
+				{
+					if (ids == null)
+						StoredTestEventBatch.addTestEvent(tempTe, batch);
+					else
+						StoredTestEventBatch.addTestEvent(tempTe, batch, ids.get(tempTe.getId()));
+				}
 			}
 		}
 	}
@@ -200,14 +212,16 @@ public class TestEventUtils
 	 * @param content to deserialize events from
 	 * @param compressed flag that indicates if content needs to be decompressed first
 	 * @param batch to add events to
+	 * @param ids Map of Collection of messages' id's related with added events
 	 * @throws IOException if deserialization failed
 	 * @throws CradleStorageException if deserialized event doesn't match batch conditions
 	 */
-	public static void 	bytesToTestEvents(ByteBuffer content, boolean compressed, StoredTestEventBatch batch)
+	public static void 	bytesToTestEvents(ByteBuffer content, boolean compressed, StoredTestEventBatch batch,
+			Map<StoredTestEventId, Collection<StoredMessageId>> ids)
 			throws IOException, CradleStorageException
 	{
 		byte[] contentBytes = getTestEventContentBytes(content, compressed, batch.getId());
-		deserializeTestEvents(contentBytes, batch);
+		deserializeTestEvents(contentBytes, batch, ids);
 	}
 	
 	public static byte[] getTestEventContentBytes(ByteBuffer content, boolean compressed, StoredTestEventId eventId) throws IOException

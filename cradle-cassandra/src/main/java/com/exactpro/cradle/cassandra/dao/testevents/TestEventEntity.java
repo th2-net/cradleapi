@@ -156,10 +156,10 @@ public class TestEventEntity extends TestEventMetadataEntity
 				.name(getName())
 				.type(getType())
 				.parentId(getParentId() != null ? new StoredTestEventId(getParentId()) : null)
-				.build(), ids);
+				.build());
 		try
 		{
-			TestEventUtils.bytesToTestEvents(content, compressed, result);
+			TestEventUtils.bytesToTestEvents(content, compressed, result, ids);
 		}
 		catch (CradleStorageException e)
 		{
