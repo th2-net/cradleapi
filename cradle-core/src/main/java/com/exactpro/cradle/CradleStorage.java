@@ -34,7 +34,6 @@ import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.StoredTestEventMetadata;
-import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
 import com.exactpro.cradle.utils.TimeUtils;
@@ -96,13 +95,6 @@ public abstract class CradleStorage
 	protected abstract CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEventWrapper event, boolean success);
 
 	public abstract CradleObjectsFactory getObjectsFactory();
-	
-	
-	/**
-	 * TestEventsMessagesLinker is used to obtain links between test events and messages
-	 * @return instance of TestEventsMessagesLinker
-	 */
-	public abstract TestEventsMessagesLinker getTestEventsMessagesLinker();
 
 	/**
 	 * IntervalsWorker is used to work with Crawler intervals

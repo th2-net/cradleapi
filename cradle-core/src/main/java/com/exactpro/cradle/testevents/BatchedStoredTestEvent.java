@@ -109,7 +109,7 @@ public class BatchedStoredTestEvent implements StoredTestEventWithContent, Seria
 	{
 		if (batch == null)
 			return Collections.emptyList();
-		return batch.getMessageIdsCollection(this.getId());
+		return batch.getMessageIds(this.getId());
 	}
 
 	public StoredTestEventId getBatchId()

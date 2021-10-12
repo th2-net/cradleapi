@@ -37,8 +37,6 @@ import com.exactpro.cradle.cassandra.dao.intervals.IntervalSupplies;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.iterators.*;
-import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
-import com.exactpro.cradle.cassandra.linkers.LinkerSupplies;
 import com.exactpro.cradle.cassandra.retries.PageSizeAdjustingPolicy;
 import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 import com.exactpro.cradle.cassandra.retries.RetryingSelectExecutor;
@@ -56,10 +54,6 @@ import com.exactpro.cradle.utils.MessageUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.lang.Math.min;
-import static java.util.stream.Collectors.toList;
-
 import java.io.*;
 import java.time.*;
 import java.util.*;
@@ -95,7 +89,6 @@ public class CassandraCradleStorage extends CradleStorage
 	private RetryingSelectExecutor selectExecutor;
 	private PagingSupplies pagingSupplies;
 
-	private TestEventsMessagesLinker testEventsMessagesLinker;
 	private IntervalsWorker intervalsWorker;
 
 	public CassandraCradleStorage(CassandraConnection connection, CassandraStorageSettings settings)
@@ -166,13 +159,6 @@ public class CassandraCradleStorage extends CradleStorage
 					.setConsistencyLevel(ConsistencyLevel.ALL)
 					.setTimeout(timeout)
 					.setPageSize(resultPageSize);
-
-			LinkerSupplies supplies =
-					new LinkerSupplies(ops.getTestEventOperator(), ops.getTimeTestEventOperator(),
-							ops.getMessageTestEventOperator(),  ops.getMessageTestEventConverter());
-			testEventsMessagesLinker =
-					new CassandraTestEventsMessagesLinker(supplies, instanceUuid, readAttrs, semaphore, selectExecutor,
-							pagingSupplies);
 
 			IntervalSupplies intervalSupplies =
 					new IntervalSupplies(ops.getIntervalOperator(), ops.getIntervalConverter(), pagingSupplies);
@@ -523,12 +509,6 @@ public class CassandraCradleStorage extends CradleStorage
 						}
 					}));
 		});
-	}
-
-	@Override
-	public TestEventsMessagesLinker getTestEventsMessagesLinker()
-	{
-		return testEventsMessagesLinker;
 	}
 
 	@Override

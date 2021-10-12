@@ -294,12 +294,12 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 		return messageIds;
 	}
 
-	public Collection<StoredMessageId> getMessageIdsCollection()
+	public Collection<StoredMessageId> getMessageIds()
 	{
 		return messageIds.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
 	}
 
-	public Collection<StoredMessageId> getMessageIdsCollection(StoredTestEventId eventId)
+	public Collection<StoredMessageId> getMessageIds(StoredTestEventId eventId)
 	{
 		return messageIds.get(eventId);
 	}
