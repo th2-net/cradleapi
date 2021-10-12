@@ -71,9 +71,6 @@ public class FilteredMessageIterator implements Iterator<StoredMessage>
 	@Override
 	public StoredMessage next()
 	{
-//		if (limit > 0 && returned.get() >= limit)
-//			return null;
-
 		returned.incrementAndGet();
 		return it.next();
 	}

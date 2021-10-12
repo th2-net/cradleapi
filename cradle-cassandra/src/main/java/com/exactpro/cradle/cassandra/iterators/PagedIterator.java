@@ -45,6 +45,9 @@ public class PagedIterator<E> implements Iterator<E>
 	@Override
 	public boolean hasNext()
 	{
+		if (rowsIterator == null)
+			return false;
+
 		if (!rowsIterator.hasNext())
 		{
 			try
