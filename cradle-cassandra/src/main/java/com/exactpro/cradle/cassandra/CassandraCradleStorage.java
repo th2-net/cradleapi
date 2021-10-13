@@ -939,29 +939,6 @@ public class CassandraCradleStorage extends CradleStorage
 		});
 	}
 
-	protected CompletableFuture<Void> storeTestEventOfMessages(List<String> messageIds, String eventId,
-			StoredTestEventId batchId)
-	{
-		String batchIdString = batchId != null ? batchId.toString() : null;
-		List<CompletableFuture<MessageTestEventEntity>> futures = new ArrayList<>();
-		MessageTestEventOperator op = ops.getMessageTestEventOperator();
-		for (String id : messageIds)
-		{
-			logger.trace("Linking test event {} to message {}", eventId, id);
-
-			MessageTestEventEntity entity = new MessageTestEventEntity();
-			entity.setInstanceId(getInstanceUuid());
-			entity.setMessageId(id);
-			entity.setEventId(eventId);
-			if (batchIdString != null)
-				entity.setBatchId(batchIdString);
-
-			futures.add(new AsyncOperator<MessageTestEventEntity>(semaphore)
-					.getFuture(() -> op.writeTestEvent(entity, writeAttrs)));
-		}
-		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-	}
-
 	@Override
 	protected void doUpdateEventStatus(StoredTestEventWrapper event, boolean success) throws IOException
 	{
