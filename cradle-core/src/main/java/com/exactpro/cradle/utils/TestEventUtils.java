@@ -20,18 +20,32 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Map.Entry;
 import java.util.zip.DataFormatException;
 
+import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.*;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class TestEventUtils
 {
+	private static final byte VERSION = 1,
+			SINGLE_EVENT_LINKS = 1,
+			BATCH_LINKS = 2,
+			END_OF_DATA = 0,
+			DIRECTION_FIRST = 1,
+			DIRECTION_SECOND = 2,
+			SINGLE_ID = 1,
+			RANGE_OF_IDS = 2;
+	
 	/**
 	 * Checks that test event has all necessary fields set
 	 * @param event to validate
@@ -70,39 +84,90 @@ public class TestEventUtils
 		return batchContent;
 	}
 
-	public static byte[] serializeLinkedMessageIds(Object ids)
+	public static byte[] serializeLinkedMessageIds(Collection<StoredMessageId> ids)
 			throws IOException
 	{
-		if (ids == null)
+		if (ids == null || ids.isEmpty())
 			return null;
-
-		byte[] batchContent;
-		try (ByteArrayOutputStream out = new ByteArrayOutputStream();
-			 ObjectOutputStream oos = new ObjectOutputStream(out))
+		
+		byte[] result;
+		try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				DataOutputStream dos = new DataOutputStream(baos))
 		{
-			oos.writeObject(ids);
-			oos.flush();
-			batchContent = out.toByteArray();
-		}
-		return batchContent;
-	}
-
-	@SuppressWarnings("unchecked")
-	public static <T> T deserializeLinkedMessageIds(ByteBuffer ids) throws IOException
-	{
-		if (ids == null)
-			return null;
-		byte[] contentBytes = ids.array();
-		T result = null;
-		try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(contentBytes)))
-		{
-			result = (T)ois.readObject();
-		}
-		catch (ClassNotFoundException e)
-		{
-			throw new IOException("Error occurred while deserialize linked message ids", e);
+			writeIdsStart(ids, dos);
+			
+			if (ids.size() == 1)
+			{
+				StoredMessageId id = ids.iterator().next();
+				writeStreamName(id.getStreamName(), dos);
+				dos.writeByte(id.getDirection() == Direction.FIRST ? DIRECTION_FIRST: DIRECTION_SECOND);
+				dos.writeLong(id.getIndex());
+			}
+			else
+			{
+				Map<String, Pair<List<Long>, List<Long>>> byStream = divideIdsByStream(ids);
+				for (Entry<String, Pair<List<Long>, List<Long>>> streamIds : byStream.entrySet())
+				{
+					writeStreamName(streamIds.getKey(), dos);
+					
+					Pair<List<Long>, List<Long>> byDirection = streamIds.getValue();
+					List<Long> first = byDirection.getLeft(),
+							second = byDirection.getRight();
+					if (first != null && first.size() > 0)
+						writeDirectionIds(Direction.FIRST, first, dos);
+					if (second != null && second.size() > 0)
+						writeDirectionIds(Direction.SECOND, second, dos);
+					dos.writeByte(END_OF_DATA);
+				}
+			}
+			
+			dos.flush();
+			result = baos.toByteArray();
 		}
 		return result;
+	}
+
+	public static Collection<StoredMessageId> deserializeLinkedMessageIds(byte[] bytes) throws IOException
+	{
+		if (bytes == null || bytes.length == 0)
+			return null;
+		
+		try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+				DataInputStream dis = new DataInputStream(bais))
+		{
+			byte version = dis.readByte();
+			if (version != VERSION)
+				throw new IOException("Unsupported data format version - "+version);
+			byte mark = dis.readByte();
+			if (mark != SINGLE_EVENT_LINKS)
+				throw new IOException("Unexpected data mark. Expected "+SINGLE_EVENT_LINKS+", got "+mark);
+			
+			int size = dis.readInt();
+			Collection<StoredMessageId> result = new ArrayList<>(size);
+			if (size == 1)
+			{
+				String streamName = readStreamName(dis);
+				Direction direction = readDirection(dis);
+				if (direction == null)
+					throw new IOException("Invalid direction");
+				result.add(new StoredMessageId(streamName, direction, dis.readLong()));
+				return result;
+			}
+			
+			int count = 0;
+			while (count < size)
+			{
+				String streamName = readStreamName(dis);
+				Direction direction;
+				while ((direction = readDirection(dis)) != null)
+				{
+					Collection<StoredMessageId> directionIds = readDirectionIds(direction, streamName, dis);
+					count += directionIds.size();
+					result.addAll(directionIds);
+				}
+			}
+			return result;
+		}
 	}
 
 	/**
@@ -264,5 +329,137 @@ public class TestEventUtils
 	private static BatchedStoredTestEventMetadata deserializeTestEventMetadata(byte[] bytes)
 	{
 		return (BatchedStoredTestEventMetadata)SerializationUtils.deserialize(bytes);
+	}
+	
+	
+	private static void writeIdsStart(Collection<StoredMessageId> ids, DataOutputStream dos) throws IOException
+	{
+		dos.writeByte(VERSION);
+		dos.writeByte(SINGLE_EVENT_LINKS);
+		dos.writeInt(ids.size());
+	}
+	
+	private static void writeStreamName(String name, DataOutputStream dos) throws IOException
+	{
+		byte[] bytes = name.getBytes();
+		dos.writeShort(bytes.length);
+		dos.write(bytes);
+	}
+	
+	private static Map<String, Pair<List<Long>, List<Long>>> divideIdsByStream(Collection<StoredMessageId> ids)
+	{
+		int inititalCapacity = ids.size() / 2;
+		Map<String, Pair<List<Long>, List<Long>>> result = new HashMap<>();
+		for (StoredMessageId id : ids)
+		{
+			Pair<List<Long>, List<Long>> storage = result.computeIfAbsent(id.getStreamName(), 
+					sn -> new ImmutablePair<>(new ArrayList<Long>(inititalCapacity), new ArrayList<Long>(inititalCapacity)));
+			if (id.getDirection() == Direction.FIRST)
+				storage.getLeft().add(id.getIndex());
+			else
+				storage.getRight().add(id.getIndex());
+		}
+		
+		for (Pair<List<Long>, List<Long>> streamIds : result.values())
+		{
+			Collections.sort(streamIds.getLeft());
+			Collections.sort(streamIds.getRight());
+		}
+		
+		return result;
+	}
+	
+	private static void writeDirectionIds(Direction direction, List<Long> ids, DataOutputStream dos) throws IOException
+	{
+		dos.writeByte(direction == Direction.FIRST ? DIRECTION_FIRST : DIRECTION_SECOND);
+		dos.writeInt(ids.size());
+		
+		long start = -1,
+				prevId = -1;
+		for (long id : ids)
+		{
+			if (start < 0)
+			{
+				start = id;
+				prevId = id;
+				continue;
+			}
+			
+			if (id != prevId+1)
+			{
+				writeIds(start, prevId, dos);
+				
+				start = id;
+				prevId = id;
+			}
+			else
+				prevId = id;
+		}
+		
+		if (start > -1)
+			writeIds(start, prevId, dos);
+	}
+	
+	private static void writeIds(long start, long end, DataOutputStream dos) throws IOException
+	{
+		if (start == end)
+		{
+			dos.writeByte(SINGLE_ID);
+			dos.writeLong(start);
+		}
+		else
+		{
+			dos.writeByte(RANGE_OF_IDS);
+			dos.writeLong(start);
+			dos.writeLong(end);
+		}
+	}
+	
+	
+	private static String readStreamName(DataInputStream dis) throws IOException
+	{
+		int length = dis.readShort();
+		byte[] bytes = new byte[length];
+		dis.readFully(bytes);
+		return new String(bytes);
+	}
+	
+	private static Direction readDirection(DataInputStream dis) throws IOException
+	{
+		byte direction = dis.readByte();
+		if (direction == 0)
+			return null;
+		if (direction == DIRECTION_FIRST)
+			return Direction.FIRST;
+		else if (direction == DIRECTION_SECOND)
+			return Direction.SECOND;
+		throw new IOException("Unknown direction - "+direction);
+	}
+	
+	private static Collection<StoredMessageId> readDirectionIds(Direction direction, String streamName, DataInputStream dis) throws IOException
+	{
+		int size = dis.readInt();
+		Collection<StoredMessageId> result = new ArrayList<>(size);
+		int count = 0;
+		while (count < size)
+		{
+			byte mark = dis.readByte();
+			if (mark == SINGLE_ID)
+			{
+				result.add(new StoredMessageId(streamName, direction, dis.readLong()));
+				count++;
+			}
+			else
+			{
+				long start = dis.readLong(),
+						end = dis.readLong();
+				for (long i = start; i <= end; i++)
+				{
+					result.add(new StoredMessageId(streamName, direction, i));
+					count++;
+				}
+			}
+		}
+		return result;
 	}
 }

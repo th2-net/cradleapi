@@ -16,12 +16,17 @@
 
 package com.exactpro.cradle.utils;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.messages.StoredMessageId;
+
+import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -31,7 +36,6 @@ import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
 import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.testevents.TestEventToStoreBuilder;
-import com.exactpro.cradle.utils.CradleStorageException;
 
 public class TestEventUtilsTest
 {
@@ -63,6 +67,27 @@ public class TestEventUtilsTest
 				};
 	}
 	
+	@DataProvider(name = "linkedIds")
+	public Object[][] linkedIds()
+	{
+		return new Object[][]
+				{
+					{null},
+					{Collections.singleton(new StoredMessageId("aliasXYZ", Direction.FIRST, 1631071200662515000L))},
+					{
+						Arrays.asList(new StoredMessageId("dummyX_alias954", Direction.FIRST, 1631071200662515748L),
+								new StoredMessageId("dummyX_alias954", Direction.FIRST, 1631071200662515749L),
+								new StoredMessageId("test_alias", Direction.FIRST, 1631071200662515750L),
+								new StoredMessageId("dummyX_alias954", Direction.FIRST, 1631071200662515750L),
+								new StoredMessageId("test_alias", Direction.SECOND, 1631071200662515750L),
+								new StoredMessageId("test_alias", Direction.FIRST, 1631071200662515749L),
+								new StoredMessageId("dummyX_alias954", Direction.FIRST, 1631071200662515751L),
+								new StoredMessageId("test_alias", Direction.FIRST, 1631071200662515752L),
+								new StoredMessageId("dummyX_alias954", Direction.FIRST, 1631071200662515752L))
+					}
+				};
+	}
+	
 	@Test(dataProvider = "invalid events",
 			expectedExceptions = CradleStorageException.class)
 	public void eventValidation(TestEventToStore event) throws CradleStorageException
@@ -87,6 +112,25 @@ public class TestEventUtilsTest
 		StoredTestEventBatch batch = generateBatch();
 		TestEventUtils.validateTestEvent(batch, false);
 	}
+	
+	@Test(dataProvider = "linkedIds")
+	public void linkedIds(Collection<StoredMessageId> links) throws IOException
+	{
+		byte[] bytes = TestEventUtils.serializeLinkedMessageIds(links);
+		Collection<StoredMessageId> restored = TestEventUtils.deserializeLinkedMessageIds(bytes);
+		
+		if (links == null)
+		{
+			Assert.assertNull(restored, "deserialized IDs are null");
+			return;
+		}
+		
+		Assert.assertEquals(restored.size(), links.size(), "size of deserialized IDs collection");
+		
+		restored.removeAll(links);
+		Assert.assertEquals(restored.size(), 0, "number of extra elements");
+	}
+	
 
 	private StoredTestEventBatch generateBatch() throws CradleStorageException
 	{
