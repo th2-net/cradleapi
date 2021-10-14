@@ -22,9 +22,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.zip.DataFormatException;
 
 import com.exactpro.cradle.Direction;
@@ -99,7 +101,7 @@ public class TestEventUtils
 			if (ids.size() == 1)
 			{
 				StoredMessageId id = ids.iterator().next();
-				writeStreamName(id.getStreamName(), dos);
+				CradleSerializationUtils.writeString(id.getStreamName(), dos);
 				dos.writeByte(id.getDirection() == Direction.FIRST ? DIRECTION_FIRST: DIRECTION_SECOND);
 				dos.writeLong(id.getIndex());
 			}
@@ -108,16 +110,41 @@ public class TestEventUtils
 				Map<String, Pair<List<Long>, List<Long>>> byStream = divideIdsByStream(ids);
 				for (Entry<String, Pair<List<Long>, List<Long>>> streamIds : byStream.entrySet())
 				{
-					writeStreamName(streamIds.getKey(), dos);
-					
-					Pair<List<Long>, List<Long>> byDirection = streamIds.getValue();
-					List<Long> first = byDirection.getLeft(),
-							second = byDirection.getRight();
-					if (first != null && first.size() > 0)
-						writeDirectionIds(Direction.FIRST, first, dos);
-					if (second != null && second.size() > 0)
-						writeDirectionIds(Direction.SECOND, second, dos);
-					dos.writeByte(END_OF_DATA);
+					CradleSerializationUtils.writeString(streamIds.getKey(), dos);
+					writeDirectionIds(streamIds.getValue(), dos);
+				}
+			}
+			
+			dos.flush();
+			result = baos.toByteArray();
+		}
+		return result;
+	}
+	
+	public static byte[] serializeBatchLinkedMessageIds(Map<StoredTestEventId, Collection<StoredMessageId>> ids)
+			throws IOException
+	{
+		if (ids == null || ids.isEmpty())
+			return null;
+		
+		byte[] result;
+		try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				DataOutputStream dos = new DataOutputStream(baos))
+		{
+			writeIdsStart(ids, dos);
+			
+			Map<String, Integer> mapping = getStreams(ids);
+			writeMapping(mapping, dos);
+			for (Entry<StoredTestEventId, Collection<StoredMessageId>> eventMessages : ids.entrySet())
+			{
+				CradleSerializationUtils.writeString(eventMessages.getKey().getId(), dos);
+				dos.writeInt(eventMessages.getValue().size());
+				
+				Map<String, Pair<List<Long>, List<Long>>> byStream = divideIdsByStream(eventMessages.getValue());
+				for (Entry<String, Pair<List<Long>, List<Long>>> streamIds : byStream.entrySet())
+				{
+					dos.writeShort(mapping.get(streamIds.getKey()));
+					writeDirectionIds(streamIds.getValue(), dos);
 				}
 			}
 			
@@ -146,7 +173,7 @@ public class TestEventUtils
 			Collection<StoredMessageId> result = new ArrayList<>(size);
 			if (size == 1)
 			{
-				String streamName = readStreamName(dis);
+				String streamName = CradleSerializationUtils.readString(dis);
 				Direction direction = readDirection(dis);
 				if (direction == null)
 					throw new IOException("Invalid direction");
@@ -154,17 +181,49 @@ public class TestEventUtils
 				return result;
 			}
 			
-			int count = 0;
-			while (count < size)
+			while (result.size() < size)
 			{
-				String streamName = readStreamName(dis);
-				Direction direction;
-				while ((direction = readDirection(dis)) != null)
+				String streamName = CradleSerializationUtils.readString(dis);
+				readDirectionIds(streamName, result, dis);
+			}
+			return result;
+		}
+	}
+	
+	public static Map<StoredTestEventId, Collection<StoredMessageId>> deserializeBatchLinkedMessageIds(byte[] bytes) throws IOException
+	{
+		if (bytes == null || bytes.length == 0)
+			return null;
+		
+		try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+				DataInputStream dis = new DataInputStream(bais))
+		{
+			byte version = dis.readByte();
+			if (version != VERSION)
+				throw new IOException("Unsupported data format version - "+version);
+			byte mark = dis.readByte();
+			if (mark != BATCH_LINKS)
+				throw new IOException("Unexpected data mark. Expected "+BATCH_LINKS+", got "+mark);
+			
+			int eventsTotal = dis.readInt();
+			Map<StoredTestEventId, Collection<StoredMessageId>> result = new HashMap<>(eventsTotal);
+			
+			Map<Integer, String> mapping = readMapping(dis);
+			
+			while (result.size() < eventsTotal)
+			{
+				StoredTestEventId eventId = new StoredTestEventId(CradleSerializationUtils.readString(dis));
+				int size = dis.readInt();
+				Collection<StoredMessageId> eventLinks = new ArrayList<>(size);
+				
+				while (eventLinks.size() < size)
 				{
-					Collection<StoredMessageId> directionIds = readDirectionIds(direction, streamName, dis);
-					count += directionIds.size();
-					result.addAll(directionIds);
+					int index = dis.readShort();
+					String streamName = mapping.get(index);
+					readDirectionIds(streamName, eventLinks, dis);
 				}
+				
+				result.put(eventId, eventLinks);
 			}
 			return result;
 		}
@@ -208,9 +267,8 @@ public class TestEventUtils
 			{
 				byte[] teBytes = readNextData(dis);
 				BatchedStoredTestEvent tempTe = deserializeTestEvent(teBytes);
-				if (tempTe.getParentId() ==
-						null)  //Workaround to fix events stored before commit
-					// f71b224e6f4dc0c8c99512de6a8f2034a1c3badc. TODO: remove it in future
+				//Workaround to fix events stored before commit f71b224e6f4dc0c8c99512de6a8f2034a1c3badc. TODO: remove it in future
+				if (tempTe.getParentId() == null)
 				{
 					TestEventToStore te = TestEventToStore.builder()
 							.id(tempTe.getId())
@@ -339,11 +397,21 @@ public class TestEventUtils
 		dos.writeInt(ids.size());
 	}
 	
-	private static void writeStreamName(String name, DataOutputStream dos) throws IOException
+	private static void writeIdsStart(Map<StoredTestEventId, Collection<StoredMessageId>> ids, DataOutputStream dos) throws IOException
 	{
-		byte[] bytes = name.getBytes();
-		dos.writeShort(bytes.length);
-		dos.write(bytes);
+		dos.writeByte(VERSION);
+		dos.writeByte(BATCH_LINKS);
+		dos.writeInt(ids.size());
+	}
+	
+	private static void writeMapping(Map<String, Integer> mapping, DataOutputStream dos) throws IOException
+	{
+		dos.writeShort(mapping.size());
+		for (Entry<String, Integer> m : mapping.entrySet())
+		{
+			CradleSerializationUtils.writeString(m.getKey(), dos);
+			dos.writeShort(m.getValue());
+		}
 	}
 	
 	private static Map<String, Pair<List<Long>, List<Long>>> divideIdsByStream(Collection<StoredMessageId> ids)
@@ -367,6 +435,28 @@ public class TestEventUtils
 		}
 		
 		return result;
+	}
+	
+	private static Map<String, Integer> getStreams(Map<StoredTestEventId, Collection<StoredMessageId>> ids)
+	{
+		Set<String> streams = new HashSet<>();
+		ids.values().forEach(eventIds -> eventIds.forEach(id -> streams.add(id.getStreamName())));
+		
+		Map<String, Integer> result = new HashMap<>();
+		for (String stream : streams)
+			result.put(stream, result.size());
+		return result;
+	}
+	
+	private static void writeDirectionIds(Pair<List<Long>, List<Long>> firstSecondIds, DataOutputStream dos) throws IOException
+	{
+		List<Long> first = firstSecondIds.getLeft(),
+				second = firstSecondIds.getRight();
+		if (first != null && first.size() > 0)
+			writeDirectionIds(Direction.FIRST, first, dos);
+		if (second != null && second.size() > 0)
+			writeDirectionIds(Direction.SECOND, second, dos);
+		dos.writeByte(END_OF_DATA);
 	}
 	
 	private static void writeDirectionIds(Direction direction, List<Long> ids, DataOutputStream dos) throws IOException
@@ -416,12 +506,24 @@ public class TestEventUtils
 	}
 	
 	
-	private static String readStreamName(DataInputStream dis) throws IOException
+	private static Map<Integer, String> readMapping(DataInputStream dis) throws IOException
 	{
-		int length = dis.readShort();
-		byte[] bytes = new byte[length];
-		dis.readFully(bytes);
-		return new String(bytes);
+		int size = dis.readShort();
+		Map<Integer, String> result = new HashMap<>(size);
+		for (int i = 0; i < size; i++)
+		{
+			String streamName = CradleSerializationUtils.readString(dis);
+			int index = dis.readShort();
+			result.put(index, streamName);
+		}
+		return result;
+	}
+	
+	private static void readDirectionIds(String streamName, Collection<StoredMessageId> result, DataInputStream dis) throws IOException
+	{
+		Direction direction;
+		while ((direction = readDirection(dis)) != null)
+			readDirectionIds(direction, streamName, result, dis);
 	}
 	
 	private static Direction readDirection(DataInputStream dis) throws IOException
@@ -436,10 +538,10 @@ public class TestEventUtils
 		throw new IOException("Unknown direction - "+direction);
 	}
 	
-	private static Collection<StoredMessageId> readDirectionIds(Direction direction, String streamName, DataInputStream dis) throws IOException
+	private static void readDirectionIds(Direction direction, String streamName, 
+			Collection<StoredMessageId> result, DataInputStream dis) throws IOException
 	{
 		int size = dis.readInt();
-		Collection<StoredMessageId> result = new ArrayList<>(size);
 		int count = 0;
 		while (count < size)
 		{
@@ -460,6 +562,5 @@ public class TestEventUtils
 				}
 			}
 		}
-		return result;
 	}
 }

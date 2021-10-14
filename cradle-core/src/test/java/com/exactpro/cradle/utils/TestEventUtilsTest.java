@@ -22,6 +22,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.messages.StoredMessageId;
@@ -43,6 +46,9 @@ public class TestEventUtilsTest
 	private static final String DUMMY_NAME = "TestEvent";
 	private static final String DUMMY_STREAM_NAME = "TestStream";
 	private static final Instant DUMMY_START_TIMESTAMP = Instant.now();
+	private static final String DUMMY_X_ALIAS = "dummyX_alias954",
+			TEST_ALIAS = "test_alias",
+			ANOTHER_ALIAS = "another_alias";
 
 	private TestEventToStoreBuilder eventBuilder;
 
@@ -75,16 +81,38 @@ public class TestEventUtilsTest
 					{null},
 					{Collections.singleton(new StoredMessageId("aliasXYZ", Direction.FIRST, 1631071200662515000L))},
 					{
-						Arrays.asList(new StoredMessageId("dummyX_alias954", Direction.FIRST, 1631071200662515748L),
-								new StoredMessageId("dummyX_alias954", Direction.FIRST, 1631071200662515749L),
-								new StoredMessageId("test_alias", Direction.FIRST, 1631071200662515750L),
-								new StoredMessageId("dummyX_alias954", Direction.FIRST, 1631071200662515750L),
-								new StoredMessageId("test_alias", Direction.SECOND, 1631071200662515750L),
-								new StoredMessageId("test_alias", Direction.FIRST, 1631071200662515749L),
-								new StoredMessageId("dummyX_alias954", Direction.FIRST, 1631071200662515751L),
-								new StoredMessageId("test_alias", Direction.FIRST, 1631071200662515752L),
-								new StoredMessageId("dummyX_alias954", Direction.FIRST, 1631071200662515752L))
+						Arrays.asList(new StoredMessageId(DUMMY_X_ALIAS, Direction.FIRST, 1631071200662515748L),
+								new StoredMessageId(DUMMY_X_ALIAS, Direction.FIRST, 1631071200662515749L),
+								new StoredMessageId(TEST_ALIAS, Direction.FIRST, 1631071200662515750L),
+								new StoredMessageId(DUMMY_X_ALIAS, Direction.FIRST, 1631071200662515750L),
+								new StoredMessageId(TEST_ALIAS, Direction.SECOND, 1631071200662515750L),
+								new StoredMessageId(TEST_ALIAS, Direction.FIRST, 1631071200662515749L),
+								new StoredMessageId(DUMMY_X_ALIAS, Direction.FIRST, 1631071200662515751L),
+								new StoredMessageId(TEST_ALIAS, Direction.FIRST, 1631071200662515752L),
+								new StoredMessageId(DUMMY_X_ALIAS, Direction.FIRST, 1631071200662515752L))
 					}
+				};
+	}
+	
+	@DataProvider(name = "batchLinkedIds")
+	public Object[][] batchLinkedIds()
+	{
+		Map<StoredTestEventId, Collection<StoredMessageId>> batch = new HashMap<>();
+		batch.put(new StoredTestEventId("regularEvent"), 
+				Arrays.asList(new StoredMessageId(DUMMY_X_ALIAS, Direction.FIRST, 1631071200662515748L),
+						new StoredMessageId(DUMMY_X_ALIAS, Direction.FIRST, 1631071200662515747L),
+						new StoredMessageId(TEST_ALIAS, Direction.FIRST, 1631071200662515749L)));
+		batch.put(new StoredTestEventId("emptyEvent"), new ArrayList<>());
+		batch.put(new StoredTestEventId("anotherEvent"), 
+				Arrays.asList(new StoredMessageId(DUMMY_X_ALIAS, Direction.FIRST, 1631071200662515748L),
+						new StoredMessageId(TEST_ALIAS, Direction.FIRST, 1631071200662515700L),
+						new StoredMessageId(TEST_ALIAS, Direction.FIRST, 1631071200662515701L),
+						new StoredMessageId(ANOTHER_ALIAS, Direction.FIRST, 2223L)));
+		
+		return new Object[][]
+				{
+					{null},
+					{batch}
 				};
 	}
 	
@@ -129,6 +157,33 @@ public class TestEventUtilsTest
 		
 		restored.removeAll(links);
 		Assert.assertEquals(restored.size(), 0, "number of extra elements");
+	}
+	
+	@Test(dataProvider = "batchLinkedIds")
+	public void batchLinkedIds(Map<StoredTestEventId, Collection<StoredMessageId>> batchLinks) throws IOException
+	{
+		byte[] bytes = TestEventUtils.serializeBatchLinkedMessageIds(batchLinks);
+		Map<StoredTestEventId, Collection<StoredMessageId>> restored = TestEventUtils.deserializeBatchLinkedMessageIds(bytes);
+		
+		if (batchLinks == null)
+		{
+			Assert.assertNull(restored, "deserialized IDs are null");
+			return;
+		}
+		
+		Assert.assertEquals(restored.size(), batchLinks.size(), "size of deserialized map");
+		for (Entry<StoredTestEventId, Collection<StoredMessageId>> eventLinks : batchLinks.entrySet())
+		{
+			StoredTestEventId eventId = eventLinks.getKey();
+			Collection<StoredMessageId> links = eventLinks.getValue();
+			Collection<StoredMessageId> restoredLinks = restored.remove(eventId);
+			Assert.assertEquals(restoredLinks.size(), links.size(), "size of deserialized IDs collection for event "+eventId);
+			
+			restoredLinks.removeAll(links);
+			Assert.assertEquals(restoredLinks.size(), 0, "number of extra elements for event "+eventId);
+		}
+		
+		Assert.assertEquals(restored.size(), 0, "number of extra elements in map");
 	}
 	
 
