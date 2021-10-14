@@ -82,8 +82,6 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 
 		result.setValue(leftBoundFromFilter.isAfter(leftBoundFromPage) ? leftBoundFromFilter : leftBoundFromPage);
 
-		LocalDateTime leftBoundLocalDate = TimeUtils.toLocalTimestamp(result.getValue());
-
 		return result;
 	}
 
