@@ -57,9 +57,10 @@ public class FilteredMessageIterator implements Iterator<StoredMessage>
 		FilterForGreater<Instant> timestampFrom = filter.getTimestampFrom();
 		FilterForLess<Instant> timestampTo = filter.getTimestampTo();
 
-		return storedMessage -> messageId == null || (messageId.check(storedMessage.getId())
-				&& timestampFrom == null || (timestampFrom.check(storedMessage.getTimestamp())
-				&& timestampTo == null || timestampTo.check(storedMessage.getTimestamp())));
+		return storedMessage ->
+					(messageId == null || messageId.check(storedMessage.getId()))
+					&& (timestampFrom == null || timestampFrom.check(storedMessage.getTimestamp()))
+					&& (timestampTo == null || timestampTo.check(storedMessage.getTimestamp()));
 	}
 
 	@Override

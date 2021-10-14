@@ -150,7 +150,11 @@ public class StoredMessage implements Serializable, CradleMessage
 	{
 		return new StringBuilder()
 				.append("StoredMessage{").append(CompressionUtils.EOL)
-				.append("ID=").append(id).append(",").append(CompressionUtils.EOL)
+				.append("id=").append(id).append(",").append(CompressionUtils.EOL)
+				.append("bookId=").append(id.getBookId()).append(',').append(CompressionUtils.EOL)
+				.append("sessionAlias=").append(id.getSessionAlias()).append(',').append(CompressionUtils.EOL)
+				.append("timestamp=").append(id.getTimestamp()).append(',').append(CompressionUtils.EOL)
+				.append("sequence=").append(id.getSequence()).append(',').append(CompressionUtils.EOL)
 				.append("metadata=").append(getMetadata()).append(",").append(CompressionUtils.EOL)
 				.append("content=").append(Arrays.toString(getContent())).append(CompressionUtils.EOL)
 				.append("}").toString();
