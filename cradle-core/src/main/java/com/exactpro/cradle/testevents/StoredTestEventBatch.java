@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 import com.exactpro.cradle.messages.StoredMessageId;
 import org.apache.commons.lang3.ArrayUtils;
 
-import com.exactpro.cradle.messages.MessageToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
 
@@ -203,6 +202,13 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 		return result != null ? Collections.unmodifiableCollection(result) : Collections.emptyList();
 	}
 	
+	Collection<StoredMessageId> getMessageIds(StoredTestEventId eventId)
+	{
+		Collection<StoredMessageId> result = messageIds.get(eventId);
+		return result != null ? Collections.unmodifiableCollection(result) : Collections.emptyList();
+	}
+	
+	
 	/**
 	 * Adds test event to the batch. Batch will verify the event to match batch conditions.
 	 * Events can be added to batch until {@link #isFull()} returns true.
@@ -287,21 +293,16 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 		
 		if (!event.isSuccess()) {
 			success = false;
-        }
+		}
 	}
 
 	public Map<StoredTestEventId, Collection<StoredMessageId>> getMessageIdsMap()
 	{
-		return messageIds;
+		return Collections.unmodifiableMap(messageIds);
 	}
 
 	public Collection<StoredMessageId> getMessageIds()
 	{
 		return messageIds.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
-	}
-
-	public Collection<StoredMessageId> getMessageIds(StoredTestEventId eventId)
-	{
-		return messageIds.get(eventId);
 	}
 }

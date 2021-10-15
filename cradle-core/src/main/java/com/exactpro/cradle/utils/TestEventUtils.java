@@ -335,7 +335,7 @@ public class TestEventUtils
 	 * @param content to deserialize events from
 	 * @param compressed flag that indicates if content needs to be decompressed first
 	 * @param batch to add events to
-	 * @param ids Map of Collection of messages' id's related with added events
+	 * @param ids Map of Collections of message IDs related to added events
 	 * @throws IOException if deserialization failed
 	 * @throws CradleStorageException if deserialized event doesn't match batch conditions
 	 */

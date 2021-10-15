@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
@@ -53,7 +54,7 @@ public class TestEventEntityTest
 
 	private Collection<StoredMessageId> generateMessageIds()
 	{
-		Collection<StoredMessageId> result = new ArrayList<>();
+		Collection<StoredMessageId> result = new HashSet<>();
 		for (int i = 0; i < 10; i++)
 		{
 			result.add(new StoredMessageId(DUMMY_STREAM_NAME, Direction.FIRST, ++messageSequence));
@@ -86,12 +87,15 @@ public class TestEventEntityTest
 		StoredTestEventBatch expected = generateBatch();
 		TestEventEntity entity = new TestEventEntity(expected, DUMMY_UUID);
 		StoredTestEventBatch actual = entity.toStoredTestEventBatch();
-		assertThatObject(actual).usingRecursiveComparison().isEqualTo(expected);
-		messageSequence = 0;
+		assertThat(actual).usingRecursiveComparison().ignoringFieldsMatchingRegexes(".*\\.messageIds\\..*", "^messageIds\\..*").isEqualTo(expected);
+		
 		for (BatchedStoredTestEvent event : actual.getTestEvents())
-			assertThat(event.getMessageIds())
-					.as("Check event %s linked ids", event.getId(), event.getMessageIds())
-					.isEqualTo(generateMessageIds());
+		{
+			assertThatObject(event.getMessageIds())
+					.usingRecursiveComparison()
+					.as("Check event %s linked ids", event.getId())
+					.isEqualTo(expected.getTestEvent(event.getId()).getMessageIds());
+		}
 	}
 
 }
