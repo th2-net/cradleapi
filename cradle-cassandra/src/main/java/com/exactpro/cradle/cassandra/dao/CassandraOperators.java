@@ -20,8 +20,6 @@ import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
 import com.exactpro.cradle.cassandra.dao.intervals.converters.IntervalConverter;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
-import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventConverter;
-import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
 import com.exactpro.cradle.cassandra.dao.messages.converters.DetailedMessageBatchConverter;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenDatesOperator;
@@ -38,12 +36,10 @@ public class CassandraOperators
 	private final TestEventOperator testEventOperator;
 	private final TimeTestEventOperator timeTestEventOperator;
 	private final TestEventChildrenDatesOperator testEventChildrenDatesOperator;
-	private final MessageTestEventOperator messageTestEventOperator;
 	private final IntervalOperator intervalOperator;
 	private final DetailedMessageBatchConverter messageBatchConverter;
 	private final TestEventConverter testEventConverter;
 	private final TestEventMetadataConverter testEventMetadataConverter;
-	private final MessageTestEventConverter messageTestEventConverter;
 	private final IntervalConverter intervalConverter;
 
 	public CassandraOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings)
@@ -54,13 +50,11 @@ public class CassandraOperators
 		testEventOperator = dataMapper.testEventOperator(settings.getKeyspace(), settings.getTestEventsTableName());
 		timeTestEventOperator = dataMapper.timeTestEventOperator(settings.getKeyspace(), settings.getTimeTestEventsTableName());
 		testEventChildrenDatesOperator = dataMapper.testEventChildrenDatesOperator(settings.getKeyspace(), settings.getTestEventsChildrenDatesTableName());
-		messageTestEventOperator = dataMapper.messageTestEventOperator(settings.getKeyspace(), settings.getMessagesTestEventsTableName());
 		intervalOperator = dataMapper.intervalOperator(settings.getKeyspace(), settings.getIntervalsTableName());
 
 		messageBatchConverter = dataMapper.detailedMessageBatchConverter();
 		testEventConverter = dataMapper.testEventConverter();
 		testEventMetadataConverter = dataMapper.testEventMetadataConverter();
-		messageTestEventConverter = dataMapper.messageTestEventConverter();
 		intervalConverter = dataMapper.intervalConverter();
 	}
 
@@ -94,11 +88,6 @@ public class CassandraOperators
 		return testEventChildrenDatesOperator;
 	}
 
-	public MessageTestEventOperator getMessageTestEventOperator()
-	{
-		return messageTestEventOperator;
-	}
-
 	public IntervalOperator getIntervalOperator() { return intervalOperator; }
 	
 	
@@ -117,11 +106,6 @@ public class CassandraOperators
 		return testEventMetadataConverter;
 	}
 
-	public MessageTestEventConverter getMessageTestEventConverter()
-	{
-		return messageTestEventConverter;
-	}
-	
 	public IntervalConverter getIntervalConverter()
 	{
 		return intervalConverter;

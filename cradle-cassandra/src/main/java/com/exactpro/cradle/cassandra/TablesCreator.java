@@ -55,7 +55,6 @@ public class TablesCreator
 		createTestEventsTable();
 		createTestEventsChildrenDatesTable();
 		createTimeTestEventsTable();
-		createMessagesTestEventsTable();
 		createIntervalsTable();
 		createIndexes();
 	}
@@ -200,22 +199,6 @@ public class TablesCreator
 				.withClusteringColumn(START_DATE, DataTypes.DATE)
 				.withClusteringOrder(START_DATE, ClusteringOrder.ASC);
 
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
-	}
-	
-	public void createMessagesTestEventsTable() throws IOException
-	{
-		String tableName = settings.getMessagesTestEventsTableName();
-		if (isTableExists(tableName))
-			return;
-		
-		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(MESSAGE_ID, DataTypes.TEXT)
-				.withClusteringColumn(TEST_EVENT_ID, DataTypes.TEXT)
-				.withColumn(BATCH_ID, DataTypes.TEXT);
-		
 		exec.executeQuery(create.asCql(), true);
 		logger.info("Table '{}' has been created", tableName);
 	}
