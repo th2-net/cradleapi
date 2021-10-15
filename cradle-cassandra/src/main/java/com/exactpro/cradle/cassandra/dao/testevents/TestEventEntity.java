@@ -59,7 +59,7 @@ public class TestEventEntity extends TestEventMetadataEntity
 	public TestEventEntity(StoredTestEvent event, UUID instanceId) throws IOException
 	{
 		super(event, instanceId);
-		logger.debug("Creating TestEventEntity from test event");
+		logger.debug("Creating TestEventEntity from test event '{}'", event.getId());
 
 		byte[] content, 
 				messageIds = null;

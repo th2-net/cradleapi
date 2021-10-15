@@ -97,7 +97,7 @@ public class TestEventMetadataEntity
 
 	public TestEventMetadataEntity(StoredTestEvent event, UUID instanceId) throws IOException
 	{
-		logger.debug("Creating TestEventMetadataEntity from test event");
+		logger.debug("Creating TestEventMetadataEntity from test event '{}'", event.getId());
 
 		StoredTestEventId parentId = event.getParentId();
 
@@ -113,24 +113,19 @@ public class TestEventMetadataEntity
 
 		if (event instanceof StoredTestEventBatch)
 		{
+			StoredTestEventBatch batch = (StoredTestEventBatch)event;
 			this.setEventBatch(true);
-			this.setEventCount(((StoredTestEventBatch)event).getTestEventsCount());
+			this.setEventCount(batch.getTestEventsCount());
+			
+			byte[] metadata = TestEventUtils.serializeTestEventsMetadata(batch.getTestEventsMetadata().getTestEvents());
+			this.setEventBatchMetadata(ByteBuffer.wrap(metadata));
 		}
 		else
 		{
 			this.setEventBatch(false);
 			this.setEventCount(1);
-		}
-
-		if (event instanceof StoredTestEventBatch)
-		{
-			StoredTestEventBatch batch = (StoredTestEventBatch)event;
-			byte[] metadata = TestEventUtils.serializeTestEventsMetadata(batch.getTestEventsMetadata().getTestEvents());
-			this.setEventBatchMetadata(ByteBuffer.wrap(metadata));
-		}
-		else
 			this.eventBatchMetadata = null;
-
+		}
 	}
 
 

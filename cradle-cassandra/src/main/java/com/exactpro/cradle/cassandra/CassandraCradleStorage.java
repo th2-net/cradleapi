@@ -921,7 +921,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		return new AsyncOperator<Void>(semaphore).getFuture(() ->
 		{
-			logger.trace("Executing date/event storing query");
+			logger.trace("Executing date/child event storing query");
 			return ops.getTestEventChildrenDatesOperator().writeTestEventDate(entity, writeAttrs);
 		});
 	}
