@@ -42,7 +42,9 @@ public class StoredTestEventSingle extends MinimalStoredTestEvent implements Sto
 		this.endTimestamp = event.getEndTimestamp();
 		this.success = event.isSuccess();
 		this.content = event.getContent();
-		this.messageIds = new HashSet<StoredMessageId>(event.getMessageIds());
+		
+		Collection<StoredMessageId> eventLinks = event.getMessageIds();
+		this.messageIds = eventLinks != null ? new HashSet<>(eventLinks) : null;
 	}
 	
 	
@@ -73,6 +75,6 @@ public class StoredTestEventSingle extends MinimalStoredTestEvent implements Sto
 	@Override
 	public Collection<StoredMessageId> getMessageIds()
 	{
-		return Collections.unmodifiableCollection(messageIds);
+		return messageIds != null ? Collections.unmodifiableCollection(messageIds) : messageIds;
 	}
 }
