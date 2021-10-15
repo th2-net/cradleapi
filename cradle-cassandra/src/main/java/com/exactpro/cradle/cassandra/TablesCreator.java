@@ -55,8 +55,6 @@ public class TablesCreator
 		createTestEventsTable();
 		createTestEventsChildrenDatesTable();
 		createTimeTestEventsTable();
-		createTestEventsMessagesTable();
-		createMessagesTestEventsTable();
 		createIntervalsTable();
 		createIndexes();
 	}
@@ -181,6 +179,7 @@ public class TablesCreator
 				.withColumn(CONTENT, DataTypes.BLOB)
 				.withColumn(STORED_DATE, DataTypes.DATE)
 				.withColumn(STORED_TIME, DataTypes.TIME)
+				.withColumn(MESSAGE_IDS, DataTypes.BLOB)
 				.withClusteringOrder(START_TIME, ClusteringOrder.ASC)
 				.withClusteringOrder(ID, ClusteringOrder.ASC);
 		
@@ -200,37 +199,6 @@ public class TablesCreator
 				.withClusteringColumn(START_DATE, DataTypes.DATE)
 				.withClusteringOrder(START_DATE, ClusteringOrder.ASC);
 
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
-	}
-	
-	public void createTestEventsMessagesTable() throws IOException
-	{
-		String tableName = settings.getTestEventsMessagesTableName();
-		if (isTableExists(tableName))
-			return;
-		
-		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(TEST_EVENT_ID, DataTypes.TEXT)
-				.withClusteringColumn(MESSAGE_IDS, DataTypes.frozenSetOf(DataTypes.TEXT));
-		
-		exec.executeQuery(create.asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
-	}
-	
-	public void createMessagesTestEventsTable() throws IOException
-	{
-		String tableName = settings.getMessagesTestEventsTableName();
-		if (isTableExists(tableName))
-			return;
-		
-		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
-				.withPartitionKey(MESSAGE_ID, DataTypes.TEXT)
-				.withClusteringColumn(TEST_EVENT_ID, DataTypes.TEXT)
-				.withColumn(BATCH_ID, DataTypes.TEXT);
-		
 		exec.executeQuery(create.asCql(), true);
 		logger.info("Table '{}' has been created", tableName);
 	}

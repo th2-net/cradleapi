@@ -17,7 +17,11 @@
 package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 
+import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
@@ -29,7 +33,8 @@ public class StoredTestEventSingle extends MinimalStoredTestEvent implements Sto
 			endTimestamp;
 	private final boolean success;
 	private final byte[] content;
-	
+	private final Collection<StoredMessageId> messageIds;
+
 	public StoredTestEventSingle(StoredTestEventWithContent event) throws CradleStorageException
 	{
 		super(event);
@@ -37,6 +42,7 @@ public class StoredTestEventSingle extends MinimalStoredTestEvent implements Sto
 		this.endTimestamp = event.getEndTimestamp();
 		this.success = event.isSuccess();
 		this.content = event.getContent();
+		this.messageIds = new HashSet<StoredMessageId>(event.getMessageIds());
 	}
 	
 	
@@ -62,5 +68,11 @@ public class StoredTestEventSingle extends MinimalStoredTestEvent implements Sto
 	public byte[] getContent()
 	{
 		return content;
+	}
+
+	@Override
+	public Collection<StoredMessageId> getMessageIds()
+	{
+		return Collections.unmodifiableCollection(messageIds);
 	}
 }

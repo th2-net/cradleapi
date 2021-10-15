@@ -16,10 +16,16 @@
 
 package com.exactpro.cradle.testevents;
 
+import com.exactpro.cradle.messages.StoredMessageId;
+
+import java.util.Collection;
+
 /**
  * Interface to access all data fields of test event
  */
 public interface StoredTestEventWithContent extends StoredTestEvent
 {
 	byte[] getContent();
+
+	Collection<StoredMessageId> getMessageIds();
 }

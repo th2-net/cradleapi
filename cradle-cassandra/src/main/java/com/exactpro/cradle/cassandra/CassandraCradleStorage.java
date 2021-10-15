@@ -37,8 +37,6 @@ import com.exactpro.cradle.cassandra.dao.intervals.IntervalSupplies;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.iterators.*;
-import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
-import com.exactpro.cradle.cassandra.linkers.LinkerSupplies;
 import com.exactpro.cradle.cassandra.retries.PageSizeAdjustingPolicy;
 import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 import com.exactpro.cradle.cassandra.retries.RetryingSelectExecutor;
@@ -56,10 +54,6 @@ import com.exactpro.cradle.utils.MessageUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.lang.Math.min;
-import static java.util.stream.Collectors.toList;
-
 import java.io.*;
 import java.time.*;
 import java.util.*;
@@ -95,7 +89,6 @@ public class CassandraCradleStorage extends CradleStorage
 	private RetryingSelectExecutor selectExecutor;
 	private PagingSupplies pagingSupplies;
 
-	private TestEventsMessagesLinker testEventsMessagesLinker;
 	private IntervalsWorker intervalsWorker;
 
 	public CassandraCradleStorage(CassandraConnection connection, CassandraStorageSettings settings)
@@ -166,13 +159,6 @@ public class CassandraCradleStorage extends CradleStorage
 					.setConsistencyLevel(ConsistencyLevel.ALL)
 					.setTimeout(timeout)
 					.setPageSize(resultPageSize);
-
-			LinkerSupplies supplies =
-					new LinkerSupplies(ops.getTestEventMessagesOperator(), ops.getMessageTestEventOperator(),
-							ops.getTestEventMessagesConverter(), ops.getMessageTestEventConverter());
-			testEventsMessagesLinker =
-					new CassandraTestEventsMessagesLinker(supplies, instanceUuid, readAttrs, semaphore, selectExecutor,
-							pagingSupplies);
 
 			IntervalSupplies intervalSupplies =
 					new IntervalSupplies(ops.getIntervalOperator(), ops.getIntervalConverter(), pagingSupplies);
@@ -322,31 +308,6 @@ public class CassandraCradleStorage extends CradleStorage
 			return CompletableFuture.completedFuture(null);
 
 		return failEventAndParents(event.getParentId());
-	}
-
-	@Override
-	protected void doStoreTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId,
-			Collection<StoredMessageId> messageIds) throws IOException
-	{
-		try
-		{
-			doStoreTestEventMessagesLinkAsync(eventId, batchId, messageIds).get();
-		}
-		catch (Exception e)
-		{
-			throw new IOException(
-					"Error while storing link between test event " + eventId + " and " + messageIds.size() +
-							" message(s)", e);
-		}
-	}
-
-	@Override
-	protected CompletableFuture<Void> doStoreTestEventMessagesLinkAsync(StoredTestEventId eventId,
-			StoredTestEventId batchId, Collection<StoredMessageId> messageIds)
-	{
-		List<String> messageIdsStrings = messageIds.stream().map(StoredMessageId::toString).collect(toList());
-		String eventIdString = eventId.toString();
-		return CompletableFuture.allOf(storeMessagesOfTestEvent(eventIdString, messageIdsStrings));
 	}
 
 	@Override
@@ -526,12 +487,6 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	public TestEventsMessagesLinker getTestEventsMessagesLinker()
-	{
-		return testEventsMessagesLinker;
-	}
-
-	@Override
 	public IntervalsWorker getIntervalsWorker() { return intervalsWorker; }
 
 
@@ -688,7 +643,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 		return new AsyncOperator<MappedAsyncPagingIterable<TestEventEntity>>(semaphore)
 				.getFuture(() -> selectExecutor.executeQuery(() ->
-								ops.getTimeTestEventOperator().getTestEventsDirect(instanceUuid,
+								ops.getTimeTestEventOperator().getTestEvents(instanceUuid,
 										params.getParentId(), params.getFromDate(), params.getFromTime(),
 										params.getToTime(), readAttrs),
 						ops.getTestEventConverter(), queryInfo))
@@ -706,7 +661,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 		return new AsyncOperator<MappedAsyncPagingIterable<TestEventMetadataEntity>>(semaphore)
 				.getFuture(() -> selectExecutor.executeQuery(() ->
-								ops.getTimeTestEventOperator().getTestEventsMetadataDirect(instanceUuid,
+								ops.getTimeTestEventOperator().getTestEventsMetadata(instanceUuid,
 										params.getParentId(), params.getFromDate(), params.getFromTime(),
 										params.getToTime(), readAttrs),
 						ops.getTestEventMetadataConverter(), queryInfo))
@@ -717,12 +672,12 @@ public class CassandraCradleStorage extends CradleStorage
 
 
 	@Override
-	protected Iterable<StoredTestEventWrapper> doGetTestEvents(Instant from, Instant to, Order order)
+	protected Iterable<StoredTestEventWrapper> doGetTestEvents(Instant from, Instant to)
 			throws CradleStorageException, IOException
 	{
 		try
 		{
-			return doGetTestEventsAsync(from, to, order).get();
+			return doGetTestEventsAsync(from, to).get();
 		}
 		catch (CradleStorageException e)
 		{
@@ -735,12 +690,12 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Iterable<StoredTestEventMetadata> doGetTestEventsMetadata(Instant from, Instant to, Order order)
+	protected Iterable<StoredTestEventMetadata> doGetTestEventsMetadata(Instant from, Instant to)
 			throws CradleStorageException, IOException
 	{
 		try
 		{
-			return doGetTestEventsMetadataAsync(from, to, order).get();
+			return doGetTestEventsMetadataAsync(from, to).get();
 		}
 		catch (CradleStorageException e)
 		{
@@ -753,18 +708,16 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsAsync(Instant from, Instant to,
-			Order order) throws CradleStorageException
+	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsAsync(Instant from, Instant to)
+			throws CradleStorageException
 	{
 		TestEventsQueryParams params = new TestEventsQueryParams(from, to);
-		String queryInfo = String.format("get test events from range %s..%s in %s order", from, to, order);
+		String queryInfo = String.format("get test events from range %s..%s", from, to);
 
 		return new AsyncOperator<MappedAsyncPagingIterable<TestEventEntity>>(semaphore)
-				.getFuture(() -> selectExecutor.executeQuery(() -> order == Order.DIRECT
-								? ops.getTimeTestEventOperator().getTestEventsDirect(instanceUuid,
-										params.getFromDate(), params.getFromTime(), params.getToTime(), readAttrs)
-								: ops.getTimeTestEventOperator().getTestEventsReverse(instanceUuid,
-										params.getFromDate(), params.getFromTime(), params.getToTime(), readAttrs),
+				.getFuture(() -> selectExecutor.executeQuery(
+						() -> ops.getTimeTestEventOperator().getTestEvents(instanceUuid,
+								params.getFromDate(), params.getFromTime(), params.getToTime(), readAttrs),
 						ops.getTestEventConverter(), queryInfo))
 				.thenApply(entity -> new TestEventDataIteratorAdapter(entity, pagingSupplies,
 						ops.getTestEventConverter(), queryInfo));
@@ -772,17 +725,15 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsMetadataAsync(Instant from,
-			Instant to, Order order) throws CradleStorageException
+			Instant to) throws CradleStorageException
 	{
 		TestEventsQueryParams params = new TestEventsQueryParams(from, to);
-		String queryInfo = String.format("get test events' metadata from range %s..%s in %s order", from, to, order);
+		String queryInfo = String.format("get test events' metadata from range %s..%s", from, to);
 
 		return new AsyncOperator<MappedAsyncPagingIterable<TestEventMetadataEntity>>(semaphore)
-				.getFuture(() -> selectExecutor.executeQuery(() -> order == Order.DIRECT
-								? ops.getTimeTestEventOperator().getTestEventsMetadataDirect(instanceUuid,
-										params.getFromDate(), params.getFromTime(), params.getToTime(), readAttrs)
-								: ops.getTimeTestEventOperator().getTestEventsMetadataReverse(instanceUuid,
-										params.getFromDate(), params.getFromTime(), params.getToTime(), readAttrs),
+				.getFuture(() -> selectExecutor.executeQuery(
+						() -> ops.getTimeTestEventOperator().getTestEventsMetadata(instanceUuid,
+								params.getFromDate(), params.getFromTime(), params.getToTime(), readAttrs),
 						ops.getTestEventMetadataConverter(), queryInfo))
 				.thenApply(entity -> new TestEventMetadataIteratorAdapter(entity, pagingSupplies,
 						ops.getTestEventMetadataConverter(), queryInfo));
@@ -982,53 +933,6 @@ public class CassandraCradleStorage extends CradleStorage
 			logger.trace("Executing time/event storing query");
 			return ops.getTimeTestEventOperator().writeTestEvent(entity, writeAttrs);
 		});
-	}
-
-	protected CompletableFuture<Void> storeMessagesOfTestEvent(String eventId, List<String> messageIds)
-	{
-		List<CompletableFuture<TestEventMessagesEntity>> futures = new ArrayList<>();
-		TestEventMessagesOperator op = ops.getTestEventMessagesOperator();
-		int msgsSize = messageIds.size();
-		for (int left = 0; left < msgsSize; left++)
-		{
-			int right = min(left + TEST_EVENTS_MSGS_LINK_MAX_MSGS, msgsSize);
-			Set<String> curMsgsIds = new HashSet<>(messageIds.subList(left, right));
-			logger.trace("Linking {} message(s) to test event {}", curMsgsIds.size(), eventId);
-
-			TestEventMessagesEntity entity = new TestEventMessagesEntity();
-			entity.setInstanceId(getInstanceUuid());
-			entity.setEventId(eventId);
-			entity.setMessageIds(curMsgsIds);
-
-			futures.add(new AsyncOperator<TestEventMessagesEntity>(semaphore)
-					.getFuture(() -> op.writeMessages(entity, writeAttrs)));
-
-			left = right - 1;
-		}
-		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-	}
-
-	protected CompletableFuture<Void> storeTestEventOfMessages(List<String> messageIds, String eventId,
-			StoredTestEventId batchId)
-	{
-		String batchIdString = batchId != null ? batchId.toString() : null;
-		List<CompletableFuture<MessageTestEventEntity>> futures = new ArrayList<>();
-		MessageTestEventOperator op = ops.getMessageTestEventOperator();
-		for (String id : messageIds)
-		{
-			logger.trace("Linking test event {} to message {}", eventId, id);
-
-			MessageTestEventEntity entity = new MessageTestEventEntity();
-			entity.setInstanceId(getInstanceUuid());
-			entity.setMessageId(id);
-			entity.setEventId(eventId);
-			if (batchIdString != null)
-				entity.setBatchId(batchIdString);
-
-			futures.add(new AsyncOperator<MessageTestEventEntity>(semaphore)
-					.getFuture(() -> op.writeTestEvent(entity, writeAttrs)));
-		}
-		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 	}
 
 	@Override

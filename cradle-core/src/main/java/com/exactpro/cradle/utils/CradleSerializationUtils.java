@@ -14,12 +14,26 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.cassandra.dao.messages;
+package com.exactpro.cradle.utils;
 
-import com.datastax.oss.driver.api.mapper.annotations.Dao;
-import com.exactpro.cradle.cassandra.dao.EntityConverter;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 
-@Dao
-public interface MessageTestEventConverter extends EntityConverter<MessageTestEventEntity>
+public class CradleSerializationUtils
 {
+	public static void writeString(String s, DataOutputStream dos) throws IOException
+	{
+		byte[] bytes = s.getBytes();
+		dos.writeShort(bytes.length);
+		dos.write(bytes);
+	}
+	
+	public static String readString(DataInputStream dis) throws IOException
+	{
+		int length = dis.readShort();
+		byte[] bytes = new byte[length];
+		dis.readFully(bytes);
+		return new String(bytes);
+	}
 }

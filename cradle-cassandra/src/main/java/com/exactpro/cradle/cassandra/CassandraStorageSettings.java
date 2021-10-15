@@ -35,15 +35,12 @@ public class CassandraStorageSettings
 			ROOT_TEST_EVENTS_TABLE_DEFAULT_NAME = "root_test_events",
 			TEST_EVENTS_CHILDREN_TABLE_DEFAULT_NAME = "test_events_children",
 			TEST_EVENTS_CHILDREN_DATES_TABLE_DEFAULT_NAME = "test_events_children_dates",
-			TEST_EVENTS_MESSAGES_TABLE_DEFAULT_NAME = "test_events_messages",
-			MESSAGES_TEST_EVENTS_TABLE_DEFAULT_NAME = "messages_test_events",
 			INTERVALS_TABLE_DEFAULT_NAME = "intervals";
 	public static final long DEFAULT_TIMEOUT = 5000,
 			DEFAULT_MAX_MESSAGE_BATCH_SIZE = StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE,
 			DEFAULT_MAX_EVENT_BATCH_SIZE = StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE;
 	public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
 	public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1;
-	public static final int TEST_EVENTS_MSGS_LINK_MAX_MSGS = 10;
 	
 	private final String keyspace;
 	private String messagesTableName,
@@ -54,8 +51,6 @@ public class CassandraStorageSettings
 			rootTestEventsTableName,
 			testEventsChildrenTableName,
 			testEventsChildrenDatesTableName,
-			testEventsMessagesTableName,
-			messagesTestEventsTableName,
 			timeIntervalsTableName,
 			intervalsTableName;
 	private final NetworkTopologyStrategy networkTopologyStrategy;
@@ -77,8 +72,6 @@ public class CassandraStorageSettings
 		this.rootTestEventsTableName = ROOT_TEST_EVENTS_TABLE_DEFAULT_NAME;
 		this.testEventsChildrenTableName = TEST_EVENTS_CHILDREN_TABLE_DEFAULT_NAME;
 		this.testEventsChildrenDatesTableName = TEST_EVENTS_CHILDREN_DATES_TABLE_DEFAULT_NAME;
-		this.testEventsMessagesTableName = TEST_EVENTS_MESSAGES_TABLE_DEFAULT_NAME;
-		this.messagesTestEventsTableName = MESSAGES_TEST_EVENTS_TABLE_DEFAULT_NAME;
 		this.intervalsTableName = INTERVALS_TABLE_DEFAULT_NAME;
 		this.keyspace = keyspace;
 		this.networkTopologyStrategy = networkTopologyStrategy;
@@ -204,27 +197,6 @@ public class CassandraStorageSettings
 	}
 	
 	
-	public String getTestEventsMessagesTableName()
-	{
-		return testEventsMessagesTableName;
-	}
-	
-	public void setTestEventsMessagesTableName(String testEventsMessagesTableName)
-	{
-		this.testEventsMessagesTableName = testEventsMessagesTableName;
-	}
-	
-	
-	public String getMessagesTestEventsTableName()
-	{
-		return messagesTestEventsTableName;
-	}
-	
-	public void setMessagesTestEventsTableName(String messagesTestEventsTableName)
-	{
-		this.messagesTestEventsTableName = messagesTestEventsTableName;
-	}
-
 	public String getIntervalsTableName() { return intervalsTableName; }
 
 	public String getTimeIntervalsTableName() { return timeIntervalsTableName; }

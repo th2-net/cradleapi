@@ -34,7 +34,6 @@ import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.StoredTestEventMetadata;
-import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
 import com.exactpro.cradle.utils.TimeUtils;
@@ -49,12 +48,15 @@ public abstract class CradleStorage
 	private String instanceId;
 	
 	private volatile boolean workingState = false;
-	
+
 	/**
-	 * Initializes internal objects of storage, i.e. creates needed connections and facilities and obtains ID of data instance with given name.
-	 * If data instance with that name doesn't exist, makes in storage the new record with given name, returning ID of that record
-	 * @param instanceName name of data instance. Will be used to mark written data
-	 * @param prepareStorage flag that indicates if underlying storage on disk can be created or its structure can be updated, if needed
+	 * Initializes internal objects of storage, i.e. creates needed connections and facilities and obtains ID of data
+	 * instance with given name. If data instance with that name doesn't exist, makes in storage the new record with
+	 * given name, returning ID of that record
+	 *
+	 * @param instanceName   name of data instance. Will be used to mark written data
+	 * @param prepareStorage flag that indicates if underlying storage on disk can be created or its structure can be
+	 *                       updated, if needed
 	 * @return ID of data instance as recorded in storage
 	 * @throws CradleStorageException if storage initialization failed
 	 */
@@ -72,9 +74,6 @@ public abstract class CradleStorage
 	protected abstract CompletableFuture<Void> doStoreTestEventAsync(StoredTestEvent event);
 	protected abstract void doUpdateParentTestEvents(StoredTestEvent event) throws IOException;
 	protected abstract CompletableFuture<Void> doUpdateParentTestEventsAsync(StoredTestEvent event);
-	protected abstract void doStoreTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messageIds) throws IOException;
-	protected abstract CompletableFuture<Void> doStoreTestEventMessagesLinkAsync(StoredTestEventId eventId, StoredTestEventId batchId, 
-			Collection<StoredMessageId> messageIds);
 	protected abstract StoredMessage doGetMessage(StoredMessageId id) throws IOException;
 	protected abstract CompletableFuture<StoredMessage> doGetMessageAsync(StoredMessageId id);
 	protected abstract Collection<StoredMessage> doGetMessageBatch(StoredMessageId id) throws IOException;
@@ -85,8 +84,10 @@ public abstract class CradleStorage
 	protected abstract long doGetLastMessageIndex(String streamName, Direction direction) throws IOException;
 	protected abstract long doGetFirstProcessedMessageIndex(String streamName, Direction direction) throws IOException;
 	protected abstract long doGetLastProcessedMessageIndex(String streamName, Direction direction) throws IOException;
-	protected abstract StoredMessageId doGetNearestMessageId(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation) throws IOException;
-	protected abstract CompletableFuture<StoredMessageId> doGetNearestMessageIdAsync(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation);
+	protected abstract StoredMessageId doGetNearestMessageId(String streamName, Direction direction, Instant timestamp,
+			TimeRelation timeRelation) throws IOException;
+	protected abstract CompletableFuture<StoredMessageId> doGetNearestMessageIdAsync(String streamName,
+			Direction direction, Instant timestamp, TimeRelation timeRelation);
 	protected abstract StoredTestEventWrapper doGetTestEvent(StoredTestEventId id) throws IOException;
 	protected abstract CompletableFuture<StoredTestEventWrapper> doGetTestEventAsync(StoredTestEventId ids);
 	protected abstract Collection<String> doGetStreams() throws IOException;
@@ -96,16 +97,10 @@ public abstract class CradleStorage
 	protected abstract CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEventWrapper event, boolean success);
 
 	public abstract CradleObjectsFactory getObjectsFactory();
-	
-	
-	/**
-	 * TestEventsMessagesLinker is used to obtain links between test events and messages
-	 * @return instance of TestEventsMessagesLinker
-	 */
-	public abstract TestEventsMessagesLinker getTestEventsMessagesLinker();
 
 	/**
 	 * IntervalsWorker is used to work with Crawler intervals
+	 *
 	 * @return instance of IntervalsWorker
 	 */
 	public abstract IntervalsWorker getIntervalsWorker();
@@ -113,7 +108,8 @@ public abstract class CradleStorage
 	protected abstract Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException;
 	protected abstract CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter);
 	protected abstract Iterable<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException;
-	protected abstract CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter);
+	protected abstract CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(
+			StoredMessageFilter filter);
 
 	protected abstract Iterable<StoredTestEventWrapper> doGetRootTestEvents(Instant from, Instant to)
 			throws CradleStorageException, IOException;
@@ -131,21 +127,23 @@ public abstract class CradleStorage
 			StoredTestEventId parentId, Instant from, Instant to) throws CradleStorageException;
 	protected abstract CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsMetadataAsync(
 			StoredTestEventId parentId, Instant from, Instant to) throws CradleStorageException;
-	protected abstract Iterable<StoredTestEventWrapper> doGetTestEvents(Instant from, Instant to, Order order)
+	protected abstract Iterable<StoredTestEventWrapper> doGetTestEvents(Instant from, Instant to)
 			throws CradleStorageException, IOException;
-	protected abstract Iterable<StoredTestEventMetadata> doGetTestEventsMetadata(Instant from, Instant to, Order order)
+	protected abstract Iterable<StoredTestEventMetadata> doGetTestEventsMetadata(Instant from, Instant to)
 			throws CradleStorageException, IOException;
 	protected abstract CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsAsync(Instant from,
-			Instant to, Order order) throws CradleStorageException;
+			Instant to) throws CradleStorageException;
 	protected abstract CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsMetadataAsync(Instant from,
-			Instant to, Order order) throws CradleStorageException;
-	
-	
+			Instant to) throws CradleStorageException;
+
+
 	/**
-	 * Initializes storage, i.e. creates needed connections and gets ready to write data marked with given instance name. 
-	 * Storage on disk is created/updated if this is allowed with prepareStorage flag
-	 * @param instanceName name of current data instance. Will be used to mark written data
-	 * @param prepareStorage flag that indicates if underlying storage on disk can be created or its structure can be updated, if needed
+	 * Initializes storage, i.e. creates needed connections and gets ready to write data marked with given instance
+	 * name. Storage on disk is created/updated if this is allowed with prepareStorage flag
+	 *
+	 * @param instanceName   name of current data instance. Will be used to mark written data
+	 * @param prepareStorage flag that indicates if underlying storage on disk can be created or its structure can be
+	 *                       updated, if needed
 	 * @throws CradleStorageException if storage initialization failed
 	 */
 	public final void init(String instanceName, boolean prepareStorage) throws CradleStorageException
@@ -165,7 +163,7 @@ public abstract class CradleStorage
 		workingState = true;
 		logger.info("Storage initialization finished");
 	}
-	
+
 	/**
 	 * @return ID of current application instance as recorded in storage
 	 */
@@ -173,21 +171,24 @@ public abstract class CradleStorage
 	{
 		return instanceId;
 	}
-	
-	
+
+
 	/**
 	 * Disposes resources occupied by storage which means closing of opened connections, flushing all buffers, etc.
-	 * @throws CradleStorageException if there was error during storage disposal, which may mean issue with data flushing, unexpected connection break, etc.
+	 *
+	 * @throws CradleStorageException if there was error during storage disposal, which may mean issue with data
+	 * flushing, unexpected connection break, etc.
 	 */
 	public final void dispose() throws CradleStorageException
 	{
 		doDispose();
 		logger.info("Storage disposed");
 	}
-	
-	
+
+
 	/**
 	 * Writes data about given message batch to storage.
+	 *
 	 * @param batch data to write
 	 * @throws IOException if data writing failed
 	 */
@@ -199,10 +200,11 @@ public abstract class CradleStorage
 		storeTimeMessages(batch.getMessages());
 		logger.debug("Message batch {} has been stored", batch.getId());
 	}
-	
-	
+
+
 	/**
 	 * Asynchronously writes data about given message batch to storage.
+	 *
 	 * @param batch data to write
 	 * @return future to get know if storing was successful
 	 */
@@ -220,9 +222,10 @@ public abstract class CradleStorage
 						logger.debug("Message batch {} has been stored asynchronously", batch.getId());
 				});
 	}
-	
+
 	/**
 	 * Writes data about given processed message batch to storage.
+	 *
 	 * @param batch data to write
 	 * @throws IOException if data writing failed
 	 */
@@ -244,15 +247,17 @@ public abstract class CradleStorage
 		return doStoreProcessedMessageBatchAsync(batch)
 				.whenComplete((r, error) -> {
 					if (error != null)
-						logger.error("Error while storing processed message batch "+batch.getId()+" asynchronously", error);
+						logger.error("Error while storing processed message batch " + batch.getId() + " asynchronously",
+								error);
 					else
 						logger.debug("Processed message batch {} has been stored asynchronously", batch.getId());
 				});
 	}
-	
-	
+
+
 	/**
 	 * Writes data about given test event to storage
+	 *
 	 * @param event data to write
 	 * @throws IOException if data writing failed
 	 */
@@ -276,12 +281,13 @@ public abstract class CradleStorage
 			logger.debug("Parents of test event {} have been updated", event.getId());
 		}
 	}
-	
+
 	/**
 	 * Asynchronously writes data about given test event to storage
+	 *
 	 * @param event data to write
-	 * @throws IOException if data is invalid
 	 * @return future to get know if storing was successful
+	 * @throws IOException if data is invalid
 	 */
 	public final CompletableFuture<Void> storeTestEventAsync(StoredTestEvent event) throws IOException
 	{
@@ -310,7 +316,8 @@ public abstract class CradleStorage
 		CompletableFuture<Void> result2 = doUpdateParentTestEventsAsync(event)
 				.whenComplete((r, error) -> {
 					if (error != null)
-						logger.error("Error while updating parent of test event "+event.getId()+" asynchronously", error);
+						logger.error("Error while updating parent of test event " + event.getId() + " asynchronously",
+								error);
 					else
 						logger.debug("Parents of test event {} have been updated asynchronously", event.getId());
 				});
@@ -318,41 +325,8 @@ public abstract class CradleStorage
 	}
 
 	/**
-	 * Writes to storage the links between given test event and messages
-	 * @param eventId ID of stored test event
-	 * @param batchId ID of batch where event is stored, if applicable
-	 * @param messagesIds collection of stored message IDs
-	 * @throws IOException if data writing failed
-	 */
-	public final void storeTestEventMessagesLink(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messagesIds) throws IOException
-	{
-		logger.debug("Storing links between test event {} and {} message(s)", eventId, messagesIds.size());
-		doStoreTestEventMessagesLink(eventId, batchId, messagesIds);
-		logger.debug("Links between test event {} and {} message(s) have been stored", eventId, messagesIds.size());
-	}
-
-	/**
-	 * Asynchronously writes to storage the links between given test event and messages
-	 * @param eventId ID of stored test event
-	 * @param batchId ID of batch where event is stored, if applicable
-	 * @param messagesIds collection of stored message IDs
-	 * @return future to get know if storing was successful
-	 */
-	public final CompletableFuture<Void> storeTestEventMessagesLinkAsync(StoredTestEventId eventId, StoredTestEventId batchId, Collection<StoredMessageId> messagesIds)
-	{
-		logger.debug("Storing links between test event {} and {} message(s) asynchronously", eventId, messagesIds.size());
-		return doStoreTestEventMessagesLinkAsync(eventId, batchId, messagesIds)
-				.whenComplete((r, error) -> {
-					if (error != null)
-						logger.error("Error while storing links between test event "+eventId+" and "+messagesIds.size()+" message(s) asynchronously", error);
-					else
-						logger.debug("Links between test event {} and {} message(s) have been stored asynchronously", eventId, messagesIds.size());
-				});
-
-	}
-	
-	/**
 	 * Retrieves message data stored under given ID
+	 *
 	 * @param id of stored message to retrieve
 	 * @return data of stored message
 	 * @throws IOException if message data retrieval failed
@@ -364,9 +338,10 @@ public abstract class CradleStorage
 		logger.debug("Message {} got", id);
 		return result;
 	}
-	
+
 	/**
 	 * Asynchronously retrieves message data stored under given ID
+	 *
 	 * @param id of stored message to retrieve
 	 * @return future to obtain data of stored message
 	 */
@@ -381,9 +356,10 @@ public abstract class CradleStorage
 						logger.debug("Message {} got asynchronously", id);
 				});
 	}
-	
+
 	/**
 	 * Retrieves batch of messages where message with given ID is stored
+	 *
 	 * @param id of stored message whose batch to retrieve
 	 * @return collection with messages stored in batch
 	 * @throws IOException if batch data retrieval failed
@@ -395,9 +371,10 @@ public abstract class CradleStorage
 		logger.debug("Message batch by message ID {} got", id);
 		return result;
 	}
-	
+
 	/**
 	 * Asynchronously retrieves batch of messages where message with given ID is stored
+	 *
 	 * @param id of stored message whose batch to retrieve
 	 * @return future to obtain collection with messages stored in batch
 	 */
@@ -412,9 +389,10 @@ public abstract class CradleStorage
 						logger.debug("Message batch by message ID {} got asynchronously", id);
 				});
 	}
-	
+
 	/**
 	 * Retrieves processed message data stored under given ID
+	 *
 	 * @param id of stored processed message to retrieve
 	 * @return data of stored processed message
 	 * @throws IOException if message data retrieval failed
@@ -426,9 +404,10 @@ public abstract class CradleStorage
 		logger.debug("Processed message {} got", id);
 		return result;
 	}
-	
+
 	/**
 	 * Asynchronously retrieves processed message data stored under given ID
+	 *
 	 * @param id of stored processed message to retrieve
 	 * @return future to obtain data of stored processed message
 	 */
@@ -443,12 +422,13 @@ public abstract class CradleStorage
 						logger.debug("Processed message {} got asynchronously", id);
 				});
 	}
-	
+
 	/**
 	 * Retrieves first stored message index for given stream and direction.
-	 * Indices are scoped by stream and direction, so both arguments are required 
-	 * @param streamName to get message index for 
-	 * @param direction to get message index for
+	 * Indices are scoped by stream and direction, so both arguments are required
+	 *
+	 * @param streamName to get message index for
+	 * @param direction  to get message index for
 	 * @return first stored message index for given arguments, if it is present, -1 otherwise
 	 * @throws IOException if index retrieval failed
 	 */
@@ -459,18 +439,21 @@ public abstract class CradleStorage
 		logger.debug("Message index {} got", result);
 		return result;
 	}
-	
+
 	/**
-	 * Retrieves last stored message index for given stream and direction. Use result of this method to continue sequence of message indices.
-	 * Indices are scoped by stream and direction, so both arguments are required 
-	 * @param streamName to get message index for 
-	 * @param direction to get message index for
+	 * Retrieves last stored message index for given stream and direction. Use result of this method to continue
+	 * sequence of message indices.
+	 * Indices are scoped by stream and direction, so both arguments are required
+	 *
+	 * @param streamName to get message index for
+	 * @param direction  to get message index for
 	 * @return last stored message index for given arguments, if it is present, -1 otherwise
 	 * @throws IOException if index retrieval failed
 	 */
 	public final long getLastMessageIndex(String streamName, Direction direction) throws IOException
 	{
-		logger.debug("Getting last stored message index for stream '{}' and direction '{}'", streamName, direction.getLabel());
+		logger.debug("Getting last stored message index for stream '{}' and direction '{}'", streamName,
+				direction.getLabel());
 		long result = doGetLastMessageIndex(streamName, direction);
 		logger.debug("Message index {} got", result);
 		return result;
@@ -486,57 +469,65 @@ public abstract class CradleStorage
 	 */
 	public final long getFirstProcessedMessageIndex(String streamName, Direction direction) throws IOException
 	{
-		logger.debug("Getting first processed message index for stream '{}' and direction '{}'", streamName, direction.getLabel());
+		logger.debug("Getting first processed message index for stream '{}' and direction '{}'", streamName,
+				direction.getLabel());
 		long result = doGetFirstProcessedMessageIndex(streamName, direction);
 		logger.debug("Processed message index {} got", result);
 		return result;
 	}
-	
+
 	/**
-	 * Retrieves last processed message index for given stream and direction. Use result of this method to continue sequence of message indices.
-	 * Indices are scoped by stream and direction, so both arguments are required 
-	 * @param streamName to get message index for 
-	 * @param direction to get message index for
+	 * Retrieves last processed message index for given stream and direction. Use result of this method to continue
+	 * sequence of message indices.
+	 * Indices are scoped by stream and direction, so both arguments are required
+	 *
+	 * @param streamName to get message index for
+	 * @param direction  to get message index for
 	 * @return last processed message index for given arguments, if it is present, -1 otherwise
 	 * @throws IOException if index retrieval failed
 	 */
 	public final long getLastProcessedMessageIndex(String streamName, Direction direction) throws IOException
 	{
-		logger.debug("Getting last processed message index for stream '{}' and direction '{}'", streamName, direction.getLabel());
+		logger.debug("Getting last processed message index for stream '{}' and direction '{}'", streamName,
+				direction.getLabel());
 		long result = doGetLastProcessedMessageIndex(streamName, direction);
 		logger.debug("Processed message index {} got", result);
 		return result;
 	}
-	
+
 	/**
 	 * Retrieves ID of first message appeared in given timestamp or before/after it
-	 * @param streamName to which the message should be related
-	 * @param direction of message
-	 * @param timestamp to search for messages
+	 *
+	 * @param streamName   to which the message should be related
+	 * @param direction    of message
+	 * @param timestamp    to search for messages
 	 * @param timeRelation defines if need to find message appeared before given timestamp or after it
 	 * @return ID of first message appeared in given timestamp or before/after it
 	 * @throws IOException if data retrieval failed
 	 */
-	public final StoredMessageId getNearestMessageId(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation) throws IOException
+	public final StoredMessageId getNearestMessageId(String streamName, Direction direction, Instant timestamp,
+			TimeRelation timeRelation) throws IOException
 	{
-		logger.debug("Getting ID of first message appeared on {} or {} for stream '{}' and direction '{}'", 
+		logger.debug("Getting ID of first message appeared on {} or {} for stream '{}' and direction '{}'",
 				timestamp, timeRelation.getLabel(), streamName, direction.getLabel());
 		StoredMessageId result = doGetNearestMessageId(streamName, direction, timestamp, timeRelation);
-		logger.debug("First message ID appeared on {} or {} for stream '{}' and direction '{}' got", 
+		logger.debug("First message ID appeared on {} or {} for stream '{}' and direction '{}' got",
 				timestamp, timeRelation.getLabel(), streamName, direction.getLabel());
 		return result;
 	}
 
 	/**
 	 * Asynchronously retrieves ID of first message appeared in given timestamp or before/after it
-	 * @param streamName to which the message should be related
-	 * @param direction of message
-	 * @param timestamp to search for messages
+	 *
+	 * @param streamName   to which the message should be related
+	 * @param direction    of message
+	 * @param timestamp    to search for messages
 	 * @param timeRelation defines if need to find message appeared before given timestamp or after it
 	 * @return ID of first message appeared in given timestamp or before/after it
 	 * @throws IOException if data retrieval failed
 	 */
-	public final CompletableFuture<StoredMessageId> getNearestMessageIdAsync(String streamName, Direction direction, Instant timestamp, TimeRelation timeRelation) throws IOException
+	public final CompletableFuture<StoredMessageId> getNearestMessageIdAsync(String streamName, Direction direction,
+			Instant timestamp, TimeRelation timeRelation) throws IOException
 	{
 		logger.debug(
 				"Asynchronously getting ID of first message appeared on {} or {} for stream '{}' and direction '{}'",
@@ -547,8 +538,8 @@ public abstract class CradleStorage
 						{
 							if (error != null)
 								logger.error(
-										"Error while getting first message ID appeared on {} or {} for stream '{}' and" +
-												" direction '{}'",
+										"Error while getting first message ID appeared on {} or {} for stream '{}' " +
+												"and direction '{}'",
 										timestamp, timeRelation.getLabel(), streamName, direction.getLabel());
 							else
 								logger.debug(
@@ -561,6 +552,7 @@ public abstract class CradleStorage
 
 	/**
 	 * Retrieves test event data stored under given ID
+	 *
 	 * @param id of stored test event to retrieve
 	 * @return data of stored test event
 	 * @throws IOException if test event data retrieval failed
@@ -572,9 +564,10 @@ public abstract class CradleStorage
 		logger.debug("Test event {} got", id);
 		return result;
 	}
-	
+
 	/**
 	 * Asynchronously retrieves test event data stored under given ID
+	 *
 	 * @param id of stored test event to retrieve
 	 * @return future to obtain data of stored test event
 	 */
@@ -594,6 +587,7 @@ public abstract class CradleStorage
 
 	/**
 	 * Allows to enumerate stored messages, optionally filtering them by given conditions
+	 *
 	 * @param filter defines conditions to filter messages by. Use null if no filtering is needed
 	 * @return iterable object to enumerate messages
 	 * @throws IOException if data retrieval failed
@@ -609,6 +603,7 @@ public abstract class CradleStorage
 
 	/**
 	 * Allows to enumerate stored message batches, optionally filtering them by given conditions
+	 *
 	 * @param filter defines conditions to filter message batches by. Use null if no filtering is needed
 	 * @return iterable object to enumerate message batches
 	 * @throws IOException if data retrieval failed
@@ -621,10 +616,11 @@ public abstract class CradleStorage
 		return result;
 	}
 
-	
+
 	/**
-	 * Allows to asynchronously obtain iterable object to enumerate stored messages, 
+	 * Allows to asynchronously obtain iterable object to enumerate stored messages,
 	 * optionally filtering them by given conditions
+	 *
 	 * @param filter defines conditions to filter messages by. Use null if no filtering is needed
 	 * @return future to obtain iterable object to enumerate messages
 	 */
@@ -895,30 +891,12 @@ public abstract class CradleStorage
 	public final Iterable<StoredTestEventWrapper> getTestEvents(Instant from, Instant to)
 			throws CradleStorageException, IOException
 	{
-		return getTestEvents(from, to, Order.DIRECT);
-	}
-
-
-	/**
-	 * Allows to enumerate test events started in given range of timestamps in specified order.
-	 * Both boundaries (from and to) should be specified
-	 *
-	 * @param from  left boundary of timestamps range
-	 * @param to    right boundary of timestamps range
-	 * @param order defines sorting order
-	 * @return iterable object to enumerate test events
-	 * @throws CradleStorageException if given parameters are invalid
-	 * @throws IOException            if data retrieval failed
-	 */
-	public final Iterable<StoredTestEventWrapper> getTestEvents(Instant from, Instant to, Order order)
-			throws CradleStorageException, IOException
-	{
 		if (from == null || to == null)
 			throw new CradleStorageException("Both boundaries (from and to) should be specified");
 
-		logger.debug("Getting test events from range {}..{} in {} order", from, to, order);
-		Iterable<StoredTestEventWrapper> result = doGetTestEvents(from, to, order);
-		logger.debug("Prepared iterator for test events from range {}..{} in {} order", from, to, order);
+		logger.debug("Getting test events from range {}..{}", from, to);
+		Iterable<StoredTestEventWrapper> result = doGetTestEvents(from, to);
+		logger.debug("Prepared iterator for test events from range {}..{}", from, to);
 		return result;
 	}
 
@@ -935,30 +913,12 @@ public abstract class CradleStorage
 	public final Iterable<StoredTestEventMetadata> getTestEventsMetadata(Instant from, Instant to)
 			throws CradleStorageException, IOException
 	{
-		return getTestEventsMetadata(from, to, Order.DIRECT);
-	}
-
-
-	/**
-	 * Allows to enumerate test events' metadata started in given range of timestamps in specified order.
-	 * Both boundaries (from and to) should be specified
-	 *
-	 * @param from  left boundary of timestamps' range
-	 * @param to    right boundary of timestamps' range
-	 * @param order defines sorting order
-	 * @return iterable object to enumerate test events
-	 * @throws CradleStorageException if given parameters are invalid
-	 * @throws IOException            if data retrieval failed
-	 */
-	public final Iterable<StoredTestEventMetadata> getTestEventsMetadata(Instant from, Instant to, Order order)
-			throws CradleStorageException, IOException
-	{
 		if (from == null || to == null)
 			throw new CradleStorageException("Both boundaries (from and to) should be specified");
 
-		logger.debug("Getting test events from range {}..{} in {} order", from, to, order);
-		Iterable<StoredTestEventMetadata> result = doGetTestEventsMetadata(from, to, order);
-		logger.debug("Prepared iterator for test events from range {}..{} in {} order", from, to, order);
+		logger.debug("Getting test events from range {}..{}", from, to);
+		Iterable<StoredTestEventMetadata> result = doGetTestEventsMetadata(from, to);
+		logger.debug("Prepared iterator for test events from range {}..{}", from, to);
 		return result;
 	}
 
@@ -975,39 +935,22 @@ public abstract class CradleStorage
 	public final CompletableFuture<Iterable<StoredTestEventWrapper>> getTestEventsAsync(Instant from, Instant to)
 			throws CradleStorageException
 	{
-		return getTestEventsAsync(from, to, Order.DIRECT);
-	}
-
-
-	/**
-	 * Allows to asynchronously obtain iterable object to enumerate test events started in given range of timestamps.
-	 * Both boundaries (from and to) should be specified
-	 *
-	 * @param from left boundary of timestamps' range
-	 * @param to   right boundary of timestamps' range
-	 * @return future to obtain iterable object to enumerate test events
-	 * @throws CradleStorageException if given parameters are invalid
-	 */
-	public final CompletableFuture<Iterable<StoredTestEventWrapper>> getTestEventsAsync(Instant from, Instant to,
-			Order order) throws CradleStorageException
-	{
 		if (from == null || to == null)
 			throw new CradleStorageException("Both boundaries (from and to) should be specified");
 
-		logger.debug("Getting test events from range {}..{} in {} order asynchronously", from, to, order);
+		logger.debug("Getting test events from range {}..{} asynchronously", from, to);
 
-		return doGetTestEventsAsync(from, to, order)
+		return doGetTestEventsAsync(from, to)
 				.whenComplete((r, error) ->
 				{
 					if (error != null)
-						logger.error(
-								"Error while getting test events from range " + from + ".." + to + " asynchronously",
-								error);
+						logger.error("Error while getting test events from range " + from + ".." + to +
+										" asynchronously", error);
 					else
-						logger.debug("Iterator for test events from range {}..{} in {} order got asynchronously", from,
-								to, order);
+						logger.debug("Iterator for test events from range {}..{} got asynchronously", from, to);
 				});
 	}
+
 
 	/**
 	 * Allows to asynchronously obtain iterable object to enumerate test events' metadata started in given range of
@@ -1021,43 +964,26 @@ public abstract class CradleStorage
 	public final CompletableFuture<Iterable<StoredTestEventMetadata>> getTestEventsMetadataAsync(Instant from,
 			Instant to) throws CradleStorageException
 	{
-		return getTestEventsMetadataAsync(from, to, Order.DIRECT);
-	}
-
-
-	/**
-	 * Allows to asynchronously obtain iterable object to enumerate test events' metadata started in given range of
-	 * timestamps. Both boundaries (from and to) should be specified
-	 *
-	 * @param from left boundary of timestamps' range
-	 * @param to   right boundary of timestamps' range
-	 * @return future to obtain iterable object to enumerate test events
-	 * @throws CradleStorageException if given parameters are invalid
-	 */
-	public final CompletableFuture<Iterable<StoredTestEventMetadata>> getTestEventsMetadataAsync(Instant from,
-			Instant to, Order order) throws CradleStorageException
-	{
 		if (from == null || to == null)
 			throw new CradleStorageException("Both boundaries (from and to) should be specified");
 
-		logger.debug("Getting test events' metadata from range {}..{} in {} order asynchronously", from, to, order);
+		logger.debug("Getting test events' metadata from range {}..{} asynchronously", from, to);
 
-		return doGetTestEventsMetadataAsync(from, to, order)
+		return doGetTestEventsMetadataAsync(from, to)
 				.whenComplete((r, error) ->
 				{
 					if (error != null)
-						logger.error(
-								"Error while getting test events' metadata from range " + from + ".." + to +
+						logger.error("Error while getting test events' metadata from range " + from + ".." + to +
 										" asynchronously", error);
 					else
-						logger.debug(
-								"Iterator for test events' metadata from range {}..{} in {} order got asynchronously",
-								from, to, order);
+						logger.debug("Iterator for test events' metadata from range {}..{} got asynchronously",
+								from, to);
 				});
 	}
-	
+
 	/**
 	 * Obtains collection of streams whose messages are currently saved in storage
+	 *
 	 * @return collection of stream names
 	 * @throws IOException if data retrieval failed
 	 */
@@ -1068,9 +994,10 @@ public abstract class CradleStorage
 		logger.debug("List of streams got");
 		return result;
 	}
-	
+
 	/**
 	 * Obtains collection of dates when root test events started
+	 *
 	 * @return collection of start dates
 	 * @throws IOException if data retrieval failed
 	 */
@@ -1081,9 +1008,10 @@ public abstract class CradleStorage
 		logger.debug("List of dates of root test events got");
 		return result;
 	}
-	
+
 	/**
 	 * Obtains collection of dates when children of given test event started
+	 *
 	 * @param parentId ID of parent test event
 	 * @return collection of start dates
 	 * @throws IOException if data retrieval failed
@@ -1121,7 +1049,6 @@ public abstract class CradleStorage
 			if (!msgSeconds.equals(ts))
 			{
 				ts = msgSeconds;
-				
 				futures.add(doStoreTimeMessageAsync(msg));
 			}
 		}

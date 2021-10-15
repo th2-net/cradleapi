@@ -23,16 +23,12 @@ import com.datastax.oss.driver.api.mapper.annotations.Mapper;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
 import com.exactpro.cradle.cassandra.dao.intervals.converters.IntervalConverter;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
-import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventConverter;
-import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
 import com.exactpro.cradle.cassandra.dao.messages.converters.DetailedMessageBatchConverter;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenDatesOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventConverter;
-import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventMessagesConverter;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventMetadataConverter;
 
 @Mapper
@@ -54,22 +50,12 @@ public interface CassandraDataMapper
 	TimeTestEventOperator timeTestEventOperator(@DaoKeyspace String keyspace, @DaoTable String timeTestEventsTable);
 
 	@DaoFactory
-	TestEventMessagesOperator testEventMessagesOperator(@DaoKeyspace String keyspace, @DaoTable String testEventsChildrenDatesTable);
-	
-	@DaoFactory
 	TestEventChildrenDatesOperator testEventChildrenDatesOperator(@DaoKeyspace String keyspace, @DaoTable String testEventsChildrenDatesTable);
-	
-	@DaoFactory
-	MessageTestEventOperator messageTestEventOperator(@DaoKeyspace String keyspace, @DaoTable String testEventsChildrenDatesTable);
-	
+
 	@DaoFactory
 	TestEventConverter testEventConverter();
 	@DaoFactory
 	TestEventMetadataConverter testEventMetadataConverter();
-	@DaoFactory
-	TestEventMessagesConverter testEventMessagesConverter();
-	@DaoFactory
-	MessageTestEventConverter messageTestEventConverter();
 
 	@DaoFactory
 	IntervalOperator intervalOperator(@DaoKeyspace String keyspace, @DaoTable String intervalsTable);
