@@ -898,7 +898,7 @@ public class CassandraCradleStorage extends CradleStorage
 		catch (Exception e)
 		{
 			throw new IOException(
-					"Error getting the index of the first message for stream '" + streamName + " and direction '" +
+					"Error while getting index of the first message for stream '" + streamName + " and direction '" +
 							direction + "'", e);
 		}
 	}
@@ -915,7 +915,7 @@ public class CassandraCradleStorage extends CradleStorage
 		catch (Exception e)
 		{
 			throw new IOException(
-					"Error getting the index of the last message for stream '" + streamName + " and direction '" +
+					"Error while getting index of the last message for stream '" + streamName + " and direction '" +
 							direction + "'", e);
 		}
 	}
