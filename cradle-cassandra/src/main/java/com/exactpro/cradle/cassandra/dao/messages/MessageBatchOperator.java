@@ -71,13 +71,13 @@ public interface MessageBatchOperator
 	
 	@Query("SELECT " + MESSAGE_INDEX + " FROM ${qualifiedTableId} WHERE "
 			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction LIMIT 1")
-	Row getFirstIndex(UUID instanceId, String streamName, String direction,
+	CompletableFuture<Row> getFirstIndex(UUID instanceId, String streamName, String direction,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("SELECT " +LAST_MESSAGE_INDEX+ " FROM ${qualifiedTableId} WHERE "
 			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction "
 			+ "ORDER BY "+DIRECTION+" DESC, "+MESSAGE_INDEX+" DESC LIMIT 1")
-	Row getLastIndex(UUID instanceId, String streamName, String direction,
+	CompletableFuture<Row> getLastIndex(UUID instanceId, String streamName, String direction,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@QueryProvider(providerClass = MessageBatchQueryProvider.class, entityHelpers = DetailedMessageBatchEntity.class)
