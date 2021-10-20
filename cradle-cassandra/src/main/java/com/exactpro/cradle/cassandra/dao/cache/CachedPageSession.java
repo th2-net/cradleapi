@@ -23,22 +23,19 @@ public class CachedPageSession
 {
 	private final String page;
 	private final String sessionAlias,
-			direction,
-			part;
+			direction;
 
-	public CachedPageSession(String page, String sessionAlias, String direction,
-			String part)
+	public CachedPageSession(String page, String sessionAlias, String direction)
 	{
 		this.page = page;
 		this.sessionAlias = sessionAlias;
 		this.direction = direction;
-		this.part = part;
 	}
 
 	@Override
 	public int hashCode()
 	{
-		return Objects.hash(page, sessionAlias, direction, part);
+		return Objects.hash(page, sessionAlias, direction);
 	}
 
 	@Override
@@ -52,7 +49,6 @@ public class CachedPageSession
 			return false;
 		CachedPageSession other = (CachedPageSession) obj;
 		return Objects.equals(page, other.page) 
-				&& Objects.equals(part, other.part) 
 				&& Objects.equals(sessionAlias, other.sessionAlias)
 				&& Objects.equals(direction, other.direction);
 	}
@@ -64,7 +60,6 @@ public class CachedPageSession
 				.add("page='" + page + "'")
 				.add("sessionAlias='" + sessionAlias + "'")
 				.add("direction='" + direction + "'")
-				.add("part='" + part + "'")
 				.toString();
 	}
 }

@@ -17,9 +17,7 @@
 package com.exactpro.cradle.cassandra;
 
 import java.io.IOException;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -44,7 +42,6 @@ import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventIteratorProvider;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
-import com.exactpro.cradle.cassandra.utils.CassandraTimeUtils;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
@@ -109,8 +106,7 @@ public class EventsWorker
 	
 	public CompletableFuture<PageScopeEntity> storePageScope(TestEventToStore event, PageId pageId, BookOperators bookOps)
 	{
-		LocalDateTime ldt = TimeUtils.toLocalTimestamp(event.getStartTimestamp());
-		if (!bookOps.getPageScopesCache().store(new CachedPageScope(pageId.toString(), event.getScope(), CassandraTimeUtils.getPart(ldt))))
+		if (!bookOps.getPageScopesCache().store(new CachedPageScope(pageId.toString(), event.getScope())))
 		{
 			logger.debug("Skipped writing scope partition of event '{}'", event.getId());
 			return CompletableFuture.completedFuture(null);
@@ -118,16 +114,15 @@ public class EventsWorker
 		
 		logger.debug("Writing scope partition of event '{}'", event.getId());
 		return bookOps.getPageScopesOperator()
-				.write(new PageScopeEntity(pageId.getName(), event.getScope(), CassandraTimeUtils.getPart(ldt)), writeAttrs);
+				.write(new PageScopeEntity(pageId.getName(), event.getScope()), writeAttrs);
 	}
 	
 	public CompletableFuture<StoredTestEvent> getTestEvent(StoredTestEventId id, PageId pageId)
 	{
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(id.getStartTimestamp());
-		LocalTime lt = ldt.toLocalTime();
 		BookId bookId = pageId.getBookId();
-		return getBookOps(bookId).getTestEventOperator().get(pageId.getName(), ldt.toLocalDate(), id.getScope(), CassandraTimeUtils.getPart(ldt), 
-				lt, id.getId(), readAttrs)
+		return getBookOps(bookId).getTestEventOperator().get(pageId.getName(), id.getScope(), 
+					ldt.toLocalDate(), ldt.toLocalTime(), id.getId(), readAttrs)
 				.thenApplyAsync(r -> {
 					try
 					{
@@ -153,11 +148,9 @@ public class EventsWorker
 		BookOperators bookOps = getBookOps(event.getBookId());
 		StoredTestEventId id = event.getId();
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(event.getStartTimestamp());
-		LocalDate ld = ldt.toLocalDate();
-		LocalTime lt = ldt.toLocalTime();
 		
-		return bookOps.getTestEventOperator().updateStatus(event.getPageId().getName(), id.getScope(), CassandraTimeUtils.getPart(ldt),
-				ld, lt, id.getId(), success, writeAttrs);
+		return bookOps.getTestEventOperator().updateStatus(event.getPageId().getName(), id.getScope(), 
+				ldt.toLocalDate(), ldt.toLocalTime(), id.getId(), success, writeAttrs);
 	}
 	
 	

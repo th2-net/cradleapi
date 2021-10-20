@@ -21,20 +21,18 @@ import java.util.Objects;
 public class CachedPageScope
 {
 	private final String page,
-			scope,
-			part;
+			scope;
 	
-	public CachedPageScope(String page, String scope, String part)
+	public CachedPageScope(String page, String scope)
 	{
 		this.page = page;
 		this.scope = scope;
-		this.part = part;
 	}
 	
 	@Override
 	public int hashCode()
 	{
-		return Objects.hash(page, scope, part);
+		return Objects.hash(page, scope);
 	}
 	
 	@Override
@@ -47,13 +45,13 @@ public class CachedPageScope
 		if (getClass() != obj.getClass())
 			return false;
 		CachedPageScope other = (CachedPageScope) obj;
-		return Objects.equals(page, other.page) && Objects.equals(scope, other.scope) && Objects.equals(part, other.part);
+		return Objects.equals(page, other.page) && Objects.equals(scope, other.scope);
 	}
 	
 	@Override
 	public String toString()
 	{
-		return "CachedPageScope [page=" + page + ", scope=" + scope + ", part=" + part + "]";
+		return "CachedPageScope [page=" + page + ", scope=" + scope + "]";
 	}
 	
 	
@@ -65,10 +63,5 @@ public class CachedPageScope
 	public String getScope()
 	{
 		return scope;
-	}
-	
-	public String getPart()
-	{
-		return part;
 	}
 }

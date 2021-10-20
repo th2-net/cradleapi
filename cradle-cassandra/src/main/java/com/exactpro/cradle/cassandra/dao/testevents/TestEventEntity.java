@@ -32,7 +32,6 @@ import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.datastax.oss.driver.api.mapper.annotations.Transient;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.CradleEntity;
-import com.exactpro.cradle.cassandra.utils.CassandraTimeUtils;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventToStore;
@@ -52,10 +51,6 @@ public class TestEventEntity extends CradleEntity
 	@PartitionKey(1)
 	@CqlName(SCOPE)
 	private String scope;
-	
-	@PartitionKey(2)
-	@CqlName(PART)
-	private String part;
 	
 	@ClusteringColumn(0)
 	@CqlName(START_DATE)
@@ -114,7 +109,6 @@ public class TestEventEntity extends CradleEntity
 		
 		setPage(pageId.getName());
 		setScope(event.getScope());
-		setPart(CassandraTimeUtils.getPart(start));
 		setStartTimestamp(start);
 		setId(event.getId().getId());
 		setChunk(chunk);
@@ -144,7 +138,7 @@ public class TestEventEntity extends CradleEntity
 	@Override
 	public String getEntityId()
 	{
-		return StringUtils.joinWith(StoredTestEventId.ID_PARTS_DELIMITER, page, scope, part, startDate, startTime, id);
+		return StringUtils.joinWith(StoredTestEventId.ID_PARTS_DELIMITER, page, scope, startDate, startTime, id);
 	}
 	
 	
@@ -167,17 +161,6 @@ public class TestEventEntity extends CradleEntity
 	public void setScope(String scope)
 	{
 		this.scope = scope;
-	}
-	
-	
-	public String getPart()
-	{
-		return part;
-	}
-	
-	public void setPart(String part)
-	{
-		this.part = part;
 	}
 	
 	

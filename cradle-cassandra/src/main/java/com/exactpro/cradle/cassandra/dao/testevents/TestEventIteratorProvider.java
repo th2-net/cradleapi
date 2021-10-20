@@ -16,8 +16,6 @@
 
 package com.exactpro.cradle.cassandra.dao.testevents;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,40 +31,26 @@ import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
-import com.exactpro.cradle.cassandra.utils.CassandraTimeUtils;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
-import com.exactpro.cradle.cassandra.utils.TimestampBound;
-import com.exactpro.cradle.filters.FilterForGreater;
-import com.exactpro.cradle.filters.FilterForLess;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventFilter;
-import com.exactpro.cradle.utils.TimeUtils;
 
 public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 {
 	/*
-	 * The iterator creates CassandraTestEventFilter for each new DB request.
-	 * Each request targets one partition, returning iterator to access the data.
+	 * The iterator creates CassandraTestEventFilter for each new DB query.
+	 * Each query targets one page, returning iterator to access the data.
 	 * 
-	 * Initial filter gets the starting page and adjusts left time bound to be not before the page start.
-	 * If right time bound is within the same partition as the left time bound, 
-	 * startTimestampTo is set for the filter, also meaning that this partition is the last one to query.
-	 * Else startTimestampTo is not set and the partition is queried till the end.
-	 * 
-	 * If the queried partition was the last one for current page, 
-	 * for the next request the page is changed and partition with the same name is queried.
-	 * Else the next partition is queried.
-	 * Left time bound is always not set.
-	 * If right time bound is within this partition, 
-	 * startTimestampTo is set, also meaning that this partition is the last one to query.
+	 * Initial filter gets the starting page and the ending page. 
+	 * If the ending page was queried, no more queries will be done, meaning the end of data
 	 */
 	
 	private static final Logger logger = LoggerFactory.getLogger(TestEventIteratorProvider.class);
 	
 	private final TestEventOperator op;
 	private final BookInfo book;
-	private final TimestampBound startTimestampEndingBound;
+	private final PageInfo firstPage, lastPage;
 	private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
 	private final int limit;
 	private final AtomicInteger returned;
@@ -75,11 +59,11 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 	public TestEventIteratorProvider(String requestInfo, TestEventFilter filter, BookOperators ops, BookInfo book,
 			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
 	{
-		//TODO: implement filtering in reversed order
 		super(requestInfo);
 		this.op = ops.getTestEventOperator();
 		this.book = book;
-		this.startTimestampEndingBound = FilterUtils.calcEndingTimeRightBound(filter.getPageId(), filter.getStartTimestampTo(), book);
+		this.firstPage = FilterUtils.findFirstPage(filter.getPageId(), filter.getStartTimestampFrom(), book);
+		this.lastPage = FilterUtils.findLastPage(filter.getPageId(), filter.getStartTimestampTo(), book);
 		this.readAttrs = readAttrs;
 		this.limit = filter.getLimit();
 		this.returned = new AtomicInteger();
@@ -118,42 +102,20 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 	
 	private CassandraTestEventFilter createInitialFilter(TestEventFilter filter)
 	{
-		PageInfo page = FilterUtils.findPage(filter.getPageId(), filter.getStartTimestampFrom(), book);
-		
-		TimestampBound dateTimeFromBound = FilterUtils.calcLeftTimeBound(filter.getStartTimestampFrom(), page.getStarted());
-		
-		LocalDate dateFrom = dateTimeFromBound.getTimestamp().toLocalDate();
-		String part = dateTimeFromBound.getPart();
-		FilterForGreater<LocalTime> timeFrom = dateTimeFromBound.toFilterForGreater();
-		//If the whole query result fits one part by time, timeTo will be not null
-		FilterForLess<LocalTime> timeTo = FilterUtils.calcCurrentTimeRightBound(dateFrom, part, page.getEnded(), startTimestampEndingBound);
-		
 		String parentId = getParentIdString(filter);
-		return new CassandraTestEventFilter(page.getId().getName(), filter.getScope(), part, dateFrom, timeFrom, timeTo, parentId);
+		return new CassandraTestEventFilter(firstPage.getId().getName(), filter.getScope(), 
+				filter.getStartTimestampFrom(), filter.getStartTimestampTo(), parentId);
 	}
 	
 	private CassandraTestEventFilter createNextFilter(CassandraTestEventFilter prevFilter)
 	{
-		if (prevFilter.getStartTimeTo() != null)  //Previous filter used the right bound for start timestamp, i.e. it was the very last query for this provider
+		PageInfo prevPage = book.getPage(new PageId(book.getId(), prevFilter.getPage()));
+		if (prevPage == lastPage)
 			return null;
 		
-		LocalDate startDate = prevFilter.getStartDate();
-		String part;
-		
-		PageInfo page = book.getPage(new PageId(book.getId(), prevFilter.getPage()));
-		//Was queried partition the last one for current page?
-		if (page.getEnded() == null || !CassandraTimeUtils.getLastPart(page).equals(prevFilter.getPart()))
-		{
-			part = CassandraTimeUtils.getNextPart(prevFilter.getPart());
-		}
-		else
-		{
-			page = book.getNextPage(page.getStarted());
-			part = prevFilter.getPart();
-		}
-		
-		FilterForLess<LocalTime> timeTo = FilterUtils.calcCurrentTimeRightBound(startDate, part, page.getEnded(), startTimestampEndingBound);
-		return new CassandraTestEventFilter(page.getId().getName(), prevFilter.getScope(), part, startDate, null, timeTo, prevFilter.getParentId());
+		PageInfo nextPage = book.getNextPage(prevPage.getStarted());
+		return new CassandraTestEventFilter(nextPage.getId().getName(), prevFilter.getScope(), 
+				prevFilter.getStartTimestampFrom(), prevFilter.getStartTimestampTo(), prevFilter.getParentId());
 	}
 	
 	

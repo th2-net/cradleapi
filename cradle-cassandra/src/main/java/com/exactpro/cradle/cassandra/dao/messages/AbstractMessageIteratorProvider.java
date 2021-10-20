@@ -30,20 +30,13 @@ import com.exactpro.cradle.filters.FilterForLess;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.TimeUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvider<T>
 {
-	private static final Logger logger = LoggerFactory.getLogger(AbstractMessageIteratorProvider.class);
-
 	protected final MessageBatchOperator op;
 	protected final BookInfo book;
 	protected final FilterForGreater<Instant> leftBoundFilter;
@@ -75,7 +68,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		Instant leftBoundFromFilter = getLeftBoundFromFilter(filter, book);
 		FilterForGreater<Instant> result = leftBoundFromFilter == null ? null : FilterForGreater.forGreaterOrEquals(leftBoundFromFilter);
 
-		firstPage = FilterUtils.findPage(filter.getPageId(), result, book);
+		firstPage = FilterUtils.findFirstPage(filter.getPageId(), result, book);
 		Instant leftBoundFromPage = firstPage.getStarted();
 		if (result == null)
 			return FilterForGreater.forGreaterOrEquals(leftBoundFromPage);
@@ -88,8 +81,8 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 	protected FilterForLess<Instant> createRightBoundFilter(StoredMessageFilter filter)
 	{
 		Instant rightBoundFromFilter = getRightBoundFromFilter(filter, book);
-		FilterForGreater<Instant> result = FilterForGreater.forGreaterOrEquals(rightBoundFromFilter);
-		lastPage = FilterUtils.findPage(filter.getPageId(), result, book);
+		FilterForLess<Instant> result = FilterForLess.forLessOrEquals(rightBoundFromFilter);
+		lastPage = FilterUtils.findLastPage(filter.getPageId(), result, book);
 		Instant endOfPage = lastPage.getEnded() == null ? Instant.now() : lastPage.getEnded();
 
 		return FilterForLess.forLessOrEquals(endOfPage.isBefore(rightBoundFromFilter) ? endOfPage : rightBoundFromFilter);

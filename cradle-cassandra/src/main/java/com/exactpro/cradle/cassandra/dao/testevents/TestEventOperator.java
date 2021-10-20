@@ -35,12 +35,10 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 @Dao
 public interface TestEventOperator
 {
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+PAGE+"=:page AND "+START_DATE+"=:startDate "
-			+ "AND "+SCOPE+"=:scope AND "+PART+"=:part "
-			+ "AND "+START_TIME+"=:startTime AND "+ID+"=:id")
-	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> get(String page, LocalDate startDate, 
-			String scope, String part,
-			LocalTime startTime, String id, 
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+PAGE+"=:page AND "+SCOPE+"=:scope "
+			+ "AND "+START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:id")
+	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> get(String page, String scope, 
+			LocalDate startDate, LocalTime startTime, String id, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@QueryProvider(providerClass = CommonQueryProvider.class, entityHelpers = TestEventEntity.class)
@@ -50,11 +48,9 @@ public interface TestEventOperator
 	@Insert
 	CompletableFuture<TestEventEntity> write(TestEventEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+PAGE+"=:page " 
-			+ "AND "+SCOPE+"=:scope AND "+PART+"=:part "
-			+ "AND "+START_DATE+"=:startDate "
-			+ "AND "+START_TIME+"=:startTime AND "+ID+"=:id AND "+CHUNK+"=0")
-	CompletableFuture<Void> updateStatus(String page, String scope, String part,
+	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+PAGE+"=:page AND "+SCOPE+"=:scope "
+			+ "AND "+START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:id AND "+CHUNK+"=0")
+	CompletableFuture<Void> updateStatus(String page, String scope, 
 			LocalDate startDate, LocalTime startTime, String id, 
 			boolean success,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);

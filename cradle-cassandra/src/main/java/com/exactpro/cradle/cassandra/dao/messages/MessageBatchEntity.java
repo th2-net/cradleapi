@@ -21,13 +21,10 @@ import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.CradleEntity;
-import com.exactpro.cradle.cassandra.utils.CassandraTimeUtils;
 import com.exactpro.cradle.messages.MessageBatch;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.TimeUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -43,8 +40,6 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 @Entity
 public class MessageBatchEntity extends CradleEntity
 {
-	private static final Logger logger = LoggerFactory.getLogger(MessageBatchEntity.class);
-
 	@PartitionKey(0)
 	@CqlName(PAGE)
 	private String page;

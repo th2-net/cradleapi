@@ -21,9 +21,7 @@ import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.exactpro.cradle.PageId;
-import com.exactpro.cradle.cassandra.utils.CassandraTimeUtils;
 import com.exactpro.cradle.messages.StoredMessageId;
-import com.exactpro.cradle.utils.TimeUtils;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 

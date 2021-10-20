@@ -18,14 +18,12 @@ package com.exactpro.cradle.cassandra.dao.testevents;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static com.exactpro.cradle.cassandra.StorageConstants.PAGE;
-import static com.exactpro.cradle.cassandra.StorageConstants.PART;
 import static com.exactpro.cradle.cassandra.StorageConstants.SCOPE;
 import static com.exactpro.cradle.cassandra.StorageConstants.START_DATE;
 import static com.exactpro.cradle.cassandra.StorageConstants.START_TIME;
 import static com.exactpro.cradle.cassandra.StorageConstants.PARENT_ID;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,28 +36,25 @@ import com.exactpro.cradle.filters.FilterForLess;
 
 public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity>
 {
-	private static final String START_TIME_FROM = "startTimeFrom",
+	private static final String START_DATE_FROM = "startDateFrom",
+			START_DATE_TO = "startDateTo",
+			START_TIME_FROM = "startTimeFrom",
 			START_TIME_TO = "startTimeTo";
 	
 	private final String page,
-			scope,
-			part;
-	private final LocalDate startDate;
-	private final FilterForGreater<LocalTime> startTimeFrom;
-	private final FilterForLess<LocalTime> startTimeTo;
+			scope;
+	private final FilterForGreater<Instant> startTimestampFrom;
+	private final FilterForLess<Instant> startTimestampTo;
 	private final String parentId;
 	
-	public CassandraTestEventFilter(String page, String scope, String part, 
-			LocalDate startDate, 
-			FilterForGreater<LocalTime> startTimeFrom, FilterForLess<LocalTime> startTimeTo,
+	public CassandraTestEventFilter(String page, String scope,  
+			FilterForGreater<Instant> startTimestampFrom, FilterForLess<Instant> startTimestampTo,
 			String parentId)
 	{
 		this.page = page;
 		this.scope = scope;
-		this.part = part;
-		this.startDate = startDate;
-		this.startTimeFrom = startTimeFrom;
-		this.startTimeTo = startTimeTo;
+		this.startTimestampFrom = startTimestampFrom;
+		this.startTimestampTo = startTimestampTo;
 		this.parentId = parentId;
 	}
 	
@@ -68,16 +63,12 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
 	public Select addConditions(Select select)
 	{
 		select = select.whereColumn(PAGE).isEqualTo(bindMarker())
-				.whereColumn(SCOPE).isEqualTo(bindMarker())
-				.whereColumn(PART).isEqualTo(bindMarker());
+				.whereColumn(SCOPE).isEqualTo(bindMarker());
 		
-		if (startDate != null)
-			select = select.whereColumn(START_DATE).isEqualTo(bindMarker());
-		
-		if (startTimeFrom != null)
-			select = FilterUtils.filterToWhere(startTimeFrom.getOperation(), select.whereColumn(START_TIME), START_TIME_FROM);
-		if (startTimeTo != null)
-			select = FilterUtils.filterToWhere(startTimeTo.getOperation(), select.whereColumn(START_TIME), START_TIME_TO);
+		if (startTimestampFrom != null)
+			select = FilterUtils.timestampFilterToWhere(startTimestampFrom.getOperation(), select, START_DATE, START_TIME, START_DATE_FROM, START_TIME_FROM);
+		if (startTimestampTo != null)
+			select = FilterUtils.timestampFilterToWhere(startTimestampTo.getOperation(), select, START_DATE, START_TIME, START_DATE_TO, START_TIME_TO);
 		if (parentId != null)
 			select = select.whereColumn(PARENT_ID).isEqualTo(bindMarker());
 		
@@ -88,16 +79,12 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
 	public BoundStatementBuilder bindParameters(BoundStatementBuilder builder)
 	{
 		builder = builder.setString(PAGE, page)
-				.setString(SCOPE, scope)
-				.setString(PART, part);
+				.setString(SCOPE, scope);
 		
-		if (startDate != null)
-			builder = builder.setLocalDate(START_DATE, startDate);
-		
-		if (startTimeFrom != null)
-			builder = builder.setLocalTime(START_TIME_FROM, startTimeFrom.getValue());
-		if (startTimeTo != null)
-			builder = builder.setLocalTime(START_TIME_TO, startTimeTo.getValue());
+		if (startTimestampFrom != null)
+			builder = FilterUtils.bindTimestamp(startTimestampFrom.getValue(), builder, START_DATE_FROM, START_TIME_FROM);
+		if (startTimestampTo != null)
+			builder = FilterUtils.bindTimestamp(startTimestampTo.getValue(), builder, START_DATE_TO, START_TIME_TO);
 		if (parentId != null)
 			builder = builder.setString(PARENT_ID, parentId);
 		
@@ -115,24 +102,14 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
 		return scope;
 	}
 	
-	public String getPart()
+	public FilterForGreater<Instant> getStartTimestampFrom()
 	{
-		return part;
+		return startTimestampFrom;
 	}
 	
-	public LocalDate getStartDate()
+	public FilterForLess<Instant> getStartTimestampTo()
 	{
-		return startDate;
-	}
-	
-	public FilterForGreater<LocalTime> getStartTimeFrom()
-	{
-		return startTimeFrom;
-	}
-	
-	public FilterForLess<LocalTime> getStartTimeTo()
-	{
-		return startTimeTo;
+		return startTimestampTo;
 	}
 	
 	public String getParentId()
@@ -149,14 +126,10 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
 			result.add("page=" + page);
 		if (scope != null)
 			result.add("scope=" + scope);
-		if (part != null)
-			result.add("part=" + part);
-		if (startDate != null)
-			result.add("start date="+startDate);
-		if (startTimeFrom != null)
-			result.add("timestamp" + startTimeFrom);
-		if (startTimeTo != null)
-			result.add("timestamp" + startTimeTo);
+		if (startTimestampFrom != null)
+			result.add("timestamp" + startTimestampFrom);
+		if (startTimestampTo != null)
+			result.add("timestamp" + startTimestampTo);
 		if (parentId != null)
 			result.add("parentId=" + parentId);
 		return String.join(", ", result);

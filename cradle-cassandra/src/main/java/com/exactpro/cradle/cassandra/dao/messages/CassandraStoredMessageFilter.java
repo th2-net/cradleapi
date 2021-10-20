@@ -19,23 +19,19 @@ package com.exactpro.cradle.cassandra.dao.messages;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.querybuilder.relation.MultiColumnRelationBuilder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.cassandra.dao.CassandraFilter;
+import com.exactpro.cradle.cassandra.utils.FilterUtils;
 import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.filters.FilterForAny;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
 import com.exactpro.cradle.messages.StoredMessageId;
-import com.exactpro.cradle.utils.TimeUtils;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.tuple;
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
-import static com.exactpro.cradle.cassandra.StorageConstants.PART;
-import static com.exactpro.cradle.filters.ComparisonOperation.*;
 
 public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatchEntity>
 {
@@ -72,10 +68,10 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 			select = addMessageIdCondition(select);
 
 		if (!isTimeFromBounded && messageTimeFrom != null)
-			select = addDateTimeCondition(select, messageTimeFrom.getOperation(), DATE_FROM, TIME_FROM);
+			select = FilterUtils.timestampFilterToWhere(messageTimeFrom.getOperation(), select, MESSAGE_DATE, MESSAGE_TIME, DATE_FROM, TIME_FROM);
 
 		if (!isTimeToBounded && messageTimeTo != null)
-			select = addDateTimeCondition(select, messageTimeTo.getOperation(), DATE_TO, TIME_TO);
+			select = FilterUtils.timestampFilterToWhere(messageTimeTo.getOperation(), select, MESSAGE_DATE, MESSAGE_TIME, DATE_TO, TIME_TO);
 
 		return select;
 	}
@@ -98,30 +94,6 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 		return select;
 	}
 
-	private Select addDateTimeCondition(Select select, ComparisonOperation op, String dateMarker, String timeMarker)
-	{
-		MultiColumnRelationBuilder<Select> mcrBuilder = select.whereColumns(MESSAGE_DATE, MESSAGE_TIME);
-		switch (op)
-		{
-			case LESS:
-				select = mcrBuilder.isLessThan(tuple(bindMarker(dateMarker), bindMarker(timeMarker)));
-				break;
-			case GREATER:
-				select = mcrBuilder.isGreaterThan(tuple(bindMarker(dateMarker), bindMarker(timeMarker)));
-				break;
-			case LESS_OR_EQUALS:
-				select = mcrBuilder.isLessThanOrEqualTo(tuple(bindMarker(dateMarker), bindMarker(timeMarker)));
-				break;
-			case GREATER_OR_EQUALS:
-				select = mcrBuilder.isGreaterThanOrEqualTo(tuple(bindMarker(dateMarker), bindMarker(timeMarker)));
-				break;
-			case EQUALS:
-				select = mcrBuilder.isEqualTo(tuple(bindMarker(dateMarker), bindMarker(timeMarker)));
-				break;
-		}
-		return select;
-	}
-
 	@Override
 	public BoundStatementBuilder bindParameters(BoundStatementBuilder builder)
 	{
@@ -135,19 +107,11 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 		}
 
 		if (messageTimeFrom != null)
-		{
-			LocalDateTime ldt = TimeUtils.toLocalTimestamp(messageTimeFrom.getValue());
-			builder = builder.setLocalDate(DATE_FROM, ldt.toLocalDate());
-			builder = builder.setLocalTime(TIME_FROM, ldt.toLocalTime());
-		}
+			builder = FilterUtils.bindTimestamp(messageTimeFrom.getValue(), builder, DATE_FROM, TIME_FROM);
 
 		if (messageTimeTo != null)
-		{
-			LocalDateTime ldt = TimeUtils.toLocalTimestamp(messageTimeTo.getValue());
-			builder = builder.setLocalDate(DATE_TO, ldt.toLocalDate());
-			builder = builder.setLocalTime(TIME_TO, ldt.toLocalTime());
-		}
-
+			builder = FilterUtils.bindTimestamp(messageTimeTo.getValue(), builder, DATE_TO, TIME_TO);
+		
 		return builder;
 	}
 

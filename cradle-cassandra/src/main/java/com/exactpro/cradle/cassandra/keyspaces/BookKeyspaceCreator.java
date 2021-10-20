@@ -136,7 +136,6 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(PAGE, DataTypes.TEXT)
 				.withPartitionKey(SCOPE, DataTypes.TEXT)
-				.withPartitionKey(PART, DataTypes.TEXT)
 				
 				.withClusteringColumn(START_DATE, DataTypes.DATE)
 				.withClusteringColumn(START_TIME, DataTypes.TIME)
@@ -166,8 +165,7 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 		String tableName = getSettings().getPageScopesTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(PAGE, DataTypes.TEXT)
-				.withClusteringColumn(SCOPE, DataTypes.TEXT)
-				.withClusteringColumn(PART, DataTypes.TEXT));
+				.withClusteringColumn(SCOPE, DataTypes.TEXT));
 	}
 	
 	private void createTestEventParentIndex() throws IOException

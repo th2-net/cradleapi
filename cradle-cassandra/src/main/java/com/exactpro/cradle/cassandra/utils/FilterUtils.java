@@ -16,10 +16,11 @@
 
 package com.exactpro.cradle.cassandra.utils;
 
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.tuple;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
@@ -28,11 +29,11 @@ import com.datastax.oss.driver.api.querybuilder.BindMarker;
 import com.datastax.oss.driver.api.querybuilder.Literal;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.relation.ColumnRelationBuilder;
+import com.datastax.oss.driver.api.querybuilder.relation.MultiColumnRelationBuilder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.PageInfo;
-import com.exactpro.cradle.cassandra.CassandraCradleStorage;
 import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.filters.FilterByField;
 import com.exactpro.cradle.filters.FilterForGreater;
@@ -94,34 +95,42 @@ public class FilterUtils
 	
 	/**
 	 * Adds WHERE condition for date and time columns to a SELECT query.
-	 * Date and time columns to use for filtering are usually got by {@code select.whereColumn(XXX)}
-	 * @param filter condition definition for timestamp to check
+	 * @param operation for comparison to use while filtering
 	 * @param select query to add conditions to
 	 * @param dateColumn name of column that holds date part of timestamp
 	 * @param timeColumn name of column that holds time part of timestamp
+	 * @param dateMarker name of placeholder to use for date part of timestamp
+	 * @param timeMarker name of placeholder to use for time part of timestamp
 	 * @return updated SELECT query with new WHERE conditions
 	 */
-	public static Select timestampFilterToWhere(FilterByField<Instant> filter, Select select, String dateColumn, String timeColumn)
+	public static Select timestampFilterToWhere(ComparisonOperation operation, Select select, String dateColumn, String timeColumn,
+			String dateMarker, String timeMarker)
 	{
-		LocalDateTime ldt = LocalDateTime.ofInstant(filter.getValue(), CassandraCradleStorage.TIMEZONE_OFFSET);
-		Select result = filterToWhere(ldt.toLocalDate(), filter.getOperation(), select.whereColumn(dateColumn));
-		result = filterToWhere(ldt.toLocalTime(), filter.getOperation(), result.whereColumn(timeColumn));
-		return result;
+		MultiColumnRelationBuilder<Select> mcrBuilder = select.whereColumns(dateColumn, timeColumn);
+		switch (operation)
+		{
+			case LESS: return mcrBuilder.isLessThan(tuple(bindMarker(dateMarker), bindMarker(timeMarker)));
+			case GREATER: return mcrBuilder.isGreaterThan(tuple(bindMarker(dateMarker), bindMarker(timeMarker)));
+			case LESS_OR_EQUALS: return mcrBuilder.isLessThanOrEqualTo(tuple(bindMarker(dateMarker), bindMarker(timeMarker)));
+			case GREATER_OR_EQUALS: return mcrBuilder.isGreaterThanOrEqualTo(tuple(bindMarker(dateMarker), bindMarker(timeMarker)));
+			default: return mcrBuilder.isEqualTo(tuple(bindMarker(dateMarker), bindMarker(timeMarker)));
+		}
 	}
 	
 	/**
 	 * Binds timestamp to corresponding values of parameters in a prepared statement
 	 * @param timestamp to bind to prepared statement
 	 * @param builder to bind parameters in
-	 * @param dateColumn name of column that holds date part of timestamp
-	 * @param timeColumn name of column that holds time part of timestamp
+	 * @param dateMarker name of placeholder for date part of timestamp
+	 * @param timeMarker name of placeholder for time part of timestamp
 	 * @return updated builder with parameters bound
 	 */
-	public static BoundStatementBuilder bindTimestamp(Instant timestamp, BoundStatementBuilder builder, String dateColumn, String timeColumn)
+	public static BoundStatementBuilder bindTimestamp(Instant timestamp, BoundStatementBuilder builder, 
+			String dateMarker, String timeMarker)
 	{
-		LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, CassandraCradleStorage.TIMEZONE_OFFSET);
-		builder = builder.setLocalDate(dateColumn, ldt.toLocalDate());
-		builder = builder.setLocalTime(timeColumn, ldt.toLocalTime());
+		LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
+		builder = builder.setLocalDate(dateMarker, ldt.toLocalDate());
+		builder = builder.setLocalTime(timeMarker, ldt.toLocalTime());
 		return builder;
 	}
 	
@@ -159,32 +168,6 @@ public class FilterUtils
 	
 	
 	/**
-	 * Calculates left time bound based on value specified in filter and actually available minimum
-	 * @param filterFrom left time bound specified in filter
-	 * @param minimumFrom actually available minimum
-	 * @return left bound to be used
-	 */
-	public static TimestampBound calcLeftTimeBound(FilterForGreater<Instant> filterFrom, Instant minimumFrom)
-	{
-		if (filterFrom == null || filterFrom.getValue().isBefore(minimumFrom))
-			return new TimestampBound(minimumFrom, ComparisonOperation.GREATER_OR_EQUALS);
-		return new TimestampBound(filterFrom.getValue(), filterFrom.getOperation());
-	}
-	
-	/**
-	 * Calculates right time bound based on value specified in filter and actually available maximum
-	 * @param filterTo right time bound specified in filter
-	 * @param maximumTo actually available maximum
-	 * @return right bound to be used
-	 */
-	public static TimestampBound calcRightTimeBound(FilterForLess<Instant> filterTo, Instant maximumTo)
-	{
-		if (filterTo == null || filterTo.getValue().isAfter(maximumTo))
-			return new TimestampBound(maximumTo, ComparisonOperation.LESS_OR_EQUALS);
-		return new TimestampBound(filterTo.getValue(), filterTo.getOperation());
-	}
-	
-	/**
 	 * Finds page to start filtering from
 	 * @param pageId specified in filter. Can be null
 	 * @param timestampFrom specified in filter. Can be null
@@ -193,7 +176,7 @@ public class FilterUtils
 	 * If timestampFrom is specified, it will be page that contains data for that timestamp.
 	 * Else it will be the first page of the book
 	 */
-	public static PageInfo findPage(PageId pageId, FilterForGreater<Instant> timestampFrom, BookInfo book)
+	public static PageInfo findFirstPage(PageId pageId, FilterForGreater<Instant> timestampFrom, BookInfo book)
 	{
 		if (pageId != null)
 			return book.getPage(pageId);
@@ -208,48 +191,25 @@ public class FilterUtils
 	}
 	
 	/**
-	 * Calculates right time bound when filtering ends
+	 * Finds page to end filtering at
 	 * @param pageId specified in filter. Can be null
 	 * @param timestampTo specified in filter. Can be null
 	 * @param book to filter data from
-	 * @return right time bound to be used as condition to end filtering
+	 * @return page to end filtering at. If pageId is specified, it will be that page. 
+	 * If timestampTo is specified, it will be the last page that contains data for that timestamp.
+	 * Else it will be the last page of the book
 	 */
-	public static TimestampBound calcEndingTimeRightBound(PageId pageId, FilterForLess<Instant> timestampTo, BookInfo book)
+	public static PageInfo findLastPage(PageId pageId, FilterForLess<Instant> timestampTo, BookInfo book)
 	{
 		if (pageId != null)
-		{
-			PageInfo page = book.getPage(pageId);
-			return calcRightTimeBound(timestampTo,
-					page.isActive() ? Instant.now() : page.getEnded());
-		}
+			return book.getPage(pageId);
 		
-		return calcRightTimeBound(timestampTo, Instant.now());
-	}
-	
-	/**
-	 * Calculates filter condition for right time bound for current filtering request
-	 * @param date used in current filtering request
-	 * @param part part used in current filtering request
-	 * @param pageEnd ending timestamp for page used in current filtering request
-	 * @param endingBound right time bound to end filtering, previously calculated with {@link #calcEndingTimeRightBound(PageId, FilterForLess, BookInfo)}
-	 * @return filter condition for right time bound to be used in current filtering request. 
-	 * If endingBound is beyond pageEnd, filter condition will be null meaning that filtering will be done till partition end and 
-	 * additional filtering request should be generated after that
-	 */
-	public static FilterForLess<LocalTime> calcCurrentTimeRightBound(LocalDate date, String part, Instant pageEnd, TimestampBound endingBound)
-	{
-		if (pageEnd != null)
+		if (timestampTo != null)
 		{
-			LocalDateTime pageEndDateTime = TimeUtils.toLocalTimestamp(pageEnd);
-			if (endingBound.getTimestamp().isAfter(pageEndDateTime))
-				return null;  //Not setting the right bound to query till the end of last partition of the page. Next page will be queried using the same partition
+			PageInfo page = book.findPage(timestampTo.getValue());
+			if (page != null)
+				return page;
 		}
-		
-		LocalDate lastDate = endingBound.getTimestamp().toLocalDate();
-		if (date.equals(lastDate) && part.equals(endingBound.getPart()))
-			return endingBound.toFilterForLess();
-		if (date.isAfter(lastDate))
-			return FilterForLess.forLessOrEquals(LocalTime.of(23, 59, 59, 999999));  //For case of wrong right bound calculation
-		return null;  //Will query till the end of part
+		return book.getActivePage();
 	}
 }

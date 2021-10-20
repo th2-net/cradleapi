@@ -42,7 +42,6 @@ import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.BookKeyspaceCreator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
 import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
-import com.exactpro.cradle.cassandra.utils.CassandraTimeUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
@@ -262,10 +261,8 @@ public class CassandraCradleStorage extends CradleStorage
 		return result
 				.thenComposeAsync(r ->
 				{
-					LocalDateTime ldt = TimeUtils.toLocalTimestamp(batchId.getTimestamp());
-					CachedPageSession cachedPageSession = new CachedPageSession(pageId.getName(),
-							sessionAlias, batchId.getDirection().getLabel(),
-							CassandraTimeUtils.getPart(ldt));
+					CachedPageSession cachedPageSession = new CachedPageSession(pageId.toString(),
+							sessionAlias, batchId.getDirection().getLabel());
 					if (!bookOps.getPageSessionsCache().store(cachedPageSession))
 					{
 						logger.debug("Skipped writing page/session of message batch '{}'", batchId);
