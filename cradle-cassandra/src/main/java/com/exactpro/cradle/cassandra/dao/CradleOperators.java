@@ -22,13 +22,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.books.CradleBookOperator;
-import com.exactpro.cradle.cassandra.dao.books.PageNameOperator;
-import com.exactpro.cradle.cassandra.dao.books.PageOperator;
-import com.exactpro.cradle.cassandra.dao.cache.CachedSession;
-import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
-import com.exactpro.cradle.cassandra.dao.messages.SessionsOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.ScopeOperator;
-import com.exactpro.cradle.cassandra.utils.LimitedCache;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 public class CradleOperators
@@ -37,13 +30,6 @@ public class CradleOperators
 	private final CassandraDataMapper dataMapper;
 	private final CassandraStorageSettings settings;
 	private final CradleBookOperator cradleBookOp;
-	private final PageOperator pageOperator;
-	private final PageNameOperator pageNameOperator;
-	private final SessionsOperator sessionsOperator;
-	private final ScopeOperator scopeOperator;
-
-	private final LimitedCache<CachedSession> sessionsCache;
-	private final LimitedCache<CachedScope> scopesCache;
 	
 	public CradleOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings)
 	{
@@ -53,13 +39,6 @@ public class CradleOperators
 		
 		String infoKeyspace = settings.getCradleInfoKeyspace();
 		this.cradleBookOp = dataMapper.cradleBookOperator(infoKeyspace, settings.getBooksTable());
-		this.pageOperator = dataMapper.pageOperator(infoKeyspace, settings.getPagesTable());
-		this.pageNameOperator = dataMapper.pageNameOperator(infoKeyspace, settings.getPagesNamesTable());
-		this.sessionsOperator = dataMapper.sessionsOperator(settings.getCradleInfoKeyspace(), settings.getSessionsTable());
-		this.scopeOperator = dataMapper.scopeOperator(infoKeyspace, settings.getScopesTable());
-
-		this.sessionsCache = new LimitedCache<>(settings.getPageSessionsCacheSize());
-		this.scopesCache = new LimitedCache<>(settings.getScopesCacheSize());
 	}
 	
 	public BookOperators getOperators(BookId bookId) throws CradleStorageException
@@ -80,36 +59,5 @@ public class CradleOperators
 	public CradleBookOperator getCradleBookOperator()
 	{
 		return cradleBookOp;
-	}
-	
-	public PageOperator getPageOperator()
-	{
-		return pageOperator;
-	}
-	
-	public PageNameOperator getPageNameOperator()
-	{
-		return pageNameOperator;
-	}
-
-	public SessionsOperator getSessionsOperator()
-	{
-		return sessionsOperator;
-	}
-
-	public ScopeOperator getScopeOperator()
-	{
-		return scopeOperator;
-	}
-
-
-	public LimitedCache<CachedSession> getSessionsCache()
-	{
-		return sessionsCache;
-	}
-	
-	public LimitedCache<CachedScope> getScopesCache()
-	{
-		return scopesCache;
 	}
 }

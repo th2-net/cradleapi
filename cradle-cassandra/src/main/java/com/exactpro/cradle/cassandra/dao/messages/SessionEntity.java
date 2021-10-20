@@ -21,17 +21,17 @@ import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.BOOK;
+import static com.exactpro.cradle.cassandra.StorageConstants.PART;
 import static com.exactpro.cradle.cassandra.StorageConstants.SESSION_ALIAS;
 
 @Entity
 public class SessionEntity
 {
-	@PartitionKey()
-	@CqlName(BOOK)
-	private String book;
+	@PartitionKey(0)
+	@CqlName(PART)
+	private String part;
 
-	@ClusteringColumn()
+	@ClusteringColumn(0)
 	@CqlName(SESSION_ALIAS)
 	private String sessionAlias;
 
@@ -39,22 +39,23 @@ public class SessionEntity
 	{
 	}
 
-	public SessionEntity(String book, String sessionAlias)
+	public SessionEntity(String part, String sessionAlias)
 	{
-		this.book = book;
+		this.part = part;
 		this.sessionAlias = sessionAlias;
 	}
-
-	public String getBook()
+	
+	public String getPart()
 	{
-		return book;
+		return part;
 	}
-
-	public void setBook(String book)
+	
+	public void setPart(String part)
 	{
-		this.book = book;
+		this.part = part;
 	}
-
+	
+	
 	public String getSessionAlias()
 	{
 		return sessionAlias;

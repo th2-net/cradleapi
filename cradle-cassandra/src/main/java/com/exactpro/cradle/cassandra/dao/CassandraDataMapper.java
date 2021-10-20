@@ -36,8 +36,8 @@ public interface CassandraDataMapper
 	@DaoFactory
 	CradleBookOperator cradleBookOperator(@DaoKeyspace String keyspace, @DaoTable String booksTable);
 
-	@DaoFactory
-	SessionsOperator sessionsOperator(@DaoKeyspace String keyspace, @DaoTable String sessionsTable);
+	
+	//*** Operators for book's keyspace ***
 	
 	@DaoFactory
 	PageOperator pageOperator(@DaoKeyspace String keyspace, @DaoTable String pagesTable);
@@ -46,9 +46,18 @@ public interface CassandraDataMapper
 	PageNameOperator pageNameOperator(@DaoKeyspace String keyspace, @DaoTable String pagesNamesTable);
 	
 	@DaoFactory
+	SessionsOperator sessionsOperator(@DaoKeyspace String keyspace, @DaoTable String sessionsTable);
+	
+	@DaoFactory
 	ScopeOperator scopeOperator(@DaoKeyspace String keyspace, @DaoTable String scopesTable);
+	
+	
+	@DaoFactory
+	MessageBatchOperator messageBatchOperator(@DaoKeyspace String keyspace, @DaoTable String messagesTable);
 
-	//*** Operators for book's keyspace ***
+	@DaoFactory
+	PageSessionsOperator pageSessionsOperator(@DaoKeyspace String keyspace, @DaoTable String pageSessionsTable);
+	
 	
 	@DaoFactory
 	TestEventOperator testEventOperator(@DaoKeyspace String keyspace, @DaoTable String testEventsTable);
@@ -58,10 +67,4 @@ public interface CassandraDataMapper
 	
 	@DaoFactory
 	IntervalOperator intervalOperator(@DaoKeyspace String keyspace, @DaoTable String intervalsTable);
-
-	@DaoFactory
-	MessageBatchOperator messageBatchOperator(@DaoKeyspace String keyspace, @DaoTable String messagesTable);
-
-	@DaoFactory
-	PageSessionsOperator pageSessionsOperator(@DaoKeyspace String keyspace, @DaoTable String pageSessionsTable);
 }

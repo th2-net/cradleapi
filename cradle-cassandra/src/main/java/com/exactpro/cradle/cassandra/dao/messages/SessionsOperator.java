@@ -29,7 +29,7 @@ import java.util.function.Function;
 public interface SessionsOperator
 {
 	@Select
-	CompletableFuture<MappedAsyncPagingIterable<SessionEntity>> get(String book,
+	CompletableFuture<MappedAsyncPagingIterable<SessionEntity>> get(String part,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Insert

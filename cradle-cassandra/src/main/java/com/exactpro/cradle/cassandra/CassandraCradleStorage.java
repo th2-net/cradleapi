@@ -194,8 +194,9 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected void doSwitchToNewPage(BookId bookId, String pageName, Instant timestamp, String comment, PageInfo prevPage) throws CradleStorageException, IOException
 	{
-		PageOperator pageOp = ops.getPageOperator();
-		PageNameOperator pageNameOp = ops.getPageNameOperator();
+		BookOperators bookOps = ops.getOperators(bookId);
+		PageOperator pageOp = bookOps.getPageOperator();
+		PageNameOperator pageNameOp = bookOps.getPageNameOperator();
 		try
 		{
 			PageNameEntity nameEntity = new PageNameEntity(bookId.getName(), pageName, timestamp, comment, null);
@@ -251,7 +252,7 @@ public class CassandraCradleStorage extends CradleStorage
 		BookOperators bookOps = ops.getOperators(pageId.getBookId());
 		MessageBatchOperator mbOperator = bookOps.getMessageBatchOperator();
 		PageSessionsOperator psOperator = bookOps.getPageSessionsOperator();
-		SessionsOperator sOperator = ops.getSessionsOperator();
+		SessionsOperator sOperator = bookOps.getSessionsOperator();
 
 		CompletableFuture<MessageBatchEntity> result = CompletableFuture.completedFuture(null);
 		for (MessageBatchEntity entity : entities)
@@ -277,7 +278,7 @@ public class CassandraCradleStorage extends CradleStorage
 				.thenComposeAsync(r ->{
 					String book = batchId.getBookId().getName();
 					CachedSession cachedSession = new CachedSession(book, sessionAlias);
-					if (!ops.getSessionsCache().store(cachedSession))
+					if (!bookOps.getSessionsCache().store(cachedSession))
 					{
 						logger.debug("Skipped writing book/session of message batch '{}'", batchId);
 						return CompletableFuture.completedFuture(null);
@@ -299,7 +300,7 @@ public class CassandraCradleStorage extends CradleStorage
 		{
 			List<TestEventEntity> entities = eventsWorker.createEntities(event, pageId);
 			eventsWorker.storeEntities(entities, bookId).get();
-			eventsWorker.storeScope(event, ops).get();
+			eventsWorker.storeScope(event, bookOps).get();
 			eventsWorker.storePageScope(event, pageId, bookOps).get();
 		}
 		catch (Exception e)
@@ -325,7 +326,7 @@ public class CassandraCradleStorage extends CradleStorage
 					}
 				})
 				.thenComposeAsync((entities) -> eventsWorker.storeEntities(entities, bookId))
-				.thenComposeAsync((r) -> eventsWorker.storeScope(event, ops))
+				.thenComposeAsync((r) -> eventsWorker.storeScope(event, bookOps))
 				.thenComposeAsync((r) -> eventsWorker.storePageScope(event, pageId, bookOps))
 				.thenAccept(NOOP);
 	}
@@ -547,20 +548,23 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected Collection<String> doGetSessionAliases(BookId bookId) throws IOException, CradleStorageException
 	{
-		Set<String> result = new TreeSet<>();
-
-		CompletableFuture<MappedAsyncPagingIterable<SessionEntity>> future =
-				ops.getSessionsOperator().get(bookId.getName(), readAttrs);
+		MappedAsyncPagingIterable<SessionEntity> entities;
 		try
 		{
-			PagedIterator<SessionEntity> it = new PagedIterator<>(future.get());
-			it.forEachRemaining(v -> result.add(v.getSessionAlias()));
+			entities = ops.getOperators(bookId).getSessionsOperator().get(bookId.getName(), readAttrs).get();
 		}
 		catch (Exception e)
 		{
-			throw new CradleStorageException("Error occurred while getting session aliases for page '"
-					+ bookId + '\'', e);
+			throw new CradleStorageException("Error occurred while getting session aliases for book '"+bookId+"'", e);
 		}
+		
+		if (entities == null)
+			return Collections.emptySet();
+		
+		Collection<String> result = new HashSet<>();
+		PagedIterator<SessionEntity> it = new PagedIterator<>(entities);
+		while (it.hasNext())
+			result.add(it.next().getSessionAlias());
 		return result;
 	}
 	
@@ -612,7 +616,7 @@ public class CassandraCradleStorage extends CradleStorage
 		MappedAsyncPagingIterable<ScopeEntity> entities;
 		try
 		{
-			entities = ops.getScopeOperator().get(bookId.getName(), readAttrs).get();
+			entities = ops.getOperators(bookId).getScopeOperator().get(bookId.getName(), readAttrs).get();
 		}
 		catch (Exception e)
 		{
@@ -720,23 +724,14 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		return strictReadAttrs;
 	}
-
-	private void checkTimeBoundaries(LocalDateTime fromDateTime, LocalDateTime toDateTime, Instant originalFrom, Instant originalTo)
-			throws CradleStorageException
-	{
-		LocalDate fromDate = fromDateTime.toLocalDate(),
-				toDate = toDateTime.toLocalDate();
-		if (!fromDate.equals(toDate))
-			throw new CradleStorageException("Left and right boundaries should be of the same date, but got '"+originalFrom+"' and '"+originalTo+"'");
-	}
-
+	
 	
 	private Collection<PageInfo> loadPageInfo(BookId bookId) throws IOException
 	{
 		Collection<PageInfo> result = new ArrayList<>();
 		try
 		{
-			for (PageEntity pageEntity : ops.getPageOperator().getAll(bookId.getName(), readAttrs))
+			for (PageEntity pageEntity : ops.getOperators(bookId).getPageOperator().getAll(bookId.getName(), readAttrs))
 				result.add(pageEntity.toPageInfo());
 		}
 		catch (Exception e)

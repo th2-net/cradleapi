@@ -123,7 +123,7 @@ public class StoredMessageId implements Serializable, Comparable<StoredMessageId
 	@Override
 	public int compareTo(StoredMessageId o)
 	{
-		int result = bookId.compareTo(o.getBookId());
+		int result = bookId.getName().compareTo(o.getBookId().getName());
 		if (result != 0)
 			return result;
 		result = sessionAlias.compareTo(o.getSessionAlias());

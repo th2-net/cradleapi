@@ -23,8 +23,10 @@ import com.exactpro.cradle.cassandra.dao.books.PageNameOperator;
 import com.exactpro.cradle.cassandra.dao.books.PageOperator;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
 import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
+import com.exactpro.cradle.cassandra.dao.cache.CachedSession;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
 import com.exactpro.cradle.cassandra.dao.messages.PageSessionsOperator;
+import com.exactpro.cradle.cassandra.dao.messages.SessionsOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.PageScopesOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeOperator;
@@ -35,32 +37,70 @@ public class BookOperators
 {
 	private final BookId bookId;
 
+	private final PageOperator pageOperator;
+	private final PageNameOperator pageNameOperator;
+	
+	private final SessionsOperator sessionsOperator;
+	private final ScopeOperator scopeOperator;
+
 	private final MessageBatchOperator messageBatchOperator;
 	private final PageSessionsOperator pageSessionsOperator;
 	private final TestEventOperator testEventOperator;
 	private final PageScopesOperator pageScopesOperator;
 	private final IntervalOperator intervalOperator;
 	
+	private final LimitedCache<CachedSession> sessionsCache;
 	private final LimitedCache<CachedPageSession> pageSessionsCache;
+	private final LimitedCache<CachedScope> scopesCache;
 	private final LimitedCache<CachedPageScope> pageScopesCache;
 	
 	public BookOperators(BookId bookId, CassandraDataMapper dataMapper, String keyspace, CassandraStorageSettings settings)
 	{
 		this.bookId = bookId;
 
+		pageOperator = dataMapper.pageOperator(keyspace, settings.getPagesTable());
+		pageNameOperator = dataMapper.pageNameOperator(keyspace, settings.getPagesNamesTable());
+		
+		sessionsOperator = dataMapper.sessionsOperator(keyspace, settings.getSessionsTable());
+		scopeOperator = dataMapper.scopeOperator(keyspace, settings.getScopesTable());
+		
 		messageBatchOperator = dataMapper.messageBatchOperator(keyspace, settings.getMessagesTable());
 		pageSessionsOperator = dataMapper.pageSessionsOperator(keyspace, settings.getPageSessionsTable());
 		testEventOperator = dataMapper.testEventOperator(keyspace, settings.getTestEventsTable());
 		pageScopesOperator = dataMapper.pageScopesOperator(keyspace, settings.getPageScopesTable());
+		
 		intervalOperator = dataMapper.intervalOperator(keyspace, settings.getIntervalsTable());
 		
+		sessionsCache = new LimitedCache<>(settings.getSessionsCacheSize());
 		pageSessionsCache = new LimitedCache<>(settings.getPageSessionsCacheSize());
+		scopesCache = new LimitedCache<>(settings.getScopesCacheSize());
 		pageScopesCache = new LimitedCache<>(settings.getPageScopesCacheSize());
 	}
 
 	public BookId getBookId()
 	{
 		return bookId;
+	}
+
+
+	public PageOperator getPageOperator()
+	{
+		return pageOperator;
+	}
+
+	public PageNameOperator getPageNameOperator()
+	{
+		return pageNameOperator;
+	}
+	
+	public SessionsOperator getSessionsOperator()
+	{
+		return sessionsOperator;
+	}
+	
+	public ScopeOperator getScopeOperator()
+	{
+		return scopeOperator;
 	}
 
 	public MessageBatchOperator getMessageBatchOperator()
@@ -89,11 +129,21 @@ public class BookOperators
 	}
 	
 	
+	public LimitedCache<CachedSession> getSessionsCache()
+	{
+		return sessionsCache;
+	}
+	
 	public LimitedCache<CachedPageSession> getPageSessionsCache()
 	{
 		return pageSessionsCache;
 	}
-
+	
+	public LimitedCache<CachedScope> getScopesCache()
+	{
+		return scopesCache;
+	}
+	
 	public LimitedCache<CachedPageScope> getPageScopesCache()
 	{
 		return pageScopesCache;

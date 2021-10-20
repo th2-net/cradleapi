@@ -16,21 +16,31 @@
 
 package com.exactpro.cradle.cassandra.dao.books;
 
+import static com.exactpro.cradle.cassandra.StorageConstants.PART;
+import static com.exactpro.cradle.cassandra.StorageConstants.START_DATE;
+import static com.exactpro.cradle.cassandra.StorageConstants.START_TIME;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.function.Function;
+
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
+import com.datastax.oss.driver.api.mapper.annotations.Query;
 import com.datastax.oss.driver.api.mapper.annotations.Select;
 import com.datastax.oss.driver.api.mapper.annotations.Update;
-
-import java.util.function.Function;
 
 @Dao
 public interface PageOperator
 {
 	@Select
 	PagingIterable<PageEntity> getAll(String book, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+PART+"=:part AND ("+START_DATE+", "+START_TIME+")>(:startDate, :startTime)")
+	PagingIterable<PageEntity> get(String part, LocalDate startDate, LocalTime startTime, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Update
 	ResultSet update(PageEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);

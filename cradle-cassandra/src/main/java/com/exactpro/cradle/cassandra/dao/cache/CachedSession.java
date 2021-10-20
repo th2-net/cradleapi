@@ -21,19 +21,19 @@ import java.util.StringJoiner;
 
 public class CachedSession
 {
-	private final String book;
-	private final String sessionAlias;
+	private final String part,
+			sessionAlias;
 
-	public CachedSession(String book, String sessionAlias)
+	public CachedSession(String part, String sessionAlias)
 	{
-		this.book = book;
+		this.part = part;
 		this.sessionAlias = sessionAlias;
 	}
 
 	@Override
 	public int hashCode()
 	{
-		return Objects.hash(book, sessionAlias);
+		return Objects.hash(part, sessionAlias);
 	}
 
 	@Override
@@ -46,7 +46,7 @@ public class CachedSession
 		if (getClass() != obj.getClass())
 			return false;
 		CachedSession other = (CachedSession) obj;
-		return Objects.equals(book, other.book)
+		return Objects.equals(part, other.part)
 				&& Objects.equals(sessionAlias, other.sessionAlias);
 	}
 
@@ -54,9 +54,18 @@ public class CachedSession
 	public String toString()
 	{
 		return new StringJoiner(", ", CachedSession.class.getSimpleName() + "[", "]")
-				.add("book='" + book + "'")
+				.add("part='" + part + "'")
 				.add("sessionAlias='" + sessionAlias + "'")
 				.toString();
 	}
-
+	
+	public String getPart()
+	{
+		return part;
+	}
+	
+	public String getSessionAlias()
+	{
+		return sessionAlias;
+	}
 }
