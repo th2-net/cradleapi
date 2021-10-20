@@ -886,16 +886,38 @@ public class CassandraCradleStorage extends CradleStorage
 			throw new CradleStorageException("Left and right boundaries should be of the same date, but got '"+originalFrom+"' and '"+originalTo+"'");
 	}
 
-	private long getFirstIndex(MessageBatchOperator op, String streamName, Direction direction)
+	private long getFirstIndex(MessageBatchOperator op, String streamName, Direction direction) throws IOException
 	{
-		Row row = op.getFirstIndex(instanceUuid, streamName, direction.getLabel(), readAttrs);
-		return row == null ? EMPTY_MESSAGE_INDEX : row.getLong(MESSAGE_INDEX);
+		CompletableFuture<Row> future = new AsyncOperator<Row>(semaphore).getFuture(
+				() -> op.getFirstIndex(instanceUuid, streamName, direction.getLabel(), readAttrs));
+		try
+		{
+			Row row = future.get();
+			return row == null ? EMPTY_MESSAGE_INDEX : row.getLong(MESSAGE_INDEX);
+		}
+		catch (Exception e)
+		{
+			throw new IOException(
+					"Error while getting index of the first message for stream '" + streamName + " and direction '" +
+							direction + "'", e);
+		}
 	}
 	
-	private long getLastIndex(MessageBatchOperator op, String streamName, Direction direction)
+	private long getLastIndex(MessageBatchOperator op, String streamName, Direction direction) throws IOException
 	{
-		Row row = op.getLastIndex(instanceUuid, streamName, direction.getLabel(), readAttrs);
-		return row == null ? EMPTY_MESSAGE_INDEX : row.getLong(LAST_MESSAGE_INDEX);
+		CompletableFuture<Row> future = new AsyncOperator<Row>(semaphore).getFuture(
+				() -> op.getLastIndex(instanceUuid, streamName, direction.getLabel(), readAttrs));
+		try
+		{
+			Row row = future.get();
+			return row == null ? EMPTY_MESSAGE_INDEX : row.getLong(LAST_MESSAGE_INDEX);
+		}
+		catch (Exception e)
+		{
+			throw new IOException(
+					"Error while getting index of the last message for stream '" + streamName + " and direction '" +
+							direction + "'", e);
+		}
 	}
 	
 	protected CompletableFuture<DetailedTestEventEntity> storeEvent(StoredTestEvent event)
