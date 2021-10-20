@@ -32,6 +32,7 @@ import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 import java.time.Instant;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -39,6 +40,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 {
 	protected final MessageBatchOperator op;
 	protected final BookInfo book;
+	protected final ExecutorService composingService;
 	protected final FilterForGreater<Instant> leftBoundFilter;
 	protected final FilterForLess<Instant> rightBoundFilter;
 	protected PageInfo firstPage, lastPage;
@@ -49,11 +51,13 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 	protected CassandraStoredMessageFilter cassandraFilter;
 
 	public AbstractMessageIteratorProvider(String requestInfo, StoredMessageFilter filter, BookOperators ops, BookInfo book,
+			ExecutorService composingService,
 			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException
 	{
 		super(requestInfo);
 		this.op = ops.getMessageBatchOperator();
 		this.book = book;
+		this.composingService = composingService;
 		this.readAttrs = readAttrs;
 		this.filter = filter;
 		this.limit = filter.getLimit();

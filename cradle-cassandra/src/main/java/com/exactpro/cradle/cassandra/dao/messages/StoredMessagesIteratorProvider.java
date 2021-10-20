@@ -37,6 +37,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.StreamSupport;
@@ -48,9 +49,10 @@ public class StoredMessagesIteratorProvider extends AbstractMessageIteratorProvi
 	private static final Logger logger = LoggerFactory.getLogger(StoredMessagesIteratorProvider.class);
 
 	public StoredMessagesIteratorProvider(String requestInfo, StoredMessageFilter filter, BookOperators ops, BookInfo book,
+			ExecutorService composingService,
 			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException
 	{
-		super(requestInfo, filter, ops, book, readAttrs);
+		super(requestInfo, filter, ops, book, composingService, readAttrs);
 	}
 
 	@Override
@@ -100,7 +102,7 @@ public class StoredMessagesIteratorProvider extends AbstractMessageIteratorProvi
 		}
 
 		logger.debug("Getting next iterator for '{}' by filter {}", getRequestInfo(), cassandraFilter);
-		return op.getByFilter(cassandraFilter, readAttrs)
+		return op.getByFilter(cassandraFilter, composingService, readAttrs)
 				.thenApplyAsync(resultSet -> {
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
 					cassandraFilter = createNextFilter(cassandraFilter);
@@ -114,7 +116,7 @@ public class StoredMessagesIteratorProvider extends AbstractMessageIteratorProvi
 							throw new RuntimeException("Error while converting message batch entity into stored message batch", e);
 						}
 					});
-				})
-				.thenApplyAsync(it -> new FilteredMessageIterator(it, filter, limit, returned));
+				}, composingService)
+				.thenApplyAsync(it -> new FilteredMessageIterator(it, filter, limit, returned), composingService);
 	}
 }

@@ -19,6 +19,7 @@ package com.exactpro.cradle.cassandra.dao.testevents;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
@@ -43,6 +44,7 @@ public interface TestEventOperator
 	
 	@QueryProvider(providerClass = CommonQueryProvider.class, entityHelpers = TestEventEntity.class)
 	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getByFilter(CassandraTestEventFilter filter,
+			ExecutorService composingService,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert

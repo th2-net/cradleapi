@@ -62,6 +62,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -73,7 +74,6 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	private final CassandraConnection connection;
 	private final CassandraStorageSettings settings;
-	private final CassandraSemaphore semaphore;
 	
 	private CradleOperators ops;
 	private QueryExecutor exec;
@@ -82,11 +82,12 @@ public class CassandraCradleStorage extends CradleStorage
 			strictReadAttrs;
 	private EventsWorker eventsWorker;
 	
-	public CassandraCradleStorage(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings) throws CradleStorageException
+	public CassandraCradleStorage(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings, 
+			ExecutorService composingService) throws CradleStorageException
 	{
+		super(composingService);
 		this.connection = new CassandraConnection(connectionSettings);
 		this.settings = storageSettings;
-		this.semaphore = new CassandraSemaphore(storageSettings.getMaxParallelQueries());
 	}
 
 	private static final Consumer<Object> NOOP = whatever -> {};
@@ -119,7 +120,7 @@ public class CassandraCradleStorage extends CradleStorage
 					.setTimeout(timeout)
 					.setPageSize(resultPageSize);
 			
-			eventsWorker = new EventsWorker(settings, ops, writeAttrs, readAttrs);
+			eventsWorker = new EventsWorker(settings, ops, composingService, writeAttrs, readAttrs);
 		}
 		catch (Exception e)
 		{
@@ -255,7 +256,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 		CompletableFuture<MessageBatchEntity> result = CompletableFuture.completedFuture(null);
 		for (MessageBatchEntity entity : entities)
-			result = result.thenComposeAsync(r -> mbOperator.write(entity, writeAttrs));
+			result = result.thenComposeAsync(r -> mbOperator.write(entity, writeAttrs), composingService);
 
 		String sessionAlias = batchId.getSessionAlias();
 		return result
@@ -271,7 +272,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 					logger.debug("Writing page/session of batch '{}'", batchId);
 					return psOperator.write(new PageSessionEntity(batchId, pageId), writeAttrs);
-				})
+				}, composingService)
 				.thenComposeAsync(r ->{
 					String book = batchId.getBookId().getName();
 					CachedSession cachedSession = new CachedSession(book, sessionAlias);
@@ -282,7 +283,7 @@ public class CassandraCradleStorage extends CradleStorage
 					}
 					logger.debug("Writing book/session of batch '{}'", batchId);
 					return sOperator.write(new SessionEntity(book, sessionAlias), writeAttrs);
-				})
+				}, composingService)
 				.thenAccept(NOOP);
 	}
 	
@@ -321,10 +322,10 @@ public class CassandraCradleStorage extends CradleStorage
 					{
 						throw new CompletionException(e);
 					}
-				})
-				.thenComposeAsync((entities) -> eventsWorker.storeEntities(entities, bookId))
-				.thenComposeAsync((r) -> eventsWorker.storeScope(event, bookOps))
-				.thenComposeAsync((r) -> eventsWorker.storePageScope(event, pageId, bookOps))
+				}, composingService)
+				.thenComposeAsync((entities) -> eventsWorker.storeEntities(entities, bookId), composingService)
+				.thenComposeAsync((r) -> eventsWorker.storeScope(event, bookOps), composingService)
+				.thenComposeAsync((r) -> eventsWorker.storePageScope(event, pageId, bookOps), composingService)
 				.thenAccept(NOOP);
 	}
 
@@ -402,7 +403,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 					logger.debug("There is no message with id '{}' in batch '{}'", id, msgs.iterator().next().getId());
 					return CompletableFuture.completedFuture(null);
-				});
+				}, composingService);
 	}
 
 	@Override
@@ -452,8 +453,8 @@ public class CassandraCradleStorage extends CradleStorage
 								{
 									throw new CompletionException(ex);
 								}
-							});
-				});
+							}, composingService);
+				}, composingService);
 	}
 	
 	
@@ -476,9 +477,9 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		StoredMessagesIteratorProvider provider =
 				new StoredMessagesIteratorProvider("get messages filtered by " + filter, filter,
-						ops.getOperators(book.getId()), book, readAttrs);
+						ops.getOperators(book.getId()), book, composingService, readAttrs);
 		return provider.nextIterator()
-				.thenApplyAsync(r -> () -> new CassandraCradleResultSet<>(r, provider));
+				.thenApply(r -> () -> new CassandraCradleResultSet<>(r, provider));
 	}
 	
 	@Override
@@ -500,9 +501,9 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		MessageBatchIteratorProvider provider =
 				new MessageBatchIteratorProvider("get messages batches filtered by " + filter, filter,
-						ops.getOperators(book.getId()), book, readAttrs);
+						ops.getOperators(book.getId()), book, composingService, readAttrs);
 		return provider.nextIterator()
-				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, provider));
+				.thenApply(r -> new CassandraCradleResultSet<>(r, provider));
 	}
 	
 	
@@ -702,11 +703,6 @@ public class CassandraCradleStorage extends CradleStorage
 		return exec;
 	}
 	
-	protected CassandraSemaphore getSemaphore()
-	{
-		return semaphore;
-	}
-	
 	public Function<BoundStatementBuilder, BoundStatementBuilder> getWriteAttrs()
 	{
 		return writeAttrs;
@@ -749,9 +745,9 @@ public class CassandraCradleStorage extends CradleStorage
 						
 						CompletableFuture<Void> update = doUpdateEventStatusAsync(event, false);
 						if (event.getParentId() != null)
-							return update.thenComposeAsync((u) -> failEventAndParents(event.getParentId()));
+							return update.thenComposeAsync((u) -> failEventAndParents(event.getParentId()), composingService);
 						return update;
-					});
+					}, composingService);
 		}
 		catch (CradleStorageException e)
 		{

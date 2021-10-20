@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
 public class MessageBatchIteratorProvider extends AbstractMessageIteratorProvider<StoredMessageBatch>
@@ -36,9 +37,10 @@ public class MessageBatchIteratorProvider extends AbstractMessageIteratorProvide
 	private static final Logger logger = LoggerFactory.getLogger(MessageBatchIteratorProvider.class);
 
 	public MessageBatchIteratorProvider(String requestInfo, StoredMessageFilter filter, BookOperators ops, BookInfo book,
+			ExecutorService composingService,
 			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException
 	{
-		super(requestInfo, filter, ops, book, readAttrs);
+		super(requestInfo, filter, ops, book, composingService, readAttrs);
 	}
 
 
@@ -54,7 +56,7 @@ public class MessageBatchIteratorProvider extends AbstractMessageIteratorProvide
 		}
 
 		logger.debug("Getting next iterator for '{}' by filter {}", getRequestInfo(), cassandraFilter);
-		return op.getByFilter(cassandraFilter, readAttrs)
+		return op.getByFilter(cassandraFilter, composingService, readAttrs)
 				.thenApplyAsync(resultSet -> {
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
 					cassandraFilter = createNextFilter(cassandraFilter);
@@ -68,6 +70,6 @@ public class MessageBatchIteratorProvider extends AbstractMessageIteratorProvide
 							throw new RuntimeException("Error while converting message batch entity into stored message batch", e);
 						}
 					});
-				});
+				}, composingService);
 	}
 }

@@ -28,6 +28,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
@@ -63,7 +64,8 @@ public interface MessageBatchOperator
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@QueryProvider(providerClass = CommonQueryProvider.class, entityHelpers = MessageBatchEntity.class)
-	CompletableFuture<MappedAsyncPagingIterable<MessageBatchEntity>> getByFilter(CassandraStoredMessageFilter filter,
+	CompletableFuture<MappedAsyncPagingIterable<MessageBatchEntity>> getByFilter(CassandraStoredMessageFilter filter, 
+			ExecutorService composingService,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Insert

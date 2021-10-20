@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
@@ -56,15 +57,18 @@ public class EventsWorker
 	
 	private final CassandraStorageSettings settings;
 	private final CradleOperators ops;
+	private final ExecutorService composingService;
 	private final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
 			readAttrs;
 	
 	public EventsWorker(CassandraStorageSettings settings, CradleOperators ops, 
+			ExecutorService composingService,
 			Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
 			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
 	{
 		this.settings = settings;
 		this.ops = ops;
+		this.composingService = composingService;
 		this.writeAttrs = writeAttrs;
 		this.readAttrs = readAttrs;
 	}
@@ -86,7 +90,7 @@ public class EventsWorker
 			if (result == null)
 				result = op.write(ent, writeAttrs);
 			else
-				result = result.thenComposeAsync(r -> op.write(ent, writeAttrs));
+				result = result.thenComposeAsync(r -> op.write(ent, writeAttrs), composingService);
 		}
 		return result;
 	}
@@ -132,15 +136,15 @@ public class EventsWorker
 					{
 						throw new CompletionException("Error while converting data of event "+id+" into test event", e);
 					}
-				});
+				}, composingService);
 	}
 	
 	public CompletableFuture<CradleResultSet<StoredTestEvent>> getTestEvents(TestEventFilter filter, BookInfo book)
 	{
 		TestEventIteratorProvider provider = new TestEventIteratorProvider("get test events filtered by "+filter, 
-				filter, getBookOps(filter.getBookId()), book, readAttrs);
+				filter, getBookOps(filter.getBookId()), book, composingService, readAttrs);
 		return provider.nextIterator()
-				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, provider));
+				.thenApply(r -> new CassandraCradleResultSet<>(r, provider));
 	}
 	
 	public CompletableFuture<Void> updateStatus(StoredTestEvent event, boolean success)

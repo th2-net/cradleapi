@@ -22,6 +22,8 @@ import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
@@ -49,11 +51,30 @@ public abstract class CradleStorage
 	protected final BookAndPageChecker bpc;
 	private volatile boolean initialized = false,
 			disposed = false;
+	protected final ExecutorService composingService;
+	protected final boolean ownedComposingService;
 	
-	public CradleStorage() throws CradleStorageException
+	
+	public CradleStorage(ExecutorService composingService) throws CradleStorageException
 	{
 		books = new ConcurrentHashMap<>();
 		bpc = new BookAndPageChecker(books);
+		
+		if (composingService == null)
+		{
+			ownedComposingService = true;
+			this.composingService = Executors.newFixedThreadPool(5);
+		}
+		else
+		{
+			ownedComposingService = false;
+			this.composingService = composingService;
+		}
+	}
+	
+	public CradleStorage() throws CradleStorageException
+	{
+		this(null);
 	}
 	
 	
@@ -151,6 +172,13 @@ public abstract class CradleStorage
 			return;
 		
 		logger.info("Disposing storage");
+		
+		if (ownedComposingService)
+		{
+			logger.info("Shutting down composing service...");
+			composingService.shutdownNow();
+		}
+		
 		doDispose();
 		disposed = true;
 		logger.info("Storage disposed");
@@ -260,12 +288,12 @@ public abstract class CradleStorage
 		logger.debug("Storing message batch {} asynchronously", id);
 		PageInfo page = bpc.checkActivePage(id.getBookId(), id.getTimestamp());
 		CompletableFuture<Void> result = doStoreMessageBatchAsync(batch, page);
-		result.whenComplete((r, error) -> {
+		result.whenCompleteAsync((r, error) -> {
 				if (error != null)
 					logger.error("Error while storing message batch "+id+" asynchronously", error);
 				else
 					logger.debug("Message batch {} has been stored asynchronously", id);
-			});
+			}, composingService);
 		return result;
 	}
 	
@@ -310,12 +338,12 @@ public abstract class CradleStorage
 		TestEventUtils.validateTestEvent(event);
 		
 		CompletableFuture<Void> result = doStoreTestEventAsync(event, page);
-		result.whenComplete((r, error) -> {
+		result.whenCompleteAsync((r, error) -> {
 				if (error != null)
 					logger.error("Error while storing test event "+id+" asynchronously", error);
 				else
 					logger.debug("Test event {} has been stored asynchronously", id);
-			});
+			}, composingService);
 		
 		if (event.getParentId() == null)
 			return result;
@@ -323,14 +351,14 @@ public abstract class CradleStorage
 		return result.thenComposeAsync(r -> {
 			logger.debug("Updating parents of test event {} asynchronously", id);
 			CompletableFuture<Void> result2 = doUpdateParentTestEventsAsync(event);
-			result2.whenComplete((r2, error) -> {
+			result2.whenCompleteAsync((r2, error) -> {
 					if (error != null)
 						logger.error("Error while updating parents of test event "+id+" asynchronously", error);
 					else
 						logger.debug("Parents of test event {} have been updated asynchronously", event.getId());
-				});
+				}, composingService);
 			return result2;
-		});
+		}, composingService);
 	}
 	
 	
@@ -375,12 +403,12 @@ public abstract class CradleStorage
 		logger.debug("Getting message {} from page {} asynchronously", id, pageId);
 		bpc.checkPage(pageId, id.getBookId());
 		CompletableFuture<StoredMessage> result = doGetMessageAsync(id, pageId);
-		result.whenComplete((r, error) -> {
+		result.whenCompleteAsync((r, error) -> {
 				if (error != null)
 					logger.error("Error while getting message "+id+" from page "+pageId+" asynchronously", error);
 				else
 					logger.debug("Message {} from page {} got asynchronously", id, pageId);
-			});
+			}, composingService);
 		return result;
 	}
 	
@@ -437,12 +465,12 @@ public abstract class CradleStorage
 		logger.debug("Getting message batch by message ID {} from page {} asynchronously", id, pageId);
 		bpc.checkPage(pageId, id.getBookId());
 		CompletableFuture<Collection<StoredMessage>> result = doGetMessageBatchAsync(id, pageId);
-		result.whenComplete((r, error) -> {
+		result.whenCompleteAsync((r, error) -> {
 				if (error != null)
 					logger.error("Error while getting message batch by message ID "+id+" from page "+pageId+" asynchronously", error);
 				else
 					logger.debug("Message batch by message ID {} from page {} got asynchronously", id, pageId);
-			});
+			}, composingService);
 		return result;
 	}
 	
@@ -485,12 +513,12 @@ public abstract class CradleStorage
 		logger.debug("Asynchronously getting messages filtered by {}", filter);
 		BookInfo book = bpc.getBook(filter.getBookId());
 		CompletableFuture<Iterable<StoredMessage>> result = doGetMessagesAsync(filter, book);
-		result.whenComplete((r, error) -> {
+		result.whenCompleteAsync((r, error) -> {
 				if (error != null)
 					logger.error("Error while getting messages filtered by "+filter+" asynchronously", error);
 				else
 					logger.debug("Iterator for messages filtered by {} got asynchronously", filter);
-			});
+			}, composingService);
 		return result;
 	}
 	
@@ -522,12 +550,12 @@ public abstract class CradleStorage
 		logger.debug("Asynchronously getting message batches filtered by {}", filter);
 		BookInfo book = bpc.getBook(filter.getBookId());
 		CompletableFuture<CradleResultSet<StoredMessageBatch>> result = doGetMessagesBatchesAsync(filter, book);
-		result.whenComplete((r, error) -> {
+		result.whenCompleteAsync((r, error) -> {
 				if (error != null)
 					logger.error("Error while getting message batches filtered by "+filter+" asynchronously", error);
 				else
 					logger.debug("Iterator for message batches filtered by {} got asynchronously", filter);
-			});
+			}, composingService);
 		return result;
 	}
 	
@@ -596,12 +624,12 @@ public abstract class CradleStorage
 		logger.debug("Getting test event {} asynchronously", id);
 		PageId pageId = bpc.findPage(id.getBookId(), id.getStartTimestamp()).getId();
 		CompletableFuture<StoredTestEvent> result = doGetTestEventAsync(id, pageId);
-		result.whenComplete((r, error) -> {
+		result.whenCompleteAsync((r, error) -> {
 				if (error != null)
 					logger.error("Error while getting test event "+id+" from page "+pageId+" asynchronously", error);
 				else
 					logger.debug("Test event {} from page {} got asynchronously", id, pageId);
-			});
+			}, composingService);
 		return result;
 	}
 	
@@ -640,12 +668,12 @@ public abstract class CradleStorage
 		
 		BookInfo book = bpc.getBook(filter.getBookId());
 		CompletableFuture<CradleResultSet<StoredTestEvent>> result = doGetTestEventsAsync(filter, book);
-		result.whenComplete((r, error) -> {
+		result.whenCompleteAsync((r, error) -> {
 				if (error != null)
 					logger.error("Error while getting test events filtered by "+filter+" asynchronously", error);
 				else
 					logger.debug("Result set with test events filtered by {} got asynchronously", filter);
-			});
+			}, composingService);
 		return result;
 	}
 	
@@ -677,12 +705,12 @@ public abstract class CradleStorage
 	{
 		logger.debug("Asynchronously updating status of event {}", event.getId());
 		CompletableFuture<Void> result = doUpdateEventStatusAsync(event, success);
-		result.whenComplete((r, error) -> {
+		result.whenCompleteAsync((r, error) -> {
 				if (error != null)
 					logger.error("Error while asynchronously updating status of event "+event.getId());
 				else
 					logger.debug("Status of event {} updated asynchronously", event.getId());
-			});
+			}, composingService);
 		return result;
 	}
 	

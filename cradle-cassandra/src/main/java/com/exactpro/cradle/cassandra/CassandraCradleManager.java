@@ -17,6 +17,7 @@
 package com.exactpro.cradle.cassandra;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
 
 import com.exactpro.cradle.CradleManager;
 import com.exactpro.cradle.CradleStorage;
@@ -27,12 +28,21 @@ public class CassandraCradleManager implements CradleManager
 {
 	private final CassandraCradleStorage storage;
 	
-	public CassandraCradleManager(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings, boolean prepareStorage) 
-			throws CradleStorageException, IOException
+	public CassandraCradleManager(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings, 
+			ExecutorService composingService, boolean prepareStorage) throws CradleStorageException, IOException
 	{
-		storage = new CassandraCradleStorage(new CassandraConnectionSettings(connectionSettings), new CassandraStorageSettings(storageSettings));
+		storage = new CassandraCradleStorage(new CassandraConnectionSettings(connectionSettings), 
+				new CassandraStorageSettings(storageSettings),
+				composingService);
 		storage.init(prepareStorage);
 	}
+	
+	public CassandraCradleManager(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings, 
+			boolean prepareStorage) throws CradleStorageException, IOException
+	{
+		this(connectionSettings, storageSettings, null, prepareStorage);
+	}
+	
 	
 	@Override
 	public void close() throws Exception

@@ -17,6 +17,7 @@
 package com.exactpro.cradle.cassandra.dao;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -40,12 +41,13 @@ public class CommonQueryProvider<T>
 	}
 	
 	public CompletableFuture<MappedAsyncPagingIterable<T>> getByFilter(CassandraFilter<T> filter,
+			ExecutorService composingService,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 	{
 		Select select = createQuery(filter);
 		PreparedStatement ps = session.prepare(select.build());
 		BoundStatement bs = bindParameters(ps, filter, attributes);
-		return session.executeAsync(bs).thenApply(r -> r.map(helper::get)).toCompletableFuture();
+		return session.executeAsync(bs).thenApplyAsync(r -> r.map(helper::get), composingService).toCompletableFuture();
 	}
 	
 	
