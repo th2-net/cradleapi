@@ -37,20 +37,22 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 	{
 		createPages();
 		createPagesNames();
+		
+		createSessions();
 		createScopes();
 		
 		createMessages();
-		createSessions();
-		createSessionsDates();
+		createPageSessions();
 		
 		createTestEvents();
 		createPageScopes();
 		createTestEventParentIndex();
+		
 		createLabelsTable();
 		createIntervals();
 	}
-	
-	
+
+
 	private void createPages() throws IOException
 	{
 		String tableName = getSettings().getPagesTable();
@@ -77,6 +79,14 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withColumn(END_TIME, DataTypes.TIME));
 	}
 	
+	private void createSessions() throws IOException
+	{
+		String tableName = getSettings().getSessionsTable();
+		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(PART, DataTypes.TEXT)
+				.withClusteringColumn(SESSION_ALIAS, DataTypes.TEXT));
+	}
+	
 	private void createScopes() throws IOException
 	{
 		String tableName = getSettings().getScopesTable();
@@ -84,18 +94,16 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withPartitionKey(PART, DataTypes.TEXT)
 				.withClusteringColumn(SCOPE, DataTypes.TEXT));
 	}
-	
-	
+
 	private void createMessages() throws IOException
 	{
 		String tableName = getSettings().getMessagesTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(PAGE, DataTypes.TEXT)
-				.withPartitionKey(MESSAGE_DATE, DataTypes.DATE)
 				.withPartitionKey(SESSION_ALIAS, DataTypes.TEXT)
 				.withPartitionKey(DIRECTION, DataTypes.TEXT)
-				.withPartitionKey(PART, DataTypes.TEXT)
-				
+
+				.withClusteringColumn(MESSAGE_DATE, DataTypes.DATE)
 				.withClusteringColumn(MESSAGE_TIME, DataTypes.TIME)
 				.withClusteringColumn(SEQUENCE, DataTypes.BIGINT)
 				.withClusteringColumn(CHUNK, DataTypes.INT)
@@ -111,25 +119,15 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withColumn(LABELS, DataTypes.setOf(DataTypes.TEXT))
 				.withColumn(CONTENT, DataTypes.BLOB));
 	}
-	
-	private void createSessions() throws IOException
+
+	private void createPageSessions() throws IOException
 	{
-		String tableName = getSettings().getSessionsTable();
+		String tableName = getSettings().getPageSessionsTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(PAGE, DataTypes.TEXT)
-				.withClusteringColumn(SESSION_ALIAS, DataTypes.TEXT));
-	}
-	
-	private void createSessionsDates() throws IOException
-	{
-		String tableName = getSettings().getSessionsDatesTable();
-		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(PAGE, DataTypes.TEXT)
-				.withPartitionKey(MESSAGE_DATE, DataTypes.DATE)
-				
+
 				.withClusteringColumn(SESSION_ALIAS, DataTypes.TEXT)
-				.withClusteringColumn(DIRECTION, DataTypes.TEXT)
-				.withClusteringColumn(PART, DataTypes.TEXT));
+				.withClusteringColumn(DIRECTION, DataTypes.TEXT));
 	}
 	
 	private void createTestEvents() throws IOException

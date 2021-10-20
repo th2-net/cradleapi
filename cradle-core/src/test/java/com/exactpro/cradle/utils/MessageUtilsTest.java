@@ -29,11 +29,11 @@ import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.messages.MessageToStoreBuilder;
 import com.exactpro.cradle.messages.StoredMessage;
-import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.messages.MessageBatchToStore;
 
 public class MessageUtilsTest
 {
-	private StoredMessageBatch batch;
+	private MessageBatchToStore batch;
 	private StoredMessage msg1,
 			msg2;
 	
@@ -48,7 +48,7 @@ public class MessageUtilsTest
 		byte[] content = "Message text".getBytes();
 		
 		long seq = 10;
-		batch = new StoredMessageBatch();
+		batch = new MessageBatchToStore();
 		msg1 = batch.addMessage(builder
 				.bookId(bookId)
 				.sessionAlias(sessionAlias)

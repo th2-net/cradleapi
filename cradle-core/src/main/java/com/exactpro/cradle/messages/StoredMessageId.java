@@ -23,13 +23,14 @@ import java.util.Objects;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.utils.CradleIdException;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Holds ID of a message stored in Cradle.
  * All messages have sequence number, scoped by direction and session the message is related to.
  * Message sequence in conjunction with session alias, direction of the message and its timestamp form the message ID
  */
-public class StoredMessageId implements Serializable
+public class StoredMessageId implements Serializable, Comparable<StoredMessageId>
 {
 	private static final long serialVersionUID = -6014720618704186254L;
 	public static final String ID_PARTS_DELIMITER = ":";
@@ -92,11 +93,8 @@ public class StoredMessageId implements Serializable
 	@Override
 	public String toString()
 	{
-		return bookId+ID_PARTS_DELIMITER
-				+sessionAlias+ID_PARTS_DELIMITER
-				+direction.getLabel()+ID_PARTS_DELIMITER
-				+StoredMessageIdUtils.timestampToString(timestamp)+ID_PARTS_DELIMITER
-				+sequence;
+		return StringUtils.joinWith(ID_PARTS_DELIMITER, bookId, sessionAlias, direction.getLabel(),
+				StoredMessageIdUtils.timestampToString(timestamp), sequence);
 	}
 
 
@@ -120,5 +118,23 @@ public class StoredMessageId implements Serializable
 		return Objects.equals(bookId, other.bookId) && Objects.equals(sessionAlias, other.sessionAlias)
 				&& direction == other.direction && Objects.equals(timestamp, other.timestamp)
 				&& sequence == other.sequence;
+	}
+
+	@Override
+	public int compareTo(StoredMessageId o)
+	{
+		int result = bookId.getName().compareTo(o.getBookId().getName());
+		if (result != 0)
+			return result;
+		result = sessionAlias.compareTo(o.getSessionAlias());
+		if (result != 0 )
+			return result;
+		result = direction.compareTo(o.getDirection());
+		if (result != 0 )
+			return result;
+		result = timestamp.compareTo(o.getTimestamp());
+		if (result != 0)
+			return result;
+		return Long.compare(sequence, o.getSequence());
 	}
 }

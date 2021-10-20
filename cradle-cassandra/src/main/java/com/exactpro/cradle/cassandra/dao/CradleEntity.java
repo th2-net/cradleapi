@@ -49,7 +49,8 @@ public abstract class CradleEntity
 	
 	@Transient
 	public abstract String getEntityId();
-	
+
+	public abstract int getChunk();
 	
 	public LocalDate getStoredDate()
 	{
@@ -74,11 +75,7 @@ public abstract class CradleEntity
 	@Transient
 	public Instant getStoredTimestamp()
 	{
-		LocalDate sd = getStoredDate();
-		LocalTime st = getStoredTime();
-		if (sd == null || st == null)
-			return null;
-		return TimeUtils.fromLocalTimestamp(LocalDateTime.of(sd, st));
+		return TimeUtils.toInstant(getStoredDate(), getStoredTime());
 	}
 	
 	@Transient

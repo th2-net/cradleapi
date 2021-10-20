@@ -22,10 +22,7 @@ import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
 import com.exactpro.cradle.intervals.IntervalsWorker;
-import com.exactpro.cradle.messages.StoredMessage;
-import com.exactpro.cradle.messages.StoredMessageBatch;
-import com.exactpro.cradle.messages.StoredMessageFilter;
-import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.TestEventFilter;
@@ -79,12 +76,13 @@ public class DummyCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected void doStoreMessageBatch(StoredMessageBatch batch) throws IOException
+	protected void doStoreMessageBatch(MessageBatchToStore batch, PageInfo page) throws IOException
 	{
 	}
 	
 	@Override
-	protected CompletableFuture<Void> doStoreMessageBatchAsync(StoredMessageBatch batch)
+	protected CompletableFuture<Void> doStoreMessageBatchAsync(MessageBatchToStore batch,
+			PageInfo page)
 	{
 		return CompletableFuture.completedFuture(null);
 	}
@@ -148,38 +146,40 @@ public class DummyCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException
+	protected Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter, BookInfo book) throws IOException
 	{
 		return null;
 	}
 	
 	@Override
-	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter)
+	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter,
+			BookInfo book)
 	{
 		return CompletableFuture.completedFuture(null);
 	}
 	
 	@Override
-	protected Iterable<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException
+	protected CradleResultSet<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter, BookInfo book) throws IOException
 	{
 		return null;
 	}
 	
 	@Override
-	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter)
+	protected CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter,
+			BookInfo book)
 	{
 		return CompletableFuture.completedFuture(null);
 	}
 	
 	
 	@Override
-	protected long doGetLastSequence(String sessionAlias, Direction direction, PageId pageId) throws IOException
+	protected long doGetLastSequence(String sessionAlias, Direction direction, BookId bookId) throws IOException
 	{
 		return 0;
 	}
 	
 	@Override
-	protected Collection<String> doGetSessionAliases(PageId pageId) throws IOException
+	protected Collection<String> doGetSessionAliases(BookId bookId) throws IOException
 	{
 		return null;
 	}

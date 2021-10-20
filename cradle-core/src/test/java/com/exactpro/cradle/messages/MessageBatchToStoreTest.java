@@ -31,7 +31,7 @@ import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.MessageUtils;
 
-public class StoredMessageBatchTest
+public class MessageBatchToStoreTest
 {
 	private MessageToStoreBuilder builder;
 	private BookId book;
@@ -90,7 +90,7 @@ public class StoredMessageBatchTest
 			expectedExceptionsMessageRegExp = ".* for first message in batch .*")
 	public void batchChecksFirstMessage() throws CradleStorageException
 	{
-		StoredMessageBatch.singleton(builder
+		MessageBatchToStore.singleton(builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
@@ -105,7 +105,7 @@ public class StoredMessageBatchTest
 			expectedExceptionsMessageRegExp = ".*, but in your message it is .*")
 	public void batchConsistency(List<IdData> ids) throws CradleStorageException
 	{
-		StoredMessageBatch batch = new StoredMessageBatch();
+		MessageBatchToStore batch = new MessageBatchToStore();
 		for (IdData id : ids)
 		{
 			batch.addMessage(builder
@@ -124,7 +124,7 @@ public class StoredMessageBatchTest
 			expectedExceptionsMessageRegExp = "Message must .*")
 	public void batchValidatesMessages(MessageToStore msg) throws CradleStorageException
 	{
-		StoredMessageBatch batch = new StoredMessageBatch();
+		MessageBatchToStore batch = new MessageBatchToStore();
 		batch.addMessage(msg);
 	}
 	
@@ -132,7 +132,7 @@ public class StoredMessageBatchTest
 	public void sequenceAutoIncrement() throws CradleStorageException
 	{
 		long seq = 10;
-		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
+		MessageBatchToStore batch = MessageBatchToStore.singleton(builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
@@ -165,7 +165,7 @@ public class StoredMessageBatchTest
 	public void sequenceGapsAllowed() throws CradleStorageException
 	{
 		long seq = 10;
-		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
+		MessageBatchToStore batch = MessageBatchToStore.singleton(builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
@@ -188,7 +188,7 @@ public class StoredMessageBatchTest
 	public void correctMessageId() throws CradleStorageException
 	{
 		long seq = 10;
-		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
+		MessageBatchToStore batch = MessageBatchToStore.singleton(builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
@@ -210,7 +210,7 @@ public class StoredMessageBatchTest
 	public void batchShowsLastTimestamp() throws CradleStorageException
 	{
 		Instant timestamp = Instant.ofEpochSecond(1000);
-		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
+		MessageBatchToStore batch = MessageBatchToStore.singleton(builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
@@ -243,7 +243,7 @@ public class StoredMessageBatchTest
 	@Test
 	public void batchSerialization() throws CradleStorageException, IOException
 	{
-		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
+		MessageBatchToStore batch = MessageBatchToStore.singleton(builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)

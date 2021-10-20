@@ -30,12 +30,14 @@ import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.datastax.oss.driver.api.mapper.annotations.Transient;
+import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.CradleEntity;
 import com.exactpro.cradle.cassandra.utils.CassandraTimeUtils;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.TimeUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Contains data of {@link StoredTestEvent} to write to or to obtain from Cassandra
@@ -104,52 +106,45 @@ public class TestEventEntity extends CradleEntity
 	public TestEventEntity()
 	{
 	}
-	
-	public TestEventEntity(EventEntityData eventData)
+
+	public TestEventEntity(TestEventToStore event, PageId pageId, int chunk, boolean lastChunk, byte[] content, boolean compressed, Set<String> messages)
 	{
-		TestEventToStore event = eventData.getEvent();
 		StoredTestEventId parentId = event.getParentId();
 		LocalDateTime start = TimeUtils.toLocalTimestamp(event.getStartTimestamp());
 		
-		this.setPage(eventData.getPageId().getName());
-		this.setScope(event.getScope());
-		this.setPart(CassandraTimeUtils.getPart(start));
-		this.setStartTimestamp(start);
-		this.setId(event.getId().getId());
-		this.setChunk(eventData.getChunk());
+		setPage(pageId.getName());
+		setScope(event.getScope());
+		setPart(CassandraTimeUtils.getPart(start));
+		setStartTimestamp(start);
+		setId(event.getId().getId());
+		setChunk(chunk);
 		
-		this.setSuccess(event.isSuccess());
-		this.setRoot(parentId == null);
-		this.setEventBatch(event.isBatch());
-		if (eventData.getChunk() == 0)
+		setSuccess(event.isSuccess());
+		setRoot(parentId == null);
+		setEventBatch(event.isBatch());
+		if (chunk == 0)
 		{
-			this.setName(event.getName());
-			this.setType(event.getType());
-			this.setParentId(parentId != null ? parentId.toString() : "");  //Empty string for absent parentId allows to use index to get root events
+			setName(event.getName());
+			setType(event.getType());
+			setParentId(parentId != null ? parentId.toString() : "");  //Empty string for absent parentId allows to use index to get root events
 			if (event.isBatch())
-				this.setEventCount(event.asBatch().getTestEventsCount());
-			this.setEndTimestamp(event.getEndTimestamp());
+				setEventCount(event.asBatch().getTestEventsCount());
+			setEndTimestamp(event.getEndTimestamp());
 			//TODO: this.setLabels(event.getLabels());
 		}
 		
-		this.setLastChunk(eventData.isLastChunk());
-		this.setCompressed(eventData.isCompressed());
+		setLastChunk(lastChunk);
+		setCompressed(compressed);
 		
-		this.setMessages(eventData.getMessages());
-		if (eventData.getContent() != null)
-			this.setContent(ByteBuffer.wrap(eventData.getContent()));
+		setMessages(messages);
+		if (content != null)
+			setContent(ByteBuffer.wrap(content));
 	}
-	
 	
 	@Override
 	public String getEntityId()
 	{
-		return page+StoredTestEventId.ID_PARTS_DELIMITER
-				+scope+StoredTestEventId.ID_PARTS_DELIMITER
-				+part+StoredTestEventId.ID_PARTS_DELIMITER
-				+startDate+StoredTestEventId.ID_PARTS_DELIMITER
-				+startTime+StoredTestEventId.ID_PARTS_DELIMITER
-				+id;
+		return StringUtils.joinWith(StoredTestEventId.ID_PARTS_DELIMITER, page, scope, part, startDate, startTime, id);
 	}
 	
 	
@@ -209,11 +204,7 @@ public class TestEventEntity extends CradleEntity
 	@Transient
 	public Instant getStartTimestamp()
 	{
-		LocalDate sd = getStartDate();
-		LocalTime st = getStartTime();
-		if (sd == null || st == null)
-			return null;
-		return TimeUtils.fromLocalTimestamp(LocalDateTime.of(sd, st));
+		return TimeUtils.toInstant(getStartDate(), getStartTime());
 	}
 	
 	@Transient
@@ -254,7 +245,7 @@ public class TestEventEntity extends CradleEntity
 		this.id = id;
 	}
 	
-	
+	@Override
 	public int getChunk()
 	{
 		return chunk;
@@ -366,11 +357,7 @@ public class TestEventEntity extends CradleEntity
 	@Transient
 	public Instant getEndTimestamp()
 	{
-		LocalDate ed = getEndDate();
-		LocalTime et = getEndTime();
-		if (ed == null || et == null)
-			return null;
-		return TimeUtils.fromLocalTimestamp(LocalDateTime.of(ed, et));
+		return TimeUtils.toInstant(getEndDate(), getEndTime());
 	}
 	
 	@Transient

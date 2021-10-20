@@ -18,6 +18,7 @@ package com.exactpro.cradle.messages;
 
 import java.time.Instant;
 
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.Order;
 import com.exactpro.cradle.PageId;
@@ -37,34 +38,38 @@ import com.exactpro.cradle.filters.FilterForLessBuilder;
  */
 public class StoredMessageFilterBuilder
 {
-	private final PageId pageId;
 	private StoredMessageFilter msgFilter;
 	
-	public StoredMessageFilterBuilder(PageId pageId)
+	public StoredMessageFilterBuilder(BookId bookId, String sessionAlias, Direction direction)
 	{
-		this.pageId = pageId;
+		msgFilter = new StoredMessageFilter();
+		msgFilter.setBookId(bookId);
+		this.sessionAlias().isEqualTo(sessionAlias);
+		this.direction().isEqualTo(direction);
 	}
-	
-	
-	public FilterForEqualsBuilder<String, StoredMessageFilterBuilder> sessionAlias()
+
+	private FilterForEqualsBuilder<String, StoredMessageFilterBuilder> sessionAlias()
 	{
-		initIfNeeded();
 		FilterForEquals<String> f = new FilterForEquals<>();
 		msgFilter.setSessionAlias(f);
 		return new FilterForEqualsBuilder<String, StoredMessageFilterBuilder>(f, this);
 	}
 	
-	public FilterForEqualsBuilder<Direction, StoredMessageFilterBuilder> direction()
+	private FilterForEqualsBuilder<Direction, StoredMessageFilterBuilder> direction()
 	{
-		initIfNeeded();
 		FilterForEquals<Direction> f = new FilterForEquals<>();
 		msgFilter.setDirection(f);
 		return new FilterForEqualsBuilder<Direction, StoredMessageFilterBuilder>(f, this);
 	}
+
+	public StoredMessageFilterBuilder pageId(PageId pageId)
+	{
+		msgFilter.setPageId(pageId);
+		return this;
+	}
 	
 	public FilterForGreaterBuilder<Instant, StoredMessageFilterBuilder> timestampFrom()
 	{
-		initIfNeeded();
 		FilterForGreater<Instant> f = new FilterForGreater<>();
 		msgFilter.setTimestampFrom(f);
 		return new FilterForGreaterBuilder<Instant, StoredMessageFilterBuilder>(f, this);
@@ -72,40 +77,36 @@ public class StoredMessageFilterBuilder
 	
 	public FilterForLessBuilder<Instant, StoredMessageFilterBuilder> timestampTo()
 	{
-		initIfNeeded();
 		FilterForLess<Instant> f = new FilterForLess<>();
 		msgFilter.setTimestampTo(f);
 		return new FilterForLessBuilder<Instant, StoredMessageFilterBuilder>(f, this);
 	}
 	
-	public FilterForAnyBuilder<Long, StoredMessageFilterBuilder> sequence()
+	public FilterForAnyBuilder<StoredMessageId, StoredMessageFilterBuilder> storedMessageId()
 	{
-		initIfNeeded();
-		FilterForAny<Long> f = new FilterForAny<>();
-		msgFilter.setSequence(f);
-		return new FilterForAnyBuilder<Long, StoredMessageFilterBuilder>(f, this);
+		FilterForAny<StoredMessageId> f = new FilterForAny<>();
+		msgFilter.setMessageId(f);
+		return new FilterForAnyBuilder<StoredMessageId, StoredMessageFilterBuilder>(f, this);
 	}
 	
 	public StoredMessageFilterBuilder next(StoredMessageId fromId, int count)
 	{
-		initIfNeeded();
 		msgFilter.setSessionAlias(new FilterForEquals<String>(fromId.getSessionAlias()));
 		msgFilter.setDirection(new FilterForEquals<Direction>(fromId.getDirection()));
 		msgFilter.setTimestampFrom(new FilterForGreater<Instant>(fromId.getTimestamp()));
 		msgFilter.setTimestampTo(null);
-		msgFilter.setSequence(new FilterForAny<Long>(fromId.getSequence(), ComparisonOperation.GREATER));
+		msgFilter.setMessageId(new FilterForAny<StoredMessageId>(fromId, ComparisonOperation.GREATER));
 		msgFilter.setLimit(count);
 		return this;
 	}
 	
 	public StoredMessageFilterBuilder previous(StoredMessageId fromId, int count)
 	{
-		initIfNeeded();
 		msgFilter.setSessionAlias(new FilterForEquals<String>(fromId.getSessionAlias()));
 		msgFilter.setDirection(new FilterForEquals<Direction>(fromId.getDirection()));
 		msgFilter.setTimestampFrom(new FilterForGreater<Instant>(fromId.getTimestamp()));
 		msgFilter.setTimestampTo(null);
-		msgFilter.setSequence(new FilterForAny<Long>(fromId.getSequence(), ComparisonOperation.LESS));
+		msgFilter.setMessageId(new FilterForAny<StoredMessageId>(fromId, ComparisonOperation.LESS));
 		msgFilter.setLimit(count);
 		return this;
 	}
@@ -117,35 +118,20 @@ public class StoredMessageFilterBuilder
 	 */
 	public StoredMessageFilterBuilder limit(int limit)
 	{
-		initIfNeeded();
 		msgFilter.setLimit(limit);
 		return this;
 	}
 
 	public StoredMessageFilterBuilder order(Order order)
 	{
-		initIfNeeded();
 		msgFilter.setOrder(order);
 		return this;
 	}
 	
 	public StoredMessageFilter build()
 	{
-		initIfNeeded();
 		StoredMessageFilter result = msgFilter;
 		msgFilter = null;
 		return result;
-	}
-	
-	
-	private void initIfNeeded()
-	{
-		if (msgFilter == null)
-			msgFilter = createStoredMessageFilter();
-	}
-	
-	protected StoredMessageFilter createStoredMessageFilter()
-	{
-		return new StoredMessageFilter(pageId);
 	}
 }
