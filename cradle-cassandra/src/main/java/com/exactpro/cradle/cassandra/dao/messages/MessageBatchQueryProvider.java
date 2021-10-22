@@ -266,7 +266,7 @@ public class MessageBatchQueryProvider
 			{
 				long fromIndex = getNearestMessageIndexBefore(tmOperator, instanceId,
 						filter.getStreamName().getValue(), directionFilter.getValue(), ts, attributes);
-				if (fromIndex > leftIndex)
+				if (fromIndex >= leftIndex)
 					builder = builder.setLong(LEFT_MESSAGE_INDEX, fromIndex);
 			}
 			catch (ExecutionException | InterruptedException e)
@@ -282,7 +282,7 @@ public class MessageBatchQueryProvider
 			{
 				long toIndex = getNearestMessageIndexAfter(tmOperator, instanceId,
 						filter.getStreamName().getValue(), directionFilter.getValue(), ts, attributes);
-				if (toIndex < rightIndex)
+				if (toIndex <= rightIndex)
 					builder = builder.setLong(RIGHT_MESSAGE_INDEX, toIndex);
 			}
 			catch (ExecutionException | InterruptedException e)
