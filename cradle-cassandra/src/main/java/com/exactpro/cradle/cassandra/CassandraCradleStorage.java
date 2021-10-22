@@ -39,11 +39,7 @@ import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.iterators.*;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.linkers.LinkerSupplies;
-import com.exactpro.cradle.cassandra.retries.CompleteEventsGetter;
-import com.exactpro.cradle.cassandra.retries.PageSizeAdjustingPolicy;
-import com.exactpro.cradle.cassandra.retries.PagingSupplies;
-import com.exactpro.cradle.cassandra.retries.RetryingSelectExecutor;
-import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
+import com.exactpro.cradle.cassandra.retries.*;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.intervals.IntervalsWorker;
@@ -97,7 +93,8 @@ public class CassandraCradleStorage extends CradleStorage
 	private SelectExecutionPolicy selectExecutionPolicy;
 	
 	private QueryExecutor exec;
-	private RetryingSelectExecutor selectExecutor;
+	private RetryingSelectExecutor retryingSelectExecutor;
+	private SingleRowQueryExecutor singleRowQueryExecutor;
 	private CompleteEventsGetter completeEventsGetter;
 	private PagingSupplies pagingSupplies;
 
@@ -144,7 +141,8 @@ public class CassandraCradleStorage extends CradleStorage
 			CqlSession session = connection.getSession();
 			exec = new QueryExecutor(session,
 					settings.getTimeout(), settings.getWriteConsistencyLevel(), settings.getReadConsistencyLevel());
-			selectExecutor = new RetryingSelectExecutor(session, selectExecutionPolicy);
+			retryingSelectExecutor = new RetryingSelectExecutor(session, selectExecutionPolicy);
+			singleRowQueryExecutor = new SingleRowQueryExecutor(session, new FixedNumberRetryPolicy(5));
 			pagingSupplies = new PagingSupplies(session, selectExecutionPolicy);
 			
 			if (prepareStorage)
@@ -171,7 +169,8 @@ public class CassandraCradleStorage extends CradleStorage
 			
 			LinkerSupplies supplies = new LinkerSupplies(ops.getTestEventMessagesOperator(), ops.getMessageTestEventOperator(),
 					ops.getTestEventMessagesConverter(), ops.getMessageTestEventConverter());
-			testEventsMessagesLinker = new CassandraTestEventsMessagesLinker(supplies, instanceUuid, readAttrs, semaphore, selectExecutor, pagingSupplies);
+			testEventsMessagesLinker = new CassandraTestEventsMessagesLinker(supplies, instanceUuid, readAttrs, semaphore,
+					retryingSelectExecutor, pagingSupplies);
 			completeEventsGetter = new CompleteEventsGetter(instanceUuid, readAttrs, selectExecutionPolicy, 
 					ops.getTestEventOperator(), ops.getTestEventConverter(), pagingSupplies);
 			
@@ -588,7 +587,7 @@ public class CassandraCradleStorage extends CradleStorage
 		MessageBatchOperator mbOp = ops.getMessageBatchOperator();
 		TimeMessageOperator tmOp = ops.getTimeMessageOperator();
 		return new AsyncOperator<MappedAsyncPagingIterable<DetailedMessageBatchEntity>>(semaphore)
-						.getFuture(() -> selectExecutor
+						.getFuture(() -> retryingSelectExecutor
 								.executeQuery(() -> mbOp.filterMessages(instanceUuid, filter, mbOp, tmOp, readAttrs),
 										ops.getMessageBatchConverter(),
 										queryInfo));
@@ -627,7 +626,7 @@ public class CassandraCradleStorage extends CradleStorage
 		RootTestEventOperator op = ops.getRootTestEventOperator();
 		CompletableFuture<MappedAsyncPagingIterable<RootTestEventEntity>> future = 
 				new AsyncOperator<MappedAsyncPagingIterable<RootTestEventEntity>>(semaphore)
-						.getFuture(() -> selectExecutor.executeQuery(order == Order.DIRECT
+						.getFuture(() -> retryingSelectExecutor.executeQuery(order == Order.DIRECT
 								? () -> op.getTestEventsDirect(instanceUuid, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
 								: () -> op.getTestEventsReverse(instanceUuid, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs),
 								ops.getRootTestEventConverter(),
@@ -668,7 +667,7 @@ public class CassandraCradleStorage extends CradleStorage
 		String queryInfo = "get child test events of "+parentId+" from range "+from+".."+to+" in "+order+" order";
 		CompletableFuture<MappedAsyncPagingIterable<TestEventChildEntity>> future =
 				new AsyncOperator<MappedAsyncPagingIterable<TestEventChildEntity>>(semaphore)
-						.getFuture(() -> selectExecutor.executeQuery(() -> order == Order.DIRECT
+						.getFuture(() -> retryingSelectExecutor.executeQuery(() -> order == Order.DIRECT
 								? ops.getTestEventChildrenOperator().getTestEventsDirect(instanceUuid, parentId.toString(),
 									fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
 								: ops.getTestEventChildrenOperator().getTestEventsReverse(instanceUuid, parentId.toString(),
@@ -710,7 +709,7 @@ public class CassandraCradleStorage extends CradleStorage
 		String queryInfo = "get test events from range "+from+".."+to+" in "+order+" order";
 		CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> future =
 				new AsyncOperator<MappedAsyncPagingIterable<TimeTestEventEntity>>(semaphore)
-						.getFuture(() -> selectExecutor.executeQuery(() -> order == Order.DIRECT
+						.getFuture(() -> retryingSelectExecutor.executeQuery(() -> order == Order.DIRECT
 								? ops.getTimeTestEventOperator().getTestEventsDirect(instanceUuid,
 										fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
 								: ops.getTimeTestEventOperator().getTestEventsReverse(instanceUuid,
@@ -888,8 +887,13 @@ public class CassandraCradleStorage extends CradleStorage
 
 	private long getFirstIndex(MessageBatchOperator op, String streamName, Direction direction) throws IOException
 	{
-		CompletableFuture<Row> future = new AsyncOperator<Row>(semaphore).getFuture(
-				() -> op.getFirstIndex(instanceUuid, streamName, direction.getLabel(), readAttrs));
+		String queryInfo = "get first message for stream '" + streamName + " and direction '" + direction + "'";
+		CompletableFuture<Row> future = new AsyncOperator<Row>(semaphore).getFuture(() ->
+						singleRowQueryExecutor.executeQuery(
+								() -> op.getFirstIndex(instanceUuid, streamName, direction.getLabel(), readAttrs),
+								r -> r,
+								queryInfo)
+																				   );
 		try
 		{
 			Row row = future.get();
