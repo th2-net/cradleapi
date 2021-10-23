@@ -18,10 +18,15 @@ package com.exactpro.cradle.testevents;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.messages.StoredMessageIdUtils;
 import com.exactpro.cradle.utils.CradleIdException;
+import com.exactpro.cradle.utils.EscapeUtils;
 
 /**
  * Holds ID of a test event stored in Cradle
@@ -30,7 +35,7 @@ public class StoredTestEventId implements Serializable
 {
 	private static final long serialVersionUID = 6954746788528942942L;
 	
-	public static final String ID_PARTS_DELIMITER = ":";
+	public static final String ID_PARTS_DELIMITER = EscapeUtils.DELIMITER_STR;
 	
 	private final BookId bookId;
 	private final String scope;
@@ -47,7 +52,7 @@ public class StoredTestEventId implements Serializable
 	
 	public static StoredTestEventId fromString(String id) throws CradleIdException
 	{
-		String[] parts = StoredTestEventIdUtils.splitParts(id);
+		List<String> parts = StoredTestEventIdUtils.splitParts(id);
 		
 		String uniqueId = StoredTestEventIdUtils.getId(parts);
 		Instant timestamp = StoredTestEventIdUtils.getTimestamp(parts);
@@ -81,7 +86,11 @@ public class StoredTestEventId implements Serializable
 	@Override
 	public String toString()
 	{
-		return bookId+ID_PARTS_DELIMITER+scope+ID_PARTS_DELIMITER+StoredTestEventIdUtils.timestampToString(startTimestamp)+ID_PARTS_DELIMITER+id;
+		return StringUtils.joinWith(ID_PARTS_DELIMITER, 
+				EscapeUtils.escape(bookId.toString()), 
+				EscapeUtils.escape(scope), 
+				StoredTestEventIdUtils.timestampToString(startTimestamp), 
+				EscapeUtils.escape(id));
 	}
 
 	@Override

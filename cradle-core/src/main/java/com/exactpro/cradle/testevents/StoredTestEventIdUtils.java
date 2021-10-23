@@ -16,13 +16,14 @@
 
 package com.exactpro.cradle.testevents;
 
+import java.text.ParseException;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
-
-import org.apache.commons.lang3.StringUtils;
+import java.util.List;
 
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.utils.CradleIdException;
+import com.exactpro.cradle.utils.EscapeUtils;
 import com.exactpro.cradle.utils.TimeUtils;
 
 /**
@@ -30,51 +31,54 @@ import com.exactpro.cradle.utils.TimeUtils;
  */
 public class StoredTestEventIdUtils
 {
-	public static String[] splitParts(String id) throws CradleIdException
+	public static List<String> splitParts(String id) throws CradleIdException
 	{
-		String[] parts = id.split(StoredTestEventId.ID_PARTS_DELIMITER);
-		if (parts.length < 3)
-			throw new CradleIdException("Test Event ID ("+id+") should contain book ID, timestamp and unique ID "
+		List<String> parts;
+		try
+		{
+			parts = EscapeUtils.split(id);
+		}
+		catch (ParseException e)
+		{
+			throw new CradleIdException("Could not parse test event ID from string '"+id+"'", e);
+		}
+		
+		if (parts.size() != 4)
+			throw new CradleIdException("Test Event ID ("+id+") should contain book ID, scope, timestamp and unique ID "
 					+ "delimited with '"+StoredTestEventId.ID_PARTS_DELIMITER+"'");
 		return parts;
 	}
 	
-	public static String getId(String[] parts) throws CradleIdException
+	public static String getId(List<String> parts) throws CradleIdException
 	{
-		return parts[parts.length-1];
+		return parts.get(3);
 	}
 	
-	public static Instant getTimestamp(String[] parts) throws CradleIdException
+	public static Instant getTimestamp(List<String> parts) throws CradleIdException
 	{
-		String timeString = parts[parts.length-2];
+		String timeString = parts.get(2);
 		try
 		{
 			return TimeUtils.fromIdTimestamp(timeString);
 		}
 		catch (DateTimeParseException e)
 		{
-			throw new CradleIdException("Invalid timstamp ("+timeString+") in ID '"+restoreId(parts)+"'", e);
+			throw new CradleIdException("Invalid timstamp ("+timeString+") in ID '"+EscapeUtils.join(parts)+"'", e);
 		}
 	}
 	
-	public static String getScope(String[] parts) throws CradleIdException
+	public static String getScope(List<String> parts) throws CradleIdException
 	{
-		return parts[parts.length-3];
+		return parts.get(1);
 	}
 	
-	public static BookId getBook(String[] parts)
+	public static BookId getBook(List<String> parts)
 	{
-		return new BookId(parts[0]);
+		return new BookId(parts.get(0));
 	}
 	
 	public static String timestampToString(Instant timestamp)
 	{
 		return TimeUtils.toIdTimestamp(timestamp);
-	}
-	
-	
-	private static String restoreId(String[] parts)
-	{
-		return StringUtils.join(parts, StoredTestEventId.ID_PARTS_DELIMITER);
 	}
 }

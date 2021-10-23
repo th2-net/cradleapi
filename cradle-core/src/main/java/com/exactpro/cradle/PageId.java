@@ -18,12 +18,14 @@ package com.exactpro.cradle;
 
 import java.util.Objects;
 
+import com.exactpro.cradle.utils.EscapeUtils;
+
 /**
  * Identifier of the page within a book
  */
 public class PageId
 {
-	public static final String DELIMITER = ":";
+	public static final String DELIMITER = EscapeUtils.DELIMITER_STR;
 	
 	private final BookId bookId;
 	private final String name;
@@ -69,6 +71,6 @@ public class PageId
 	@Override
 	public String toString()
 	{
-		return bookId+DELIMITER+name;
+		return EscapeUtils.escape(bookId.toString())+DELIMITER+EscapeUtils.escape(name);
 	}
 }

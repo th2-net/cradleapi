@@ -18,11 +18,14 @@ package com.exactpro.cradle.messages;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.utils.CradleIdException;
+import com.exactpro.cradle.utils.EscapeUtils;
+
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -33,7 +36,7 @@ import org.apache.commons.lang3.StringUtils;
 public class StoredMessageId implements Serializable, Comparable<StoredMessageId>
 {
 	private static final long serialVersionUID = -6014720618704186254L;
-	public static final String ID_PARTS_DELIMITER = ":";
+	public static final String ID_PARTS_DELIMITER = EscapeUtils.DELIMITER_STR;
 	
 	private final BookId bookId;
 	private final String sessionAlias;
@@ -53,7 +56,7 @@ public class StoredMessageId implements Serializable, Comparable<StoredMessageId
 	
 	public static StoredMessageId fromString(String id) throws CradleIdException
 	{
-		String[] parts = StoredMessageIdUtils.splitParts(id);
+		List<String> parts = StoredMessageIdUtils.splitParts(id);
 		
 		long seq = StoredMessageIdUtils.getSequence(parts);
 		Instant timestamp = StoredMessageIdUtils.getTimestamp(parts);
@@ -93,7 +96,7 @@ public class StoredMessageId implements Serializable, Comparable<StoredMessageId
 	@Override
 	public String toString()
 	{
-		return StringUtils.joinWith(ID_PARTS_DELIMITER, bookId, sessionAlias, direction.getLabel(),
+		return StringUtils.joinWith(ID_PARTS_DELIMITER, EscapeUtils.escape(bookId.toString()), EscapeUtils.escape(sessionAlias), direction.getLabel(),
 				StoredMessageIdUtils.timestampToString(timestamp), sequence);
 	}
 

@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle.messages;
 
+import org.apache.commons.lang3.StringUtils;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
@@ -32,54 +33,54 @@ import java.time.Instant;
 public class StoredMessageIdTest
 {
 	private BookId book;
-	private String sessionAlias,
-			sessionAliasWithColon;
+	private String sessionAlias;
 	private Direction direction;
 	private Instant timestamp;
 	private long seq,
 			messageSeq;
-	private String stringId,
-			stringIdWithColon;
+	private String stringId;
 	
 	@BeforeClass
 	public void prepare()
 	{
 		book = new BookId("book1");
 		sessionAlias = "Session1";
-		sessionAliasWithColon = "10.20.30.40:8080-10:20:30:42:9000";
 		direction = Direction.FIRST;
 		timestamp = Instant.EPOCH;
 		seq = 100;
 		messageSeq = seq+3;
-		stringId = book+ID_PARTS_DELIMITER
-				+sessionAlias+ID_PARTS_DELIMITER
-				+direction.getLabel()+ID_PARTS_DELIMITER
-				+StoredMessageIdUtils.timestampToString(timestamp)+ID_PARTS_DELIMITER
-				+messageSeq;
-		stringIdWithColon = book+ID_PARTS_DELIMITER
-				+sessionAliasWithColon+ID_PARTS_DELIMITER
-				+direction.getLabel()+ID_PARTS_DELIMITER
-				+StoredMessageIdUtils.timestampToString(timestamp)+ID_PARTS_DELIMITER
-				+messageSeq;
+		stringId = StringUtils.joinWith(ID_PARTS_DELIMITER, 
+				book, 
+				sessionAlias, 
+				direction.getLabel(), 
+				StoredMessageIdUtils.timestampToString(timestamp), 
+				messageSeq);
 	}
 	
-	@DataProvider(name = "ids")
-	public Object[][] ids()
+	@DataProvider(name = "escaped")
+	public Object[][] escaped()
+	{
+		return new Object[][]
+				{
+					{new StoredMessageId(new BookId("book1:main"), "127.0.0.1:8080", direction, timestamp, seq)},
+					{new StoredMessageId(new BookId("book1\\final"), "client\\server", direction, timestamp, seq)},
+					{new StoredMessageId(new BookId("book1:main\\client"), "client\\server:9000:21000", direction, timestamp, seq)}
+				};
+	}
+	
+	@DataProvider(name = "invalid IDs")
+	public Object[][] invalidIds()
 	{
 		return new Object[][]
 				{
 					{""},
-					{book.toString()},
-					{book+ID_PARTS_DELIMITER},
-					{book+ID_PARTS_DELIMITER+sessionAlias},
-					{book+ID_PARTS_DELIMITER+sessionAlias+ID_PARTS_DELIMITER},
-					{book+ID_PARTS_DELIMITER+sessionAlias+ID_PARTS_DELIMITER+"XXX"},
-					{book+ID_PARTS_DELIMITER+sessionAlias+ID_PARTS_DELIMITER+"XXX"+ID_PARTS_DELIMITER},
-					{book+ID_PARTS_DELIMITER+sessionAlias+ID_PARTS_DELIMITER+"XXX"+ID_PARTS_DELIMITER+"NNN"},
-					{book+ID_PARTS_DELIMITER+sessionAlias+ID_PARTS_DELIMITER+"XXX"+ID_PARTS_DELIMITER+seq},
-					{book+ID_PARTS_DELIMITER+sessionAlias+ID_PARTS_DELIMITER+direction.getLabel()},
-					{book+ID_PARTS_DELIMITER+sessionAlias+ID_PARTS_DELIMITER+direction.getLabel()+ID_PARTS_DELIMITER},
-					{book+ID_PARTS_DELIMITER+sessionAlias+ID_PARTS_DELIMITER+direction.getLabel()+ID_PARTS_DELIMITER+"NNN"}
+					{StringUtils.joinWith(ID_PARTS_DELIMITER, book, sessionAlias, direction.getLabel(), "20211020100000123456789")},
+					{StringUtils.joinWith(ID_PARTS_DELIMITER, book+"\\", sessionAlias, direction.getLabel(), "20211020100000123456789", seq)},
+					{StringUtils.joinWith(ID_PARTS_DELIMITER, "\\"+book, sessionAlias, direction.getLabel(), "20211020100000123456789", seq)},
+					{StringUtils.joinWith(ID_PARTS_DELIMITER, book, sessionAlias, "wrng", "20211020100000123456789", seq)},
+					{StringUtils.joinWith(ID_PARTS_DELIMITER, book, sessionAlias, direction.getLabel(), "tmstmp", seq)},
+					{StringUtils.joinWith(ID_PARTS_DELIMITER, book, sessionAlias, direction.getLabel(), "20211020100000123456789", "seq123")},
+					{StringUtils.joinWith(ID_PARTS_DELIMITER, book, sessionAlias, direction.getLabel(), "20211020100000123456789", seq+"\\")},
 				};
 	}
 	
@@ -99,26 +100,19 @@ public class StoredMessageIdTest
 		Assert.assertEquals(fromString, id);
 	}
 	
-	@Test
-	public void idFromStringWithColon() throws CradleIdException
+	@Test(dataProvider = "escaped")
+	public void idFromEscapedString(StoredMessageId id) throws CradleIdException
 	{
-		StoredMessageId id = new StoredMessageId(book, sessionAliasWithColon, direction, timestamp, messageSeq),
-				fromString = StoredMessageId.fromString(stringIdWithColon);
+		String s = id.toString();
+		StoredMessageId fromString = StoredMessageId.fromString(s);
 		Assert.assertEquals(fromString, id);
 	}
 	
-	@Test(dataProvider = "ids",	
+	@Test(dataProvider = "invalid IDs",	
 			expectedExceptions = {CradleIdException.class})
 	public void idFromStringChecks(String s) throws CradleIdException
 	{
 		StoredMessageId.fromString(s);
-	}
-	
-	@Test
-	public void correctSessionAlias() throws CradleIdException
-	{
-		StoredMessageId id = StoredMessageId.fromString(stringIdWithColon);
-		Assert.assertEquals(id.getSessionAlias(), sessionAliasWithColon);
 	}
 	
 	@Test
