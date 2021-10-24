@@ -133,4 +133,11 @@ public class BookInfo
 		pages.put(activePage.getId(), activePage);
 		orderedPages.put(activePage.getStarted(), activePage);
 	}
+	
+	void removePage(PageId pageId)
+	{
+		PageInfo pageInfo = pages.remove(pageId);
+		if (pageInfo != null)
+			orderedPages.remove(pageInfo.getStarted());
+	}
 }

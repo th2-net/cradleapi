@@ -21,12 +21,9 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.exactpro.cradle.cassandra.dao.CommonQueryProvider;
-import com.exactpro.cradle.cassandra.dao.testevents.CassandraTestEventFilter;
-import com.exactpro.cradle.messages.StoredMessageFilter;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
@@ -71,4 +68,7 @@ public interface MessageBatchOperator
 	@Insert
 	CompletableFuture<MessageBatchEntity> write(MessageBatchEntity batch,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
+	@Delete(entityClass = MessageBatchEntity.class)
+	void remove(String page, String sessionAlias, String direction, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

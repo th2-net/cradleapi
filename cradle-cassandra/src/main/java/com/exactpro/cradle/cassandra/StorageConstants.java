@@ -52,6 +52,7 @@ public class StorageConstants
 			START_TIME = "start_time",
 			END_DATE = "end_date",
 			END_TIME = "end_time",
+			REMOVED = "removed",
 			EVENT_COUNT = "event_count",
 			EVENT_BATCH = "event_batch",
 			SUCCESS = "success",

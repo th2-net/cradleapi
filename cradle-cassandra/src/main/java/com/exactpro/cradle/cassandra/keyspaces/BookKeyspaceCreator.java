@@ -63,7 +63,8 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withColumn(NAME, DataTypes.TEXT)
 				.withColumn(COMMENT, DataTypes.TEXT)
 				.withColumn(END_DATE, DataTypes.DATE)
-				.withColumn(END_TIME, DataTypes.TIME));
+				.withColumn(END_TIME, DataTypes.TIME)
+				.withColumn(REMOVED, DataTypes.TIMESTAMP));
 	}
 	
 	private void createPagesNames() throws IOException

@@ -21,6 +21,7 @@ import java.util.function.Function;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
+import com.datastax.oss.driver.api.mapper.annotations.Delete;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Update;
 
@@ -32,4 +33,7 @@ public interface PageNameOperator
 	
 	@Update
 	ResultSet update(PageNameEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
+	@Delete(entityClass = PageNameEntity.class)
+	void remove(String part, String name, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

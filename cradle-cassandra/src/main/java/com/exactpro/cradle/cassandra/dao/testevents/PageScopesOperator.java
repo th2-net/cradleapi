@@ -20,8 +20,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
+import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
+import com.datastax.oss.driver.api.mapper.annotations.Delete;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Select;
 
@@ -32,8 +34,11 @@ public interface PageScopesOperator
 	CompletableFuture<MappedAsyncPagingIterable<PageScopeEntity>> all(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Select
-	CompletableFuture<MappedAsyncPagingIterable<PageScopeEntity>> get(String page, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	PagingIterable<PageScopeEntity> get(String page, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
 	CompletableFuture<PageScopeEntity> write(PageScopeEntity pageScope, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
+	@Delete(entityClass = PageScopeEntity.class)
+	void remove(String page, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

@@ -60,6 +60,9 @@ public class PageEntity
 	@CqlName(END_TIME)
 	private LocalTime endTime;
 	
+	@CqlName(REMOVED)
+	private Instant removed;
+	
 	
 	public PageEntity()
 	{
@@ -200,6 +203,17 @@ public class PageEntity
   		setEndDate(ldt.toLocalDate());
   		setEndTime(ldt.toLocalTime());
 		}
+	}
+	
+	
+	public Instant getRemoved()
+	{
+		return removed;
+	}
+	
+	public void setRemoved(Instant removed)
+	{
+		this.removed = removed;
 	}
 	
 	

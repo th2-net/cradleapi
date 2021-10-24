@@ -76,6 +76,11 @@ public class DummyCradleStorage extends CradleStorage
 	}
 	
 	@Override
+	protected void doRemovePage(PageInfo page) throws CradleStorageException, IOException
+	{
+	}
+	
+	@Override
 	protected void doStoreMessageBatch(MessageBatchToStore batch, PageInfo page) throws IOException
 	{
 	}

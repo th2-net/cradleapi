@@ -23,9 +23,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
+import com.datastax.oss.driver.api.mapper.annotations.Delete;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
 import com.datastax.oss.driver.api.mapper.annotations.QueryProvider;
@@ -56,4 +56,7 @@ public interface TestEventOperator
 			LocalDate startDate, LocalTime startTime, String id, 
 			boolean success,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
+	@Delete(entityClass = TestEventEntity.class)
+	void remove(String page, String scope, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

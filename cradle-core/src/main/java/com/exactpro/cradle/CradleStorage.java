@@ -86,6 +86,7 @@ public abstract class CradleStorage
 	protected abstract void doSwitchToNewPage(BookId bookId, String pageName, Instant timestamp, String comment, 
 			PageInfo prevPage) throws CradleStorageException, IOException;
 	protected abstract Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException, IOException;
+	protected abstract void doRemovePage(PageInfo page) throws CradleStorageException, IOException;
 	
 	
 	protected abstract void doStoreMessageBatch(MessageBatchToStore batch, PageInfo page) throws IOException;
@@ -254,6 +255,32 @@ public abstract class CradleStorage
 		Collection<PageInfo> pages = doLoadPages(bookId);
 		book = new BookInfo(book.getId(), book.getFullName(), book.getDesc(), book.getCreated(), pages);
 		books.put(book.getId(), book);
+		return book;
+	}
+	
+	/**
+	 * Removes page with given ID, deleting all messages and test events stored within that page
+	 * @param pageId ID of page to remove
+	 * @return refreshed book information
+	 * @throws CradleStorageException if given page ID or its book is unknown or the page is currently the active one
+	 * @throws IOException if page data removal failed
+	 */
+	public BookInfo removePage(PageId pageId) throws CradleStorageException, IOException
+	{
+		logger.info("Removing page '{}'", pageId);
+		
+		BookId bookId = pageId.getBookId();
+		BookInfo book = refreshPages(bookId);
+		
+		String pageName = pageId.getName();
+		PageInfo page = book.getPage(pageId);
+		if (page == null)
+			throw new CradleStorageException("Page '"+pageName+"' is not present in book '"+bookId+"'");
+		if (page == book.getActivePage())
+			throw new CradleStorageException("Page '"+pageName+"' is the active page and cannot be removed");
+		doRemovePage(page);
+		book.removePage(pageId);
+		logger.info("Page '{}' has been removed", pageId);
 		return book;
 	}
 	

@@ -19,6 +19,7 @@ package com.exactpro.cradle.cassandra;
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
+import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.exactpro.cradle.*;
@@ -36,8 +37,11 @@ import com.exactpro.cradle.cassandra.dao.books.PageOperator;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageSession;
 import com.exactpro.cradle.cassandra.dao.cache.CachedSession;
 import com.exactpro.cradle.cassandra.dao.messages.*;
+import com.exactpro.cradle.cassandra.dao.testevents.PageScopeEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.PageScopesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.BookKeyspaceCreator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
@@ -225,6 +229,17 @@ public class CassandraCradleStorage extends CradleStorage
 	protected Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException, IOException
 	{
 		return loadPageInfo(bookId);
+	}
+	
+	@Override
+	protected void doRemovePage(PageInfo page) throws CradleStorageException, IOException
+	{
+		PageId pageId = page.getId();
+		BookOperators bookOps = ops.getOperators(pageId.getBookId());
+		
+		removeMessages(pageId, bookOps);
+		removeTestEvents(pageId, bookOps);
+		removePage(page, bookOps);
 	}
 	
 	
@@ -725,7 +740,10 @@ public class CassandraCradleStorage extends CradleStorage
 		try
 		{
 			for (PageEntity pageEntity : ops.getOperators(bookId).getPageOperator().getAll(bookId.getName(), readAttrs))
-				result.add(pageEntity.toPageInfo());
+			{
+				if (pageEntity.getRemoved() == null)
+					result.add(pageEntity.toPageInfo());
+			}
 		}
 		catch (Exception e)
 		{
@@ -753,5 +771,42 @@ public class CassandraCradleStorage extends CradleStorage
 		{
 			throw new CompletionException("Error while failing test event "+eventId, e);
 		}
+	}
+	
+	protected void removeMessages(PageId pageId, BookOperators bookOps)
+	{
+		PageSessionsOperator pageSessionsOp = bookOps.getPageSessionsOperator();
+		MessageBatchOperator messageOp = bookOps.getMessageBatchOperator();
+		String pageName = pageId.getName();
+		
+		PagingIterable<PageSessionEntity> rs = pageSessionsOp.get(pageName, readAttrs);
+		for (PageSessionEntity session : rs)
+			messageOp.remove(session.getPage(), session.getSessionAlias(), session.getDirection(), writeAttrs);
+		pageSessionsOp.remove(pageName, writeAttrs);
+	}
+	
+	protected void removeTestEvents(PageId pageId, BookOperators bookOps)
+	{
+		PageScopesOperator pageScopesOp = bookOps.getPageScopesOperator();
+		TestEventOperator eventOp = bookOps.getTestEventOperator();
+		String pageName = pageId.getName();
+		
+		PagingIterable<PageScopeEntity> rs = pageScopesOp.get(pageName, readAttrs);
+		for (PageScopeEntity scope : rs)
+			eventOp.remove(scope.getPage(), scope.getScope(), writeAttrs);
+		pageScopesOp.remove(pageName, writeAttrs);
+	}
+	
+	protected void removePage(PageInfo pageInfo, BookOperators bookOps)
+	{
+		String book = pageInfo.getId().getBookId().getName();
+		bookOps.getPageNameOperator().remove(book, pageInfo.getId().getName(), writeAttrs);
+		
+		LocalDateTime ldt = TimeUtils.toLocalTimestamp(pageInfo.getStarted());
+		bookOps.getPageOperator().remove(book, 
+				ldt.toLocalDate(), 
+				ldt.toLocalTime(), 
+				Instant.now(), 
+				writeAttrs);
 	}
 }

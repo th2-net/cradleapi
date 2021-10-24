@@ -19,7 +19,9 @@ package com.exactpro.cradle.cassandra.dao.books;
 import static com.exactpro.cradle.cassandra.StorageConstants.PART;
 import static com.exactpro.cradle.cassandra.StorageConstants.START_DATE;
 import static com.exactpro.cradle.cassandra.StorageConstants.START_TIME;
+import static com.exactpro.cradle.cassandra.StorageConstants.REMOVED;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.function.Function;
@@ -47,4 +49,8 @@ public interface PageOperator
 	
 	@Insert
 	ResultSet write(PageEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	
+	@Query("UPDATE ${qualifiedTableId} SET "+REMOVED+"=:removed WHERE "+PART+"=:part AND "+START_DATE+"=:startDate AND "+START_TIME+"=:startTime")
+	ResultSet remove(String part, LocalDate startDate, LocalTime startTime, Instant removed, 
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }
