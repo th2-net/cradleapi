@@ -93,8 +93,7 @@ public class CassandraCradleStorage extends CradleStorage
 	private SelectExecutionPolicy selectExecutionPolicy;
 	
 	private QueryExecutor exec;
-	private RetryingSelectExecutor retryingSelectExecutor;
-	private SingleRowQueryExecutor singleRowQueryExecutor;
+	private SelectQueryExecutor selectExecutor;
 	private CompleteEventsGetter completeEventsGetter;
 	private PagingSupplies pagingSupplies;
 
@@ -141,8 +140,7 @@ public class CassandraCradleStorage extends CradleStorage
 			CqlSession session = connection.getSession();
 			exec = new QueryExecutor(session,
 					settings.getTimeout(), settings.getWriteConsistencyLevel(), settings.getReadConsistencyLevel());
-			retryingSelectExecutor = new RetryingSelectExecutor(session, selectExecutionPolicy);
-			singleRowQueryExecutor = new SingleRowQueryExecutor(session, new FixedNumberRetryPolicy(5));
+			selectExecutor = new SelectQueryExecutor(session, selectExecutionPolicy, new FixedNumberRetryPolicy(5));
 			pagingSupplies = new PagingSupplies(session, selectExecutionPolicy);
 			
 			if (prepareStorage)
@@ -170,7 +168,7 @@ public class CassandraCradleStorage extends CradleStorage
 			LinkerSupplies supplies = new LinkerSupplies(ops.getTestEventMessagesOperator(), ops.getMessageTestEventOperator(),
 					ops.getTestEventMessagesConverter(), ops.getMessageTestEventConverter());
 			testEventsMessagesLinker = new CassandraTestEventsMessagesLinker(supplies, instanceUuid, readAttrs, semaphore,
-					retryingSelectExecutor, pagingSupplies);
+					selectExecutor, pagingSupplies);
 			completeEventsGetter = new CompleteEventsGetter(instanceUuid, readAttrs, selectExecutionPolicy, 
 					ops.getTestEventOperator(), ops.getTestEventConverter(), pagingSupplies);
 			
@@ -587,8 +585,8 @@ public class CassandraCradleStorage extends CradleStorage
 		MessageBatchOperator mbOp = ops.getMessageBatchOperator();
 		TimeMessageOperator tmOp = ops.getTimeMessageOperator();
 		return new AsyncOperator<MappedAsyncPagingIterable<DetailedMessageBatchEntity>>(semaphore)
-						.getFuture(() -> retryingSelectExecutor
-								.executeQuery(() -> mbOp.filterMessages(instanceUuid, filter, mbOp, tmOp, readAttrs),
+						.getFuture(() -> selectExecutor
+								.executeManyRowQuery(() -> mbOp.filterMessages(instanceUuid, filter, mbOp, tmOp, readAttrs),
 										ops.getMessageBatchConverter(),
 										queryInfo));
 	}
@@ -626,7 +624,7 @@ public class CassandraCradleStorage extends CradleStorage
 		RootTestEventOperator op = ops.getRootTestEventOperator();
 		CompletableFuture<MappedAsyncPagingIterable<RootTestEventEntity>> future = 
 				new AsyncOperator<MappedAsyncPagingIterable<RootTestEventEntity>>(semaphore)
-						.getFuture(() -> retryingSelectExecutor.executeQuery(order == Order.DIRECT
+						.getFuture(() -> selectExecutor.executeManyRowQuery(order == Order.DIRECT
 								? () -> op.getTestEventsDirect(instanceUuid, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
 								: () -> op.getTestEventsReverse(instanceUuid, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs),
 								ops.getRootTestEventConverter(),
@@ -667,7 +665,7 @@ public class CassandraCradleStorage extends CradleStorage
 		String queryInfo = "get child test events of "+parentId+" from range "+from+".."+to+" in "+order+" order";
 		CompletableFuture<MappedAsyncPagingIterable<TestEventChildEntity>> future =
 				new AsyncOperator<MappedAsyncPagingIterable<TestEventChildEntity>>(semaphore)
-						.getFuture(() -> retryingSelectExecutor.executeQuery(() -> order == Order.DIRECT
+						.getFuture(() -> selectExecutor.executeManyRowQuery(() -> order == Order.DIRECT
 								? ops.getTestEventChildrenOperator().getTestEventsDirect(instanceUuid, parentId.toString(),
 									fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
 								: ops.getTestEventChildrenOperator().getTestEventsReverse(instanceUuid, parentId.toString(),
@@ -709,7 +707,7 @@ public class CassandraCradleStorage extends CradleStorage
 		String queryInfo = "get test events from range "+from+".."+to+" in "+order+" order";
 		CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> future =
 				new AsyncOperator<MappedAsyncPagingIterable<TimeTestEventEntity>>(semaphore)
-						.getFuture(() -> retryingSelectExecutor.executeQuery(() -> order == Order.DIRECT
+						.getFuture(() -> selectExecutor.executeManyRowQuery(() -> order == Order.DIRECT
 								? ops.getTimeTestEventOperator().getTestEventsDirect(instanceUuid,
 										fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
 								: ops.getTimeTestEventOperator().getTestEventsReverse(instanceUuid,
@@ -889,7 +887,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		String queryInfo = "get first message for stream '" + streamName + " and direction '" + direction + "'";
 		CompletableFuture<Row> future = new AsyncOperator<Row>(semaphore).getFuture(() ->
-						singleRowQueryExecutor.executeQuery(
+						selectExecutor.executeSingleRowQuery(
 								() -> op.getFirstIndex(instanceUuid, streamName, direction.getLabel(), readAttrs),
 								r -> r,
 								queryInfo)
@@ -906,11 +904,16 @@ public class CassandraCradleStorage extends CradleStorage
 							direction + "'", e);
 		}
 	}
-	
+
 	private long getLastIndex(MessageBatchOperator op, String streamName, Direction direction) throws IOException
 	{
-		CompletableFuture<Row> future = new AsyncOperator<Row>(semaphore).getFuture(
-				() -> op.getLastIndex(instanceUuid, streamName, direction.getLabel(), readAttrs));
+		String queryInfo = "get last message for stream '" + streamName + " and direction '" + direction + "'";
+		CompletableFuture<Row> future = new AsyncOperator<Row>(semaphore).getFuture(() ->
+						selectExecutor.executeSingleRowQuery(
+								() -> op.getLastIndex(instanceUuid, streamName, direction.getLabel(), readAttrs),
+								r -> r,
+								queryInfo)
+																				   );
 		try
 		{
 			Row row = future.get();

@@ -37,7 +37,7 @@ public class FixedNumberRetryPolicy implements SelectExecutionPolicy
 			throw new CannotRetryException("Cannot retry after this error", cause);
 
 		if (retryCount > maxRetry)
-			throw new CannotRetryException("The maximum number '" + maxRetry + "' of retry has been reached", cause);
+			throw new CannotRetryException("The maximum number '" + maxRetry + "' of retries has been reached", cause);
 		return new SelectExecutionVerdict(null, statement.getPageSize());
 	}
 
@@ -49,7 +49,7 @@ public class FixedNumberRetryPolicy implements SelectExecutionPolicy
 			throw new CannotRetryException("Cannot retry after this error", cause);
 
 		if (retryCount > maxRetry)
-			throw new CannotRetryException("The maximum number '" + maxRetry + "' of retry has been reached", cause);
+			throw new CannotRetryException("The maximum number '" + maxRetry + "' of retries has been reached", cause);
 		return new SelectExecutionVerdict(null, ids.size());
 	}
 
