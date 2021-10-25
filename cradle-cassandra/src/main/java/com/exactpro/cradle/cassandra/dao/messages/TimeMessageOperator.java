@@ -16,12 +16,6 @@
 
 package com.exactpro.cradle.cassandra.dao.messages;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.DIRECTION;
-import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
-import static com.exactpro.cradle.cassandra.StorageConstants.MESSAGE_DATE;
-import static com.exactpro.cradle.cassandra.StorageConstants.MESSAGE_TIME;
-import static com.exactpro.cradle.cassandra.StorageConstants.STREAM_NAME;
-
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
@@ -33,18 +27,20 @@ import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
 
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
+
 @Dao
 public interface TimeMessageOperator
 {
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
 			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction AND "+MESSAGE_DATE+"=:messageDate AND "
-			+MESSAGE_TIME+">=:messageTime ORDER BY "+MESSAGE_TIME+" ASC limit 1")
+			+MESSAGE_TIME+">=:messageTime ORDER BY "+MESSAGE_TIME+" ASC, "+MESSAGE_INDEX+" ASC limit 1")
 	CompletableFuture<TimeMessageEntity> getNearestMessageAfter(UUID instanceId, String streamName, LocalDate messageDate, String direction, 
 			LocalTime messageTime, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
 			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction AND "+MESSAGE_DATE+"=:messageDate AND "
-			+MESSAGE_TIME+"<=:messageTime ORDER BY "+MESSAGE_TIME+" DESC limit 1")
+			+MESSAGE_TIME+"<=:messageTime ORDER BY "+MESSAGE_TIME+" DESC, "+MESSAGE_INDEX+" DESC limit 1")
 	CompletableFuture<TimeMessageEntity> getNearestMessageBefore(UUID instanceId, String streamName, LocalDate messageDate, String direction, 
 			LocalTime messageTime, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
