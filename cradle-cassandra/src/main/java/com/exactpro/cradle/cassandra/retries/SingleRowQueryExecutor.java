@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -83,8 +84,10 @@ public class SingleRowQueryExecutor
 
 		try
 		{
-			logger.debug("Retrying request ({}) '{}' and CL {} after error: '{}'",
-					retryCount+1, queryInfo, stmt.getConsistencyLevel(), error.getMessage());
+			long delay = RetryUtils.calculateDelayWithJitter(retryCount);
+			logger.debug("Retrying request ({}) '{}' and CL {} with delay {}ms after error: '{}'",
+					retryCount+1, queryInfo, stmt.getConsistencyLevel(), delay, error.getMessage());
+			TimeUnit.MILLISECONDS.sleep(delay);
 
 			session.executeAsync(stmt).thenApply(AsyncPagingIterable::one)
 					.whenCompleteAsync((retryResult, retryError) ->

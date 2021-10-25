@@ -17,7 +17,6 @@
 package com.exactpro.cradle.cassandra.retries;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -36,9 +35,6 @@ import com.exactpro.cradle.cassandra.dao.EntityConverter;
 public class RetryingSelectExecutor
 {
 	private static final Logger logger = LoggerFactory.getLogger(RetryingSelectExecutor.class);
-	
-	private static final long BASE_DELAYS_MS = 1_000;
-	private static final long MAX_DELAYS_MS = 10_000;
 	
 	private final CqlSession session;
 	private final SelectExecutionPolicy execPolicy;
@@ -89,7 +85,7 @@ public class RetryingSelectExecutor
 		
 		try
 		{
-			long delay = calculateDelayWithJitter(retryCount);
+			long delay = RetryUtils.calculateDelayWithJitter(retryCount);
 			logger.debug("Retrying request ({}) '{}' with page size {} and CL {} with delay {}ms after error: '{}'", 
 					retryCount+1, queryInfo, stmt.getPageSize(), stmt.getConsistencyLevel(), delay, error.getMessage());
 			TimeUnit.MILLISECONDS.sleep(delay);
@@ -101,17 +97,5 @@ public class RetryingSelectExecutor
 			logger.error("Error while retrying '"+queryInfo+"'", e);
 			f.completeExceptionally(e);
 		}
-	}
-
-	private long calculateDelayWithJitter(int retryCount) {
-		// get the pure exponential delay based on the attempt count
-		long delay = Math.min(BASE_DELAYS_MS * (1L << retryCount++), MAX_DELAYS_MS);
-		// calculate up to 15% jitter, plus or minus (i.e. 85 - 115% of the pure value)
-		int jitter = ThreadLocalRandom.current().nextInt(85, 116);
-		// apply jitter
-		delay = (jitter * delay) / 100;
-		// ensure the final delay is between the base and max
-		delay = Math.min(MAX_DELAYS_MS, Math.max(BASE_DELAYS_MS, delay));
-		return delay;
 	}
 }
