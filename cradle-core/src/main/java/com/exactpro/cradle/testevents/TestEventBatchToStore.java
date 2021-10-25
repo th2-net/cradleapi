@@ -40,6 +40,7 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 	private final Map<StoredTestEventId, BatchedStoredTestEvent> events = new LinkedHashMap<>();
 	private final Collection<BatchedStoredTestEvent> rootEvents = new ArrayList<>();
 	private final Map<StoredTestEventId, Collection<BatchedStoredTestEvent>> children = new HashMap<>();
+	private final Map<StoredTestEventId, Set<StoredMessageId>> messages = new HashMap<>();
 	
 	public TestEventBatchToStore(StoredTestEventId id, String name, StoredTestEventId parentId) throws CradleStorageException
 	{
@@ -53,6 +54,16 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 		return new TestEventBatchToStoreBuilder();
 	}
 	
+	
+	@Override
+	public Set<StoredMessageId> getMessages()
+	{
+		if (messages == null)  //This is the case when validateTestEvent() is called from super constructor
+			return null;
+		Set<StoredMessageId> result = new HashSet<>();
+		messages.values().forEach(c -> result.addAll(c));
+		return result;
+	}
 	
 	@Override
 	public int getTestEventsCount()
@@ -79,6 +90,12 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 	}
 	
 	@Override
+	public Map<StoredTestEventId, Set<StoredMessageId>> getBatchMessages()
+	{
+		return Collections.unmodifiableMap(messages);
+	}
+	
+	@Override
 	public boolean hasChildren(StoredTestEventId parentId)
 	{
 		return children.containsKey(parentId);
@@ -89,6 +106,13 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 	{
 		Collection<BatchedStoredTestEvent> result = children.get(parentId);
 		return result != null ? Collections.unmodifiableCollection(result) : Collections.emptyList();
+	}
+	
+	@Override
+	public Set<StoredMessageId> getMessages(StoredTestEventId eventId)
+	{
+		Set<StoredMessageId> result = messages.get(eventId);
+		return result != null ? result : Collections.emptySet();
 	}
 	
 	
@@ -146,15 +170,11 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 		if (!event.isSuccess())
 			success = false;
 		
+		//Not checking messages because event being added is already checked for having the same book as the batch and 
+		//event messages are checked for the same book in TestEventUtils.validateTestEvent()
 		Set<StoredMessageId> eventMessages = event.getMessages();
 		if (eventMessages != null && eventMessages.size() > 0)
-		{
-			if (this.messages == null)
-				this.messages = new HashSet<>();
-			//Not checking messages because event being added is already checked for having the same book as the batch and 
-			//event messages are checked for the same book in TestEventUtils.validateTestEvent()
-			this.messages.addAll(eventMessages);
-		}
+			messages.put(event.getId(), Collections.unmodifiableSet(new HashSet<>(eventMessages)));
 	}
 	
 	private void checkEvent(TestEventSingle event) throws CradleStorageException

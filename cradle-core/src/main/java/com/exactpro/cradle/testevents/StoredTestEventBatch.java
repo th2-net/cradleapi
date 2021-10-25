@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -40,19 +41,21 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 	private final Map<StoredTestEventId, BatchedStoredTestEvent> events;
 	private final Collection<BatchedStoredTestEvent> rootEvents;
 	private final Map<StoredTestEventId, Collection<BatchedStoredTestEvent>> children;
+	private final Map<StoredTestEventId, Set<StoredMessageId>> messages;
 	private final Instant endTimestamp;
 	private final boolean success;
-	private final Set<StoredMessageId> messages;
 	
 	public StoredTestEventBatch(StoredTestEventId id, String name, String type, StoredTestEventId parentId,
-			Collection<BatchedStoredTestEvent> batchEvents, PageId pageId, String error) throws CradleStorageException
+			Collection<BatchedStoredTestEvent> batchEvents, 
+			Map<StoredTestEventId, Set<StoredMessageId>> messages, 
+			PageId pageId, String error) throws CradleStorageException
 	{
 		super(id, name, type, parentId, pageId, error);
 		
 		Map<StoredTestEventId, BatchedStoredTestEvent> allEvents = new LinkedHashMap<>();
 		Collection<BatchedStoredTestEvent> roots = new ArrayList<>();
 		Map<StoredTestEventId, Collection<BatchedStoredTestEvent>> childrenPerEvent = new LinkedHashMap<>();
-		Set<StoredMessageId> batchMessages = new HashSet<>();
+		Map<StoredTestEventId, Set<StoredMessageId>> batchMessages = new HashMap<>();
 		Instant end = null;
 		boolean success = true;
 		if (batchEvents != null)
@@ -72,9 +75,9 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 				else
 					roots.add(child);
 				
-				Set<StoredMessageId> eventMessages = child.getMessages();
+				Set<StoredMessageId> eventMessages = messages != null ? messages.get(child.getId()) : null;
 				if (eventMessages != null)
-					batchMessages.addAll(eventMessages);
+					batchMessages.put(child.getId(), Collections.unmodifiableSet(new HashSet<>(eventMessages)));
 				
 				Instant eventEnd = child.getEndTimestamp();
 				if (eventEnd != null)
@@ -91,16 +94,15 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 		this.events = Collections.unmodifiableMap(allEvents);
 		this.rootEvents = Collections.unmodifiableCollection(roots);
 		this.children = Collections.unmodifiableMap(childrenPerEvent);
+		this.messages = Collections.unmodifiableMap(batchMessages);
 		this.endTimestamp = end;
 		this.success = success;
-		
-		this.messages = batchMessages != null && batchMessages.size() > 0 ? Collections.unmodifiableSet(batchMessages) : null;
 	}
 	
 	public StoredTestEventBatch(TestEventBatch batch, PageId pageId) throws CradleStorageException
 	{
 		this(batch.getId(), batch.getName(), batch.getType(), batch.getParentId(),
-				batch.getTestEvents(), pageId, null);
+				batch.getTestEvents(), batch.getBatchMessages(), pageId, null);
 	}
 	
 	@Override
@@ -118,7 +120,9 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 	@Override
 	public Set<StoredMessageId> getMessages()
 	{
-		return messages;
+		Set<StoredMessageId> result = new HashSet<>();
+		messages.values().forEach(c -> result.addAll(c));
+		return result;
 	}
 	
 	
@@ -147,6 +151,12 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 	}
 	
 	@Override
+	public Map<StoredTestEventId, Set<StoredMessageId>> getBatchMessages()
+	{
+		return messages;
+	}
+	
+	@Override
 	public boolean hasChildren(StoredTestEventId parentId)
 	{
 		return children.containsKey(parentId);
@@ -157,5 +167,12 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 	{
 		Collection<BatchedStoredTestEvent> result = children.get(parentId);
 		return result != null ? Collections.unmodifiableCollection(result) : Collections.emptyList();
+	}
+	
+	@Override
+	public Set<StoredMessageId> getMessages(StoredTestEventId eventId)
+	{
+		Set<StoredMessageId> result = messages.get(eventId);
+		return result != null ? result : Collections.emptySet();
 	}
 }

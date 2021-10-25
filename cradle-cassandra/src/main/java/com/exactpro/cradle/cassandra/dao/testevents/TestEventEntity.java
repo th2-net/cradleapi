@@ -23,7 +23,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Set;
 
 import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
@@ -95,14 +94,14 @@ public class TestEventEntity extends CradleEntity
 	private LocalTime endTime;
 	
 	@CqlName(MESSAGES)
-	private Set<String> messages;
+	private ByteBuffer messages;
 	
 	
 	public TestEventEntity()
 	{
 	}
 
-	public TestEventEntity(TestEventToStore event, PageId pageId, int chunk, boolean lastChunk, byte[] content, boolean compressed, Set<String> messages)
+	public TestEventEntity(TestEventToStore event, PageId pageId, int chunk, boolean lastChunk, byte[] content, boolean compressed, byte[] messages)
 	{
 		StoredTestEventId parentId = event.getParentId();
 		LocalDateTime start = TimeUtils.toLocalTimestamp(event.getStartTimestamp());
@@ -130,7 +129,8 @@ public class TestEventEntity extends CradleEntity
 		setLastChunk(lastChunk);
 		setCompressed(compressed);
 		
-		setMessages(messages);
+		if (messages != null)
+			setMessages(ByteBuffer.wrap(messages));
 		if (content != null)
 			setContent(ByteBuffer.wrap(content));
 	}
@@ -360,12 +360,12 @@ public class TestEventEntity extends CradleEntity
 	}
 	
 
-	public Set<String> getMessages()
+	public ByteBuffer getMessages()
 	{
 		return messages;
 	}
 	
-	public void setMessages(Set<String> messages)
+	public void setMessages(ByteBuffer messages)
 	{
 		this.messages = messages;
 	}

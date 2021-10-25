@@ -34,7 +34,6 @@ public abstract class TestEventToStore implements TestEvent
 	protected String type;
 	protected Instant endTimestamp;
 	protected boolean success;
-	protected Set<StoredMessageId> messages;
 	
 	public TestEventToStore(StoredTestEventId id, String name, StoredTestEventId parentId) throws CradleStorageException
 	{
@@ -97,12 +96,6 @@ public abstract class TestEventToStore implements TestEvent
 	public boolean isSuccess()
 	{
 		return success;
-	}
-	
-	@Override
-	public Set<StoredMessageId> getMessages()
-	{
-		return messages;
 	}
 	
 	

@@ -156,7 +156,7 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withColumn(END_TIME, DataTypes.TIME)
 				.withColumn(LAST_CHUNK, DataTypes.BOOLEAN)
 				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
-				.withColumn(MESSAGES, DataTypes.setOf(DataTypes.TEXT))
+				.withColumn(MESSAGES, DataTypes.BLOB)
 				.withColumn(LABELS, DataTypes.setOf(DataTypes.TEXT))
 				.withColumn(CONTENT, DataTypes.BLOB));
 	}

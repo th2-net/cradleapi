@@ -27,6 +27,7 @@ import com.exactpro.cradle.utils.CradleStorageException;
  */
 public class TestEventSingleToStore extends TestEventToStore implements TestEventSingle
 {
+	private Set<StoredMessageId> messages;
 	private byte[] content;
 	
 	public TestEventSingleToStore(StoredTestEventId id, String name, StoredTestEventId parentId) throws CradleStorageException
@@ -40,6 +41,12 @@ public class TestEventSingleToStore extends TestEventToStore implements TestEven
 		return new TestEventSingleToStoreBuilder();
 	}
 	
+	
+	@Override
+	public Set<StoredMessageId> getMessages()
+	{
+		return messages;
+	}
 	
 	@Override
 	public byte[] getContent()

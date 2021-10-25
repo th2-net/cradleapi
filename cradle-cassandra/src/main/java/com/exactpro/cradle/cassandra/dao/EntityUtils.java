@@ -20,26 +20,41 @@ import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Function;
 
 public class EntityUtils
 {
-	public static byte[] uniteContents(Collection<? extends CradleEntity> entities)
+	public static BlobChunkData nextChunk(byte[] data, int currentPos, int maxChunkSize)
+	{
+		if (data == null)
+			return null;
+		
+		int entityContentSize = Math.min(data.length-currentPos, maxChunkSize);
+		if (entityContentSize > 0)  //Will be <=0 if the whole content is already stored
+			return new BlobChunkData(Arrays.copyOfRange(data, currentPos, currentPos+entityContentSize), currentPos+entityContentSize);
+		else
+			return null;
+	}
+	
+	public static <T> byte[] uniteChunks(Collection<T> entities, Function<T, ByteBuffer> getChunk)
 	{
 		int size = entities.stream()
-				.mapToInt(e -> e.getContent() != null ? e.getContent().limit() : 0)
+				.mapToInt(e -> getChunk.apply(e) != null ? getChunk.apply(e).limit() : 0)
 				.sum();
-
+		
 		if (size == 0)
 			return null;
-
+		
 		ByteBuffer buffer = ByteBuffer.allocate(size);
-		for (CradleEntity e : entities)
+		for (T e : entities)
 		{
-			if (e.getContent() == null)
+			ByteBuffer chunk = getChunk.apply(e);
+			if (chunk == null)
 				continue;
-			buffer.put(e.getContent());
+			buffer.put(chunk);
 		}
 		return buffer.array();
 	}
@@ -51,10 +66,10 @@ public class EntityUtils
 		{
 			if (entity.getChunk() != chunkIndex)
 				return "Chunk #"+chunkIndex+" is missing";
-
+			
 			if (chunkIndex == entities.size()-1 && !entity.isLastChunk())
 				return "Last chunk is missing";
-
+			
 			chunkIndex++;
 		}
 		return null;

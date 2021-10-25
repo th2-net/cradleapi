@@ -43,7 +43,7 @@ public class CassandraStorageSettings
 			DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE = 5 * 1024,
 			DEFAULT_MESSAGE_BATCH_CHUNK_SIZE = 1024 * 1024,
 			DEFAULT_TEST_EVENT_CHUNK_SIZE = 1024 * 1024,
-			DEFAULT_TEST_EVENT_MESSAGES_PER_CHUNK = 10,
+			DEFAULT_TEST_EVENT_MESSAGES_CHUNK_SIZE = 1024 * 1024,
 			DEFAULT_SESSIONS_CACHE_SIZE = 100,
 			DEFAULT_SCOPES_CACHE_SIZE = 10,
 			DEFAULT_PAGE_SESSION_CACHE_SIZE = 100,
@@ -73,7 +73,7 @@ public class CassandraStorageSettings
 			maxUncompressedTestEventSize,
 			messageBatchChunkSize,
 			testEventChunkSize,
-			testEventMessagesPerChunk,
+			testEventMessagesChunkSize,
 			
 			sessionsCacheSize,
 			scopesCacheSize,
@@ -120,7 +120,7 @@ public class CassandraStorageSettings
 		this.maxUncompressedTestEventSize = DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE;
 		this.messageBatchChunkSize = DEFAULT_MESSAGE_BATCH_CHUNK_SIZE;
 		this.testEventChunkSize = DEFAULT_TEST_EVENT_CHUNK_SIZE;
-		this.testEventMessagesPerChunk = DEFAULT_TEST_EVENT_MESSAGES_PER_CHUNK;
+		this.testEventMessagesChunkSize = DEFAULT_TEST_EVENT_MESSAGES_CHUNK_SIZE;
 		
 		this.sessionsCacheSize = DEFAULT_SESSIONS_CACHE_SIZE;
 		this.pageSessionsCacheSize = DEFAULT_PAGE_SESSION_CACHE_SIZE;
@@ -156,7 +156,7 @@ public class CassandraStorageSettings
 		this.maxUncompressedTestEventSize = settings.getMaxUncompressedTestEventSize();
 		this.messageBatchChunkSize = settings.getMessageBatchChunkSize();
 		this.testEventChunkSize = settings.getTestEventChunkSize();
-		this.testEventMessagesPerChunk = settings.getTestEventMessagesPerChunk();
+		this.testEventMessagesChunkSize = settings.getTestEventMessagesChunkSize();
 		
 		this.sessionsCacheSize = settings.getSessionsCacheSize();
 		this.pageSessionsCacheSize = settings.getPageSessionsCacheSize();
@@ -406,14 +406,14 @@ public class CassandraStorageSettings
 	}
 
 
-	public int getTestEventMessagesPerChunk()
+	public int getTestEventMessagesChunkSize()
 	{
-		return testEventMessagesPerChunk;
+		return testEventMessagesChunkSize;
 	}
-
-	public void setTestEventMessagesPerChunk(int testEventMessagesPerChunk)
+	
+	public void setTestEventMessagesChunkSize(int testEventMessagesChunkSize)
 	{
-		this.testEventMessagesPerChunk = testEventMessagesPerChunk;
+		this.testEventMessagesChunkSize = testEventMessagesChunkSize;
 	}
 	
 	

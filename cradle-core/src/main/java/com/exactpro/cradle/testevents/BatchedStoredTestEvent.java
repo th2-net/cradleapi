@@ -20,7 +20,6 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 
 import com.exactpro.cradle.PageId;
@@ -40,7 +39,6 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 	private final StoredTestEventId parentId;
 	private final Instant endTimestamp;
 	private final boolean success;
-	private final Set<StoredMessageId> messages;
 	private final byte[] content;
 	
 	private final transient TestEventBatch batch;
@@ -64,9 +62,6 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 			this.content = new byte[eventContent.length];
 			System.arraycopy(eventContent, 0, this.content, 0, this.content.length);
 		}
-		
-		Set<StoredMessageId> eventMessages = event.getMessages();
-		this.messages = eventMessages != null && eventMessages.size() > 0 ? Collections.unmodifiableSet(new HashSet<>(eventMessages)) : null;
 		
 		this.batch = batch;
 		this.pageId = pageId;
@@ -112,7 +107,9 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 	@Override
 	public Set<StoredMessageId> getMessages()
 	{
-		return messages;
+		if (batch == null)
+			return Collections.emptySet();
+		return batch.getMessages(this.getId());
 	}
 	
 	@Override

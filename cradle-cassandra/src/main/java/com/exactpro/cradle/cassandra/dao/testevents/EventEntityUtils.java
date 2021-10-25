@@ -18,13 +18,13 @@ package com.exactpro.cradle.cassandra.dao.testevents;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.zip.DataFormatException;
 
+import com.exactpro.cradle.cassandra.dao.BlobChunkData;
 import com.exactpro.cradle.cassandra.dao.EntityUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -55,7 +55,7 @@ public class EventEntityUtils
 	}
 	
 	public static List<TestEventEntity> toEntities(TestEventToStore event, PageId pageId, int maxUncompressedSize, 
-			int contentChunkSize, int messagesPerChunk) throws IOException
+			int contentChunkSize, int messagesChunkSize) throws IOException
 	{
 		byte[] content = TestEventUtils.getTestEventContent(event);
 		boolean compressed;
@@ -68,14 +68,14 @@ public class EventEntityUtils
 		else
 			compressed = false;
 		
-		return toEntities(event, pageId, content, compressed, contentChunkSize, messagesPerChunk);
+		byte[] messages = TestEventUtils.serializeLinkedMessageIds(event);
+		
+		return toEntities(event, pageId, content, compressed, messages, contentChunkSize, messagesChunkSize);
 	}
 	
-	public static List<TestEventEntity> toEntities(TestEventToStore event, PageId pageId, byte[] content, boolean compressed, 
-			int contentChunkSize, int messagesPerChunk)
+	public static List<TestEventEntity> toEntities(TestEventToStore event, PageId pageId, byte[] content, boolean compressed,
+			byte[] messages, int contentChunkSize, int messagesChunkSize)
 	{
-		Set<StoredMessageId> eventMessages = event.getMessages();
-		List<StoredMessageId> messages = eventMessages != null && eventMessages.size() > 0 ? new ArrayList<>(eventMessages) : null;
 		List<TestEventEntity> result = new ArrayList<>();
 		int contentPos = 0,
 				messagesPos = 0;
@@ -83,39 +83,27 @@ public class EventEntityUtils
 		boolean last = false;
 		do
 		{
+			BlobChunkData contentChunk = EntityUtils.nextChunk(content, contentPos, contentChunkSize),
+					messagesChunk = EntityUtils.nextChunk(messages, messagesPos, messagesChunkSize);
 			byte[] entityContent;
-			if (content != null)
+			if (contentChunk != null)
 			{
-				int entityContentSize = Math.min(content.length-contentPos, contentChunkSize);
-				if (entityContentSize > 0)  //Will be <=0 if the whole content is already stored, but messages are not
-				{
-					entityContent = Arrays.copyOfRange(content, contentPos, contentPos+entityContentSize);
-					contentPos += entityContentSize;
-				}
-				else
-					entityContent = null;
+				entityContent = contentChunk.getChunk();
+				contentPos = contentChunk.getPosition();
 			}
 			else
 				entityContent = null;
 			
-			Set<String> entityMessages;
-			if (messages != null)
+			byte[] entityMessages;
+			if (messagesChunk != null)
 			{
-				int entityMessagesSize = Math.min(messages.size()-messagesPos, messagesPerChunk);
-				if (entityMessagesSize > 0)  //Will be <=0 if all messages are already stored, but content is not
-				{
-					entityMessages = new HashSet<String>(entityMessagesSize);
-					for (StoredMessageId id : messages.subList(messagesPos, messagesPos+entityMessagesSize))
-						entityMessages.add(id.toString());
-					messagesPos += entityMessagesSize;
-				}
-				else
-					entityMessages = null;
+				entityMessages = messagesChunk.getChunk();
+				messagesPos = messagesChunk.getPosition();
 			}
 			else
 				entityMessages = null;
 			
-			last = (entityContent == null || contentPos >= content.length-1) && (entityMessages == null || messagesPos >= messages.size()-1);
+			last = (entityContent == null || contentPos >= content.length-1) && (entityMessages == null || messagesPos >= messages.length-1);
 			if (logger.isDebugEnabled())
 				logger.debug("Creating chunk #{}{} from test event '{}'", 
 						result.size()+1, 
@@ -165,7 +153,7 @@ public class EventEntityUtils
 	
 	private static byte[] getContent(Collection<TestEventEntity> entities, StoredTestEventId eventId) throws IOException, DataFormatException
 	{
-		byte[] result = EntityUtils.uniteContents(entities);
+		byte[] result = EntityUtils.uniteChunks(entities, e -> e.getContent());
 		TestEventEntity entity = entities.iterator().next();
 		if (entity.isCompressed())
 		{
@@ -175,31 +163,29 @@ public class EventEntityUtils
 		return result;
 	}
 	
-	private static Set<StoredMessageId> getMessages(Collection<TestEventEntity> entities) throws IOException, DataFormatException, CradleIdException
+	private static Set<StoredMessageId> getMessages(Collection<TestEventEntity> entities, BookId bookId) 
+			throws IOException, DataFormatException, CradleIdException
 	{
-		Set<StoredMessageId> result = null;
-		for (TestEventEntity e : entities)
-		{
-			Set<String> messages = e.getMessages();
-			if (messages == null)
-				continue;
-			
-			if (result == null)
-				result = new HashSet<>();
-			for (String id : messages)
-				result.add(StoredMessageId.fromString(id));
-		}
-		return result;
+		byte[] result = EntityUtils.uniteChunks(entities, e -> e.getMessages());
+		return TestEventUtils.deserializeLinkedMessageIds(result, bookId);
+	}
+	
+	private static Map<StoredTestEventId, Set<StoredMessageId>> getBatchMessages(Collection<TestEventEntity> entities, BookId bookId) 
+			throws IOException, DataFormatException, CradleIdException
+	{
+		byte[] result = EntityUtils.uniteChunks(entities, e -> e.getMessages());
+		return TestEventUtils.deserializeBatchLinkedMessageIds(result, bookId);
 	}
 	
 	private static StoredTestEventSingle toStoredTestEventSingle(Collection<TestEventEntity> entities, PageId pageId) 
 			throws IOException, CradleStorageException, DataFormatException, CradleIdException
 	{
 		TestEventEntity entity = entities.iterator().next();
+		BookId bookId = pageId.getBookId();
 		
-		StoredTestEventId eventId = createId(entity, pageId.getBookId());
+		StoredTestEventId eventId = createId(entity, bookId);
 		byte[] eventContent = getContent(entities, eventId);
-		Set<StoredMessageId> messages = getMessages(entities);
+		Set<StoredMessageId> messages = getMessages(entities, bookId);
 		return new StoredTestEventSingle(eventId, entity.getName(), entity.getType(), createParentId(entity),
 				entity.getEndTimestamp(), entity.isSuccess(), eventContent, messages, pageId, null);
 	}
@@ -208,13 +194,14 @@ public class EventEntityUtils
 			throws IOException, CradleStorageException, DataFormatException, CradleIdException
 	{
 		TestEventEntity entity = entities.iterator().next();
+		BookId bookId = pageId.getBookId();
 		
 		StoredTestEventId eventId = createId(entity, pageId.getBookId());
 		byte[] eventContent = getContent(entities, eventId);
-		//Test event batch doesn't have it own messages, they are got from child events. In Cassandra messages are stored for batch to create index
 		Collection<BatchedStoredTestEvent> children = TestEventUtils.deserializeTestEvents(eventContent);
+		Map<StoredTestEventId, Set<StoredMessageId>> messages = getBatchMessages(entities, bookId);
 		return new StoredTestEventBatch(eventId, entity.getName(), entity.getType(), createParentId(entity),
-				children, pageId, null);
+				children, messages, pageId, null);
 	}
 	
 	private static StoredTestEvent toErrorEvent(TestEventEntity entity, PageId pageId, String error) throws CradleIdException, CradleStorageException
@@ -223,7 +210,7 @@ public class EventEntityUtils
 				parentId = createParentId(entity);
 		logger.warn("Event '{}' is corrupted: {}", id, error);
 		return entity.isEventBatch() 
-				? new StoredTestEventBatch(id, entity.getName(), entity.getType(), parentId, null, pageId, error)
+				? new StoredTestEventBatch(id, entity.getName(), entity.getType(), parentId, null, null, pageId, error)
 				: new StoredTestEventSingle(id, entity.getName(), entity.getType(), parentId,
 						entity.getEndTimestamp(), entity.isSuccess(), null, null, pageId, error);
 	}

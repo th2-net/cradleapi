@@ -115,7 +115,7 @@ public class MessageEntityUtils
 	private static byte[] getContent(Collection<MessageBatchEntity> entities, StoredMessageId messageBatchId)
 			throws DataFormatException, IOException
 	{
-		byte[] content = EntityUtils.uniteContents(entities);
+		byte[] content = EntityUtils.uniteChunks(entities, e -> e.getContent());
 		if (content == null)
 			return null;
 		MessageBatchEntity entity = entities.iterator().next();

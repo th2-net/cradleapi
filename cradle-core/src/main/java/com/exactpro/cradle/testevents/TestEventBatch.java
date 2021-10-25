@@ -17,6 +17,10 @@
 package com.exactpro.cradle.testevents;
 
 import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+
+import com.exactpro.cradle.messages.StoredMessageId;
 
 /**
  * Interface for batches of test events
@@ -41,7 +45,12 @@ public interface TestEventBatch extends TestEvent
 	 * @return collection of root test events stored in the batch
 	 */
 	Collection<BatchedStoredTestEvent> getRootTestEvents();
+	/**
+	 * @return map of event IDs stored in the batch and the corresponding message IDs
+	 */
+	Map<StoredTestEventId, Set<StoredMessageId>> getBatchMessages();
 	
 	boolean hasChildren(StoredTestEventId parentId);
 	Collection<BatchedStoredTestEvent> getChildren(StoredTestEventId parentId);
+	Set<StoredMessageId> getMessages(StoredTestEventId eventId);
 }

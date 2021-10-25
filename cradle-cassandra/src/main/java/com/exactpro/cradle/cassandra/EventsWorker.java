@@ -77,7 +77,7 @@ public class EventsWorker
 	public List<TestEventEntity> createEntities(TestEventToStore event, PageId pageId) throws IOException
 	{
 		return EventEntityUtils.toEntities(event, pageId, 
-				settings.getMaxUncompressedTestEventSize(), settings.getTestEventChunkSize(), settings.getTestEventMessagesPerChunk());
+				settings.getMaxUncompressedTestEventSize(), settings.getTestEventChunkSize(), settings.getTestEventMessagesChunkSize());
 	}
 	
 	public CompletableFuture<TestEventEntity> storeEntities(Collection<TestEventEntity> entities, BookId bookId)
