@@ -381,25 +381,25 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected long doGetFirstMessageIndex(String streamName, Direction direction)
+	protected long doGetFirstMessageIndex(String streamName, Direction direction) throws IOException
 	{
 		return getFirstIndex(ops.getMessageBatchOperator(), streamName, direction);
 	}
 
 	@Override
-	protected long doGetLastMessageIndex(String streamName, Direction direction)
+	protected long doGetLastMessageIndex(String streamName, Direction direction) throws IOException
 	{
 		return getLastIndex(ops.getMessageBatchOperator(), streamName, direction);
 	}
 
 	@Override
-	protected long doGetFirstProcessedMessageIndex(String streamName, Direction direction)
+	protected long doGetFirstProcessedMessageIndex(String streamName, Direction direction) throws IOException
 	{
 		return getFirstIndex(ops.getProcessedMessageBatchOperator(), streamName, direction);
 	}
 
 	@Override
-	protected long doGetLastProcessedMessageIndex(String streamName, Direction direction)
+	protected long doGetLastProcessedMessageIndex(String streamName, Direction direction) throws IOException
 	{
 		return getLastIndex(ops.getProcessedMessageBatchOperator(), streamName, direction);
 	}
@@ -897,16 +897,38 @@ public class CassandraCradleStorage extends CradleStorage
 		});
 	}
 
-	private long getFirstIndex(MessageBatchOperator op, String streamName, Direction direction)
+	private long getFirstIndex(MessageBatchOperator op, String streamName, Direction direction) throws IOException
 	{
-		Row row = op.getFirstIndex(instanceUuid, streamName, direction.getLabel(), readAttrs);
-		return row == null ? EMPTY_MESSAGE_INDEX : row.getLong(MESSAGE_INDEX);
+		CompletableFuture<Row> future = new AsyncOperator<Row>(semaphore).getFuture(
+				() -> op.getFirstIndex(instanceUuid, streamName, direction.getLabel(), readAttrs));
+		try
+		{
+			Row row = future.get();
+			return row == null ? EMPTY_MESSAGE_INDEX : row.getLong(MESSAGE_INDEX);
+		}
+		catch (Exception e)
+		{
+			throw new IOException(
+					"Error while getting index of the first message for stream '" + streamName + " and direction '" +
+							direction + "'", e);
+		}
 	}
 
-	private long getLastIndex(MessageBatchOperator op, String streamName, Direction direction)
+	private long getLastIndex(MessageBatchOperator op, String streamName, Direction direction) throws IOException
 	{
-		Row row = op.getLastIndex(instanceUuid, streamName, direction.getLabel(), readAttrs);
-		return row == null ? EMPTY_MESSAGE_INDEX : row.getLong(LAST_MESSAGE_INDEX);
+		CompletableFuture<Row> future = new AsyncOperator<Row>(semaphore).getFuture(
+				() -> op.getLastIndex(instanceUuid, streamName, direction.getLabel(), readAttrs));
+		try
+		{
+			Row row = future.get();
+			return row == null ? EMPTY_MESSAGE_INDEX : row.getLong(LAST_MESSAGE_INDEX);
+		}
+		catch (Exception e)
+		{
+			throw new IOException(
+					"Error while getting index of the last message for stream '" + streamName + " and direction '" +
+							direction + "'", e);
+		}
 	}
 
 	protected CompletableFuture<Void> storeDateTime(DateTimeEventEntity entity)
