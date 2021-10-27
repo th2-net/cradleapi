@@ -65,7 +65,7 @@ public class TablesCreator
 		createIntervalsTable();
 	}
 	
-	public void createKeyspace()
+	public void createKeyspace() throws IOException
 	{
 		Optional<KeyspaceMetadata> keyspaceExists = getKeyspaceMetadata();
 		if (!keyspaceExists.isPresent())
@@ -73,7 +73,7 @@ public class TablesCreator
 			CreateKeyspace createKs = settings.getNetworkTopologyStrategy() != null 
 					? SchemaBuilder.createKeyspace(settings.getKeyspace()).withNetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap()) 
 					: SchemaBuilder.createKeyspace(settings.getKeyspace()).withSimpleStrategy(settings.getKeyspaceReplicationFactor());
-			exec.getSession().execute(createKs.build());
+			exec.executeQuery(createKs.asCql(), true);
 			logger.info("Keyspace '{}' has been created", settings.getKeyspace());
 			this.keyspaceMetadata = getKeyspaceMetadata().get();
 		}
