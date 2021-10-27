@@ -1,5 +1,10 @@
 ext {
-    driver_version = '4.2.0'
+	driver_version = '4.6.1'
+}
+
+configurations.all {
+	exclude group: 'com.esri.geometry'
+	exclude group: 'org.apache.tinkerpop'
 }
 
 dependencies {
