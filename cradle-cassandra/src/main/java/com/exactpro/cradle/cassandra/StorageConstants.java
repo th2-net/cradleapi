@@ -22,8 +22,6 @@ public class StorageConstants
 			PAGE = "page",
 			NAME = "name",
 			PART = "part",
-			CHUNK = "chunk",
-			LAST_CHUNK = "last_chunk",
 			STORED_DATE = "stored_date",
 			STORED_TIME = "stored_time",
 			COMPRESSED = "compressed",

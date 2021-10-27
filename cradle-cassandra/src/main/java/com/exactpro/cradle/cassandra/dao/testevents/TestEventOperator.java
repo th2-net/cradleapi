@@ -38,7 +38,7 @@ public interface TestEventOperator
 {
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+PAGE+"=:page AND "+SCOPE+"=:scope "
 			+ "AND "+START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:id")
-	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> get(String page, String scope, 
+	CompletableFuture<TestEventEntity> get(String page, String scope, 
 			LocalDate startDate, LocalTime startTime, String id, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
@@ -51,7 +51,7 @@ public interface TestEventOperator
 	CompletableFuture<TestEventEntity> write(TestEventEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+PAGE+"=:page AND "+SCOPE+"=:scope "
-			+ "AND "+START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:id AND "+CHUNK+"=0")
+			+ "AND "+START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:id")
 	CompletableFuture<Void> updateStatus(String page, String scope, 
 			LocalDate startDate, LocalTime startTime, String id, 
 			boolean success,

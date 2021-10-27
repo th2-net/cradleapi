@@ -34,7 +34,7 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 public interface MessageBatchOperator
 {
 	@Select
-	CompletableFuture<MappedAsyncPagingIterable<MessageBatchEntity>> get(String page, String sessionAlias,
+	CompletableFuture<MessageBatchEntity> get(String page, String sessionAlias,
 			String direction, LocalDate messageDate, LocalTime messageTime, long sequence,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 

@@ -90,10 +90,10 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 				.thenApplyAsync(resultSet -> {
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
 					cassandraFilter = createNextFilter(cassandraFilter);
-					return new ConvertingPagedIterator<>(resultSet, limit, returned, entities -> {
+					return new ConvertingPagedIterator<>(resultSet, limit, returned, entity -> {
 						try
 						{
-							return EventEntityUtils.toStoredTestEvent(entities, pageId);
+							return entity.toStoredTestEvent(pageId);
 						}
 						catch (Exception e)
 						{

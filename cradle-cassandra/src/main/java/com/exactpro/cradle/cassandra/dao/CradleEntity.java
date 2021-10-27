@@ -38,19 +38,12 @@ public abstract class CradleEntity
 	private LocalDate storedDate;
 	@CqlName(STORED_TIME)
 	private LocalTime storedTime;
-	@CqlName(LAST_CHUNK)
-	private boolean lastChunk;
 	@CqlName(COMPRESSED)
 	private boolean compressed;
 	@CqlName(LABELS)
 	private Set<String> labels;
 	@CqlName(CONTENT)
 	private ByteBuffer content;
-	
-	@Transient
-	public abstract String getEntityId();
-
-	public abstract int getChunk();
 	
 	public LocalDate getStoredDate()
 	{
@@ -92,17 +85,6 @@ public abstract class CradleEntity
 			setStoredDate(null);
 			setStoredTime(null);
 		}
-	}
-	
-	
-	public boolean isLastChunk()
-	{
-		return lastChunk;
-	}
-	
-	public void setLastChunk(boolean lastChunk)
-	{
-		this.lastChunk = lastChunk;
 	}
 	
 	

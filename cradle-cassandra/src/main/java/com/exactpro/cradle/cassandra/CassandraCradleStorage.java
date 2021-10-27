@@ -262,16 +262,13 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		PageId pageId = page.getId();
 		StoredMessageId batchId = batch.getId();
-		Collection<MessageBatchEntity> entities = MessageEntityUtils.toEntities(batch, pageId,
-				settings.getMaxUncompressedMessageBatchSize(), settings.getMessageBatchChunkSize());
+		MessageBatchEntity entity = new MessageBatchEntity(batch, pageId, settings.getMaxUncompressedMessageBatchSize());
 		BookOperators bookOps = ops.getOperators(pageId.getBookId());
 		MessageBatchOperator mbOperator = bookOps.getMessageBatchOperator();
 		PageSessionsOperator psOperator = bookOps.getPageSessionsOperator();
 		SessionsOperator sOperator = bookOps.getSessionsOperator();
 
-		CompletableFuture<MessageBatchEntity> result = CompletableFuture.completedFuture(null);
-		for (MessageBatchEntity entity : entities)
-			result = result.thenComposeAsync(r -> mbOperator.write(entity, writeAttrs), composingService);
+		CompletableFuture<MessageBatchEntity> result = mbOperator.write(entity, writeAttrs);
 
 		String sessionAlias = batchId.getSessionAlias();
 		return result
@@ -311,8 +308,8 @@ public class CassandraCradleStorage extends CradleStorage
 		BookOperators bookOps = ops.getOperators(bookId);
 		try
 		{
-			List<TestEventEntity> entities = eventsWorker.createEntities(event, pageId);
-			eventsWorker.storeEntities(entities, bookId).get();
+			TestEventEntity entity = eventsWorker.createEntity(event, pageId);
+			eventsWorker.storeEntity(entity, bookId).get();
 			eventsWorker.storeScope(event, bookOps).get();
 			eventsWorker.storePageScope(event, pageId, bookOps).get();
 		}
@@ -331,14 +328,14 @@ public class CassandraCradleStorage extends CradleStorage
 		return CompletableFuture.supplyAsync(() -> {
 					try
 					{
-						return eventsWorker.createEntities(event, pageId);
+						return eventsWorker.createEntity(event, pageId);
 					}
 					catch (IOException e)
 					{
 						throw new CompletionException(e);
 					}
 				}, composingService)
-				.thenComposeAsync((entities) -> eventsWorker.storeEntities(entities, bookId), composingService)
+				.thenComposeAsync(entity -> eventsWorker.storeEntity(entity, bookId), composingService)
 				.thenComposeAsync((r) -> eventsWorker.storeScope(event, bookOps), composingService)
 				.thenComposeAsync((r) -> eventsWorker.storePageScope(event, pageId, bookOps), composingService)
 				.thenAccept(NOOP);
@@ -460,7 +457,7 @@ public class CassandraCradleStorage extends CradleStorage
 							{
 								try
 								{
-									StoredMessageBatch batch = MessageEntityUtils.toStoredMessageBatch(e, pageId);
+									StoredMessageBatch batch = e.toStoredMessageBatch(pageId);
 									logger.debug("Message batch with id '{}' found for message with id '{}'", batch.getId(), id);
 									return batch.getMessages();
 								}

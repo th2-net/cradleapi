@@ -23,47 +23,31 @@ import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Collection;
 import java.util.zip.DataFormatException;
 
 import static com.exactpro.cradle.cassandra.TestUtils.createContent;
 
-public class MessageEntityUtilsTest
+public class MessageBatchEntityTest
 {
-	private final BookId book = new BookId("Test_Book_1");
-	private final PageId page = new PageId(book, "Test_Page_1");
-	private final String sessionAlias = "TEST_Session";
-	private final int contentChunk = 20,
-			maxUncompressedSize = 2000,
-			content40 = 40,
-			content45 = 45;
-	private long sequence = 0L;
-
-	@DataProvider(name = "batches")
-	public Object[][] batches() throws CradleStorageException
+	@Test
+	public void messageEntity() throws IOException, DataFormatException, CradleStorageException
 	{
-		MessageToStoreBuilder builder = MessageToStore.builder()
-				.bookId(page.getBookId())
-				.sessionAlias(sessionAlias)
+		PageId pageId = new PageId(new BookId("Test_Book_1"), "Test_Page_1");
+		MessageBatchToStore batch = MessageBatchToStore.singleton(MessageToStore.builder()
+				.bookId(pageId.getBookId())
+				.sessionAlias("TEST_Session")
+				.direction(Direction.FIRST)
 				.timestamp(Instant.now())
-				.direction(Direction.FIRST);
-		return new Object[][]
-				{
-					{MessageBatchToStore.singleton(builder.content(createContent(content40)).sequence(++sequence).build())}	
-				};
-	}
-	
-	@Test(dataProvider = "batches")
-	public void testToEntities(MessageBatch batch) throws IOException, DataFormatException
-	{
-		Collection<MessageBatchEntity> entities = 
-				MessageEntityUtils.toEntities(batch, page, maxUncompressedSize, contentChunk);
-		StoredMessageBatch messageBatch = MessageEntityUtils.toStoredMessageBatch(entities, page);
+				.sequence(1)
+				.content(createContent(40))
+				.build());
+		
+		MessageBatchEntity entity = new MessageBatchEntity(batch, pageId, 2000);
+		StoredMessageBatch messageBatch = entity.toStoredMessageBatch(pageId);
 
 		RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
 

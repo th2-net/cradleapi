@@ -41,9 +41,6 @@ public class CassandraStorageSettings
 			DEFAULT_RESULT_PAGE_SIZE = 0,  //Driver default will be used in this case.
 			DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_SIZE = 5 * 1024,
 			DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE = 5 * 1024,
-			DEFAULT_MESSAGE_BATCH_CHUNK_SIZE = 1024 * 1024,
-			DEFAULT_TEST_EVENT_CHUNK_SIZE = 1024 * 1024,
-			DEFAULT_TEST_EVENT_MESSAGES_CHUNK_SIZE = 1024 * 1024,
 			DEFAULT_SESSIONS_CACHE_SIZE = 100,
 			DEFAULT_SCOPES_CACHE_SIZE = 10,
 			DEFAULT_PAGE_SESSION_CACHE_SIZE = 100,
@@ -71,9 +68,6 @@ public class CassandraStorageSettings
 			resultPageSize,
 			maxUncompressedMessageBatchSize,
 			maxUncompressedTestEventSize,
-			messageBatchChunkSize,
-			testEventChunkSize,
-			testEventMessagesChunkSize,
 			
 			sessionsCacheSize,
 			scopesCacheSize,
@@ -118,9 +112,6 @@ public class CassandraStorageSettings
 		this.resultPageSize = DEFAULT_RESULT_PAGE_SIZE;
 		this.maxUncompressedMessageBatchSize = DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_SIZE;
 		this.maxUncompressedTestEventSize = DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE;
-		this.messageBatchChunkSize = DEFAULT_MESSAGE_BATCH_CHUNK_SIZE;
-		this.testEventChunkSize = DEFAULT_TEST_EVENT_CHUNK_SIZE;
-		this.testEventMessagesChunkSize = DEFAULT_TEST_EVENT_MESSAGES_CHUNK_SIZE;
 		
 		this.sessionsCacheSize = DEFAULT_SESSIONS_CACHE_SIZE;
 		this.pageSessionsCacheSize = DEFAULT_PAGE_SESSION_CACHE_SIZE;
@@ -154,9 +145,6 @@ public class CassandraStorageSettings
 		this.resultPageSize = settings.getResultPageSize();
 		this.maxUncompressedMessageBatchSize = settings.getMaxUncompressedMessageBatchSize();
 		this.maxUncompressedTestEventSize = settings.getMaxUncompressedTestEventSize();
-		this.messageBatchChunkSize = settings.getMessageBatchChunkSize();
-		this.testEventChunkSize = settings.getTestEventChunkSize();
-		this.testEventMessagesChunkSize = settings.getTestEventMessagesChunkSize();
 		
 		this.sessionsCacheSize = settings.getSessionsCacheSize();
 		this.pageSessionsCacheSize = settings.getPageSessionsCacheSize();
@@ -384,39 +372,6 @@ public class CassandraStorageSettings
 	}
 
 
-	public int getMessageBatchChunkSize()
-	{
-		return messageBatchChunkSize;
-	}
-
-	public void setMessageBatchChunkSize(int messageBatchChunkSize)
-	{
-		this.messageBatchChunkSize = messageBatchChunkSize;
-	}
-
-
-	public int getTestEventChunkSize()
-	{
-		return testEventChunkSize;
-	}
-
-	public void setTestEventChunkSize(int testEventChunkSize)
-	{
-		this.testEventChunkSize = testEventChunkSize;
-	}
-
-
-	public int getTestEventMessagesChunkSize()
-	{
-		return testEventMessagesChunkSize;
-	}
-	
-	public void setTestEventMessagesChunkSize(int testEventMessagesChunkSize)
-	{
-		this.testEventMessagesChunkSize = testEventMessagesChunkSize;
-	}
-	
-	
 	public int getSessionsCacheSize()
 	{
 		return sessionsCacheSize;

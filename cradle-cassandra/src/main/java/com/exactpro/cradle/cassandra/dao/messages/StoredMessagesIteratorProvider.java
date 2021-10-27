@@ -18,13 +18,13 @@ package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
-import com.datastax.oss.driver.shaded.guava.common.collect.Streams;
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.messages.StoredMessage;
+import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TimeUtils;
@@ -40,7 +40,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.stream.StreamSupport;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.MESSAGE_TIME;
 
@@ -106,10 +105,10 @@ public class StoredMessagesIteratorProvider extends AbstractMessageIteratorProvi
 				.thenApplyAsync(resultSet -> {
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
 					cassandraFilter = createNextFilter(cassandraFilter);
-					return new ConvertingPagedIterator<>(resultSet, -1, new AtomicInteger(), entities -> {
+					return new ConvertingPagedIterator<StoredMessageBatch, MessageBatchEntity>(resultSet, -1, new AtomicInteger(), entity -> {
 						try
 						{
-							return MessageEntityUtils.toStoredMessageBatch(entities, pageId);
+							return entity.toStoredMessageBatch(pageId);
 						}
 						catch (Exception e)
 						{

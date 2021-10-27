@@ -18,24 +18,41 @@ package com.exactpro.cradle.cassandra.dao.testevents;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+import java.util.zip.DataFormatException;
+
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.datastax.oss.driver.api.mapper.annotations.Transient;
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.CradleEntity;
+import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEvent;
+import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.StoredTestEventSingle;
 import com.exactpro.cradle.testevents.TestEventToStore;
+import com.exactpro.cradle.utils.CompressionUtils;
+import com.exactpro.cradle.utils.CradleIdException;
+import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.TestEventUtils;
 import com.exactpro.cradle.utils.TimeUtils;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Contains data of {@link StoredTestEvent} to write to or to obtain from Cassandra
@@ -43,6 +60,8 @@ import org.apache.commons.lang3.StringUtils;
 @Entity
 public class TestEventEntity extends CradleEntity
 {
+	private static final Logger logger = LoggerFactory.getLogger(TestEventEntity.class);
+	
 	@PartitionKey(0)
 	@CqlName(PAGE)
 	private String page;
@@ -62,10 +81,6 @@ public class TestEventEntity extends CradleEntity
 	@ClusteringColumn(2)
 	@CqlName(ID)
 	private String id;
-	
-	@ClusteringColumn(3)
-	@CqlName(CHUNK)
-	private int chunk;
 	
 	@CqlName(NAME)
 	private String name;
@@ -101,8 +116,23 @@ public class TestEventEntity extends CradleEntity
 	{
 	}
 
-	public TestEventEntity(TestEventToStore event, PageId pageId, int chunk, boolean lastChunk, byte[] content, boolean compressed, byte[] messages)
+	public TestEventEntity(TestEventToStore event, PageId pageId, int maxUncompressedSize) throws IOException
 	{
+		logger.debug("Creating entity from test event '{}'", event.getId());
+		
+		byte[] content = TestEventUtils.getTestEventContent(event);
+		boolean compressed;
+		if (content != null && content.length > maxUncompressedSize)
+		{
+			logger.trace("Compressing content of test event '{}'", event.getId());
+			content = CompressionUtils.compressData(content);
+			compressed = true;
+		}
+		else
+			compressed = false;
+		
+		byte[] messages = TestEventUtils.serializeLinkedMessageIds(event);
+		
 		StoredTestEventId parentId = event.getParentId();
 		LocalDateTime start = TimeUtils.toLocalTimestamp(event.getStartTimestamp());
 		
@@ -110,35 +140,24 @@ public class TestEventEntity extends CradleEntity
 		setScope(event.getScope());
 		setStartTimestamp(start);
 		setId(event.getId().getId());
-		setChunk(chunk);
 		
 		setSuccess(event.isSuccess());
 		setRoot(parentId == null);
 		setEventBatch(event.isBatch());
-		if (chunk == 0)
-		{
-			setName(event.getName());
-			setType(event.getType());
-			setParentId(parentId != null ? parentId.toString() : "");  //Empty string for absent parentId allows to use index to get root events
-			if (event.isBatch())
-				setEventCount(event.asBatch().getTestEventsCount());
-			setEndTimestamp(event.getEndTimestamp());
-			//TODO: this.setLabels(event.getLabels());
-		}
+		setName(event.getName());
+		setType(event.getType());
+		setParentId(parentId != null ? parentId.toString() : "");  //Empty string for absent parentId allows to use index to get root events
+		if (event.isBatch())
+			setEventCount(event.asBatch().getTestEventsCount());
+		setEndTimestamp(event.getEndTimestamp());
+		//TODO: this.setLabels(event.getLabels());
 		
-		setLastChunk(lastChunk);
 		setCompressed(compressed);
 		
 		if (messages != null)
 			setMessages(ByteBuffer.wrap(messages));
 		if (content != null)
 			setContent(ByteBuffer.wrap(content));
-	}
-	
-	@Override
-	public String getEntityId()
-	{
-		return StringUtils.joinWith(StoredTestEventId.ID_PARTS_DELIMITER, page, scope, startDate, startTime, id);
 	}
 	
 	
@@ -228,18 +247,7 @@ public class TestEventEntity extends CradleEntity
 		this.id = id;
 	}
 	
-	@Override
-	public int getChunk()
-	{
-		return chunk;
-	}
 	
-	public void setChunk(int chunk)
-	{
-		this.chunk = chunk;
-	}
-	
-
 	public String getName()
 	{
 		return name;
@@ -368,5 +376,83 @@ public class TestEventEntity extends CradleEntity
 	public void setMessages(ByteBuffer messages)
 	{
 		this.messages = messages;
+	}
+	
+	
+	public StoredTestEvent toStoredTestEvent(PageId pageId) 
+			throws IOException, CradleStorageException, DataFormatException, CradleIdException
+	{
+		StoredTestEventId eventId = createId(pageId.getBookId());
+		logger.trace("Creating test event '{}' from entity", eventId);
+		
+		byte[] content = restoreContent(eventId);
+		return isEventBatch() ? toStoredTestEventBatch(pageId, eventId, content) : toStoredTestEventSingle(pageId, eventId, content);
+	}
+	
+	
+	private StoredTestEventId createId(BookId bookId)
+	{
+		return new StoredTestEventId(bookId, getScope(), getStartTimestamp(), getId());
+	}
+	
+	private StoredTestEventId createParentId() throws CradleIdException
+	{
+		return StringUtils.isEmpty(getParentId()) ? null : StoredTestEventId.fromString(getParentId());
+	}
+	
+	
+	private byte[] restoreContent(StoredTestEventId eventId) throws IOException, DataFormatException
+	{
+		ByteBuffer content = getContent();
+		if (content == null)
+			return null;
+		
+		byte[] result = content.array();
+		if (isCompressed())
+		{
+			logger.trace("Decompressing content of test event '{}'", eventId);
+			return CompressionUtils.decompressData(result);
+		}
+		return result;
+	}
+	
+	private Set<StoredMessageId> restoreMessages(BookId bookId) 
+			throws IOException, DataFormatException, CradleIdException
+	{
+		ByteBuffer messages = getMessages();
+		if (messages == null)
+			return null;
+		
+		byte[] result = messages.array();
+		return TestEventUtils.deserializeLinkedMessageIds(result, bookId);
+	}
+	
+	private Map<StoredTestEventId, Set<StoredMessageId>> restoreBatchMessages(BookId bookId) 
+			throws IOException, DataFormatException, CradleIdException
+	{
+		ByteBuffer messages = getMessages();
+		if (messages == null)
+			return null;
+		
+		byte[] result = messages.array();
+		return TestEventUtils.deserializeBatchLinkedMessageIds(result, bookId);
+	}
+	
+	
+	private StoredTestEventSingle toStoredTestEventSingle(PageId pageId, StoredTestEventId eventId, byte[] content) 
+			throws IOException, CradleStorageException, DataFormatException, CradleIdException
+	{
+		Set<StoredMessageId> messages = restoreMessages(pageId.getBookId());
+		return new StoredTestEventSingle(eventId, getName(), getType(), createParentId(),
+				getEndTimestamp(), isSuccess(), content, messages, pageId, null);
+	}
+	
+	private StoredTestEventBatch toStoredTestEventBatch(PageId pageId, StoredTestEventId eventId, byte[] content) 
+			throws IOException, CradleStorageException, DataFormatException, CradleIdException
+	{
+		Collection<BatchedStoredTestEvent> children = TestEventUtils.deserializeTestEvents(content);
+		Map<StoredTestEventId, Set<StoredMessageId>> messages = restoreBatchMessages(pageId.getBookId());
+		return new StoredTestEventBatch(eventId, getName(), getType(), createParentId(),
+				children, messages, pageId, null);
 	}
 }

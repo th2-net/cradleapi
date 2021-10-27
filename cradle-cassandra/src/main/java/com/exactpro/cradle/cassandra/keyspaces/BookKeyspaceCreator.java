@@ -107,7 +107,6 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withClusteringColumn(MESSAGE_DATE, DataTypes.DATE)
 				.withClusteringColumn(MESSAGE_TIME, DataTypes.TIME)
 				.withClusteringColumn(SEQUENCE, DataTypes.BIGINT)
-				.withClusteringColumn(CHUNK, DataTypes.INT)
 				
 				.withColumn(STORED_DATE, DataTypes.DATE)
 				.withColumn(STORED_TIME, DataTypes.TIME)
@@ -115,7 +114,6 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withColumn(LAST_MESSAGE_TIME, DataTypes.TIME)
 				.withColumn(LAST_SEQUENCE, DataTypes.BIGINT)
 				.withColumn(MESSAGE_COUNT, DataTypes.INT)
-				.withColumn(LAST_CHUNK, DataTypes.BOOLEAN)
 				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
 				.withColumn(LABELS, DataTypes.setOf(DataTypes.TEXT))
 				.withColumn(CONTENT, DataTypes.BLOB));
@@ -141,7 +139,6 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withClusteringColumn(START_DATE, DataTypes.DATE)
 				.withClusteringColumn(START_TIME, DataTypes.TIME)
 				.withClusteringColumn(ID, DataTypes.TEXT)
-				.withClusteringColumn(CHUNK, DataTypes.INT)
 				
 				.withColumn(NAME, DataTypes.TEXT)
 				.withColumn(TYPE, DataTypes.TEXT)
@@ -154,7 +151,6 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withColumn(STORED_TIME, DataTypes.TIME)
 				.withColumn(END_DATE, DataTypes.DATE)
 				.withColumn(END_TIME, DataTypes.TIME)
-				.withColumn(LAST_CHUNK, DataTypes.BOOLEAN)
 				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
 				.withColumn(MESSAGES, DataTypes.BLOB)
 				.withColumn(LABELS, DataTypes.setOf(DataTypes.TEXT))

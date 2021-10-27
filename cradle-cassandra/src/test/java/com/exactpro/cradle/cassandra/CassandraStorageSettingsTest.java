@@ -26,7 +26,7 @@ public class CassandraStorageSettingsTest
 	{
 		CassandraStorageSettings settings = new CassandraStorageSettings();
 		settings.setBooksTable(settings.getBooksTable()+"_1");
-		settings.setTestEventChunkSize(settings.getTestEventChunkSize()+10);
+		settings.setMaxUncompressedTestEventSize(settings.getMaxUncompressedTestEventSize()+10);
 		
 		CassandraStorageSettings copy = new CassandraStorageSettings(settings);
 		Assertions.assertThat(copy)

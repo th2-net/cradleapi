@@ -18,8 +18,6 @@ package com.exactpro.cradle.cassandra;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
@@ -36,7 +34,6 @@ import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.dao.CradleOperators;
 import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
-import com.exactpro.cradle.cassandra.dao.testevents.EventEntityUtils;
 import com.exactpro.cradle.cassandra.dao.testevents.PageScopeEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
@@ -74,25 +71,15 @@ public class EventsWorker
 	}
 	
 	
-	public List<TestEventEntity> createEntities(TestEventToStore event, PageId pageId) throws IOException
+	public TestEventEntity createEntity(TestEventToStore event, PageId pageId) throws IOException
 	{
-		return EventEntityUtils.toEntities(event, pageId, 
-				settings.getMaxUncompressedTestEventSize(), settings.getTestEventChunkSize(), settings.getTestEventMessagesChunkSize());
+		return new TestEventEntity(event, pageId, settings.getMaxUncompressedTestEventSize());
 	}
 	
-	public CompletableFuture<TestEventEntity> storeEntities(Collection<TestEventEntity> entities, BookId bookId)
+	public CompletableFuture<TestEventEntity> storeEntity(TestEventEntity entity, BookId bookId)
 	{
 		TestEventOperator op = getBookOps(bookId).getTestEventOperator();
-		
-		CompletableFuture<TestEventEntity> result = null;
-		for (TestEventEntity ent : entities)
-		{
-			if (result == null)
-				result = op.write(ent, writeAttrs);
-			else
-				result = result.thenComposeAsync(r -> op.write(ent, writeAttrs), composingService);
-		}
-		return result;
+		return op.write(entity, writeAttrs);
 	}
 	
 	public CompletableFuture<ScopeEntity> storeScope(TestEventToStore event, BookOperators bookOps)
@@ -130,7 +117,7 @@ public class EventsWorker
 				.thenApplyAsync(r -> {
 					try
 					{
-						return EventEntityUtils.toStoredTestEvent(r, pageId);
+						return r.toStoredTestEvent(pageId);
 					}
 					catch (Exception e)
 					{
