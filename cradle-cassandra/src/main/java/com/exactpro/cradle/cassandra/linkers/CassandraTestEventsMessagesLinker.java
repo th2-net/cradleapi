@@ -80,7 +80,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 		String queryInfo = "get test events for messageId="+messageId;
 		CompletableFuture<MappedAsyncPagingIterable<MessageTestEventEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<MessageTestEventEntity>>(semaphore)
 				.getFuture(() -> selectExec
-						.executeManyRowQuery(() -> supplies.getMessagesOperator().getTestEvents(instanceId, messageId.toString(), readAttrs),
+						.executeMultiRowResultQuery(() -> supplies.getMessagesOperator().getTestEvents(instanceId, messageId.toString(), readAttrs),
 								supplies.getMessageConverter(),
 								queryInfo));
 		
@@ -121,7 +121,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 		String queryInfo = "get messages for eventId="+eventId;
 		CompletableFuture<MappedAsyncPagingIterable<TestEventMessagesEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<TestEventMessagesEntity>>(semaphore)
 				.getFuture(() -> selectExec
-						.executeManyRowQuery(() -> supplies.getTestEventsOperator().getMessages(instanceId, eventId.toString(), readAttrs),
+						.executeMultiRowResultQuery(() -> supplies.getTestEventsOperator().getMessages(instanceId, eventId.toString(), readAttrs),
 								supplies.getTestEventConverter(),
 								queryInfo));
 		
@@ -175,7 +175,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 		String queryInfo = "get messages for eventId="+eventId+" to check links";
 		CompletableFuture<MappedAsyncPagingIterable<TestEventMessagesEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<TestEventMessagesEntity>>(semaphore)
 				.getFuture(() -> selectExec
-						.executeManyRowQuery(() -> supplies.getTestEventsOperator().getMessages(instanceId, eventId.toString(), readAttrs),
+						.executeMultiRowResultQuery(() -> supplies.getTestEventsOperator().getMessages(instanceId, eventId.toString(), readAttrs),
 								supplies.getTestEventConverter(),
 								queryInfo));
 		
@@ -214,7 +214,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 		String queryInfo = "get test events for messageId="+messageId+" to check links";
 		CompletableFuture<MappedAsyncPagingIterable<MessageTestEventEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<MessageTestEventEntity>>(semaphore)
 				.getFuture(() -> selectExec
-						.executeManyRowQuery(() -> supplies.getMessagesOperator().getTestEvents(instanceId, messageId.toString(), readAttrs),
+						.executeMultiRowResultQuery(() -> supplies.getMessagesOperator().getTestEvents(instanceId, messageId.toString(), readAttrs),
 								supplies.getMessageConverter(),
 								queryInfo));
 		

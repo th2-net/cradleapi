@@ -586,7 +586,7 @@ public class CassandraCradleStorage extends CradleStorage
 		TimeMessageOperator tmOp = ops.getTimeMessageOperator();
 		return new AsyncOperator<MappedAsyncPagingIterable<DetailedMessageBatchEntity>>(semaphore)
 						.getFuture(() -> selectExecutor
-								.executeManyRowQuery(() -> mbOp.filterMessages(instanceUuid, filter, mbOp, tmOp, readAttrs),
+								.executeMultiRowResultQuery(() -> mbOp.filterMessages(instanceUuid, filter, mbOp, tmOp, readAttrs),
 										ops.getMessageBatchConverter(),
 										queryInfo));
 	}
@@ -624,7 +624,7 @@ public class CassandraCradleStorage extends CradleStorage
 		RootTestEventOperator op = ops.getRootTestEventOperator();
 		CompletableFuture<MappedAsyncPagingIterable<RootTestEventEntity>> future = 
 				new AsyncOperator<MappedAsyncPagingIterable<RootTestEventEntity>>(semaphore)
-						.getFuture(() -> selectExecutor.executeManyRowQuery(order == Order.DIRECT
+						.getFuture(() -> selectExecutor.executeMultiRowResultQuery(order == Order.DIRECT
 								? () -> op.getTestEventsDirect(instanceUuid, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
 								: () -> op.getTestEventsReverse(instanceUuid, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs),
 								ops.getRootTestEventConverter(),
@@ -665,7 +665,7 @@ public class CassandraCradleStorage extends CradleStorage
 		String queryInfo = "get child test events of "+parentId+" from range "+from+".."+to+" in "+order+" order";
 		CompletableFuture<MappedAsyncPagingIterable<TestEventChildEntity>> future =
 				new AsyncOperator<MappedAsyncPagingIterable<TestEventChildEntity>>(semaphore)
-						.getFuture(() -> selectExecutor.executeManyRowQuery(() -> order == Order.DIRECT
+						.getFuture(() -> selectExecutor.executeMultiRowResultQuery(() -> order == Order.DIRECT
 								? ops.getTestEventChildrenOperator().getTestEventsDirect(instanceUuid, parentId.toString(),
 									fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
 								: ops.getTestEventChildrenOperator().getTestEventsReverse(instanceUuid, parentId.toString(),
@@ -707,7 +707,7 @@ public class CassandraCradleStorage extends CradleStorage
 		String queryInfo = "get test events from range "+from+".."+to+" in "+order+" order";
 		CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> future =
 				new AsyncOperator<MappedAsyncPagingIterable<TimeTestEventEntity>>(semaphore)
-						.getFuture(() -> selectExecutor.executeManyRowQuery(() -> order == Order.DIRECT
+						.getFuture(() -> selectExecutor.executeMultiRowResultQuery(() -> order == Order.DIRECT
 								? ops.getTimeTestEventOperator().getTestEventsDirect(instanceUuid,
 										fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
 								: ops.getTimeTestEventOperator().getTestEventsReverse(instanceUuid,

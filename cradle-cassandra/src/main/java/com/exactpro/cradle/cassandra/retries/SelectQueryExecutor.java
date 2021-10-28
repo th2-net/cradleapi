@@ -58,7 +58,7 @@ public class SelectQueryExecutor
 		return f;
 	}
 
-	public <T> CompletableFuture<MappedAsyncPagingIterable<T>> executeManyRowQuery(
+	public <T> CompletableFuture<MappedAsyncPagingIterable<T>> executeMultiRowResultQuery(
 			Supplier<CompletableFuture<MappedAsyncPagingIterable<T>>> query,
 			EntityConverter<T> converter, String queryInfo)
 	{
