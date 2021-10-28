@@ -887,7 +887,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		String queryInfo = "get first message for stream '" + streamName + " and direction '" + direction + "'";
 		CompletableFuture<Row> future = new AsyncOperator<Row>(semaphore).getFuture(() ->
-						selectExecutor.executeSingleRowQuery(
+						selectExecutor.executeSingleRowResultQuery(
 								() -> op.getFirstIndex(instanceUuid, streamName, direction.getLabel(), readAttrs),
 								r -> r,
 								queryInfo)
@@ -909,7 +909,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		String queryInfo = "get last message for stream '" + streamName + " and direction '" + direction + "'";
 		CompletableFuture<Row> future = new AsyncOperator<Row>(semaphore).getFuture(() ->
-						selectExecutor.executeSingleRowQuery(
+						selectExecutor.executeSingleRowResultQuery(
 								() -> op.getLastIndex(instanceUuid, streamName, direction.getLabel(), readAttrs),
 								r -> r,
 								queryInfo)

@@ -33,29 +33,29 @@ public class FixedNumberRetryPolicy implements SelectExecutionPolicy
 	public SelectExecutionVerdict onError(Statement<?> statement, String queryInfo, Throwable cause, int retryCount)
 			throws CannotRetryException
 	{
-		if (!RetryUtils.isRetriableException(cause))
-			throw new CannotRetryException("Cannot retry after this error", cause);
-
-		if (retryCount > maxRetry)
-			throw new CannotRetryException("The maximum number '" + maxRetry + "' of retries has been reached", cause);
-		return new SelectExecutionVerdict(null, statement.getPageSize());
+		return passVerdict(cause, retryCount, statement.getPageSize());
 	}
 
 	@Override
 	public SelectExecutionVerdict onError(Collection<String> ids, String queryInfo, Throwable cause, int retryCount)
 			throws CannotRetryException
 	{
-		if (!RetryUtils.isRetriableException(cause))
-			throw new CannotRetryException("Cannot retry after this error", cause);
-
-		if (retryCount > maxRetry)
-			throw new CannotRetryException("The maximum number '" + maxRetry + "' of retries has been reached", cause);
-		return new SelectExecutionVerdict(null, ids.size());
+		return passVerdict(cause, retryCount, ids.size());
 	}
 
 	@Override
 	public SelectExecutionVerdict onNextPage(Statement<?> statement, String queryInfo)
 	{
 		return new SelectExecutionVerdict(null, statement.getPageSize());
+	}
+
+	private SelectExecutionVerdict passVerdict(Throwable cause, int retryCount, int pageSize) throws CannotRetryException
+	{
+		if (!RetryUtils.isRetriableException(cause))
+			throw new CannotRetryException("Cannot retry after this error", cause);
+
+		if (retryCount > maxRetry)
+			throw new CannotRetryException("The maximum number '" + maxRetry + "' of retries has been reached", cause);
+		return new SelectExecutionVerdict(null, pageSize);
 	}
 }

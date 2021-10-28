@@ -47,7 +47,7 @@ public class SelectQueryExecutor
 		this.singleRowQueryPolicy = singleRowQueryPolicy;
 	}
 
-	public <T> CompletableFuture<T> executeSingleRowQuery(Supplier<CompletableFuture<Row>> query,
+	public <T> CompletableFuture<T> executeSingleRowResultQuery(Supplier<CompletableFuture<Row>> query,
 			EntityConverter<T> converter, String queryInfo)
 	{
 		CompletableFuture<T> f = new CompletableFuture<>();
