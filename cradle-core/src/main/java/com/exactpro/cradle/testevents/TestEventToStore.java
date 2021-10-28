@@ -17,9 +17,7 @@
 package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
-import java.util.Set;
 
-import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
 
@@ -49,9 +47,9 @@ public abstract class TestEventToStore implements TestEvent
 		return new TestEventSingleToStoreBuilder();
 	}
 	
-	public static TestEventBatchToStoreBuilder batchBuilder()
+	public static TestEventBatchToStoreBuilder batchBuilder(int maxBatchSize)
 	{
-		return new TestEventBatchToStoreBuilder();
+		return new TestEventBatchToStoreBuilder(maxBatchSize);
 	}
 	
 	

@@ -27,10 +27,17 @@ import com.exactpro.cradle.utils.CradleStorageException;
  */
 public class TestEventBatchToStoreBuilder
 {
+	private final int maxBatchSize;
 	private StoredTestEventId id;
 	private String name;
 	private StoredTestEventId parentId;
 	private String type;
+	
+	public TestEventBatchToStoreBuilder(int maxBatchSize)
+	{
+		this.maxBatchSize = maxBatchSize;
+	}
+	
 	
 	public TestEventBatchToStoreBuilder id(StoredTestEventId id)
 	{
@@ -86,7 +93,7 @@ public class TestEventBatchToStoreBuilder
 	
 	protected TestEventBatchToStore createTestEventToStore(StoredTestEventId id, String name, StoredTestEventId parentId) throws CradleStorageException
 	{
-		return new TestEventBatchToStore(id, name, parentId);
+		return new TestEventBatchToStore(id, name, parentId, maxBatchSize);
 	}
 	
 	protected void reset()

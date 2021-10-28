@@ -46,6 +46,8 @@ public abstract class CradleStorage
 {
 	private static final Logger logger = LoggerFactory.getLogger(CradleStorage.class);
 	public static final ZoneOffset TIMEZONE_OFFSET = ZoneOffset.UTC;
+	public static final int DEFAULT_MAX_MESSAGE_BATCH_SIZE = 1024*1024,
+			DEFAULT_MAX_TEST_EVENT_BATCH_SIZE = DEFAULT_MAX_MESSAGE_BATCH_SIZE;
 	
 	private final Map<BookId, BookInfo> books;
 	protected final BookAndPageChecker bpc;
@@ -53,9 +55,10 @@ public abstract class CradleStorage
 			disposed = false;
 	protected final ExecutorService composingService;
 	protected final boolean ownedComposingService;
+	protected final CradleEntitiesFactory entitiesFactory;
 	
 	
-	public CradleStorage(ExecutorService composingService) throws CradleStorageException
+	public CradleStorage(ExecutorService composingService, int maxMessageBatchSize, int maxTestEventBatchSize) throws CradleStorageException
 	{
 		books = new ConcurrentHashMap<>();
 		bpc = new BookAndPageChecker(books);
@@ -70,11 +73,13 @@ public abstract class CradleStorage
 			ownedComposingService = false;
 			this.composingService = composingService;
 		}
+		
+		entitiesFactory = new CradleEntitiesFactory(maxMessageBatchSize, maxTestEventBatchSize);
 	}
 	
 	public CradleStorage() throws CradleStorageException
 	{
-		this(null);
+		this(null, DEFAULT_MAX_MESSAGE_BATCH_SIZE, DEFAULT_MAX_TEST_EVENT_BATCH_SIZE);
 	}
 	
 	
@@ -282,6 +287,15 @@ public abstract class CradleStorage
 		book.removePage(pageId);
 		logger.info("Page '{}' has been removed", pageId);
 		return book;
+	}
+	
+	
+	/**
+	 * @return factory to create message and test event batches that conform with storage settings
+	 */
+	public CradleEntitiesFactory getEntitiesFactory()
+	{
+		return entitiesFactory;
 	}
 	
 	

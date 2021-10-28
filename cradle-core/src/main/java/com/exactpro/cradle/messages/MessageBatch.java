@@ -43,7 +43,7 @@ public interface MessageBatch
 	/**
 	 * @return size of messages currently stored in the batch
 	 */
-	long getBatchSize();
+	int getBatchSize();
 
 	/**
 	 * @return collection of messages stored in the batch

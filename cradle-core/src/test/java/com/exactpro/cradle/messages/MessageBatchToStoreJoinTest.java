@@ -17,10 +17,12 @@
 package com.exactpro.cradle.messages;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 import java.time.Instant;
 
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import com.exactpro.cradle.Direction;
@@ -30,6 +32,7 @@ import com.exactpro.cradle.utils.CradleStorageException;
 public class MessageBatchToStoreJoinTest
 {
     private static final BookId bookId = new BookId("testbook");
+    private static final int MAX_SIZE = 1024;
     
     @Test
     public void testJoinEmptyBatchWithOther() throws CradleStorageException {
@@ -42,15 +45,71 @@ public class MessageBatchToStoreJoinTest
         assertEquals(emptyBatch.getSessionAlias(), "test");
         assertEquals(emptyBatch.getDirection(), Direction.FIRST);
     }
+    
+    @Test(dataProvider = "full batches")
+    public void testJoinEmptyBatchWithFull(MessageBatchToStore other) throws CradleStorageException {
+        MessageBatchToStore emptyBatch = createEmptyBatch();
+        assertTrue(emptyBatch.addBatch(other));
+
+        assertTrue(emptyBatch.isFull());
+        assertEquals(emptyBatch.getSessionAlias(), "test");
+        assertEquals(emptyBatch.getDirection(), Direction.FIRST);
+    }
+
+    
+    @DataProvider(name = "full batches")
+    public Object[][] fullBatches() throws CradleStorageException {
+        return new Object[][] {
+                { createFullBySizeBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH) }
+        };
+    }
+
+    @Test(dataProvider = "full batches")
+    public void testJoinFullBatchWithEmpty(MessageBatchToStore batch) throws CradleStorageException {
+        long messagesSize = batch.getBatchSize();
+        int messageCount = batch.getMessageCount();
+        StoredMessageId id = batch.getId();
+
+        assertTrue(batch.addBatch(createEmptyBatch()));
+
+        assertEquals(batch.getMessageCount(), messageCount);
+        assertEquals(batch.getBatchSize(), messagesSize);
+        assertEquals(batch.getId(), id);
+    }
+
+    @DataProvider(name = "full batches matrix")
+    public Object[][] fullBatchesMatrix() throws CradleStorageException {
+        MessageBatchToStore fullBySizeBatch = createFullBySizeBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH);
+        return new Object[][] {
+                { fullBySizeBatch, fullBySizeBatch }
+        };
+    }
+
+    @Test(dataProvider = "full batches matrix")
+    public void testFullBatches(MessageBatchToStore first, MessageBatchToStore second) throws CradleStorageException {
+        assertFalse(first.addBatch(second));
+    }
 
     @Test
-    public void testAddBatch() throws CradleStorageException {
+    public void testAddBatchLessThanLimit() throws CradleStorageException {
         MessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, 5, 5);
         MessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH.plusMillis(5), 5, 5);
-
+        
         assertTrue(first.addBatch(second));
         assertEquals(first.getMessageCount(), 10);
         assertEquals(first.getBatchSize(), 50);
+        assertEquals(first.getSessionAlias(), "test");
+        assertEquals(first.getDirection(), Direction.FIRST);
+    }
+
+    @Test
+    public void testAddBatchMoreThanLimitBySize() throws CradleStorageException {
+        MessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, 1, MAX_SIZE - 1);
+        MessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH, 1, MAX_SIZE - 1);
+        
+        assertFalse(first.addBatch(second));
+        assertEquals(first.getMessageCount(), 1);
+        assertEquals(first.getBatchSize(), MAX_SIZE - 1);
         assertEquals(first.getSessionAlias(), "test");
         assertEquals(first.getDirection(), Direction.FIRST);
     }
@@ -135,6 +194,11 @@ public class MessageBatchToStoreJoinTest
     }
 
     private MessageBatchToStore createEmptyBatch() {
-        return new MessageBatchToStore();
+        return new MessageBatchToStore(MAX_SIZE);
+    }
+    
+    private MessageBatchToStore createFullBySizeBatch(BookId bookId, 
+            String sessionAlias, long startSequence, Direction direction, Instant startTimestamp) throws CradleStorageException {
+        return createBatch(bookId, sessionAlias, startSequence, direction, startTimestamp, 1, MAX_SIZE);
     }
 }

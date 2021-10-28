@@ -17,6 +17,7 @@
 package com.exactpro.cradle.cassandra;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.cassandra.connection.NetworkTopologyStrategy;
 
 public class CassandraStorageSettings
@@ -63,10 +64,12 @@ public class CassandraStorageSettings
 			labelsTable,
 			intervalsTable;
 	private int keyspaceReplicationFactor;
-
+	
 	private int maxParallelQueries,
 			resultPageSize,
+			maxMessageBatchSize,
 			maxUncompressedMessageBatchSize,
+			maxTestEventBatchSize,
 			maxUncompressedTestEventSize,
 			
 			sessionsCacheSize,
@@ -110,9 +113,10 @@ public class CassandraStorageSettings
 		this.keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
 		this.maxParallelQueries = DEFAULT_MAX_PARALLEL_QUERIES;
 		this.resultPageSize = DEFAULT_RESULT_PAGE_SIZE;
+		this.maxMessageBatchSize = CradleStorage.DEFAULT_MAX_MESSAGE_BATCH_SIZE;
 		this.maxUncompressedMessageBatchSize = DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_SIZE;
+		this.maxTestEventBatchSize = CradleStorage.DEFAULT_MAX_TEST_EVENT_BATCH_SIZE;
 		this.maxUncompressedTestEventSize = DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE;
-		
 		this.sessionsCacheSize = DEFAULT_SESSIONS_CACHE_SIZE;
 		this.pageSessionsCacheSize = DEFAULT_PAGE_SESSION_CACHE_SIZE;
 		this.scopesCacheSize = DEFAULT_SCOPES_CACHE_SIZE;
@@ -143,7 +147,9 @@ public class CassandraStorageSettings
 		this.keyspaceReplicationFactor = settings.getKeyspaceReplicationFactor();
 		this.maxParallelQueries = settings.getMaxParallelQueries();
 		this.resultPageSize = settings.getResultPageSize();
+		this.maxMessageBatchSize = settings.getMaxMessageBatchSize();
 		this.maxUncompressedMessageBatchSize = settings.getMaxUncompressedMessageBatchSize();
+		this.maxTestEventBatchSize = settings.getMaxTestEventBatchSize();
 		this.maxUncompressedTestEventSize = settings.getMaxUncompressedTestEventSize();
 		
 		this.sessionsCacheSize = settings.getSessionsCacheSize();
@@ -348,35 +354,57 @@ public class CassandraStorageSettings
 	{
 		this.resultPageSize = resultPageSize;
 	}
-
-
+	
+	
+	public int getMaxMessageBatchSize()
+	{
+		return maxMessageBatchSize;
+	}
+	
+	public void setMaxMessageBatchSize(int maxMessageBatchSize)
+	{
+		this.maxMessageBatchSize = maxMessageBatchSize;
+	}
+	
+	
 	public int getMaxUncompressedMessageBatchSize()
 	{
 		return maxUncompressedMessageBatchSize;
 	}
-
+	
 	public void setMaxUncompressedMessageBatchSize(int maxUncompressedMessageBatchSize)
 	{
 		this.maxUncompressedMessageBatchSize = maxUncompressedMessageBatchSize;
 	}
-
-
+	
+	
+	public int getMaxTestEventBatchSize()
+	{
+		return maxTestEventBatchSize;
+	}
+	
+	public void setMaxTestEventBatchSize(int maxTestEventBatchSize)
+	{
+		this.maxTestEventBatchSize = maxTestEventBatchSize;
+	}
+	
+	
 	public int getMaxUncompressedTestEventSize()
 	{
 		return maxUncompressedTestEventSize;
 	}
-
+	
 	public void setMaxUncompressedTestEventSize(int maxUncompressedTestEventSize)
 	{
 		this.maxUncompressedTestEventSize = maxUncompressedTestEventSize;
 	}
-
-
+	
+	
 	public int getSessionsCacheSize()
 	{
 		return sessionsCacheSize;
 	}
-
+	
 	public void setSessionsCacheSize(int sessionsCacheSize)
 	{
 		this.sessionsCacheSize = sessionsCacheSize;

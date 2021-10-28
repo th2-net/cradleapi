@@ -44,13 +44,14 @@ public class MessageBatchEntityTest
 				.timestamp(Instant.now())
 				.sequence(1)
 				.content(createContent(40))
-				.build());
+				.build(), 100);
+		StoredMessageBatch storedBatch = new StoredMessageBatch(batch.getMessages());
 		
 		MessageBatchEntity entity = new MessageBatchEntity(batch, pageId, 2000);
-		StoredMessageBatch messageBatch = entity.toStoredMessageBatch(pageId);
+		StoredMessageBatch batchFromEntity = entity.toStoredMessageBatch(pageId);
 
 		RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
 
-		Assertions.assertThat(batch).usingRecursiveComparison(config).isEqualTo(messageBatch);
+		Assertions.assertThat(storedBatch).usingRecursiveComparison(config).isEqualTo(batchFromEntity);
 	}
 }

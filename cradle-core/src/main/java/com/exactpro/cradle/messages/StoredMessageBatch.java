@@ -17,8 +17,6 @@
 package com.exactpro.cradle.messages;
 
 import com.exactpro.cradle.Direction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -28,10 +26,8 @@ import java.util.List;
 
 public class StoredMessageBatch implements MessageBatch
 {
-	private static final Logger logger = LoggerFactory.getLogger(StoredMessageBatch.class);
-
 	protected StoredMessageId id;
-	protected long batchSize;
+	protected int batchSize;
 	protected final List<StoredMessage> messages;
 
 	public StoredMessageBatch()
@@ -45,7 +41,7 @@ public class StoredMessageBatch implements MessageBatch
 		if (messages == null || messages.isEmpty())
 			return;
 		id = messages.iterator().next().getId();
-		batchSize = messages.stream().mapToLong(m -> m.getContent().length).sum();
+		batchSize = messages.stream().mapToInt(m -> m.getContent().length).sum();
 	}
 
 	@Override
@@ -73,7 +69,7 @@ public class StoredMessageBatch implements MessageBatch
 	}
 
 	@Override
-	public long getBatchSize()
+	public int getBatchSize()
 	{
 		return batchSize;
 	}

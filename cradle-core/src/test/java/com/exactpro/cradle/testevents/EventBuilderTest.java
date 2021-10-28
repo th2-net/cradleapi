@@ -52,7 +52,8 @@ public class EventBuilderTest
 	@Test
 	public void batchBuilderIsReset() throws CradleStorageException
 	{
-		TestEventBatchToStoreBuilder builder = new TestEventBatchToStoreBuilder();
+		int maxSize = 1024;
+		TestEventBatchToStoreBuilder builder = new TestEventBatchToStoreBuilder(maxSize);
 		builder.id(bookId, "Scope1", Instant.now(), "123")
 				.name("Event1")
 				.parentId(new StoredTestEventId(bookId, "Scope2", Instant.EPOCH, "234"))
@@ -61,6 +62,6 @@ public class EventBuilderTest
 		
 		Assertions.assertThat(builder)
 				.usingRecursiveComparison()
-				.isEqualTo(new TestEventBatchToStoreBuilder());
+				.isEqualTo(new TestEventBatchToStoreBuilder(maxSize));
 	}
 }

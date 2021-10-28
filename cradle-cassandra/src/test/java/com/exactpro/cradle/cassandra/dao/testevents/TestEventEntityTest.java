@@ -58,7 +58,7 @@ public class TestEventEntityTest
 	@DataProvider(name = "events")
 	public Object[][] events() throws CradleStorageException
 	{
-		TestEventBatchToStore batch = TestEventBatchToStore.builder()
+		TestEventBatchToStore batch = TestEventBatchToStore.builder(1024)
 				.id(new StoredTestEventId(book, scope, startTimestamp, "BatchId"))
 				.parentId(parentId)
 				.build();

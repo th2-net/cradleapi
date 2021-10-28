@@ -19,6 +19,7 @@ package com.exactpro.cradle.messages;
 import java.time.Instant;
 import java.util.*;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,12 +35,51 @@ public class MessageBatchToStore extends StoredMessageBatch
 {
 	private static final Logger logger = LoggerFactory.getLogger(MessageBatchToStore.class);
 	
-	public static MessageBatchToStore singleton(MessageToStore message) throws CradleStorageException
+	private final int maxBatchSize;
+	
+	public MessageBatchToStore(int maxBatchSize)
 	{
-		MessageBatchToStore result = new MessageBatchToStore();
+		this.maxBatchSize = maxBatchSize;
+	}
+	
+	public static MessageBatchToStore singleton(MessageToStore message, int maxBatchSize) throws CradleStorageException
+	{
+		MessageBatchToStore result = new MessageBatchToStore(maxBatchSize);
 		result.addMessage(message);
 		return result;
 	}
+	
+	
+	/**
+	 * Indicates if the batch cannot hold more messages
+	 * @return true if batch capacity is reached and the batch must be flushed to Cradle
+	 */
+	public boolean isFull()
+	{
+		return batchSize >= maxBatchSize;
+	}
+	
+	/**
+	 * Shows how many bytes the batch can hold till its capacity is reached
+	 * @return number of bytes the batch can hold
+	 */
+	public int getSpaceLeft()
+	{
+		int result = maxBatchSize-batchSize;
+		return result > 0 ? result : 0;
+	}
+	
+	/**
+	 * Shows if batch has enough space to hold given message
+	 * @param message to check against batch capacity
+	 * @return true if batch has enough space to hold given message
+	 */
+	public boolean hasSpace(MessageToStore message)
+	{
+		byte[] content = message.getContent();
+		return ArrayUtils.isEmpty(content) || batchSize+content.length <= maxBatchSize;
+	}
+	
 
 	/**
 	 * Adds message to the batch. Batch will add correct message ID by itself, verifying message to match batch conditions.
@@ -48,8 +88,11 @@ public class MessageBatchToStore extends StoredMessageBatch
 	 * @return immutable message object with assigned ID
 	 * @throws CradleStorageException if message cannot be added to the batch due to verification failure
 	 */
-	public StoredMessage addMessage(CradleMessage message) throws CradleStorageException
+	public StoredMessage addMessage(MessageToStore message) throws CradleStorageException
 	{
+		if (!hasSpace(message))
+			throw new CradleStorageException("Batch has not enough space to hold given message");
+		
 		MessageUtils.validateMessage(message);  //Checking if book, session alias, direction, timestamp and content are set
 		
 		long messageSeq;
@@ -94,9 +137,9 @@ public class MessageBatchToStore extends StoredMessageBatch
 				messageSeq = lastMsg.getSequence()+1;
 		}
 
-		StoredMessage msg = message instanceof MessageToStore ? new StoredMessage((MessageToStore) message,
+		StoredMessage msg = new StoredMessage(message,
 				new StoredMessageId(message.getBookId(), message.getSessionAlias(), message.getDirection(),
-						message.getTimestamp(), messageSeq)) : (StoredMessage) message;
+						message.getTimestamp(), messageSeq));
 		messages.add(msg);
 		batchSize += msg.getContent().length;
 
@@ -112,7 +155,7 @@ public class MessageBatchToStore extends StoredMessageBatch
    * @return true if the result batch meets the restriction for message count and batch size
    * @throws CradleStorageException if the batch doesn't meet the requirements regarding inner content
    */
-	public boolean addBatch(MessageBatch batch) throws CradleStorageException {
+	public boolean addBatch(MessageBatchToStore batch) throws CradleStorageException {
 		if (batch.isEmpty()) {
 			// we don't need to actually add empty batch
 			return true;
@@ -123,7 +166,14 @@ public class MessageBatchToStore extends StoredMessageBatch
 			messages.addAll(batch.getMessages());
 			return true;
 		}
-		long resultSize = batchSize + batch.getBatchSize();
+		if (isFull() || batch.isFull()) {
+			return false;
+		}
+		int resultSize = batchSize + batch.getBatchSize();
+		if (resultSize > maxBatchSize) {
+			// cannot add because of size limit
+			return false;
+		}
 		verifyBatch(batch);
 		messages.addAll(batch.getMessages());
 		this.batchSize = resultSize;
@@ -153,5 +203,4 @@ public class MessageBatchToStore extends StoredMessageBatch
 			throw new CradleStorageException(String.format("Batches are not ordered. Current last index: %d; Other first index: %d", currentLastIndex, otherFirstIndex));
 		}
 	}
-	
 }

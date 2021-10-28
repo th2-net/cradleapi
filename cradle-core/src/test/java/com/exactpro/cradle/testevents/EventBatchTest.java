@@ -41,8 +41,9 @@ import com.exactpro.cradle.utils.TestEventUtils;
 
 public class EventBatchTest
 {
+	private final int MAX_SIZE = 1024;
 	private TestEventSingleToStoreBuilder eventBuilder = TestEventToStore.singleBuilder();
-	private TestEventBatchToStoreBuilder batchBuilder = TestEventToStore.batchBuilder();
+	private TestEventBatchToStoreBuilder batchBuilder = TestEventToStore.batchBuilder(MAX_SIZE);
 	private StoredTestEventId batchId = new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, UUID.randomUUID().toString());
 	private TestEventBatchToStore batch;
 	
@@ -85,7 +86,7 @@ public class EventBatchTest
 	@Test
 	public void batchFields() throws CradleStorageException
 	{
-		TestEventBatchToStore event = TestEventToStore.batchBuilder()
+		TestEventBatchToStore event = TestEventToStore.batchBuilder(MAX_SIZE)
 				.id(DUMMY_ID)
 				.name("Name1")
 				.parentId(batchParentId)
@@ -132,7 +133,7 @@ public class EventBatchTest
 				.content("Test content".getBytes())
 				.build();
 		
-		TestEventBatchToStore batch = new TestEventBatchToStore(batchId, null, parentId);
+		TestEventBatchToStore batch = new TestEventBatchToStore(batchId, null, parentId, MAX_SIZE);
 		batch.addTestEvent(event);
 		TestEventUtils.validateTestEvent(batch);
 	}
@@ -141,6 +142,50 @@ public class EventBatchTest
 	public void batchParentMustBeSet() throws CradleStorageException
 	{
 		batchBuilder.id(DUMMY_ID).build();
+	}
+	
+	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Batch has not enough space to hold given test event")
+	public void batchContentIsLimited() throws CradleIdException, CradleStorageException
+	{
+		byte[] content = new byte[5000];
+		for (int i = 0; i <= (MAX_SIZE/content.length)+1; i++)
+			batch.addTestEvent(eventBuilder
+					.id(new StoredTestEventId(BOOK, SCOPE, Instant.EPOCH, Integer.toString(i)))
+					.name(DUMMY_NAME)
+					.parentId(batch.getParentId())
+					.content(content)
+					.build());
+	}
+	
+	@Test
+	public void batchCountsSpaceLeft() throws CradleStorageException
+	{
+		byte[] content = new byte[MAX_SIZE-1];
+		long left = batch.getSpaceLeft();
+		
+		batch.addTestEvent(eventBuilder
+				.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "1"))
+				.name(DUMMY_NAME)
+				.parentId(batch.getParentId())
+				.content(content)
+				.build());
+		
+		Assert.assertEquals(batch.getSpaceLeft(), left-content.length, "Batch counts space left");
+	}
+	
+	@Test
+	public void batchChecksSpaceLeft() throws CradleStorageException
+	{
+		byte[] content = new byte[MAX_SIZE-1];
+		
+		TestEventSingleToStore event = eventBuilder
+				.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "1"))
+				.name(DUMMY_NAME)
+				.parentId(batch.getParentId())
+				.content(content)
+				.build();
+		batch.addTestEvent(event);
+		Assert.assertEquals(batch.hasSpace(event), false, "Batch shows if it has space to hold given test event");
 	}
 	
 	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Test event with ID .* is already present in batch")

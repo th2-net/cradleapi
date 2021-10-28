@@ -26,6 +26,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
@@ -41,17 +43,20 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 	private final Collection<BatchedStoredTestEvent> rootEvents = new ArrayList<>();
 	private final Map<StoredTestEventId, Collection<BatchedStoredTestEvent>> children = new HashMap<>();
 	private final Map<StoredTestEventId, Set<StoredMessageId>> messages = new HashMap<>();
+	private final int maxBatchSize;
+	private int batchSize = 0;
 	
-	public TestEventBatchToStore(StoredTestEventId id, String name, StoredTestEventId parentId) throws CradleStorageException
+	public TestEventBatchToStore(StoredTestEventId id, String name, StoredTestEventId parentId, int maxBatchSize) throws CradleStorageException
 	{
 		super(id, name, parentId);
 		success = true;
+		this.maxBatchSize = maxBatchSize;
 	}
 	
 	
-	public static TestEventBatchToStoreBuilder builder()
+	public static TestEventBatchToStoreBuilder builder(int maxBatchSize)
 	{
-		return new TestEventBatchToStoreBuilder();
+		return new TestEventBatchToStoreBuilder(maxBatchSize);
 	}
 	
 	
@@ -117,6 +122,45 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 	
 	
 	/**
+	 * @return size of events currently stored in the batch
+	 */
+	public int getBatchSize()
+	{
+		return batchSize;
+	}
+	
+	/**
+	 * Indicates if the batch cannot hold more test events
+	 * @return true if batch capacity is reached and the batch must be flushed to Cradle
+	 */
+	public boolean isFull()
+	{
+		return batchSize >= maxBatchSize;
+	}
+	
+	/**
+	 * Shows how many bytes the batch can hold till its capacity is reached
+	 * @return number of bytes the batch can hold
+	 */
+	public int getSpaceLeft()
+	{
+		int result = maxBatchSize-batchSize;
+		return result > 0 ? result : 0;
+	}
+	
+	/**
+	 * Shows if batch has enough space to hold given test event
+	 * @param event to check against batch capacity
+	 * @return true if batch has enough space to hold given test event
+	 */
+	public boolean hasSpace(TestEventSingleToStore event)
+	{
+		byte[] content = event.getContent();
+		return ArrayUtils.isEmpty(content) || batchSize+content.length <= maxBatchSize;
+	}
+	
+	
+	/**
 	 * Adds test event to the batch. Batch will verify the event to match batch conditions.
 	 * Result of this method should be used for all further operations on the event
 	 * @param event to add to the batch
@@ -125,6 +169,9 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 	 */
 	public BatchedStoredTestEvent addTestEvent(TestEventSingleToStore event) throws CradleStorageException
 	{
+		if (!hasSpace(event))
+			throw new CradleStorageException("Batch has not enough space to hold given test event");
+		
 		//Verifying event being added to not verify all added events before writing batch to storage
 		TestEventUtils.validateTestEvent(event);
 		
@@ -154,6 +201,9 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 			children.computeIfAbsent(parentId, k -> new ArrayList<>()).add(result);
 		else
 			rootEvents.add(result);
+		
+		if (event.getContent() != null)
+			batchSize += event.getContent().length;
 		
 		return result;
 	}

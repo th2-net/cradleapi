@@ -36,7 +36,8 @@ public class TestEventUtilsTest
 		StoredTestEventId parentId = new StoredTestEventId(book, scope, Instant.now(), scope);
 		TestEventBatchToStore batch = new TestEventBatchToStore(new StoredTestEventId(book, scope, Instant.now(), "BatchID"), 
 				"Batch", 
-				parentId);
+				parentId,
+				1024);
 		
 		batch.addTestEvent(TestEventToStore.singleBuilder()
 				.id(book, scope, Instant.now(), "EventID")

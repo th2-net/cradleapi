@@ -48,7 +48,7 @@ public class MessageUtilsTest
 		byte[] content = "Message text".getBytes();
 		
 		long seq = 10;
-		batch = new MessageBatchToStore();
+		batch = new MessageBatchToStore(1024);
 		msg1 = batch.addMessage(builder
 				.bookId(bookId)
 				.sessionAlias(sessionAlias)
