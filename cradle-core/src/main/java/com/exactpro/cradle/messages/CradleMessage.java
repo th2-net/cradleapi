@@ -34,7 +34,7 @@ public interface CradleMessage
 	String getSessionAlias();
 
 	/**
-	 * @return direction in which the message went through the stream
+	 * @return direction in which the message went through the session
 	 */
 	Direction getDirection();
 

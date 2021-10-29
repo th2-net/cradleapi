@@ -462,6 +462,9 @@ public class CassandraCradleStorage extends CradleStorage
 									ldt.toLocalDate(), row.getLocalTime(MESSAGE_TIME), row.getLong(SEQUENCE), readAttrs)
 							.thenApplyAsync(e ->
 							{
+								if (e == null)
+									return null;
+								
 								try
 								{
 									StoredMessageBatch batch = e.toStoredMessageBatch(pageId);

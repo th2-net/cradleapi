@@ -22,6 +22,7 @@ import java.util.Arrays;
 
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.utils.CompressionUtils;
 
 /**
@@ -34,27 +35,22 @@ public class StoredMessage implements Serializable, CradleMessage
 	private final StoredMessageId id;
 	private final StoredMessageMetadata metadata;
 	private final byte[] content;
+	private final PageId pageId;
 	
-	public StoredMessage(MessageToStore message, StoredMessageId id)
+	public StoredMessage(CradleMessage message, StoredMessageId id, PageId pageId)
 	{
 		this.id = id;
 		this.metadata = message.getMetadata() != null ? new StoredMessageMetadata(message.getMetadata()) : null;
 		this.content = message.getContent();
-	}
-	
-	public StoredMessage(StoredMessage copyFrom, StoredMessageId id)
-	{
-		this.id = id;
-		this.metadata = copyFrom.getMetadata() != null ? new StoredMessageMetadata(copyFrom.getMetadata()) : null;
-		this.content = copyFrom.getContent();
+		this.pageId = pageId;
 	}
 	
 	public StoredMessage(StoredMessage copyFrom)
 	{
-		this(copyFrom, copyFrom.getId());
+		this(copyFrom, copyFrom.getId(), copyFrom.getPageId());
 	}
-
-
+	
+	
 	/**
 	 * @return unique message ID as stored in Cradle.
 	 * Result of this method should be used for referencing stored messages to obtain them from Cradle
@@ -106,6 +102,11 @@ public class StoredMessage implements Serializable, CradleMessage
 		return content;
 	}
 	
+	public PageId getPageId()
+	{
+		return pageId;
+	}
+	
 	
 	@Override
 	public int hashCode()
@@ -115,6 +116,7 @@ public class StoredMessage implements Serializable, CradleMessage
 		result = prime * result + Arrays.hashCode(content);
 		result = prime * result + ((id == null) ? 0 : id.hashCode());
 		result = prime * result + ((metadata == null) ? 0 : metadata.hashCode());
+		result = prime * result + ((pageId == null) ? 0 : pageId.hashCode());
 		return result;
 	}
 	
@@ -142,6 +144,14 @@ public class StoredMessage implements Serializable, CradleMessage
 				return false;
 		} else if (!metadata.equals(other.metadata))
 			return false;
+		
+		if (pageId == null)
+		{
+			if (other.pageId != null)
+				return false;
+		} else if (!pageId.equals(other.pageId))
+			return false;
+		
 		return true;
 	}
 	
@@ -151,12 +161,9 @@ public class StoredMessage implements Serializable, CradleMessage
 		return new StringBuilder()
 				.append("StoredMessage{").append(CompressionUtils.EOL)
 				.append("id=").append(id).append(",").append(CompressionUtils.EOL)
-				.append("bookId=").append(id.getBookId()).append(',').append(CompressionUtils.EOL)
-				.append("sessionAlias=").append(id.getSessionAlias()).append(',').append(CompressionUtils.EOL)
-				.append("timestamp=").append(id.getTimestamp()).append(',').append(CompressionUtils.EOL)
-				.append("sequence=").append(id.getSequence()).append(',').append(CompressionUtils.EOL)
 				.append("metadata=").append(getMetadata()).append(",").append(CompressionUtils.EOL)
 				.append("content=").append(Arrays.toString(getContent())).append(CompressionUtils.EOL)
+				.append("pageId=").append(getPageId()).append(CompressionUtils.EOL)
 				.append("}").toString();
 	}
 }

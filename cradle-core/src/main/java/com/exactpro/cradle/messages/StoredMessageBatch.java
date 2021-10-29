@@ -17,6 +17,7 @@
 package com.exactpro.cradle.messages;
 
 import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.PageId;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -32,15 +33,15 @@ public class StoredMessageBatch implements MessageBatch
 
 	public StoredMessageBatch()
 	{
-		this(null);
+		this(null, null);
 	}
 
-	public StoredMessageBatch(Collection<StoredMessage> messages)
+	public StoredMessageBatch(Collection<StoredMessage> messages, PageId pageId)
 	{
-		this.messages = createMessagesList(messages);
+		this.messages = createMessagesList(messages, pageId);
 		if (messages == null || messages.isEmpty())
 			return;
-		id = messages.iterator().next().getId();
+		id = this.messages.get(0).getId();
 		batchSize = messages.stream().mapToInt(m -> m.getContent().length).sum();
 	}
 
@@ -77,7 +78,7 @@ public class StoredMessageBatch implements MessageBatch
 	@Override
 	public Collection<StoredMessage> getMessages()
 	{
-		return new ArrayList<>(messages);
+		return Collections.unmodifiableList(messages);
 	}
 
 	@Override
@@ -86,7 +87,7 @@ public class StoredMessageBatch implements MessageBatch
 		List<StoredMessage> list = new ArrayList<>(messages);
 		Collections.reverse(list);
 
-		return list;
+		return Collections.unmodifiableList(list);
 	}
 
 	@Override
@@ -121,11 +122,14 @@ public class StoredMessageBatch implements MessageBatch
 		return messages.isEmpty();
 	}
 
-	protected List<StoredMessage> createMessagesList(Collection<StoredMessage> messages)
+	protected List<StoredMessage> createMessagesList(Collection<StoredMessage> messages, PageId pageId)
 	{
 		if (messages == null)
 			return new ArrayList<>();
 		
-		return new ArrayList<>(messages);
+		List<StoredMessage> result = new ArrayList<>(messages.size());
+		for (StoredMessage msg : messages)
+			result.add(new StoredMessage(msg, msg.getId(), pageId));
+		return result;
 	}
 }

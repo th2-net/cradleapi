@@ -27,8 +27,8 @@ import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.MessageUtils;
 
 /**
- * Holds information about batch of messages stored in Cradle.
- * All messages stored in the batch should be from one sequence and should be related to the same session, having the same direction.
+ * Holds information about batch of messages to be stored in Cradle.
+ * All messages stored in the batch should form a sequence and should be related to the same session, having the same direction.
  * ID of first message is treated as batch ID.
  */
 public class MessageBatchToStore extends StoredMessageBatch
@@ -100,10 +100,10 @@ public class MessageBatchToStore extends StoredMessageBatch
 		{
 			long i = message.getSequence();
 			if (i < 0)
-				throw new CradleStorageException("Message sequence number for first message in batch cannot be negative");
+				throw new CradleStorageException("Sequence number for first message in batch cannot be negative");
 			
 			id = new StoredMessageId(message.getBookId(), message.getSessionAlias(), message.getDirection(), message.getTimestamp(), i);
-			messageSeq = message.getSequence();
+			messageSeq = i;
 		}
 		else
 		{
@@ -136,10 +136,9 @@ public class MessageBatchToStore extends StoredMessageBatch
 			else
 				messageSeq = lastMsg.getSequence()+1;
 		}
-
-		StoredMessage msg = new StoredMessage(message,
-				new StoredMessageId(message.getBookId(), message.getSessionAlias(), message.getDirection(),
-						message.getTimestamp(), messageSeq));
+		
+		StoredMessageId msgId = new StoredMessageId(message.getBookId(), message.getSessionAlias(), message.getDirection(), message.getTimestamp(), messageSeq);
+		StoredMessage msg = new StoredMessage(message, msgId, null);
 		messages.add(msg);
 		batchSize += msg.getContent().length;
 
@@ -197,10 +196,11 @@ public class MessageBatchToStore extends StoredMessageBatch
 			throw new CradleStorageException(String.format("Batches are not ordered. Current last timestamp: %s; Other first timestamp: %s", 
 					currentLastTimestamp, otherFirstTimestamp));
 		
-		long currentLastIndex = lastMsg.getSequence();
-		long otherFirstIndex = otherFirstMsg.getSequence();
-		if (currentLastIndex >= otherFirstIndex) {
-			throw new CradleStorageException(String.format("Batches are not ordered. Current last index: %d; Other first index: %d", currentLastIndex, otherFirstIndex));
+		long currentLastSeq = lastMsg.getSequence();
+		long otherFirstSeq = otherFirstMsg.getSequence();
+		if (currentLastSeq >= otherFirstSeq) {
+			throw new CradleStorageException(String.format("Batches are not ordered. "
+					+ "Current last sequence number: %d; Other first sequence number: %d", currentLastSeq, otherFirstSeq));
 		}
 	}
 }

@@ -114,12 +114,13 @@ public class MessageBatchEntity extends CradleEntity
 		//Last sequence is used in the getLastSequenceQuery, that returns last chunk
 		setLastSequence(batch.getLastMessage().getSequence());
 		
-		//TODO: setStoredTimestamp(Instant.now());
 		setFirstMessageTimestamp(batch.getFirstTimestamp());
 		setLastMessageTimestamp(batch.getLastTimestamp());
 		setMessageCount(batch.getMessageCount());
 		
+		setStoredTimestamp(Instant.now());
 		setCompressed(compressed);
+		//TODO: setLabels(batch.getLabels());
 		setContent(ByteBuffer.wrap(batchContent));
 	}
 
@@ -261,7 +262,7 @@ public class MessageBatchEntity extends CradleEntity
 		
 		byte[] content = restoreContent(batchId);
 		List<StoredMessage> storedMessages = MessageUtils.deserializeMessages(content);
-		return new StoredMessageBatch(storedMessages);
+		return new StoredMessageBatch(storedMessages, pageId);
 	}
 	
 	

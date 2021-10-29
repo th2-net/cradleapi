@@ -37,4 +37,9 @@ public class MessageMetadata extends StoredMessageMetadata
 	{
 		data.put(key, value);
 	}
+	
+	public void remove(String key)
+	{
+		data.remove(key);
+	}
 }
