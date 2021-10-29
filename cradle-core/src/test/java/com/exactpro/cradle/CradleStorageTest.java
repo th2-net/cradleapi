@@ -57,7 +57,7 @@ public class CradleStorageTest
 							"unknown"},
 					{validEvent()
 							.id(new BookId(BOOK), SCOPE, Instant.EPOCH, EVENT_ID),                 //Too early
-							"started after"},
+							"no page for timestamp"},
 					{validEvent().endTimestamp(START_TIMESTAMP.minusMillis(5000)),                 //End before start
 							"cannot end sooner than it started"}
 				};

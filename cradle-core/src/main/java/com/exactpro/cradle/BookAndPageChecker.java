@@ -39,25 +39,11 @@ public class BookAndPageChecker
 		return result;
 	}
 	
-	public PageInfo getActivePage(BookId bookId) throws CradleStorageException
-	{
-		BookInfo book = getBook(bookId);
-		PageInfo page = book.getActivePage();
-		if (page == null)
-			throw new CradleStorageException("Book '"+bookId+"' has no active pages");
-		return page;
-	}
-	
-	public PageId getActivePageId(BookId bookId) throws CradleStorageException
-	{
-		return getActivePage(bookId).getId();
-	}
-	
 	public PageInfo findPage(BookId bookId, Instant timestamp) throws CradleStorageException
 	{
 		BookInfo book = getBook(bookId);
 		PageInfo page = book.findPage(timestamp);
-		if (page == null)
+		if (page == null || (page.getEnded() != null && timestamp.isAfter(page.getEnded())))
 			throw new CradleStorageException("Book '"+bookId+"' has no page for timestamp "+timestamp);
 		return page;
 	}
@@ -70,14 +56,6 @@ public class BookAndPageChecker
 			throw new CradleStorageException("Requested book ("+bookFromId+") doesn't match book of requested page ("+pageId.getBookId()+")");
 		if (book.getPage(pageId) == null)
 			throw new CradleStorageException("Page '"+pageId+"' is unknown");
-	}
-	
-	public PageInfo checkActivePage(BookId book, Instant timestamp) throws CradleStorageException
-	{
-		PageInfo activePage = getActivePage(book);
-		if (activePage.getStarted().isAfter(timestamp))
-			throw new CradleStorageException("Active page '"+activePage.getId()+"' was started after given timestamp ("+timestamp+")");
-		return activePage;
 	}
 	
 	public void checkPage(PageId pageId) throws CradleStorageException

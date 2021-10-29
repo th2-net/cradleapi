@@ -17,8 +17,8 @@
 package com.exactpro.cradle;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import com.exactpro.cradle.intervals.IntervalsWorker;
@@ -64,7 +64,7 @@ public class DummyCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected void doSwitchToNewPage(BookId bookId, String pageName, Instant timestamp, String comment, PageInfo prevPage)
+	protected void doAddPages(BookId bookId, List<PageInfo> pages, PageInfo lastPage)
 			throws CradleStorageException, IOException
 	{
 	}

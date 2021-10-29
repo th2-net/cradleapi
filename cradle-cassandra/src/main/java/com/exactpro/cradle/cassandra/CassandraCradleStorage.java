@@ -196,32 +196,39 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected void doSwitchToNewPage(BookId bookId, String pageName, Instant timestamp, String comment, PageInfo prevPage) throws CradleStorageException, IOException
+	protected void doAddPages(BookId bookId, List<PageInfo> pages, PageInfo lastPage)
+			throws CradleStorageException, IOException
 	{
 		BookOperators bookOps = ops.getOperators(bookId);
 		PageOperator pageOp = bookOps.getPageOperator();
 		PageNameOperator pageNameOp = bookOps.getPageNameOperator();
-		try
+		
+		String bookName = bookId.getName();
+		for (PageInfo page : pages)
 		{
-			PageNameEntity nameEntity = new PageNameEntity(bookId.getName(), pageName, timestamp, comment, null);
-			if (!pageNameOp.writeNew(nameEntity, writeAttrs).wasApplied())
-				throw new IOException("Query to insert page '"+nameEntity.getName()+"' was not applied. Probably, page already exists");
-			PageEntity entity = new PageEntity(bookId.getName(), pageName, timestamp, comment, null);
-			pageOp.write(entity, writeAttrs);
-			
-			if (prevPage != null)
+			String pageName = page.getId().getName();
+			try
 			{
-				pageOp.update(new PageEntity(prevPage), writeAttrs);
-				pageNameOp.update(new PageNameEntity(prevPage), writeAttrs);
+				PageNameEntity nameEntity = new PageNameEntity(bookName, pageName, page.getStarted(), page.getComment(), page.getEnded());
+				if (!pageNameOp.writeNew(nameEntity, writeAttrs).wasApplied())
+					throw new IOException("Query to insert page '"+nameEntity.getName()+"' was not applied. Probably, page already exists");
+				PageEntity entity = new PageEntity(bookName, pageName, page.getStarted(), page.getComment(), page.getEnded());
+				pageOp.write(entity, writeAttrs);
+			}
+			catch (IOException e)
+			{
+				throw e;
+			}
+			catch (Exception e)
+			{
+				throw new IOException("Error while writing info of page '"+pageName+"'", e);
 			}
 		}
-		catch (IOException e)
+		
+		if (lastPage != null)
 		{
-			throw e;
-		}
-		catch (Exception e)
-		{
-			throw new IOException("Error while writing page info", e);
+			pageOp.update(new PageEntity(lastPage), writeAttrs);
+			pageNameOp.update(new PageNameEntity(lastPage), writeAttrs);
 		}
 	}
 	
@@ -526,24 +533,24 @@ public class CassandraCradleStorage extends CradleStorage
 		BookOperators bookOps = ops.getOperators(bookId);
 		MessageBatchOperator mbOp = bookOps.getMessageBatchOperator();
 		BookInfo book = bpc.getBook(bookId);
-		PageInfo currentPage = bpc.getActivePage(bookId);
+		PageInfo lastPage = book.getLastPage();
 		Row row = null;
-		while (row == null && currentPage != null)
+		while (row == null && lastPage != null)
 		{
 			try
 			{
-				row = mbOp.getLastSequence(currentPage.getId().getName(), sessionAlias, direction.getLabel(),
+				row = mbOp.getLastSequence(lastPage.getId().getName(), sessionAlias, direction.getLabel(),
 						readAttrs).get();
 			}
 			catch (InterruptedException | ExecutionException e)
 			{
 				String msg = String.format("Error occurs while getting last sequence for page '%s', session alias '%s', " +
-						"direction '%s'", currentPage.getId().getName(), sessionAlias, direction);
+						"direction '%s'", lastPage.getId().getName(), sessionAlias, direction);
 				throw new CradleStorageException(msg, e);
 			}
 
 			if (row == null)
-				currentPage = book.getPreviousPage(currentPage.getStarted());
+				lastPage = book.getPreviousPage(lastPage.getStarted());
 		}
 		if (row == null)
 		{

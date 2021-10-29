@@ -210,6 +210,6 @@ public class FilterUtils
 			if (page != null)
 				return page;
 		}
-		return book.getActivePage();
+		return book.getLastPage();
 	}
 }

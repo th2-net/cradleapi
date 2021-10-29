@@ -25,6 +25,8 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.exactpro.cradle.utils.CradleStorageException;
+
 /**
  * Information about a book
  */
@@ -36,9 +38,8 @@ public class BookInfo
 	private final Instant created;
 	private final Map<PageId, PageInfo> pages;
 	private final TreeMap<Instant, PageInfo> orderedPages;
-	private PageInfo activePage;
 	
-	public BookInfo(BookId id, String fullName, String desc, Instant created, Collection<PageInfo> pages)
+	public BookInfo(BookId id, String fullName, String desc, Instant created, Collection<PageInfo> pages) throws CradleStorageException
 	{
 		this.id = id;
 		this.fullName = fullName;
@@ -50,12 +51,19 @@ public class BookInfo
 		if (pages == null)
 			return;
 		
+		PageInfo activePage = null;
 		for (PageInfo p : pages)
 		{
 			this.pages.put(p.getId(), p);
 			this.orderedPages.put(p.getStarted(), p);
 			if (p.isActive())
+			{
+				if (activePage != null)
+					throw new CradleStorageException("Inconsistent state of book '"+id+"': "
+							+ "page '"+activePage.getId().getName()+"' is active, "
+							+ "but '"+p.getId().getName()+"' is active as well");
 				activePage = p;
+			}
 		}
 	}
 	
@@ -90,14 +98,14 @@ public class BookInfo
 		return orderedPages.size() > 0 ? orderedPages.firstEntry().getValue() : null;
 	}
 	
+	public PageInfo getLastPage()
+	{
+		return orderedPages.size() > 0 ? orderedPages.lastEntry().getValue() : null;
+	}
+	
 	public PageInfo getPage(PageId pageId)
 	{
 		return pages.get(pageId);
-	}
-	
-	public PageInfo getActivePage()
-	{
-		return activePage;
 	}
 	
 	public PageInfo findPage(Instant timestamp)
@@ -119,25 +127,16 @@ public class BookInfo
 	}
 	
 	
-	void nextPage(String pageName, Instant started, String comment)
-	{
-		if (activePage != null)
-		{
-			//Replacing old active page with ended one
-			PageInfo endedPage = PageInfo.ended(activePage, started);
-			pages.put(activePage.getId(), endedPage);
-			orderedPages.put(activePage.getStarted(), endedPage);
-		}
-		
-		activePage = new PageInfo(new PageId(id, pageName), started, null, comment);
-		pages.put(activePage.getId(), activePage);
-		orderedPages.put(activePage.getStarted(), activePage);
-	}
-	
 	void removePage(PageId pageId)
 	{
 		PageInfo pageInfo = pages.remove(pageId);
 		if (pageInfo != null)
 			orderedPages.remove(pageInfo.getStarted());
+	}
+	
+	void addPage(PageInfo page)
+	{
+		pages.put(page.getId(), page);
+		orderedPages.put(page.getStarted(), page);
 	}
 }

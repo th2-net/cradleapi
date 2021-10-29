@@ -28,6 +28,8 @@ import com.exactpro.cradle.filters.FilterForLess;
 import com.exactpro.cradle.messages.StoredMessageId;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.tuple;
@@ -133,5 +135,25 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	public FilterForAny<StoredMessageId> getMessageId()
 	{
 		return messageId;
+	}
+	
+	
+	@Override
+	public String toString()
+	{
+		List<String> result = new ArrayList<>(10);
+		if (page != null)
+			result.add("page=" + page);
+		if (sessionAlias != null)
+			result.add("sessionAlias=" + sessionAlias);
+		if (direction != null)
+			result.add("direction=" + direction);
+		if (messageTimeFrom != null)
+			result.add("timestamp" + messageTimeFrom);
+		if (messageTimeTo != null)
+			result.add("timestamp" + messageTimeTo);
+		if (messageId != null)
+			result.add("messageId" + messageId);
+		return String.join(", ", result);
 	}
 }

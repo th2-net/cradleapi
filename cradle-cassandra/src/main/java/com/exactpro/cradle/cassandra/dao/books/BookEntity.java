@@ -33,6 +33,7 @@ import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.BookToAdd;
 import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.CassandraBookToAdd;
+import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
  * Contains information about book as stored in "cradle" keyspace
@@ -125,7 +126,7 @@ public class BookEntity
 	}
 	
 	
-	public BookInfo toBookInfo(Collection<PageInfo> pages)
+	public BookInfo toBookInfo(Collection<PageInfo> pages) throws CradleStorageException
 	{
 		return new BookInfo(new BookId(name), fullName, desc, created, pages);
 	}
