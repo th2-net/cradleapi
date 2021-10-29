@@ -411,22 +411,22 @@ public class CassandraCradleStorage extends CradleStorage
 			throws CradleStorageException
 	{
 		return doGetMessageBatchAsync(id, pageId)
-				.thenComposeAsync(msgs ->
+				.thenComposeAsync(batch ->
 				{
-					if (msgs == null)
+					if (batch == null)
 						return CompletableFuture.completedFuture(null);
 
-					Optional<StoredMessage> found = msgs.stream().filter(m -> id.equals(m.getId())).findFirst();
+					Optional<StoredMessage> found = batch.getMessages().stream().filter(m -> id.equals(m.getId())).findFirst();
 					if (found.isPresent())
 						return CompletableFuture.completedFuture(found.get());
 
-					logger.debug("There is no message with id '{}' in batch '{}'", id, msgs.iterator().next().getId());
+					logger.debug("There is no message with id '{}' in batch '{}'", id, batch.getId());
 					return CompletableFuture.completedFuture(null);
 				}, composingService);
 	}
 
 	@Override
-	protected Collection<StoredMessage> doGetMessageBatch(StoredMessageId id, PageId pageId) throws IOException
+	protected StoredMessageBatch doGetMessageBatch(StoredMessageId id, PageId pageId) throws IOException
 	{
 		try
 		{
@@ -439,7 +439,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Collection<StoredMessage>> doGetMessageBatchAsync(StoredMessageId id, PageId pageId)
+	protected CompletableFuture<StoredMessageBatch> doGetMessageBatchAsync(StoredMessageId id, PageId pageId)
 			throws CradleStorageException
 	{
 		logger.debug("Getting message batch for message with id '{}'", id);
@@ -466,7 +466,7 @@ public class CassandraCradleStorage extends CradleStorage
 								{
 									StoredMessageBatch batch = e.toStoredMessageBatch(pageId);
 									logger.debug("Message batch with id '{}' found for message with id '{}'", batch.getId(), id);
-									return batch.getMessages();
+									return batch;
 								}
 								catch (Exception ex)
 								{
@@ -478,7 +478,7 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	protected Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter, BookInfo book) throws IOException
+	protected CradleResultSet<StoredMessage> doGetMessages(StoredMessageFilter filter, BookInfo book) throws IOException
 	{
 		try
 		{
@@ -491,22 +491,22 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter, BookInfo book)
+	protected CompletableFuture<CradleResultSet<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter, BookInfo book)
 			throws CradleStorageException
 	{
 		StoredMessagesIteratorProvider provider =
 				new StoredMessagesIteratorProvider("get messages filtered by " + filter, filter,
 						ops.getOperators(book.getId()), book, composingService, readAttrs);
 		return provider.nextIterator()
-				.thenApply(r -> () -> new CassandraCradleResultSet<>(r, provider));
+				.thenApply(r -> new CassandraCradleResultSet<>(r, provider));
 	}
 	
 	@Override
-	protected CradleResultSet<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter, BookInfo book) throws IOException
+	protected CradleResultSet<StoredMessageBatch> doGetMessageBatches(StoredMessageFilter filter, BookInfo book) throws IOException
 	{
 		try
 		{
-			return doGetMessagesBatchesAsync(filter, book).get();
+			return doGetMessageBatchesAsync(filter, book).get();
 		}
 		catch (Exception e)
 		{
@@ -515,7 +515,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter, BookInfo book)
+	protected CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetMessageBatchesAsync(StoredMessageFilter filter, BookInfo book)
 			throws CradleStorageException
 	{
 		MessageBatchIteratorProvider provider =
@@ -621,7 +621,7 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	@Override
 	protected CompletableFuture<CradleResultSet<StoredTestEvent>> doGetTestEventsAsync(TestEventFilter filter, BookInfo book) 
-			throws CradleStorageException, IOException
+			throws CradleStorageException
 	{
 		return eventsWorker.getTestEvents(filter, book);
 	}

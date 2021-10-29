@@ -139,38 +139,38 @@ public class DummyCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected Collection<StoredMessage> doGetMessageBatch(StoredMessageId id, PageId pageId) throws IOException
+	protected StoredMessageBatch doGetMessageBatch(StoredMessageId id, PageId pageId) throws IOException
 	{
 		return null;
 	}
 	
 	@Override
-	protected CompletableFuture<Collection<StoredMessage>> doGetMessageBatchAsync(StoredMessageId id, PageId pageId)
+	protected CompletableFuture<StoredMessageBatch> doGetMessageBatchAsync(StoredMessageId id, PageId pageId)
 	{
 		return CompletableFuture.completedFuture(null);
 	}
 	
 	@Override
-	protected Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter, BookInfo book) throws IOException
+	protected CradleResultSet<StoredMessage> doGetMessages(StoredMessageFilter filter, BookInfo book) throws IOException
 	{
 		return null;
 	}
 	
 	@Override
-	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter,
+	protected CompletableFuture<CradleResultSet<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter,
 			BookInfo book)
 	{
 		return CompletableFuture.completedFuture(null);
 	}
 	
 	@Override
-	protected CradleResultSet<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter, BookInfo book) throws IOException
+	protected CradleResultSet<StoredMessageBatch> doGetMessageBatches(StoredMessageFilter filter, BookInfo book) throws IOException
 	{
 		return null;
 	}
 	
 	@Override
-	protected CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter,
+	protected CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetMessageBatchesAsync(StoredMessageFilter filter,
 			BookInfo book)
 	{
 		return CompletableFuture.completedFuture(null);
@@ -211,7 +211,7 @@ public class DummyCradleStorage extends CradleStorage
 	
 	@Override
 	protected CompletableFuture<CradleResultSet<StoredTestEvent>> doGetTestEventsAsync(TestEventFilter filter, BookInfo book) 
-			throws CradleStorageException, IOException
+			throws CradleStorageException
 	{
 		return CompletableFuture.completedFuture(null);
 	}
