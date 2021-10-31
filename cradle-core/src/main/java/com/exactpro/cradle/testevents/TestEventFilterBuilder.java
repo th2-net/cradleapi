@@ -25,6 +25,7 @@ import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForGreaterBuilder;
 import com.exactpro.cradle.filters.FilterForLess;
 import com.exactpro.cradle.filters.FilterForLessBuilder;
+import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
  * Builder of filter for test events.
@@ -32,49 +33,59 @@ import com.exactpro.cradle.filters.FilterForLessBuilder;
  */
 public class TestEventFilterBuilder
 {
-	private TestEventFilter eventFilter;
+	private BookId bookId;
+	private String scope;
+	private PageId pageId;
+	private FilterForGreater<Instant> startTimestampFrom;
+	private FilterForLess<Instant> startTimestampTo;
+	private StoredTestEventId parentId;
+	private boolean root;
+	private int limit;
+	private Order order = Order.DIRECT;
 	
 	public TestEventFilterBuilder bookId(BookId bookId)
 	{
-		initIfNeeded();
-		eventFilter.setBookId(bookId);
+		this.bookId = bookId;
 		return this;
 	}
 	
 	public TestEventFilterBuilder scope(String scope)
 	{
-		initIfNeeded();
-		eventFilter.setScope(scope);
+		this.scope = scope;
+		return this;
+	}
+	
+	public TestEventFilterBuilder pageId(PageId pageId)
+	{
+		this.pageId = pageId;
 		return this;
 	}
 	
 	public FilterForGreaterBuilder<Instant, TestEventFilterBuilder> startTimestampFrom()
 	{
-		initIfNeeded();
 		FilterForGreater<Instant> f = new FilterForGreater<>();
-		eventFilter.setStartTimestampFrom(f);
+		startTimestampFrom = f;
 		return new FilterForGreaterBuilder<Instant, TestEventFilterBuilder>(f, this);
 	}
 	
 	public FilterForLessBuilder<Instant, TestEventFilterBuilder> startTimestampTo()
 	{
-		initIfNeeded();
 		FilterForLess<Instant> f = new FilterForLess<>();
-		eventFilter.setStartTimestampTo(f);
+		startTimestampTo = f;
 		return new FilterForLessBuilder<Instant, TestEventFilterBuilder>(f, this);
 	}
 	
 	public TestEventFilterBuilder parent(StoredTestEventId parentId)
 	{
-		initIfNeeded();
-		eventFilter.setParentId(parentId);
+		this.parentId = parentId;
+		this.root = false;
 		return this;
 	}
 	
 	public TestEventFilterBuilder root()
 	{
-		initIfNeeded();
-		eventFilter.setRoot();
+		root = true;
+		parentId = null;
 		return this;
 	}
 	
@@ -85,42 +96,56 @@ public class TestEventFilterBuilder
 	 */
 	public TestEventFilterBuilder limit(int limit)
 	{
-		initIfNeeded();
-		eventFilter.setLimit(limit);
+		this.limit = limit;
 		return this;
 	}
 
 	public TestEventFilterBuilder order(Order order)
 	{
-		initIfNeeded();
-		eventFilter.setOrder(order);
+		this.order = order;
 		return this;
 	}
 	
-	public TestEventFilterBuilder pageId(PageId pageId)
+	
+	public TestEventFilter build() throws CradleStorageException
 	{
-		initIfNeeded();
-		eventFilter.setPageId(pageId);
-		return this;
+		try
+		{
+			TestEventFilter result = createStoredTestEventFilter();
+			result.setStartTimestampFrom(startTimestampFrom);
+			result.setStartTimestampTo(startTimestampTo);
+			
+			if (root)
+				result.setRoot();
+			else
+				result.setParentId(parentId);
+			
+			result.setLimit(limit);
+			result.setOrder(order);
+			return result;
+		}
+		finally
+		{
+			reset();
+		}
 	}
 	
-	public TestEventFilter build()
+	
+	protected TestEventFilter createStoredTestEventFilter() throws CradleStorageException
 	{
-		initIfNeeded();
-		TestEventFilter result = eventFilter;
-		eventFilter = null;
-		return result;
+		return new TestEventFilter(bookId, scope, pageId);
 	}
 	
-	
-	private void initIfNeeded()
+	protected void reset()
 	{
-		if (eventFilter == null)
-			eventFilter = createStoredTestEventFilter();
-	}
-	
-	protected TestEventFilter createStoredTestEventFilter()
-	{
-		return new TestEventFilter();
+		bookId = null;
+		scope = null;
+		pageId = null;
+		startTimestampFrom = null;
+		startTimestampTo = null;
+		parentId = null;
+		root = false;
+		limit = 0;
+		order = Order.DIRECT;
 	}
 }

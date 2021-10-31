@@ -20,29 +20,41 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Order;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
+import com.exactpro.cradle.utils.CradleStorageException;
 
 public class TestEventFilter
 {
-	private BookId bookId;
-	private String scope;
+	private final BookId bookId;
+	private final String scope;
+	private final PageId pageId;
 	private FilterForGreater<Instant> startTimestampFrom;
 	private FilterForLess<Instant> startTimestampTo;
 	private StoredTestEventId parentId;
 	private boolean root;
 	private int limit;
 	private Order order = Order.DIRECT;
-	private PageId pageId;
 	
-	public TestEventFilter()
+	public TestEventFilter(BookId bookId, String scope, PageId pageId) throws CradleStorageException
 	{
+		this.bookId = bookId;
+		this.scope = scope;
+		this.pageId = pageId;
+		validate();
 	}
 	
-	public TestEventFilter(TestEventFilter copyFrom)
+	public TestEventFilter(BookId bookId, String scope) throws CradleStorageException
+	{
+		this(bookId, scope, null);
+	}
+	
+	public TestEventFilter(TestEventFilter copyFrom) throws CradleStorageException
 	{
 		this.bookId = copyFrom.getBookId();
 		this.scope = copyFrom.getScope();
@@ -58,6 +70,7 @@ public class TestEventFilter
 		this.limit = copyFrom.getLimit();
 		this.order = copyFrom.getOrder();
 		this.pageId = copyFrom.getPageId();
+		validate();
 	}
 	
 	
@@ -72,20 +85,14 @@ public class TestEventFilter
 		return bookId;
 	}
 	
-	public void setBookId(BookId bookId)
-	{
-		this.bookId = bookId;
-	}
-	
-	
 	public String getScope()
 	{
 		return scope;
 	}
 	
-	public void setScope(String scope)
+	public PageId getPageId()
 	{
-		this.scope = scope;
+		return pageId;
 	}
 	
 	
@@ -157,17 +164,6 @@ public class TestEventFilter
 	}
 	
 	
-	public PageId getPageId()
-	{
-		return pageId;
-	}
-	
-	public void setPageId(PageId pageId)
-	{
-		this.pageId = pageId;
-	}
-	
-	
 	@Override
 	public String toString()
 	{
@@ -189,5 +185,16 @@ public class TestEventFilter
 		if (pageId != null)
 			result.add("page=" + pageId);
 		return String.join(", ", result);
+	}
+	
+	
+	private void validate() throws CradleStorageException
+	{
+		if (bookId == null)
+			throw new CradleStorageException("bookId is mandatory");
+		if (StringUtils.isEmpty(scope))
+			throw new CradleStorageException("scope is mandatory");
+		if (pageId != null && !pageId.getBookId().equals(bookId))
+			throw new CradleStorageException("pageId must be from book '"+bookId+"'");
 	}
 }

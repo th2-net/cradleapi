@@ -150,12 +150,13 @@ public class TestEventEntity extends CradleEntity
 		if (event.isBatch())
 			setEventCount(event.asBatch().getTestEventsCount());
 		setEndTimestamp(event.getEndTimestamp());
-		//TODO: this.setLabels(event.getLabels());
-		
-		setCompressed(compressed);
 		
 		if (messages != null)
 			setMessages(ByteBuffer.wrap(messages));
+		
+		setStoredTimestamp(Instant.now());
+		setCompressed(compressed);
+		//TODO: this.setLabels(event.getLabels());
 		if (content != null)
 			setContent(ByteBuffer.wrap(content));
 	}

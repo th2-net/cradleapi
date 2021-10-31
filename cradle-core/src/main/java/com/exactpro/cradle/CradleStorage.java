@@ -823,16 +823,9 @@ public abstract class CradleStorage
 	
 	private boolean checkFilter(TestEventFilter filter) throws CradleStorageException
 	{
-		if (filter.getBookId() == null)
-			throw new CradleStorageException("bookId is mandatory");
-		
 		BookInfo book = bpc.getBook(filter.getBookId());
-		
 		if (filter.getPageId() != null)
 			bpc.checkPage(filter.getPageId(), book.getId());
-		
-		if (filter.getScope() == null)
-			throw new CradleStorageException("scope is mandatory");
 		
 		if (filter.getParentId() != null && !book.getId().equals(filter.getParentId().getBookId()))
 			throw new CradleStorageException("Requested book ("+book.getId()+") doesn't match book of requested parent ("+filter.getParentId()+")");

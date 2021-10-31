@@ -115,6 +115,9 @@ public class EventsWorker
 		return getBookOps(bookId).getTestEventOperator().get(pageId.getName(), id.getScope(), 
 					ldt.toLocalDate(), ldt.toLocalTime(), id.getId(), readAttrs)
 				.thenApplyAsync(r -> {
+					if (r == null)
+						return null;
+					
 					try
 					{
 						return r.toStoredTestEvent(pageId);
