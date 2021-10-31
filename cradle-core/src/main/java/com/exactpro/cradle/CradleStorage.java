@@ -767,8 +767,15 @@ public abstract class CradleStorage
 	private List<PageInfo> checkPages(List<PageToAdd> pages, BookInfo book) throws CradleStorageException
 	{
 		PageInfo lastPage = book.getLastPage();
-		if (lastPage != null && !pages.get(0).getStart().isAfter(lastPage.getStarted()))
-			throw new CradleStorageException("Timestamp of new page start must be after last page start ("+lastPage.getStarted()+")");
+		if (lastPage != null)  //If book has any pages, i.e. may have some data
+		{
+			Instant now = Instant.now(),
+					firstStart = pages.get(0).getStart();
+			if (!firstStart.isAfter(now))
+				throw new CradleStorageException("Timestamp of new page start must be after current timestamp ("+now+")");
+			if (!firstStart.isAfter(lastPage.getStarted()))
+				throw new CradleStorageException("Timestamp of new page start must be after last page start ("+lastPage.getStarted()+")");
+		}
 		
 		Set<String> names = new HashSet<>();
 		PageToAdd prevPage = null;

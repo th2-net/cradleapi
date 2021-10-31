@@ -42,8 +42,11 @@ public class BookAndPageChecker
 	public PageInfo findPage(BookId bookId, Instant timestamp) throws CradleStorageException
 	{
 		BookInfo book = getBook(bookId);
+		Instant now = Instant.now();
+		if (timestamp.isAfter(now))
+			throw new CradleStorageException("Timestamp "+timestamp+" is from future, now is "+now);
 		PageInfo page = book.findPage(timestamp);
-		if (page == null || (page.getEnded() != null && timestamp.isAfter(page.getEnded())))
+		if (page == null || (page.getEnded() != null && !timestamp.isBefore(page.getEnded())))  //If page.getEnded().equals(timestamp), timestamp is outside of page
 			throw new CradleStorageException("Book '"+bookId+"' has no page for timestamp "+timestamp);
 		return page;
 	}
