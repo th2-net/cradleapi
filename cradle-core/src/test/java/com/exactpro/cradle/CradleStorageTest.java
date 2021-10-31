@@ -34,7 +34,7 @@ public class CradleStorageTest
 			SCOPE = "Scope1",
 			EVENT_ID = "Event1";
 	private final BookId BOOK_ID = new BookId(BOOK);
-	private final Instant START_TIMESTAMP = Instant.now().plusSeconds(10000);
+	private final Instant START_TIMESTAMP = Instant.now();
 	private final StoredTestEventId DUMMY_EVENT_ID = new StoredTestEventId(BOOK_ID, SCOPE, START_TIMESTAMP, EVENT_ID);
 	
 	private CradleStorage storage;
@@ -44,7 +44,7 @@ public class CradleStorageTest
 	{
 		storage = new DummyCradleStorage();
 		storage.init(false);
-		storage.addBook(new BookToAdd(BOOK, Instant.now(), PAGE));
+		storage.addBook(new BookToAdd(BOOK, START_TIMESTAMP, PAGE));
 	}
 	
 	@DataProvider(name = "invalid events")
@@ -58,7 +58,7 @@ public class CradleStorageTest
 					{validEvent()
 							.id(new BookId(BOOK), SCOPE, Instant.EPOCH, EVENT_ID),                 //Too early
 							"no page for timestamp"},
-					{validEvent().endTimestamp(START_TIMESTAMP.minusMillis(5000)),                 //End before start
+					{validEvent().endTimestamp(START_TIMESTAMP.minusMillis(5000)),             //End before start
 							"cannot end sooner than it started"}
 				};
 	}
