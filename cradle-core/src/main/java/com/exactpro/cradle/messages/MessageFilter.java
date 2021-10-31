@@ -20,85 +20,89 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.filters.*;
+import com.exactpro.cradle.utils.CradleStorageException;
 
-public class StoredMessageFilter
+public class MessageFilter
 {
-	private BookId bookId;
-	private PageId pageId;
-	private FilterForEquals<String> sessionAlias;
-	private FilterForEquals<Direction> direction;
+	private final BookId bookId;
+	private final String sessionAlias;
+	private final Direction direction;
+	private final PageId pageId;
 	private FilterForGreater<Instant> timestampFrom;
 	private FilterForLess<Instant> timestampTo;
-	private FilterForAny<StoredMessageId> messageId;
+	private FilterForAny<Long> sequence;
 	private int limit;
 	private Order order = Order.DIRECT;
-
-	public static StoredMessageFilterBuilder builder(BookId bookId, String sessionAlias, Direction direction)
+	
+	public MessageFilter(BookId bookId, String sessionAlias, Direction direction, PageId pageId) throws CradleStorageException
 	{
-		return new StoredMessageFilterBuilder(bookId, sessionAlias, direction);
+		this.bookId = bookId;
+		this.sessionAlias = sessionAlias;
+		this.direction = direction;
+		this.pageId = pageId;
+		validate();
+	}
+	
+	public MessageFilter(BookId bookId, String sessionAlias, Direction direction) throws CradleStorageException
+	{
+		this(bookId, sessionAlias, direction, null);
 	}
 
-	protected StoredMessageFilter()
-	{
-
-	}
-
-	public StoredMessageFilter(StoredMessageFilter copyFrom)
+	public MessageFilter(MessageFilter copyFrom) throws CradleStorageException
 	{
 		this.bookId = copyFrom.getBookId();
-		this.pageId = copyFrom.getPageId();
 		this.sessionAlias = copyFrom.getSessionAlias();
 		this.direction = copyFrom.getDirection();
 		this.timestampFrom = copyFrom.getTimestampFrom();
 		this.timestampTo = copyFrom.getTimestampTo();
-		this.messageId = copyFrom.getMessageId();
+		this.sequence = copyFrom.getSequence();
 		this.limit = copyFrom.getLimit();
 		this.order = copyFrom.getOrder();
+		this.pageId = copyFrom.getPageId();
+		validate();
 	}
+	
+	
+	public static MessageFilterBuilder builder()
+	{
+		return new MessageFilterBuilder();
+	}
+	
+	public static MessageFilterBuilder next(StoredMessageId messageId, int limit)
+	{
+		return MessageFilterBuilder.next(messageId, limit);
+	}
+	
+	public static MessageFilterBuilder previous(StoredMessageId messageId, int limit)
+	{
+		return MessageFilterBuilder.previous(messageId, limit);
+	}
+
+	
+	
 
 	public BookId getBookId()
 	{
 		return bookId;
 	}
-
-	public void setBookId(BookId bookId)
-	{
-		this.bookId = bookId;
-	}
-
-
-	public PageId getPageId()
-	{
-		return pageId;
-	}
-
-	public void setPageId(PageId pageId)
-	{
-		this.pageId = pageId;
-	}
-
-
-	public FilterForEquals<String> getSessionAlias()
+	
+	public String getSessionAlias()
 	{
 		return sessionAlias;
 	}
 	
-	public void setSessionAlias(FilterForEquals<String> sessionAlias)
-	{
-		this.sessionAlias = sessionAlias;
-	}
-	
-	
-	public FilterForEquals<Direction> getDirection()
+	public Direction getDirection()
 	{
 		return direction;
 	}
 	
-	public void setDirection(FilterForEquals<Direction> direction)
+	public PageId getPageId()
 	{
-		this.direction = direction;
+		return pageId;
 	}
 	
 	
@@ -124,14 +128,14 @@ public class StoredMessageFilter
 	}
 	
 	
-	public FilterForAny<StoredMessageId> getMessageId()
+	public FilterForAny<Long> getSequence()
 	{
-		return messageId;
+		return sequence;
 	}
 	
-	public void setMessageId(FilterForAny<StoredMessageId> messageId)
+	public void setSequence(FilterForAny<Long> sequence)
 	{
-		this.messageId = messageId;
+		this.sequence = sequence;
 	}
 	
 	
@@ -161,21 +165,37 @@ public class StoredMessageFilter
 	public String toString()
 	{
 		List<String> result = new ArrayList<>(10);
-		result.add("pageId=" + pageId);
+		if (bookId != null)
+			result.add("bookId=" + bookId);
 		if (sessionAlias != null)
-			result.add("session alias" + sessionAlias);
+			result.add("sessionAlias=" + sessionAlias);
 		if (direction != null)
-			result.add("direction" + direction);
+			result.add("direction=" + direction);
 		if (timestampFrom != null)
 			result.add("timestamp" + timestampFrom);
 		if (timestampTo != null)
 			result.add("timestamp" + timestampTo);
-		if (messageId != null)
-			result.add("sequence" + messageId);
+		if (sequence != null)
+			result.add("sequence" + sequence);
 		if (limit > 0)
 			result.add("limit=" + limit);
 		if (order != null)
 			result.add("order=" + order);
+		if (pageId != null)
+			result.add("pageId=" + pageId.getName());
 		return String.join(", ", result);
+	}
+	
+	
+	private void validate() throws CradleStorageException
+	{
+		if (bookId == null)
+			throw new CradleStorageException("bookId is mandatory");
+		if (StringUtils.isEmpty(sessionAlias))
+			throw new CradleStorageException("sessionAlias is mandatory");
+		if (direction == null)
+			throw new CradleStorageException("direction is mandatory");
+		if (pageId != null && !pageId.getBookId().equals(bookId))
+			throw new CradleStorageException("pageId must be from book '"+bookId+"'");
 	}
 }

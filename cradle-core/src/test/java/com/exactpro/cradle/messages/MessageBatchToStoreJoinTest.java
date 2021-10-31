@@ -177,16 +177,16 @@ public class MessageBatchToStoreJoinTest
         long begin = startSequence;
         Instant timestamp = startTimestamp;
         while (messageCount-- > 0) {
-            MessageToStore toStore = new MessageToStore();
-            toStore.setBook(bookId);
-            toStore.setSequence(begin++);
-            toStore.setDirection(direction);
-            toStore.setSessionAlias(sessionAlias);
-            toStore.setTimestamp(timestamp);
+            MessageToStoreBuilder toStore = MessageToStore.builder()
+                    .bookId(bookId)
+                    .sessionAlias(sessionAlias)
+                    .direction(direction)
+                    .timestamp(timestamp)
+                    .sequence(begin++);
             if (contentSizePerMessage > 0) {
-                toStore.setContent(new byte[contentSizePerMessage]);
+                toStore = toStore.content(new byte[contentSizePerMessage]);
             }
-            messageBatchToStore.addMessage(toStore);
+            messageBatchToStore.addMessage(toStore.build());
             
             timestamp = timestamp.plusMillis(1);
         }

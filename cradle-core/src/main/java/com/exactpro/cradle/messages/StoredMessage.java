@@ -33,15 +33,15 @@ public class StoredMessage implements Serializable, CradleMessage
 	private static final long serialVersionUID = 5602557739148866986L;
 	
 	private final StoredMessageId id;
-	private final StoredMessageMetadata metadata;
 	private final byte[] content;
+	private final StoredMessageMetadata metadata;
 	private final PageId pageId;
 	
 	public StoredMessage(CradleMessage message, StoredMessageId id, PageId pageId)
 	{
 		this.id = id;
-		this.metadata = message.getMetadata() != null ? new StoredMessageMetadata(message.getMetadata()) : null;
 		this.content = message.getContent();
+		this.metadata = message.getMetadata() != null ? new StoredMessageMetadata(message.getMetadata()) : null;
 		this.pageId = pageId;
 	}
 	
@@ -91,17 +91,17 @@ public class StoredMessage implements Serializable, CradleMessage
 	}
 
 	@Override
-	public StoredMessageMetadata getMetadata()
-	{
-		return metadata;
-	}
-
-	@Override
 	public byte[] getContent()
 	{
 		return content;
 	}
 	
+	@Override
+	public StoredMessageMetadata getMetadata()
+	{
+		return metadata;
+	}
+
 	public PageId getPageId()
 	{
 		return pageId;
@@ -161,8 +161,8 @@ public class StoredMessage implements Serializable, CradleMessage
 		return new StringBuilder()
 				.append("StoredMessage{").append(CompressionUtils.EOL)
 				.append("id=").append(id).append(",").append(CompressionUtils.EOL)
-				.append("metadata=").append(getMetadata()).append(",").append(CompressionUtils.EOL)
 				.append("content=").append(Arrays.toString(getContent())).append(CompressionUtils.EOL)
+				.append("metadata=").append(getMetadata()).append(",").append(CompressionUtils.EOL)
 				.append("pageId=").append(getPageId()).append(CompressionUtils.EOL)
 				.append("}").toString();
 	}

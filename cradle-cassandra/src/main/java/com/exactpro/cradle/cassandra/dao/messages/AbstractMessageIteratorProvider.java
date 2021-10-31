@@ -23,12 +23,9 @@ import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
-import com.exactpro.cradle.filters.ComparisonOperation;
-import com.exactpro.cradle.filters.FilterForAny;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
-import com.exactpro.cradle.messages.StoredMessageFilter;
-import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.messages.MessageFilter;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 import java.time.Instant;
@@ -45,12 +42,12 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 	protected final FilterForLess<Instant> rightBoundFilter;
 	protected PageInfo firstPage, lastPage;
 	protected final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
-	protected final StoredMessageFilter filter;
+	protected final MessageFilter filter;
 	protected final int limit;
 	protected final AtomicInteger returned;
 	protected CassandraStoredMessageFilter cassandraFilter;
 
-	public AbstractMessageIteratorProvider(String requestInfo, StoredMessageFilter filter, BookOperators ops, BookInfo book,
+	public AbstractMessageIteratorProvider(String requestInfo, MessageFilter filter, BookOperators ops, BookInfo book,
 			ExecutorService composingService,
 			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException
 	{
@@ -67,7 +64,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		this.cassandraFilter = createInitialFilter(filter);
 	}
 
-	protected FilterForGreater<Instant> createLeftBoundFilter(StoredMessageFilter filter) throws CradleStorageException
+	protected FilterForGreater<Instant> createLeftBoundFilter(MessageFilter filter) throws CradleStorageException
 	{
 		Instant leftBoundFromFilter = getLeftBoundFromFilter(filter, book);
 		FilterForGreater<Instant> result = leftBoundFromFilter == null ? null : FilterForGreater.forGreaterOrEquals(leftBoundFromFilter);
@@ -82,7 +79,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		return result;
 	}
 
-	protected FilterForLess<Instant> createRightBoundFilter(StoredMessageFilter filter)
+	protected FilterForLess<Instant> createRightBoundFilter(MessageFilter filter)
 	{
 		Instant rightBoundFromFilter = getRightBoundFromFilter(filter, book);
 		FilterForLess<Instant> result = FilterForLess.forLessOrEquals(rightBoundFromFilter);
@@ -92,10 +89,10 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		return FilterForLess.forLessOrEquals(endOfPage.isBefore(rightBoundFromFilter) ? endOfPage : rightBoundFromFilter);
 	}
 
-	protected CassandraStoredMessageFilter createInitialFilter(StoredMessageFilter filter)
+	protected CassandraStoredMessageFilter createInitialFilter(MessageFilter filter)
 	{
-		return new CassandraStoredMessageFilter(firstPage.getId().getName(), filter.getSessionAlias().getValue(),
-				filter.getDirection().getValue().getLabel(), leftBoundFilter, rightBoundFilter, filter.getMessageId());
+		return new CassandraStoredMessageFilter(firstPage.getId().getName(), filter.getSessionAlias(),
+				filter.getDirection().getLabel(), leftBoundFilter, rightBoundFilter, filter.getSequence());
 	}
 
 	protected CassandraStoredMessageFilter createNextFilter(CassandraStoredMessageFilter prevFilter)
@@ -107,22 +104,15 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		PageInfo nextPage = book.getNextPage(prevPage.getStarted());
 
 		return new CassandraStoredMessageFilter(nextPage.getId().getName(), prevFilter.getSessionAlias(),
-				prevFilter.getDirection(), leftBoundFilter, rightBoundFilter, prevFilter.getMessageId());
+				prevFilter.getDirection(), leftBoundFilter, rightBoundFilter, prevFilter.getSequence());
 	}
 
-	public static Instant getLeftBoundFromFilter(StoredMessageFilter filter, BookInfo book)
+	public static Instant getLeftBoundFromFilter(MessageFilter filter, BookInfo book)
 	{
 		if (filter == null)
 			return null;
 
-		FilterForAny<StoredMessageId> messageId = filter.getMessageId();
 		Instant result = null;
-		if (messageId != null && (messageId.getOperation() == ComparisonOperation.GREATER_OR_EQUALS
-				|| messageId.getOperation() == ComparisonOperation.GREATER))
-		{
-			result = messageId.getValue().getTimestamp();
-		}
-
 		FilterForGreater<Instant> filterFrom = filter.getTimestampFrom();
 		if (filterFrom != null)
 		{
@@ -141,19 +131,12 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		return result;
 	}
 
-	public static Instant getRightBoundFromFilter(StoredMessageFilter filter, BookInfo book)
+	public static Instant getRightBoundFromFilter(MessageFilter filter, BookInfo book)
 	{
 		if (filter == null)
 			return null;
 
-		FilterForAny<StoredMessageId> messageId = filter.getMessageId();
 		Instant result = null;
-		if (messageId != null && (messageId.getOperation() == ComparisonOperation.LESS_OR_EQUALS
-				|| messageId.getOperation() == ComparisonOperation.LESS))
-		{
-			result = messageId.getValue().getTimestamp();
-		}
-
 		FilterForLess<Instant> filterTo = filter.getTimestampTo();
 		if (filterTo != null)
 		{

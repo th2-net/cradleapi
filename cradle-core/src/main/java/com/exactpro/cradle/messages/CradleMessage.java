@@ -24,37 +24,63 @@ import java.time.Instant;
 public interface CradleMessage
 {
 	/**
-	 * @return ID of book the message is related to
+	 * @return ID of message
 	 */
-	BookId getBookId();
-
+	StoredMessageId getId();
+	
 	/**
-	 * @return alias of session the message is related to
+	 * @return message content
 	 */
-	String getSessionAlias();
-
-	/**
-	 * @return direction in which the message went through the session
-	 */
-	Direction getDirection();
-
-	/**
-	 * @return timestamp of message creation
-	 */
-	Instant getTimestamp();
-
-	/**
-	 * @return sequence number the message has for its session, direction and timestamp
-	 */
-	long getSequence();
-
+	byte[] getContent();
+	
 	/**
 	 * @return metadata attached to message
 	 */
 	StoredMessageMetadata getMetadata();
 
+	
 	/**
-	 * @return message content
+	 * @return ID of book the message is related to
 	 */
-	byte[] getContent();
+	public default BookId getBookId()
+	{
+		StoredMessageId id = getId();
+		return id != null ? id.getBookId() : null;
+	}
+	
+	/**
+	 * @return alias of session the message is related to
+	 */
+	public default String getSessionAlias()
+	{
+		StoredMessageId id = getId();
+		return id != null ? id.getSessionAlias() : null;
+	}
+	
+	/**
+	 * @return direction in which the message went through the session
+	 */
+	public default Direction getDirection()
+	{
+		StoredMessageId id = getId();
+		return id != null ? id.getDirection() : null;
+	}
+	
+	/**
+	 * @return timestamp of message creation
+	 */
+	public default Instant getTimestamp()
+	{
+		StoredMessageId id = getId();
+		return id != null ? id.getTimestamp() : null;
+	}
+
+	/**
+	 * @return sequence number the message has for its session, direction and timestamp
+	 */
+	public default long getSequence()
+	{
+		StoredMessageId id = getId();
+		return id != null ? id.getSequence() : null;
+	}
 }

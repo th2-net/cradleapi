@@ -481,7 +481,7 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	
 	@Override
-	protected CradleResultSet<StoredMessage> doGetMessages(StoredMessageFilter filter, BookInfo book) throws IOException
+	protected CradleResultSet<StoredMessage> doGetMessages(MessageFilter filter, BookInfo book) throws IOException
 	{
 		try
 		{
@@ -494,18 +494,18 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected CompletableFuture<CradleResultSet<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter, BookInfo book)
+	protected CompletableFuture<CradleResultSet<StoredMessage>> doGetMessagesAsync(MessageFilter filter, BookInfo book)
 			throws CradleStorageException
 	{
-		StoredMessagesIteratorProvider provider =
-				new StoredMessagesIteratorProvider("get messages filtered by " + filter, filter,
+		MessagesIteratorProvider provider =
+				new MessagesIteratorProvider("get messages filtered by " + filter, filter,
 						ops.getOperators(book.getId()), book, composingService, readAttrs);
 		return provider.nextIterator()
 				.thenApply(r -> new CassandraCradleResultSet<>(r, provider));
 	}
 	
 	@Override
-	protected CradleResultSet<StoredMessageBatch> doGetMessageBatches(StoredMessageFilter filter, BookInfo book) throws IOException
+	protected CradleResultSet<StoredMessageBatch> doGetMessageBatches(MessageFilter filter, BookInfo book) throws IOException
 	{
 		try
 		{
@@ -518,11 +518,11 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetMessageBatchesAsync(StoredMessageFilter filter, BookInfo book)
+	protected CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetMessageBatchesAsync(MessageFilter filter, BookInfo book)
 			throws CradleStorageException
 	{
-		MessageBatchIteratorProvider provider =
-				new MessageBatchIteratorProvider("get messages batches filtered by " + filter, filter,
+		MessageBatchesIteratorProvider provider =
+				new MessageBatchesIteratorProvider("get messages batches filtered by " + filter, filter,
 						ops.getOperators(book.getId()), book, composingService, readAttrs);
 		return provider.nextIterator()
 				.thenApply(r -> new CassandraCradleResultSet<>(r, provider));

@@ -16,40 +16,32 @@
 
 package com.exactpro.cradle.messages;
 
-import java.time.Instant;
 import java.util.Arrays;
 
-import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.utils.CompressionUtils;
+import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.MessageUtils;
 
 /**
  * Object to hold information about one message prepared to be stored in Cradle
  */
 public class MessageToStore implements CradleMessage
 {
-	private BookId bookId;
-	private String sessionAlias;
-	private Direction direction;
-	private Instant timestamp;
-	private long sequence;
+	private final StoredMessageId id;
+	private final byte[] content;
 	private MessageMetadata metadata;
-	private byte[] content;
 	
-	public MessageToStore()
+	public MessageToStore(StoredMessageId id, byte[] content) throws CradleStorageException
 	{
-		sequence = -1;
+		this.id = id;
+		this.content = content;
+		MessageUtils.validateMessage(this);
 	}
 	
-	public MessageToStore(MessageToStore copyFrom)
+	public MessageToStore(MessageToStore copyFrom) throws CradleStorageException
 	{
-		this.bookId = copyFrom.getBookId();
-		this.sessionAlias = copyFrom.getSessionAlias();
-		this.direction = copyFrom.getDirection();
-		this.sequence = copyFrom.getSequence();
-		this.timestamp = copyFrom.getTimestamp();
+		this(copyFrom.getId(), copyFrom.getContent());
 		this.metadata = copyFrom.getMetadata() != null ? new MessageMetadata(copyFrom.getMetadata()) : null;
-		this.content = copyFrom.getContent();
 	}
 
 	public static MessageToStoreBuilder builder()
@@ -57,65 +49,20 @@ public class MessageToStore implements CradleMessage
 		return new MessageToStoreBuilder();
 	}
 	
+	
 	@Override
-	public BookId getBookId()
+	public StoredMessageId getId()
 	{
-		return bookId;
+		return id;
 	}
 	
-	public void setBook(BookId book)
-	{
-		this.bookId = book;
-	}
-
-
 	@Override
-	public String getSessionAlias()
+	public byte[] getContent()
 	{
-		return sessionAlias;
+		return content;
 	}
 	
-	public void setSessionAlias(String sessionAlias)
-	{
-		this.sessionAlias = sessionAlias;
-	}
-
-
-	@Override
-	public Direction getDirection()
-	{
-		return direction;
-	}
 	
-	public void setDirection(Direction direction)
-	{
-		this.direction = direction;
-	}
-
-
-	@Override
-	public Instant getTimestamp()
-	{
-		return timestamp;
-	}
-	
-	public void setTimestamp(Instant timestamp)
-	{
-		this.timestamp = timestamp;
-	}
-
-
-	@Override
-	public long getSequence()
-	{
-		return sequence;
-	}
-	
-	public void setSequence(long sequence)
-	{
-		this.sequence = sequence;
-	}
-
 	@Override
 	public MessageMetadata getMetadata()
 	{
@@ -133,18 +80,6 @@ public class MessageToStore implements CradleMessage
 			metadata = new MessageMetadata();
 		metadata.add(key, value);
 	}
-
-
-	@Override
-	public byte[] getContent()
-	{
-		return content;
-	}
-	
-	public void setContent(byte[] message)
-	{
-		this.content = message;
-	}
 	
 	
 	@Override
@@ -152,13 +87,9 @@ public class MessageToStore implements CradleMessage
 	{
 		return new StringBuilder()
 				.append("MessageToStore{").append(CompressionUtils.EOL)
-				.append("bookId=").append(bookId).append(",").append(CompressionUtils.EOL)
-				.append("sessionAlias=").append(sessionAlias).append(",").append(CompressionUtils.EOL)
-				.append("direction=").append(direction).append(",").append(CompressionUtils.EOL)
-				.append("sequence=").append(sequence).append(",").append(CompressionUtils.EOL)
-				.append("timestamp=").append(timestamp).append(",").append(CompressionUtils.EOL)
-				.append("metadata=").append(metadata).append(",").append(CompressionUtils.EOL)
+				.append("id=").append(id).append(",").append(CompressionUtils.EOL)
 				.append("content=").append(Arrays.toString(content)).append(CompressionUtils.EOL)
+				.append("metadata=").append(metadata).append(",").append(CompressionUtils.EOL)
 				.append("}").toString();
 	}
 }

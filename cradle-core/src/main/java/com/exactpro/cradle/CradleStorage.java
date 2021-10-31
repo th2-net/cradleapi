@@ -113,13 +113,13 @@ public abstract class CradleStorage
 	protected abstract CompletableFuture<StoredMessageBatch> doGetMessageBatchAsync(StoredMessageId id, PageId pageId)
 			throws CradleStorageException;
 	
-	protected abstract CradleResultSet<StoredMessage> doGetMessages(StoredMessageFilter filter, BookInfo book) 
+	protected abstract CradleResultSet<StoredMessage> doGetMessages(MessageFilter filter, BookInfo book) 
 			throws IOException, CradleStorageException;
-	protected abstract CompletableFuture<CradleResultSet<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter, BookInfo book)
+	protected abstract CompletableFuture<CradleResultSet<StoredMessage>> doGetMessagesAsync(MessageFilter filter, BookInfo book)
 			throws CradleStorageException;
-	protected abstract CradleResultSet<StoredMessageBatch> doGetMessageBatches(StoredMessageFilter filter, BookInfo book) 
+	protected abstract CradleResultSet<StoredMessageBatch> doGetMessageBatches(MessageFilter filter, BookInfo book) 
 			throws IOException, CradleStorageException;
-	protected abstract CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetMessageBatchesAsync(StoredMessageFilter filter,
+	protected abstract CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetMessageBatchesAsync(MessageFilter filter,
 			BookInfo book) throws CradleStorageException;
 	
 	protected abstract long doGetLastSequence(String sessionAlias, Direction direction, BookId bookId)
@@ -528,11 +528,14 @@ public abstract class CradleStorage
 	 * @param filter defines conditions to filter messages by
 	 * @return result set to enumerate messages
 	 * @throws IOException if data retrieval failed
-	 * @throws CradleStorageException if given parameter is invalid
+	 * @throws CradleStorageException if filter is invalid
 	 */
-	public final CradleResultSet<StoredMessage> getMessages(StoredMessageFilter filter) throws IOException, CradleStorageException
+	public final CradleResultSet<StoredMessage> getMessages(MessageFilter filter) throws IOException, CradleStorageException
 	{
 		logger.debug("Filtering messages by {}", filter);
+		if (!checkFilter(filter))
+			return new EmptyResultSet<>();
+		
 		BookInfo book = bpc.getBook(filter.getBookId());
 		CradleResultSet<StoredMessage> result = doGetMessages(filter, book);
 		logger.debug("Got result set with messages filtered by {}", filter);
@@ -543,11 +546,14 @@ public abstract class CradleStorage
 	 * Allows to asynchronously obtain result set to enumerate stored messages filtering them by given conditions
 	 * @param filter defines conditions to filter messages by
 	 * @return future to obtain result set to enumerate messages
-	 * @throws CradleStorageException if given parameter is invalid
+	 * @throws CradleStorageException if filter is invalid
 	 */
-	public final CompletableFuture<CradleResultSet<StoredMessage>> getMessagesAsync(StoredMessageFilter filter) throws CradleStorageException
+	public final CompletableFuture<CradleResultSet<StoredMessage>> getMessagesAsync(MessageFilter filter) throws CradleStorageException
 	{
 		logger.debug("Asynchronously getting messages filtered by {}", filter);
+		if (!checkFilter(filter))
+			return CompletableFuture.completedFuture(new EmptyResultSet<>());
+		
 		BookInfo book = bpc.getBook(filter.getBookId());
 		CompletableFuture<CradleResultSet<StoredMessage>> result = doGetMessagesAsync(filter, book);
 		result.whenCompleteAsync((r, error) -> {
@@ -565,11 +571,14 @@ public abstract class CradleStorage
 	 * @param filter defines conditions to filter message batches by
 	 * @return result set to enumerate message batches
 	 * @throws IOException if data retrieval failed
-	 * @throws CradleStorageException if given parameter is invalid
+	 * @throws CradleStorageException if filter is invalid
 	 */
-	public final CradleResultSet<StoredMessageBatch> getMessageBatches(StoredMessageFilter filter) throws IOException, CradleStorageException
+	public final CradleResultSet<StoredMessageBatch> getMessageBatches(MessageFilter filter) throws IOException, CradleStorageException
 	{
 		logger.debug("Filtering message batches by {}", filter);
+		if (!checkFilter(filter))
+			return new EmptyResultSet<>();
+		
 		BookInfo book = bpc.getBook(filter.getBookId());
 		CradleResultSet<StoredMessageBatch> result = doGetMessageBatches(filter, book);
 		logger.debug("Got result set with message batches filtered by {}", filter);
@@ -580,11 +589,14 @@ public abstract class CradleStorage
 	 * Allows to asynchronously obtain result set to enumerate stored message batches filtering them by given conditions
 	 * @param filter defines conditions to filter message batches by
 	 * @return future to obtain result set to enumerate message batches
-	 * @throws CradleStorageException if given parameter is invalid
+	 * @throws CradleStorageException if filter is invalid
 	 */
-	public final CompletableFuture<CradleResultSet<StoredMessageBatch>> getMessageBatchesAsync(StoredMessageFilter filter) throws CradleStorageException
+	public final CompletableFuture<CradleResultSet<StoredMessageBatch>> getMessageBatchesAsync(MessageFilter filter) throws CradleStorageException
 	{
 		logger.debug("Asynchronously getting message batches filtered by {}", filter);
+		if (!checkFilter(filter))
+			return CompletableFuture.completedFuture(new EmptyResultSet<>());
+		
 		BookInfo book = bpc.getBook(filter.getBookId());
 		CompletableFuture<CradleResultSet<StoredMessageBatch>> result = doGetMessageBatchesAsync(filter, book);
 		result.whenCompleteAsync((r, error) -> {
@@ -790,6 +802,16 @@ public abstract class CradleStorage
 					null, 
 					prevPage.getComment()));
 		return result;
+	}
+	
+	private boolean checkFilter(MessageFilter filter) throws CradleStorageException
+	{
+		BookInfo book = bpc.getBook(filter.getBookId());
+		if (filter.getPageId() != null)
+			bpc.checkPage(filter.getPageId(), book.getId());
+		
+		//TODO: add more checks
+		return true;
 	}
 	
 	private boolean checkFilter(TestEventFilter filter) throws CradleStorageException

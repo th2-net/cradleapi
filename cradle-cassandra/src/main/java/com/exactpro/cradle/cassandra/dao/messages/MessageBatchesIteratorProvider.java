@@ -22,7 +22,7 @@ import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.messages.StoredMessageBatch;
-import com.exactpro.cradle.messages.StoredMessageFilter;
+import com.exactpro.cradle.messages.MessageFilter;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,11 +32,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
-public class MessageBatchIteratorProvider extends AbstractMessageIteratorProvider<StoredMessageBatch>
+public class MessageBatchesIteratorProvider extends AbstractMessageIteratorProvider<StoredMessageBatch>
 {
-	private static final Logger logger = LoggerFactory.getLogger(MessageBatchIteratorProvider.class);
+	private static final Logger logger = LoggerFactory.getLogger(MessageBatchesIteratorProvider.class);
 
-	public MessageBatchIteratorProvider(String requestInfo, StoredMessageFilter filter, BookOperators ops, BookInfo book,
+	public MessageBatchesIteratorProvider(String requestInfo, MessageFilter filter, BookOperators ops, BookInfo book,
 			ExecutorService composingService,
 			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException
 	{

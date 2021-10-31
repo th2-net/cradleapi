@@ -79,11 +79,11 @@ public class MessageBatchToStoreTest
 	{
 		return new Object[][]
 				{
-					{builder.build()},                                                                                       //Empty message
-					{builder.bookId(book).build()},                                                                          //Only book is set
-					{builder.bookId(book).sessionAlias(sessionAlias).direction(null).timestamp(null).build()},               //Only book and session are set
-					{builder.bookId(book).sessionAlias(sessionAlias).direction(direction).timestamp(null).build()},          //Only book, session and direction are set
-					{builder.bookId(book).sessionAlias(sessionAlias).direction(direction).timestamp(Instant.now()).build()}  //Content is not set
+					{builder},                                                                                       //Empty message
+					{builder.bookId(book)},                                                                          //Only book is set
+					{builder.bookId(book).sessionAlias(sessionAlias).direction(null).timestamp(null)},               //Only book and session are set
+					{builder.bookId(book).sessionAlias(sessionAlias).direction(direction).timestamp(null)},          //Only book, session and direction are set
+					{builder.bookId(book).sessionAlias(sessionAlias).direction(direction).timestamp(Instant.now())}  //Content is not set
 				};
 	}
 	
@@ -208,10 +208,10 @@ public class MessageBatchToStoreTest
 	@Test(dataProvider = "invalid messages",
 			expectedExceptions = {CradleStorageException.class},
 			expectedExceptionsMessageRegExp = "Message must .*")
-	public void batchValidatesMessages(MessageToStore msg) throws CradleStorageException
+	public void messageValidation(MessageToStoreBuilder builder) throws CradleStorageException
 	{
 		MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE);
-		batch.addMessage(msg);
+		batch.addMessage(builder.build());
 	}
 	
 	@Test

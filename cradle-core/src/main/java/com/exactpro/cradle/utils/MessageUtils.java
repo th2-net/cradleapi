@@ -44,14 +44,17 @@ public class MessageUtils
 	 */
 	public static void validateMessage(CradleMessage message) throws CradleStorageException
 	{
+		if (message.getId() == null)
+			throw new CradleStorageException("Messages ID cannot be null");
+			
 		if (message.getBookId() == null)
-			throw new CradleStorageException("Message must have book ID");
+			throw new CradleStorageException("Message must have a book");
 		if (StringUtils.isEmpty(message.getSessionAlias()))
-			throw new CradleStorageException("Message must have session alias");
+			throw new CradleStorageException("Message must have a session alias");
 		if (message.getDirection() == null)
-			throw new CradleStorageException("Message must have direction");
+			throw new CradleStorageException("Message must have a direction");
 		if (message.getTimestamp() == null)
-			throw new CradleStorageException("Message must have timestamp");
+			throw new CradleStorageException("Message must have a timestamp");
 		if (ArrayUtils.isEmpty(message.getContent()))
 			throw new CradleStorageException("Message must have content");
 	}

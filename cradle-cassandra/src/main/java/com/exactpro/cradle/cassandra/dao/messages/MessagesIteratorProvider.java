@@ -25,7 +25,7 @@ import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
-import com.exactpro.cradle.messages.StoredMessageFilter;
+import com.exactpro.cradle.messages.MessageFilter;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TimeUtils;
 import org.slf4j.Logger;
@@ -43,11 +43,11 @@ import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.MESSAGE_TIME;
 
-public class StoredMessagesIteratorProvider extends AbstractMessageIteratorProvider<StoredMessage>
+public class MessagesIteratorProvider extends AbstractMessageIteratorProvider<StoredMessage>
 {
-	private static final Logger logger = LoggerFactory.getLogger(StoredMessagesIteratorProvider.class);
+	private static final Logger logger = LoggerFactory.getLogger(MessagesIteratorProvider.class);
 
-	public StoredMessagesIteratorProvider(String requestInfo, StoredMessageFilter filter, BookOperators ops, BookInfo book,
+	public MessagesIteratorProvider(String requestInfo, MessageFilter filter, BookOperators ops, BookInfo book,
 			ExecutorService composingService,
 			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException
 	{
@@ -55,13 +55,13 @@ public class StoredMessagesIteratorProvider extends AbstractMessageIteratorProvi
 	}
 
 	@Override
-	protected FilterForGreater<Instant> createLeftBoundFilter(StoredMessageFilter filter) throws CradleStorageException
+	protected FilterForGreater<Instant> createLeftBoundFilter(MessageFilter filter) throws CradleStorageException
 	{
 		FilterForGreater<Instant> result = super.createLeftBoundFilter(filter);
 		LocalDateTime leftBoundLocalDate = TimeUtils.toLocalTimestamp(result.getValue());
 		//A batch with a smaller date can contain messages that satisfy the original condition
-		LocalTime nearestBatchTime = getNearestBatchTime(firstPage.getId().getName(), filter.getSessionAlias().getValue(),
-				filter.getDirection().getValue().getLabel(), leftBoundLocalDate.toLocalDate(),
+		LocalTime nearestBatchTime = getNearestBatchTime(firstPage.getId().getName(), filter.getSessionAlias(),
+				filter.getDirection().getLabel(), leftBoundLocalDate.toLocalDate(),
 				leftBoundLocalDate.toLocalTime());
 
 		if (nearestBatchTime != null)

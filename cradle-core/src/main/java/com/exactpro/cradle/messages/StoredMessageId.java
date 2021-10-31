@@ -33,7 +33,7 @@ import org.apache.commons.lang3.StringUtils;
  * All messages have sequence number, scoped by direction and session the message is related to.
  * Message sequence in conjunction with session alias, direction of the message and its timestamp form the message ID
  */
-public class StoredMessageId implements Serializable, Comparable<StoredMessageId>
+public class StoredMessageId implements Serializable
 {
 	private static final long serialVersionUID = -6014720618704186254L;
 	public static final String ID_PARTS_DELIMITER = EscapeUtils.DELIMITER_STR;
@@ -121,23 +121,5 @@ public class StoredMessageId implements Serializable, Comparable<StoredMessageId
 		return Objects.equals(bookId, other.bookId) && Objects.equals(sessionAlias, other.sessionAlias)
 				&& direction == other.direction && Objects.equals(timestamp, other.timestamp)
 				&& sequence == other.sequence;
-	}
-
-	@Override
-	public int compareTo(StoredMessageId o)
-	{
-		int result = bookId.getName().compareTo(o.getBookId().getName());
-		if (result != 0)
-			return result;
-		result = sessionAlias.compareTo(o.getSessionAlias());
-		if (result != 0 )
-			return result;
-		result = direction.compareTo(o.getDirection());
-		if (result != 0 )
-			return result;
-		result = timestamp.compareTo(o.getTimestamp());
-		if (result != 0)
-			return result;
-		return Long.compare(sequence, o.getSequence());
 	}
 }

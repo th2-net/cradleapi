@@ -22,8 +22,7 @@ import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
-import com.exactpro.cradle.messages.StoredMessageFilter;
-import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.messages.MessageFilter;
 
 import java.time.Instant;
 import java.util.Iterator;
@@ -36,7 +35,7 @@ public class FilteredMessageIterator implements Iterator<StoredMessage>
 	private final AtomicInteger returned;
 	private final Iterator<StoredMessage> it;
 
-	public FilteredMessageIterator(Iterator<StoredMessageBatch> batchIterator, StoredMessageFilter filter, int limit,
+	public FilteredMessageIterator(Iterator<StoredMessageBatch> batchIterator, MessageFilter filter, int limit,
 			AtomicInteger returned)
 	{
 		this.limit = limit;
@@ -48,17 +47,17 @@ public class FilteredMessageIterator implements Iterator<StoredMessage>
 				.iterator();
 	}
 
-	private Predicate<StoredMessage> createFilterPredicate(StoredMessageFilter filter)
+	private Predicate<StoredMessage> createFilterPredicate(MessageFilter filter)
 	{
 		if (filter == null)
 			return storedMessage -> true;
 
-		FilterForAny<StoredMessageId> messageId = filter.getMessageId();
+		FilterForAny<Long> sequence = filter.getSequence();
 		FilterForGreater<Instant> timestampFrom = filter.getTimestampFrom();
 		FilterForLess<Instant> timestampTo = filter.getTimestampTo();
 
 		return storedMessage ->
-					(messageId == null || messageId.check(storedMessage.getId()))
+					(sequence == null || sequence.check(storedMessage.getId().getSequence()))
 					&& (timestampFrom == null || timestampFrom.check(storedMessage.getTimestamp()))
 					&& (timestampTo == null || timestampTo.check(storedMessage.getTimestamp()));
 	}

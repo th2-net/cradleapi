@@ -20,87 +20,115 @@ import java.time.Instant;
 
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
  * Builder for MessageToStore object. After calling {@link #build()} method, the builder can be reused to build new message
  */
 public class MessageToStoreBuilder
 {
-	private MessageToStore msg;
+	private BookId bookId;
+	private String sessionAlias;
+	private Direction direction;
+	private Instant timestamp;
+	private long sequence;
+	private byte[] content;
+	private MessageMetadata metadata;
 	
-	public MessageToStoreBuilder()
+	
+	public MessageToStoreBuilder bookId(BookId bookId)
 	{
-		msg = createMessageToStore();
-	}
-	
-	
-	protected MessageToStore createMessageToStore()
-	{
-		return new MessageToStore();
-	}
-	
-	private void initIfNeeded()
-	{
-		if (msg == null)
-			msg = createMessageToStore();
-	}
-	
-	
-	public MessageToStoreBuilder bookId(BookId book)
-	{
-		initIfNeeded();
-		msg.setBook(book);
+		this.bookId = bookId;
 		return this;
 	}
 	
 	public MessageToStoreBuilder sessionAlias(String sessionAlias)
 	{
-		initIfNeeded();
-		msg.setSessionAlias(sessionAlias);
+		this.sessionAlias = sessionAlias;
 		return this;
 	}
 	
-	public MessageToStoreBuilder direction(Direction d)
+	public MessageToStoreBuilder direction(Direction direction)
 	{
-		initIfNeeded();
-		msg.setDirection(d);
+		this.direction = direction;
 		return this;
 	}
 	
 	public MessageToStoreBuilder timestamp(Instant timestamp)
 	{
-		initIfNeeded();
-		msg.setTimestamp(timestamp);
+		this.timestamp = timestamp;
 		return this;
 	}
 	
 	public MessageToStoreBuilder sequence(long sequence)
 	{
-		initIfNeeded();
-		msg.setSequence(sequence);
+		this.sequence = sequence;
 		return this;
 	}
 	
-	public MessageToStoreBuilder metadata(String key, String value)
+	public MessageToStoreBuilder id(StoredMessageId id)
 	{
-		initIfNeeded();
-		msg.addMetadata(key, value);
+		this.bookId = id.getBookId();
+		this.sessionAlias = id.getSessionAlias();
+		this.direction = id.getDirection();
+		this.timestamp = id.getTimestamp();
+		this.sequence = id.getSequence();
+		return this;
+	}
+	
+	public MessageToStoreBuilder id(BookId bookId, String sessionAlias, Direction direction, Instant timestamp, long sequence)
+	{
+		this.bookId = bookId;
+		this.sessionAlias = sessionAlias;
+		this.direction = direction;
+		this.timestamp = timestamp;
+		this.sequence = sequence;
 		return this;
 	}
 	
 	public MessageToStoreBuilder content(byte[] content)
 	{
-		initIfNeeded();
-		msg.setContent(content);
+		this.content = content;
+		return this;
+	}
+	
+	public MessageToStoreBuilder metadata(String key, String value)
+	{
+		if (metadata == null)
+			metadata = new MessageMetadata();
+		metadata.add(key, value);
 		return this;
 	}
 	
 	
-	public MessageToStore build()
+	public MessageToStore build() throws CradleStorageException
 	{
-		initIfNeeded();
-		MessageToStore result = msg;
-		msg = null;
-		return result;
+		try
+		{
+			MessageToStore result = createMessageToStore();
+			result.setMetadata(metadata);
+			return result;
+		}
+		finally
+		{
+			reset();
+		}
+	}
+	
+	
+	protected MessageToStore createMessageToStore() throws CradleStorageException
+	{
+		return new MessageToStore(new StoredMessageId(bookId, sessionAlias, direction, timestamp, sequence), content);
+	}
+	
+	protected void reset()
+	{
+		bookId = null;
+		sessionAlias = null;
+		direction = null;
+		timestamp = null;
+		sequence = 0;
+		content = null;
+		metadata = null;
 	}
 }
