@@ -154,7 +154,6 @@ public class TestEventEntity extends CradleEntity
 		if (messages != null)
 			setMessages(ByteBuffer.wrap(messages));
 		
-		setStoredTimestamp(Instant.now());
 		setCompressed(compressed);
 		//TODO: this.setLabels(event.getLabels());
 		if (content != null)

@@ -118,7 +118,6 @@ public class MessageBatchEntity extends CradleEntity
 		setLastMessageTimestamp(batch.getLastTimestamp());
 		setMessageCount(batch.getMessageCount());
 		
-		setStoredTimestamp(Instant.now());
 		setCompressed(compressed);
 		//TODO: setLabels(batch.getLabels());
 		setContent(ByteBuffer.wrap(batchContent));

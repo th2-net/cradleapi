@@ -22,8 +22,6 @@ public class StorageConstants
 			PAGE = "page",
 			NAME = "name",
 			PART = "part",
-			STORED_DATE = "stored_date",
-			STORED_TIME = "stored_time",
 			COMPRESSED = "compressed",
 			LABELS = "labels",
 			COMMENT = "comment",

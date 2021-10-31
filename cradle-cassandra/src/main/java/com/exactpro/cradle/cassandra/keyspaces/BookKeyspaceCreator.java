@@ -108,8 +108,6 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withClusteringColumn(MESSAGE_TIME, DataTypes.TIME)
 				.withClusteringColumn(SEQUENCE, DataTypes.BIGINT)
 				
-				.withColumn(STORED_DATE, DataTypes.DATE)
-				.withColumn(STORED_TIME, DataTypes.TIME)
 				.withColumn(LAST_MESSAGE_DATE, DataTypes.DATE)
 				.withColumn(LAST_MESSAGE_TIME, DataTypes.TIME)
 				.withColumn(LAST_SEQUENCE, DataTypes.BIGINT)
@@ -147,8 +145,6 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withColumn(PARENT_ID, DataTypes.TEXT)
 				.withColumn(EVENT_BATCH, DataTypes.BOOLEAN)
 				.withColumn(EVENT_COUNT, DataTypes.INT)
-				.withColumn(STORED_DATE, DataTypes.DATE)
-				.withColumn(STORED_TIME, DataTypes.TIME)
 				.withColumn(END_DATE, DataTypes.DATE)
 				.withColumn(END_TIME, DataTypes.TIME)
 				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
