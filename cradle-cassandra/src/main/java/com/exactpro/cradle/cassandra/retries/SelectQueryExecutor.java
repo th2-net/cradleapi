@@ -64,7 +64,7 @@ public class SelectQueryExecutor
 	{
 		CompletableFuture<MappedAsyncPagingIterable<T>> f = new CompletableFuture<>();
 		Function<Row, T> mapper = converter::convert;
-		query.get().whenCompleteAsync((result, error) -> onCompleteMany(result, error, f, mapper, queryInfo, 0));
+		query.get().whenCompleteAsync((result, error) -> onCompleteMulti(result, error, f, mapper, queryInfo, 0));
 		return f;
 	}
 
@@ -127,7 +127,7 @@ public class SelectQueryExecutor
 		TimeUnit.MILLISECONDS.sleep(delay);
 	}
 
-	private <T> void onCompleteMany(MappedAsyncPagingIterable<T> result, Throwable error,
+	private <T> void onCompleteMulti(MappedAsyncPagingIterable<T> result, Throwable error,
 			CompletableFuture<MappedAsyncPagingIterable<T>> f, Function<Row, T> mapper,
 			String queryInfo, int retryCount)
 	{
@@ -146,7 +146,7 @@ public class SelectQueryExecutor
 			delay(error, queryInfo, retryCount, stmt);
 			session.executeAsync(stmt).thenApply(row -> new AsyncPagingIterableWrapper<Row, T>(row, mapper))
 					.whenCompleteAsync(
-							(retryResult, retryError) -> onCompleteMany(retryResult, retryError, f, mapper, queryInfo,
+							(retryResult, retryError) -> onCompleteMulti(retryResult, retryError, f, mapper, queryInfo,
 									retryCount + 1));
 		}
 		catch (Exception e)
