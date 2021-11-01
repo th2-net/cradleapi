@@ -37,14 +37,14 @@ public class SelectQueryExecutor
 	private static final Logger logger = LoggerFactory.getLogger(SelectQueryExecutor.class);
 
 	private final CqlSession session;
-	private final SelectExecutionPolicy manyRowQueryPolicy, singleRowQueryPolicy;
+	private final SelectExecutionPolicy multiRowResultExecPolicy, singleRowResultExecPolicy;
 
-	public SelectQueryExecutor(CqlSession session, SelectExecutionPolicy manyRowQueryPolicy,
-			SelectExecutionPolicy singleRowQueryPolicy)
+	public SelectQueryExecutor(CqlSession session, SelectExecutionPolicy multiRowResultExecPolicy,
+			SelectExecutionPolicy singleRowResultExecPolicy)
 	{
 		this.session = session;
-		this.manyRowQueryPolicy = manyRowQueryPolicy;
-		this.singleRowQueryPolicy = singleRowQueryPolicy;
+		this.multiRowResultExecPolicy = multiRowResultExecPolicy;
+		this.singleRowResultExecPolicy = singleRowResultExecPolicy;
 	}
 
 	public <T> CompletableFuture<T> executeSingleRowResultQuery(Supplier<CompletableFuture<Row>> query,
@@ -100,7 +100,7 @@ public class SelectQueryExecutor
 			return;
 		}
 
-		Statement<?> stmt = handleErrorAndGetStatement(error, f, singleRowQueryPolicy, queryInfo, retryCount);
+		Statement<?> stmt = handleErrorAndGetStatement(error, f, singleRowResultExecPolicy, queryInfo, retryCount);
 		if (f.isDone())
 			return;
 
@@ -137,7 +137,7 @@ public class SelectQueryExecutor
 			return;
 		}
 
-		Statement<?> stmt = handleErrorAndGetStatement(error, f, manyRowQueryPolicy, queryInfo, retryCount);
+		Statement<?> stmt = handleErrorAndGetStatement(error, f, multiRowResultExecPolicy, queryInfo, retryCount);
 		if (f.isDone())
 			return;
 

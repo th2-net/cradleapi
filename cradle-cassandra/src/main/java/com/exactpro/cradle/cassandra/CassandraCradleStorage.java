@@ -90,7 +90,7 @@ public class CassandraCradleStorage extends CradleStorage
 			readAttrs,
 			strictReadAttrs;
 	private int resultPageSize;
-	private SelectExecutionPolicy selectExecutionPolicy;
+	private SelectExecutionPolicy multiRowResultExecPolicy, singleRowResultExecPolicy;
 	
 	private QueryExecutor exec;
 	private SelectQueryExecutor selectExecutor;
@@ -110,9 +110,13 @@ public class CassandraCradleStorage extends CradleStorage
 		this.objectsFactory = new CradleObjectsFactory(settings.getMaxMessageBatchSize(), settings.getMaxTestEventBatchSize());
 		this.resultPageSize = conSettings.getResultPageSize();
 		
-		this.selectExecutionPolicy = conSettings.getSelectExecutionPolicy();
-		if (this.selectExecutionPolicy == null)
-			this.selectExecutionPolicy = new PageSizeAdjustingPolicy(resultPageSize == 0 ? 5000 : resultPageSize, 2);
+		this.multiRowResultExecPolicy = conSettings.getSelectExecutionPolicy();
+		if (this.multiRowResultExecPolicy == null)
+			this.multiRowResultExecPolicy = new PageSizeAdjustingPolicy(resultPageSize == 0 ? 5000 : resultPageSize, 2);
+
+		this.singleRowResultExecPolicy = conSettings.getSingleRowResultExecutionPolicy();
+		if (this.singleRowResultExecPolicy == null)
+			this.singleRowResultExecPolicy = new FixedNumberRetryPolicy(5);
 	}
 
 
@@ -140,8 +144,8 @@ public class CassandraCradleStorage extends CradleStorage
 			CqlSession session = connection.getSession();
 			exec = new QueryExecutor(session,
 					settings.getTimeout(), settings.getWriteConsistencyLevel(), settings.getReadConsistencyLevel());
-			selectExecutor = new SelectQueryExecutor(session, selectExecutionPolicy, new FixedNumberRetryPolicy(5));
-			pagingSupplies = new PagingSupplies(session, selectExecutionPolicy);
+			selectExecutor = new SelectQueryExecutor(session, multiRowResultExecPolicy, singleRowResultExecPolicy);
+			pagingSupplies = new PagingSupplies(session, multiRowResultExecPolicy);
 			
 			if (prepareStorage)
 			{
@@ -169,7 +173,7 @@ public class CassandraCradleStorage extends CradleStorage
 					ops.getTestEventMessagesConverter(), ops.getMessageTestEventConverter());
 			testEventsMessagesLinker = new CassandraTestEventsMessagesLinker(supplies, instanceUuid, readAttrs, semaphore,
 					selectExecutor, pagingSupplies);
-			completeEventsGetter = new CompleteEventsGetter(instanceUuid, readAttrs, selectExecutionPolicy, 
+			completeEventsGetter = new CompleteEventsGetter(instanceUuid, readAttrs, multiRowResultExecPolicy,
 					ops.getTestEventOperator(), ops.getTestEventConverter(), pagingSupplies);
 			
 			IntervalSupplies intervalSupplies = new IntervalSupplies(ops.getIntervalOperator(), ops.getIntervalConverter(), pagingSupplies);
