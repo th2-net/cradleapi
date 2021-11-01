@@ -25,6 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 
+import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventsMessagesLinker;
@@ -37,7 +38,6 @@ import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesEntity;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.retries.PagingSupplies;
-import com.exactpro.cradle.cassandra.retries.RetryingSelectExecutor;
 
 public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLinker
 {
@@ -45,12 +45,12 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 	private final UUID instanceId;
 	private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
 	private final CassandraSemaphore semaphore;
-	private final RetryingSelectExecutor selectExec;
+	private final SelectQueryExecutor selectExec;
 	private final PagingSupplies pagingSupplies;
 	
 	public CassandraTestEventsMessagesLinker(LinkerSupplies supplies, 
-			UUID instanceId, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs, CassandraSemaphore semaphore, 
-			RetryingSelectExecutor selectExec, PagingSupplies pagingSupplies)
+			UUID instanceId, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs, CassandraSemaphore semaphore,
+			SelectQueryExecutor selectExec, PagingSupplies pagingSupplies)
 	{
 		this.supplies = supplies;
 		this.instanceId = instanceId;
@@ -80,7 +80,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 		String queryInfo = "get test events for messageId="+messageId;
 		CompletableFuture<MappedAsyncPagingIterable<MessageTestEventEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<MessageTestEventEntity>>(semaphore)
 				.getFuture(() -> selectExec
-						.executeQuery(() -> supplies.getMessagesOperator().getTestEvents(instanceId, messageId.toString(), readAttrs),
+						.executeMultiRowResultQuery(() -> supplies.getMessagesOperator().getTestEvents(instanceId, messageId.toString(), readAttrs),
 								supplies.getMessageConverter(),
 								queryInfo));
 		
@@ -121,7 +121,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 		String queryInfo = "get messages for eventId="+eventId;
 		CompletableFuture<MappedAsyncPagingIterable<TestEventMessagesEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<TestEventMessagesEntity>>(semaphore)
 				.getFuture(() -> selectExec
-						.executeQuery(() -> supplies.getTestEventsOperator().getMessages(instanceId, eventId.toString(), readAttrs),
+						.executeMultiRowResultQuery(() -> supplies.getTestEventsOperator().getMessages(instanceId, eventId.toString(), readAttrs),
 								supplies.getTestEventConverter(),
 								queryInfo));
 		
@@ -175,7 +175,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 		String queryInfo = "get messages for eventId="+eventId+" to check links";
 		CompletableFuture<MappedAsyncPagingIterable<TestEventMessagesEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<TestEventMessagesEntity>>(semaphore)
 				.getFuture(() -> selectExec
-						.executeQuery(() -> supplies.getTestEventsOperator().getMessages(instanceId, eventId.toString(), readAttrs),
+						.executeMultiRowResultQuery(() -> supplies.getTestEventsOperator().getMessages(instanceId, eventId.toString(), readAttrs),
 								supplies.getTestEventConverter(),
 								queryInfo));
 		
@@ -214,7 +214,7 @@ public class CassandraTestEventsMessagesLinker implements TestEventsMessagesLink
 		String queryInfo = "get test events for messageId="+messageId+" to check links";
 		CompletableFuture<MappedAsyncPagingIterable<MessageTestEventEntity>> future = new AsyncOperator<MappedAsyncPagingIterable<MessageTestEventEntity>>(semaphore)
 				.getFuture(() -> selectExec
-						.executeQuery(() -> supplies.getMessagesOperator().getTestEvents(instanceId, messageId.toString(), readAttrs),
+						.executeMultiRowResultQuery(() -> supplies.getMessagesOperator().getTestEvents(instanceId, messageId.toString(), readAttrs),
 								supplies.getMessageConverter(),
 								queryInfo));
 		

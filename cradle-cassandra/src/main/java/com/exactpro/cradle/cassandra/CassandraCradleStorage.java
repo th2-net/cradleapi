@@ -39,11 +39,7 @@ import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.iterators.*;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.linkers.LinkerSupplies;
-import com.exactpro.cradle.cassandra.retries.CompleteEventsGetter;
-import com.exactpro.cradle.cassandra.retries.PageSizeAdjustingPolicy;
-import com.exactpro.cradle.cassandra.retries.PagingSupplies;
-import com.exactpro.cradle.cassandra.retries.RetryingSelectExecutor;
-import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
+import com.exactpro.cradle.cassandra.retries.*;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.intervals.IntervalsWorker;
@@ -94,10 +90,10 @@ public class CassandraCradleStorage extends CradleStorage
 			readAttrs,
 			strictReadAttrs;
 	private int resultPageSize;
-	private SelectExecutionPolicy selectExecutionPolicy;
+	private SelectExecutionPolicy multiRowResultExecPolicy, singleRowResultExecPolicy;
 	
 	private QueryExecutor exec;
-	private RetryingSelectExecutor selectExecutor;
+	private SelectQueryExecutor selectExecutor;
 	private CompleteEventsGetter completeEventsGetter;
 	private PagingSupplies pagingSupplies;
 
@@ -114,9 +110,13 @@ public class CassandraCradleStorage extends CradleStorage
 		this.objectsFactory = new CradleObjectsFactory(settings.getMaxMessageBatchSize(), settings.getMaxTestEventBatchSize());
 		this.resultPageSize = conSettings.getResultPageSize();
 		
-		this.selectExecutionPolicy = conSettings.getSelectExecutionPolicy();
-		if (this.selectExecutionPolicy == null)
-			this.selectExecutionPolicy = new PageSizeAdjustingPolicy(resultPageSize == 0 ? 5000 : resultPageSize, 2);
+		this.multiRowResultExecPolicy = conSettings.getSelectExecutionPolicy();
+		if (this.multiRowResultExecPolicy == null)
+			this.multiRowResultExecPolicy = new PageSizeAdjustingPolicy(resultPageSize == 0 ? 5000 : resultPageSize, 2);
+
+		this.singleRowResultExecPolicy = conSettings.getSingleRowResultExecutionPolicy();
+		if (this.singleRowResultExecPolicy == null)
+			this.singleRowResultExecPolicy = new FixedNumberRetryPolicy(5);
 	}
 
 
@@ -144,8 +144,8 @@ public class CassandraCradleStorage extends CradleStorage
 			CqlSession session = connection.getSession();
 			exec = new QueryExecutor(session,
 					settings.getTimeout(), settings.getWriteConsistencyLevel(), settings.getReadConsistencyLevel());
-			selectExecutor = new RetryingSelectExecutor(session, selectExecutionPolicy);
-			pagingSupplies = new PagingSupplies(session, selectExecutionPolicy);
+			selectExecutor = new SelectQueryExecutor(session, multiRowResultExecPolicy, singleRowResultExecPolicy);
+			pagingSupplies = new PagingSupplies(session, multiRowResultExecPolicy);
 			
 			if (prepareStorage)
 			{
@@ -171,8 +171,9 @@ public class CassandraCradleStorage extends CradleStorage
 			
 			LinkerSupplies supplies = new LinkerSupplies(ops.getTestEventMessagesOperator(), ops.getMessageTestEventOperator(),
 					ops.getTestEventMessagesConverter(), ops.getMessageTestEventConverter());
-			testEventsMessagesLinker = new CassandraTestEventsMessagesLinker(supplies, instanceUuid, readAttrs, semaphore, selectExecutor, pagingSupplies);
-			completeEventsGetter = new CompleteEventsGetter(instanceUuid, readAttrs, selectExecutionPolicy, 
+			testEventsMessagesLinker = new CassandraTestEventsMessagesLinker(supplies, instanceUuid, readAttrs, semaphore,
+					selectExecutor, pagingSupplies);
+			completeEventsGetter = new CompleteEventsGetter(instanceUuid, readAttrs, multiRowResultExecPolicy,
 					ops.getTestEventOperator(), ops.getTestEventConverter(), pagingSupplies);
 			
 			IntervalSupplies intervalSupplies = new IntervalSupplies(ops.getIntervalOperator(), ops.getIntervalConverter(), pagingSupplies);
@@ -589,7 +590,7 @@ public class CassandraCradleStorage extends CradleStorage
 		TimeMessageOperator tmOp = ops.getTimeMessageOperator();
 		return new AsyncOperator<MappedAsyncPagingIterable<DetailedMessageBatchEntity>>(semaphore)
 						.getFuture(() -> selectExecutor
-								.executeQuery(() -> mbOp.filterMessages(instanceUuid, filter, mbOp, tmOp, readAttrs),
+								.executeMultiRowResultQuery(() -> mbOp.filterMessages(instanceUuid, filter, mbOp, tmOp, readAttrs),
 										ops.getMessageBatchConverter(),
 										queryInfo));
 	}
@@ -627,7 +628,7 @@ public class CassandraCradleStorage extends CradleStorage
 		RootTestEventOperator op = ops.getRootTestEventOperator();
 		CompletableFuture<MappedAsyncPagingIterable<RootTestEventEntity>> future = 
 				new AsyncOperator<MappedAsyncPagingIterable<RootTestEventEntity>>(semaphore)
-						.getFuture(() -> selectExecutor.executeQuery(order == Order.DIRECT
+						.getFuture(() -> selectExecutor.executeMultiRowResultQuery(order == Order.DIRECT
 								? () -> op.getTestEventsDirect(instanceUuid, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
 								: () -> op.getTestEventsReverse(instanceUuid, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs),
 								ops.getRootTestEventConverter(),
@@ -668,7 +669,7 @@ public class CassandraCradleStorage extends CradleStorage
 		String queryInfo = "get child test events of "+parentId+" from range "+from+".."+to+" in "+order+" order";
 		CompletableFuture<MappedAsyncPagingIterable<TestEventChildEntity>> future =
 				new AsyncOperator<MappedAsyncPagingIterable<TestEventChildEntity>>(semaphore)
-						.getFuture(() -> selectExecutor.executeQuery(() -> order == Order.DIRECT
+						.getFuture(() -> selectExecutor.executeMultiRowResultQuery(() -> order == Order.DIRECT
 								? ops.getTestEventChildrenOperator().getTestEventsDirect(instanceUuid, parentId.toString(),
 									fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
 								: ops.getTestEventChildrenOperator().getTestEventsReverse(instanceUuid, parentId.toString(),
@@ -710,7 +711,7 @@ public class CassandraCradleStorage extends CradleStorage
 		String queryInfo = "get test events from range "+from+".."+to+" in "+order+" order";
 		CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> future =
 				new AsyncOperator<MappedAsyncPagingIterable<TimeTestEventEntity>>(semaphore)
-						.getFuture(() -> selectExecutor.executeQuery(() -> order == Order.DIRECT
+						.getFuture(() -> selectExecutor.executeMultiRowResultQuery(() -> order == Order.DIRECT
 								? ops.getTimeTestEventOperator().getTestEventsDirect(instanceUuid,
 										fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
 								: ops.getTimeTestEventOperator().getTestEventsReverse(instanceUuid,
@@ -888,8 +889,13 @@ public class CassandraCradleStorage extends CradleStorage
 
 	private long getFirstIndex(MessageBatchOperator op, String streamName, Direction direction) throws IOException
 	{
-		CompletableFuture<Row> future = new AsyncOperator<Row>(semaphore).getFuture(
-				() -> op.getFirstIndex(instanceUuid, streamName, direction.getLabel(), readAttrs));
+		String queryInfo = "get first message for stream '" + streamName + " and direction '" + direction + "'";
+		CompletableFuture<Row> future = new AsyncOperator<Row>(semaphore).getFuture(() ->
+						selectExecutor.executeSingleRowResultQuery(
+								() -> op.getFirstIndex(instanceUuid, streamName, direction.getLabel(), readAttrs),
+								r -> r,
+								queryInfo)
+																				   );
 		try
 		{
 			Row row = future.get();
@@ -902,11 +908,16 @@ public class CassandraCradleStorage extends CradleStorage
 							direction + "'", e);
 		}
 	}
-	
+
 	private long getLastIndex(MessageBatchOperator op, String streamName, Direction direction) throws IOException
 	{
-		CompletableFuture<Row> future = new AsyncOperator<Row>(semaphore).getFuture(
-				() -> op.getLastIndex(instanceUuid, streamName, direction.getLabel(), readAttrs));
+		String queryInfo = "get last message for stream '" + streamName + " and direction '" + direction + "'";
+		CompletableFuture<Row> future = new AsyncOperator<Row>(semaphore).getFuture(() ->
+						selectExecutor.executeSingleRowResultQuery(
+								() -> op.getLastIndex(instanceUuid, streamName, direction.getLabel(), readAttrs),
+								r -> r,
+								queryInfo)
+																				   );
 		try
 		{
 			Row row = future.get();
