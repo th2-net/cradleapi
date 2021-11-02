@@ -77,7 +77,7 @@ public abstract class KeyspaceCreator
 	}
 	
 	
-	public void createKeyspace()
+	public void createKeyspace() throws IOException
 	{
 		Optional<KeyspaceMetadata> meta = obtainKeyspaceMetadata();
 		if (!meta.isPresent())
@@ -86,7 +86,7 @@ public abstract class KeyspaceCreator
 			CreateKeyspace createKs = settings.getNetworkTopologyStrategy() != null 
 					? SchemaBuilder.createKeyspace(keyspace).withNetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap()) 
 					: SchemaBuilder.createKeyspace(keyspace).withSimpleStrategy(settings.getKeyspaceReplicationFactor());
-			queryExecutor.getSession().execute(createKs.build().setTimeout(Duration.ofMillis(settings.getTimeout())));
+			queryExecutor.executeQuery(createKs.asCql(), true);
 			logger.info("Keyspace '{}' has been created", keyspace);
 			this.keyspaceMetadata = obtainKeyspaceMetadata().get();  //FIXME: keyspace creation may take time and it won't be available immediately
 		}
