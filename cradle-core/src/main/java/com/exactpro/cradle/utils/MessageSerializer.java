@@ -28,32 +28,36 @@ import java.util.Map;
 
 public class MessageSerializer {
 	
-	public byte[] serialize(StoredMessage message) {
+	public byte[] serialize(StoredMessage message) throws SerializationException {
 		ByteBuffer b = ByteBuffer.allocate(calculateMessageSize(message));
-		b.putLong(StoredMessage.serialVersionUID);
-		this.printMessageId(message.getId(), b);
-		this.printInstant(message.getTimestamp(), b);
-		this.printMessageMetaData(message.getMetadata(), b);
-		this.printBody(message.getContent(), b);
+		this.serialize(message, b);
 		return b.array();
+	}
+
+	public void serialize(StoredMessage message, ByteBuffer buffer) throws SerializationException {
+		buffer.putLong(StoredMessage.serialVersionUID);
+		this.printMessageId(message.getId(), buffer);
+		this.printInstant(message.getTimestamp(), buffer);
+		this.printMessageMetaData(message.getMetadata(), buffer);
+		this.printBody(message.getContent(), buffer);
 	}
 	
 	public int calculateMessageSize(StoredMessage message) {
 		
 		/* 
 		 8 - magic number
-		 4 - stream id length
-		 4 - DIRECTION enum (ordinal)
+		 2 - stream id length
+		 1 - DIRECTION enum (ordinal)
 		 8 - index (long)
 		 4 + 8 = Instant (timestamp) long (seconds) + int (nanos)
 		 4 - message body (byte[]) length
 		 4 - metadata (map) length
 		 
-		 Collapsed constant = 44 
+		 Collapsed constant = 39 
 		 */
 
 		int i = message.getId().getStreamName().length() 
-			+ message.getContent().length + 44;
+			+ message.getContent().length + 39;
 		Map<String, String> md ;
 		if (message.getMetadata() != null && (md = message.getMetadata().toMap()) != null) {
 			for (Map.Entry<String, String> entry : md.entrySet()) {
@@ -64,9 +68,9 @@ public class MessageSerializer {
 		return i;
 	}
 	
-	private void printMessageId(StoredMessageId messageId, ByteBuffer buffer) {
-		printString(messageId.getStreamName(), buffer);
-		buffer.putInt(messageId.getDirection().ordinal());
+	private void printMessageId(StoredMessageId messageId, ByteBuffer buffer) throws SerializationException {
+		printStreamName(messageId.getStreamName(), buffer);
+		buffer.put((byte) messageId.getDirection().ordinal());
 		buffer.putLong(messageId.getIndex());
 	}
 
@@ -91,6 +95,17 @@ public class MessageSerializer {
 	private void printBody(byte[] body, ByteBuffer buffer) {
 		buffer.putInt(body.length);
 		buffer.put(body);
+	}
+
+	private void printStreamName(String value, ByteBuffer buffer) throws SerializationException {
+		if (value == null) {
+			value = "";
+		}
+		if (value.length() > 65535) {
+			throw new SerializationException("Session alias is too big. Expected [0-65535]");
+		}
+		buffer.putShort((short) value.length());
+		buffer.put(value.getBytes(StandardCharsets.UTF_8));
 	}
 	
 	private void printString(String value, ByteBuffer buffer) {

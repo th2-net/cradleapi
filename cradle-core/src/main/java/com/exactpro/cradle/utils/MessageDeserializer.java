@@ -46,15 +46,15 @@ public class MessageDeserializer {
 	
 	private Direction getDirection(int ordinal) throws SerializationException {
 		Direction[] values = Direction.values();
-		if (values.length > ordinal)
+		if (values.length > ordinal && ordinal >= 0)
 			return values[ordinal];
 		throw new SerializationException(String.format("Invalid ordinal for enum (Direction): %d. Values: [0-%d]",
 				ordinal, values.length - 1));
 	}
 
 	private StoredMessageId readMessageId(ByteBuffer buffer) throws SerializationException {
-		String stream = readString(buffer);
-		Direction direction = getDirection(buffer.getInt());
+		String stream = readStreamName(buffer);
+		Direction direction = getDirection(buffer.get());
 		long index = buffer.getLong();
 		return new StoredMessageId(stream, direction, index);
 	}
@@ -80,12 +80,19 @@ public class MessageDeserializer {
 	}
 
 	private String readString(ByteBuffer buffer) throws SerializationException {
-		int len = buffer.getInt();
+		return readString(buffer, buffer.getInt());
+	}
+
+	private String readStreamName(ByteBuffer buffer) throws SerializationException {
+		return readString(buffer, Short.toUnsignedInt(buffer.getShort()));
+	}
+
+	private String readString(ByteBuffer buffer, int len) throws SerializationException {
 		if (len <= 0)
 			return "";
-		
+
 		if (buffer.remaining() < len) {
-			throw new SerializationException(String.format("Expected string (%d bytes) is bigger than remaining buffer (%d)", 
+			throw new SerializationException(String.format("Expected string (%d bytes) is bigger than remaining buffer (%d)",
 					len, buffer.remaining()));
 		}
 		int currPos = buffer.position();

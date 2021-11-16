@@ -16,7 +16,9 @@
 
 package com.exactpro.cradle.utils;
 
-public class SerializationException extends Exception {
+import java.io.IOException;
+
+public class SerializationException extends IOException {
 
 	public SerializationException() {
 	}
@@ -32,8 +34,5 @@ public class SerializationException extends Exception {
 	public SerializationException(Throwable cause) {
 		super(cause);
 	}
-
-	public SerializationException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-		super(message, cause, enableSuppression, writableStackTrace);
-	}
+	
 }

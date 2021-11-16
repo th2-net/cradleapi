@@ -22,6 +22,7 @@ import com.exactpro.cradle.messages.StoredMessageBuilder;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 
@@ -60,6 +61,57 @@ public class SerializationTest {
 		MessageDeserializer deserializer = new MessageDeserializer();
 		StoredMessage deserialize = deserializer.deserialize(serialize);
 		Assert.assertEquals(deserialize, build);
+	}
+
+	@Test
+	public void serializeDeserialize3BIGStreamName() throws SerializationException {
+		StoredMessageBuilder builder = new StoredMessageBuilder();
+		builder.setStreamName("str3456789".repeat(65000/10));
+		builder.setIndex(123456789010111213L);
+		builder.setDirection(Direction.SECOND);
+		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.00Z").plusNanos(51234));
+		builder.setContent("MessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessage".getBytes(StandardCharsets.UTF_8));
+		StoredMessage build = builder.build();
+		MessageSerializer serializer = new MessageSerializer();
+		byte[] serialize = serializer.serialize(build);
+		MessageDeserializer deserializer = new MessageDeserializer();
+		StoredMessage deserialize = deserializer.deserialize(serialize);
+		Assert.assertEquals(deserialize, build);
+	}
+
+	@Test
+	public void serializeDeserialize4OverflowStreamName() throws SerializationException {
+		StoredMessageBuilder builder = new StoredMessageBuilder();
+		builder.setStreamName("str3456789".repeat(66000/10));
+		builder.setIndex(123456789010111213L);
+		builder.setDirection(Direction.SECOND);
+		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.00Z").plusNanos(51234));
+		builder.setContent("MessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessage".getBytes(StandardCharsets.UTF_8));
+		StoredMessage build = builder.build();
+		MessageSerializer serializer = new MessageSerializer();
+		try {
+			serializer.serialize(build);
+		} catch (SerializationException e) {
+			Assert.assertTrue(true);
+			return;
+		}
+		Assert.fail("Should be an error when stream name is more than 65536");
+	}
+
+	@Test
+	public void checkMessageLength() throws SerializationException {
+		StoredMessageBuilder builder = new StoredMessageBuilder();
+		builder.setStreamName("streamname12345");
+		builder.setIndex(123456789010111213L);
+		builder.setDirection(Direction.SECOND);
+		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.00Z").plusNanos(51234));
+		builder.setContent("MessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessage".getBytes(StandardCharsets.UTF_8));
+		StoredMessage build = builder.build();
+		MessageSerializer serializer = new MessageSerializer();
+		
+		ByteBuffer buffer = ByteBuffer.allocate(10_000);
+		serializer.serialize(build, buffer);
+		Assert.assertEquals(buffer.position(), serializer.calculateMessageSize(build));
 	}
 	
 }

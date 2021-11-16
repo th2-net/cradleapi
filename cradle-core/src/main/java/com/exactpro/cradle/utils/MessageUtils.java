@@ -70,7 +70,7 @@ public class MessageUtils
 				if (msg == null)  //For case of not full batch
 					break;
 				
-				byte[] serializedMsg = SerializationUtils.serialize(msg);
+				byte[] serializedMsg = serializer.serialize(msg);
 				dos.writeInt(serializedMsg.length);
 				dos.write(serializedMsg);
 			}
@@ -159,9 +159,11 @@ public class MessageUtils
 		return result;
 	}
 	
-	private static StoredMessage deserializeMessage(byte[] bytes)
-	{
-		return (StoredMessage)SerializationUtils.deserialize(bytes);
+	private static final MessageSerializer serializer = new MessageSerializer();
+	private static final MessageDeserializer deserializer = new MessageDeserializer();
+	
+	private static StoredMessage deserializeMessage(byte[] bytes) throws SerializationException {
+		return deserializer.deserialize(bytes);
 	}
 	
 	private static byte[] getMessageContentBytes(ByteBuffer content, boolean compressed, StoredMessageId id) throws IOException
