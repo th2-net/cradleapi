@@ -19,12 +19,18 @@ package com.exactpro.cradle.utils;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBuilder;
+import com.exactpro.cradle.serialization.MessageDeserializer;
+import com.exactpro.cradle.serialization.MessageSerializer;
+import com.exactpro.cradle.serialization.SerializationException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class SerializationTest {
 	
@@ -38,7 +44,7 @@ public class SerializationTest {
 		builder.putMetadata("key1", "value1");
 		builder.putMetadata("key2", "value2");
 		builder.putMetadata("key3", "value3");
-		builder.setContent("MessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessage".getBytes(StandardCharsets.UTF_8));
+		builder.setContent("Message".repeat(10).getBytes(StandardCharsets.UTF_8));
 		StoredMessage build = builder.build();
 		MessageSerializer serializer = new MessageSerializer();
 		byte[] serialize = serializer.serialize(build);
@@ -54,7 +60,7 @@ public class SerializationTest {
 		builder.setIndex(123456789010111213L);
 		builder.setDirection(Direction.SECOND);
 		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.00Z").plusNanos(51234));
-		builder.setContent("MessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessage".getBytes(StandardCharsets.UTF_8));
+		builder.setContent("Message".repeat(10).getBytes(StandardCharsets.UTF_8));
 		StoredMessage build = builder.build();
 		MessageSerializer serializer = new MessageSerializer();
 		byte[] serialize = serializer.serialize(build);
@@ -70,7 +76,7 @@ public class SerializationTest {
 		builder.setIndex(123456789010111213L);
 		builder.setDirection(Direction.SECOND);
 		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.00Z").plusNanos(51234));
-		builder.setContent("MessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessage".getBytes(StandardCharsets.UTF_8));
+		builder.setContent("Message".repeat(10).getBytes(StandardCharsets.UTF_8));
 		StoredMessage build = builder.build();
 		MessageSerializer serializer = new MessageSerializer();
 		byte[] serialize = serializer.serialize(build);
@@ -86,7 +92,7 @@ public class SerializationTest {
 		builder.setIndex(123456789010111213L);
 		builder.setDirection(Direction.SECOND);
 		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.00Z").plusNanos(51234));
-		builder.setContent("MessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessage".getBytes(StandardCharsets.UTF_8));
+		builder.setContent("Message".repeat(10).getBytes(StandardCharsets.UTF_8));
 		StoredMessage build = builder.build();
 		MessageSerializer serializer = new MessageSerializer();
 		try {
@@ -105,13 +111,80 @@ public class SerializationTest {
 		builder.setIndex(123456789010111213L);
 		builder.setDirection(Direction.SECOND);
 		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.00Z").plusNanos(51234));
-		builder.setContent("MessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessageMessage".getBytes(StandardCharsets.UTF_8));
+		builder.setContent("Message".repeat(10).getBytes(StandardCharsets.UTF_8));
 		StoredMessage build = builder.build();
 		MessageSerializer serializer = new MessageSerializer();
 		
 		ByteBuffer buffer = ByteBuffer.allocate(10_000);
 		serializer.serialize(build, buffer);
 		Assert.assertEquals(buffer.position(), serializer.calculateMessageSize(build));
+	}
+	
+	private List<StoredMessage> getBatch() {
+		StoredMessageBuilder builder = new StoredMessageBuilder();
+		builder.setStreamName("streamname12345");
+		builder.setIndex(123456789010111213L);
+		builder.setDirection(Direction.SECOND);
+		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.00Z"));
+		builder.putMetadata("key1", "value1");
+		builder.putMetadata("key2", "value2");
+		builder.putMetadata("key3", "value3");
+		builder.setContent("Message".repeat(10).getBytes(StandardCharsets.UTF_8));
+
+		List<StoredMessage> stMessage = new ArrayList<>(10);
+		stMessage.add(builder.build());
+
+		builder.setIndex(123456789010111214L);
+		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.01Z"));
+		builder.setContent("Messag".repeat(10).getBytes(StandardCharsets.UTF_8));
+		stMessage.add(builder.build());
+
+		builder.setIndex(123456789010111215L);
+		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.01Z"));
+		builder.setContent("Messag".repeat(10).getBytes(StandardCharsets.UTF_8));
+		stMessage.add(builder.build());
+
+		builder.setIndex(123456789010111216L);
+		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.02Z"));
+		builder.setContent("Message2".repeat(10).getBytes(StandardCharsets.UTF_8));
+		stMessage.add(builder.build());
+
+		builder.setIndex(123456789010111217L);
+		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.03Z"));
+		builder.setContent("Message3".repeat(10).getBytes(StandardCharsets.UTF_8));
+		stMessage.add(builder.build());
+		
+		return stMessage;
+	}
+
+	@Test
+	public void serializeDeserialize5BATCH() throws SerializationException {
+		MessageSerializer serializer = new MessageSerializer();
+		List<StoredMessage> initBatch = getBatch();
+		byte[] serialize = serializer.serializeBatch(initBatch);
+		MessageDeserializer deserializer = new MessageDeserializer();
+		List<StoredMessage> deserialize = deserializer.deserializeBatch(serialize);
+		Assert.assertEquals(deserialize, initBatch);
+	}
+
+	@Test
+	public void serializeDeserialize6EMTPYBATCH() throws SerializationException {
+		MessageSerializer serializer = new MessageSerializer();
+		List<StoredMessage> initBatch = Collections.emptyList();
+		byte[] serialize = serializer.serializeBatch(initBatch);
+		MessageDeserializer deserializer = new MessageDeserializer();
+		List<StoredMessage> deserialize = deserializer.deserializeBatch(serialize);
+		Assert.assertEquals(deserialize, initBatch);
+	}
+
+	@Test
+	public void checkMessageBatchLength() throws SerializationException {
+		MessageSerializer serializer = new MessageSerializer();
+
+		ByteBuffer buffer = ByteBuffer.allocate(10_000);
+		List<StoredMessage> batch = getBatch();
+		serializer.serializeBatch(batch, buffer, null);
+		Assert.assertEquals(buffer.position(), serializer.calculateMessageBatchSize(batch).total);
 	}
 	
 }

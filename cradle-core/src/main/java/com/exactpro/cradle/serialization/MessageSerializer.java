@@ -14,19 +14,49 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.utils;
+package com.exactpro.cradle.serialization;
 
-import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.messages.StoredMessageMetadata;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
+import java.util.Collection;
 import java.util.Map;
 
+import static com.exactpro.cradle.serialization.Serialization.MessageBatchConst.*;
+import static com.exactpro.cradle.serialization.SerializationUtils.printBody;
+import static com.exactpro.cradle.serialization.SerializationUtils.printInstant;
+import static com.exactpro.cradle.serialization.SerializationUtils.printShortString;
+import static com.exactpro.cradle.serialization.SerializationUtils.printString;
+
 public class MessageSerializer {
+
+	public byte[] serializeBatch(Collection<StoredMessage> batch) throws SerializationException {
+		SerializationBatchSizes messageBatchSizes = calculateMessageBatchSize(batch);
+		ByteBuffer buffer = ByteBuffer.allocate(messageBatchSizes.total);
+		
+		this.serializeBatch(batch, buffer, messageBatchSizes);
+		
+		return buffer.array();
+	}
+
+	public void serializeBatch(Collection<StoredMessage> batch, ByteBuffer buffer, SerializationBatchSizes messageBatchSizes) throws SerializationException {
+
+		if (messageBatchSizes == null) {
+			messageBatchSizes = this.calculateMessageBatchSize(batch);
+		}
+		
+		buffer.putInt(MESSAGE_BATCH_MAGIC);
+		buffer.put(MESSAGE_PROTOCOL_VER);
+		buffer.putInt(batch.size());
+		int i = 0;
+		for (StoredMessage message : batch) {
+			buffer.putInt(messageBatchSizes.mess[i]);
+			this.serialize(message, buffer);
+			i++;
+		}
+	}
 	
 	public byte[] serialize(StoredMessage message) throws SerializationException {
 		ByteBuffer b = ByteBuffer.allocate(calculateMessageSize(message));
@@ -35,17 +65,17 @@ public class MessageSerializer {
 	}
 
 	public void serialize(StoredMessage message, ByteBuffer buffer) throws SerializationException {
-		buffer.putLong(StoredMessage.serialVersionUID);
+		buffer.putShort(MESSAGE_MAGIC);
 		this.printMessageId(message.getId(), buffer);
-		this.printInstant(message.getTimestamp(), buffer);
+		printInstant(message.getTimestamp(), buffer);
 		this.printMessageMetaData(message.getMetadata(), buffer);
-		this.printBody(message.getContent(), buffer);
+		printBody(message.getContent(), buffer);
 	}
 	
 	public int calculateMessageSize(StoredMessage message) {
 		
 		/* 
-		 8 - magic number
+		 2 - magic number
 		 2 - stream id length
 		 1 - DIRECTION enum (ordinal)
 		 8 - index (long)
@@ -53,11 +83,11 @@ public class MessageSerializer {
 		 4 - message body (byte[]) length
 		 4 - metadata (map) length
 		 
-		 Collapsed constant = 39 
+		 Collapsed constant = 33 
 		 */
 
 		int i = message.getId().getStreamName().length() 
-			+ message.getContent().length + 39;
+			+ message.getContent().length + 33;
 		Map<String, String> md ;
 		if (message.getMetadata() != null && (md = message.getMetadata().toMap()) != null) {
 			for (Map.Entry<String, String> entry : md.entrySet()) {
@@ -67,16 +97,38 @@ public class MessageSerializer {
 		}
 		return i;
 	}
+
+	public SerializationBatchSizes calculateMessageBatchSize(Collection<StoredMessage> message) {
+		
+		/* 
+		 4 - magic number
+		 1 - protocol version
+		 4 - message sizes
+		 Collapsed constant = 9
+		 
+		 every:
+		 4 - message length
+		 x - message
+		  
+		 */
+
+		SerializationBatchSizes sizes = new SerializationBatchSizes(message.size());
+		sizes.total = 9;
+		
+		int i  = 0;
+		for (StoredMessage storedMessage : message) {
+			sizes.mess[i] = this.calculateMessageSize(storedMessage);
+			sizes.total += 4 + sizes.mess[i];
+			i++;
+		}
+		
+		return sizes;
+	}
 	
 	private void printMessageId(StoredMessageId messageId, ByteBuffer buffer) throws SerializationException {
-		printStreamName(messageId.getStreamName(), buffer);
+		printShortString(messageId.getStreamName(), buffer, "Session alias");
 		buffer.put((byte) messageId.getDirection().ordinal());
 		buffer.putLong(messageId.getIndex());
-	}
-
-	private void printInstant(Instant instant, ByteBuffer buffer) {
-		buffer.putLong(instant.getEpochSecond());
-		buffer.putInt(instant.getNano());
 	}
 
 	private void printMessageMetaData(StoredMessageMetadata metadata, ByteBuffer buffer) {
@@ -91,29 +143,4 @@ public class MessageSerializer {
 			}
 		}
 	}
-
-	private void printBody(byte[] body, ByteBuffer buffer) {
-		buffer.putInt(body.length);
-		buffer.put(body);
-	}
-
-	private void printStreamName(String value, ByteBuffer buffer) throws SerializationException {
-		if (value == null) {
-			value = "";
-		}
-		if (value.length() > 65535) {
-			throw new SerializationException("Session alias is too big. Expected [0-65535]");
-		}
-		buffer.putShort((short) value.length());
-		buffer.put(value.getBytes(StandardCharsets.UTF_8));
-	}
-	
-	private void printString(String value, ByteBuffer buffer) {
-		if (value == null) {
-			value = "";
-		}
-		buffer.putInt(value.length());
-		buffer.put(value.getBytes(StandardCharsets.UTF_8));
-	}
-	
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.utils;
+package com.exactpro.cradle.serialization;
 
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.messages.StoredMessage;
@@ -22,19 +22,56 @@ import com.exactpro.cradle.messages.StoredMessageBuilder;
 import com.exactpro.cradle.messages.StoredMessageId;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.exactpro.cradle.serialization.Serialization.INVALID_MAGIC_NUMBER_FORMAT;
+import static com.exactpro.cradle.serialization.Serialization.MessageBatchConst.*;
+import static com.exactpro.cradle.serialization.Serialization.NOT_SUPPORTED_PROTOCOL_FORMAT;
+import static com.exactpro.cradle.serialization.SerializationUtils.readInstant;
+import static com.exactpro.cradle.serialization.SerializationUtils.readShortString;
+import static com.exactpro.cradle.serialization.SerializationUtils.readString;
+import static com.exactpro.cradle.serialization.SerializationUtils.readBody;
 
 public class MessageDeserializer {
+
+	public List<StoredMessage> deserializeBatch(byte[] buffer) throws SerializationException {
+		return this.deserializeBatch(ByteBuffer.wrap(buffer));
+	}
 	
-	public static final String INVALID_MAGIC_NUMBER_FORMAT = "Invalid magic number for class: %s. Got: %d. Expected %d. Probably received inconsistent data.";
+	public List<StoredMessage> deserializeBatch(ByteBuffer buffer) throws SerializationException {
+		int magicNumber = buffer.getInt();
+		if (magicNumber != MESSAGE_BATCH_MAGIC) {
+			throw SerializationUtils.incorrectMagicNumber("MESSAGE_BATCH", magicNumber, MESSAGE_BATCH_MAGIC);
+		}
+
+		byte protocolVer = buffer.get();
+		if (protocolVer != MESSAGE_PROTOCOL_VER) {
+			throw new SerializationException(String.format(NOT_SUPPORTED_PROTOCOL_FORMAT, "message batches",
+					protocolVer, MESSAGE_PROTOCOL_VER));
+		}
+
+		int messagesCount = buffer.getInt();
+		List<StoredMessage> messages = new ArrayList<>(messagesCount);
+		for (int i = 0; i < messagesCount; ++i) {
+			int msgLen = buffer.getInt();
+			ByteBuffer msgBuf = ByteBuffer.wrap(buffer.array(), buffer.position(), msgLen);
+			messages.add(this.deserialize(msgBuf));
+			buffer.position(buffer.position() + msgLen);
+		}
+		
+		return messages;
+	}
 	
 	public StoredMessage deserialize(byte[] message) throws SerializationException {
 		ByteBuffer buffer = ByteBuffer.wrap(message);
-		long magicNumber = buffer.getLong();
-		if (magicNumber != StoredMessage.serialVersionUID) {
-			throw new SerializationException(String.format(INVALID_MAGIC_NUMBER_FORMAT,
-					StoredMessage.class.getSimpleName(), magicNumber, StoredMessage.serialVersionUID));
+		return deserialize(buffer);
+	}
+
+	public StoredMessage deserialize(ByteBuffer buffer) throws SerializationException {
+		short magicNumber = buffer.getShort();
+		if (magicNumber != MESSAGE_MAGIC) {
+			throw SerializationUtils.incorrectMagicNumber(StoredMessage.class.getSimpleName(), magicNumber, MESSAGE_MAGIC);
 		}
 		StoredMessageBuilder builder = new StoredMessageBuilder();
 		builder.setMessageId(readMessageId(buffer));
@@ -53,14 +90,10 @@ public class MessageDeserializer {
 	}
 
 	private StoredMessageId readMessageId(ByteBuffer buffer) throws SerializationException {
-		String stream = readStreamName(buffer);
+		String stream = readShortString(buffer);
 		Direction direction = getDirection(buffer.get());
 		long index = buffer.getLong();
 		return new StoredMessageId(stream, direction, index);
-	}
-
-	private Instant readInstant(ByteBuffer buffer) {
-		return Instant.ofEpochSecond(buffer.getLong(), buffer.getInt());
 	}
 
 	private void readMessageMetaData(ByteBuffer buffer, StoredMessageBuilder builder) throws SerializationException {
@@ -70,35 +103,6 @@ public class MessageDeserializer {
 			String value = readString(buffer);
 			builder.putMetadata(key, value);
 		}
-	}
-
-	private byte[] readBody(ByteBuffer buffer) {
-		int bodyLen = buffer.getInt();
-		byte[] body = new byte[bodyLen];
-		buffer.get(body);
-		return body;
-	}
-
-	private String readString(ByteBuffer buffer) throws SerializationException {
-		return readString(buffer, buffer.getInt());
-	}
-
-	private String readStreamName(ByteBuffer buffer) throws SerializationException {
-		return readString(buffer, Short.toUnsignedInt(buffer.getShort()));
-	}
-
-	private String readString(ByteBuffer buffer, int len) throws SerializationException {
-		if (len <= 0)
-			return "";
-
-		if (buffer.remaining() < len) {
-			throw new SerializationException(String.format("Expected string (%d bytes) is bigger than remaining buffer (%d)",
-					len, buffer.remaining()));
-		}
-		int currPos = buffer.position();
-		String str = new String(buffer.array(), currPos, len, StandardCharsets.UTF_8);
-		buffer.position(currPos + len);
-		return str;
 	}
 	
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.utils;
+package com.exactpro.cradle.serialization;
 
 import java.io.IOException;
 

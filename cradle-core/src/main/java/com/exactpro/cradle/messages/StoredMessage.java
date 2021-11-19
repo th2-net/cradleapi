@@ -28,7 +28,7 @@ import com.exactpro.cradle.utils.CompressionUtils;
  */
 public class StoredMessage implements Serializable
 {
-	public static final long serialVersionUID = 200983136307497672L;
+	private static final long serialVersionUID = 200983136307497672L;
 	
 	private final StoredMessageId id;
 	private final Instant timestamp;

@@ -17,9 +17,7 @@
 package com.exactpro.cradle.utils;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -27,8 +25,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.zip.DataFormatException;
 
+import com.exactpro.cradle.serialization.MessageDeserializer;
+import com.exactpro.cradle.serialization.MessageSerializer;
+import com.exactpro.cradle.serialization.SerializationException;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.SerializationUtils;
 
 import com.exactpro.cradle.messages.MessageToStore;
 import com.exactpro.cradle.messages.StoredMessage;
@@ -61,23 +61,7 @@ public class MessageUtils
 	 */
 	public static byte[] serializeMessages(Collection<StoredMessage> messages) throws IOException
 	{
-		byte[] batchContent;
-		try (ByteArrayOutputStream out = new ByteArrayOutputStream();
-				DataOutputStream dos = new DataOutputStream(out))
-		{
-			for (StoredMessage msg : messages)
-			{
-				if (msg == null)  //For case of not full batch
-					break;
-				
-				byte[] serializedMsg = serializer.serialize(msg);
-				dos.writeInt(serializedMsg.length);
-				dos.write(serializedMsg);
-			}
-			dos.flush();
-			batchContent = out.toByteArray();
-		}
-		return batchContent;
+		return serializer.serializeBatch(messages);
 	}
 	
 	/**
@@ -121,6 +105,7 @@ public class MessageUtils
 			}
 		}
 		return storedMessages;
+		
 	}
 	
 	/**
