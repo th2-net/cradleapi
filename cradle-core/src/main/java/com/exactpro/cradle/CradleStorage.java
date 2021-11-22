@@ -151,10 +151,7 @@ public abstract class CradleStorage
 		logger.info("Initializing storage");
 		
 		doInit(prepareStorage);
-		
-		Collection<BookInfo> loaded = loadBooks();
-		if (loaded != null)
-			loaded.forEach((b) -> books.put(b.getId(), b));
+		refreshBooks();
 		
 		initialized = true;
 		logger.info("Storage initialized");
@@ -308,6 +305,20 @@ public abstract class CradleStorage
 		book = new BookInfo(book.getId(), book.getFullName(), book.getDesc(), book.getCreated(), pages);
 		books.put(book.getId(), book);
 		return book;
+	}
+
+	/**
+	 * Getting information about books from storage and put it in internal cache
+	 * @return Collection of loaded books
+	 * @throws IOException if books data reading failed
+	 */
+	public Collection<BookInfo> refreshBooks() throws IOException
+	{
+		logger.info("Refreshing books from storage");
+		Collection<BookInfo> loaded = loadBooks();
+		if (loaded != null)
+			loaded.forEach(bookInfo -> books.putIfAbsent(bookInfo.getId(), bookInfo));
+		return loaded;
 	}
 	
 	/**
