@@ -16,20 +16,22 @@
 
 package com.exactpro.cradle.serialization;
 
-import com.exactpro.cradle.messages.StoredMessage;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 
 import static com.exactpro.cradle.serialization.Serialization.INVALID_MAGIC_NUMBER_FORMAT;
-import static com.exactpro.cradle.serialization.Serialization.MessageBatchConst.MESSAGE_MAGIC;
 
 public class SerializationUtils {
 
 	static void printBody(byte[] body, ByteBuffer buffer) {
-		buffer.putInt(body.length);
-		buffer.put(body);
+		if (body == null) {
+			buffer.putInt(-1);
+		} else {
+			buffer.putInt(body.length);
+			buffer.put(body);	
+		}
 	}
 
 	static void printShortString(String value, ByteBuffer buffer, String paramName) throws SerializationException {
@@ -45,19 +47,28 @@ public class SerializationUtils {
 
 	static void printString(String value, ByteBuffer buffer) {
 		if (value == null) {
-			value = "";
+			buffer.putInt(-1);
+		} else {
+			buffer.putInt(value.length());
+			buffer.put(value.getBytes(StandardCharsets.UTF_8));
 		}
-		buffer.putInt(value.length());
-		buffer.put(value.getBytes(StandardCharsets.UTF_8));
 	}
 
 	static void printInstant(Instant instant, ByteBuffer buffer) {
-		buffer.putLong(instant.getEpochSecond());
-		buffer.putInt(instant.getNano());
+		if (instant != null) {
+			buffer.putLong(instant.getEpochSecond());
+			buffer.putInt(instant.getNano());	
+		} else {
+			buffer.putLong(-1);
+			buffer.putInt(-1);
+		}
 	}
 
 	static byte[] readBody(ByteBuffer buffer) {
 		int bodyLen = buffer.getInt();
+		if (bodyLen < 0) {
+			return null;
+		}
 		byte[] body = new byte[bodyLen];
 		buffer.get(body);
 		return body;
@@ -72,8 +83,8 @@ public class SerializationUtils {
 	}
 
 	private static String readString(ByteBuffer buffer, int len) throws SerializationException {
-		if (len <= 0)
-			return "";
+		if (len < 0)
+			return null;
 
 		if (buffer.remaining() < len) {
 			throw new SerializationException(String.format("Expected string (%d bytes) is bigger than remaining buffer (%d)",
@@ -86,7 +97,14 @@ public class SerializationUtils {
 	}
 
 	static Instant readInstant(ByteBuffer buffer) {
-		return Instant.ofEpochSecond(buffer.getLong(), buffer.getInt());
+		long seconds = buffer.getLong();
+		int nanos = buffer.getInt();
+		if (seconds == -1 && nanos == -1) {
+			return null;
+		} else {
+			return Instant.ofEpochSecond(seconds, nanos);	
+		}
+		
 	}
 
 	static void printSingleBoolean(boolean instant, ByteBuffer buffer) {

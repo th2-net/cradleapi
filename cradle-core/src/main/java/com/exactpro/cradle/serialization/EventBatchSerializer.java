@@ -18,6 +18,7 @@ package com.exactpro.cradle.serialization;
 
 import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
 import com.exactpro.cradle.testevents.BatchedStoredTestEventMetadata;
+import com.exactpro.cradle.testevents.StoredTestEventId;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -108,8 +109,8 @@ public class EventBatchSerializer {
 		===
 		47
 		 */
-		return  47 + message.getId().getId().length() + message.getName().length() + message.getType().length()
-				+ message.getParentId().getId().length() + message.getContent().length;
+		return  47 + lenId(message.getId()) + lenStr(message.getName()) + lenStr(message.getType())
+				+ lenId(message.getParentId()) + (message.getContent() != null ? message.getContent().length : 0);
 		
 	}
 
@@ -127,9 +128,16 @@ public class EventBatchSerializer {
 		===
 		43
 		 */
-		return  43 + message.getId().getId().length() + message.getName().length() + message.getType().length()
-				+ message.getParentId().getId().length();
+		return  43 + lenId(message.getId()) + lenStr(message.getName()) + lenStr(message.getType())
+				+ lenId(message.getParentId());
+	}
 
+	private int lenId(StoredTestEventId id) {
+		return id != null && id.getId() != null ? id.getId().length() : 0;
+	}
+	
+	private int lenStr(String str) {
+		return str != null ? str.length() : 0;
 	}
 
 	public <T> SerializationBatchSizes  calculateBatchEventMetadataSize(Collection<BatchedStoredTestEventMetadata> message) {

@@ -19,6 +19,7 @@ package com.exactpro.cradle.serialization;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.messages.StoredMessageMetadata;
+import com.exactpro.cradle.testevents.StoredTestEventId;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -86,16 +87,20 @@ public class MessageSerializer {
 		 Collapsed constant = 33 
 		 */
 
-		int i = message.getId().getStreamName().length() 
-			+ message.getContent().length + 33;
+		int i = (message.getId() != null ? lenStr(message.getId().getStreamName()) : 0) 
+			+ (message.getContent() != null ? message.getContent().length : 0) + 33;
 		Map<String, String> md ;
 		if (message.getMetadata() != null && (md = message.getMetadata().toMap()) != null) {
 			for (Map.Entry<String, String> entry : md.entrySet()) {
-				i += entry.getKey().length()  // key
-					+ entry.getValue().length() + 8; // value + 2 length
+				i += lenStr(entry.getKey())  // key
+					+ lenStr(entry.getValue()) + 8; // value + 2 length
 			}
 		}
 		return i;
+	}
+
+	private int lenStr(String str) {
+		return str != null ? str.length() : 0;
 	}
 
 	public SerializationBatchSizes calculateMessageBatchSize(Collection<StoredMessage> message) {
