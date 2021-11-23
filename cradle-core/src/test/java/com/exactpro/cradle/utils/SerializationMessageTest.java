@@ -32,7 +32,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class SerializationTest {
+public class SerializationMessageTest {
 	
 	@Test
 	public void serializeDeserialize() throws SerializationException {
@@ -120,7 +120,7 @@ public class SerializationTest {
 		Assert.assertEquals(buffer.position(), serializer.calculateMessageSize(build));
 	}
 	
-	private List<StoredMessage> getBatch() {
+	static List<StoredMessage> getBatch() {
 		StoredMessageBuilder builder = new StoredMessageBuilder();
 		builder.setStreamName("streamname12345");
 		builder.setIndex(123456789010111213L);

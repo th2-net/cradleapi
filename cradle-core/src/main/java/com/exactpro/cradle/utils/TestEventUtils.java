@@ -31,8 +31,12 @@ import java.util.zip.DataFormatException;
 
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.serialization.EventBatchDeserializer;
+import com.exactpro.cradle.serialization.EventBatchSerializer;
 import com.exactpro.cradle.serialization.EventMessageIdDeserializer;
 import com.exactpro.cradle.serialization.EventMessageIdSerializer;
+import com.exactpro.cradle.serialization.LegacyEventDeserializer;
+import com.exactpro.cradle.serialization.SerializationConsumer;
 import com.exactpro.cradle.testevents.*;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -41,6 +45,9 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public class TestEventUtils
 {
+	
+	public static final EventBatchDeserializer deserializer = new EventBatchDeserializer();
+	public static final EventBatchSerializer serializer = new EventBatchSerializer();
 	
 	/**
 	 * Checks that test event has all necessary fields set
@@ -68,16 +75,7 @@ public class TestEventUtils
 	 */
 	public static byte[] serializeTestEvents(Collection<BatchedStoredTestEvent> testEvents) throws IOException
 	{
-		byte[] batchContent;
-		try (ByteArrayOutputStream out = new ByteArrayOutputStream();
-				DataOutputStream dos = new DataOutputStream(out))
-		{
-			for (BatchedStoredTestEvent te : testEvents)
-				serialize(te, dos);
-			dos.flush();
-			batchContent = out.toByteArray();
-		}
-		return batchContent;
+		return serializer.serializeEventBatch(testEvents);
 	}
 
 	/**
@@ -88,16 +86,7 @@ public class TestEventUtils
 	 */
 	public static byte[] serializeTestEventsMetadata(Collection<BatchedStoredTestEventMetadata> testEventsMetadata) throws IOException
 	{
-		byte[] batchContent;
-		try (ByteArrayOutputStream out = new ByteArrayOutputStream();
-				DataOutputStream dos = new DataOutputStream(out))
-		{
-			for (BatchedStoredTestEventMetadata te : testEventsMetadata)
-				serialize(te, dos);
-			dos.flush();
-			batchContent = CompressionUtils.compressData(out.toByteArray());
-		}
-		return batchContent;
+		return serializer.serializeEventMetadataBatch(testEventsMetadata);
 	}
 	
 	/**
@@ -112,18 +101,34 @@ public class TestEventUtils
 			Map<StoredTestEventId, Collection<StoredMessageId>> ids)
 			throws IOException, CradleStorageException
 	{
-		try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(contentBytes)))
-		{
-			while (dis.available() != 0)
-			{
-				byte[] teBytes = readNextData(dis);
-				BatchedStoredTestEvent tempTe = deserializeTestEvent(teBytes);
-				
-				if (ids == null)
-					StoredTestEventBatch.addTestEvent(tempTe, batch);
-				else
-					StoredTestEventBatch.addTestEvent(tempTe, batch, ids.get(tempTe.getId()));
+		SerializationConsumer<BatchedStoredTestEvent> action = it -> {
+			if (ids == null)
+				StoredTestEventBatch.addTestEvent(it, batch);
+			else
+				StoredTestEventBatch.addTestEvent(it, batch, ids.get(it.getId()));
+		};
+
+		try {
+			deserializeTestEvents(contentBytes, action);
+		} catch (Exception e) {
+			if (e instanceof IOException) {
+				throw (IOException) e;
+			} else {
+				throw new IOException(e);
 			}
+		}
+		
+	}
+
+	public static void deserializeTestEvents(byte[] contentBytes, 
+			SerializationConsumer<BatchedStoredTestEvent> action) throws Exception
+	{
+		if (deserializer.checkEventBatchHeader(contentBytes)) {
+			deserializer.deserializeBatchEntries(contentBytes, action);
+		} else {
+			//This code is for backward compatibility. 
+
+			LegacyEventDeserializer.deserializeTestEvents(contentBytes, action);
 		}
 	}
 
@@ -133,8 +138,22 @@ public class TestEventUtils
 	 * @param batch to add events to
 	 * @throws IOException if deserialization failed
 	 */
-	public static void deserializeTestEventsMetadata(byte[] contentBytes, StoredTestEventBatchMetadata batch) 
+	public static void deserializeTestEventsMetadata(byte[] contentBytes, StoredTestEventBatchMetadata batch)
 			throws IOException
+	{
+		deserializeTestEventsMetadata(contentBytes, batch.getId().toString(), 
+				it -> StoredTestEventBatchMetadata.addTestEventMetadata(it, batch) );
+	}
+
+	/**
+	 * Deserializes all test events metadata, adding them to given batch for metadata
+	 * @param contentBytes to deserialize events metadata from
+	 * @param batchId batchId
+	 * @param action action under test metadata  
+	 * @throws IOException if deserialization failed
+	 */
+	public static void deserializeTestEventsMetadata(byte[] contentBytes, String batchId,
+		 	SerializationConsumer<BatchedStoredTestEventMetadata> action) throws IOException
 	{
 		try
 		{
@@ -142,20 +161,26 @@ public class TestEventUtils
 		}
 		catch (IOException e)
 		{
-			throw new IOException("Could not decompress metadata of test events from batch with ID '"+batch.getId()+"'", e);
+			throw new IOException("Could not decompress metadata of test events from batch with ID '"+batchId+"'", e);
 		}
 		catch (DataFormatException e)
 		{
 			//Data seems to be not compressed, i.e written by Cradle API prior to 2.9.0, let's try to deserialize events from bytes as they are
 		}
 		
-		try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(contentBytes)))
-		{
-			while (dis.available() != 0)
-			{
-				byte[] teBytes = readNextData(dis);
-				BatchedStoredTestEventMetadata tempTe = deserializeTestEventMetadata(teBytes);
-				StoredTestEventBatchMetadata.addTestEventMetadata(tempTe, batch);
+		try {
+			if (deserializer.checkEventBatchMetadataHeader(contentBytes)) {
+				deserializer.deserializeBatchEntriesMetadata(contentBytes, action);
+			} else {
+				//This code is for backward compatibility. 
+
+				LegacyEventDeserializer.deserializeTestEventsMetadata(contentBytes, action);
+			}
+		} catch (Exception e) {
+			if (e instanceof IOException) {
+				throw (IOException) e;
+			} else {
+				throw new IOException(e);
 			}
 		}
 	}
@@ -194,31 +219,7 @@ public class TestEventUtils
 		}
 	}
 	
-	
-	private static void serialize(Serializable data, DataOutputStream target) throws IOException
-	{
-		byte[] serializedData = SerializationUtils.serialize(data);
-		target.writeInt(serializedData.length);
-		target.write(serializedData);
-	}
-	
-	private static byte[] readNextData(DataInputStream source) throws IOException
-	{
-		int size = source.readInt();
-		byte[] result = new byte[size];
-		source.read(result);
-		return result;
-	}
-	
-	private static BatchedStoredTestEvent deserializeTestEvent(byte[] bytes)
-	{
-		return (BatchedStoredTestEvent)SerializationUtils.deserialize(bytes);
-	}
-	
-	private static BatchedStoredTestEventMetadata deserializeTestEventMetadata(byte[] bytes)
-	{
-		return (BatchedStoredTestEventMetadata)SerializationUtils.deserialize(bytes);
-	}
+
 
 	public static Collection<StoredMessageId> deserializeLinkedMessageIds(byte[] array) throws IOException {
 		return EventMessageIdDeserializer.deserializeLinkedMessageIds(array);

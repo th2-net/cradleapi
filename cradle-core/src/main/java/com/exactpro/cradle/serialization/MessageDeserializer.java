@@ -21,10 +21,14 @@ import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBuilder;
 import com.exactpro.cradle.messages.StoredMessageId;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.exactpro.cradle.serialization.Serialization.EventBatchConst.EVENT_BATCH_MAGIC;
 import static com.exactpro.cradle.serialization.Serialization.INVALID_MAGIC_NUMBER_FORMAT;
 import static com.exactpro.cradle.serialization.Serialization.MessageBatchConst.*;
 import static com.exactpro.cradle.serialization.Serialization.NOT_SUPPORTED_PROTOCOL_FORMAT;
@@ -35,11 +39,15 @@ import static com.exactpro.cradle.serialization.SerializationUtils.readBody;
 
 public class MessageDeserializer {
 
+	public boolean checkMessageBatchHeader(byte[] array) {
+		return ByteBuffer.wrap(array, 0, 4).getInt() == MESSAGE_BATCH_MAGIC;
+	}
+	
 	public List<StoredMessage> deserializeBatch(byte[] buffer) throws SerializationException {
 		return this.deserializeBatch(ByteBuffer.wrap(buffer));
 	}
 	
-	public List<StoredMessage> deserializeBatch(ByteBuffer buffer) throws SerializationException {
+	private void checkMessageBatchMagics(ByteBuffer buffer) throws SerializationException {
 		int magicNumber = buffer.getInt();
 		if (magicNumber != MESSAGE_BATCH_MAGIC) {
 			throw SerializationUtils.incorrectMagicNumber("MESSAGE_BATCH", magicNumber, MESSAGE_BATCH_MAGIC);
@@ -50,6 +58,10 @@ public class MessageDeserializer {
 			throw new SerializationException(String.format(NOT_SUPPORTED_PROTOCOL_FORMAT, "message batches",
 					protocolVer, MESSAGE_PROTOCOL_VER));
 		}
+	}
+	
+	public List<StoredMessage> deserializeBatch(ByteBuffer buffer) throws SerializationException {
+		checkMessageBatchMagics(buffer);
 
 		int messagesCount = buffer.getInt();
 		List<StoredMessage> messages = new ArrayList<>(messagesCount);
@@ -62,10 +74,26 @@ public class MessageDeserializer {
 		
 		return messages;
 	}
+
+	public StoredMessage deserializeOneMessage(ByteBuffer buffer, StoredMessageId id) throws SerializationException {
+		checkMessageBatchMagics(buffer);
+
+		int messagesCount = buffer.getInt();
+		for (int i = 0; i < messagesCount; ++i) {
+			int msgLen = buffer.getInt();
+			ByteBuffer msgBuf = ByteBuffer.wrap(buffer.array(), buffer.position(), msgLen);
+			StoredMessage msg = this.deserialize(msgBuf);
+			if (msg.getId().equals(id)) {
+				return msg;
+			}
+			buffer.position(buffer.position() + msgLen);
+		}
+
+		return null;
+	}
 	
 	public StoredMessage deserialize(byte[] message) throws SerializationException {
-		ByteBuffer buffer = ByteBuffer.wrap(message);
-		return deserialize(buffer);
+		return deserialize(ByteBuffer.wrap(message));
 	}
 
 	public StoredMessage deserialize(ByteBuffer buffer) throws SerializationException {

@@ -96,42 +96,42 @@ public class SerializationEventBatchTest {
 	}
 
 	@Test
-	public void serializeDeserialize3() throws SerializationException {
+	public void serializeDeserialize3() throws Exception {
 		List<BatchedStoredTestEvent> build = createBatchEvents();
 		EventBatchSerializer serializer = new EventBatchSerializer();
 		byte[] serialize = serializer.serializeEventBatch(build);
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
 		List<BatchedStoredTestEvent> deserialize = deserializer.deserializeBatchEntries(serialize);
 		for (int i = 0, to = Math.max(build.size(), deserialize.size()); i < to; ++i) {
-			compare(build.get(0), deserialize.get(0));
+			compare(build.get(i), deserialize.get(i));
 		}
 	}
 
 	@Test
-	public void serializeDeserialize4() throws SerializationException {
+	public void serializeDeserialize4() throws Exception {
 		List<BatchedStoredTestEventMetadata> build = createBatchMetadata();
 		EventBatchSerializer serializer = new EventBatchSerializer();
 		byte[] serialize = serializer.serializeEventMetadataBatch(build);
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
 		List<BatchedStoredTestEventMetadata> deserialize = deserializer.deserializeBatchEntriesMetadata(serialize);
 		for (int i = 0, to = Math.max(build.size(), deserialize.size()); i < to; ++i) {
-			compare(build.get(0), deserialize.get(0));
+			compare(build.get(i), deserialize.get(i));
 		}
-	}	
+	}
 
-	private BatchedStoredTestEventMetadata createBatchedStoredTestEventMetadata(String name) {
+	static BatchedStoredTestEventMetadata createBatchedStoredTestEventMetadata(String name) {
 		BatchedStoredTestEventMetadataBuilder builder = new BatchedStoredTestEventMetadataBuilder();
 		builder.setSuccess(true);
 		builder.setStartTimestamp(Instant.parse("2007-12-03T10:15:30.00Z"));
 		builder.setEndTimestamp(Instant.parse("2007-12-03T10:15:31.00Z"));
 		builder.setId(new StoredTestEventId(UUID.randomUUID().toString()));
 		builder.setParentId(new StoredTestEventId(UUID.randomUUID().toString()));
-		builder.setName("Test even1234567890");
-		builder.setType("Test even1234567890 ----");
+		builder.setName(name);
+		builder.setType(name + " ----");
 		return builder.build();
 	}
 
-	private BatchedStoredTestEvent createBatchedStoredTestEvent(String name) {
+	static BatchedStoredTestEvent createBatchedStoredTestEvent(String name) {
 		BatchedStoredTestEventBuilder builder = new BatchedStoredTestEventBuilder();
 		builder.setSuccess(true);
 		builder.setStartTimestamp(Instant.parse("2007-12-03T10:15:30.00Z"));
@@ -144,7 +144,7 @@ public class SerializationEventBatchTest {
 		return builder.build();
 	}
 
-	private List<BatchedStoredTestEvent> createBatchEvents() {
+	static List<BatchedStoredTestEvent> createBatchEvents() {
 		ArrayList<BatchedStoredTestEvent> objects = new ArrayList<>(3);
 		objects.add(createBatchedStoredTestEvent("batch1"));
 		objects.add(createBatchedStoredTestEvent("batch2"));
@@ -152,7 +152,7 @@ public class SerializationEventBatchTest {
 		return objects;
 	}
 
-	private List<BatchedStoredTestEventMetadata> createBatchMetadata() {
+	static List<BatchedStoredTestEventMetadata> createBatchMetadata() {
 		ArrayList<BatchedStoredTestEventMetadata> objects = new ArrayList<>(3);
 		objects.add(createBatchedStoredTestEventMetadata("batch1"));
 		objects.add(createBatchedStoredTestEventMetadata("batch2"));
@@ -160,7 +160,7 @@ public class SerializationEventBatchTest {
 		return objects;
 	}
 	
-	private static void compare(BatchedStoredTestEvent o1, BatchedStoredTestEvent o2) {
+	static void compare(BatchedStoredTestEvent o1, BatchedStoredTestEvent o2) {
 		Assert.assertEquals(o1.getContent(), o2.getContent());
 		Assert.assertEquals(o1.getParentId(), o2.getParentId());
 		Assert.assertEquals(o1.getId(), o2.getId());
@@ -171,7 +171,7 @@ public class SerializationEventBatchTest {
 		Assert.assertEquals(o1.getType(), o2.getType());
 	}
 
-	private static void compare(BatchedStoredTestEventMetadata o1, BatchedStoredTestEventMetadata o2) {
+	static void compare(BatchedStoredTestEventMetadata o1, BatchedStoredTestEventMetadata o2) {
 		Assert.assertEquals(o1.getParentId(), o2.getParentId());
 		Assert.assertEquals(o1.getId(), o2.getId());
 		Assert.assertEquals(o1.getStartTimestamp(), o2.getStartTimestamp());

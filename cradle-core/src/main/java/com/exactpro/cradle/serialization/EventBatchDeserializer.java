@@ -25,7 +25,6 @@ import com.exactpro.cradle.testevents.StoredTestEventId;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 
 import static com.exactpro.cradle.serialization.Serialization.EventBatchConst.EVENT_BATCH_ENT_MAGIC;
 import static com.exactpro.cradle.serialization.Serialization.EventBatchConst.EVENT_BATCH_MAGIC;
@@ -41,8 +40,22 @@ import static com.exactpro.cradle.serialization.SerializationUtils.readSingleBoo
 import static com.exactpro.cradle.serialization.SerializationUtils.readString;
 
 public class EventBatchDeserializer {
+	
+	public boolean checkEventBatchHeader(byte[] array) {
+		return ByteBuffer.wrap(array, 0, 4).getInt() == EVENT_BATCH_MAGIC;
+	}
 
-	public void deserializeBatchEntries(ByteBuffer buffer, Consumer<BatchedStoredTestEvent> action) throws SerializationException {
+	public boolean checkEventBatchMetadataHeader(byte[] array) {
+		return ByteBuffer.wrap(array, 0, 4).getInt() == EVENT_BATCH_MD_MAGIC;
+	}
+
+	public void deserializeBatchEntries(byte[] buffer, SerializationConsumer<BatchedStoredTestEvent> action)
+			throws Exception {
+		deserializeBatchEntries(ByteBuffer.wrap(buffer), action);
+	}
+
+	public void deserializeBatchEntries(ByteBuffer buffer, SerializationConsumer<BatchedStoredTestEvent> action)
+			throws Exception {
 		int magicNumber = buffer.getInt();
 		if (magicNumber != EVENT_BATCH_MAGIC) {
 			throw SerializationUtils.incorrectMagicNumber("EVENT_BATCH", magicNumber, EVENT_BATCH_MAGIC);
@@ -64,7 +77,13 @@ public class EventBatchDeserializer {
 		}
 	}
 
-	public void deserializeBatchEntriesMetadata(ByteBuffer buffer, Consumer<BatchedStoredTestEventMetadata> action) throws SerializationException {
+	public void deserializeBatchEntriesMetadata(byte[] buffer, SerializationConsumer<BatchedStoredTestEventMetadata> action)
+			throws Exception {
+		deserializeBatchEntriesMetadata(ByteBuffer.wrap(buffer), action);
+	}
+
+	public void deserializeBatchEntriesMetadata(ByteBuffer buffer, SerializationConsumer<BatchedStoredTestEventMetadata> action)
+			throws Exception {
 		int magicNumber = buffer.getInt();
 		if (magicNumber != EVENT_BATCH_MD_MAGIC) {
 			throw SerializationUtils.incorrectMagicNumber("EVENT_BATCH_METADATA", magicNumber, EVENT_BATCH_MAGIC);
@@ -86,28 +105,24 @@ public class EventBatchDeserializer {
 		}
 	}
 
-	public List<BatchedStoredTestEvent> deserializeBatchEntries(ByteBuffer buffer) throws SerializationException {
+	public List<BatchedStoredTestEvent> deserializeBatchEntries(ByteBuffer buffer) throws Exception {
 		final ArrayList<BatchedStoredTestEvent> batches = new ArrayList<>();
 		deserializeBatchEntries(buffer, batches::add);
 		return batches;
 	}
 
-	public List<BatchedStoredTestEventMetadata> deserializeBatchEntriesMetadata(ByteBuffer buffer) throws SerializationException {
+	public List<BatchedStoredTestEvent> deserializeBatchEntries(byte[] buffer) throws Exception {
+		return deserializeBatchEntries(ByteBuffer.wrap(buffer));
+	}
+
+	public List<BatchedStoredTestEventMetadata> deserializeBatchEntriesMetadata(ByteBuffer buffer) throws Exception {
 		final ArrayList<BatchedStoredTestEventMetadata> batches = new ArrayList<>();
 		deserializeBatchEntriesMetadata(buffer, batches::add);
 		return batches;
 	}
-
-	public List<BatchedStoredTestEvent> deserializeBatchEntries(byte[] buffer) throws SerializationException {
-		final ArrayList<BatchedStoredTestEvent> batches = new ArrayList<>();
-		deserializeBatchEntries(ByteBuffer.wrap(buffer), batches::add);
-		return batches;
-	}
-
-	public List<BatchedStoredTestEventMetadata> deserializeBatchEntriesMetadata(byte[] buffer) throws SerializationException {
-		final ArrayList<BatchedStoredTestEventMetadata> batches = new ArrayList<>();
-		deserializeBatchEntriesMetadata(ByteBuffer.wrap(buffer), batches::add);
-		return batches;
+	
+	public List<BatchedStoredTestEventMetadata> deserializeBatchEntriesMetadata(byte[] buffer) throws Exception {
+		return deserializeBatchEntriesMetadata(ByteBuffer.wrap(buffer));
 	}
 
 	public BatchedStoredTestEvent deserializeBatchEntry(byte[] buffer) throws SerializationException {

@@ -16,18 +16,14 @@
 
 package com.exactpro.cradle.serialization;
 
-import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
 import com.exactpro.cradle.testevents.BatchedStoredTestEventMetadata;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.serialization.Serialization.EventBatchConst.*;
-import static com.exactpro.cradle.serialization.Serialization.MessageBatchConst.MESSAGE_BATCH_MAGIC;
-import static com.exactpro.cradle.serialization.Serialization.MessageBatchConst.MESSAGE_PROTOCOL_VER;
 import static com.exactpro.cradle.serialization.SerializationUtils.printBody;
 import static com.exactpro.cradle.serialization.SerializationUtils.printInstant;
 import static com.exactpro.cradle.serialization.SerializationUtils.printSingleBoolean;
