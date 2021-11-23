@@ -79,6 +79,13 @@ public interface MessageBatchOperator
 			+ "ORDER BY "+DIRECTION+" DESC, "+MESSAGE_INDEX+" DESC LIMIT 1")
 	CompletableFuture<Row> getLastIndex(UUID instanceId, String streamName, String direction,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+	@Query("SELECT " + MESSAGE_INDEX + " FROM ${qualifiedTableId} WHERE "
+			+ INSTANCE_ID + "=:instanceId AND " + STREAM_NAME + "=:streamName AND " + DIRECTION + "=:direction "
+			+ "AND " + MESSAGE_INDEX + "<=:messageIndex "
+			+ "ORDER BY " + DIRECTION + " DESC, " + MESSAGE_INDEX + " DESC LIMIT 1")
+	CompletableFuture<Row> getBatchIndex(UUID instanceId, String streamName, String direction, long messageIndex,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@QueryProvider(providerClass = MessageBatchQueryProvider.class, entityHelpers = DetailedMessageBatchEntity.class)
 	CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> filterMessages(UUID instanceId,
