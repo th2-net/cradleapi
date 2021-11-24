@@ -33,6 +33,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class SerializationBackwardCompatibility {
 
 	private static byte[] serializeMessages(Collection<StoredMessage> messages) throws IOException
@@ -113,9 +115,7 @@ public class SerializationBackwardCompatibility {
 		byte[] bytes = serializeTestEvents(batch);
 		ArrayList<BatchedStoredTestEvent> events = new ArrayList<>();
 		TestEventUtils.deserializeTestEvents(bytes, events::add);
-		for (int i = 0, to = Math.max(batch.size(), events.size()); i < to; ++i) {
-			SerializationEventBatchTest.compare(batch.get(i), events.get(i));
-		}
+		assertThat(batch).usingRecursiveComparison().isEqualTo(events);
 	}
 
 	@Test
@@ -124,9 +124,7 @@ public class SerializationBackwardCompatibility {
 		byte[] bytes = new EventBatchSerializer().serializeEventBatch(batch);
 		ArrayList<BatchedStoredTestEvent> events = new ArrayList<>();
 		TestEventUtils.deserializeTestEvents(bytes, events::add);
-		for (int i = 0, to = Math.max(batch.size(), events.size()); i < to; ++i) {
-			SerializationEventBatchTest.compare(batch.get(i), events.get(i));
-		}
+		assertThat(batch).usingRecursiveComparison().isEqualTo(events);
 	}
 
 	@Test
@@ -135,9 +133,7 @@ public class SerializationBackwardCompatibility {
 		byte[] bytes = serializeTestEventsMetadata(batch);
 		ArrayList<BatchedStoredTestEventMetadata> events = new ArrayList<>();
 		TestEventUtils.deserializeTestEventsMetadata(bytes, "batch123", events::add);
-		for (int i = 0, to = Math.max(batch.size(), events.size()); i < to; ++i) {
-			SerializationEventBatchTest.compare(batch.get(i), events.get(i));
-		}
+		assertThat(batch).usingRecursiveComparison().isEqualTo(events);
 	}
 	
 
@@ -147,9 +143,7 @@ public class SerializationBackwardCompatibility {
 		byte[] bytes = new EventBatchSerializer().serializeEventMetadataBatch(batch);
 		ArrayList<BatchedStoredTestEventMetadata> events = new ArrayList<>();
 		TestEventUtils.deserializeTestEventsMetadata(bytes, "batch123", events::add);
-		for (int i = 0, to = Math.max(batch.size(), events.size()); i < to; ++i) {
-			SerializationEventBatchTest.compare(batch.get(i), events.get(i));
-		}
+		assertThat(batch).usingRecursiveComparison().isEqualTo(events);
 	}
 
 }

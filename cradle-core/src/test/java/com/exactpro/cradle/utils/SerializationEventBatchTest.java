@@ -35,6 +35,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class SerializationEventBatchTest {
 
 	@Test
@@ -81,7 +83,7 @@ public class SerializationEventBatchTest {
 		byte[] serialize = serializer.serializeEventRecord(build);
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
 		BatchedStoredTestEvent deserialize = deserializer.deserializeBatchEntry(serialize);
-		compare(deserialize, build);
+		assertThat(build).usingRecursiveComparison().isEqualTo(deserialize);
 	}
 
 	
@@ -92,7 +94,7 @@ public class SerializationEventBatchTest {
 		byte[] serialize = serializer.serializeEventMetadataRecord(build);
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
 		BatchedStoredTestEventMetadata deserialize = deserializer.deserializeBatchEntryMetadata(serialize);
-		compare(deserialize, build);
+		assertThat(build).usingRecursiveComparison().isEqualTo(deserialize);
 	}
 
 	@Test
@@ -102,9 +104,7 @@ public class SerializationEventBatchTest {
 		byte[] serialize = serializer.serializeEventBatch(build);
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
 		List<BatchedStoredTestEvent> deserialize = deserializer.deserializeBatchEntries(serialize);
-		for (int i = 0, to = Math.max(build.size(), deserialize.size()); i < to; ++i) {
-			compare(build.get(i), deserialize.get(i));
-		}
+		assertThat(build).usingRecursiveComparison().isEqualTo(deserialize);
 	}
 
 	@Test
@@ -114,9 +114,7 @@ public class SerializationEventBatchTest {
 		byte[] serialize = serializer.serializeEventMetadataBatch(build);
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
 		List<BatchedStoredTestEventMetadata> deserialize = deserializer.deserializeBatchEntriesMetadata(serialize);
-		for (int i = 0, to = Math.max(build.size(), deserialize.size()); i < to; ++i) {
-			compare(build.get(i), deserialize.get(i));
-		}
+		assertThat(build).usingRecursiveComparison().isEqualTo(deserialize);
 	}
 
 	static BatchedStoredTestEventMetadata createBatchedStoredTestEventMetadata(String name) {
@@ -158,25 +156,5 @@ public class SerializationEventBatchTest {
 		objects.add(createBatchedStoredTestEventMetadata("batch2"));
 		objects.add(createBatchedStoredTestEventMetadata("batch3"));
 		return objects;
-	}
-	
-	static void compare(BatchedStoredTestEvent o1, BatchedStoredTestEvent o2) {
-		Assert.assertEquals(o1.getContent(), o2.getContent());
-		Assert.assertEquals(o1.getParentId(), o2.getParentId());
-		Assert.assertEquals(o1.getId(), o2.getId());
-		Assert.assertEquals(o1.getMessageIds(), o2.getMessageIds());
-		Assert.assertEquals(o1.getStartTimestamp(), o2.getStartTimestamp());
-		Assert.assertEquals(o1.getEndTimestamp(), o2.getEndTimestamp());
-		Assert.assertEquals(o1.getName(), o2.getName());
-		Assert.assertEquals(o1.getType(), o2.getType());
-	}
-
-	static void compare(BatchedStoredTestEventMetadata o1, BatchedStoredTestEventMetadata o2) {
-		Assert.assertEquals(o1.getParentId(), o2.getParentId());
-		Assert.assertEquals(o1.getId(), o2.getId());
-		Assert.assertEquals(o1.getStartTimestamp(), o2.getStartTimestamp());
-		Assert.assertEquals(o1.getEndTimestamp(), o2.getEndTimestamp());
-		Assert.assertEquals(o1.getName(), o2.getName());
-		Assert.assertEquals(o1.getType(), o2.getType());
 	}
 }
