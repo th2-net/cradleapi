@@ -60,6 +60,12 @@ public interface MessageBatchOperator
 	CompletableFuture<Row> getLastSequence(String page, String sessionAlias, String direction,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
+	@Query("SELECT " + SEQUENCE + " FROM ${qualifiedTableId} WHERE " + PAGE + "=:page"
+			+ " AND " + SESSION_ALIAS + "=:sessionAlias AND " + DIRECTION + "=:direction "
+			+ " ORDER BY " + MESSAGE_DATE + " ASC, " + MESSAGE_TIME + " ASC, " + SEQUENCE + " ASC LIMIT 1" )
+	CompletableFuture<Row> getFirstSequence(String page, String sessionAlias, String direction,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
 	@QueryProvider(providerClass = CommonQueryProvider.class, entityHelpers = MessageBatchEntity.class)
 	CompletableFuture<MappedAsyncPagingIterable<MessageBatchEntity>> getByFilter(CassandraStoredMessageFilter filter, 
 			ExecutorService composingService,

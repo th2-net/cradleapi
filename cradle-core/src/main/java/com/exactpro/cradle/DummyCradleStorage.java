@@ -182,7 +182,14 @@ public class DummyCradleStorage extends CradleStorage
 	{
 		return 0;
 	}
-	
+
+	@Override
+	protected long doGetFirstSequence(String sessionAlias, Direction direction, BookId bookId)
+			throws IOException, CradleStorageException
+	{
+		return 0;
+	}
+
 	@Override
 	protected Collection<String> doGetSessionAliases(BookId bookId) throws IOException
 	{

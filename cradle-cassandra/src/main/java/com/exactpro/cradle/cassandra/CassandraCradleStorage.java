@@ -531,40 +531,57 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	@Override
 	protected long doGetLastSequence(String sessionAlias, Direction direction, BookId bookId)
-			throws IOException, CradleStorageException
+			throws CradleStorageException
+	{
+		return doGetBoundarySequence(sessionAlias, direction, bookId, false);
+	}
+
+	@Override
+	protected long doGetFirstSequence(String sessionAlias, Direction direction, BookId bookId)
+			throws CradleStorageException
+	{
+		return doGetBoundarySequence(sessionAlias, direction, bookId, true);
+	}
+
+	private long doGetBoundarySequence(String sessionAlias, Direction direction, BookId bookId, boolean first)
+			throws CradleStorageException
 	{
 		BookOperators bookOps = ops.getOperators(bookId);
 		MessageBatchOperator mbOp = bookOps.getMessageBatchOperator();
 		BookInfo book = bpc.getBook(bookId);
-		PageInfo lastPage = book.getLastPage();
+		PageInfo currentPage = first ? book.getFirstPage() : book.getLastPage();
 		Row row = null;
-		while (row == null && lastPage != null)
+
+		while (row == null && currentPage != null)
 		{
 			try
 			{
-				row = mbOp.getLastSequence(lastPage.getId().getName(), sessionAlias, direction.getLabel(),
-						readAttrs).get();
+				row = first ? mbOp.getFirstSequence(currentPage.getId().getName(), sessionAlias, direction.getLabel(),
+						readAttrs).get()
+						: mbOp.getLastSequence(currentPage.getId().getName(), sessionAlias, direction.getLabel(),
+								readAttrs).get();
 			}
 			catch (InterruptedException | ExecutionException e)
 			{
-				String msg = String.format("Error occurs while getting last sequence for page '%s', session alias '%s', " +
-						"direction '%s'", lastPage.getId().getName(), sessionAlias, direction);
+				String msg = String.format("Error occurs while getting %s sequence for page '%s', session alias '%s', " +
+						"direction '%s'", first ? "first" : "last", currentPage.getId().getName(), sessionAlias, direction);
 				throw new CradleStorageException(msg, e);
 			}
 
 			if (row == null)
-				lastPage = book.getPreviousPage(lastPage.getStarted());
+				currentPage = first ? book.getNextPage(currentPage.getStarted())
+						: book.getPreviousPage(currentPage.getStarted());
 		}
 		if (row == null)
 		{
 			logger.debug("There is no messages yet in book '{}' with session alias '{}' and direction '{}'", bookId,
 					sessionAlias, direction);
-			return 0L;
+			return EMPTY_MESSAGE_INDEX;
 		}
 
-		return row.getLong(LAST_SEQUENCE);
+		return row.getLong(first ? SEQUENCE : LAST_SEQUENCE);
 	}
-	
+
 	@Override
 	protected Collection<String> doGetSessionAliases(BookId bookId) throws IOException, CradleStorageException
 	{

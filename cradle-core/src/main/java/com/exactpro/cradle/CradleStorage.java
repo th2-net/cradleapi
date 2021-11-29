@@ -46,6 +46,7 @@ public abstract class CradleStorage
 {
 	private static final Logger logger = LoggerFactory.getLogger(CradleStorage.class);
 	public static final ZoneOffset TIMEZONE_OFFSET = ZoneOffset.UTC;
+	public static final long EMPTY_MESSAGE_INDEX = -1L;
 	public static final int DEFAULT_MAX_MESSAGE_BATCH_SIZE = 1024*1024,
 			DEFAULT_MAX_TEST_EVENT_BATCH_SIZE = DEFAULT_MAX_MESSAGE_BATCH_SIZE;
 	
@@ -123,6 +124,8 @@ public abstract class CradleStorage
 			BookInfo book) throws CradleStorageException;
 	
 	protected abstract long doGetLastSequence(String sessionAlias, Direction direction, BookId bookId)
+			throws IOException, CradleStorageException;
+	protected abstract long doGetFirstSequence(String sessionAlias, Direction direction, BookId bookId)
 			throws IOException, CradleStorageException;
 	protected abstract Collection<String> doGetSessionAliases(BookId bookId) throws IOException, CradleStorageException;
 	
@@ -638,8 +641,28 @@ public abstract class CradleStorage
 		logger.debug("Sequence number {} got", result);
 		return result;
 	}
-	
-	
+
+
+	/**
+	 * Retrieves first stored sequence number for given session alias and direction within given page.
+	 * @param sessionAlias to get sequence number for
+	 * @param direction to get sequence number for
+	 * @param bookId to get last sequence for
+	 * @return first stored sequence number for given arguments, if it is present, -1 otherwise
+	 * @throws IOException if retrieval failed
+	 * @throws CradleStorageException if given parameters are invalid
+	 */
+	public final long getFirstSequence(String sessionAlias, Direction direction, BookId bookId) throws IOException, CradleStorageException
+	{
+		logger.debug("Getting first stored sequence number for book '{}' and session alias '{}' and direction '{}'",
+				bookId, sessionAlias, direction.getLabel());
+		long result = doGetFirstSequence(sessionAlias, direction, bookId);
+		logger.debug("Sequence number {} got", result);
+		return result;
+	}
+
+
+
 	/**
 	 * Obtains collection of session aliases whose messages are saved in given book
 	 * @param bookId to get session aliases from
