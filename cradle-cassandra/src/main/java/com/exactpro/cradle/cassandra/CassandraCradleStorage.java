@@ -21,7 +21,6 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.datastax.oss.driver.api.core.cql.Row;
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
@@ -34,8 +33,6 @@ import com.exactpro.cradle.cassandra.dao.books.PageEntity;
 import com.exactpro.cradle.cassandra.dao.books.PageNameEntity;
 import com.exactpro.cradle.cassandra.dao.books.PageNameOperator;
 import com.exactpro.cradle.cassandra.dao.books.PageOperator;
-import com.exactpro.cradle.cassandra.dao.cache.CachedPageSession;
-import com.exactpro.cradle.cassandra.dao.cache.CachedSession;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.testevents.PageScopeEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.PageScopesOperator;
@@ -45,8 +42,9 @@ import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.BookKeyspaceCreator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
-import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
+import com.exactpro.cradle.cassandra.workers.EventsWorker;
+import com.exactpro.cradle.cassandra.workers.MessagesWorker;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
@@ -65,12 +63,9 @@ import java.time.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 public class CassandraCradleStorage extends CradleStorage
 {
@@ -85,7 +80,8 @@ public class CassandraCradleStorage extends CradleStorage
 			readAttrs,
 			strictReadAttrs;
 	private EventsWorker eventsWorker;
-	
+	private MessagesWorker messagesWorker;
+
 	public CassandraCradleStorage(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings, 
 			ExecutorService composingService) throws CradleStorageException
 	{
@@ -125,6 +121,7 @@ public class CassandraCradleStorage extends CradleStorage
 					.setPageSize(resultPageSize);
 			
 			eventsWorker = new EventsWorker(settings, ops, composingService, writeAttrs, readAttrs);
+			messagesWorker = new MessagesWorker(settings, ops, composingService, writeAttrs, readAttrs);
 		}
 		catch (Exception e)
 		{
@@ -253,9 +250,15 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected void doStoreMessageBatch(MessageBatchToStore batch, PageInfo page) throws IOException
 	{
+		PageId pageId = page.getId();
+		BookId bookId = pageId.getBookId();
+
 		try
 		{
-			doStoreMessageBatchAsync(batch, page).get();
+			MessageBatchEntity entity = messagesWorker.createEntity(batch, pageId);
+			messagesWorker.storeMessageBatch(entity, bookId).get();
+			messagesWorker.storeSession(batch).get();
+			messagesWorker.storePageSession(batch, pageId).get();
 		}
 		catch (Exception e)
 		{
@@ -265,44 +268,24 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<Void> doStoreMessageBatchAsync(MessageBatchToStore batch, PageInfo page)
-			throws IOException, CradleStorageException
 	{
 		PageId pageId = page.getId();
-		StoredMessageId batchId = batch.getId();
-		MessageBatchEntity entity = new MessageBatchEntity(batch, pageId, settings.getMaxUncompressedMessageBatchSize());
-		BookOperators bookOps = ops.getOperators(pageId.getBookId());
-		MessageBatchOperator mbOperator = bookOps.getMessageBatchOperator();
-		PageSessionsOperator psOperator = bookOps.getPageSessionsOperator();
-		SessionsOperator sOperator = bookOps.getSessionsOperator();
+		BookId bookId = pageId.getBookId();
 
-		CompletableFuture<MessageBatchEntity> result = mbOperator.write(entity, writeAttrs);
-
-		String sessionAlias = batchId.getSessionAlias();
-		return result
-				.thenComposeAsync(r ->
+		return CompletableFuture.supplyAsync(() ->
 				{
-					CachedPageSession cachedPageSession = new CachedPageSession(pageId.toString(),
-							sessionAlias, batchId.getDirection().getLabel());
-					if (!bookOps.getPageSessionsCache().store(cachedPageSession))
+					try
 					{
-						logger.debug("Skipped writing page/session of message batch '{}'", batchId);
-						return CompletableFuture.completedFuture(null);
+						return messagesWorker.createEntity(batch, pageId);
 					}
-
-					logger.debug("Writing page/session of batch '{}'", batchId);
-					return psOperator.write(new PageSessionEntity(batchId, pageId), writeAttrs);
-				}, composingService)
-				.thenComposeAsync(r ->{
-					String book = batchId.getBookId().getName();
-					CachedSession cachedSession = new CachedSession(book, sessionAlias);
-					if (!bookOps.getSessionsCache().store(cachedSession))
+					catch (IOException e)
 					{
-						logger.debug("Skipped writing book/session of message batch '{}'", batchId);
-						return CompletableFuture.completedFuture(null);
+						throw new CompletionException(e);
 					}
-					logger.debug("Writing book/session of batch '{}'", batchId);
-					return sOperator.write(new SessionEntity(book, sessionAlias), writeAttrs);
 				}, composingService)
+				.thenComposeAsync(entity -> messagesWorker.storeMessageBatch(entity, bookId), composingService)
+				.thenComposeAsync(r -> messagesWorker.storeSession(batch), composingService)
+				.thenComposeAsync(r -> messagesWorker.storePageSession(batch, pageId), composingService)
 				.thenAccept(NOOP);
 	}
 	
@@ -408,21 +391,8 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<StoredMessage> doGetMessageAsync(StoredMessageId id, PageId pageId)
-			throws CradleStorageException
 	{
-		return doGetMessageBatchAsync(id, pageId)
-				.thenComposeAsync(batch ->
-				{
-					if (batch == null)
-						return CompletableFuture.completedFuture(null);
-
-					Optional<StoredMessage> found = batch.getMessages().stream().filter(m -> id.equals(m.getId())).findFirst();
-					if (found.isPresent())
-						return CompletableFuture.completedFuture(found.get());
-
-					logger.debug("There is no message with id '{}' in batch '{}'", id, batch.getId());
-					return CompletableFuture.completedFuture(null);
-				}, composingService);
+		return messagesWorker.getMessage(id, pageId);
 	}
 
 	@Override
@@ -440,43 +410,8 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<StoredMessageBatch> doGetMessageBatchAsync(StoredMessageId id, PageId pageId)
-			throws CradleStorageException
 	{
-		logger.debug("Getting message batch for message with id '{}'", id);
-		BookId bookId = pageId.getBookId();
-		LocalDateTime ldt = TimeUtils.toLocalTimestamp(id.getTimestamp());
-		BookOperators bookOps = ops.getOperators(bookId);
-		return bookOps.getMessageBatchOperator()
-				.getNearestTimeAndSequenceBefore(pageId.getName(), id.getSessionAlias(), id.getDirection().getLabel(),
-						ldt.toLocalDate(), ldt.toLocalTime(), id.getSequence(), readAttrs)
-				.thenComposeAsync(row ->
-				{
-					if (row == null)
-					{
-						logger.debug("No message batches found by id '{}'", id);
-						return CompletableFuture.completedFuture(null);
-					}
-					return bookOps
-							.getMessageBatchOperator()
-							.get(pageId.getName(), id.getSessionAlias(), id.getDirection().getLabel(),
-									ldt.toLocalDate(), row.getLocalTime(MESSAGE_TIME), row.getLong(SEQUENCE), readAttrs)
-							.thenApplyAsync(e ->
-							{
-								if (e == null)
-									return null;
-								
-								try
-								{
-									StoredMessageBatch batch = e.toStoredMessageBatch(pageId);
-									logger.debug("Message batch with id '{}' found for message with id '{}'", batch.getId(), id);
-									return batch;
-								}
-								catch (Exception ex)
-								{
-									throw new CompletionException(ex);
-								}
-							}, composingService);
-				}, composingService);
+		return messagesWorker.getMessageBatch(id, pageId);
 	}
 	
 	
@@ -497,11 +432,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<CradleResultSet<StoredMessage>> doGetMessagesAsync(MessageFilter filter, BookInfo book)
 			throws CradleStorageException
 	{
-		MessagesIteratorProvider provider =
-				new MessagesIteratorProvider("get messages filtered by " + filter, filter,
-						ops.getOperators(book.getId()), book, composingService, readAttrs);
-		return provider.nextIterator()
-				.thenApply(r -> new CassandraCradleResultSet<>(r, provider));
+		return messagesWorker.getMessages(filter, book);
 	}
 	
 	@Override
@@ -516,70 +447,27 @@ public class CassandraCradleStorage extends CradleStorage
 			throw new IOException("Error while getting message batches filtered by "+filter, e);
 		}
 	}
-	
+
 	@Override
 	protected CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetMessageBatchesAsync(MessageFilter filter, BookInfo book)
 			throws CradleStorageException
 	{
-		MessageBatchesIteratorProvider provider =
-				new MessageBatchesIteratorProvider("get messages batches filtered by " + filter, filter,
-						ops.getOperators(book.getId()), book, composingService, readAttrs);
-		return provider.nextIterator()
-				.thenApply(r -> new CassandraCradleResultSet<>(r, provider));
+		return messagesWorker.getMessageBatches(filter, book);
 	}
-	
-	
+
+
 	@Override
 	protected long doGetLastSequence(String sessionAlias, Direction direction, BookId bookId)
 			throws CradleStorageException
 	{
-		return doGetBoundarySequence(sessionAlias, direction, bookId, false);
+		return messagesWorker.getBoundarySequence(sessionAlias, direction, bpc.getBook(bookId), false);
 	}
 
 	@Override
 	protected long doGetFirstSequence(String sessionAlias, Direction direction, BookId bookId)
 			throws CradleStorageException
 	{
-		return doGetBoundarySequence(sessionAlias, direction, bookId, true);
-	}
-
-	private long doGetBoundarySequence(String sessionAlias, Direction direction, BookId bookId, boolean first)
-			throws CradleStorageException
-	{
-		BookOperators bookOps = ops.getOperators(bookId);
-		MessageBatchOperator mbOp = bookOps.getMessageBatchOperator();
-		BookInfo book = bpc.getBook(bookId);
-		PageInfo currentPage = first ? book.getFirstPage() : book.getLastPage();
-		Row row = null;
-
-		while (row == null && currentPage != null)
-		{
-			try
-			{
-				row = first ? mbOp.getFirstSequence(currentPage.getId().getName(), sessionAlias, direction.getLabel(),
-						readAttrs).get()
-						: mbOp.getLastSequence(currentPage.getId().getName(), sessionAlias, direction.getLabel(),
-								readAttrs).get();
-			}
-			catch (InterruptedException | ExecutionException e)
-			{
-				String msg = String.format("Error occurs while getting %s sequence for page '%s', session alias '%s', " +
-						"direction '%s'", first ? "first" : "last", currentPage.getId().getName(), sessionAlias, direction);
-				throw new CradleStorageException(msg, e);
-			}
-
-			if (row == null)
-				currentPage = first ? book.getNextPage(currentPage.getStarted())
-						: book.getPreviousPage(currentPage.getStarted());
-		}
-		if (row == null)
-		{
-			logger.debug("There is no messages yet in book '{}' with session alias '{}' and direction '{}'", bookId,
-					sessionAlias, direction);
-			return EMPTY_MESSAGE_INDEX;
-		}
-
-		return row.getLong(first ? SEQUENCE : LAST_SEQUENCE);
+		return messagesWorker.getBoundarySequence(sessionAlias, direction, bpc.getBook(bookId), true);
 	}
 
 	@Override
