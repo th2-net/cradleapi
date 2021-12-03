@@ -20,6 +20,7 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.PageId;
+import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.filters.FilterForGreater;
@@ -48,45 +49,10 @@ public class MessagesIteratorProvider extends AbstractMessageIteratorProvider<St
 	private static final Logger logger = LoggerFactory.getLogger(MessagesIteratorProvider.class);
 
 	public MessagesIteratorProvider(String requestInfo, MessageFilter filter, BookOperators ops, BookInfo book,
-			ExecutorService composingService,
-			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException
+			ExecutorService composingService, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
+			throws CradleStorageException
 	{
 		super(requestInfo, filter, ops, book, composingService, readAttrs);
-	}
-
-	@Override
-	protected FilterForGreater<Instant> createLeftBoundFilter(MessageFilter filter) throws CradleStorageException
-	{
-		FilterForGreater<Instant> result = super.createLeftBoundFilter(filter);
-		LocalDateTime leftBoundLocalDate = TimeUtils.toLocalTimestamp(result.getValue());
-		//A batch with a smaller date can contain messages that satisfy the original condition
-		LocalTime nearestBatchTime = getNearestBatchTime(firstPage.getId().getName(), filter.getSessionAlias(),
-				filter.getDirection().getLabel(), leftBoundLocalDate.toLocalDate(),
-				leftBoundLocalDate.toLocalTime());
-
-		if (nearestBatchTime != null)
-		{
-			Instant nearestBatchInstant = TimeUtils.toInstant(leftBoundLocalDate.toLocalDate(), nearestBatchTime);
-			if (nearestBatchInstant.isBefore(result.getValue()))
-				result.setValue(nearestBatchInstant);
-		}
-
-		return result;
-	}
-
-	private LocalTime getNearestBatchTime(String page, String sessionAlias, String direction,
-			LocalDate messageDate, LocalTime messageTime) throws CradleStorageException
-	{
-		CompletableFuture<Row> future = op.getNearestTime(page, sessionAlias, direction, messageDate, messageTime, readAttrs);
-		try
-		{
-			Row row = future.get();
-			return row == null ? null : row.getLocalTime(MESSAGE_TIME);
-		}
-		catch (Exception e)
-		{
-			throw new CradleStorageException("Error while getting left bound ", e);
-		}
 	}
 
 	@Override

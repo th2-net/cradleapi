@@ -120,8 +120,8 @@ public class CassandraCradleStorage extends CradleStorage
 					.setTimeout(timeout)
 					.setPageSize(resultPageSize);
 			
-			eventsWorker = new EventsWorker(settings, ops, composingService, writeAttrs, readAttrs);
-			messagesWorker = new MessagesWorker(settings, ops, composingService, writeAttrs, readAttrs);
+			eventsWorker = new EventsWorker(settings, ops, composingService, bpc, writeAttrs, readAttrs);
+			messagesWorker = new MessagesWorker(settings, ops, composingService, bpc, writeAttrs, readAttrs);
 		}
 		catch (Exception e)
 		{

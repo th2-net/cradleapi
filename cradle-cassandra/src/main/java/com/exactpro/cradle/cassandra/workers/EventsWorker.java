@@ -23,6 +23,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
+import com.exactpro.cradle.BookAndPageChecker;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,11 +54,11 @@ public class EventsWorker extends Worker
 	private static final Logger logger = LoggerFactory.getLogger(EventsWorker.class);
 
 	public EventsWorker(CassandraStorageSettings settings, CradleOperators ops,
-			ExecutorService composingService,
+			ExecutorService composingService, BookAndPageChecker bpc,
 			Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
 			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
 	{
-		super(settings, ops, composingService, writeAttrs, readAttrs);
+		super(settings, ops, composingService, bpc, writeAttrs, readAttrs);
 	}
 
 	public TestEventEntity createEntity(TestEventToStore event, PageId pageId) throws IOException
