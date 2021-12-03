@@ -1,10 +1,11 @@
-# Overview
+# cradleapi (3.0.0)
+## Overview
 
 Cradle API is used to work with Cradle - the datalake where th2 stores its data.
 
 Cradle API has implementation for Apache Cassandra, wrapping interaction with this database and adding Cradle-specific data processing.
 
-# Getting started
+## Getting started
 
 To build Cradle API binaries you will need to have JDK 8 or higher.
 
@@ -35,7 +36,7 @@ repositories {
 To use Cradle API, add the following dependency to your project:
 ```
 dependencies {
-	implementation 'com.exactpro.th2:cradle-cassandra:2.12.0'
+	implementation 'com.exactpro.th2:cradle-cassandra:3.0.0'
 	...
 }
 ```
@@ -102,7 +103,7 @@ StoredTestEventWrapper storedEvent = storage.getTestEvent(event.getId());
 System.out.println(storedEvent.getName()+" - "+storedEvent.getStartTimestamp());
 ```
 
-# Data in Cradle
+## Data in Cradle
 
 th2 stores data about messages it sends and receives and test events generated during the work.
 
@@ -112,7 +113,7 @@ Test events and messages can be linked if, for example, a message was verified d
 
 IDs for stored data are generated outside of Cradle and are supplied with the objects being stored.
 
-## Messages
+### Messages
 
 Messages are stored in batches, i.e. if multiple messages arrive in a short period of time, they can be put in a batch and saved as one record in Cradle. Or you can have one message per batch.
 
@@ -128,7 +129,7 @@ I.e. if for the stream name="stream1" and direction="first" the last message ind
 
 Messages can have metadata as a set of key-value string pairs, providing additional details about the message. Metadata cannot be used in any search requests or filtering.
 
-## Test events
+### Test events
 
 Test events in Cradle can be stored separately or in batches, if an event has complex hierarchical structure.
 
