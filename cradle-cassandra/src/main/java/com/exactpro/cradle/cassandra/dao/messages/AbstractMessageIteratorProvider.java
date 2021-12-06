@@ -77,7 +77,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		FilterForGreater<Instant> result = filter.getTimestampFrom();
 		firstPage = FilterUtils.findFirstPage(filter.getPageId(), result, book);
 		Instant leftBoundFromPage = firstPage.getStarted();
-		if (result == null || leftBoundFromPage.isAfter(result.getValue()))
+		if (result == null || (filter.getPageId() != null && leftBoundFromPage.isAfter(result.getValue())))
 			return FilterForGreater.forGreaterOrEquals(leftBoundFromPage);
 
 		// If the page wasn't specified in the filter, we should find a batch with a lower date,
@@ -91,9 +91,10 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		{
 			Instant nearestBatchInstant = TimeUtils.toInstant(leftBoundLocalDate.toLocalDate(), nearestBatchTime);
 			if (nearestBatchInstant.isBefore(result.getValue()))
-				result.setValue(nearestBatchInstant);
+				result = FilterForGreater.forGreaterOrEquals(nearestBatchInstant);
+			firstPage = FilterUtils.findFirstPage(filter.getPageId(), result, book);
 		}
-
+		
 		return result;
 	}
 
@@ -128,7 +129,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		lastPage = FilterUtils.findLastPage(filter.getPageId(), result, book);
 		Instant endOfPage = lastPage.getEnded() == null ? Instant.now() : lastPage.getEnded();
 
-		return FilterForLess.forLessOrEquals(endOfPage.isBefore(result.getValue()) ? endOfPage : result.getValue());
+		return FilterForLess.forLessOrEquals(result == null || endOfPage.isBefore(result.getValue()) ? endOfPage : result.getValue());
 	}
 
 	protected CassandraStoredMessageFilter createInitialFilter(MessageFilter filter)
