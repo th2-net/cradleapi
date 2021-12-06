@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.cassandra;
+package com.exactpro.cradle.cassandra.workers;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -23,6 +23,8 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
+import com.exactpro.cradle.BookAndPageChecker;
+import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,32 +47,20 @@ import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.TestEventToStore;
-import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TimeUtils;
 
-public class EventsWorker
+public class EventsWorker extends Worker
 {
 	private static final Logger logger = LoggerFactory.getLogger(EventsWorker.class);
-	
-	private final CassandraStorageSettings settings;
-	private final CradleOperators ops;
-	private final ExecutorService composingService;
-	private final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
-			readAttrs;
-	
-	public EventsWorker(CassandraStorageSettings settings, CradleOperators ops, 
-			ExecutorService composingService,
+
+	public EventsWorker(CassandraStorageSettings settings, CradleOperators ops,
+			ExecutorService composingService, BookAndPageChecker bpc,
 			Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
 			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
 	{
-		this.settings = settings;
-		this.ops = ops;
-		this.composingService = composingService;
-		this.writeAttrs = writeAttrs;
-		this.readAttrs = readAttrs;
+		super(settings, ops, composingService, bpc, writeAttrs, readAttrs);
 	}
-	
-	
+
 	public TestEventEntity createEntity(TestEventToStore event, PageId pageId) throws IOException
 	{
 		return new TestEventEntity(event, pageId, settings.getMaxUncompressedTestEventSize());
@@ -145,18 +135,5 @@ public class EventsWorker
 		
 		return bookOps.getTestEventOperator().updateStatus(event.getPageId().getName(), id.getScope(), 
 				ldt.toLocalDate(), ldt.toLocalTime(), id.getId(), success, writeAttrs);
-	}
-	
-	
-	private BookOperators getBookOps(BookId bookId)
-	{
-		try
-		{
-			return ops.getOperators(bookId);
-		}
-		catch (CradleStorageException e)
-		{
-			throw new CompletionException(e);
-		}
 	}
 }
