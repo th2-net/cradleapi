@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.exactpro.cradle.serialization.Serialization.EventMessageIdsConst.*;
+import static com.exactpro.cradle.serialization.Serialization.NOT_SUPPORTED_PROTOCOL_FORMAT;
 
 public class EventMessageIdDeserializer {
 
@@ -43,8 +44,10 @@ public class EventMessageIdDeserializer {
 			 DataInputStream dis = new DataInputStream(bais))
 		{
 			byte version = dis.readByte();
-			if (version != VERSION)
-				throw new IOException("Unsupported data format version - "+version);
+			if (version != VERSION) {
+				throw new SerializationException(String.format(NOT_SUPPORTED_PROTOCOL_FORMAT, "linkedMessageIds",
+						version, VERSION));
+			}
 			byte mark = dis.readByte();
 			if (mark != SINGLE_EVENT_LINKS)
 				throw new IOException("Unexpected data mark. Expected "+SINGLE_EVENT_LINKS+", got "+mark);
@@ -80,7 +83,8 @@ public class EventMessageIdDeserializer {
 		{
 			byte version = dis.readByte();
 			if (version != VERSION)
-				throw new IOException("Unsupported data format version - "+version);
+				throw new SerializationException(String.format(NOT_SUPPORTED_PROTOCOL_FORMAT, "linkedMessageIds",
+						version, VERSION));
 			byte mark = dis.readByte();
 			if (mark != BATCH_LINKS)
 				throw new IOException("Unexpected data mark. Expected "+BATCH_LINKS+", got "+mark);

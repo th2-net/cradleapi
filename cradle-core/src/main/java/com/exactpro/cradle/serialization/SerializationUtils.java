@@ -24,6 +24,8 @@ import java.time.Instant;
 import static com.exactpro.cradle.serialization.Serialization.INVALID_MAGIC_NUMBER_FORMAT;
 
 public class SerializationUtils {
+	
+	public static final int USHORT_MAX_VALUE = 65535;
 
 	static void printBody(byte[] body, ByteBuffer buffer) {
 		if (body == null) {
@@ -38,8 +40,8 @@ public class SerializationUtils {
 		if (value == null) {
 			value = "";
 		}
-		if (value.length() > 65535) {
-			throw new SerializationException(paramName + " is too big. Expected length [0-65535]");
+		if (value.length() > USHORT_MAX_VALUE) {
+			throw new SerializationException(String.format("%s is too big. Expected length [0-%s]", paramName, USHORT_MAX_VALUE));
 		}
 		buffer.putShort((short) value.length());
 		buffer.put(value.getBytes(StandardCharsets.UTF_8));

@@ -21,6 +21,7 @@ import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBuilder;
 import com.exactpro.cradle.serialization.MessageDeserializer;
 import com.exactpro.cradle.serialization.MessageSerializer;
+import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import com.exactpro.cradle.serialization.SerializationException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -31,6 +32,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 public class SerializationMessageTest {
 	
@@ -49,7 +51,7 @@ public class SerializationMessageTest {
 		MessageSerializer serializer = new MessageSerializer();
 		byte[] serialize = serializer.serialize(build);
 		MessageDeserializer deserializer = new MessageDeserializer();
-		StoredMessage deserialize = deserializer.deserialize(serialize);
+		StoredMessage deserialize = deserializer.deserialize(serialize, "streamname12345", Direction.SECOND);
 		Assert.assertEquals(deserialize, build);
 	}
 
@@ -65,7 +67,7 @@ public class SerializationMessageTest {
 		MessageSerializer serializer = new MessageSerializer();
 		byte[] serialize = serializer.serialize(build);
 		MessageDeserializer deserializer = new MessageDeserializer();
-		StoredMessage deserialize = deserializer.deserialize(serialize);
+		StoredMessage deserialize = deserializer.deserialize(serialize, "streamname12345", Direction.SECOND);
 		Assert.assertEquals(deserialize, build);
 	}
 
@@ -79,10 +81,11 @@ public class SerializationMessageTest {
 		builder.setContent("Message".repeat(10).getBytes(StandardCharsets.UTF_8));
 		StoredMessage build = builder.build();
 		MessageSerializer serializer = new MessageSerializer();
-		byte[] serialize = serializer.serialize(build);
+		Set<StoredMessage> batch = Collections.singleton(build);
+		byte[] serialize = serializer.serializeBatch(batch);
 		MessageDeserializer deserializer = new MessageDeserializer();
-		StoredMessage deserialize = deserializer.deserialize(serialize);
-		Assert.assertEquals(deserialize, build);
+		List<StoredMessage> deserialize = deserializer.deserializeBatch(serialize);
+		Assert.assertEquals(deserialize, batch);
 	}
 
 	@Test
@@ -96,12 +99,12 @@ public class SerializationMessageTest {
 		StoredMessage build = builder.build();
 		MessageSerializer serializer = new MessageSerializer();
 		try {
-			serializer.serialize(build);
+			serializer.serializeBatch(Collections.singleton(build));
 		} catch (SerializationException e) {
 			Assert.assertTrue(true);
 			return;
 		}
-		Assert.fail("Should be an error when stream name is more than 65536");
+		Assert.fail("Should be an error when stream name is longer than 65536");
 	}
 
 	@Test
@@ -117,7 +120,7 @@ public class SerializationMessageTest {
 		
 		ByteBuffer buffer = ByteBuffer.allocate(10_000);
 		serializer.serialize(build, buffer);
-		Assert.assertEquals(buffer.position(), serializer.calculateMessageSize(build));
+		Assert.assertEquals(buffer.position(), MessagesSizeCalculator.calculateMessageSize(build));
 	}
 	
 	static List<StoredMessage> getBatch() {
@@ -184,7 +187,7 @@ public class SerializationMessageTest {
 		ByteBuffer buffer = ByteBuffer.allocate(10_000);
 		List<StoredMessage> batch = getBatch();
 		serializer.serializeBatch(batch, buffer, null);
-		Assert.assertEquals(buffer.position(), serializer.calculateMessageBatchSize(batch).total);
+		Assert.assertEquals(buffer.position(), MessagesSizeCalculator.calculateMessageBatchSize(batch).total);
 	}
 	
 }

@@ -19,6 +19,8 @@ package com.exactpro.cradle.messages;
 import java.time.Instant;
 import java.util.*;
 
+import com.exactpro.cradle.serialization.MessagesSizeCalculator;
+import com.exactpro.cradle.serialization.SerializationUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -103,6 +105,9 @@ public class StoredMessageBatch
 	 */
 	public long getBatchSize()
 	{
+		if (batchSize == 0) {
+			this.batchSize = MessagesSizeCalculator.calculateServiceMessageBatchSize(null);
+		}
 		return batchSize;
 	}
 	
@@ -135,7 +140,13 @@ public class StoredMessageBatch
 	 */
 	public StoredMessage addMessage(MessageToStore message) throws CradleStorageException
 	{
-		if (!hasSpace(message))
+		//first message in the batch. Need to fill it by services
+		if (messages.isEmpty()) {
+			batchSize = MessagesSizeCalculator.calculateServiceMessageBatchSize(message.getStreamName());
+		}
+		
+		int expectedMessageSize = MessagesSizeCalculator.calculateMessageSizeInBatch(message);
+		if (!hasSpace(expectedMessageSize))
 			throw new CradleStorageException("Batch has not enough space to hold given message");
 		
 		MessageUtils.validateMessage(message);
@@ -178,7 +189,7 @@ public class StoredMessageBatch
 		
 		StoredMessage msg = new StoredMessage(message, new StoredMessageId(message.getStreamName(), message.getDirection(), messageIndex));
 		messages.add(msg);
-		batchSize += msg.getContent().length;
+		batchSize += expectedMessageSize;
 		return msg;
 	}
 	
@@ -226,7 +237,7 @@ public class StoredMessageBatch
 	 */
 	public boolean isFull()
 	{
-		return batchSize >= maxBatchSize;
+		return getBatchSize() >= maxBatchSize;
 	}
 	
 	/**
@@ -235,7 +246,7 @@ public class StoredMessageBatch
 	 */
 	public long getSpaceLeft()
 	{
-		long result = maxBatchSize-batchSize;
+		long result = maxBatchSize-getBatchSize();
 		return result > 0 ? result : 0;
 	}
 	
@@ -246,8 +257,17 @@ public class StoredMessageBatch
 	 */
 	public boolean hasSpace(MessageToStore message)
 	{
-		byte[] content = message.getContent();
-		return ArrayUtils.isEmpty(content) || batchSize+content.length <= maxBatchSize;
+		return getBatchSize() + MessagesSizeCalculator.calculateMessageSizeInBatch(message) <= maxBatchSize;
+	}
+
+	/**
+	 * Shows if batch has enough space to hold given message
+	 * @param expected expected size of given message
+	 * @return true if batch has enough space to hold given message
+	 */
+	private boolean hasSpace(int expected)
+	{
+		return getBatchSize() + expected <= maxBatchSize;
 	}
 	
 
@@ -274,7 +294,8 @@ public class StoredMessageBatch
 		if (isFull() || batch.isFull()) {
 			return false;
 		}
-		long resultSize = batchSize + batch.batchSize;
+		long resultSize = batchSize + batch.messages.stream().mapToInt(MessagesSizeCalculator::calculateMessageSizeInBatch).sum();
+		
 		if (resultSize > maxBatchSize) {
 			// cannot add because of size limit
 			return false;

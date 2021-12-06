@@ -21,8 +21,13 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
+import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.Collection;
 
+import com.exactpro.cradle.serialization.MessageSerializer;
+import com.exactpro.cradle.serialization.MessagesSizeCalculator;
+import com.exactpro.cradle.serialization.SerializationException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -32,13 +37,13 @@ import com.exactpro.cradle.utils.CradleStorageException;
 public class StoredMessageBatchJoinTest {
 
     @Test
-    public void testJoinEmptyBatchWithOther() throws CradleStorageException {
+    public void testJoinEmptyBatchWithOther() throws CradleStorageException, SerializationException {
         StoredMessageBatch emptyBatch = createEmptyBatch();
         StoredMessageBatch batch = createBatch("test", 1, Direction.FIRST, 5, 5);
         assertTrue(emptyBatch.addBatch(batch));
 
         assertEquals(emptyBatch.getMessageCount(), 5);
-        assertEquals(emptyBatch.getBatchSize(), 25);
+        assertEquals(emptyBatch.getBatchSize(), getRealBatchSize(emptyBatch));
         assertEquals(emptyBatch.getStreamName(), "test");
         assertEquals(emptyBatch.getDirection(), Direction.FIRST);
     }
@@ -85,27 +90,41 @@ public class StoredMessageBatchJoinTest {
     public void testFullBatches(StoredMessageBatch first, StoredMessageBatch second) throws CradleStorageException {
         assertFalse(first.addBatch(second));
     }
+    
+    private int getRealBatchSize(StoredMessageBatch batch, int bufferSize) throws SerializationException {
+        ByteBuffer buffer = ByteBuffer.wrap(new byte[bufferSize]);
+        MessageSerializer msg = new MessageSerializer();
+        Collection<StoredMessage> messages = batch.getMessages();
+        msg.serializeBatch(messages, buffer, MessagesSizeCalculator.calculateMessageBatchSize(messages));
+        return buffer.position();
+    }
+
+    private int getRealBatchSize(StoredMessageBatch batch) throws SerializationException {
+        return getRealBatchSize(batch, 10_000);
+    }
 
     @Test
-    public void testAddBatchLessThanLimit() throws CradleStorageException {
+    public void testAddBatchLessThanLimit() throws CradleStorageException, SerializationException {
         StoredMessageBatch first = createBatch("test", 0, Direction.FIRST, 5, 5);
         StoredMessageBatch second = createBatch("test", 5, Direction.FIRST, 5, 5);
 
         assertTrue(first.addBatch(second));
         assertEquals(first.getMessageCount(), 10);
-        assertEquals(first.getBatchSize(), 50);
+        assertEquals(first.getBatchSize(), getRealBatchSize(first));
         assertEquals(first.getStreamName(), "test");
         assertEquals(first.getDirection(), Direction.FIRST);
     }
 
     @Test
-    public void testAddBatchMoreThanLimitBySize() throws CradleStorageException {
-        StoredMessageBatch first = createBatch("test", 0, Direction.FIRST, 1, DEFAULT_MAX_BATCH_SIZE - 1);
-        StoredMessageBatch second = createBatch("test", 5, Direction.FIRST, 1, DEFAULT_MAX_BATCH_SIZE - 1);
+    public void testAddBatchMoreThanLimitBySize() throws CradleStorageException, SerializationException {
+        StoredMessageBatch first = createBatch("test", 0, Direction.FIRST, 1, (int) (DEFAULT_MAX_BATCH_SIZE * (0.5)));
+        StoredMessageBatch second = createBatch("test", 5, Direction.FIRST, 1, (int) (DEFAULT_MAX_BATCH_SIZE * (0.5)));
 
+        long sizeBefore = first.getBatchSize();
         assertFalse(first.addBatch(second));
         assertEquals(first.getMessageCount(), 1);
-        assertEquals(first.getBatchSize(), DEFAULT_MAX_BATCH_SIZE - 1);
+        assertEquals(first.getBatchSize(), sizeBefore);
+        assertEquals(first.getBatchSize(), getRealBatchSize(first, DEFAULT_MAX_BATCH_SIZE * 10));
         assertEquals(first.getStreamName(), "test");
         assertEquals(first.getDirection(), Direction.FIRST);
     }
@@ -165,6 +184,15 @@ public class StoredMessageBatchJoinTest {
     }
 
     private StoredMessageBatch createFullBySizeBatch(String streamName, long startIndex, Direction direction) throws CradleStorageException {
-        return createBatch(streamName, startIndex, direction, 1, DEFAULT_MAX_BATCH_SIZE);
+        return createBatch(streamName, startIndex, direction, 1, 
+                DEFAULT_MAX_BATCH_SIZE - 46 - streamName.length());
+    }
+
+    @Test
+    public void emptyBatchSerialization() throws CradleStorageException, SerializationException {
+        StoredMessageBatch emptyBatch = createEmptyBatch();
+        
+        assertEquals(emptyBatch.getBatchSize(), getRealBatchSize(emptyBatch));
+        assertEquals(emptyBatch.getMessageCount(), 0);
     }
 }

@@ -35,6 +35,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateBatchEventMetadataSize;
+import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateBatchEventSize;
+import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateEventMetadataSize;
+import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateEventRecordSize;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class SerializationEventBatchTest {
@@ -45,7 +49,7 @@ public class SerializationEventBatchTest {
 		EventBatchSerializer serializer = new EventBatchSerializer();
 		ByteBuffer buffer = ByteBuffer.allocate(10_000);
 		serializer.serializeEventRecord(build, buffer);
-		Assert.assertEquals(buffer.position(), serializer.calculateEventRecordSize(build));
+		Assert.assertEquals(buffer.position(), calculateEventRecordSize(build));
 	}
 
 	@Test
@@ -54,7 +58,7 @@ public class SerializationEventBatchTest {
 		EventBatchSerializer serializer = new EventBatchSerializer();
 		ByteBuffer buffer = ByteBuffer.allocate(10_000);
 		serializer.serializeEventMetadataRecord(build, buffer);
-		Assert.assertEquals(buffer.position(), serializer.calculateEventMetadataSize(build));
+		Assert.assertEquals(buffer.position(), calculateEventMetadataSize(build));
 	}
 
 	@Test
@@ -63,7 +67,7 @@ public class SerializationEventBatchTest {
 		EventBatchSerializer serializer = new EventBatchSerializer();
 		ByteBuffer buffer = ByteBuffer.allocate(10_000);
 		serializer.serializeEventBatch(build, buffer);
-		Assert.assertEquals(buffer.position(), serializer.calculateBatchEventSize(build).total);
+		Assert.assertEquals(buffer.position(), calculateBatchEventSize(build).total);
 	}
 
 	@Test
@@ -72,7 +76,7 @@ public class SerializationEventBatchTest {
 		EventBatchSerializer serializer = new EventBatchSerializer();
 		ByteBuffer buffer = ByteBuffer.allocate(10_000);
 		serializer.serializeEventMetadataBatch(build, buffer);
-		Assert.assertEquals(buffer.position(), serializer.calculateBatchEventMetadataSize(build).total);
+		Assert.assertEquals(calculateBatchEventMetadataSize(build).total, buffer.position());
 	}
 	
 

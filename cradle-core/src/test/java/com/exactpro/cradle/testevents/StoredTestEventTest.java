@@ -19,6 +19,7 @@ package com.exactpro.cradle.testevents;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.exactpro.cradle.serialization.EventsSizeCalculator;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -128,24 +129,26 @@ public class StoredTestEventTest
 	@Test
 	public void batchCountsSpaceLeft() throws CradleStorageException
 	{
-		byte[] content = new byte[StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE-1];
+		byte[] content = new byte[StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE/2];
 		long left = batch.getSpaceLeft();
-		
-		batch.addTestEvent(eventBuilder
+
+		TestEventToStore build = eventBuilder
 				.id(new StoredTestEventId(Integer.toString(1)))
 				.name(DUMMY_NAME)
 				.startTimestamp(DUMMY_START_TIMESTAMP)
 				.parentId(batch.getParentId())
 				.content(content)
-				.build());
+				.build();
+
+		batch.addTestEvent(build);
 		
-		Assert.assertEquals(batch.getSpaceLeft(), left-content.length, "Batch counts space left");
+		Assert.assertEquals(batch.getSpaceLeft(), left - EventsSizeCalculator.calculateRecordSizeInBatch(build), "Batch counts space left");
 	}
 	
 	@Test
 	public void batchChecksSpaceLeft() throws CradleStorageException
 	{
-		byte[] content = new byte[StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE-1];
+		byte[] content = new byte[StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE / 2];
 		
 		TestEventToStore event = eventBuilder
 				.id(new StoredTestEventId(Integer.toString(1)))

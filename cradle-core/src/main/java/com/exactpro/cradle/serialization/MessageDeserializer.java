@@ -63,12 +63,15 @@ public class MessageDeserializer {
 	public List<StoredMessage> deserializeBatch(ByteBuffer buffer) throws SerializationException {
 		checkMessageBatchMagics(buffer);
 
+		String sessionAlias = SerializationUtils.readShortString(buffer);
+		Direction direction = getDirection(buffer.get());
+
 		int messagesCount = buffer.getInt();
 		List<StoredMessage> messages = new ArrayList<>(messagesCount);
 		for (int i = 0; i < messagesCount; ++i) {
 			int msgLen = buffer.getInt();
 			ByteBuffer msgBuf = ByteBuffer.wrap(buffer.array(), buffer.position(), msgLen);
-			messages.add(this.deserialize(msgBuf));
+			messages.add(this.deserialize(msgBuf, sessionAlias, direction));
 			buffer.position(buffer.position() + msgLen);
 		}
 		
@@ -78,11 +81,14 @@ public class MessageDeserializer {
 	public StoredMessage deserializeOneMessage(ByteBuffer buffer, StoredMessageId id) throws SerializationException {
 		checkMessageBatchMagics(buffer);
 
+		String sessionAlias = SerializationUtils.readShortString(buffer);
+		Direction direction = getDirection(buffer.get());
+		
 		int messagesCount = buffer.getInt();
 		for (int i = 0; i < messagesCount; ++i) {
 			int msgLen = buffer.getInt();
 			ByteBuffer msgBuf = ByteBuffer.wrap(buffer.array(), buffer.position(), msgLen);
-			StoredMessage msg = this.deserialize(msgBuf);
+			StoredMessage msg = this.deserialize(msgBuf, sessionAlias, direction);
 			if (msg.getId().equals(id)) {
 				return msg;
 			}
@@ -92,17 +98,17 @@ public class MessageDeserializer {
 		return null;
 	}
 	
-	public StoredMessage deserialize(byte[] message) throws SerializationException {
-		return deserialize(ByteBuffer.wrap(message));
+	public StoredMessage deserialize(byte[] message, String sessionAlias, Direction dir) throws SerializationException {
+		return deserialize(ByteBuffer.wrap(message), sessionAlias, dir);
 	}
 
-	public StoredMessage deserialize(ByteBuffer buffer) throws SerializationException {
+	public StoredMessage deserialize(ByteBuffer buffer, String sessionAlias, Direction dir) throws SerializationException {
 		short magicNumber = buffer.getShort();
 		if (magicNumber != MESSAGE_MAGIC) {
 			throw SerializationUtils.incorrectMagicNumber(StoredMessage.class.getSimpleName(), magicNumber, MESSAGE_MAGIC);
 		}
 		StoredMessageBuilder builder = new StoredMessageBuilder();
-		builder.setMessageId(readMessageId(buffer));
+		builder.setMessageId(readMessageId(buffer, sessionAlias, dir));
 		builder.setTimestamp(readInstant(buffer));
 		readMessageMetaData(buffer, builder);
 		builder.setContent(readBody(buffer));
@@ -117,9 +123,7 @@ public class MessageDeserializer {
 				ordinal, values.length - 1));
 	}
 
-	private StoredMessageId readMessageId(ByteBuffer buffer) throws SerializationException {
-		String stream = readShortString(buffer);
-		Direction direction = getDirection(buffer.get());
+	private StoredMessageId readMessageId(ByteBuffer buffer, String stream, Direction direction) throws SerializationException {
 		long index = buffer.getLong();
 		return new StoredMessageId(stream, direction, index);
 	}

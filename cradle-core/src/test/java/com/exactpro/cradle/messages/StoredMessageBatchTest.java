@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 
+import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
@@ -113,6 +114,7 @@ public class StoredMessageBatchTest
 	public void batchIsFull() throws CradleStorageException
 	{
 		byte[] content = new byte[StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE/2];
+		
 		StoredMessageBatch batch = StoredMessageBatch.singleton(builder
 				.streamName(streamName)
 				.direction(direction)
@@ -124,34 +126,38 @@ public class StoredMessageBatchTest
 				.streamName(streamName)
 				.direction(direction)
 				.timestamp(timestamp)
-				.content(content)
+				.content(new byte[(int) (StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE - batch.getBatchSize() - 34)]) // 30 (msg md) + 4 (len)
 				.build());
-		
-		Assert.assertEquals(batch.isFull(), true, "Batch indicates it is full");
+
+		Assert.assertTrue(batch.isFull(), "Batch indicates it is full");
 	}
 	
 	@Test
 	public void batchCountsSpaceLeft() throws CradleStorageException
 	{
-		byte[] content = new byte[StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE-1];
+		byte[] content = new byte[StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE / 2];
 		StoredMessageBatch batch = new StoredMessageBatch();
 		long left = batch.getSpaceLeft();
-		
-		batch.addMessage(builder
+
+		MessageToStore build = builder
 				.streamName(streamName)
 				.direction(direction)
 				.index(1)
 				.timestamp(timestamp)
 				.content(content)
-				.build());
+				.build();
+
+		batch.addMessage(build);
 		
-		Assert.assertEquals(batch.getSpaceLeft(), left-content.length, "Batch counts space left");
+		long expected = left - MessagesSizeCalculator.calculateMessageSizeInBatch(build) - streamName.length();
+		
+		Assert.assertEquals(batch.getSpaceLeft(), expected, "Batch counts space left");
 	}
 	
 	@Test
 	public void batchChecksSpaceLeft() throws CradleStorageException
 	{
-		byte[] content = new byte[StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE-1];
+		byte[] content = new byte[StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE / 2];
 		StoredMessageBatch batch = new StoredMessageBatch();
 		
 		MessageToStore msg = builder
