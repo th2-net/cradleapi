@@ -21,6 +21,7 @@ import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.mapper.MapperContext;
 import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
@@ -266,6 +267,8 @@ public class MessageBatchQueryProvider
 			{
 				long fromIndex = getNearestMessageIndexBefore(tmOperator, instanceId,
 						filter.getStreamName().getValue(), directionFilter.getValue(), ts, attributes);
+				fromIndex = getMessageBatchIndex(operator, instanceId, filter.getStreamName().getValue(),
+						directionFilter.getValue(), fromIndex, attributes);
 				if (fromIndex >= leftIndex)
 					builder = builder.setLong(LEFT_MESSAGE_INDEX, fromIndex);
 			}
@@ -301,7 +304,16 @@ public class MessageBatchQueryProvider
 		LocalDateTime ldt = LocalDateTime.ofInstant(instant, TIMEZONE_OFFSET);
 		TimeMessageEntity entity = tmOperator.getNearestMessageBefore(instanceId, streamName, ldt.toLocalDate(),
 				direction.getLabel(), ldt.toLocalTime(), attributes).get();
-		return entity == null ? 0 : entity.getMessageIndex();
+		return entity == null ? 0L : entity.getMessageIndex();
+	}
+
+	private long getMessageBatchIndex(MessageBatchOperator mbOperator, UUID instanceId, String streamName,
+			Direction direction, long messageIndex, Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
+			throws ExecutionException, InterruptedException
+	{
+		Row row =
+				mbOperator.getBatchIndex(instanceId, streamName, direction.getLabel(), messageIndex, attributes).get();
+		return row == null ? 0L : row.getLong(MESSAGE_INDEX);
 	}
 	
 	private long getNearestMessageIndexAfter(TimeMessageOperator tmOperator, UUID instanceId, String streamName,
