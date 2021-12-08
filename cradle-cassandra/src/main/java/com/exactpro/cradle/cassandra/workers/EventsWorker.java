@@ -25,6 +25,7 @@ import java.util.function.Function;
 
 import com.exactpro.cradle.BookAndPageChecker;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
+import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,10 +56,11 @@ public class EventsWorker extends Worker
 
 	public EventsWorker(CassandraStorageSettings settings, CradleOperators ops,
 			ExecutorService composingService, BookAndPageChecker bpc,
+			SelectQueryExecutor selectQueryExecutor,
 			Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
 			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
 	{
-		super(settings, ops, composingService, bpc, writeAttrs, readAttrs);
+		super(settings, ops, composingService, bpc, selectQueryExecutor, writeAttrs, readAttrs);
 	}
 
 	public TestEventEntity createEntity(TestEventToStore event, PageId pageId) throws IOException

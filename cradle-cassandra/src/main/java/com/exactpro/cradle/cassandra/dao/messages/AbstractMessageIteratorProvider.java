@@ -22,7 +22,9 @@ import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.dao.BookOperators;
+import com.exactpro.cradle.cassandra.dao.messages.converters.MessageBatchEntityConverter;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
+import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
@@ -44,8 +46,10 @@ import static com.exactpro.cradle.cassandra.StorageConstants.MESSAGE_TIME;
 abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvider<T>
 {
 	protected final MessageBatchOperator op;
+	protected final MessageBatchEntityConverter messageBatchEntityConverter;
 	protected final BookInfo book;
 	protected final ExecutorService composingService;
+	protected final SelectQueryExecutor selectQueryExecutor;
 	protected final FilterForGreater<Instant> leftBoundFilter;
 	protected final FilterForLess<Instant> rightBoundFilter;
 	protected PageInfo firstPage, lastPage;
@@ -56,13 +60,15 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 	protected CassandraStoredMessageFilter cassandraFilter;
 
 	public AbstractMessageIteratorProvider(String requestInfo, MessageFilter filter, BookOperators ops, BookInfo book,
-			ExecutorService composingService,
+			ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
 			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException
 	{
 		super(requestInfo);
 		this.op = ops.getMessageBatchOperator();
+		this.messageBatchEntityConverter = ops.getMessageBatchEntityConverter();
 		this.book = book;
 		this.composingService = composingService;
+		this.selectQueryExecutor = selectQueryExecutor;
 		this.readAttrs = readAttrs;
 		this.filter = filter;
 		this.limit = filter.getLimit();

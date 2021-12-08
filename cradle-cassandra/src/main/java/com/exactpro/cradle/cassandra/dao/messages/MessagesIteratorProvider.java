@@ -23,6 +23,7 @@ import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
+import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
@@ -49,10 +50,10 @@ public class MessagesIteratorProvider extends AbstractMessageIteratorProvider<St
 	private static final Logger logger = LoggerFactory.getLogger(MessagesIteratorProvider.class);
 
 	public MessagesIteratorProvider(String requestInfo, MessageFilter filter, BookOperators ops, BookInfo book,
-			ExecutorService composingService, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
-			throws CradleStorageException
+			ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
+			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException
 	{
-		super(requestInfo, filter, ops, book, composingService, readAttrs);
+		super(requestInfo, filter, ops, book, composingService, selectQueryExecutor, readAttrs);
 	}
 
 	@Override
@@ -67,20 +68,25 @@ public class MessagesIteratorProvider extends AbstractMessageIteratorProvider<St
 		}
 
 		logger.debug("Getting next iterator for '{}' by filter {}", getRequestInfo(), cassandraFilter);
-		return op.getByFilter(cassandraFilter, composingService, readAttrs)
-				.thenApplyAsync(resultSet -> {
+		return op.getByFilter(cassandraFilter, selectQueryExecutor, getRequestInfo(), readAttrs)
+				.thenApplyAsync(resultSet ->
+				{
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
 					cassandraFilter = createNextFilter(cassandraFilter);
-					return new ConvertingPagedIterator<StoredMessageBatch, MessageBatchEntity>(resultSet, -1, new AtomicInteger(), entity -> {
-						try
-						{
-							return entity.toStoredMessageBatch(pageId);
-						}
-						catch (Exception e)
-						{
-							throw new RuntimeException("Error while converting message batch entity into stored message batch", e);
-						}
-					});
+					return new ConvertingPagedIterator<StoredMessageBatch, MessageBatchEntity>(resultSet,
+							selectQueryExecutor, -1, new AtomicInteger(),
+							entity ->
+							{
+								try
+								{
+									return entity.toStoredMessageBatch(pageId);
+								}
+								catch (Exception e)
+								{
+									throw new RuntimeException(
+											"Error while converting message batch entity into stored message batch", e);
+								}
+							}, messageBatchEntityConverter::getEntity, "Fetching next page of message batches");
 				}, composingService)
 				.thenApplyAsync(it -> new FilteredMessageIterator(it, filter, limit, returned), composingService);
 	}

@@ -23,6 +23,7 @@ import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.dao.CradleOperators;
+import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 import java.util.concurrent.CompletionException;
@@ -35,12 +36,13 @@ public abstract class Worker
 	protected final CradleOperators ops;
 	protected final ExecutorService composingService;
 	protected final BookAndPageChecker bpc;
+	protected final SelectQueryExecutor selectQueryExecutor;
 	protected final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
 			readAttrs;
 
 	public Worker(CassandraStorageSettings settings, CradleOperators ops,
-			ExecutorService composingService,
-			BookAndPageChecker bpc,
+			ExecutorService composingService, BookAndPageChecker bpc,
+			SelectQueryExecutor selectQueryExecutor,
 			Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
 			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
 	{
@@ -48,6 +50,7 @@ public abstract class Worker
 		this.ops = ops;
 		this.composingService = composingService;
 		this.bpc = bpc;
+		this.selectQueryExecutor = selectQueryExecutor;
 		this.writeAttrs = writeAttrs;
 		this.readAttrs = readAttrs;
 	}
