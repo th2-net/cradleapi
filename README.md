@@ -1,4 +1,4 @@
-# cradleapi (3.0.0)
+# cradleapi (3.1.0)
 ## Overview
 
 Cradle API is used to work with Cradle - the datalake where th2 stores its data.
