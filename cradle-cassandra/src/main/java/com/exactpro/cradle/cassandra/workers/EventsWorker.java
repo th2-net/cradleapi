@@ -124,7 +124,7 @@ public class EventsWorker extends Worker
 	public CompletableFuture<CradleResultSet<StoredTestEvent>> getTestEvents(TestEventFilter filter, BookInfo book)
 	{
 		TestEventIteratorProvider provider = new TestEventIteratorProvider("get test events filtered by "+filter, 
-				filter, getBookOps(filter.getBookId()), book, composingService, readAttrs);
+				filter, getBookOps(filter.getBookId()), book, composingService, selectQueryExecutor, readAttrs);
 		return provider.nextIterator()
 				.thenApply(r -> new CassandraCradleResultSet<>(r, provider));
 	}
