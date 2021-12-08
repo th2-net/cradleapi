@@ -130,7 +130,7 @@ public class SelectQueryExecutor
 			throw new IllegalStateException(
 					"The request for query '" + queryInfo + "' has unsupported type '" + request.getClass() +
 							"' but required '"+Statement.class+"'");
-		return ((Statement<?>) request);
+		return (Statement<?>) request;
 	}
 
 	private <T> void onCompleteSingle(T result, Throwable error, CompletableFuture<T> f, Function<Row, T> mapper,

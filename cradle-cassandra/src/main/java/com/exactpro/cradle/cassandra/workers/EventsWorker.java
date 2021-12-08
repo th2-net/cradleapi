@@ -25,6 +25,7 @@ import java.util.function.Function;
 
 import com.exactpro.cradle.BookAndPageChecker;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
+import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,16 +104,19 @@ public class EventsWorker extends Worker
 	public CompletableFuture<StoredTestEvent> getTestEvent(StoredTestEventId id, PageId pageId)
 	{
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(id.getStartTimestamp());
-		BookId bookId = pageId.getBookId();
-		return getBookOps(bookId).getTestEventOperator().get(pageId.getName(), id.getScope(), 
-					ldt.toLocalDate(), ldt.toLocalTime(), id.getId(), readAttrs)
-				.thenApplyAsync(r -> {
-					if (r == null)
+		BookOperators bookOps = getBookOps(pageId.getBookId());
+		TestEventEntityConverter converter = bookOps.getTestEventEntityConverter();
+		return selectQueryExecutor.executeSingleRowResultQuery(
+				() -> bookOps.getTestEventOperator().get(pageId.getName(), id.getScope(),
+						ldt.toLocalDate(), ldt.toLocalTime(), id.getId(), readAttrs), converter::getEntity,
+				String.format("getting test event by id '%s'", id))
+				.thenApplyAsync(entity -> {
+					if (entity == null)
 						return null;
 					
 					try
 					{
-						return r.toStoredTestEvent(pageId);
+						return entity.toStoredTestEvent(pageId);
 					}
 					catch (Exception e)
 					{
