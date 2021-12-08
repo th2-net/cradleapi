@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,15 +29,26 @@ public class StoredMessageMetadata implements Serializable
 {
 	private static final long serialVersionUID = -3397537024211430427L;
 	
-	protected final Map<String, String> data = new HashMap<>();
+	protected final Map<String, String> data;
 	
 	public StoredMessageMetadata()
 	{
+		this(new HashMap<>());
+	}
+
+	protected StoredMessageMetadata(Map<String, String> data)
+	{
+		this.data = data;
 	}
 	
 	public StoredMessageMetadata(StoredMessageMetadata metadata)
 	{
+		this();
 		this.data.putAll(metadata.data);
+	}
+	
+	public static StoredMessageMetadata empty() {
+		return new StoredMessageMetadata(Collections.emptyMap());
 	}
 	
 	

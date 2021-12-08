@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,8 +55,14 @@ public class StoredMessage implements Serializable
 	{
 		this(copyFrom, copyFrom.getId());
 	}
-	
-	
+
+	protected StoredMessage(StoredMessageId id, Instant timestamp, StoredMessageMetadata metadata, byte[] content) {
+		this.id = id;
+		this.timestamp = timestamp;
+		this.metadata = metadata;
+		this.content = content;
+	}
+
 	/**
 	 * @return unique message ID as stored in Cradle.
 	 * Result of this method should be used for referencing stored messages to obtain them from Cradle

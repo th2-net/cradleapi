@@ -32,9 +32,9 @@ subprojects {
 	
 	
 	defaultTasks 'build'
-	
-	sourceCompatibility = 1.8 //Java version compatibility to use when compiling Java source.
-	targetCompatibility = 1.8 //Java version to generate classes for.
+
+	sourceCompatibility = JavaVersion.VERSION_11
+	targetCompatibility = JavaVersion.VERSION_11
 	compileJava.options.debugOptions.debugLevel = 'source,lines,vars' // Include debug information
 
 

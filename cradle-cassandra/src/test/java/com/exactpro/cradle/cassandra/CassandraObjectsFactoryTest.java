@@ -16,6 +16,8 @@
 
 package com.exactpro.cradle.cassandra;
 
+import com.exactpro.cradle.serialization.EventsSizeCalculator;
+import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -47,7 +49,7 @@ public class CassandraObjectsFactoryTest
 	public void createMessageBatch()
 	{
 		StoredMessageBatch batch = storage.getObjectsFactory().createMessageBatch();
-		Assert.assertEquals(batch.getSpaceLeft(), maxMessageBatchSize, 
+		Assert.assertEquals(batch.getSpaceLeft(), maxMessageBatchSize - MessagesSizeCalculator.calculateServiceMessageBatchSize(null), 
 				"CradleObjectsFactory of CassandraCradleStorage creates StoredMessageBatch with maximum size defined in storage settings");
 	}
 	
@@ -59,7 +61,7 @@ public class CassandraObjectsFactoryTest
 				.name("test_event")
 				.parentId(new StoredTestEventId("parent_event1"))
 				.build());
-		Assert.assertEquals(batch.getSpaceLeft(), maxEventBatchSize, 
+		Assert.assertEquals(batch.getSpaceLeft(), maxEventBatchSize - EventsSizeCalculator.BATCH_LEN_CONST, 
 				"CradleObjectsFactory of CassandraCradleStorage creates StoredTestEventBatch with maximum size defined in storage settings");
 	}
 }
