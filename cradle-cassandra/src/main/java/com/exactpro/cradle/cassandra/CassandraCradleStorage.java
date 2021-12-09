@@ -35,6 +35,7 @@ import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.intervals.CassandraIntervalsWorker;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalSupplies;
 import com.exactpro.cradle.cassandra.dao.messages.*;
+import com.exactpro.cradle.cassandra.dao.messages.converters.TimeMessageConverter;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.iterators.*;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
@@ -468,13 +469,18 @@ public class CassandraCradleStorage extends CradleStorage
 			Instant timestamp, TimeRelation timeRelation)
 	{
 		LocalDateTime messageDateTime = LocalDateTime.ofInstant(timestamp, TIMEZONE_OFFSET);
+		TimeMessageOperator tmOperator = ops.getTimeMessageOperator();
+		TimeMessageConverter converter = ops.getTimeMessageConverter();
 		CompletableFuture<TimeMessageEntity> result = timeRelation == TimeRelation.BEFORE
-				? ops.getTimeMessageOperator()
-						.getNearestMessageBefore(instanceUuid, streamName, messageDateTime.toLocalDate(),
-								direction.getLabel(), messageDateTime.toLocalTime(), readAttrs)
-				: ops.getTimeMessageOperator()
-						.getNearestMessageAfter(instanceUuid, streamName, messageDateTime.toLocalDate(),
-								direction.getLabel(), messageDateTime.toLocalTime(), readAttrs);
+				? selectExecutor.executeMappedSingleRowResultQuery(
+						() -> tmOperator.getNearestMessageBefore(instanceUuid, streamName, messageDateTime.toLocalDate(),
+								direction.getLabel(), messageDateTime.toLocalTime(), readAttrs),
+						converter, "getting nearest message time before " + timestamp)
+
+				: selectExecutor.executeMappedSingleRowResultQuery(
+						() -> tmOperator.getNearestMessageAfter(instanceUuid, streamName, messageDateTime.toLocalDate(),
+								direction.getLabel(), messageDateTime.toLocalTime(), readAttrs),
+						converter, "getting nearest message time after " + timestamp);
 
 		return result;
 	}
@@ -857,7 +863,9 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		MessageBatchOperator op = rawMessage ? ops.getMessageBatchOperator() : ops.getProcessedMessageBatchOperator();
 		return new AsyncOperator<DetailedMessageBatchEntity>(semaphore)
-				.getFuture(() -> CassandraMessageUtils.getMessageBatch(messageId, op, instanceUuid, readAttrs));
+				.getFuture(() -> selectExecutor.executeMappedSingleRowResultQuery(
+						() -> CassandraMessageUtils.getMessageBatch(messageId, op, instanceUuid, readAttrs),
+						ops.getMessageBatchConverter(), "getting message batch by id "+messageId));
 	}
 
 	private CompletableFuture<StoredMessage> readMessage(StoredMessageId id, boolean rawMessage)

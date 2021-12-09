@@ -16,10 +16,7 @@
 
 package com.exactpro.cradle.cassandra.retries;
 
-import com.datastax.oss.driver.api.core.AsyncPagingIterable;
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.DriverException;
-import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
+import com.datastax.oss.driver.api.core.*;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.internal.core.AsyncPagingIterableWrapper;
@@ -53,8 +50,17 @@ public class SelectQueryExecutor
 		CompletableFuture<T> f = new CompletableFuture<>();
 		Function<Row, T> mapper = converter::convert;
 		query.get()
-				.thenApply(mapper)
+				.thenApplyAsync(row -> row == null ? null : mapper.apply(row))
 				.whenCompleteAsync((result, error) -> onCompleteSingle(result, error, f, mapper, queryInfo, 0));
+		return f;
+	}
+	
+	public <T> CompletableFuture<T> executeMappedSingleRowResultQuery(Supplier<CompletableFuture<T>> query,
+			EntityConverter<T> converter, String queryInfo)
+	{
+		CompletableFuture<T> f = new CompletableFuture<>();
+		query.get().whenCompleteAsync(
+				(result, error) -> onCompleteSingle(result, error, f, converter::convert, queryInfo, 0));
 		return f;
 	}
 
@@ -106,8 +112,14 @@ public class SelectQueryExecutor
 
 		try
 		{
-			delay(error, queryInfo, retryCount, stmt);
-			session.executeAsync(stmt).thenApply(AsyncPagingIterable::one).thenApply(mapper)
+			long delay = RetryUtils.calculateDelayWithJitter(retryCount);
+			CompletableFuture.runAsync(
+							() -> logger.debug("Retrying request ({}) '{}' and CL {} with delay {}ms after error: '{}'",
+									retryCount + 1, queryInfo, stmt.getConsistencyLevel(), delay, error.getMessage()),
+							CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS))
+					.thenComposeAsync(r -> session.executeAsync(stmt))
+					.thenApplyAsync(AsyncPagingIterable::one)
+					.thenApplyAsync(row -> row == null ? null : mapper.apply(row))
 					.whenCompleteAsync((retryResult, retryError) ->
 							onCompleteSingle(retryResult, retryError, f, mapper, queryInfo, retryCount+1));
 		}
@@ -116,15 +128,6 @@ public class SelectQueryExecutor
 			logger.error("Error while retrying '"+queryInfo+"'", e);
 			f.completeExceptionally(e);
 		}
-	}
-
-	private void delay(Throwable error, String queryInfo, int retryCount, Statement<?> stmt)
-			throws InterruptedException
-	{
-		long delay = RetryUtils.calculateDelayWithJitter(retryCount);
-		logger.debug("Retrying request ({}) '{}' and CL {} with delay {}ms after error: '{}'",
-				retryCount +1, queryInfo, stmt.getConsistencyLevel(), delay, error.getMessage());
-		TimeUnit.MILLISECONDS.sleep(delay);
 	}
 
 	private <T> void onCompleteMulti(MappedAsyncPagingIterable<T> result, Throwable error,
@@ -143,8 +146,13 @@ public class SelectQueryExecutor
 
 		try
 		{
-			delay(error, queryInfo, retryCount, stmt);
-			session.executeAsync(stmt).thenApply(row -> new AsyncPagingIterableWrapper<Row, T>(row, mapper))
+			long delay = RetryUtils.calculateDelayWithJitter(retryCount);
+			CompletableFuture.runAsync(
+							() -> logger.debug("Retrying request ({}) '{}' and CL {} with delay {}ms after error: '{}'",
+									retryCount + 1, queryInfo, stmt.getConsistencyLevel(), delay, error.getMessage()),
+							CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS))
+					.thenComposeAsync(r -> session.executeAsync(stmt))
+					.thenApplyAsync(row -> new AsyncPagingIterableWrapper<Row, T>(row, mapper))
 					.whenCompleteAsync(
 							(retryResult, retryError) -> onCompleteMulti(retryResult, retryError, f, mapper, queryInfo,
 									retryCount + 1));

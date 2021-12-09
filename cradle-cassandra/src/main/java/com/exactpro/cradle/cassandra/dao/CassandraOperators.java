@@ -24,6 +24,7 @@ import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventConverter;
 import com.exactpro.cradle.cassandra.dao.messages.MessageTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
 import com.exactpro.cradle.cassandra.dao.messages.converters.DetailedMessageBatchConverter;
+import com.exactpro.cradle.cassandra.dao.messages.converters.TimeMessageConverter;
 import com.exactpro.cradle.cassandra.dao.testevents.RootTestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenDatesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenOperator;
@@ -57,6 +58,7 @@ public class CassandraOperators
 	private final TestEventMessagesConverter testEventMessagesConverter;
 	private final MessageTestEventConverter messageTestEventConverter;
 	private final IntervalConverter intervalConverter;
+	private final TimeMessageConverter timeMessageConverter;
 
 	public CassandraOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings)
 	{
@@ -79,6 +81,7 @@ public class CassandraOperators
 		testEventMessagesConverter = dataMapper.testEventMessagesConverter();
 		messageTestEventConverter = dataMapper.messageTestEventConverter();
 		intervalConverter = dataMapper.intervalConverter();
+		timeMessageConverter = dataMapper.timeMessageConverter();
 	}
 
 	public MessageBatchOperator getMessageBatchOperator()
@@ -172,5 +175,10 @@ public class CassandraOperators
 	public IntervalConverter getIntervalConverter()
 	{
 		return intervalConverter;
+	}
+
+	public TimeMessageConverter getTimeMessageConverter()
+	{
+		return timeMessageConverter;
 	}
 }
