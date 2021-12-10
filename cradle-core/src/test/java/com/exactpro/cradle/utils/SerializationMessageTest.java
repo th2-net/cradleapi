@@ -23,6 +23,7 @@ import com.exactpro.cradle.serialization.MessageDeserializer;
 import com.exactpro.cradle.serialization.MessageSerializer;
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import com.exactpro.cradle.serialization.SerializationException;
+import com.exactpro.cradle.serialization.SerializationUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -74,7 +75,7 @@ public class SerializationMessageTest {
 	@Test
 	public void serializeDeserialize3BIGStreamName() throws SerializationException {
 		StoredMessageBuilder builder = new StoredMessageBuilder();
-		builder.setStreamName("str3456789".repeat(65000/10));
+		builder.setStreamName("str3456789".repeat((SerializationUtils.USHORT_MAX_VALUE - 10)/10));
 		builder.setIndex(123456789010111213L);
 		builder.setDirection(Direction.SECOND);
 		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.00Z").plusNanos(51234));
@@ -91,7 +92,7 @@ public class SerializationMessageTest {
 	@Test
 	public void serializeDeserialize4OverflowStreamName() throws SerializationException {
 		StoredMessageBuilder builder = new StoredMessageBuilder();
-		builder.setStreamName("str3456789".repeat(66000/10));
+		builder.setStreamName("str3456789".repeat((SerializationUtils.USHORT_MAX_VALUE + 10)/10));
 		builder.setIndex(123456789010111213L);
 		builder.setDirection(Direction.SECOND);
 		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.00Z").plusNanos(51234));
@@ -104,7 +105,7 @@ public class SerializationMessageTest {
 			Assert.assertTrue(true);
 			return;
 		}
-		Assert.fail("Should be an error when stream name is longer than 65536");
+		Assert.fail("Should be an error when stream name is longer than " + SerializationUtils.USHORT_MAX_VALUE);
 	}
 
 	@Test
