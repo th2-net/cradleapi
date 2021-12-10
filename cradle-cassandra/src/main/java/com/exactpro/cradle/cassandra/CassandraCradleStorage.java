@@ -37,6 +37,8 @@ import com.exactpro.cradle.cassandra.dao.intervals.IntervalSupplies;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.messages.converters.TimeMessageConverter;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
+import com.exactpro.cradle.cassandra.dao.testevents.converters.RootTestEventsDatesConverter;
+import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventChildDatesConverter;
 import com.exactpro.cradle.cassandra.iterators.*;
 import com.exactpro.cradle.cassandra.linkers.CassandraTestEventsMessagesLinker;
 import com.exactpro.cradle.cassandra.linkers.LinkerSupplies;
@@ -60,6 +62,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.lang.Math.min;
+import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 
 import java.io.*;
@@ -67,6 +70,7 @@ import java.time.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
@@ -379,7 +383,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Collection<StoredMessage>> doGetMessageBatchAsync(StoredMessageId id)
 	{
 		CompletableFuture<DetailedMessageBatchEntity> entityFuture = readMessageBatchEntity(id, true);
-		return entityFuture.thenApply(entity -> {
+		return entityFuture.thenApplyAsync(entity -> {
 			if (entity == null)
 				return null;
 			
@@ -472,12 +476,12 @@ public class CassandraCradleStorage extends CradleStorage
 		TimeMessageOperator tmOperator = ops.getTimeMessageOperator();
 		TimeMessageConverter converter = ops.getTimeMessageConverter();
 		CompletableFuture<TimeMessageEntity> result = timeRelation == TimeRelation.BEFORE
-				? selectExecutor.executeMappedSingleRowResultQuery(
+				? selectExecutor.executeSingleRowResultQuery(
 						() -> tmOperator.getNearestMessageBefore(instanceUuid, streamName, messageDateTime.toLocalDate(),
 								direction.getLabel(), messageDateTime.toLocalTime(), readAttrs),
 						converter, "getting nearest message time before " + timestamp)
 
-				: selectExecutor.executeMappedSingleRowResultQuery(
+				: selectExecutor.executeSingleRowResultQuery(
 						() -> tmOperator.getNearestMessageAfter(instanceUuid, streamName, messageDateTime.toLocalDate(),
 								direction.getLabel(), messageDateTime.toLocalTime(), readAttrs),
 						converter, "getting nearest message time after " + timestamp);
@@ -561,7 +565,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter)
 	{
-		String queryInfo = "get messages filtered by "+filter;
+		String queryInfo = "getting messages filtered by "+filter;
 		return doGetDetailedMessageBatchEntities(filter, queryInfo)
 				.thenApply(it -> new MessagesIteratorAdapter(filter, it, pagingSupplies, ops.getMessageBatchConverter(), queryInfo));
 	}
@@ -583,7 +587,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter)
 	{
-		String queryInfo = "get message batches filtered by "+filter;
+		String queryInfo = "getting message batches filtered by "+filter;
 		return doGetDetailedMessageBatchEntities(filter, queryInfo)
 				.thenApply(it -> new StoredMessageBatchAdapter(it, pagingSupplies, ops.getMessageBatchConverter(), queryInfo,
 						objectsFactory, filter == null ? 0 : filter.getLimit()));
@@ -595,10 +599,9 @@ public class CassandraCradleStorage extends CradleStorage
 		MessageBatchOperator mbOp = ops.getMessageBatchOperator();
 		TimeMessageOperator tmOp = ops.getTimeMessageOperator();
 		return new AsyncOperator<MappedAsyncPagingIterable<DetailedMessageBatchEntity>>(semaphore)
-						.getFuture(() -> selectExecutor
-								.executeMultiRowResultQuery(() -> mbOp.filterMessages(instanceUuid, filter, mbOp, tmOp, readAttrs),
-										ops.getMessageBatchConverter(),
-										queryInfo));
+				.getFuture(() -> selectExecutor.executeMultiRowResultQuery(
+						() -> mbOp.filterMessages(instanceUuid, filter, mbOp, tmOp, readAttrs),
+						ops.getMessageBatchConverter(), queryInfo));
 	}
 
 	@Override
@@ -634,11 +637,13 @@ public class CassandraCradleStorage extends CradleStorage
 		RootTestEventOperator op = ops.getRootTestEventOperator();
 		CompletableFuture<MappedAsyncPagingIterable<RootTestEventEntity>> future = 
 				new AsyncOperator<MappedAsyncPagingIterable<RootTestEventEntity>>(semaphore)
-						.getFuture(() -> selectExecutor.executeMultiRowResultQuery(order == Order.DIRECT
-								? () -> op.getTestEventsDirect(instanceUuid, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
-								: () -> op.getTestEventsReverse(instanceUuid, fromDateTime.toLocalDate(), fromTime, toTime, readAttrs),
-								ops.getRootTestEventConverter(),
-								queryInfo));
+						.getFuture(() -> selectExecutor.executeMultiRowResultQuery(
+								() -> order == Order.DIRECT
+										? op.getTestEventsDirect(instanceUuid, fromDateTime.toLocalDate(), fromTime,
+												toTime, readAttrs)
+										: op.getTestEventsReverse(instanceUuid, fromDateTime.toLocalDate(), fromTime,
+												toTime, readAttrs),
+								ops.getRootTestEventConverter(), queryInfo));
 		return future.thenApply(result -> new RootTestEventsMetadataIteratorAdapter(result, pagingSupplies, ops.getRootTestEventConverter(), queryInfo));
 	}
 
@@ -672,7 +677,7 @@ public class CassandraCradleStorage extends CradleStorage
 		LocalTime fromTime = fromDateTime.toLocalTime(),
 				toTime = toDateTime.toLocalTime();
 		
-		String queryInfo = "get child test events of "+parentId+" from range "+from+".."+to+" in "+order+" order";
+		String queryInfo = format("getting child test events of %s from range %s..%s in %s order", parentId, from, to, order);
 		CompletableFuture<MappedAsyncPagingIterable<TestEventChildEntity>> future =
 				new AsyncOperator<MappedAsyncPagingIterable<TestEventChildEntity>>(semaphore)
 						.getFuture(() -> selectExecutor.executeMultiRowResultQuery(() -> order == Order.DIRECT
@@ -680,8 +685,7 @@ public class CassandraCradleStorage extends CradleStorage
 									fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
 								: ops.getTestEventChildrenOperator().getTestEventsReverse(instanceUuid, parentId.toString(),
 									fromDateTime.toLocalDate(), fromTime, toTime, readAttrs),
-								ops.getTestEventChildConverter(),
-								queryInfo));
+								ops.getTestEventChildConverter(), queryInfo));
 		return future.thenApply(result -> new TestEventChildrenMetadataIteratorAdapter(result, pagingSupplies, ops.getTestEventChildConverter(), queryInfo));
 	}
 
@@ -714,7 +718,7 @@ public class CassandraCradleStorage extends CradleStorage
 		LocalTime fromTime = fromDateTime.toLocalTime(),
 				toTime = toDateTime.toLocalTime();
 		
-		String queryInfo = "get test events from range "+from+".."+to+" in "+order+" order";
+		String queryInfo = format("getting child test events from range %s..%s in %s order", from, to, order);
 		CompletableFuture<MappedAsyncPagingIterable<TimeTestEventEntity>> future =
 				new AsyncOperator<MappedAsyncPagingIterable<TimeTestEventEntity>>(semaphore)
 						.getFuture(() -> selectExecutor.executeMultiRowResultQuery(() -> order == Order.DIRECT
@@ -722,8 +726,7 @@ public class CassandraCradleStorage extends CradleStorage
 										fromDateTime.toLocalDate(), fromTime, toTime, readAttrs)
 								: ops.getTimeTestEventOperator().getTestEventsReverse(instanceUuid,
 										fromDateTime.toLocalDate(), fromTime, toTime, readAttrs),
-								ops.getTimeTestEventConverter(),
-								queryInfo));
+								ops.getTimeTestEventConverter(), queryInfo));
 		return future.thenApply(result -> new TimeTestEventsMetadataIteratorAdapter(result, pagingSupplies, ops.getTimeTestEventConverter(), queryInfo));
 	}
 
@@ -744,23 +747,58 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected Collection<Instant> doGetRootTestEventsDates() throws IOException
 	{
-		List<Instant> result = new ArrayList<>();
-		for (RootTestEventDateEntity entity : ops.getRootTestEventOperator().getDates(readAttrs))
+		Collection<Instant> result = new ArrayList<>();
+		RootTestEventOperator rteOperator = ops.getRootTestEventOperator();
+		RootTestEventsDatesConverter converter = ops.getRootTestEventsDatesConverter();
+		String queryInfo = "getting root event dates";
+		CompletableFuture<MappedAsyncPagingIterable<RootTestEventDateEntity>> future =
+				new AsyncOperator<MappedAsyncPagingIterable<RootTestEventDateEntity>>(semaphore).getFuture(
+						() -> selectExecutor.executeMultiRowResultQuery(
+								() -> rteOperator.getDates(readAttrs), converter, queryInfo));
+		try
 		{
-			if (instanceUuid.equals(entity.getInstanceId()))
-				result.add(entity.getStartDate().atStartOfDay(TIMEZONE_OFFSET).toInstant());
+			PagedIterator<RootTestEventDateEntity> entities =
+					future.thenApply(it -> new PagedIterator<>(it, pagingSupplies, converter, queryInfo)).get();
+			for (; entities.hasNext(); )
+			{
+				RootTestEventDateEntity entity = entities.next();
+				if (instanceUuid.equals(entity.getInstanceId()))
+					result.add(entity.getStartDate().atStartOfDay(TIMEZONE_OFFSET).toInstant());
+			}
+			return result;
 		}
-		result.sort(null);
-		return result;
+		catch (InterruptedException | ExecutionException e)
+		{
+			throw new IOException("Error occured while " + queryInfo, e);
+		}
 	}
 
 	@Override
 	protected Collection<Instant> doGetTestEventsDates(StoredTestEventId parentId) throws IOException
 	{
 		Collection<Instant> result = new ArrayList<>();
-		for (TestEventChildDateEntity entity : ops.getTestEventChildrenDatesOperator().get(instanceUuid, parentId.toString(), readAttrs))
-			result.add(entity.getStartDate().atStartOfDay(TIMEZONE_OFFSET).toInstant());
-		return result;
+		TestEventChildrenDatesOperator tecdOperator = ops.getTestEventChildrenDatesOperator();
+		TestEventChildDatesConverter converter = ops.getTestEventChildDatesConverter();
+		String queryInfo = "getting child event dates of parent " + parentId;
+		CompletableFuture<MappedAsyncPagingIterable<TestEventChildDateEntity>> future = 
+				new AsyncOperator<MappedAsyncPagingIterable<TestEventChildDateEntity>>(semaphore).getFuture(
+						() -> selectExecutor.executeMultiRowResultQuery(
+								() -> tecdOperator.get(instanceUuid, parentId.toString(), readAttrs), converter, queryInfo));
+		try
+		{
+			PagedIterator<TestEventChildDateEntity> entities =
+					future.thenApply(it -> new PagedIterator<>(it, pagingSupplies, converter, queryInfo)).get();
+			for (; entities.hasNext(); )
+			{
+				TestEventChildDateEntity entity = entities.next();
+				result.add(entity.getStartDate().atStartOfDay(TIMEZONE_OFFSET).toInstant());
+			}
+			return result;
+		}
+		catch (InterruptedException | ExecutionException e)
+		{
+			throw new IOException("Error occured while " + queryInfo, e);
+		}
 	}
 
 	@Override
@@ -863,7 +901,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		MessageBatchOperator op = rawMessage ? ops.getMessageBatchOperator() : ops.getProcessedMessageBatchOperator();
 		return new AsyncOperator<DetailedMessageBatchEntity>(semaphore)
-				.getFuture(() -> selectExecutor.executeMappedSingleRowResultQuery(
+				.getFuture(() -> selectExecutor.executeSingleRowResultQuery(
 						() -> CassandraMessageUtils.getMessageBatch(messageId, op, instanceUuid, readAttrs),
 						ops.getMessageBatchConverter(), "getting message batch by id "+messageId));
 	}
@@ -897,13 +935,11 @@ public class CassandraCradleStorage extends CradleStorage
 
 	private long getFirstIndex(MessageBatchOperator op, String streamName, Direction direction) throws IOException
 	{
-		String queryInfo = "get first message for stream '" + streamName + " and direction '" + direction + "'";
+		String queryInfo = format("getting first message for stream '%s' and direction '%s'", streamName, direction);
 		CompletableFuture<Row> future = new AsyncOperator<Row>(semaphore).getFuture(() ->
 						selectExecutor.executeSingleRowResultQuery(
 								() -> op.getFirstIndex(instanceUuid, streamName, direction.getLabel(), readAttrs),
-								r -> r,
-								queryInfo)
-																				   );
+								r -> r, queryInfo));
 		try
 		{
 			Row row = future.get();
@@ -911,21 +947,17 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		catch (Exception e)
 		{
-			throw new IOException(
-					"Error while getting index of the first message for stream '" + streamName + " and direction '" +
-							direction + "'", e);
+			throw new IOException("Error occurred while " + queryInfo, e);
 		}
 	}
 
 	private long getLastIndex(MessageBatchOperator op, String streamName, Direction direction) throws IOException
 	{
-		String queryInfo = "get last message for stream '" + streamName + " and direction '" + direction + "'";
+		String queryInfo = format("getting last message for stream '%s' and direction '%s'", streamName, direction);
 		CompletableFuture<Row> future = new AsyncOperator<Row>(semaphore).getFuture(() ->
 						selectExecutor.executeSingleRowResultQuery(
 								() -> op.getLastIndex(instanceUuid, streamName, direction.getLabel(), readAttrs),
-								r -> r,
-								queryInfo)
-																				   );
+								r -> r, queryInfo));
 		try
 		{
 			Row row = future.get();
@@ -933,9 +965,7 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		catch (Exception e)
 		{
-			throw new IOException(
-					"Error while getting index of the last message for stream '" + streamName + " and direction '" +
-							direction + "'", e);
+			throw new IOException("Error occurred while " + queryInfo, e);
 		}
 	}
 	

@@ -34,11 +34,7 @@ import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.converters.RootTestEventConverter;
-import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventChildConverter;
-import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventConverter;
-import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventMessagesConverter;
-import com.exactpro.cradle.cassandra.dao.testevents.converters.TimeTestEventConverter;
+import com.exactpro.cradle.cassandra.dao.testevents.converters.*;
 
 @Mapper
 public interface CassandraDataMapper
@@ -87,6 +83,10 @@ public interface CassandraDataMapper
 	MessageTestEventConverter messageTestEventConverter();
 	@DaoFactory
 	TimeMessageConverter timeMessageConverter();
+	@DaoFactory
+	TestEventChildDatesConverter testEventChildDatesConverter();
+	@DaoFactory
+	RootTestEventsDatesConverter rootTestEventsDatesConverter();
 
 	@DaoFactory
 	IntervalOperator intervalOperator(@DaoKeyspace String keyspace, @DaoTable String intervalsTable);

@@ -58,5 +58,5 @@ public interface RootTestEventOperator
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("SELECT DISTINCT "+INSTANCE_ID+", "+START_DATE+" from ${qualifiedTableId}")
-	PagingIterable<RootTestEventDateEntity> getDates(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<MappedAsyncPagingIterable<RootTestEventDateEntity>> getDates(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

@@ -20,7 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import com.datastax.oss.driver.api.core.PagingIterable;
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
@@ -34,6 +34,6 @@ public interface TestEventChildrenDatesOperator
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Select
-	PagingIterable<TestEventChildDateEntity> get(UUID instanceId, String parentId, 
+	CompletableFuture<MappedAsyncPagingIterable<TestEventChildDateEntity>> get(UUID instanceId, String parentId, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }
