@@ -31,11 +31,7 @@ import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventMessagesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.converters.RootTestEventConverter;
-import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventChildConverter;
-import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventConverter;
-import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventMessagesConverter;
-import com.exactpro.cradle.cassandra.dao.testevents.converters.TimeTestEventConverter;
+import com.exactpro.cradle.cassandra.dao.testevents.converters.*;
 
 public class CassandraOperators
 {
@@ -59,6 +55,8 @@ public class CassandraOperators
 	private final MessageTestEventConverter messageTestEventConverter;
 	private final IntervalConverter intervalConverter;
 	private final TimeMessageConverter timeMessageConverter;
+	private final TestEventChildDatesConverter testEventChildDatesConverter;
+	private final RootTestEventsDatesConverter rootTestEventsDatesConverter;
 
 	public CassandraOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings)
 	{
@@ -82,6 +80,8 @@ public class CassandraOperators
 		messageTestEventConverter = dataMapper.messageTestEventConverter();
 		intervalConverter = dataMapper.intervalConverter();
 		timeMessageConverter = dataMapper.timeMessageConverter();
+		testEventChildDatesConverter = dataMapper.testEventChildDatesConverter();
+		rootTestEventsDatesConverter = dataMapper.rootTestEventsDatesConverter();
 	}
 
 	public MessageBatchOperator getMessageBatchOperator()
@@ -180,5 +180,15 @@ public class CassandraOperators
 	public TimeMessageConverter getTimeMessageConverter()
 	{
 		return timeMessageConverter;
+	}
+
+	public TestEventChildDatesConverter getTestEventChildDatesConverter()
+	{
+		return testEventChildDatesConverter;
+	}
+
+	public RootTestEventsDatesConverter getRootTestEventsDatesConverter()
+	{
+		return rootTestEventsDatesConverter;
 	}
 }

@@ -44,18 +44,7 @@ public class SelectQueryExecutor
 		this.singleRowResultExecPolicy = singleRowResultExecPolicy;
 	}
 
-	public <T> CompletableFuture<T> executeSingleRowResultQuery(Supplier<CompletableFuture<Row>> query,
-			EntityConverter<T> converter, String queryInfo)
-	{
-		CompletableFuture<T> f = new CompletableFuture<>();
-		Function<Row, T> mapper = converter::convert;
-		query.get()
-				.thenApplyAsync(row -> row == null ? null : mapper.apply(row))
-				.whenCompleteAsync((result, error) -> onCompleteSingle(result, error, f, mapper, queryInfo, 0));
-		return f;
-	}
-	
-	public <T> CompletableFuture<T> executeMappedSingleRowResultQuery(Supplier<CompletableFuture<T>> query,
+	public <T> CompletableFuture<T> executeSingleRowResultQuery(Supplier<CompletableFuture<T>> query,
 			EntityConverter<T> converter, String queryInfo)
 	{
 		CompletableFuture<T> f = new CompletableFuture<>();
