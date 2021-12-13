@@ -20,6 +20,8 @@ import com.datastax.oss.driver.api.core.*;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.internal.core.AsyncPagingIterableWrapper;
+import com.exactpro.cradle.cassandra.CassandraSemaphore;
+import com.exactpro.cradle.cassandra.dao.AsyncOperator;
 import com.exactpro.cradle.cassandra.dao.EntityConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,12 +36,15 @@ public class SelectQueryExecutor
 	private static final Logger logger = LoggerFactory.getLogger(SelectQueryExecutor.class);
 
 	private final CqlSession session;
+	private final CassandraSemaphore semaphore;
 	private final SelectExecutionPolicy multiRowResultExecPolicy, singleRowResultExecPolicy;
 
-	public SelectQueryExecutor(CqlSession session, SelectExecutionPolicy multiRowResultExecPolicy,
+	public SelectQueryExecutor(CqlSession session, CassandraSemaphore semaphore,
+			SelectExecutionPolicy multiRowResultExecPolicy,
 			SelectExecutionPolicy singleRowResultExecPolicy)
 	{
 		this.session = session;
+		this.semaphore = semaphore;
 		this.multiRowResultExecPolicy = multiRowResultExecPolicy;
 		this.singleRowResultExecPolicy = singleRowResultExecPolicy;
 	}
@@ -47,20 +52,28 @@ public class SelectQueryExecutor
 	public <T> CompletableFuture<T> executeSingleRowResultQuery(Supplier<CompletableFuture<T>> query,
 			EntityConverter<T> converter, String queryInfo)
 	{
-		CompletableFuture<T> f = new CompletableFuture<>();
-		query.get().whenCompleteAsync(
-				(result, error) -> onCompleteSingle(result, error, f, converter::convert, queryInfo, 0));
-		return f;
+		return new AsyncOperator<T>(semaphore).getFuture(
+				() ->
+				{
+					CompletableFuture<T> f = new CompletableFuture<>();
+					query.get().whenCompleteAsync(
+							(result, error) -> onCompleteSingle(result, error, f, converter::convert, queryInfo, 0));
+					return f;
+				});
 	}
 
 	public <T> CompletableFuture<MappedAsyncPagingIterable<T>> executeMultiRowResultQuery(
 			Supplier<CompletableFuture<MappedAsyncPagingIterable<T>>> query,
 			EntityConverter<T> converter, String queryInfo)
 	{
-		CompletableFuture<MappedAsyncPagingIterable<T>> f = new CompletableFuture<>();
-		Function<Row, T> mapper = converter::convert;
-		query.get().whenCompleteAsync((result, error) -> onCompleteMulti(result, error, f, mapper, queryInfo, 0));
-		return f;
+		return new AsyncOperator<MappedAsyncPagingIterable<T>>(semaphore).getFuture(
+				() ->
+				{
+					CompletableFuture<MappedAsyncPagingIterable<T>> f = new CompletableFuture<>();
+					query.get().whenCompleteAsync(
+							(result, error) -> onCompleteMulti(result, error, f, converter::convert, queryInfo, 0));
+					return f;
+				});
 	}
 
 	private Statement<?> handleErrorAndGetStatement(Throwable error, CompletableFuture<?> f,
