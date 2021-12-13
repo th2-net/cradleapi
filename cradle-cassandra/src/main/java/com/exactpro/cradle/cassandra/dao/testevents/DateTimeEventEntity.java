@@ -33,7 +33,7 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 import static com.exactpro.cradle.cassandra.StorageConstants.START_TIME;
 
 @Entity
-public class DateTimeEventEntity
+public class DateTimeEventEntity extends DateEventEntity
 {
 	@PartitionKey(0)
 	@CqlName(INSTANCE_ID)
@@ -43,9 +43,6 @@ public class DateTimeEventEntity
 	@CqlName(ID)
 	private String id;
 
-	@CqlName(START_DATE)
-	private LocalDate startDate;
-	
 	@CqlName(START_TIME)
 	private LocalTime startTime;
 
@@ -78,16 +75,6 @@ public class DateTimeEventEntity
 	public void setId(String id)
 	{
 		this.id = id;
-	}
-
-	public LocalDate getStartDate()
-	{
-		return startDate;
-	}
-
-	public void setStartDate(LocalDate startDate)
-	{
-		this.startDate = startDate;
 	}
 
 	public LocalTime getStartTime()
