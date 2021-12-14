@@ -88,7 +88,8 @@ public class PagedIterator<E> implements Iterator<E>
 	{
 		if (rows.hasMorePages())
 		{
-			rows = rows.fetchNextPage().toCompletableFuture().get();  //TODO: better to fetch next page in advance, not when current page ended
+			//TODO: better to fetch next page in advance, not when current page ended
+			rows = selectQueryExecutor.fetchNextPage(rows, mapper, queryInfo).get();
 			return rows.currentPage().iterator();
 		}
 		return null;
