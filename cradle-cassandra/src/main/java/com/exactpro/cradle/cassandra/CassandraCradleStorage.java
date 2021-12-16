@@ -86,7 +86,7 @@ public class CassandraCradleStorage extends CradleStorage
 			ExecutorService composingService) throws CradleStorageException
 	{
 		super(composingService, storageSettings.getMaxMessageBatchSize(), storageSettings.getMaxTestEventBatchSize());
-		this.connection = new CassandraConnection(connectionSettings);
+		this.connection = new CassandraConnection(connectionSettings, storageSettings);
 		this.settings = storageSettings;
 	}
 
