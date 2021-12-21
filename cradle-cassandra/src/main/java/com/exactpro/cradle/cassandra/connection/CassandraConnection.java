@@ -31,32 +31,33 @@ import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.internal.core.config.typesafe.DefaultDriverConfigLoader;
 import com.datastax.oss.driver.internal.core.config.typesafe.DefaultProgrammaticDriverConfigLoaderBuilder;
-import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.apache.commons.lang3.StringUtils;
+
+import static com.exactpro.cradle.cassandra.CassandraStorageSettings.DEFAULT_TIMEOUT;
 
 public class CassandraConnection
 {
 	public static final String DRIVER_CONFIG_FILE_NAME = "application.conf";
 	private static final Path DRIVER_CONFIG = Paths.get(System.getProperty("user.dir"), DRIVER_CONFIG_FILE_NAME);
 	
-	private final CassandraConnectionSettings connectionSettings;
-	private final CassandraStorageSettings storageSettings;
+	private final CassandraConnectionSettings settings;
 	private volatile CqlSession session;
 	private volatile Instant started,
 			stopped;
+	private final long timeout;
 
 	public CassandraConnection()
 	{
-		this.connectionSettings = createConnectionSettings();
-		this.storageSettings = createStorageSettings();
+		this.settings = createConnectionSettings();
+		this.timeout = DEFAULT_TIMEOUT;
 	}
 
-	public CassandraConnection(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings)
+	public CassandraConnection(CassandraConnectionSettings settings, long timeout)
 	{
-		this.connectionSettings = connectionSettings;
-		this.storageSettings = storageSettings;
+		this.settings = settings;
+		this.timeout = timeout;
 	}
 
 	
@@ -64,14 +65,14 @@ public class CassandraConnection
 	{
 		CqlSessionBuilder sessionBuilder = CqlSession.builder();
 		sessionBuilder.withConfigLoader(getConfigLoader());
-		if (!StringUtils.isEmpty(connectionSettings.getLocalDataCenter()))
-			sessionBuilder = sessionBuilder.withLocalDatacenter(connectionSettings.getLocalDataCenter());
-		if (connectionSettings.getPort() > -1)
-			sessionBuilder = sessionBuilder.addContactPoint(new InetSocketAddress(connectionSettings.getHost(), connectionSettings
+		if (!StringUtils.isEmpty(settings.getLocalDataCenter()))
+			sessionBuilder = sessionBuilder.withLocalDatacenter(settings.getLocalDataCenter());
+		if (settings.getPort() > -1)
+			sessionBuilder = sessionBuilder.addContactPoint(new InetSocketAddress(settings.getHost(), settings
 					.getPort()));
-		if (!StringUtils.isEmpty(connectionSettings.getUsername()))
+		if (!StringUtils.isEmpty(settings.getUsername()))
 			sessionBuilder = sessionBuilder.withAuthCredentials(
-					connectionSettings.getUsername(), connectionSettings.getPassword());
+					settings.getUsername(), settings.getPassword());
 		session = sessionBuilder.build();
 		started = Instant.now();
 		stopped = null;
@@ -88,15 +89,8 @@ public class CassandraConnection
 
 		return new DefaultProgrammaticDriverConfigLoaderBuilder(fallBackSupplier, DefaultDriverConfigLoader.DEFAULT_ROOT_PATH)
 				//Set the init-query timeout the same as for the select query
-				.withDuration(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT,
-						Duration.ofMillis(getQueryTimeout()))
+				.withDuration(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, Duration.ofMillis(timeout))
 				.build();
-	}
-
-	private long getQueryTimeout()
-	{
-		long queryTimeout = storageSettings.getTimeout();
-		return queryTimeout == 0 ? storageSettings.DEFAULT_TIMEOUT : queryTimeout;
 	}
 
 	public void stop() throws Exception
@@ -110,9 +104,9 @@ public class CassandraConnection
 	}
 	
 	
-	public CassandraConnectionSettings getConnectionSettings()
+	public CassandraConnectionSettings getSettings()
 	{
-		return connectionSettings;
+		return settings;
 	}
 	
 	public CqlSession getSession()
@@ -139,10 +133,5 @@ public class CassandraConnection
 	protected CassandraConnectionSettings createConnectionSettings()
 	{
 		return new CassandraConnectionSettings();
-	}
-	
-	protected CassandraStorageSettings createStorageSettings()
-	{
-		return new CassandraStorageSettings();
 	}
 }
