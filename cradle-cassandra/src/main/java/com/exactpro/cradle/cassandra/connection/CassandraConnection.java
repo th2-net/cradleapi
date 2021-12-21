@@ -50,8 +50,7 @@ public class CassandraConnection
 
 	public CassandraConnection()
 	{
-		this.settings = createConnectionSettings();
-		this.timeout = DEFAULT_TIMEOUT;
+		this(new CassandraConnectionSettings(), DEFAULT_TIMEOUT);
 	}
 
 	public CassandraConnection(CassandraConnectionSettings settings, long timeout)
@@ -68,11 +67,9 @@ public class CassandraConnection
 		if (!StringUtils.isEmpty(settings.getLocalDataCenter()))
 			sessionBuilder = sessionBuilder.withLocalDatacenter(settings.getLocalDataCenter());
 		if (settings.getPort() > -1)
-			sessionBuilder = sessionBuilder.addContactPoint(new InetSocketAddress(settings.getHost(), settings
-					.getPort()));
+			sessionBuilder = sessionBuilder.addContactPoint(new InetSocketAddress(settings.getHost(), settings.getPort()));
 		if (!StringUtils.isEmpty(settings.getUsername()))
-			sessionBuilder = sessionBuilder.withAuthCredentials(
-					settings.getUsername(), settings.getPassword());
+			sessionBuilder = sessionBuilder.withAuthCredentials(settings.getUsername(), settings.getPassword());
 		session = sessionBuilder.build();
 		started = Instant.now();
 		stopped = null;
@@ -127,11 +124,5 @@ public class CassandraConnection
 	public boolean isRunning()
 	{
 		return started != null && stopped == null;
-	}
-	
-	
-	protected CassandraConnectionSettings createConnectionSettings()
-	{
-		return new CassandraConnectionSettings();
 	}
 }
