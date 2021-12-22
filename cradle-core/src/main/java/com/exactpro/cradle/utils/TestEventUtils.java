@@ -80,13 +80,17 @@ public class TestEventUtils
 		if (event instanceof TestEventBatch && event.getParentId() == null)
 			throw new CradleStorageException("Batch must have a parent");
 		
-		if (event.getBookId() == null)
+		if (event.getBookId() == null || StringUtils.isEmpty(event.getBookId().toString()))
 			throw new CradleStorageException("Test event must have a book");
-		if (event.getScope() == null)
+		if (StringUtils.isEmpty(event.getScope()))
 			throw new CradleStorageException("Test event must have a scope");
 		if (event.getStartTimestamp() == null)
 			throw new CradleStorageException("Test event must have a start timestamp");
-		
+		Instant now = Instant.now();
+		if (event.getStartTimestamp().isAfter(now))
+			throw new CradleStorageException(
+					"Event start timestamp '" + TimeUtils.toLocalTimestamp(event.getStartTimestamp()) +
+							"' It can not be greater than current '" + TimeUtils.toLocalTimestamp(now) + "'");
 		if (event.getEndTimestamp() != null && event.getEndTimestamp().isBefore(event.getStartTimestamp()))
 			throw new CradleStorageException("Test event cannot end sooner than it started");
 		
