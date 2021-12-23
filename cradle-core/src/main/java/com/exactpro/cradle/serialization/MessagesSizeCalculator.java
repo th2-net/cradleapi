@@ -36,7 +36,7 @@ public class MessagesSizeCalculator {
 	 * 	Collapsed constant = 30 
 	 *  
 	 */
-	private final static int MESSAGE_SIZE_CONST_VALUE = 30;
+	public final static int MESSAGE_SIZE_CONST_VALUE = 30;
 
 	/*
 	 * 	     4 - magic number
@@ -50,9 +50,9 @@ public class MessagesSizeCalculator {
 	 * 		 4 - message length
 	 * 		 x - message
 	 */
-	private final static int MESSAGE_BATCH_CONST_VALUE = 12;
+	public final static int MESSAGE_BATCH_CONST_VALUE = 12;
 	
-	private final static int MESSAGE_LENGTH_IN_BATCH = 4;
+	public final static int MESSAGE_LENGTH_IN_BATCH = 4;
 
 	public static int calculateMessageSize(StoredMessage message) {
 		int i = (message.getContent() != null ? message.getContent().length : 0) + MESSAGE_SIZE_CONST_VALUE;
