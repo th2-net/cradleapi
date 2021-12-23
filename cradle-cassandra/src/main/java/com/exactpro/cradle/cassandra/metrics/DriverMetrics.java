@@ -16,16 +16,18 @@
 
 package com.exactpro.cradle.cassandra.metrics;
 
+import com.datastax.oss.driver.api.core.CqlSession;
+import io.prometheus.client.dropwizard.DropwizardExports;
+import io.prometheus.client.dropwizard.samplebuilder.CustomMappingSampleBuilder;
 import io.prometheus.client.dropwizard.samplebuilder.MapperConfig;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
-public class MetricConstants
+public class DriverMetrics
 {
-	// Session level metrics
+	// Session level metrics. All of them has prefix "session_".
 	// The number and rate of bytes sent for the entire session (exposed as a Meter).
 	private static final String SESSION_BYTES_SENT = "bytes-sent";
 	// The number and rate of bytes received for the entire session (exposed as a Meter).
@@ -48,12 +50,12 @@ public class MetricConstants
 	// a Counter)
 	private static final String THROTTLING_ERRORS = "throttling.errors";
 
-	public static final String[] SESSION_LEVEL_METRICS = {SESSION_BYTES_SENT, SESSION_BYTES_RECEIVED, CONNECTED_NODES,
+	private static final String[] SESSION_LEVEL_METRICS = {SESSION_BYTES_SENT, SESSION_BYTES_RECEIVED, CONNECTED_NODES,
 			CQL_REQUESTS, CQL_CLIENT_TIMEOUTS, CQL_PREPARED_CACHE_SIZE, THROTTLING_DELAY, THROTTLING_QUEUE_SIZE, THROTTLING_ERRORS};
-	public static final String SESSION_LEVEL_METRICS_FORMATTER = "*.%s";
-	public static final String[] SESSION_LEVEL_METRICS_PARAMS = {"session"};
+	private static final String SESSION_LEVEL_METRICS_FORMATTER = "*.%s";
+	private static final String[] SESSION_LEVEL_METRICS_PARAMS = {"session"};
 
-	// Node level metrics
+	// Node level metrics. All of them has prefix "node_".
 	// The number of connections open to this node for regular requests (exposed as a Gauge<Integer>)
 	private static final String POOL_OPEN_CONNECTIONS = "pool.open-connections";
 	// The number of stream ids available on the connections to this node (exposed as a Gauge<Integer>).
@@ -110,16 +112,22 @@ public class MetricConstants
 	// to this node (exposed as a Counter).
 	private static final String ERRORS_CONNECTION_AUTH = "errors.connection.auth";
 
-	public static final String[] NODE_LEVEL_METRICS = {POOL_OPEN_CONNECTIONS, POOL_AVAILABLE_STREAMS, POOL_IN_FLIGHT,
+	private static final String[] NODE_LEVEL_METRICS = {POOL_OPEN_CONNECTIONS, POOL_AVAILABLE_STREAMS, POOL_IN_FLIGHT,
 			POOL_ORPHANED_STREAMS, NODE_BYTES_SENT, NODE_BYTES_RECEIVED, CQL_MESSAGES, ERRORS_REQUEST_UNSENT,
 			ERRORS_REQUEST_ABORTED, ERRORS_REQUEST_WRITE_TIMEOUT, ERRORS_REQUEST_READ_TIMEOUT, ERRORS_REQUEST_UNAVAILABLE,
 			ERRORS_REQUEST_OTHERS, RETRIES_TOTAL, RETRIES_ABORTED, RETRIES_READ_TIMEOUT, RETRIES_WRITE_TIMEOUT,
 			RETRIES_UNAVAILABLE, RETRIES_OTHER, IGNORES_TOTAL, IGNORES_ABORTED, IGNORES_READ_TIMEOUT, IGNORES_WRITE_TIMEOUT,
 			IGNORES_UNAVIABLE, IGNORES_OTHER, SPECULATIVE_EXECUTIONS, ERRORS_CONNECTION_INIT, ERRORS_CONNECTION_AUTH};
-	public static final String NODE_LEVEL_METRICS_FORMATTER = "*.nodes.*.%s";
-	public static final String[] NODE_LEVEL_METRICS_PARAMS = {"session", "node"};
+	private static final String NODE_LEVEL_METRICS_FORMATTER = "*.nodes.*.%s";
+	private static final String[] NODE_LEVEL_METRICS_PARAMS = {"session", "node"};
 
-	public static List<MapperConfig> createMapperConfigs()
+	public static void register(CqlSession session)
+	{
+		session.getMetrics().ifPresent(metrics -> new DropwizardExports(metrics.getRegistry(),
+				new CustomMappingSampleBuilder(createMapperConfigs())).register());
+	}
+	
+	private static List<MapperConfig> createMapperConfigs()
 	{
 		List<MapperConfig> result = new ArrayList<>();
 		// Add session level metrics

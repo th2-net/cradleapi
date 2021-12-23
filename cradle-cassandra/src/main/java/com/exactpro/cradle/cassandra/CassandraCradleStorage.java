@@ -42,7 +42,7 @@ import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.BookKeyspaceCreator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
-import com.exactpro.cradle.cassandra.metrics.CradleCassandraMetrics;
+import com.exactpro.cradle.cassandra.metrics.DriverMetrics;
 import com.exactpro.cradle.cassandra.retries.FixedNumberRetryPolicy;
 import com.exactpro.cradle.cassandra.retries.PageSizeAdjustingPolicy;
 import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
@@ -89,7 +89,6 @@ public class CassandraCradleStorage extends CradleStorage
 	private SelectExecutionPolicy multiRowResultExecPolicy, singleRowResultExecPolicy;
 	private EventsWorker eventsWorker;
 	private MessagesWorker messagesWorker;
-	private CradleCassandraMetrics driverMetrics;
 
 	public CassandraCradleStorage(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings, 
 			ExecutorService composingService) throws CradleStorageException
@@ -116,7 +115,7 @@ public class CassandraCradleStorage extends CradleStorage
 		
 		try
 		{
-			driverMetrics = new CradleCassandraMetrics(connection.getSession());
+			DriverMetrics.register(connection.getSession());
 			exec = new QueryExecutor(connection.getSession(),
 					settings.getTimeout(), settings.getWriteConsistencyLevel(), settings.getReadConsistencyLevel());
 			selectExecutor = new SelectQueryExecutor(connection.getSession(), composingService, multiRowResultExecPolicy,

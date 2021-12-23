@@ -33,6 +33,7 @@ import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TimeUtils;
+import io.prometheus.client.Counter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +47,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
+import java.util.zip.DataFormatException;
 
 import static com.exactpro.cradle.CradleStorage.EMPTY_MESSAGE_INDEX;
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
@@ -54,6 +56,11 @@ import static java.lang.String.format;
 public class MessagesWorker extends Worker
 {
 	private static final Logger logger = LoggerFactory.getLogger(MessagesWorker.class);
+	
+	private static final Counter MESSAGE_READ_METRIC = Counter.build().name("cradle_message_readed")
+			.help("Fetched messages").labelNames(BOOK_ID, SESSION_ALIAS, DIRECTION).register();
+	private static final Counter MESSAGE_WRITE_METRIC = Counter.build().name("cradle_message_stored")
+			.help("Stored messages").labelNames(BOOK_ID, SESSION_ALIAS, DIRECTION).register();
 
 	public MessagesWorker(CassandraStorageSettings settings, CradleOperators ops,
 			ExecutorService composingService, BookAndPageChecker bpc,
@@ -62,6 +69,34 @@ public class MessagesWorker extends Worker
 			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
 	{
 		super(settings, ops, composingService, bpc, selectQueryExecutor, writeAttrs, readAttrs);
+	}
+
+	public static StoredMessageBatch mapMessageBatchEntity(PageId pageId, MessageBatchEntity entity)
+	{
+		try
+		{
+			StoredMessageBatch batch = entity.toStoredMessageBatch(pageId);
+			updateMessageReadMetrics(batch);
+			return batch;
+		}
+		catch (DataFormatException | IOException e)
+		{
+			throw new CompletionException("Error while converting message batch entity into stored message batch", e);
+		}
+	}
+
+	private static void updateMessageReadMetrics(StoredMessageBatch batch)
+	{
+		MESSAGE_READ_METRIC
+				.labels(batch.getId().getBookId().getName(), batch.getSessionAlias(), batch.getDirection().getLabel())
+				.inc(batch.getMessageCount());
+	}
+	
+	private static void updateMessageWriteMetrics(MessageBatchEntity entity, BookId bookId)
+	{
+		MESSAGE_WRITE_METRIC
+				.labels(bookId.getName(), entity.getSessionAlias(), entity.getDirection())
+				.inc(entity.getMessageCount());
 	}
 
 	public CompletableFuture<CradleResultSet<StoredMessageBatch>> getMessageBatches(MessageFilter filter, BookInfo book)
@@ -146,18 +181,10 @@ public class MessagesWorker extends Worker
 							{
 								if (entity == null)
 									return null;
-
-								try
-								{
-									StoredMessageBatch batch = entity.toStoredMessageBatch(pageId);
-									logger.debug("Message batch with id '{}' found for message with id '{}'",
-											batch.getId(), id);
-									return batch;
-								}
-								catch (Exception ex)
-								{
-									throw new CompletionException(ex);
-								}
+								StoredMessageBatch batch = mapMessageBatchEntity(pageId, entity);
+								logger.debug("Message batch with id '{}' found for message with id '{}'",
+										batch.getId(), id);
+								return batch;
 							}, composingService);
 				}, composingService);
 	}
@@ -218,12 +245,13 @@ public class MessagesWorker extends Worker
 		return bookOps.getSessionsOperator().write(new SessionEntity(bookId.toString(), batch.getSessionAlias()), writeAttrs);
 	}
 
-	public CompletableFuture<MessageBatchEntity> storeMessageBatch(MessageBatchEntity entity, BookId bookId)
+	public CompletableFuture<Void> storeMessageBatch(MessageBatchEntity entity, BookId bookId)
 	{
 		BookOperators bookOps = getBookOps(bookId);
 		MessageBatchOperator mbOperator = bookOps.getMessageBatchOperator();
 
-		return mbOperator.write(entity, writeAttrs);
+		return mbOperator.write(entity, writeAttrs)
+				.thenAcceptAsync(result -> updateMessageWriteMetrics(result, bookId), composingService);
 	}
 
 	public long getBoundarySequence(String sessionAlias, Direction direction, BookInfo book, boolean first)
