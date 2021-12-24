@@ -86,8 +86,8 @@ public class MessageBatchToStoreTest
 					{builder.bookId(null)},																			 //Null book
 					{builder.bookId(new BookId(""))},														 //Empty book
 					{builder.bookId(book)},                                                                          //Only book is set
-					{builder.bookId(book).sessionAlias(null).direction(null).timestamp(null)},               		 //Null session are set
-					{builder.bookId(book).sessionAlias("").direction(null).timestamp(null)},               		 	 //Empty session are set
+					{builder.bookId(book).sessionAlias(null).direction(null).timestamp(null)},               		 //Null session is set
+					{builder.bookId(book).sessionAlias("").direction(null).timestamp(null)},               		 	 //Empty session is set
 					{builder.bookId(book).sessionAlias(sessionAlias).direction(null).timestamp(null)},               //Only book and session are set
 					{builder.bookId(book).sessionAlias(sessionAlias).direction(direction).timestamp(null)},          //Only book, session and direction are set
 					{builder.bookId(book).sessionAlias(sessionAlias).direction(direction).timestamp(Instant.now())}  //Content is not set

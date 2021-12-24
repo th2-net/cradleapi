@@ -101,8 +101,8 @@ public class MessageBatchToStore extends StoredMessageBatch
 		Instant now = Instant.now();
 		if (message.getTimestamp().isAfter(now))
 			throw new CradleStorageException(
-					"Message timestamp '" + TimeUtils.toLocalTimestamp(message.getTimestamp()) +
-							"' It cannot be greater than current '" + TimeUtils.toLocalTimestamp(now) + "'");
+					"Message timestamp is (" + TimeUtils.toLocalTimestamp(message.getTimestamp()) +
+							") It cannot be greater than current timestamp (" + TimeUtils.toLocalTimestamp(now) + ")");
 
 		long messageSeq;
 		if (id == null)
