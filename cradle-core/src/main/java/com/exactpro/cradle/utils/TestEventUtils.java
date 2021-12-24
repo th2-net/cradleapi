@@ -80,22 +80,35 @@ public class TestEventUtils
 		if (event instanceof TestEventBatch && event.getParentId() == null)
 			throw new CradleStorageException("Batch must have a parent");
 		
-		if (event.getBookId() == null)
+		if (event.getBookId() == null || StringUtils.isEmpty(event.getBookId().toString()))
 			throw new CradleStorageException("Test event must have a book");
-		if (event.getScope() == null)
+		if (StringUtils.isEmpty(event.getScope()))
 			throw new CradleStorageException("Test event must have a scope");
 		if (event.getStartTimestamp() == null)
 			throw new CradleStorageException("Test event must have a start timestamp");
-		
-		if (event.getEndTimestamp() != null && event.getEndTimestamp().isBefore(event.getStartTimestamp()))
-			throw new CradleStorageException("Test event cannot end sooner than it started");
-		
+		Instant now = Instant.now();
+		if (event.getStartTimestamp().isAfter(now))
+			throw new CradleStorageException(
+					"Event start timestamp (" + TimeUtils.toLocalTimestamp(event.getStartTimestamp()) +
+							") is greater than current timestamp (" + TimeUtils.toLocalTimestamp(now) + ")");
+		validateTestEventEndDate(event);
 		if (event.getParentId() != null && !event.getBookId().equals(event.getParentId().getBookId()))
 			throw new CradleStorageException("Test event and its parent must be from the same book");
 		
 		Set<StoredMessageId> messages = event.getMessages();
 		if (messages != null)
 			validateMessages(messages, event.getBookId());
+	}
+
+	/**
+	 * Validate that end timestamp of test event is greater than start timestamp
+	 * @param event to validate
+	 * @throws CradleStorageException if validation failed
+	 */
+	public static void validateTestEventEndDate(TestEvent event) throws CradleStorageException
+	{
+		if (event.getEndTimestamp() != null && event.getEndTimestamp().isBefore(event.getStartTimestamp()))
+			throw new CradleStorageException("Test event cannot end sooner than it started");
 	}
 	
 	/**

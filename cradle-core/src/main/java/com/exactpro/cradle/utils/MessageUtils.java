@@ -22,6 +22,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -46,8 +47,7 @@ public class MessageUtils
 	{
 		if (message.getId() == null)
 			throw new CradleStorageException("Messages ID cannot be null");
-			
-		if (message.getBookId() == null)
+		if (message.getBookId() == null || StringUtils.isEmpty(message.getBookId().toString()))
 			throw new CradleStorageException("Message must have a book");
 		if (StringUtils.isEmpty(message.getSessionAlias()))
 			throw new CradleStorageException("Message must have a session alias");

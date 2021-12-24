@@ -17,8 +17,10 @@
 package com.exactpro.cradle.messages;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.*;
 
+import com.exactpro.cradle.utils.TimeUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +38,7 @@ public class MessageBatchToStore extends StoredMessageBatch
 	private static final Logger logger = LoggerFactory.getLogger(MessageBatchToStore.class);
 	
 	private final int maxBatchSize;
+	private LocalDate batchDate;
 	
 	public MessageBatchToStore(int maxBatchSize)
 	{
@@ -93,8 +96,14 @@ public class MessageBatchToStore extends StoredMessageBatch
 		if (!hasSpace(message))
 			throw new CradleStorageException("Batch has not enough space to hold given message");
 		
-		MessageUtils.validateMessage(message);  //Checking if book, session alias, direction, timestamp and content are set
-		
+		// Checking that the timestamp of a message is not from the future
+		// Other checks have already been done when the MessageToStore was created
+		Instant now = Instant.now();
+		if (message.getTimestamp().isAfter(now))
+			throw new CradleStorageException(
+					"Message timestamp (" + TimeUtils.toLocalTimestamp(message.getTimestamp()) +
+							") is greater than current timestamp (" + TimeUtils.toLocalTimestamp(now) + ")");
+
 		long messageSeq;
 		if (id == null)
 		{
@@ -103,6 +112,7 @@ public class MessageBatchToStore extends StoredMessageBatch
 				throw new CradleStorageException("Sequence number for first message in batch cannot be negative");
 			
 			id = new StoredMessageId(message.getBookId(), message.getSessionAlias(), message.getDirection(), message.getTimestamp(), i);
+			batchDate = TimeUtils.toLocalTimestamp(id.getTimestamp()).toLocalDate();
 			messageSeq = i;
 		}
 		else
@@ -116,7 +126,10 @@ public class MessageBatchToStore extends StoredMessageBatch
 			if (id.getDirection() != message.getDirection())
 				throw new CradleStorageException("Batch contains messages with direction "+id.getDirection()+", "
 						+ "but in your message it is "+message.getDirection());
-			
+			LocalDate messageDate = TimeUtils.toLocalTimestamp(message.getTimestamp()).toLocalDate();
+			if (!batchDate.equals(messageDate))
+				throw new CradleStorageException("Batch contains messages with date '" + batchDate + "', "
+						+ "but in your message it is '" + messageDate);
 			StoredMessage lastMsg = getLastMessage();
 			
 			if (lastMsg.getTimestamp().isAfter(message.getTimestamp()))

@@ -18,6 +18,7 @@ package com.exactpro.cradle.messages;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 
@@ -49,7 +50,7 @@ public class MessageBatchToStoreTest
 		book = new BookId("book1");
 		sessionAlias = "Session1";
 		direction = Direction.FIRST;
-		timestamp = Instant.now();
+		timestamp = Instant.now().minus(1, ChronoUnit.DAYS);
 		messageContent = "Message text".getBytes();
 	}
 	
@@ -67,6 +68,8 @@ public class MessageBatchToStoreTest
 					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
 							new IdData(book, sessionAlias, Direction.SECOND, timestamp, seq+1))},  //Different directions
 					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
+							new IdData(book, sessionAlias, Direction.FIRST, timestamp.plus(1, ChronoUnit.DAYS), seq+1))},  //Different date
+					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
 							new IdData(book, sessionAlias, d, timestamp.minusMillis(1), seq))},    //Timestamp is less than previous
 					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
 							new IdData(book, sessionAlias, d, timestamp, seq),                     //Sequence is not incremented
@@ -80,7 +83,11 @@ public class MessageBatchToStoreTest
 		return new Object[][]
 				{
 					{builder},                                                                                       //Empty message
+					{builder.bookId(null)},																			 //Null book
+					{builder.bookId(new BookId(""))},														 //Empty book
 					{builder.bookId(book)},                                                                          //Only book is set
+					{builder.bookId(book).sessionAlias(null).direction(null).timestamp(null)},               		 //Null session is set
+					{builder.bookId(book).sessionAlias("").direction(null).timestamp(null)},               		 	 //Empty session is set
 					{builder.bookId(book).sessionAlias(sessionAlias).direction(null).timestamp(null)},               //Only book and session are set
 					{builder.bookId(book).sessionAlias(sessionAlias).direction(direction).timestamp(null)},          //Only book, session and direction are set
 					{builder.bookId(book).sessionAlias(sessionAlias).direction(direction).timestamp(Instant.now())}  //Content is not set
