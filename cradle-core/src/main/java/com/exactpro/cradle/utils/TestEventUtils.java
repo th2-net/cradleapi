@@ -89,8 +89,8 @@ public class TestEventUtils
 		Instant now = Instant.now();
 		if (event.getStartTimestamp().isAfter(now))
 			throw new CradleStorageException(
-					"Event start timestamp '" + TimeUtils.toLocalTimestamp(event.getStartTimestamp()) +
-							"' It can not be greater than current '" + TimeUtils.toLocalTimestamp(now) + "'");
+					"Event start timestamp (" + TimeUtils.toLocalTimestamp(event.getStartTimestamp()) +
+							") is greater than current timestamp (" + TimeUtils.toLocalTimestamp(now) + ")");
 		validateTestEventEndDate(event);
 		if (event.getParentId() != null && !event.getBookId().equals(event.getParentId().getBookId()))
 			throw new CradleStorageException("Test event and its parent must be from the same book");
