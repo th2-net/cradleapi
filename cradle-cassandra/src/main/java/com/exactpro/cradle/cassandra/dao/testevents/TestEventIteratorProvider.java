@@ -39,6 +39,8 @@ import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventFilter;
 
+import static com.exactpro.cradle.cassandra.workers.EventsWorker.mapTestEventEntity;
+
 public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 {
 	/*
@@ -96,20 +98,11 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 				.thenApplyAsync(resultSet -> {
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
 					cassandraFilter = createNextFilter(cassandraFilter);
-					return new ConvertingPagedIterator<>(resultSet, selectQueryExecutor, limit, returned, entity -> {
-						try
-						{
-							return entity.toStoredTestEvent(pageId);
-						}
-						catch (Exception e)
-						{
-							throw new RuntimeException("Error while converting test event entity into Cradle test event", e);
-						}
-					}, entityConverter::getEntity, getRequestInfo());
+					return new ConvertingPagedIterator<>(resultSet, selectQueryExecutor, limit, returned,
+							entity -> mapTestEventEntity(pageId, entity), entityConverter::getEntity, getRequestInfo());
 				}, composingService);
 	}
-	
-	
+
 	private CassandraTestEventFilter createInitialFilter(TestEventFilter filter)
 	{
 		String parentId = getParentIdString(filter);
