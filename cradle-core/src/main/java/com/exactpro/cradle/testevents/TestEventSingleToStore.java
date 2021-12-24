@@ -86,8 +86,8 @@ public class TestEventSingleToStore extends TestEventToStore implements TestEven
 		{
 			BookId messageBookId = id.getBookId();
 			if (!eventBookId.equals(messageBookId))
-				throw new CradleStorageException("Book of message is '" +
-						messageBookId + "' that different from the current event book id '" + eventBookId + "'");
+				throw new CradleStorageException("Book of message is (" +
+						messageBookId + ") differs from the event book (" + eventBookId + ")");
 		}
 	}
 }

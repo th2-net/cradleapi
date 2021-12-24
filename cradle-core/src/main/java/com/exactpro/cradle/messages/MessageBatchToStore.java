@@ -96,8 +96,14 @@ public class MessageBatchToStore extends StoredMessageBatch
 		if (!hasSpace(message))
 			throw new CradleStorageException("Batch has not enough space to hold given message");
 		
-		MessageUtils.validateMessage(message);  //Checking if book, session alias, direction, timestamp and content are set
-		
+		// Checking that the timestamp of a message is not from the future
+		// Other checks have already been done when the MessageToStore was created
+		Instant now = Instant.now();
+		if (message.getTimestamp().isAfter(now))
+			throw new CradleStorageException(
+					"Message timestamp '" + TimeUtils.toLocalTimestamp(message.getTimestamp()) +
+							"' It cannot be greater than current '" + TimeUtils.toLocalTimestamp(now) + "'");
+
 		long messageSeq;
 		if (id == null)
 		{

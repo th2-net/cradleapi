@@ -49,17 +49,12 @@ public class MessageUtils
 			throw new CradleStorageException("Messages ID cannot be null");
 		if (message.getBookId() == null || StringUtils.isEmpty(message.getBookId().toString()))
 			throw new CradleStorageException("Message must have a book");
-		if (StringUtils.isEmpty(message.getSessionAlias()) )
+		if (StringUtils.isEmpty(message.getSessionAlias()))
 			throw new CradleStorageException("Message must have a session alias");
 		if (message.getDirection() == null)
 			throw new CradleStorageException("Message must have a direction");
 		if (message.getTimestamp() == null)
 			throw new CradleStorageException("Message must have a timestamp");
-		Instant now = Instant.now();
-		if (message.getTimestamp().isAfter(now))
-			throw new CradleStorageException(
-					"Message timestamp '" + TimeUtils.toLocalTimestamp(message.getTimestamp()) +
-							"' It can not be greater than current '" + TimeUtils.toLocalTimestamp(now) + "'");
 		if (ArrayUtils.isEmpty(message.getContent()))
 			throw new CradleStorageException("Message must have content");
 	}
