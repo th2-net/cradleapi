@@ -22,6 +22,7 @@ import java.util.Set;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.TestEventUtils;
 
 /**
  * Holds information about single (individual) test event prepared to be stored in Cradle
@@ -61,9 +62,10 @@ public class TestEventSingleToStore extends TestEventToStore implements TestEven
 	}
 	
 	
-	public void setEndTimestamp(Instant endTimestamp)
+	public void setEndTimestamp(Instant endTimestamp) throws CradleStorageException
 	{
 		this.endTimestamp = endTimestamp;
+		TestEventUtils.validateTestEventEndDate(this);
 	}
 	
 	public void setSuccess(boolean success)
