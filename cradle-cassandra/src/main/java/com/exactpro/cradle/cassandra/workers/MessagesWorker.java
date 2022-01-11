@@ -55,13 +55,9 @@ public class MessagesWorker extends Worker
 {
 	private static final Logger logger = LoggerFactory.getLogger(MessagesWorker.class);
 
-	public MessagesWorker(CassandraStorageSettings settings, CradleOperators ops,
-			ExecutorService composingService, BookAndPageChecker bpc,
-			SelectQueryExecutor selectQueryExecutor,
-			Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
-			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
+	public MessagesWorker(WorkerSupplies workerSupplies)
 	{
-		super(settings, ops, composingService, bpc, selectQueryExecutor, writeAttrs, readAttrs);
+		super(workerSupplies);
 	}
 
 	public CompletableFuture<CradleResultSet<StoredMessageBatch>> getMessageBatches(MessageFilter filter, BookInfo book)

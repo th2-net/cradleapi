@@ -55,13 +55,9 @@ public class EventsWorker extends Worker
 {
 	private static final Logger logger = LoggerFactory.getLogger(EventsWorker.class);
 
-	public EventsWorker(CassandraStorageSettings settings, CradleOperators ops,
-			ExecutorService composingService, BookAndPageChecker bpc,
-			SelectQueryExecutor selectQueryExecutor,
-			Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
-			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
+	public EventsWorker(WorkerSupplies workerSupplies)
 	{
-		super(settings, ops, composingService, bpc, selectQueryExecutor, writeAttrs, readAttrs);
+		super(workerSupplies);
 	}
 
 	public TestEventEntity createEntity(TestEventToStore event, PageId pageId) throws IOException

@@ -28,13 +28,6 @@ public class NoRetryPolicy implements SelectExecutionPolicy
 	{
 		throw noRetries(cause);
 	}
-	
-	@Override
-	public SelectExecutionVerdict onError(Collection<String> ids, String queryInfo, Throwable cause, int retryCount)
-			throws CannotRetryException
-	{
-		throw noRetries(cause);
-	}
 
 	@Override
 	public SelectExecutionVerdict onNextPage(Statement<?> statement, String queryInfo)

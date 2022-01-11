@@ -37,13 +37,6 @@ public class FixedNumberRetryPolicy implements SelectExecutionPolicy
 	}
 
 	@Override
-	public SelectExecutionVerdict onError(Collection<String> ids, String queryInfo, Throwable cause, int retryCount)
-			throws CannotRetryException
-	{
-		return passVerdict(cause, retryCount, ids.size());
-	}
-
-	@Override
 	public SelectExecutionVerdict onNextPage(Statement<?> statement, String queryInfo)
 	{
 		return new SelectExecutionVerdict(null, statement.getPageSize());
