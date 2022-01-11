@@ -33,8 +33,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.cassandra.workers.MessagesWorker.mapMessageBatchEntity;
-
 public class MessageBatchesIteratorProvider extends AbstractMessageIteratorProvider<StoredMessageBatch>
 {
 	private static final Logger logger = LoggerFactory.getLogger(MessageBatchesIteratorProvider.class);
@@ -60,13 +58,20 @@ public class MessageBatchesIteratorProvider extends AbstractMessageIteratorProvi
 
 		logger.debug("Getting next iterator for '{}' by filter {}", getRequestInfo(), cassandraFilter);
 		return op.getByFilter(cassandraFilter, selectQueryExecutor, getRequestInfo(), readAttrs)
-				.thenApplyAsync(resultSet ->
-				{
+				.thenApplyAsync(resultSet -> {
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
 					cassandraFilter = createNextFilter(cassandraFilter);
 					return new ConvertingPagedIterator<>(resultSet, selectQueryExecutor, limit, returned,
-							entity -> mapMessageBatchEntity(pageId, entity), messageBatchEntityConverter::getEntity,
-							"Fetching next page of message batches");
+							entity -> {
+						try
+						{
+							return entity.toStoredMessageBatch(pageId);
+						}
+						catch (Exception e)
+						{
+							throw new RuntimeException("Error while converting message batch entity into stored message batch", e);
+						}
+					}, messageBatchEntityConverter::getEntity, "Fetching next page of message batches");
 				}, composingService);
 	}
 }

@@ -32,12 +32,6 @@ import java.util.function.Function;
 
 public abstract class Worker
 {
-	// Metric Labels
-	public static final String BOOK_ID = "book_id";
-	public static final String SESSION_ALIAS = "session_alias";
-	public static final String SCOPE = "scope";
-	public static final String DIRECTION = "direction";
-
 	protected final CassandraStorageSettings settings;
 	protected final CradleOperators ops;
 	protected final ExecutorService composingService;
