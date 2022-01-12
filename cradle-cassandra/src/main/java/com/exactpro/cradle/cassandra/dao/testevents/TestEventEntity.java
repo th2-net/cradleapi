@@ -27,6 +27,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
+import com.exactpro.cradle.CradleObjectsFactory;
+import com.exactpro.cradle.testevents.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,13 +37,6 @@ import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.datastax.oss.driver.api.mapper.annotations.Transient;
 import com.exactpro.cradle.cassandra.CassandraCradleStorage;
-import com.exactpro.cradle.testevents.TestEventBatchToStoreBuilder;
-import com.exactpro.cradle.testevents.StoredTestEventWrapper;
-import com.exactpro.cradle.testevents.StoredTestEventBatch;
-import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.StoredTestEventId;
-import com.exactpro.cradle.testevents.StoredTestEventSingle;
-import com.exactpro.cradle.testevents.TestEventToStoreBuilder;
 import com.exactpro.cradle.utils.CompressionUtils;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
@@ -350,14 +345,15 @@ public class TestEventEntity
 	
 	
 	
-	public StoredTestEventSingle toStoredTestEventSingle() throws IOException, CradleStorageException
+	public StoredTestEventSingle toStoredTestEventSingle(CradleObjectsFactory objectsFactory)
+			throws IOException, CradleStorageException
 	{
 		if (isEventBatch())
 			return null;
 		
 		StoredTestEventId eventId = new StoredTestEventId(id);
 		byte[] eventContent = TestEventUtils.getTestEventContentBytes(content, compressed, eventId);
-		return new StoredTestEventSingle(new TestEventToStoreBuilder().id(eventId)
+		TestEventToStore eventToStore = new TestEventToStoreBuilder().id(eventId)
 				.name(name)
 				.type(type)
 				.parentId(parentId != null ? new StoredTestEventId(parentId) : null)
@@ -365,39 +361,64 @@ public class TestEventEntity
 				.endTimestamp(getEndTimestamp())
 				.success(success)
 				.content(eventContent)
-				.build());
+				.build();
+		return objectsFactory == null ? new StoredTestEventSingle(eventToStore) : objectsFactory.createTestEvent(eventToStore);
+	}
+
+	public StoredTestEventSingle toStoredTestEventSingle() throws CradleStorageException, IOException
+	{
+		return toStoredTestEventSingle(null);
 	}
 	
-	public StoredTestEventBatch toStoredTestEventBatch() throws IOException, CradleStorageException
+	public StoredTestEventBatch toStoredTestEventBatch(CradleObjectsFactory objectsFactory)
+			throws IOException, CradleStorageException
 	{
 		if (!isEventBatch())
 			return null;
 		
 		StoredTestEventId eventId = new StoredTestEventId(id);
-		StoredTestEventBatch result = new StoredTestEventBatch(new TestEventBatchToStoreBuilder()
+		TestEventBatchToStore batchToStore = new TestEventBatchToStoreBuilder()
 				.id(eventId)
 				.name(name)
 				.type(type)
 				.parentId(parentId != null ? new StoredTestEventId(parentId) : null)
-				.build());
+				.build();
+		StoredTestEventBatch storedBatch = objectsFactory == null
+				? new StoredTestEventBatch(batchToStore) : objectsFactory.createTestEventBatch(batchToStore);
 		try
 		{
-			TestEventUtils.bytesToTestEvents(content, compressed, result);
+			TestEventUtils.bytesToTestEvents(content, compressed, storedBatch);
 		}
 		catch (CradleStorageException e)
 		{
 			throw new IOException("Error while adding deserialized test events to batch", e);
 		}
-		return result;
+		return storedBatch;
+	}
+
+	public StoredTestEventBatch toStoredTestEventBatch() throws CradleStorageException, IOException
+	{
+		return toStoredTestEventBatch(null);
 	}
 	
+	public StoredTestEvent toStoredTestEvent(CradleObjectsFactory objectsFactory) throws IOException, CradleStorageException
+	{
+		return isEventBatch() ? toStoredTestEventBatch(objectsFactory) : toStoredTestEventSingle(objectsFactory);
+	}
+
 	public StoredTestEvent toStoredTestEvent() throws IOException, CradleStorageException
 	{
-		return isEventBatch() ? toStoredTestEventBatch() : toStoredTestEventSingle();
+		return toStoredTestEvent(null);
 	}
-	
-	public StoredTestEventWrapper toStoredTestEventWrapper() throws IOException, CradleStorageException
+
+	public StoredTestEventWrapper toStoredTestEventWrapper(CradleObjectsFactory objectsFactory)
+			throws IOException, CradleStorageException
 	{
-		return new StoredTestEventWrapper(toStoredTestEvent());
+		return new StoredTestEventWrapper(toStoredTestEvent(objectsFactory));
+	}
+
+	public StoredTestEventWrapper toStoredTestEventWrapper() throws CradleStorageException, IOException
+	{
+		return toStoredTestEventWrapper(null);
 	}
 }

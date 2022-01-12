@@ -178,7 +178,7 @@ public class CassandraCradleStorage extends CradleStorage
 					ops.getTestEventMessagesConverter(), ops.getMessageTestEventConverter());
 			testEventsMessagesLinker = new CassandraTestEventsMessagesLinker(supplies, instanceUuid, readAttrs, semaphore,
 					selectExecutor, pagingSupplies);
-			completeEventsGetter = new CompleteEventsGetter(instanceUuid, readAttrs, multiRowResultExecPolicy,
+			completeEventsGetter = new CompleteEventsGetter(instanceUuid, readAttrs, multiRowResultExecPolicy, objectsFactory,
 					ops.getTestEventOperator(), ops.getTestEventConverter(), pagingSupplies);
 			
 			IntervalSupplies intervalSupplies = new IntervalSupplies(ops.getIntervalOperator(), ops.getIntervalConverter(), pagingSupplies);
@@ -513,7 +513,7 @@ public class CassandraCradleStorage extends CradleStorage
 				{
 					try
 					{
-						return e != null ? e.toStoredTestEventWrapper() : null;
+						return e != null ? e.toStoredTestEventWrapper(objectsFactory) : null;
 					}
 					catch (Exception error)
 					{
@@ -536,10 +536,10 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetCompleteTestEventsAsync(Set<StoredTestEventId> id)
+	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetCompleteTestEventsAsync(Set<StoredTestEventId> ids)
 	{
 		return new AsyncOperator<Iterable<StoredTestEventWrapper>>(semaphore)
-						.getFuture(() -> completeEventsGetter.get(id, "get test events "+id));
+						.getFuture(() -> completeEventsGetter.get(ids, "get test events "+ids));
 	}
 
 	@Override
@@ -767,7 +767,7 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		catch (InterruptedException | ExecutionException e)
 		{
-			throw new IOException("Error occured while " + queryInfo, e);
+			throw new IOException("Error occurred while " + queryInfo, e);
 		}
 	}
 
