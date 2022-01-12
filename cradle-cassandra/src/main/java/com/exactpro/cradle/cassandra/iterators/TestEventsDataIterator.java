@@ -17,6 +17,7 @@
 package com.exactpro.cradle.cassandra.iterators;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
+import com.exactpro.cradle.CradleObjectsFactory;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventConverter;
 import com.exactpro.cradle.cassandra.retries.PagingSupplies;
@@ -27,10 +28,14 @@ import java.io.IOException;
 
 public class TestEventsDataIterator extends ConvertingPagedIterator<StoredTestEventWrapper, TestEventEntity>
 {
+	private final CradleObjectsFactory objectsFactory;
+
 	public TestEventsDataIterator(MappedAsyncPagingIterable<TestEventEntity> rows,
-			PagingSupplies pagingSupplies, TestEventConverter converter, String queryInfo)
+			PagingSupplies pagingSupplies, TestEventConverter converter,
+			CradleObjectsFactory objectsFactory, String queryInfo)
 	{
 		super(rows, pagingSupplies, converter, queryInfo);
+		this.objectsFactory = objectsFactory;
 	}
 
 	@Override
@@ -38,7 +43,7 @@ public class TestEventsDataIterator extends ConvertingPagedIterator<StoredTestEv
 	{
 		try
 		{
-			return entity.toStoredTestEventWrapper();
+			return entity.toStoredTestEventWrapper(objectsFactory);
 		}
 		catch (CradleStorageException e)
 		{

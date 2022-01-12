@@ -490,7 +490,7 @@ public class CassandraCradleStorage extends CradleStorage
 					{
 						try
 						{
-							return entity != null ? entity.toStoredTestEventWrapper() : null;
+							return entity != null ? entity.toStoredTestEventWrapper(objectsFactory) : null;
 						}
 						catch (Exception error)
 						{
@@ -658,8 +658,8 @@ public class CassandraCradleStorage extends CradleStorage
 				() -> ops.getTimeTestEventOperator().getTestEvents(instanceUuid, params.getParentId(),
 						params.getFromDate(), params.getFromTime(), params.getToTime(), readAttrs),
 				ops.getTestEventConverter(), queryInfo)
-				.thenApply(r -> new TestEventDataIteratorAdapter(r, pagingSupplies, ops.getTestEventConverter(),
-						queryInfo));
+				.thenApply(r -> new TestEventDataIteratorAdapter(r, objectsFactory, pagingSupplies,
+						ops.getTestEventConverter(), queryInfo));
 	}
 
 	@Override
@@ -726,7 +726,7 @@ public class CassandraCradleStorage extends CradleStorage
 				() -> ops.getTimeTestEventOperator().getTestEvents(instanceUuid,
 						params.getFromDate(), params.getFromTime(), params.getToTime(), readAttrs),
 				ops.getTestEventConverter(), queryInfo)
-				.thenApply(entity -> new TestEventDataIteratorAdapter(entity, pagingSupplies,
+				.thenApply(entity -> new TestEventDataIteratorAdapter(entity, objectsFactory, pagingSupplies,
 						ops.getTestEventConverter(), queryInfo));
 	}
 
