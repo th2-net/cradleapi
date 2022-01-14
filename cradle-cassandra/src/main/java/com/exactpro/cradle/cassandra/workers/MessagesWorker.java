@@ -88,7 +88,7 @@ public class MessagesWorker extends Worker
 		// Therefore, when current page has different start date, search in previous pages doesn't make sense
 		if (page == null || TimeUtils.toLocalTimestamp(page.getStarted()).toLocalDate().isBefore(messageDate))
 			return CompletableFuture.completedFuture(null);
-		String queryInfo = format("getting nearest time and sequence before %s for page '%s'",
+		String queryInfo = format("get nearest time and sequence before %s for page '%s'",
 				TimeUtils.toInstant(messageDate, messageTime), page.getId().getName());
 		return selectQueryExecutor.executeSingleRowResultQuery(
 						() -> mbOperator.getNearestTimeAndSequenceBefore(page.getId().getName(), sessionAlias,
@@ -232,7 +232,7 @@ public class MessagesWorker extends Worker
 		while (row == null && currentPage != null)
 		{
 			String page = currentPage.getId().getName();
-			String queryInfo = format("getting %s sequence for page '%s', session alias '%s', " +
+			String queryInfo = format("get %s sequence for page '%s', session alias '%s', " +
 					"direction '%s'", first ? "first" : "last", page, sessionAlias, direction);
 			try
 			{

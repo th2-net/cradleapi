@@ -86,7 +86,7 @@ public class MessagesIteratorProvider extends AbstractMessageIteratorProvider<St
 									throw new RuntimeException(
 											"Error while converting message batch entity into stored message batch", e);
 								}
-							}, messageBatchEntityConverter::getEntity, "Fetching next page of message batches");
+							}, messageBatchEntityConverter::getEntity, "fetch next page of message batches");
 				}, composingService)
 				.thenApplyAsync(it -> new FilteredMessageIterator(it, filter, limit, returned), composingService);
 	}

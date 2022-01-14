@@ -71,7 +71,7 @@ public class MessageBatchesIteratorProvider extends AbstractMessageIteratorProvi
 						{
 							throw new RuntimeException("Error while converting message batch entity into stored message batch", e);
 						}
-					}, messageBatchEntityConverter::getEntity, "Fetching next page of message batches");
+					}, messageBatchEntityConverter::getEntity, "fetch next page of message batches");
 				}, composingService);
 	}
 }

@@ -105,7 +105,7 @@ public class EventsWorker extends Worker
 		return selectQueryExecutor.executeSingleRowResultQuery(
 				() -> bookOps.getTestEventOperator().get(pageId.getName(), id.getScope(),
 						ldt.toLocalDate(), ldt.toLocalTime(), id.getId(), readAttrs), converter::getEntity,
-				String.format("getting test event by id '%s'", id))
+				String.format("get test event by id '%s'", id))
 				.thenApplyAsync(entity -> {
 					if (entity == null)
 						return null;

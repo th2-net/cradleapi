@@ -570,7 +570,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected Collection<String> doGetScopes(BookId bookId) throws IOException, CradleStorageException
 	{
 		MappedAsyncPagingIterable<ScopeEntity> entities;
-		String queryInfo = String.format("Getting scopes for book '%s'", bookId);
+		String queryInfo = String.format("get scopes for book '%s'", bookId);
 		BookOperators bookOps = null;
 		try
 		{
@@ -582,7 +582,7 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		catch (Exception e)
 		{
-			throw new IOException("Error while " + StringUtils.uncapitalize(queryInfo), e);
+			throw new IOException("Error while " + queryInfo, e);
 		}
 		
 		if (entities == null)
