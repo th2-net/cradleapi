@@ -21,6 +21,7 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.exactpro.cradle.cassandra.dao.CommonQueryProvider;
+import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -67,8 +68,8 @@ public interface MessageBatchOperator
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@QueryProvider(providerClass = CommonQueryProvider.class, entityHelpers = MessageBatchEntity.class)
-	CompletableFuture<MappedAsyncPagingIterable<MessageBatchEntity>> getByFilter(CassandraStoredMessageFilter filter, 
-			ExecutorService composingService,
+	CompletableFuture<MappedAsyncPagingIterable<MessageBatchEntity>> getByFilter(CassandraStoredMessageFilter filter,
+			SelectQueryExecutor selectExecutor, String queryInfo,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Insert

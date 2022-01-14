@@ -25,6 +25,8 @@ import java.util.function.Function;
 
 import com.exactpro.cradle.BookAndPageChecker;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
+import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
+import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,12 +55,9 @@ public class EventsWorker extends Worker
 {
 	private static final Logger logger = LoggerFactory.getLogger(EventsWorker.class);
 
-	public EventsWorker(CassandraStorageSettings settings, CradleOperators ops,
-			ExecutorService composingService, BookAndPageChecker bpc,
-			Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
-			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
+	public EventsWorker(WorkerSupplies workerSupplies)
 	{
-		super(settings, ops, composingService, bpc, writeAttrs, readAttrs);
+		super(workerSupplies);
 	}
 
 	public TestEventEntity createEntity(TestEventToStore event, PageId pageId) throws IOException
@@ -101,16 +100,19 @@ public class EventsWorker extends Worker
 	public CompletableFuture<StoredTestEvent> getTestEvent(StoredTestEventId id, PageId pageId)
 	{
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(id.getStartTimestamp());
-		BookId bookId = pageId.getBookId();
-		return getBookOps(bookId).getTestEventOperator().get(pageId.getName(), id.getScope(), 
-					ldt.toLocalDate(), ldt.toLocalTime(), id.getId(), readAttrs)
-				.thenApplyAsync(r -> {
-					if (r == null)
+		BookOperators bookOps = getBookOps(pageId.getBookId());
+		TestEventEntityConverter converter = bookOps.getTestEventEntityConverter();
+		return selectQueryExecutor.executeSingleRowResultQuery(
+				() -> bookOps.getTestEventOperator().get(pageId.getName(), id.getScope(),
+						ldt.toLocalDate(), ldt.toLocalTime(), id.getId(), readAttrs), converter::getEntity,
+				String.format("get test event by id '%s'", id))
+				.thenApplyAsync(entity -> {
+					if (entity == null)
 						return null;
 					
 					try
 					{
-						return r.toStoredTestEvent(pageId);
+						return entity.toStoredTestEvent(pageId);
 					}
 					catch (Exception e)
 					{
@@ -122,7 +124,7 @@ public class EventsWorker extends Worker
 	public CompletableFuture<CradleResultSet<StoredTestEvent>> getTestEvents(TestEventFilter filter, BookInfo book)
 	{
 		TestEventIteratorProvider provider = new TestEventIteratorProvider("get test events filtered by "+filter, 
-				filter, getBookOps(filter.getBookId()), book, composingService, readAttrs);
+				filter, getBookOps(filter.getBookId()), book, composingService, selectQueryExecutor, readAttrs);
 		return provider.nextIterator()
 				.thenApply(r -> new CassandraCradleResultSet<>(r, provider));
 	}

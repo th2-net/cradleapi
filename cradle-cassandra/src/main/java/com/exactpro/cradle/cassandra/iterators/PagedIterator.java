@@ -17,8 +17,12 @@
 package com.exactpro.cradle.cassandra.iterators;
 
 import java.util.Iterator;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,11 +38,18 @@ public class PagedIterator<E> implements Iterator<E>
 	
 	private MappedAsyncPagingIterable<E> rows;
 	private Iterator<E> rowsIterator;
+	private final SelectQueryExecutor selectQueryExecutor;
+	private final Function<Row, E> mapper;
+	private final String queryInfo;
 	
-	public PagedIterator(MappedAsyncPagingIterable<E> rows)
+	public PagedIterator(MappedAsyncPagingIterable<E> rows, SelectQueryExecutor selectQueryExecutor,
+			Function<Row, E> mapper, String queryInfo)
 	{
 		this.rows = rows;
 		this.rowsIterator = rows.currentPage().iterator();
+		this.selectQueryExecutor = selectQueryExecutor;
+		this.mapper = mapper;
+		this.queryInfo = queryInfo;
 	}
 	
 	
@@ -77,7 +88,8 @@ public class PagedIterator<E> implements Iterator<E>
 	{
 		if (rows.hasMorePages())
 		{
-			rows = rows.fetchNextPage().toCompletableFuture().get();  //TODO: better to fetch next page in advance, not when current page ended
+			//TODO: better to fetch next page in advance, not when current page ended
+			rows = selectQueryExecutor.fetchNextPage(rows, mapper, queryInfo).get();
 			return rows.currentPage().iterator();
 		}
 		return null;

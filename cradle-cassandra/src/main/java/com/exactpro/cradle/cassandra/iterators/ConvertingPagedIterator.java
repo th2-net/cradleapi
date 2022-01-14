@@ -21,6 +21,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 
 /**
  * Wrapper for asynchronous paging iterable that converts retrieved entities into Cradle objects
@@ -33,10 +35,11 @@ public class ConvertingPagedIterator<R, E> implements Iterator<R>
 	private final int limit;
 	private final AtomicInteger returned;
 	private final Function<E, R> converter;
-	
-	public ConvertingPagedIterator(MappedAsyncPagingIterable<E> rows, int limit, AtomicInteger returned, Function<E, R> converter)
+
+	public ConvertingPagedIterator(MappedAsyncPagingIterable<E> rows, SelectQueryExecutor selectExecutor,
+			int limit, AtomicInteger returned, Function<E, R> converter, Function<Row, E> mapper, String queryInfo)
 	{
-		this.it = new PagedIterator<>(rows);
+		this.it = new PagedIterator<>(rows, selectExecutor, mapper, queryInfo);
 		this.limit = limit;
 		this.returned = returned;
 		this.converter = converter;

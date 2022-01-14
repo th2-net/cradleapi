@@ -30,6 +30,7 @@ import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
 import com.datastax.oss.driver.api.mapper.annotations.QueryProvider;
 import com.exactpro.cradle.cassandra.dao.CommonQueryProvider;
+import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
@@ -44,7 +45,7 @@ public interface TestEventOperator
 	
 	@QueryProvider(providerClass = CommonQueryProvider.class, entityHelpers = TestEventEntity.class)
 	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getByFilter(CassandraTestEventFilter filter,
-			ExecutorService composingService,
+			SelectQueryExecutor selectQueryExecutor, String queryInfo,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
