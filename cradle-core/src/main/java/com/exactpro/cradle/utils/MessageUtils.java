@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,17 @@
 
 package com.exactpro.cradle.utils;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.zip.DataFormatException;
 
 import com.exactpro.cradle.messages.CradleMessage;
+import com.exactpro.cradle.serialization.LegacyMessageDeserializer;
+import com.exactpro.cradle.serialization.MessageDeserializer;
+import com.exactpro.cradle.serialization.MessageSerializer;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.exactpro.cradle.messages.StoredMessage;
@@ -38,6 +34,10 @@ import com.exactpro.cradle.messages.StoredMessageId;
 
 public class MessageUtils
 {
+
+	private static final MessageSerializer serializer = new MessageSerializer();
+	private static final MessageDeserializer deserializer = new MessageDeserializer();
+
 	/**
 	 * Checks that message has all necessary fields set
 	 * @param message to validate
@@ -67,23 +67,7 @@ public class MessageUtils
 	 */
 	public static byte[] serializeMessages(Collection<StoredMessage> messages) throws IOException
 	{
-		byte[] batchContent;
-		try (ByteArrayOutputStream out = new ByteArrayOutputStream();
-				DataOutputStream dos = new DataOutputStream(out))
-		{
-			for (StoredMessage msg : messages)
-			{
-				if (msg == null)  //For case of not full batch
-					break;
-				
-				byte[] serializedMsg = SerializationUtils.serialize(msg);
-				dos.writeInt(serializedMsg.length);
-				dos.write(serializedMsg);
-			}
-			dos.flush();
-			batchContent = out.toByteArray();
-		}
-		return batchContent;
+		return serializer.serializeBatch(messages);
 	}
 	
 	/**
@@ -95,17 +79,11 @@ public class MessageUtils
 	 */
 	public static StoredMessage deserializeOneMessage(byte[] contentBytes, StoredMessageId id) throws IOException
 	{
-		try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(contentBytes)))
-		{
-			while (dis.available() != 0)
-			{
-				byte[] messageBytes = readNextMessageBytes(dis);
-				StoredMessage msg = deserializeMessage(messageBytes);
-				if (id.equals(msg.getId()))
-					return msg;
-			}
+		if (deserializer.checkMessageBatchHeader(contentBytes)) {
+			return deserializer.deserializeOneMessage(ByteBuffer.wrap(contentBytes), id);
+		} else {
+			return LegacyMessageDeserializer.deserializeOneMessage(contentBytes, id);
 		}
-		return null;
 	}
 	
 	/**
@@ -116,17 +94,11 @@ public class MessageUtils
 	 */
 	public static List<StoredMessage> deserializeMessages(byte[] contentBytes) throws IOException
 	{
-		List<StoredMessage> storedMessages = new ArrayList<>();
-		try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(contentBytes)))
-		{
-			while (dis.available() != 0)
-			{
-				byte[] messageBytes = readNextMessageBytes(dis);
-				StoredMessage tempMessage = deserializeMessage(messageBytes);
-				storedMessages.add(tempMessage);
-			}
+		if (deserializer.checkMessageBatchHeader(contentBytes)) {
+			return deserializer.deserializeBatch(contentBytes);
+		} else {
+			return LegacyMessageDeserializer.deserializeMessages(contentBytes);
 		}
-		return storedMessages;
 	}
 	
 	/**
@@ -154,20 +126,6 @@ public class MessageUtils
 	{
 		byte[] contentBytes = getMessageContentBytes(content, compressed, null);
 		return deserializeMessages(contentBytes);
-	}
-	
-	
-	private static byte[] readNextMessageBytes(DataInputStream dis) throws IOException
-	{
-		int messageSize = dis.readInt();
-		byte[] result = new byte[messageSize];
-		dis.read(result);
-		return result;
-	}
-	
-	private static StoredMessage deserializeMessage(byte[] bytes)
-	{
-		return (StoredMessage)SerializationUtils.deserialize(bytes);
 	}
 	
 	private static byte[] getMessageContentBytes(ByteBuffer content, boolean compressed, StoredMessageId id) throws IOException

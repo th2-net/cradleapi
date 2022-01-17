@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle.testevents;
 
+import com.exactpro.cradle.serialization.EventsSizeCalculator;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -160,23 +161,26 @@ public class EventBatchTest
 	@Test
 	public void batchCountsSpaceLeft() throws CradleStorageException
 	{
-		byte[] content = new byte[MAX_SIZE-1];
+		byte[] content = new byte[MAX_SIZE / 2];
 		long left = batch.getSpaceLeft();
-		
-		batch.addTestEvent(eventBuilder
+
+		TestEventSingleToStore event = eventBuilder
 				.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "1"))
 				.name(DUMMY_NAME)
 				.parentId(batch.getParentId())
 				.content(content)
-				.build());
+				.build();
+
+		batch.addTestEvent(event);
 		
-		Assert.assertEquals(batch.getSpaceLeft(), left-content.length, "Batch counts space left");
+		Assert.assertEquals(batch.getSpaceLeft(), left - EventsSizeCalculator.calculateRecordSizeInBatch(event)
+				- BOOK.getName().length() - SCOPE.length(),"Batch counts space left");
 	}
 	
 	@Test
 	public void batchChecksSpaceLeft() throws CradleStorageException
 	{
-		byte[] content = new byte[MAX_SIZE-1];
+		byte[] content = new byte[MAX_SIZE / 2];
 		
 		TestEventSingleToStore event = eventBuilder
 				.id(new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "1"))
@@ -185,7 +189,7 @@ public class EventBatchTest
 				.content(content)
 				.build();
 		batch.addTestEvent(event);
-		Assert.assertEquals(batch.hasSpace(event), false, "Batch shows if it has space to hold given test event");
+		Assert.assertFalse(batch.hasSpace(event), "Batch shows if it has space to hold given test event");
 	}
 	
 	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Test event with ID .* is already present in batch")

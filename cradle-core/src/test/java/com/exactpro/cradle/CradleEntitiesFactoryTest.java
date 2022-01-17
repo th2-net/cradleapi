@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package com.exactpro.cradle;
 
 import java.time.Instant;
 
+import com.exactpro.cradle.serialization.EventsSizeCalculator;
+import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -43,7 +45,7 @@ public class CradleEntitiesFactoryTest
 	public void createMessageBatch()
 	{
 		MessageBatchToStore batch = factory.messageBatch();
-		Assert.assertEquals(batch.getSpaceLeft(), maxMessageBatchSize, 
+		Assert.assertEquals(batch.getSpaceLeft(), maxMessageBatchSize - MessagesSizeCalculator.calculateServiceMessageBatchSize(null),
 				"CradleEntitiesFactory creates MessageBatchToStore with maximum size defined in factory constructor");
 	}
 	
@@ -58,7 +60,8 @@ public class CradleEntitiesFactoryTest
 				.name("test_event")
 				.parentId(new StoredTestEventId(bookId, scope, timestamp.plusNanos(1), "parent_event1"))
 				.build();
-		Assert.assertEquals(batch.getSpaceLeft(), maxEventBatchSize, 
+		Assert.assertEquals(batch.getSpaceLeft(), maxEventBatchSize -
+						EventsSizeCalculator.calculateServiceEventBatchSize(null),
 				"CradleEntitiesFactory creates TestEventBatchToStore with maximum size defined in factory constructor");
 	}
 }

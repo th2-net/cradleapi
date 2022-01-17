@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,13 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
+import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.Collection;
 
+import com.exactpro.cradle.serialization.MessageSerializer;
+import com.exactpro.cradle.serialization.MessagesSizeCalculator;
+import com.exactpro.cradle.serialization.SerializationException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -32,16 +37,16 @@ import com.exactpro.cradle.utils.CradleStorageException;
 public class MessageBatchToStoreJoinTest
 {
     private static final BookId bookId = new BookId("testbook");
-    private static final int MAX_SIZE = 1024;
+    static final int MAX_SIZE = 1024;
     
     @Test
-    public void testJoinEmptyBatchWithOther() throws CradleStorageException {
+    public void testJoinEmptyBatchWithOther() throws CradleStorageException, SerializationException {
         MessageBatchToStore emptyBatch = createEmptyBatch();
         MessageBatchToStore batch = createBatch(bookId, "test", 1, Direction.FIRST, Instant.EPOCH, 5, 5);
         assertTrue(emptyBatch.addBatch(batch));
 
         assertEquals(emptyBatch.getMessageCount(), 5);
-        assertEquals(emptyBatch.getBatchSize(), 25);
+        assertEquals(emptyBatch.getBatchSize(), getRealBatchSize(emptyBatch));
         assertEquals(emptyBatch.getSessionAlias(), "test");
         assertEquals(emptyBatch.getDirection(), Direction.FIRST);
     }
@@ -90,26 +95,30 @@ public class MessageBatchToStoreJoinTest
         assertFalse(first.addBatch(second));
     }
 
+
     @Test
-    public void testAddBatchLessThanLimit() throws CradleStorageException {
+    public void testAddBatchLessThanLimit() throws CradleStorageException, SerializationException {
         MessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, 5, 5);
         MessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH.plusMillis(5), 5, 5);
-        
+
+        assertEquals(first.getBatchSize(), getRealBatchSize(first));
         assertTrue(first.addBatch(second));
         assertEquals(first.getMessageCount(), 10);
-        assertEquals(first.getBatchSize(), 50);
+        assertEquals(first.getBatchSize(), getRealBatchSize(first));
         assertEquals(first.getSessionAlias(), "test");
         assertEquals(first.getDirection(), Direction.FIRST);
     }
 
     @Test
-    public void testAddBatchMoreThanLimitBySize() throws CradleStorageException {
-        MessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, 1, MAX_SIZE - 1);
-        MessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH, 1, MAX_SIZE - 1);
-        
+    public void testAddBatchMoreThanLimitBySize() throws CradleStorageException, SerializationException {
+        MessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, 1, MAX_SIZE / 2);
+        MessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH, 1, MAX_SIZE / 2);
+
+        long sizeBefore = first.getBatchSize();
         assertFalse(first.addBatch(second));
         assertEquals(first.getMessageCount(), 1);
-        assertEquals(first.getBatchSize(), MAX_SIZE - 1);
+        assertEquals(first.getBatchSize(), sizeBefore);
+        assertEquals(first.getBatchSize(), getRealBatchSize(first, MAX_SIZE * 10));
         assertEquals(first.getSessionAlias(), "test");
         assertEquals(first.getDirection(), Direction.FIRST);
     }
@@ -171,7 +180,7 @@ public class MessageBatchToStoreJoinTest
         first.addBatch(second);
     }
 
-    private MessageBatchToStore createBatch(BookId bookId, String sessionAlias, long startSequence, Direction direction, Instant startTimestamp, 
+    private static MessageBatchToStore createBatch(BookId bookId, String sessionAlias, long startSequence, Direction direction, Instant startTimestamp,
             int messageCount, int contentSizePerMessage) throws CradleStorageException {
         MessageBatchToStore messageBatchToStore = createEmptyBatch();
         long begin = startSequence;
@@ -193,12 +202,27 @@ public class MessageBatchToStoreJoinTest
         return messageBatchToStore;
     }
 
-    private MessageBatchToStore createEmptyBatch() {
+    private static MessageBatchToStore createEmptyBatch() {
         return new MessageBatchToStore(MAX_SIZE);
     }
-    
-    private MessageBatchToStore createFullBySizeBatch(BookId bookId, 
+
+    static MessageBatchToStore createFullBySizeBatch(BookId bookId,
             String sessionAlias, long startSequence, Direction direction, Instant startTimestamp) throws CradleStorageException {
-        return createBatch(bookId, sessionAlias, startSequence, direction, startTimestamp, 1, MAX_SIZE);
+        return createBatch(bookId, sessionAlias, startSequence, direction, startTimestamp, 1,
+                MAX_SIZE - (MessagesSizeCalculator.MESSAGE_BATCH_CONST_VALUE
+                        + MessagesSizeCalculator.MESSAGE_SIZE_CONST_VALUE + MessagesSizeCalculator.MESSAGE_LENGTH_IN_BATCH
+                        + bookId.getName().length() + sessionAlias.length()));
+    }
+
+    private int getRealBatchSize(StoredMessageBatch batch, int bufferSize) throws SerializationException {
+        ByteBuffer buffer = ByteBuffer.wrap(new byte[bufferSize]);
+        MessageSerializer msg = new MessageSerializer();
+        Collection<StoredMessage> messages = batch.getMessages();
+        msg.serializeBatch(messages, buffer, MessagesSizeCalculator.calculateMessageBatchSize(messages));
+        return buffer.position();
+    }
+
+    private int getRealBatchSize(StoredMessageBatch batch) throws SerializationException {
+        return getRealBatchSize(batch, 10_000);
     }
 }
