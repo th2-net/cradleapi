@@ -172,9 +172,6 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 		if (!hasSpace(event))
 			throw new CradleStorageException("Batch has not enough space to hold given test event");
 		
-		//Verifying event being added to not verify all added events before writing batch to storage
-		TestEventUtils.validateTestEvent(event);
-		
 		checkEvent(event);
 		
 		StoredTestEventId parentId = event.getParentId();

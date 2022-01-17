@@ -46,19 +46,15 @@ public abstract class Worker
 	protected final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
 			readAttrs;
 
-	public Worker(CassandraStorageSettings settings, CradleOperators ops,
-			ExecutorService composingService, BookAndPageChecker bpc,
-			SelectQueryExecutor selectQueryExecutor,
-			Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
-			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
+	public Worker(WorkerSupplies workerSupplies)
 	{
-		this.settings = settings;
-		this.ops = ops;
-		this.composingService = composingService;
-		this.bpc = bpc;
-		this.selectQueryExecutor = selectQueryExecutor;
-		this.writeAttrs = writeAttrs;
-		this.readAttrs = readAttrs;
+		this.settings = workerSupplies.getSettings();
+		this.ops = workerSupplies.getOps();
+		this.composingService = workerSupplies.getComposingService();
+		this.bpc = workerSupplies.getBpc();
+		this.selectQueryExecutor = workerSupplies.getSelectExecutor();
+		this.writeAttrs = workerSupplies.getWriteAttrs();
+		this.readAttrs = workerSupplies.getReadAttrs();
 	}
 
 	protected BookOperators getBookOps(BookId bookId)

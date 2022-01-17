@@ -22,6 +22,8 @@ import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
+import com.exactpro.cradle.filters.FilterForGreater;
+import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.MessageFilter;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -66,7 +68,7 @@ public class MessagesIteratorProvider extends AbstractMessageIteratorProvider<St
 					cassandraFilter = createNextFilter(cassandraFilter);
 					return new ConvertingPagedIterator<>(resultSet, selectQueryExecutor, -1, new AtomicInteger(),
 							entity -> mapMessageBatchEntity(pageId, entity), messageBatchEntityConverter::getEntity,
-							"Fetching next page of message batches");
+							"fetch next page of message batches");
 				}, composingService)
 				.thenApplyAsync(it -> new FilteredMessageIterator(it, filter, limit, returned), composingService);
 	}

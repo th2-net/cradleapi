@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 
 package com.exactpro.cradle.cassandra.retries;
-
-import java.util.Collection;
 
 import com.datastax.oss.driver.api.core.cql.Statement;
 
@@ -52,19 +50,6 @@ public class PageSizeAdjustingPolicy implements SelectExecutionPolicy
 		if (pageSize <= factor)
 			throw new CannotRetryException("Page size is already too small ("+pageSize+"), cannot adjust it by dividing by "+factor, cause);
 		return new SelectExecutionVerdict(null, pageSize / factor);
-	}
-	
-	@Override
-	public SelectExecutionVerdict onError(Collection<String> ids, String queryInfo, Throwable cause, int retryCount)
-			throws CannotRetryException
-	{
-		if (!RetryUtils.isRetriableException(cause))
-			throw new CannotRetryException("Cannot retry after this error", cause);
-		
-		int divider = (retryCount+1)*factor;
-		if (ids.size() <= divider)
-			throw new CannotRetryException("List size is already too small ("+ids.size()+"), cannot adjust it by dividing by "+divider, cause);
-		return new SelectExecutionVerdict(null, ids.size() / divider);
 	}
 	
 	@Override

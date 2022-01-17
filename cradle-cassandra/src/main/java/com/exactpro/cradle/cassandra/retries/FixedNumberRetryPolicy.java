@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,13 +34,6 @@ public class FixedNumberRetryPolicy implements SelectExecutionPolicy
 			throws CannotRetryException
 	{
 		return passVerdict(cause, retryCount, statement.getPageSize());
-	}
-
-	@Override
-	public SelectExecutionVerdict onError(Collection<String> ids, String queryInfo, Throwable cause, int retryCount)
-			throws CannotRetryException
-	{
-		return passVerdict(cause, retryCount, ids.size());
 	}
 
 	@Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,31 +65,6 @@ public class RetryUtils
 		return stmt;
 	}
 	
-	public static List<List<String>> applyPolicyVerdict(List<String> ids, SelectExecutionVerdict policyVerdict)
-	{
-		if (policyVerdict == null)
-			return Collections.singletonList(ids);
-		
-		int pageSize = policyVerdict.getPageSize();
-		if (pageSize <= 0)
-			return Collections.singletonList(ids);
-		
-		List<List<String>> result = new ArrayList<>();
-		
-		int length = ids.size();
-		for (int i = 0; i < length/pageSize; i++)
-		{
-			int index = i*pageSize;
-			result.add(ids.subList(index, index+pageSize));
-		}
-		
-		int tail = length%pageSize;
-		if (tail > 0)
-			result.add(ids.subList(length-tail, length));
-		
-		return result;
-	}
-
 	public static long calculateDelayWithJitter(int retryCount) {
 		// get the pure exponential delay based on the attempt count
 		long delay = Math.min(BASE_DELAYS_MS * (1L << retryCount++), MAX_DELAYS_MS);

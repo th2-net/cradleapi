@@ -23,10 +23,19 @@ import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.function.Supplier;
 
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import com.datastax.oss.driver.internal.core.config.typesafe.DefaultDriverConfigLoader;
+import com.datastax.oss.driver.internal.core.config.typesafe.DefaultProgrammaticDriverConfigLoaderBuilder;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 import org.apache.commons.lang3.StringUtils;
+
+import static com.exactpro.cradle.cassandra.CassandraStorageSettings.DEFAULT_TIMEOUT;
 
 public class CassandraConnection
 {
@@ -37,23 +46,24 @@ public class CassandraConnection
 	private volatile CqlSession session;
 	private volatile Instant started,
 			stopped;
+	private final long timeout;
 
 	public CassandraConnection()
 	{
-		this.settings = createSettings();
+		this(new CassandraConnectionSettings(), DEFAULT_TIMEOUT);
 	}
 
-	public CassandraConnection(CassandraConnectionSettings settings)
+	public CassandraConnection(CassandraConnectionSettings settings, long timeout)
 	{
 		this.settings = settings;
+		this.timeout = timeout;
 	}
 
 	
 	public void start() throws Exception
 	{
 		CqlSessionBuilder sessionBuilder = CqlSession.builder();
-		if (Files.exists(DRIVER_CONFIG))
-			sessionBuilder.withConfigLoader(DriverConfigLoader.fromFile(DRIVER_CONFIG.toFile()));
+		sessionBuilder.withConfigLoader(getConfigLoader());
 		if (!StringUtils.isEmpty(settings.getLocalDataCenter()))
 			sessionBuilder = sessionBuilder.withLocalDatacenter(settings.getLocalDataCenter());
 		if (settings.getPort() > -1)
@@ -63,6 +73,21 @@ public class CassandraConnection
 		session = sessionBuilder.build();
 		started = Instant.now();
 		stopped = null;
+	}
+
+	private DriverConfigLoader getConfigLoader()
+	{
+		Supplier<Config> fallBackSupplier = () -> {
+			Config config = ConfigFactory.defaultApplication();
+			if (Files.exists(DRIVER_CONFIG))
+				config = config.withFallback(ConfigFactory.parseFileAnySyntax(DRIVER_CONFIG.toFile()));
+			return config.withFallback(ConfigFactory.defaultReference()).resolve();
+		};
+
+		return new DefaultProgrammaticDriverConfigLoaderBuilder(fallBackSupplier, DefaultDriverConfigLoader.DEFAULT_ROOT_PATH)
+				//Set the init-query timeout the same as for the select query
+				.withDuration(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, Duration.ofMillis(timeout))
+				.build();
 	}
 
 	public void stop() throws Exception
@@ -99,11 +124,5 @@ public class CassandraConnection
 	public boolean isRunning()
 	{
 		return started != null && stopped == null;
-	}
-	
-	
-	protected CassandraConnectionSettings createSettings()
-	{
-		return new CassandraConnectionSettings();
 	}
 }

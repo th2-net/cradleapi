@@ -66,7 +66,7 @@ public class MessageBatchesIteratorProvider extends AbstractMessageIteratorProvi
 					cassandraFilter = createNextFilter(cassandraFilter);
 					return new ConvertingPagedIterator<>(resultSet, selectQueryExecutor, limit, returned,
 							entity -> mapMessageBatchEntity(pageId, entity), messageBatchEntityConverter::getEntity,
-							"Fetching next page of message batches");
+							"fetch next page of message batches");
 				}, composingService);
 	}
 }

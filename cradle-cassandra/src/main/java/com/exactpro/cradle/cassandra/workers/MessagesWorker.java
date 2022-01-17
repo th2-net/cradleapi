@@ -56,19 +56,15 @@ import static java.lang.String.format;
 public class MessagesWorker extends Worker
 {
 	private static final Logger logger = LoggerFactory.getLogger(MessagesWorker.class);
-	
+
 	private static final Counter MESSAGE_READ_METRIC = Counter.build().name("cradle_message_readed")
 			.help("Fetched messages").labelNames(BOOK_ID, SESSION_ALIAS, DIRECTION).register();
 	private static final Counter MESSAGE_WRITE_METRIC = Counter.build().name("cradle_message_stored")
 			.help("Stored messages").labelNames(BOOK_ID, SESSION_ALIAS, DIRECTION).register();
 
-	public MessagesWorker(CassandraStorageSettings settings, CradleOperators ops,
-			ExecutorService composingService, BookAndPageChecker bpc,
-			SelectQueryExecutor selectQueryExecutor,
-			Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
-			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
+	public MessagesWorker(WorkerSupplies workerSupplies)
 	{
-		super(settings, ops, composingService, bpc, selectQueryExecutor, writeAttrs, readAttrs);
+		super(workerSupplies);
 	}
 
 	public static StoredMessageBatch mapMessageBatchEntity(PageId pageId, MessageBatchEntity entity)
@@ -91,7 +87,7 @@ public class MessagesWorker extends Worker
 				.labels(batch.getId().getBookId().getName(), batch.getSessionAlias(), batch.getDirection().getLabel())
 				.inc(batch.getMessageCount());
 	}
-	
+
 	private static void updateMessageWriteMetrics(MessageBatchEntity entity, BookId bookId)
 	{
 		MESSAGE_WRITE_METRIC
@@ -127,7 +123,7 @@ public class MessagesWorker extends Worker
 		// Therefore, when current page has different start date, search in previous pages doesn't make sense
 		if (page == null || TimeUtils.toLocalTimestamp(page.getStarted()).toLocalDate().isBefore(messageDate))
 			return CompletableFuture.completedFuture(null);
-		String queryInfo = format("getting nearest time and sequence before %s for page '%s'",
+		String queryInfo = format("get nearest time and sequence before %s for page '%s'",
 				TimeUtils.toInstant(messageDate, messageTime), page.getId().getName());
 		return selectQueryExecutor.executeSingleRowResultQuery(
 						() -> mbOperator.getNearestTimeAndSequenceBefore(page.getId().getName(), sessionAlias,
@@ -172,7 +168,7 @@ public class MessagesWorker extends Worker
 						return CompletableFuture.completedFuture(null);
 					}
 					return selectQueryExecutor.executeSingleRowResultQuery(
-									() -> mbOperator.get(pageId.getName(), id.getSessionAlias(), 
+									() -> mbOperator.get(pageId.getName(), id.getSessionAlias(),
 											id.getDirection().getLabel(), ldt.toLocalDate(),
 											row.getLocalTime(MESSAGE_TIME), row.getLong(SEQUENCE), readAttrs),
 									mbEntityConverter::getEntity,
@@ -264,7 +260,7 @@ public class MessagesWorker extends Worker
 		while (row == null && currentPage != null)
 		{
 			String page = currentPage.getId().getName();
-			String queryInfo = format("getting %s sequence for page '%s', session alias '%s', " +
+			String queryInfo = format("get %s sequence for page '%s', session alias '%s', " +
 					"direction '%s'", first ? "first" : "last", page, sessionAlias, direction);
 			try
 			{

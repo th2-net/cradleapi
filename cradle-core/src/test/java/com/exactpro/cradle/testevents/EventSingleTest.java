@@ -17,6 +17,7 @@
 package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -38,7 +39,7 @@ public class EventSingleTest
 	public static final String SCOPE = "default",
 			DUMMY_NAME = "TestEvent",
 			ID_VALUE = "Event_ID";
-	public static final Instant START_TIMESTAMP = Instant.now();
+	public static final Instant START_TIMESTAMP = Instant.now().minus(10, ChronoUnit.SECONDS);
 	public static final StoredTestEventId DUMMY_ID = new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, ID_VALUE),
 			batchParentId = new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "BatchParentID");
 	

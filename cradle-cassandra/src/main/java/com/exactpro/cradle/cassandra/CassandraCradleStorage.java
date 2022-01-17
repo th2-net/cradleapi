@@ -50,6 +50,7 @@ import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.cassandra.workers.EventsWorker;
 import com.exactpro.cradle.cassandra.workers.MessagesWorker;
+import com.exactpro.cradle.cassandra.workers.WorkerSupplies;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
@@ -94,7 +95,7 @@ public class CassandraCradleStorage extends CradleStorage
 			ExecutorService composingService) throws CradleStorageException
 	{
 		super(composingService, storageSettings.getMaxMessageBatchSize(), storageSettings.getMaxTestEventBatchSize());
-		this.connection = new CassandraConnection(connectionSettings);
+		this.connection = new CassandraConnection(connectionSettings, storageSettings.getTimeout());
 		this.settings = storageSettings;
 
 		this.multiRowResultExecPolicy = settings.getMultiRowResultExecutionPolicy();
@@ -137,9 +138,10 @@ public class CassandraCradleStorage extends CradleStorage
 			strictReadAttrs = builder -> builder.setConsistencyLevel(ConsistencyLevel.ALL)
 					.setTimeout(timeout)
 					.setPageSize(resultPageSize);
-			
-			eventsWorker = new EventsWorker(settings, ops, composingService, bpc, selectExecutor, writeAttrs, readAttrs);
-			messagesWorker = new MessagesWorker(settings, ops, composingService, bpc, selectExecutor, writeAttrs, readAttrs);
+
+			WorkerSupplies ws = new WorkerSupplies(settings, ops, composingService, bpc, selectExecutor, writeAttrs, readAttrs);
+			eventsWorker = new EventsWorker(ws);
+			messagesWorker = new MessagesWorker(ws);
 		}
 		catch (Exception e)
 		{
@@ -564,7 +566,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected Collection<String> doGetScopes(BookId bookId) throws IOException, CradleStorageException
 	{
 		MappedAsyncPagingIterable<ScopeEntity> entities;
-		String queryInfo = String.format("Getting scopes aliases for book '%s'", bookId);
+		String queryInfo = String.format("get scopes for book '%s'", bookId);
 		BookOperators bookOps = null;
 		try
 		{
@@ -576,7 +578,7 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		catch (Exception e)
 		{
-			throw new IOException("Error while " + StringUtils.uncapitalize(queryInfo), e);
+			throw new IOException("Error while " + queryInfo, e);
 		}
 		
 		if (entities == null)

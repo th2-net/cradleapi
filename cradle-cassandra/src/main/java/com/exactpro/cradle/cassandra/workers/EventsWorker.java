@@ -20,26 +20,19 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
 import java.util.zip.DataFormatException;
 
-import com.exactpro.cradle.BookAndPageChecker;
-import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
-import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
 import io.prometheus.client.Counter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.BookOperators;
-import com.exactpro.cradle.cassandra.dao.CradleOperators;
 import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
 import com.exactpro.cradle.cassandra.dao.testevents.PageScopeEntity;
@@ -58,19 +51,15 @@ import com.exactpro.cradle.utils.TimeUtils;
 public class EventsWorker extends Worker
 {
 	private static final Logger logger = LoggerFactory.getLogger(EventsWorker.class);
-	
+
 	private static final Counter EVENTS_READ_METRIC = Counter.build().name("cradle_test_events_readed")
 			.help("Fetched test events").labelNames(BOOK_ID, SCOPE).register();
 	private static final Counter EVENTS_STORE_METRIC = Counter.build().name("cradle_test_events_stored")
 			.help("Stored test events").labelNames(BOOK_ID, SCOPE).register();
 
-	public EventsWorker(CassandraStorageSettings settings, CradleOperators ops,
-			ExecutorService composingService, BookAndPageChecker bpc,
-			SelectQueryExecutor selectQueryExecutor,
-			Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
-			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
+	public EventsWorker(WorkerSupplies workerSupplies)
 	{
-		super(settings, ops, composingService, bpc, selectQueryExecutor, writeAttrs, readAttrs);
+		super(workerSupplies);
 	}
 
 	public static StoredTestEvent mapTestEventEntity(PageId pageId, TestEventEntity entity)
@@ -86,7 +75,7 @@ public class EventsWorker extends Worker
 			throw new CompletionException("Error while converting test event entity into Cradle test event", e);
 		}
 	}
-	
+
 	private static void updateEventReadMetrics(StoredTestEvent testEvent)
 	{
 		EVENTS_READ_METRIC.labels(testEvent.getId().getBookId().getName(), testEvent.getScope())
@@ -144,7 +133,7 @@ public class EventsWorker extends Worker
 		return selectQueryExecutor.executeSingleRowResultQuery(
 				() -> bookOps.getTestEventOperator().get(pageId.getName(), id.getScope(),
 						ldt.toLocalDate(), ldt.toLocalTime(), id.getId(), readAttrs), converter::getEntity,
-				String.format("getting test event by id '%s'", id))
+				String.format("get test event by id '%s'", id))
 				.thenApplyAsync(entity -> {
 					if (entity == null)
 						return null;

@@ -19,8 +19,10 @@ package com.exactpro.cradle.testevents;
 import java.time.Instant;
 import java.util.Set;
 
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.TestEventUtils;
 
 /**
  * Holds information about single (individual) test event prepared to be stored in Cradle
@@ -60,9 +62,10 @@ public class TestEventSingleToStore extends TestEventToStore implements TestEven
 	}
 	
 	
-	public void setEndTimestamp(Instant endTimestamp)
+	public void setEndTimestamp(Instant endTimestamp) throws CradleStorageException
 	{
 		this.endTimestamp = endTimestamp;
+		TestEventUtils.validateTestEventEndDate(this);
 	}
 	
 	public void setSuccess(boolean success)
@@ -70,8 +73,23 @@ public class TestEventSingleToStore extends TestEventToStore implements TestEven
 		this.success = success;
 	}
 	
-	public void setMessages(Set<StoredMessageId> messages)
+	public void setMessages(Set<StoredMessageId> messages) throws CradleStorageException
 	{
+		validateAttachedMessageIds(messages);
 		this.messages = messages;
+	}
+
+	private void validateAttachedMessageIds(Set<StoredMessageId> ids) throws CradleStorageException
+	{
+		if (ids == null)
+			return;
+		BookId eventBookId = getId().getBookId();
+		for (StoredMessageId id : ids)
+		{
+			BookId messageBookId = id.getBookId();
+			if (!eventBookId.equals(messageBookId))
+				throw new CradleStorageException("Book of message (" +
+						messageBookId + ") differs from the event book (" + eventBookId + ")");
+		}
 	}
 }
