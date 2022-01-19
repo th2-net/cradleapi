@@ -18,31 +18,33 @@ package com.exactpro.cradle.serialization;
 
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.messages.StoredMessageId;
 
 public class MessageCommonParams {
 
     private String sessionAlias;
     private Direction direction;
-
-    private String bookName;
-
     private BookId bookId;
 
+    public MessageCommonParams() {}
+
+    public MessageCommonParams(StoredMessageId id) {
+        this.sessionAlias = id.getSessionAlias();
+        this.bookId = id.getBookId();
+        this.direction = id.getDirection();
+    }
+
+
     public void setBookId(BookId bookId) {
-        this.bookName = bookId != null ? bookId.getName() : null;
-        this.bookId = null;
+        this.bookId = bookId;
     }
 
     public void setBookName(String bookName) {
-        this.bookName = bookName;
-        this.bookId = null;
+        this.bookId = new BookId(bookName);
     }
 
 
     public BookId getBookId() {
-        if (bookId == null) {
-            bookId = new BookId(this.bookName);
-        }
         return bookId;
     }
 
@@ -59,10 +61,10 @@ public class MessageCommonParams {
     }
 
     public Direction getDirection() {
-        return (direction != null) ? direction : Direction.FIRST;
+        return direction != null ? direction : Direction.FIRST;
     }
 
     public String getBookName() {
-        return bookName;
+        return bookId != null ? bookId.getName() : null;
     }
 }

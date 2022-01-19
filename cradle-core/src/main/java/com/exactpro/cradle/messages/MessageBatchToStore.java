@@ -22,12 +22,10 @@ import java.util.*;
 
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import com.exactpro.cradle.utils.TimeUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.MessageUtils;
 
 /**
  * Holds information about batch of messages to be stored in Cradle.
@@ -100,7 +98,7 @@ public class MessageBatchToStore extends StoredMessageBatch
 	{
 		//first message in the batch. Need to fill it by services
 		if (messages.isEmpty()) {
-			this.batchSize = MessagesSizeCalculator.calculateServiceMessageBatchSize(message);
+			this.batchSize = MessagesSizeCalculator.calculateServiceMessageBatchSize();
 		}
 
 		int expMsgSize = MessagesSizeCalculator.calculateMessageSizeInBatch(message);
@@ -172,7 +170,7 @@ public class MessageBatchToStore extends StoredMessageBatch
   /**
    *
    * @param batch the batch to add to the current one.
-   *              The batch to add must contains message with same stream name and direction as the current one.
+   *              The batch to add must contain message with same stream name and direction as the current one.
    *              The index of the first message in the [batch] should be greater
    *              than the last message index in the current batch.
    * @return true if the result batch meets the restriction for message count and batch size

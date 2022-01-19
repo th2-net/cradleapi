@@ -147,7 +147,6 @@ public class MessageBatchToStoreTest
 				.direction(direction)
 				.timestamp(timestamp)
 				.content(new byte[MAX_SIZE - MessagesSizeCalculator.MESSAGE_BATCH_CONST_VALUE
-						- book.getName().length() - sessionAlias.length()
 						- MessagesSizeCalculator.MESSAGE_LENGTH_IN_BATCH * 2
 						- MessagesSizeCalculator.MESSAGE_SIZE_CONST_VALUE * 2
 						- content.length])
@@ -174,8 +173,7 @@ public class MessageBatchToStoreTest
 
 		batch.addMessage(msg);
 		
-		Assert.assertEquals(batch.getSpaceLeft(), left - (MessagesSizeCalculator.calculateMessageSizeInBatch(msg)
-				+ book.getName().length() + sessionAlias.length()), "Batch counts space left");
+		Assert.assertEquals(batch.getSpaceLeft(), left - MessagesSizeCalculator.calculateMessageSizeInBatch(msg), "Batch counts space left");
 	}
 	
 	@Test
@@ -193,8 +191,8 @@ public class MessageBatchToStoreTest
 				.content(content)
 				.build();
 		batch.addMessage(msg);
-		
-		Assert.assertEquals(batch.hasSpace(msg), false, "Batch shows if it has space to hold given message");
+
+		Assert.assertFalse(batch.hasSpace(msg), "Batch shows if it has space to hold given message");
 	}
 	
 	
@@ -366,12 +364,12 @@ public class MessageBatchToStoreTest
 				.build(), MAX_SIZE);
 		StoredMessage storedMsg = batch.getFirstMessage();
 		byte[] bytes = MessageUtils.serializeMessages(batch.getMessages());
-		StoredMessage msg = MessageUtils.deserializeMessages(bytes).iterator().next();
+		StoredMessage msg = MessageUtils.deserializeMessages(bytes, batch.id).iterator().next();
 		Assert.assertEquals(msg, storedMsg, "Message should be completely serialized/deserialized");
 	}
 	
 	
-	class IdData
+	static class IdData
 	{
 		final BookId book;
 		final String sessionAlias;

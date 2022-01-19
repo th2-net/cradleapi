@@ -39,10 +39,8 @@ public class StoredMessage implements Serializable, CradleMessage
 	
 	public StoredMessage(CradleMessage message, StoredMessageId id, PageId pageId)
 	{
-		this.id = id;
-		this.content = message.getContent();
-		this.metadata = message.getMetadata() != null ? new StoredMessageMetadata(message.getMetadata()) : null;
-		this.pageId = pageId;
+		this(id, message.getContent(), message.getMetadata() != null
+				? new StoredMessageMetadata(message.getMetadata()) : null, pageId);
 	}
 	
 	public StoredMessage(StoredMessage copyFrom)

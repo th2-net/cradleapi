@@ -16,12 +16,7 @@
 
 package com.exactpro.cradle.serialization;
 
-import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.messages.CradleMessage;
-import com.exactpro.cradle.messages.MessageToStore;
-import com.exactpro.cradle.messages.StoredMessage;
-import com.exactpro.cradle.messages.StoredMessageId;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.Collection;
 import java.util.Map;
@@ -42,19 +37,16 @@ public class MessagesSizeCalculator {
 	public final static int MESSAGE_SIZE_CONST_VALUE = 30;
 
 	/*
-	 * 	     4 - magic number
-	 * 		 1 - protocol version
-	 * 	     4 - book name length
-	 * 		 2 - stream id length
-	 * 		 1 - DIRECTION enum (ordinal)
-	 * 		 4 - message sizes
-	 * 		 Collapsed constant = 16
+	 *  4 - magic number
+	 * 	1 - protocol version
+	 * 	4 - message sizes
+	 * 	Collapsed constant = 9
 	 *
-	 * 		 every:
-	 * 		 4 - message length
-	 * 		 x - message
+	 *  every:
+	 *  4 - message length
+	 * 	x - message
 	 */
-	public final static int MESSAGE_BATCH_CONST_VALUE = 16;
+	public final static int MESSAGE_BATCH_CONST_VALUE = 9;
 	
 	public final static int MESSAGE_LENGTH_IN_BATCH = 4;
 
@@ -78,32 +70,19 @@ public class MessagesSizeCalculator {
 		return str != null ? str.length() : 0;
 	}
 
-	public static int calculateServiceMessageBatchSize(CradleMessage message) {
-		int total = MESSAGE_BATCH_CONST_VALUE;
-		StoredMessageId id;
-		if (message != null && (id = message.getId()) != null) {
-			if (StringUtils.isNotEmpty(id.getSessionAlias())) {
-				total += message.getSessionAlias().length();
-			}
-
-			BookId bookId = id.getBookId();
-			if (bookId != null && StringUtils.isNotEmpty(bookId.getName())) {
-				total += bookId.getName().length();
-			}
-		}
-
-		return total;
+	public static int calculateServiceMessageBatchSize() {
+		return MESSAGE_BATCH_CONST_VALUE;
 	}
 
 	public static SerializationBatchSizes calculateMessageBatchSize(Collection<? extends CradleMessage> message) {
 
 		SerializationBatchSizes sizes = new SerializationBatchSizes(message.size());
-		sizes.total = calculateServiceMessageBatchSize(message.isEmpty() ? null : message.iterator().next());
+		sizes.total = calculateServiceMessageBatchSize();
 		
 		int i  = 0;
 		for (CradleMessage storedMessage : message) {
-			sizes.mess[i] = calculateMessageSize(storedMessage);
-			sizes.total += MESSAGE_LENGTH_IN_BATCH + sizes.mess[i];
+			sizes.eventEnt[i] = calculateMessageSize(storedMessage);
+			sizes.total += MESSAGE_LENGTH_IN_BATCH + sizes.eventEnt[i];
 			i++;
 		}
 

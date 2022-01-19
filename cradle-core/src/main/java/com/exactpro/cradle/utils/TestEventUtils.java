@@ -16,15 +16,9 @@
 
 package com.exactpro.cradle.utils;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -32,7 +26,6 @@ import java.util.zip.DataFormatException;
 
 import com.exactpro.cradle.serialization.*;
 import com.exactpro.cradle.testevents.*;
-import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,7 +90,7 @@ public class TestEventUtils
 	}
 	
 	/**
-	 * Serializes test events, skipping non-meaningful or calculatable fields
+	 * Serializes test events, skipping non-meaningful or calculable fields
 	 * @param testEvents to serialize
 	 * @return array of bytes, containing serialized events
 	 * @throws IOException if serialization failed
@@ -110,34 +103,31 @@ public class TestEventUtils
 	/**
 	 * Deserializes test events from given bytes
 	 * @param contentBytes to deserialize events from
+	 * @param id is batchId
 	 * @return collection of deserialized test events
 	 * @throws IOException if deserialization failed
 	 */
-	public static Collection<BatchedStoredTestEvent> deserializeTestEvents(byte[] contentBytes)
+	public static Collection<BatchedStoredTestEvent> deserializeTestEvents(byte[] contentBytes, StoredTestEventId id)
 			throws IOException
 	{
-		if (deserializer.checkEventBatchHeader(contentBytes)) {
-			return deserializer.deserializeBatchEntries(contentBytes);
-		} else {
-			//This code is for backward compatibility.
-			return LegacyEventDeserializer.deserializeTestEvents(contentBytes);
-		}
+		return deserializer.deserializeBatchEntries(contentBytes, new EventBatchCommonParams(id));
 	}
 	
 	
 	/**
 	 * Decompresses given ByteBuffer and deserializes test events
 	 * @param content to deserialize events from
+	 * @param eventId batch id. Required to specify common event params like bookId, scope
 	 * @param compressed flag that indicates if content needs to be decompressed first
 	 * @return collection of deserialized test events
 	 * @throws IOException if deserialization failed
 	 * @throws CradleStorageException if deserialized event doesn't match batch conditions
 	 */
-	public static Collection<BatchedStoredTestEvent> bytesToTestEvents(ByteBuffer content, boolean compressed)
+	public static Collection<BatchedStoredTestEvent> bytesToTestEvents(ByteBuffer content, StoredTestEventId eventId, boolean compressed)
 			throws IOException, CradleStorageException
 	{
 		byte[] contentBytes = getTestEventContentBytes(content, compressed);
-		return deserializeTestEvents(contentBytes);
+		return deserializeTestEvents(contentBytes, eventId);
 	}
 	
 	public static byte[] getTestEventContentBytes(ByteBuffer content, boolean compressed) throws IOException

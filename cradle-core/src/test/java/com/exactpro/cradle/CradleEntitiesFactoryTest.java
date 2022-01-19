@@ -45,7 +45,7 @@ public class CradleEntitiesFactoryTest
 	public void createMessageBatch()
 	{
 		MessageBatchToStore batch = factory.messageBatch();
-		Assert.assertEquals(batch.getSpaceLeft(), maxMessageBatchSize - MessagesSizeCalculator.calculateServiceMessageBatchSize(null),
+		Assert.assertEquals(batch.getSpaceLeft(), maxMessageBatchSize - MessagesSizeCalculator.calculateServiceMessageBatchSize(),
 				"CradleEntitiesFactory creates MessageBatchToStore with maximum size defined in factory constructor");
 	}
 	
@@ -61,7 +61,7 @@ public class CradleEntitiesFactoryTest
 				.parentId(new StoredTestEventId(bookId, scope, timestamp.plusNanos(1), "parent_event1"))
 				.build();
 		Assert.assertEquals(batch.getSpaceLeft(), maxEventBatchSize -
-						EventsSizeCalculator.calculateServiceEventBatchSize(null),
+						EventsSizeCalculator.calculateServiceEventBatchSize(),
 				"CradleEntitiesFactory creates TestEventBatchToStore with maximum size defined in factory constructor");
 	}
 }

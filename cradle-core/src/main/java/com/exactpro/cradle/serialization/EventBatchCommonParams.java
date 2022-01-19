@@ -17,21 +17,26 @@
 package com.exactpro.cradle.serialization;
 
 import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.testevents.StoredTestEventId;
 
 public class EventBatchCommonParams {
 
-    private String bookName;
+    private BookId bookId;
     private String scope;
 
-    private BookId bookId;
+    public EventBatchCommonParams() {}
+
+    public EventBatchCommonParams(StoredTestEventId id) {
+        this.bookId = id.getBookId();
+        this.scope = id.getScope();
+    }
 
     public String getBookName() {
-        return bookName;
+        return bookId != null ? bookId.getName() : null;
     }
 
     public void setBookName(String bookName) {
-        this.bookName = bookName;
-        this.bookId = null;
+        this.bookId = new BookId(bookName);
     }
 
     public String getScope() {
@@ -43,9 +48,6 @@ public class EventBatchCommonParams {
     }
 
     public BookId getBookId() {
-        if (bookId == null) {
-            bookId = new BookId(bookName);
-        }
         return bookId;
     }
 

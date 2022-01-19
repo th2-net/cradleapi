@@ -27,8 +27,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -138,12 +136,12 @@ public class EventMessageIdSerializer {
 
 	private static Map<String, Pair<List<StoredMessageId>, List<StoredMessageId>>> divideIdsBySession(Set<StoredMessageId> ids)
 	{
-		int inititalCapacity = ids.size() / 2;
+		int initialCapacity = ids.size() / 2;
 		Map<String, Pair<List<StoredMessageId>, List<StoredMessageId>>> result = new HashMap<>();
 		for (StoredMessageId id : ids)
 		{
 			Pair<List<StoredMessageId>, List<StoredMessageId>> storage = result.computeIfAbsent(id.getSessionAlias(),
-					sn -> new ImmutablePair<>(new ArrayList<>(inititalCapacity), new ArrayList<>(inititalCapacity)));
+					sn -> new ImmutablePair<>(new ArrayList<>(initialCapacity), new ArrayList<>(initialCapacity)));
 			if (id.getDirection() == Direction.FIRST)
 				storage.getLeft().add(id);
 			else
@@ -156,7 +154,7 @@ public class EventMessageIdSerializer {
 	private static Map<String, Integer> getSessions(Map<StoredTestEventId, Set<StoredMessageId>> ids)
 	{
 		Set<String> sessions = new HashSet<>();
-		ids.values().forEach(eventIds -> eventIds.forEach(id -> sessions.add(id.getSessionAlias())));
+		ids.values().forEach(messageIds -> messageIds.forEach(id -> sessions.add(id.getSessionAlias())));
 
 		Map<String, Integer> result = new HashMap<>();
 		for (String session : sessions)

@@ -27,15 +27,13 @@ import java.util.Map;
 import java.util.Set;
 
 import com.exactpro.cradle.serialization.EventsSizeCalculator;
-import org.apache.commons.lang3.ArrayUtils;
 
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.TestEventUtils;
 
 /**
  * Holds information about batch of test events prepared to be stored in Cradle
- * Events stored in the batch can refer to each other to form a hierarchy. No references to these events are possible outside of the batch and vice versa.
+ * Events stored in the batch can refer to each other to form a hierarchy. No references to these events are possible outside the batch and vice versa.
  * Root events in the batch should reference batch's parent.
  */
 public class TestEventBatchToStore extends TestEventToStore implements TestEventBatch
@@ -45,7 +43,7 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 	private final Map<StoredTestEventId, Collection<BatchedStoredTestEvent>> children = new HashMap<>();
 	private final Map<StoredTestEventId, Set<StoredMessageId>> messages = new HashMap<>();
 	private final int maxBatchSize;
-	private int batchSize = EventsSizeCalculator.calculateServiceEventBatchSize(null);
+	private int batchSize = EventsSizeCalculator.calculateServiceEventBatchSize();
 	
 	public TestEventBatchToStore(StoredTestEventId id, String name, StoredTestEventId parentId, int maxBatchSize) throws CradleStorageException
 	{
@@ -61,6 +59,7 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 	}
 	
 
+	@SuppressWarnings("ConstantConditions")
 	@Override
 	public Set<StoredMessageId> getMessages()
 	{
@@ -174,10 +173,6 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 	 */
 	public BatchedStoredTestEvent addTestEvent(TestEventSingleToStore event) throws CradleStorageException
 	{
-		if (events.isEmpty()) {
-			this.batchSize = EventsSizeCalculator.calculateServiceEventBatchSize(event);
-		}
-
 		int currEventSize = EventsSizeCalculator.calculateRecordSizeInBatch(event);
 		if (!hasSpace(currEventSize))
 			throw new CradleStorageException("Batch has not enough space to hold given test event");

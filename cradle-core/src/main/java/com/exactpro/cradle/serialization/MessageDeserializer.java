@@ -38,8 +38,8 @@ public class MessageDeserializer {
 		return ByteBuffer.wrap(array, 0, 4).getInt() == MESSAGE_BATCH_MAGIC;
 	}
 	
-	public List<StoredMessage> deserializeBatch(byte[] buffer) throws SerializationException {
-		return this.deserializeBatch(ByteBuffer.wrap(buffer));
+	public List<StoredMessage> deserializeBatch(byte[] buffer, MessageCommonParams commonParams) throws SerializationException {
+		return this.deserializeBatch(ByteBuffer.wrap(buffer), commonParams);
 	}
 	
 	private void checkMessageBatchMagics(ByteBuffer buffer) throws SerializationException {
@@ -55,14 +55,6 @@ public class MessageDeserializer {
 		}
 	}
 
-	private MessageCommonParams readCommonsParams(ByteBuffer buffer) throws SerializationException {
-		MessageCommonParams commonParams = new MessageCommonParams();
-		commonParams.setBookName(SerializationUtils.readString(buffer));
-		commonParams.setSessionAlias(SerializationUtils.readShortString(buffer));
-		commonParams.setDirection(getDirection(buffer.get()));
-		return commonParams;
-	}
-
 	private StoredMessage readMessage(ByteBuffer buffer, MessageCommonParams commonParams) throws SerializationException {
 		int msgLen = buffer.getInt();
 		ByteBuffer msgBuf = ByteBuffer.wrap(buffer.array(), buffer.position(), msgLen);
@@ -71,9 +63,8 @@ public class MessageDeserializer {
 		return msg;
 	}
 	
-	public List<StoredMessage> deserializeBatch(ByteBuffer buffer) throws SerializationException {
+	public List<StoredMessage> deserializeBatch(ByteBuffer buffer, MessageCommonParams commonParams) throws SerializationException {
 		checkMessageBatchMagics(buffer);
-		MessageCommonParams commonParams = readCommonsParams(buffer);
 
 		int messagesCount = buffer.getInt();
 		List<StoredMessage> messages = new ArrayList<>(messagesCount);
@@ -84,10 +75,9 @@ public class MessageDeserializer {
 		return messages;
 	}
 
-	public StoredMessage deserializeOneMessage(ByteBuffer buffer, StoredMessageId id) throws SerializationException {
+	public StoredMessage deserializeOneMessage(ByteBuffer buffer, MessageCommonParams commonParams, StoredMessageId id) throws SerializationException {
 		checkMessageBatchMagics(buffer);
-		MessageCommonParams commonParams = readCommonsParams(buffer);
-		
+
 		int messagesCount = buffer.getInt();
 		for (int i = 0; i < messagesCount; ++i) {
 			StoredMessage msg = this.readMessage(buffer, commonParams);

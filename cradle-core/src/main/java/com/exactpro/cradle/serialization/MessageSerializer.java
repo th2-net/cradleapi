@@ -16,14 +16,9 @@
 
 package com.exactpro.cradle.serialization;
 
-import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.Direction;
-import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.messages.StoredMessageMetadata;
-import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
-import com.exactpro.cradle.testevents.StoredTestEventId;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -54,17 +49,11 @@ public class MessageSerializer {
 		
 		buffer.putInt(MESSAGE_BATCH_MAGIC);
 		buffer.put(MESSAGE_PROTOCOL_VER);
-
-		MessageCommonParams commonParams = getCommonParams(batch);
-
-		printString(commonParams.getBookName(), buffer);
-		SerializationUtils.printShortString(commonParams.getSessionAlias(), buffer, "Session alias");
-		buffer.put((byte) commonParams.getDirection().ordinal());
 		
 		buffer.putInt(batch.size());
 		int i = 0;
 		for (StoredMessage message : batch) {
-			buffer.putInt(messageBatchSizes.mess[i]);
+			buffer.putInt(messageBatchSizes.eventEnt[i]);
 			this.serialize(message, buffer);
 			i++;
 		}

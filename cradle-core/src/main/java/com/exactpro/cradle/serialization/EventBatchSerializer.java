@@ -16,14 +16,12 @@
 
 package com.exactpro.cradle.serialization;
 
-import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.Iterator;
 
 import static com.exactpro.cradle.serialization.Serialization.EventBatchConst.*;
 import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateEventRecordSize;
@@ -36,9 +34,9 @@ import static com.exactpro.cradle.serialization.SerializationUtils.printString;
 public class EventBatchSerializer {
 
 
-	public byte[] serializeEventRecord (BatchedStoredTestEvent message) throws SerializationException {
-		ByteBuffer allocate = ByteBuffer.allocate(calculateEventRecordSize(message));
-		this.serializeEventRecord(message, allocate);
+	public byte[] serializeEventRecord (BatchedStoredTestEvent event) throws SerializationException {
+		ByteBuffer allocate = ByteBuffer.allocate(calculateEventRecordSize(event));
+		this.serializeEventRecord(event, allocate);
 		return allocate.array();
 	}
 
@@ -53,16 +51,16 @@ public class EventBatchSerializer {
 		printString(id_str, buffer);
 	}
 	
-	public void serializeEventRecord (BatchedStoredTestEvent message, ByteBuffer buffer) throws SerializationException {
+	public void serializeEventRecord (BatchedStoredTestEvent event, ByteBuffer buffer) throws SerializationException {
 		buffer.putShort(EVENT_BATCH_ENT_MAGIC);
 
-		printId(message.getId(), buffer);
-		printString(message.getName(), buffer);
-		printString(message.getType(), buffer);
-		printId(message.getParentId(), buffer);
-		printInstant(message.getEndTimestamp(), buffer);
-		printSingleBoolean(message.isSuccess(), buffer);
-		printBody(message.getContent(), buffer);
+		printId(event.getId(), buffer);
+		printString(event.getName(), buffer);
+		printString(event.getType(), buffer);
+		printId(event.getParentId(), buffer);
+		printInstant(event.getEndTimestamp(), buffer);
+		printSingleBoolean(event.isSuccess(), buffer);
+		printBody(event.getContent(), buffer);
 	}
 
 
@@ -74,43 +72,23 @@ public class EventBatchSerializer {
 	}
 
 	public void serializeEventBatch (Collection<BatchedStoredTestEvent> batch, ByteBuffer buffer) throws SerializationException {
-		SerializationBatchSizes messageBatchSizes = calculateBatchEventSize(batch);
-		serializeEventBatch(batch, buffer, messageBatchSizes);
+		SerializationBatchSizes eventBatchSizes = calculateBatchEventSize(batch);
+		serializeEventBatch(batch, buffer, eventBatchSizes);
 	}
 
 	public void serializeEventBatch (Collection<BatchedStoredTestEvent> batch, ByteBuffer buffer,
-									 SerializationBatchSizes messageBatchSizes) throws SerializationException {
+									 SerializationBatchSizes eventBatchSizes) throws SerializationException {
 
 		buffer.putInt(EVENT_BATCH_MAGIC);
 		buffer.put(EVENT_BATCH_PROTOCOL_VER);
 
-		EventBatchCommonParams commonParams = getCommonParams(batch);
-		printString(commonParams.getBookName(), buffer);
-		printString(commonParams.getScope(), buffer);
-
 		buffer.putInt(batch.size());
 		int i = 0;
-		for (BatchedStoredTestEvent message : batch) {
-			buffer.putInt(messageBatchSizes.mess[i]);
-			this.serializeEventRecord(message, buffer);
+		for (BatchedStoredTestEvent event : batch) {
+			buffer.putInt(eventBatchSizes.eventEnt[i]);
+			this.serializeEventRecord(event, buffer);
 			i++;
 		}
 	}
 
-	private EventBatchCommonParams getCommonParams(Collection<BatchedStoredTestEvent> batch) {
-		Iterator<BatchedStoredTestEvent> iterator = batch.iterator();
-		if (iterator.hasNext()) {
-			EventBatchCommonParams params = new EventBatchCommonParams();
-			BatchedStoredTestEvent event = iterator.next();
-
-			StoredTestEventId eventId = event.getId();
-			BookId bookId = eventId != null ? eventId.getBookId() : null;
-
-			params.setBookName(bookId != null ? bookId.getName() : null);
-			params.setScope(eventId != null ? eventId.getScope() : null);
-			return params;
-		} else {
-			return new EventBatchCommonParams();
-		}
-	}
 }

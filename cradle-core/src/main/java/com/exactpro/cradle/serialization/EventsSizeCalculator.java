@@ -19,7 +19,6 @@ package com.exactpro.cradle.serialization;
 import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventSingle;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.Collection;
 
@@ -38,7 +37,7 @@ public class EventsSizeCalculator {
 		4 = body len
 
 		===
-		47
+		59
  	*/
 	private static final int EVENT_RECORD_CONST = 59;
 
@@ -46,12 +45,10 @@ public class EventsSizeCalculator {
 	/*
 		4 - magic number
 		1 - protocol version
-		4 - book name length
-		4 - scope length
 		4 - message sizes
-		Collapsed constant = 17
+		Collapsed constant = 9
 	 */
-	public static final int BATCH_LEN_CONST = 17;
+	public static final int BATCH_LEN_CONST = 9;
 
 	private final static int ENTITY_LENGTH_IN_BATCH = 4;
 	
@@ -74,12 +71,12 @@ public class EventsSizeCalculator {
 	public static SerializationBatchSizes calculateBatchEventSize(Collection<BatchedStoredTestEvent> events) {
 		
 		SerializationBatchSizes sizes = new SerializationBatchSizes(events.size());
-		sizes.total = calculateServiceEventBatchSize(events.isEmpty() ? null : events.iterator().next());
+		sizes.total = calculateServiceEventBatchSize();
 
 		int i  = 0;
 		for (BatchedStoredTestEvent storedMessage : events) {
-			sizes.mess[i] = EventsSizeCalculator.calculateEventRecordSize(storedMessage);
-			sizes.total += ENTITY_LENGTH_IN_BATCH + sizes.mess[i];
+			sizes.eventEnt[i] = EventsSizeCalculator.calculateEventRecordSize(storedMessage);
+			sizes.total += ENTITY_LENGTH_IN_BATCH + sizes.eventEnt[i];
 			i++;
 		}
 
@@ -90,19 +87,8 @@ public class EventsSizeCalculator {
 		return calculateEventRecordSize(event) + ENTITY_LENGTH_IN_BATCH;
 	}
 
-	public static int calculateServiceEventBatchSize(TestEventSingle event) {
-		int service = BATCH_LEN_CONST;
-
-		if (event != null) {
-			StoredTestEventId id = event.getId();
-			if (id != null && StringUtils.isNotEmpty(id.getScope())) {
-				service += id.getScope().length();
-			}
-			if (id != null && id.getBookId() != null && StringUtils.isNotEmpty(id.getBookId().getName())) {
-				service += id.getBookId().getName().length();
-			}
-		}
-		return service;
+	public static int calculateServiceEventBatchSize() {
+		return BATCH_LEN_CONST;
 	}
 
 

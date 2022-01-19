@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.zip.DataFormatException;
 
 import com.exactpro.cradle.messages.CradleMessage;
-import com.exactpro.cradle.serialization.LegacyMessageDeserializer;
+import com.exactpro.cradle.serialization.MessageCommonParams;
 import com.exactpro.cradle.serialization.MessageDeserializer;
 import com.exactpro.cradle.serialization.MessageSerializer;
 import org.apache.commons.lang3.ArrayUtils;
@@ -79,26 +79,19 @@ public class MessageUtils
 	 */
 	public static StoredMessage deserializeOneMessage(byte[] contentBytes, StoredMessageId id) throws IOException
 	{
-		if (deserializer.checkMessageBatchHeader(contentBytes)) {
-			return deserializer.deserializeOneMessage(ByteBuffer.wrap(contentBytes), id);
-		} else {
-			return LegacyMessageDeserializer.deserializeOneMessage(contentBytes, id);
-		}
+		return deserializer.deserializeOneMessage(ByteBuffer.wrap(contentBytes), new MessageCommonParams(id), id);
 	}
 	
 	/**
 	 * Deserializes all messages
 	 * @param contentBytes to deserialize messages from
+	 * @param batchId to deserialize messages from
 	 * @return collection of deserialized messages
 	 * @throws IOException if deserialization failed
 	 */
-	public static List<StoredMessage> deserializeMessages(byte[] contentBytes) throws IOException
+	public static List<StoredMessage> deserializeMessages(byte[] contentBytes, StoredMessageId batchId) throws IOException
 	{
-		if (deserializer.checkMessageBatchHeader(contentBytes)) {
-			return deserializer.deserializeBatch(contentBytes);
-		} else {
-			return LegacyMessageDeserializer.deserializeMessages(contentBytes);
-		}
+		return deserializer.deserializeBatch(contentBytes, new MessageCommonParams(batchId));
 	}
 	
 	/**
@@ -118,14 +111,15 @@ public class MessageUtils
 	/**
 	 * Decompresses given ByteBuffer and deserializes all messages
 	 * @param content to deserialize messages from
+	 * @param id batch id. Required to specify common message params like bookId, sessionAlias, direction
 	 * @param compressed flag that indicates if content needs to be decompressed first
 	 * @return collection of deserialized messages
 	 * @throws IOException if deserialization failed
 	 */
-	public static List<StoredMessage> bytesToMessages(ByteBuffer content, boolean compressed) throws IOException
+	public static List<StoredMessage> bytesToMessages(ByteBuffer content, StoredMessageId id, boolean compressed) throws IOException
 	{
-		byte[] contentBytes = getMessageContentBytes(content, compressed, null);
-		return deserializeMessages(contentBytes);
+		byte[] contentBytes = getMessageContentBytes(content, compressed, id);
+		return deserializeMessages(contentBytes, id);
 	}
 	
 	private static byte[] getMessageContentBytes(ByteBuffer content, boolean compressed, StoredMessageId id) throws IOException

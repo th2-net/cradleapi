@@ -173,8 +173,7 @@ public class EventBatchTest
 
 		batch.addTestEvent(event);
 		
-		Assert.assertEquals(batch.getSpaceLeft(), left - EventsSizeCalculator.calculateRecordSizeInBatch(event)
-				- BOOK.getName().length() - SCOPE.length(),"Batch counts space left");
+		Assert.assertEquals(batch.getSpaceLeft(), left - EventsSizeCalculator.calculateRecordSizeInBatch(event),"Batch counts space left");
 	}
 	
 	@Test
@@ -249,8 +248,8 @@ public class EventBatchTest
 						.name(DUMMY_NAME)
 						.parentId(parentEvent.getId())
 						.build());
-		
-		Assert.assertEquals(parentEvent.getChildren().contains(childEvent), true, "Children are aligned with their parent");
+
+		Assert.assertTrue(parentEvent.getChildren().contains(childEvent), "Children are aligned with their parent");
 	}
 	
 	@Test
@@ -261,7 +260,7 @@ public class EventBatchTest
 				.name(DUMMY_NAME)
 				.parentId(batch.getParentId())
 				.build());
-		Assert.assertEquals(batch.getRootTestEvents().contains(parentEvent), true, "Root event is listed in roots");
+		Assert.assertTrue(batch.getRootTestEvents().contains(parentEvent), "Root event is listed in roots");
 	}
 	
 	@Test
@@ -278,7 +277,7 @@ public class EventBatchTest
 						.parentId(parentEvent.getId())
 						.build());
 
-		Assert.assertEquals(batch.getRootTestEvents().contains(childEvent), false, "Child event is not listed in roots");
+		Assert.assertFalse(batch.getRootTestEvents().contains(childEvent), "Child event is not listed in roots");
 	}
 	
 	@Test(dataProvider = "batch invalid events",

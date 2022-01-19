@@ -86,6 +86,11 @@ public class StoredMessageBuilder {
 		return this;
 	}
 
+	public StoredMessageBuilder setPageId(PageId pageId) {
+		this.pageId = pageId;
+		return this;
+	}
+
 	public StoredMessage build() {
 		StoredMessageMetadata smm = metadata == null ? StoredMessageMetadata.empty() 
 				: new StoredMessageMetadata(this.metadata);

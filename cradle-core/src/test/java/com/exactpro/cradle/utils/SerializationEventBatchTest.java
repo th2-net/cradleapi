@@ -16,7 +16,6 @@
 
 package com.exactpro.cradle.utils;
 
-import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.serialization.EventBatchCommonParams;
 import com.exactpro.cradle.serialization.EventBatchDeserializer;
 import com.exactpro.cradle.serialization.EventBatchSerializer;
@@ -71,11 +70,12 @@ public class SerializationEventBatchTest {
 
 	@Test
 	public void serializeDeserialize3() throws Exception {
-		List<BatchedStoredTestEvent> build = createBatchEvents();
+		EventBatchCommonParams commonParams = createCommonParams();
+		List<BatchedStoredTestEvent> build = createBatchEvents(commonParams);
 		EventBatchSerializer serializer = new EventBatchSerializer();
 		byte[] serialize = serializer.serializeEventBatch(build);
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
-		List<BatchedStoredTestEvent> deserialize = deserializer.deserializeBatchEntries(serialize);
+		List<BatchedStoredTestEvent> deserialize = deserializer.deserializeBatchEntries(serialize, commonParams);
 		Assertions.assertThat(build).usingRecursiveFieldByFieldElementComparator().isEqualTo(deserialize);
 	}
 

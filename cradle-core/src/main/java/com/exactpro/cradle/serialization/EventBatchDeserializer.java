@@ -30,7 +30,6 @@ import static com.exactpro.cradle.serialization.Serialization.EventBatchConst.EV
 import static com.exactpro.cradle.serialization.Serialization.EventBatchConst.EVENT_BATCH_PROTOCOL_VER;
 import static com.exactpro.cradle.serialization.Serialization.NOT_SUPPORTED_PROTOCOL_FORMAT;
 import static com.exactpro.cradle.serialization.SerializationUtils.*;
-import static com.exactpro.cradle.serialization.SerializationUtils.printString;
 
 public class EventBatchDeserializer {
 	
@@ -38,12 +37,12 @@ public class EventBatchDeserializer {
 		return ByteBuffer.wrap(array, 0, 4).getInt() == EVENT_BATCH_MAGIC;
 	}
 
-	public List<BatchedStoredTestEvent> deserializeBatchEntries(byte[] buffer)
+	public List<BatchedStoredTestEvent> deserializeBatchEntries(byte[] buffer, EventBatchCommonParams common)
 			throws SerializationException {
-		return deserializeBatchEntries(ByteBuffer.wrap(buffer));
+		return deserializeBatchEntries(ByteBuffer.wrap(buffer), common);
 	}
 
-	public List<BatchedStoredTestEvent> deserializeBatchEntries(ByteBuffer buffer)
+	public List<BatchedStoredTestEvent> deserializeBatchEntries(ByteBuffer buffer, EventBatchCommonParams common)
 			throws SerializationException {
 		int magicNumber = buffer.getInt();
 		if (magicNumber != EVENT_BATCH_MAGIC) {
@@ -55,10 +54,6 @@ public class EventBatchDeserializer {
 			throw new SerializationException(String.format(NOT_SUPPORTED_PROTOCOL_FORMAT, "event batches",
 					protocolVer, EVENT_BATCH_PROTOCOL_VER));
 		}
-
-		EventBatchCommonParams common = new EventBatchCommonParams();
-		common.setBookName(readString(buffer));
-		common.setScope(readString(buffer));
 
 		int batchesCount = buffer.getInt();
 		List<BatchedStoredTestEvent> eventList = new ArrayList<>(batchesCount);
