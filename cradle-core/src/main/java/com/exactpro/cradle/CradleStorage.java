@@ -24,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Pattern;
 
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
@@ -49,6 +50,8 @@ public abstract class CradleStorage
 	public static final long EMPTY_MESSAGE_INDEX = -1L;
 	public static final int DEFAULT_MAX_MESSAGE_BATCH_SIZE = 1024*1024,
 			DEFAULT_MAX_TEST_EVENT_BATCH_SIZE = DEFAULT_MAX_MESSAGE_BATCH_SIZE;
+
+	private static final Pattern BOOK_PAGE_NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9][a-zA-Z0-9_]*$");
 	
 	private final Map<BookId, BookInfo> books;
 	protected final BookAndPageChecker bpc;
@@ -208,6 +211,8 @@ public abstract class CradleStorage
 	 */
 	public BookInfo addBook(BookToAdd book) throws CradleStorageException, IOException
 	{
+		checkBookToAdd(book);
+
 		BookId id = new BookId(book.getName());
 		logger.info("Adding book '{}' to storage", id);
 		if (books.containsKey(id))
@@ -538,7 +543,7 @@ public abstract class CradleStorage
 	}
 	
 	/**
-	 * Allows to enumerate stored messages filtering them by given conditions
+	 * Allows enumerating stored messages filtering them by given conditions
 	 * @param filter defines conditions to filter messages by
 	 * @return result set to enumerate messages
 	 * @throws IOException if data retrieval failed
@@ -581,7 +586,7 @@ public abstract class CradleStorage
 	
 	
 	/**
-	 * Allows to enumerate stored message batches filtering them by given conditions
+	 * Allows enumerating stored message batches filtering them by given conditions
 	 * @param filter defines conditions to filter message batches by
 	 * @return result set to enumerate message batches
 	 * @throws IOException if data retrieval failed
@@ -817,6 +822,10 @@ public abstract class CradleStorage
 		List<PageInfo> result = new ArrayList<>(pages.size());
 		for (PageToAdd page : pages)
 		{
+			if (page.getName() == null || !BOOK_PAGE_NAME_PATTERN.matcher(page.getName()).matches()) {
+				throw new CradleStorageException("Invalid page name. Alphanumeric characters and underscore are allowed.");
+			}
+
 			String name = page.getName();
 			if (names.contains(name))
 				throw new CradleStorageException("Duplicated page name: '"+page.getName()+"'");
@@ -887,5 +896,14 @@ public abstract class CradleStorage
 		}
 		
 		return true;
+	}
+
+	protected void checkBookToAdd(BookToAdd book) throws CradleStorageException {
+		if (book.getName() == null || !BOOK_PAGE_NAME_PATTERN.matcher(book.getName()).matches()) {
+			throw new CradleStorageException("Invalid book name. Alphanumeric characters and underscore are allowed.");
+		}
+		if (book.getFirstPageName() == null || !BOOK_PAGE_NAME_PATTERN.matcher(book.getFirstPageName()).matches()) {
+			throw new CradleStorageException("Invalid first page name. Alphanumeric characters and underscore are allowed.");
+		}
 	}
 }
