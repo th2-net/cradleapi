@@ -47,7 +47,7 @@ public class SerializationEventBatchTest {
 	}
 
 	@Test
-	public void checkSize3() throws SerializationException {
+	public void checkSize2() throws SerializationException {
 		Collection<BatchedStoredTestEvent> build = createBatchEvents();
 		EventBatchSerializer serializer = new EventBatchSerializer();
 		ByteBuffer buffer = ByteBuffer.allocate(10_000);
@@ -69,7 +69,7 @@ public class SerializationEventBatchTest {
 
 
 	@Test
-	public void serializeDeserialize3() throws Exception {
+	public void serializeDeserialize2() throws Exception {
 		EventBatchCommonParams commonParams = createCommonParams();
 		List<BatchedStoredTestEvent> build = createBatchEvents(commonParams);
 		EventBatchSerializer serializer = new EventBatchSerializer();

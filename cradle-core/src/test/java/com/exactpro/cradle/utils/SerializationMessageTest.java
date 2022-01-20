@@ -82,6 +82,29 @@ public class SerializationMessageTest {
 	}
 
 	@Test
+	public void serializeDeserializeEmptyBody() throws SerializationException {
+		MessageCommonParams commonParams = new MessageCommonParams();
+		commonParams.setBookName("book_name1234");
+		commonParams.setSessionAlias("stream_name12345");
+		commonParams.setDirection(Direction.SECOND);
+
+		StoredMessageBuilder builder = new StoredMessageBuilder();
+		builder.setSessionAlias(commonParams.getSessionAlias());
+		builder.setIndex(123456789010111213L);
+		builder.setDirection(commonParams.getDirection());
+		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.00Z"));
+		builder.setContent(new byte[0]);
+		builder.setBookId(commonParams.getBookId());
+		StoredMessage build = builder.build();
+		MessageSerializer serializer = new MessageSerializer();
+		byte[] serialize = serializer.serialize(build);
+		MessageDeserializer deserializer = new MessageDeserializer();
+
+		StoredMessage deserialize = deserializer.deserialize(serialize, commonParams);
+		Assert.assertEquals(deserialize, build);
+	}
+
+	@Test
 	public void checkMessageLength() throws SerializationException {
 		StoredMessageBuilder builder = new StoredMessageBuilder();
 		builder.setSessionAlias("stream_name12345");
@@ -116,7 +139,7 @@ public class SerializationMessageTest {
 		builder.setSessionAlias(params.getSessionAlias());
 		builder.setIndex(123456789010111213L);
 		builder.setDirection(params.getDirection());
-        builder.setBookId(params.getBookId());
+		builder.setBookId(params.getBookId());
 		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.00Z"));
 		builder.putMetadata("key1", "value1");
 		builder.putMetadata("key2", "value2");
@@ -150,7 +173,7 @@ public class SerializationMessageTest {
 	}
 
 	@Test
-	public void serializeDeserialize5BATCH() throws SerializationException {
+	public void serializeDeserializeBatch() throws SerializationException {
 		MessageSerializer serializer = new MessageSerializer();
 		MessageCommonParams commonParams = getCommonParams();
 		List<StoredMessage> initBatch = getBatch(commonParams);
@@ -161,7 +184,7 @@ public class SerializationMessageTest {
 	}
 
 	@Test
-	public void serializeDeserialize6EMTPYBATCH() throws SerializationException {
+	public void serializeDeserializeEmptyBatch() throws SerializationException {
 		MessageSerializer serializer = new MessageSerializer();
 		MessageCommonParams commonParams = getCommonParams();
 		List<StoredMessage> initBatch = Collections.emptyList();

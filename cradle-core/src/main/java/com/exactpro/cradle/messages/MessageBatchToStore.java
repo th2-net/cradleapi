@@ -78,7 +78,7 @@ public class MessageBatchToStore extends StoredMessageBatch
 	 */
 	public boolean hasSpace(MessageToStore message)
 	{
-		return batchSize + MessagesSizeCalculator.calculateMessageSize(message) <= maxBatchSize;
+		return hasSpace(MessagesSizeCalculator.calculateMessageSize(message));
 	}
 
 	private boolean hasSpace(int messageSize)

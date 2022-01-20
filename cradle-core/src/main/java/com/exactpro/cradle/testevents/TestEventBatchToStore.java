@@ -155,7 +155,7 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 	 */
 	public boolean hasSpace(TestEventSingleToStore event)
 	{
-		return batchSize + EventsSizeCalculator.calculateRecordSizeInBatch(event) <= maxBatchSize;
+		return hasSpace(EventsSizeCalculator.calculateRecordSizeInBatch(event));
 	}
 
 	private boolean hasSpace(int eventLen)

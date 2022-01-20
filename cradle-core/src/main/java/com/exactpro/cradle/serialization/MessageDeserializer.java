@@ -115,8 +115,8 @@ public class MessageDeserializer {
 	}
 
 	private StoredMessageId readMessageId(ByteBuffer buffer, MessageCommonParams commonParams) throws SerializationException {
-		long index = buffer.getLong();
 		Instant time = readInstant(buffer);
+		long index = buffer.getLong();
 		return new StoredMessageId(commonParams.getBookId(), commonParams.getSessionAlias(),
 				commonParams.getDirection(), time, index);
 	}

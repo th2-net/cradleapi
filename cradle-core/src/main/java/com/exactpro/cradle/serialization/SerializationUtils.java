@@ -88,7 +88,7 @@ public class SerializationUtils {
 			return null;
 
 		if (buffer.remaining() < len) {
-			throw new SerializationException(String.format("Expected string (%d bytes) is bigger than remaining buffer (%d)",
+			throw new SerializationException(String.format("String to read (%d bytes) is longer than remaining buffer (%d)",
 					len, buffer.remaining()));
 		}
 		int currPos = buffer.position();

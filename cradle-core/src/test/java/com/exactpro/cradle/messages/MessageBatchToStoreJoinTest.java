@@ -20,11 +20,8 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
-import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.Collection;
 
-import com.exactpro.cradle.serialization.MessageSerializer;
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import com.exactpro.cradle.serialization.SerializationException;
 import org.testng.annotations.DataProvider;
@@ -46,7 +43,7 @@ public class MessageBatchToStoreJoinTest
         assertTrue(emptyBatch.addBatch(batch));
 
         assertEquals(emptyBatch.getMessageCount(), 5);
-        assertEquals(emptyBatch.getBatchSize(), getRealBatchSize(emptyBatch));
+        assertEquals(emptyBatch.getBatchSize(), getBatchSize(emptyBatch));
         assertEquals(emptyBatch.getSessionAlias(), "test");
         assertEquals(emptyBatch.getDirection(), Direction.FIRST);
     }
@@ -101,10 +98,10 @@ public class MessageBatchToStoreJoinTest
         MessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, 5, 5);
         MessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH.plusMillis(5), 5, 5);
 
-        assertEquals(first.getBatchSize(), getRealBatchSize(first));
+        assertEquals(first.getBatchSize(), getBatchSize(first));
         assertTrue(first.addBatch(second));
         assertEquals(first.getMessageCount(), 10);
-        assertEquals(first.getBatchSize(), getRealBatchSize(first));
+        assertEquals(first.getBatchSize(), getBatchSize(first));
         assertEquals(first.getSessionAlias(), "test");
         assertEquals(first.getDirection(), Direction.FIRST);
     }
@@ -118,7 +115,7 @@ public class MessageBatchToStoreJoinTest
         assertFalse(first.addBatch(second));
         assertEquals(first.getMessageCount(), 1);
         assertEquals(first.getBatchSize(), sizeBefore);
-        assertEquals(first.getBatchSize(), getRealBatchSize(first, MAX_SIZE * 10));
+        assertEquals(first.getBatchSize(), getBatchSize(first));
         assertEquals(first.getSessionAlias(), "test");
         assertEquals(first.getDirection(), Direction.FIRST);
     }
@@ -213,15 +210,7 @@ public class MessageBatchToStoreJoinTest
                         + MessagesSizeCalculator.MESSAGE_SIZE_CONST_VALUE + MessagesSizeCalculator.MESSAGE_LENGTH_IN_BATCH));
     }
 
-    private int getRealBatchSize(StoredMessageBatch batch, int bufferSize) throws SerializationException {
-        ByteBuffer buffer = ByteBuffer.wrap(new byte[bufferSize]);
-        MessageSerializer msg = new MessageSerializer();
-        Collection<StoredMessage> messages = batch.getMessages();
-        msg.serializeBatch(messages, buffer, MessagesSizeCalculator.calculateMessageBatchSize(messages));
-        return buffer.position();
-    }
-
-    private int getRealBatchSize(StoredMessageBatch batch) throws SerializationException {
-        return getRealBatchSize(batch, 10_000);
+    private int getBatchSize(StoredMessageBatch batch) throws SerializationException {
+        return MessagesSizeCalculator.calculateMessageBatchSize(batch.getMessages()).total;
     }
 }

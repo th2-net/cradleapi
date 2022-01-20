@@ -92,7 +92,7 @@ public class StoredMessageBuilder {
 	}
 
 	public StoredMessage build() {
-		StoredMessageMetadata smm = metadata == null ? StoredMessageMetadata.empty() 
+		StoredMessageMetadata smm = this.metadata == null ? StoredMessageMetadata.empty()
 				: new StoredMessageMetadata(this.metadata);
 		StoredMessageId msgId = messageId;
 		if (msgId == null) {
