@@ -24,9 +24,15 @@ import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.PageSessionsOperator;
 import com.exactpro.cradle.cassandra.dao.messages.SessionsOperator;
+import com.exactpro.cradle.cassandra.dao.messages.converters.MessageBatchEntityConverter;
+import com.exactpro.cradle.cassandra.dao.messages.converters.PageSessionEntityConverter;
+import com.exactpro.cradle.cassandra.dao.messages.converters.SessionEntityConverter;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.PageScopesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
+import com.exactpro.cradle.cassandra.dao.testevents.converters.PageScopeEntityConverter;
+import com.exactpro.cradle.cassandra.dao.testevents.converters.ScopeEntityConverter;
+import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
 
 @Mapper
 public interface CassandraDataMapper
@@ -67,4 +73,22 @@ public interface CassandraDataMapper
 	
 	@DaoFactory
 	IntervalOperator intervalOperator(@DaoKeyspace String keyspace, @DaoTable String intervalsTable);
+
+	@DaoFactory
+	SessionEntityConverter sessionEntityConverter();
+
+	@DaoFactory
+	ScopeEntityConverter scopeEntityConverter();
+
+	@DaoFactory
+	MessageBatchEntityConverter messageBatchEntityConverter();
+
+	@DaoFactory
+	TestEventEntityConverter testEventEntityConverter();
+
+	@DaoFactory
+	PageScopeEntityConverter pageScopeEntityConverter();
+
+	@DaoFactory
+	PageSessionEntityConverter pageSessionEntityConverter();
 }

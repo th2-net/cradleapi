@@ -21,6 +21,7 @@ import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
+import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.MessageFilter;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -37,10 +38,10 @@ public class MessageBatchesIteratorProvider extends AbstractMessageIteratorProvi
 	private static final Logger logger = LoggerFactory.getLogger(MessageBatchesIteratorProvider.class);
 
 	public MessageBatchesIteratorProvider(String requestInfo, MessageFilter filter, BookOperators ops, BookInfo book,
-			ExecutorService composingService,
+			ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
 			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException
 	{
-		super(requestInfo, filter, ops, book, composingService, readAttrs);
+		super(requestInfo, filter, ops, book, composingService, selectQueryExecutor, readAttrs);
 	}
 
 
@@ -56,11 +57,12 @@ public class MessageBatchesIteratorProvider extends AbstractMessageIteratorProvi
 		}
 
 		logger.debug("Getting next iterator for '{}' by filter {}", getRequestInfo(), cassandraFilter);
-		return op.getByFilter(cassandraFilter, composingService, readAttrs)
+		return op.getByFilter(cassandraFilter, selectQueryExecutor, getRequestInfo(), readAttrs)
 				.thenApplyAsync(resultSet -> {
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
 					cassandraFilter = createNextFilter(cassandraFilter);
-					return new ConvertingPagedIterator<>(resultSet, limit, returned, entity -> {
+					return new ConvertingPagedIterator<>(resultSet, selectQueryExecutor, limit, returned,
+							entity -> {
 						try
 						{
 							return entity.toStoredMessageBatch(pageId);
@@ -69,7 +71,7 @@ public class MessageBatchesIteratorProvider extends AbstractMessageIteratorProvi
 						{
 							throw new RuntimeException("Error while converting message batch entity into stored message batch", e);
 						}
-					});
+					}, messageBatchEntityConverter::getEntity, "fetch next page of message batches");
 				}, composingService);
 	}
 }

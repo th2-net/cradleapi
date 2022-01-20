@@ -19,6 +19,8 @@ package com.exactpro.cradle.cassandra;
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.cassandra.connection.NetworkTopologyStrategy;
+import com.exactpro.cradle.cassandra.retries.PageSizeAdjustingPolicy;
+import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
 
 public class CassandraStorageSettings
 {
@@ -46,6 +48,7 @@ public class CassandraStorageSettings
 			DEFAULT_SCOPES_CACHE_SIZE = 10,
 			DEFAULT_PAGE_SESSION_CACHE_SIZE = 100,
 			DEFAULT_PAGE_SCOPES_CACHE_SIZE = 100;
+
 	private final NetworkTopologyStrategy networkTopologyStrategy;
 	private final long timeout;
 	private final ConsistencyLevel writeConsistencyLevel,
@@ -76,6 +79,8 @@ public class CassandraStorageSettings
 			scopesCacheSize,
 			pageSessionsCacheSize,
 			pageScopesCacheSize;
+
+	private SelectExecutionPolicy multiRowResultExecutionPolicy, singleRowResultExecutionPolicy;
 	
 	public CassandraStorageSettings()
 	{
@@ -151,6 +156,8 @@ public class CassandraStorageSettings
 		this.maxUncompressedMessageBatchSize = settings.getMaxUncompressedMessageBatchSize();
 		this.maxTestEventBatchSize = settings.getMaxTestEventBatchSize();
 		this.maxUncompressedTestEventSize = settings.getMaxUncompressedTestEventSize();
+		this.singleRowResultExecutionPolicy = settings.getSingleRowResultExecutionPolicy();
+		this.multiRowResultExecutionPolicy = settings.getMultiRowResultExecutionPolicy();
 		
 		this.sessionsCacheSize = settings.getSessionsCacheSize();
 		this.pageSessionsCacheSize = settings.getPageSessionsCacheSize();
@@ -441,5 +448,27 @@ public class CassandraStorageSettings
 	public void setPageScopesCacheSize(int pageScopesCacheSize)
 	{
 		this.pageScopesCacheSize = pageScopesCacheSize;
+	}
+
+	public SelectExecutionPolicy getMultiRowResultExecutionPolicy()
+	{
+		return multiRowResultExecutionPolicy;
+	}
+
+	public void setMultiRowResultExecutionPolicy(
+			SelectExecutionPolicy multiRowResultExecutionPolicy)
+	{
+		this.multiRowResultExecutionPolicy = multiRowResultExecutionPolicy;
+	}
+
+	public SelectExecutionPolicy getSingleRowResultExecutionPolicy()
+	{
+		return singleRowResultExecutionPolicy;
+	}
+
+	public void setSingleRowResultExecutionPolicy(
+			SelectExecutionPolicy singleRowResultExecutionPolicy)
+	{
+		this.singleRowResultExecutionPolicy = singleRowResultExecutionPolicy;
 	}
 }

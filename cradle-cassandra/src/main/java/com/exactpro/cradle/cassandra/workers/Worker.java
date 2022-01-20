@@ -23,6 +23,7 @@ import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.dao.CradleOperators;
+import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 import java.util.concurrent.CompletionException;
@@ -35,21 +36,19 @@ public abstract class Worker
 	protected final CradleOperators ops;
 	protected final ExecutorService composingService;
 	protected final BookAndPageChecker bpc;
+	protected final SelectQueryExecutor selectQueryExecutor;
 	protected final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
 			readAttrs;
 
-	public Worker(CassandraStorageSettings settings, CradleOperators ops,
-			ExecutorService composingService,
-			BookAndPageChecker bpc,
-			Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
-			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
+	public Worker(WorkerSupplies workerSupplies)
 	{
-		this.settings = settings;
-		this.ops = ops;
-		this.composingService = composingService;
-		this.bpc = bpc;
-		this.writeAttrs = writeAttrs;
-		this.readAttrs = readAttrs;
+		this.settings = workerSupplies.getSettings();
+		this.ops = workerSupplies.getOps();
+		this.composingService = workerSupplies.getComposingService();
+		this.bpc = workerSupplies.getBpc();
+		this.selectQueryExecutor = workerSupplies.getSelectExecutor();
+		this.writeAttrs = workerSupplies.getWriteAttrs();
+		this.readAttrs = workerSupplies.getReadAttrs();
 	}
 
 	protected BookOperators getBookOps(BookId bookId)
