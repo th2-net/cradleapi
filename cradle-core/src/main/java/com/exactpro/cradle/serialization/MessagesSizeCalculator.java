@@ -70,14 +70,10 @@ public class MessagesSizeCalculator {
 		return str != null ? str.length() : 0;
 	}
 
-	public static int calculateServiceMessageBatchSize() {
-		return MESSAGE_BATCH_CONST_VALUE;
-	}
-
 	public static SerializationBatchSizes calculateMessageBatchSize(Collection<? extends CradleMessage> message) {
 
 		SerializationBatchSizes sizes = new SerializationBatchSizes(message.size());
-		sizes.total = calculateServiceMessageBatchSize();
+		sizes.total = MESSAGE_BATCH_CONST_VALUE;
 		
 		int i  = 0;
 		for (CradleMessage storedMessage : message) {

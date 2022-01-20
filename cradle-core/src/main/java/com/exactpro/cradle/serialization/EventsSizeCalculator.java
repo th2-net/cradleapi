@@ -48,7 +48,7 @@ public class EventsSizeCalculator {
 		4 - message sizes
 		Collapsed constant = 9
 	 */
-	public static final int BATCH_LEN_CONST = 9;
+	public static final int EVENT_BATCH_LEN_CONST = 9;
 
 	private final static int ENTITY_LENGTH_IN_BATCH = 4;
 	
@@ -71,7 +71,7 @@ public class EventsSizeCalculator {
 	public static SerializationBatchSizes calculateBatchEventSize(Collection<BatchedStoredTestEvent> events) {
 		
 		SerializationBatchSizes sizes = new SerializationBatchSizes(events.size());
-		sizes.total = calculateServiceEventBatchSize();
+		sizes.total = EVENT_BATCH_LEN_CONST;
 
 		int i  = 0;
 		for (BatchedStoredTestEvent storedMessage : events) {
@@ -86,10 +86,4 @@ public class EventsSizeCalculator {
 	public static int calculateRecordSizeInBatch(TestEventSingle event) {
 		return calculateEventRecordSize(event) + ENTITY_LENGTH_IN_BATCH;
 	}
-
-	public static int calculateServiceEventBatchSize() {
-		return BATCH_LEN_CONST;
-	}
-
-
 }

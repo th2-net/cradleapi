@@ -96,11 +96,6 @@ public class MessageBatchToStore extends StoredMessageBatch
 	 */
 	public StoredMessage addMessage(MessageToStore message) throws CradleStorageException
 	{
-		//first message in the batch. Need to fill it by services
-		if (messages.isEmpty()) {
-			this.batchSize = MessagesSizeCalculator.calculateServiceMessageBatchSize();
-		}
-
 		int expMsgSize = MessagesSizeCalculator.calculateMessageSizeInBatch(message);
 		if (!hasSpace(expMsgSize))
 			throw new CradleStorageException("Batch has not enough space to hold given message");

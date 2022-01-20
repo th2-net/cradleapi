@@ -43,7 +43,7 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 	private final Map<StoredTestEventId, Collection<BatchedStoredTestEvent>> children = new HashMap<>();
 	private final Map<StoredTestEventId, Set<StoredMessageId>> messages = new HashMap<>();
 	private final int maxBatchSize;
-	private int batchSize = EventsSizeCalculator.calculateServiceEventBatchSize();
+	private int batchSize = EventsSizeCalculator.EVENT_BATCH_LEN_CONST;
 	
 	public TestEventBatchToStore(StoredTestEventId id, String name, StoredTestEventId parentId, int maxBatchSize) throws CradleStorageException
 	{
