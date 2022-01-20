@@ -81,8 +81,8 @@ public class MessagesSizeCalculator {
 		
 		int i  = 0;
 		for (CradleMessage storedMessage : message) {
-			sizes.eventEnt[i] = calculateMessageSize(storedMessage);
-			sizes.total += MESSAGE_LENGTH_IN_BATCH + sizes.eventEnt[i];
+			sizes.entities[i] = calculateMessageSize(storedMessage);
+			sizes.total += MESSAGE_LENGTH_IN_BATCH + sizes.entities[i];
 			i++;
 		}
 

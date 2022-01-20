@@ -22,7 +22,6 @@ import com.exactpro.cradle.messages.StoredMessageMetadata;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Map;
 
 import static com.exactpro.cradle.serialization.Serialization.MessageBatchConst.*;
@@ -53,7 +52,7 @@ public class MessageSerializer {
 		buffer.putInt(batch.size());
 		int i = 0;
 		for (StoredMessage message : batch) {
-			buffer.putInt(messageBatchSizes.eventEnt[i]);
+			buffer.putInt(messageBatchSizes.entities[i]);
 			this.serialize(message, buffer);
 			i++;
 		}
@@ -84,26 +83,6 @@ public class MessageSerializer {
 				printString(entry.getKey(), buffer);
 				printString(entry.getValue(), buffer);
 			}
-		}
-	}
-
-	private MessageCommonParams getCommonParams(Collection<StoredMessage> batch) {
-		Iterator<StoredMessage> iterator = batch.iterator();
-		if (iterator.hasNext()) {
-			MessageCommonParams params = new MessageCommonParams();
-			StoredMessage message = iterator.next();
-
-			StoredMessageId messageId = message.getId();
-
-			if (messageId != null) {
-				params.setBookId(messageId.getBookId());
-				params.setDirection(messageId.getDirection());
-				params.setSessionAlias(messageId.getSessionAlias());
-			}
-
-			return params;
-		} else {
-			return new MessageCommonParams();
 		}
 	}
 }

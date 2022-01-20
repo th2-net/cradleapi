@@ -85,7 +85,7 @@ public class EventBatchSerializer {
 		buffer.putInt(batch.size());
 		int i = 0;
 		for (BatchedStoredTestEvent event : batch) {
-			buffer.putInt(eventBatchSizes.eventEnt[i]);
+			buffer.putInt(eventBatchSizes.entities[i]);
 			this.serializeEventRecord(event, buffer);
 			i++;
 		}

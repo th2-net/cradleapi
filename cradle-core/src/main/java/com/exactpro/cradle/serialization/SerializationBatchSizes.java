@@ -18,8 +18,8 @@ package com.exactpro.cradle.serialization;
 
 public class SerializationBatchSizes {
 	public int total = 0;
-	public int[] eventEnt;
+	public int[] entities;
 	SerializationBatchSizes(int size) {
-		this.eventEnt = new int[size];
+		this.entities = new int[size];
 	}
 }

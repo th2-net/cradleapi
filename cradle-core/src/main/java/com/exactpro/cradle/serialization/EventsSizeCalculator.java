@@ -75,8 +75,8 @@ public class EventsSizeCalculator {
 
 		int i  = 0;
 		for (BatchedStoredTestEvent storedMessage : events) {
-			sizes.eventEnt[i] = EventsSizeCalculator.calculateEventRecordSize(storedMessage);
-			sizes.total += ENTITY_LENGTH_IN_BATCH + sizes.eventEnt[i];
+			sizes.entities[i] = EventsSizeCalculator.calculateEventRecordSize(storedMessage);
+			sizes.total += ENTITY_LENGTH_IN_BATCH + sizes.entities[i];
 			i++;
 		}
 
