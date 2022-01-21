@@ -27,6 +27,7 @@ import java.util.concurrent.Executors;
 
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
+import com.exactpro.cradle.utils.BookPagesNamesChecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +50,7 @@ public abstract class CradleStorage
 	public static final long EMPTY_MESSAGE_INDEX = -1L;
 	public static final int DEFAULT_MAX_MESSAGE_BATCH_SIZE = 1024*1024,
 			DEFAULT_MAX_TEST_EVENT_BATCH_SIZE = DEFAULT_MAX_MESSAGE_BATCH_SIZE;
-	
+
 	private final Map<BookId, BookInfo> books;
 	protected final BookAndPageChecker bpc;
 	private volatile boolean initialized = false,
@@ -208,6 +209,9 @@ public abstract class CradleStorage
 	 */
 	public BookInfo addBook(BookToAdd book) throws CradleStorageException, IOException
 	{
+		BookPagesNamesChecker.validateBookName(book.getName());
+		BookPagesNamesChecker.validatePageName(book.getFirstPageName());
+
 		BookId id = new BookId(book.getName());
 		logger.info("Adding book '{}' to storage", id);
 		if (books.containsKey(id))
@@ -538,7 +542,7 @@ public abstract class CradleStorage
 	}
 	
 	/**
-	 * Allows to enumerate stored messages filtering them by given conditions
+	 * Allows enumerating stored messages filtering them by given conditions
 	 * @param filter defines conditions to filter messages by
 	 * @return result set to enumerate messages
 	 * @throws IOException if data retrieval failed
@@ -581,7 +585,7 @@ public abstract class CradleStorage
 	
 	
 	/**
-	 * Allows to enumerate stored message batches filtering them by given conditions
+	 * Allows enumerating stored message batches filtering them by given conditions
 	 * @param filter defines conditions to filter message batches by
 	 * @return result set to enumerate message batches
 	 * @throws IOException if data retrieval failed
@@ -817,6 +821,8 @@ public abstract class CradleStorage
 		List<PageInfo> result = new ArrayList<>(pages.size());
 		for (PageToAdd page : pages)
 		{
+			BookPagesNamesChecker.validatePageName(page.getName());
+
 			String name = page.getName();
 			if (names.contains(name))
 				throw new CradleStorageException("Duplicated page name: '"+page.getName()+"'");
@@ -888,4 +894,6 @@ public abstract class CradleStorage
 		
 		return true;
 	}
+
+
 }
