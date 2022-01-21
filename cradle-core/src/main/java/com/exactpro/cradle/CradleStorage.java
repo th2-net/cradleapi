@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
+import com.exactpro.cradle.utils.BookPagesNamesChecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,8 +52,6 @@ public abstract class CradleStorage
 	public static final int DEFAULT_MAX_MESSAGE_BATCH_SIZE = 1024*1024,
 			DEFAULT_MAX_TEST_EVENT_BATCH_SIZE = DEFAULT_MAX_MESSAGE_BATCH_SIZE;
 
-	private static final Pattern BOOK_PAGE_NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9][a-zA-Z0-9_]*$");
-	
 	private final Map<BookId, BookInfo> books;
 	protected final BookAndPageChecker bpc;
 	private volatile boolean initialized = false,
@@ -211,7 +210,8 @@ public abstract class CradleStorage
 	 */
 	public BookInfo addBook(BookToAdd book) throws CradleStorageException, IOException
 	{
-		checkBookToAdd(book);
+		BookPagesNamesChecker.checkBookName(book.getName());
+		BookPagesNamesChecker.checkPageName(book.getFirstPageName());
 
 		BookId id = new BookId(book.getName());
 		logger.info("Adding book '{}' to storage", id);
@@ -822,9 +822,7 @@ public abstract class CradleStorage
 		List<PageInfo> result = new ArrayList<>(pages.size());
 		for (PageToAdd page : pages)
 		{
-			if (page.getName() == null || !BOOK_PAGE_NAME_PATTERN.matcher(page.getName()).matches()) {
-				throw new CradleStorageException("Invalid page name. Alphanumeric characters and underscore are allowed.");
-			}
+			BookPagesNamesChecker.checkPageName(page.getName());
 
 			String name = page.getName();
 			if (names.contains(name))
@@ -898,12 +896,5 @@ public abstract class CradleStorage
 		return true;
 	}
 
-	protected void checkBookToAdd(BookToAdd book) throws CradleStorageException {
-		if (book.getName() == null || !BOOK_PAGE_NAME_PATTERN.matcher(book.getName()).matches()) {
-			throw new CradleStorageException("Invalid book name. Alphanumeric characters and underscore are allowed.");
-		}
-		if (book.getFirstPageName() == null || !BOOK_PAGE_NAME_PATTERN.matcher(book.getFirstPageName()).matches()) {
-			throw new CradleStorageException("Invalid first page name. Alphanumeric characters and underscore are allowed.");
-		}
-	}
+
 }

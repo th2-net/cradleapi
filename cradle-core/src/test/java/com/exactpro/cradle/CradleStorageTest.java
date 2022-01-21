@@ -114,41 +114,47 @@ public class CradleStorageTest
 		storage.addBook(new BookToAdd("book", Instant.now(), "page1"));
 		storage.addBook(new BookToAdd("book_2", Instant.now(), "page1"));
 		storage.addBook(new BookToAdd("BOOK3", Instant.now(), "page1"));
-		storage.addBook(new BookToAdd("4book", Instant.now(), "page1_"));
+		storage.addBook(new BookToAdd("4book", Instant.now(), "pag\u0020e1"));
 	}
 
-	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Invalid first page name.*")
+	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Invalid page name.*")
 	public void invalidFirstPageName() throws IOException, CradleStorageException
 	{
-		storage.addBook(new BookToAdd("book", Instant.now(), "_page1"));
+		storage.addBook(new BookToAdd("book", Instant.now(), "pag\u0001e1"));
 	}
 
-	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Invalid first page name.*")
+	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Invalid page name.*")
 	public void invalidFirstPageName2() throws IOException, CradleStorageException
 	{
-		storage.addBook(new BookToAdd("book", Instant.now(), "pag%%e1"));
+		storage.addBook(new BookToAdd("book", Instant.now(), "page\u007F"));
 	}
 
 	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Invalid page name.*")
 	public void invalidPageName() throws IOException, CradleStorageException
 	{
-		storage.addPage(BOOK_ID, "_page1", Instant.now(), "comment");
+		storage.addPage(BOOK_ID, "\u0000", Instant.now(), "comment");
 	}
 
 	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Invalid page name.*")
 	public void invalidPageName2() throws IOException, CradleStorageException
 	{
-		storage.addPage(BOOK_ID, "pa#ge1", Instant.now(), "comment");
+		storage.addPage(BOOK_ID, "pa\r\nge1", Instant.now(), "comment");
 	}
 
 	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Invalid page name.*")
 	public void invalidPageName3() throws IOException, CradleStorageException
 	{
-		storage.addPage(BOOK_ID, "pa ge1", Instant.now(), "comment");
+		storage.addPage(BOOK_ID, "page\u007F", Instant.now(), "comment");
 	}
 
 	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Invalid page name.*")
 	public void invalidPageName4() throws IOException, CradleStorageException
+	{
+		storage.addPage(BOOK_ID, "page\u0080", Instant.now(), "comment");
+	}
+
+	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Invalid page name.*")
+	public void invalidPageName5() throws IOException, CradleStorageException
 	{
 		storage.addPage(BOOK_ID, null, Instant.now(), "comment");
 	}
@@ -156,9 +162,10 @@ public class CradleStorageTest
 	@Test
 	public void validPageName() throws IOException, CradleStorageException
 	{
-		storage.addPage(BOOK_ID, "page", Instant.now(), "comment");
-		storage.addPage(BOOK_ID, "page2_", Instant.now(), "comment");
-		storage.addPage(BOOK_ID, "page_3", Instant.now(), "comment");
-		storage.addPage(BOOK_ID, "4page", Instant.now(), "comment");
+		storage.addPage(BOOK_ID, "pag-~e", Instant.now(), "comment");
+		storage.addPage(BOOK_ID, "pa`ge 2_", Instant.now(), "comment");
+		storage.addPage(BOOK_ID, "'page=_3", Instant.now(), "comment");
+		storage.addPage(BOOK_ID, "4\"pa++ge", Instant.now(), "comment");
+		storage.addPage(BOOK_ID, "pag%%e1", Instant.now(), "comment");
 	}
 }
