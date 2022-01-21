@@ -24,7 +24,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.regex.Pattern;
 
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
@@ -210,8 +209,8 @@ public abstract class CradleStorage
 	 */
 	public BookInfo addBook(BookToAdd book) throws CradleStorageException, IOException
 	{
-		BookPagesNamesChecker.checkBookName(book.getName());
-		BookPagesNamesChecker.checkPageName(book.getFirstPageName());
+		BookPagesNamesChecker.validateBookName(book.getName());
+		BookPagesNamesChecker.validatePageName(book.getFirstPageName());
 
 		BookId id = new BookId(book.getName());
 		logger.info("Adding book '{}' to storage", id);
@@ -822,7 +821,7 @@ public abstract class CradleStorage
 		List<PageInfo> result = new ArrayList<>(pages.size());
 		for (PageToAdd page : pages)
 		{
-			BookPagesNamesChecker.checkPageName(page.getName());
+			BookPagesNamesChecker.validatePageName(page.getName());
 
 			String name = page.getName();
 			if (names.contains(name))

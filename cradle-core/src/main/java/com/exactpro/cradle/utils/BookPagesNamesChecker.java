@@ -25,19 +25,19 @@ public class BookPagesNamesChecker {
     // from 0x20 - 0x7E ascii symbols. Contain all latin character, numbers and printed symbols
     private static final Pattern PAGE_NAME_PATTERN = Pattern.compile("^[\\x20-\\x7E]+$");
 
-    public static final String INVALID_BOOK_NAME_TEXT = "Invalid book name. Up to 48 alphanumeric characters and underscore are allowed.";
-    public static final String INVALID_PAGE_NAME_TEXT = "Invalid page name. ASCII printable characters (alphanumeric and symbols) are allowed.";
+    public static final String INVALID_BOOK_NAME_TEXT = "Invalid book name: %s. Up to 48 alphanumeric characters and underscore are allowed.";
+    public static final String INVALID_PAGE_NAME_TEXT = "Invalid page name: %s. ASCII printable characters (alphanumeric and symbols) are allowed.";
 
 
-    public static void checkBookName(String bookName) throws CradleStorageException {
+    public static void validateBookName(String bookName) throws CradleStorageException {
         if (bookName == null || !BOOK_NAME_PATTERN.matcher(bookName).matches()) {
-            throw new CradleStorageException(INVALID_BOOK_NAME_TEXT);
+            throw new CradleStorageException(String.format(INVALID_BOOK_NAME_TEXT, bookName));
         }
     }
 
-    public static void checkPageName(String pageName) throws CradleStorageException {
+    public static void validatePageName(String pageName) throws CradleStorageException {
         if (pageName == null || !PAGE_NAME_PATTERN.matcher(pageName).matches()) {
-            throw new CradleStorageException(INVALID_PAGE_NAME_TEXT);
+            throw new CradleStorageException(String.format(INVALID_PAGE_NAME_TEXT, pageName));
         }
     }
 
