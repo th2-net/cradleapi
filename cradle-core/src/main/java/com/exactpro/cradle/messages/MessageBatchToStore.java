@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,12 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
 
+import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import com.exactpro.cradle.utils.TimeUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.MessageUtils;
 
 /**
  * Holds information about batch of messages to be stored in Cradle.
@@ -68,8 +67,8 @@ public class MessageBatchToStore extends StoredMessageBatch
 	 */
 	public int getSpaceLeft()
 	{
-		int result = maxBatchSize-batchSize;
-		return result > 0 ? result : 0;
+		int result = maxBatchSize - batchSize;
+		return Math.max(result, 0);
 	}
 	
 	/**
@@ -79,8 +78,12 @@ public class MessageBatchToStore extends StoredMessageBatch
 	 */
 	public boolean hasSpace(MessageToStore message)
 	{
-		byte[] content = message.getContent();
-		return ArrayUtils.isEmpty(content) || batchSize+content.length <= maxBatchSize;
+		return hasSpace(MessagesSizeCalculator.calculateMessageSize(message));
+	}
+
+	private boolean hasSpace(int messageSize)
+	{
+		return batchSize + messageSize <= maxBatchSize;
 	}
 	
 
@@ -93,7 +96,8 @@ public class MessageBatchToStore extends StoredMessageBatch
 	 */
 	public StoredMessage addMessage(MessageToStore message) throws CradleStorageException
 	{
-		if (!hasSpace(message))
+		int expMsgSize = MessagesSizeCalculator.calculateMessageSizeInBatch(message);
+		if (!hasSpace(expMsgSize))
 			throw new CradleStorageException("Batch has not enough space to hold given message");
 		
 		// Checking that the timestamp of a message is not from the future
@@ -153,7 +157,7 @@ public class MessageBatchToStore extends StoredMessageBatch
 		StoredMessageId msgId = new StoredMessageId(message.getBookId(), message.getSessionAlias(), message.getDirection(), message.getTimestamp(), messageSeq);
 		StoredMessage msg = new StoredMessage(message, msgId, null);
 		messages.add(msg);
-		batchSize += msg.getContent().length;
+		batchSize += expMsgSize;
 
 		return msg;
 	}
@@ -161,7 +165,7 @@ public class MessageBatchToStore extends StoredMessageBatch
   /**
    *
    * @param batch the batch to add to the current one.
-   *              The batch to add must contains message with same stream name and direction as the current one.
+   *              The batch to add must contain message with same stream name and direction as the current one.
    *              The index of the first message in the [batch] should be greater
    *              than the last message index in the current batch.
    * @return true if the result batch meets the restriction for message count and batch size
@@ -181,7 +185,8 @@ public class MessageBatchToStore extends StoredMessageBatch
 		if (isFull() || batch.isFull()) {
 			return false;
 		}
-		int resultSize = batchSize + batch.getBatchSize();
+		int resultSize = batchSize + batch.messages.stream().mapToInt(MessagesSizeCalculator::calculateMessageSizeInBatch).sum();
+
 		if (resultSize > maxBatchSize) {
 			// cannot add because of size limit
 			return false;

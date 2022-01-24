@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,8 @@ public class MessageBatchEntityTest
 				.timestamp(Instant.now())
 				.sequence(1)
 				.content(createContent(40))
-				.build(), 100);
+				.metadata("key_test", "value_test")
+				.build(), 200);
 		StoredMessageBatch storedBatch = new StoredMessageBatch(batch.getMessages(), pageId);
 		
 		MessageBatchEntity entity = new MessageBatchEntity(batch, pageId, 2000);

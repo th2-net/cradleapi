@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -146,7 +146,7 @@ public class TestEventEntity extends CradleEntity
 		setEventBatch(event.isBatch());
 		setName(event.getName());
 		setType(event.getType());
-		setParentId(parentId != null ? parentId.toString() : "");  //Empty string for absent parentId allows to use index to get root events
+		setParentId(parentId != null ? parentId.toString() : "");  //Empty string for absent parentId allows using index to get root events
 		if (event.isBatch())
 			setEventCount(event.asBatch().getTestEventsCount());
 		setEndTimestamp(event.getEndTimestamp());
@@ -450,7 +450,7 @@ public class TestEventEntity extends CradleEntity
 	private StoredTestEventBatch toStoredTestEventBatch(PageId pageId, StoredTestEventId eventId, byte[] content) 
 			throws IOException, CradleStorageException, DataFormatException, CradleIdException
 	{
-		Collection<BatchedStoredTestEvent> children = TestEventUtils.deserializeTestEvents(content);
+		Collection<BatchedStoredTestEvent> children = TestEventUtils.deserializeTestEvents(content, eventId);
 		Map<StoredTestEventId, Set<StoredMessageId>> messages = restoreBatchMessages(pageId.getBookId());
 		return new StoredTestEventBatch(eventId, getName(), getType(), createParentId(),
 				children, messages, pageId, null);

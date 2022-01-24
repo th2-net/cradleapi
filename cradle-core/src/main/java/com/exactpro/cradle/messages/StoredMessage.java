@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,18 +39,22 @@ public class StoredMessage implements Serializable, CradleMessage
 	
 	public StoredMessage(CradleMessage message, StoredMessageId id, PageId pageId)
 	{
-		this.id = id;
-		this.content = message.getContent();
-		this.metadata = message.getMetadata() != null ? new StoredMessageMetadata(message.getMetadata()) : null;
-		this.pageId = pageId;
+		this(id, message.getContent(), message.getMetadata() != null
+				? new StoredMessageMetadata(message.getMetadata()) : null, pageId);
 	}
 	
 	public StoredMessage(StoredMessage copyFrom)
 	{
 		this(copyFrom, copyFrom.getId(), copyFrom.getPageId());
 	}
-	
-	
+
+	protected StoredMessage(StoredMessageId id, byte[] content, StoredMessageMetadata metadata, PageId pageId) {
+		this.id = id;
+		this.content = content;
+		this.metadata = metadata;
+		this.pageId = pageId;
+	}
+
 	/**
 	 * @return unique message ID as stored in Cradle.
 	 * Result of this method should be used for referencing stored messages to obtain them from Cradle
