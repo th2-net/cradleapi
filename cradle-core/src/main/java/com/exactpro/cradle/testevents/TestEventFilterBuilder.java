@@ -80,7 +80,7 @@ public class TestEventFilterBuilder extends AbstractFilterBuilder<TestEventFilte
 	}
 
 	@Override
-	protected TestEventFilter getFilterInstance() throws CradleStorageException
+	protected TestEventFilter createFilterInstance() throws CradleStorageException
 	{
 		return new TestEventFilter(getBookId(), scope, getPageId());
 	}

@@ -24,15 +24,20 @@ public class FetchParameters {
     {
     }
 
+    public FetchParameters(int fetchSize, long timeout)
+    {
+        this.fetchSize = fetchSize;
+        this.timeout = timeout;
+    }
+
     public int getFetchSize()
     {
         return fetchSize;
     }
 
-    public FetchParameters setFetchSize(int fetchSize)
+    public void setFetchSize(int fetchSize)
     {
         this.fetchSize = fetchSize;
-        return this;
     }
 
     public long getTimeout()
@@ -40,9 +45,8 @@ public class FetchParameters {
         return timeout;
     }
 
-    public FetchParameters setTimeout(long timeout)
+    public void setTimeout(long timeout)
     {
         this.timeout = timeout;
-        return this;
     }
 }

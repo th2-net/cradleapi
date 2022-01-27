@@ -138,7 +138,7 @@ public abstract class AbstractFilterBuilder<T extends AbstractFilterBuilder<T,R>
 
 	public R build() throws CradleStorageException
 	{
-		R instance = getFilterInstance();
+		R instance = createFilterInstance();
 		instance.setFetchParameters(fetchParameters);
 		instance.setFrom(timestampFrom);
 		instance.setTo(timestampTo);
@@ -148,5 +148,5 @@ public abstract class AbstractFilterBuilder<T extends AbstractFilterBuilder<T,R>
 		return instance;
 	}
 
-	abstract protected R getFilterInstance() throws CradleStorageException;
+	abstract protected R createFilterInstance() throws CradleStorageException;
 }

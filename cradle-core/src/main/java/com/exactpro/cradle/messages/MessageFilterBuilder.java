@@ -92,7 +92,7 @@ public class MessageFilterBuilder extends AbstractFilterBuilder<MessageFilterBui
 	}
 
 	@Override
-	protected MessageFilter getFilterInstance() throws CradleStorageException
+	protected MessageFilter createFilterInstance() throws CradleStorageException
 	{
 		return new MessageFilter(getBookId(), sessionAlias, direction, getPageId());
 	}
