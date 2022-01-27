@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,61 +18,33 @@ package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
 
-import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.Order;
-import com.exactpro.cradle.PageId;
-import com.exactpro.cradle.filters.FilterForGreater;
-import com.exactpro.cradle.filters.FilterForGreaterBuilder;
-import com.exactpro.cradle.filters.FilterForLess;
-import com.exactpro.cradle.filters.FilterForLessBuilder;
+import com.exactpro.cradle.filters.*;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
  * Builder of filter for test events.
  * Various combinations of filter conditions may have different performance because some operations are done on client side.
  */
-public class TestEventFilterBuilder
+public class TestEventFilterBuilder extends AbstractFilterBuilder<TestEventFilterBuilder, TestEventFilter>
 {
-	private BookId bookId;
 	private String scope;
-	private PageId pageId;
-	private FilterForGreater<Instant> startTimestampFrom;
-	private FilterForLess<Instant> startTimestampTo;
 	private StoredTestEventId parentId;
 	private boolean root;
-	private int limit;
-	private Order order = Order.DIRECT;
-	
-	public TestEventFilterBuilder bookId(BookId bookId)
-	{
-		this.bookId = bookId;
-		return this;
-	}
-	
+
 	public TestEventFilterBuilder scope(String scope)
 	{
 		this.scope = scope;
 		return this;
 	}
 	
-	public TestEventFilterBuilder pageId(PageId pageId)
-	{
-		this.pageId = pageId;
-		return this;
-	}
-	
 	public FilterForGreaterBuilder<Instant, TestEventFilterBuilder> startTimestampFrom()
 	{
-		FilterForGreater<Instant> f = new FilterForGreater<>();
-		startTimestampFrom = f;
-		return new FilterForGreaterBuilder<Instant, TestEventFilterBuilder>(f, this);
+		return super.timestampFrom();
 	}
 	
 	public FilterForLessBuilder<Instant, TestEventFilterBuilder> startTimestampTo()
 	{
-		FilterForLess<Instant> f = new FilterForLess<>();
-		startTimestampTo = f;
-		return new FilterForLessBuilder<Instant, TestEventFilterBuilder>(f, this);
+		return super.timestampTo();
 	}
 	
 	public TestEventFilterBuilder parent(StoredTestEventId parentId)
@@ -88,40 +60,17 @@ public class TestEventFilterBuilder
 		parentId = null;
 		return this;
 	}
-	
-	/**
-	 * Sets maximum number of test events to get after filtering
-	 * @param limit max number of test events to return
-	 * @return the same builder instance to continue building chain
-	 */
-	public TestEventFilterBuilder limit(int limit)
-	{
-		this.limit = limit;
-		return this;
-	}
 
-	public TestEventFilterBuilder order(Order order)
-	{
-		this.order = order;
-		return this;
-	}
-	
-	
+	@Override
 	public TestEventFilter build() throws CradleStorageException
 	{
 		try
 		{
-			TestEventFilter result = createStoredTestEventFilter();
-			result.setStartTimestampFrom(startTimestampFrom);
-			result.setStartTimestampTo(startTimestampTo);
-			
+			TestEventFilter result = super.build();
 			if (root)
 				result.setRoot();
 			else
 				result.setParentId(parentId);
-			
-			result.setLimit(limit);
-			result.setOrder(order);
 			return result;
 		}
 		finally
@@ -129,23 +78,18 @@ public class TestEventFilterBuilder
 			reset();
 		}
 	}
-	
-	
-	protected TestEventFilter createStoredTestEventFilter() throws CradleStorageException
+
+	@Override
+	protected TestEventFilter getFilterInstance() throws CradleStorageException
 	{
-		return new TestEventFilter(bookId, scope, pageId);
+		return new TestEventFilter(getBookId(), scope, getPageId());
 	}
-	
+
 	protected void reset()
 	{
-		bookId = null;
+		super.reset();
 		scope = null;
-		pageId = null;
-		startTimestampFrom = null;
-		startTimestampTo = null;
 		parentId = null;
 		root = false;
-		limit = 0;
-		order = Order.DIRECT;
 	}
 }

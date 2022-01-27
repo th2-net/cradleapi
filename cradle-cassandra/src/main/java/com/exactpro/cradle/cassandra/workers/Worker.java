@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,14 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookAndPageChecker;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.BookInfo;
+import com.exactpro.cradle.FetchParameters;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.dao.CradleOperators;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.utils.CradleStorageException;
 
+import java.time.Duration;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
@@ -66,5 +68,16 @@ public abstract class Worker
 	protected BookInfo getBook(BookId bookId) throws CradleStorageException
 	{
 		return bpc.getBook(bookId);
+	}
+
+	protected Function<BoundStatementBuilder, BoundStatementBuilder> composeReadAttrs(FetchParameters fetchParams)
+	{
+		if (fetchParams == null)
+			return readAttrs;
+
+		int fetchSize = fetchParams.getFetchSize();
+		long timeout = fetchParams.getTimeout();
+		return readAttrs.andThen(builder -> fetchSize > 0 ? builder.setPageSize(fetchSize) : builder)
+				.andThen(builder -> timeout > 0 ? builder.setTimeout(Duration.ofMillis(timeout)) : builder);
 	}
 }

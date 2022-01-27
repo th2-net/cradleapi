@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,22 +20,15 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
 
-import com.exactpro.cradle.BookAndPageChecker;
-import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
-import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.BookOperators;
-import com.exactpro.cradle.cassandra.dao.CradleOperators;
 import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
 import com.exactpro.cradle.cassandra.dao.testevents.PageScopeEntity;
@@ -124,7 +117,8 @@ public class EventsWorker extends Worker
 	public CompletableFuture<CradleResultSet<StoredTestEvent>> getTestEvents(TestEventFilter filter, BookInfo book)
 	{
 		TestEventIteratorProvider provider = new TestEventIteratorProvider("get test events filtered by "+filter, 
-				filter, getBookOps(filter.getBookId()), book, composingService, selectQueryExecutor, readAttrs);
+				filter, getBookOps(filter.getBookId()), book, composingService, selectQueryExecutor,
+				composeReadAttrs(filter.getFetchParameters()));
 		return provider.nextIterator()
 				.thenApply(r -> new CassandraCradleResultSet<>(r, provider));
 	}
