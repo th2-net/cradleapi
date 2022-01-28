@@ -170,7 +170,7 @@ public class StoredMessageBatch
 				if (messageIndex <= lastMsg.getIndex())
 					throw new CradleStorageException("Message index should be greater than "+lastMsg.getIndex()+" for the batch to contain sequenced messages, but in your message it is "+messageIndex);
 				if (messageIndex != lastMsg.getIndex()+1)
-					logger.warn("Message index should be "+(lastMsg.getIndex()+1)+" for the batch to contain strictly sequenced messages, but in your message it is "+messageIndex);
+					logger.debug("Message index should be "+(lastMsg.getIndex()+1)+" for the batch to contain strictly sequenced messages, but in your message it is "+messageIndex);
 			}
 			else
 				messageIndex = lastMsg.getIndex()+1;
