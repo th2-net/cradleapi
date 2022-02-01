@@ -32,8 +32,8 @@ import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.BookToAdd;
 import com.exactpro.cradle.PageInfo;
-import com.exactpro.cradle.cassandra.CassandraBookToAdd;
 import com.exactpro.cradle.utils.CradleStorageException;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Contains information about book as stored in "cradle" keyspace
@@ -41,6 +41,8 @@ import com.exactpro.cradle.utils.CradleStorageException;
 @Entity
 public class BookEntity
 {
+	public static final String BOOK_NAME_PREFIX = "book_";
+
 	@PartitionKey(0)
 	@CqlName(NAME)
 	private String name;
@@ -65,7 +67,7 @@ public class BookEntity
 	{
 		name = book.getName();
 		fullName = book.getFullName();
-		keyspaceName = book instanceof CassandraBookToAdd ? ((CassandraBookToAdd)book).getKeyspace() : toKeyspaceName(name);
+		keyspaceName = toKeyspaceName(name);
 		desc = book.getDesc();
 		created = book.getCreated();
 	}
@@ -134,6 +136,8 @@ public class BookEntity
 	
 	private String toKeyspaceName(String name)
 	{
-		return name.toLowerCase().replaceAll("[ \t]", "_");
+		return StringUtils.wrap(StringUtils.prependIfMissingIgnoreCase(
+				StringUtils.unwrap(name, '\"')
+				.toLowerCase().replaceAll("[ \t]", "_"), BOOK_NAME_PREFIX), '\"');
 	}
 }

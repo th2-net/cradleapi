@@ -51,12 +51,6 @@ public class CradleStorageBookPageNamingTest {
     }
 
     @Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Invalid book name.*")
-    public void invalidBookName3() throws IOException, CradleStorageException
-    {
-        storage.addBook(new BookToAdd("_book", Instant.now(), "page1"));
-    }
-
-    @Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Invalid book name.*")
     public void invalidBookName4() throws IOException, CradleStorageException
     {
         storage.addBook(new BookToAdd("bo ok", Instant.now(), "page1"));
@@ -65,6 +59,8 @@ public class CradleStorageBookPageNamingTest {
     @Test
     public void validBookName() throws IOException, CradleStorageException
     {
+        storage.addBook(new BookToAdd("_", Instant.now(), "page1"));
+        storage.addBook(new BookToAdd("4", Instant.now(), "page1"));
         storage.addBook(new BookToAdd("book", Instant.now(), "page1"));
         storage.addBook(new BookToAdd("book_2", Instant.now(), "page1"));
         storage.addBook(new BookToAdd("BOOK3", Instant.now(), "page1"));

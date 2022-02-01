@@ -24,21 +24,39 @@ import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
+import com.exactpro.cradle.utils.CradleStorageException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 {
+	private static final Logger logger = LoggerFactory.getLogger(CradleInfoKeyspaceCreator.class);
+	
 	public CradleInfoKeyspaceCreator(QueryExecutor exec, CassandraStorageSettings settings)
 	{
 		super(settings.getCradleInfoKeyspace(), exec, settings);
 	}
-	
+
 	@Override
 	protected void createTables() throws IOException
 	{
 		createBooks();
 	}
-	
-	
+
+	@Override
+	public void createAll() throws IOException, CradleStorageException
+	{
+		try
+		{
+			createKeyspace();
+			createTables();
+		}
+		catch (CradleStorageException e)
+		{
+			logger.info("Existing \"Cradle Info\" keyspace '{}' is in use", getKeyspace());
+		}
+	}
+
 	private void createBooks() throws IOException
 	{
 		String tableName = getSettings().getBooksTable();

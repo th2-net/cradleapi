@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 
 public class BookPagesNamesChecker {
 
-    private static final Pattern BOOK_NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9][a-zA-Z0-9_]{0,47}$");
+    public static final Pattern BOOK_NAME_PATTERN = Pattern.compile("[a-zA-Z0-9_]{1,47}$");
     // from 0x20 - 0x7E ascii symbols. Contain all latin character, numbers and printed symbols
     private static final Pattern PAGE_NAME_PATTERN = Pattern.compile("^[\\x20-\\x7E]+$");
 

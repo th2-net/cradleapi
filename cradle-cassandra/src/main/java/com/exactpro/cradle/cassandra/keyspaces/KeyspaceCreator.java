@@ -17,10 +17,10 @@
 package com.exactpro.cradle.cassandra.keyspaces;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +36,7 @@ import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 public abstract class KeyspaceCreator
 {
 	private static final Logger logger = LoggerFactory.getLogger(KeyspaceCreator.class);
-	
+
 	private final String keyspace;
 	private final QueryExecutor queryExecutor;
 	private final CassandraStorageSettings settings;
@@ -54,7 +54,7 @@ public abstract class KeyspaceCreator
 	protected abstract void createTables() throws IOException;
 	
 	
-	public void createAll() throws IOException
+	public void createAll() throws IOException, CradleStorageException
 	{
 		createKeyspace();
 		createTables();
@@ -77,24 +77,19 @@ public abstract class KeyspaceCreator
 	}
 	
 	
-	public void createKeyspace() throws IOException
+	public void createKeyspace() throws IOException, CradleStorageException
 	{
 		Optional<KeyspaceMetadata> meta = obtainKeyspaceMetadata();
-		if (!meta.isPresent())
-		{
-			logger.info("Creating keyspace '{}'", keyspace);
-			CreateKeyspace createKs = settings.getNetworkTopologyStrategy() != null 
-					? SchemaBuilder.createKeyspace(keyspace).withNetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap()) 
-					: SchemaBuilder.createKeyspace(keyspace).withSimpleStrategy(settings.getKeyspaceReplicationFactor());
-			queryExecutor.executeQuery(createKs.asCql(), true);
-			logger.info("Keyspace '{}' has been created", keyspace);
-			this.keyspaceMetadata = obtainKeyspaceMetadata().get();  //FIXME: keyspace creation may take time and it won't be available immediately
-		}
-		else
-		{
-			logger.info("Keyspace '{}' already exists", keyspace);
-			this.keyspaceMetadata = meta.get();
-		}
+		if (meta.isPresent())
+			throw new CradleStorageException("Keyspace '" + keyspace + "' already exists");
+
+		logger.info("Creating keyspace '{}'", keyspace);
+		CreateKeyspace createKs = settings.getNetworkTopologyStrategy() != null
+				? SchemaBuilder.createKeyspace(keyspace).withNetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap())
+				: SchemaBuilder.createKeyspace(keyspace).withSimpleStrategy(settings.getKeyspaceReplicationFactor());
+		queryExecutor.executeQuery(createKs.asCql(), true);
+		logger.info("Keyspace '{}' has been created", keyspace);
+		this.keyspaceMetadata = obtainKeyspaceMetadata().get();  //FIXME: keyspace creation may take time and it won't be available immediately
 	}
 	
 	protected boolean isTableExists(String tableName)
