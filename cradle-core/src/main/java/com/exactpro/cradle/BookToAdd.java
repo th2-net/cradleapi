@@ -16,6 +16,8 @@
 
 package com.exactpro.cradle;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.time.Instant;
 
 public class BookToAdd
@@ -29,7 +31,7 @@ public class BookToAdd
 	
 	public BookToAdd(String name, Instant created, String firstPageName)
 	{
-		this.name = name;
+		this.name = StringUtils.lowerCase(name);
 		this.created = created;
 		this.firstPageName = firstPageName;
 	}
