@@ -62,15 +62,15 @@ public class TimeMessageEntity
 	@CqlName(DIRECTION)
 	private String direction;
 	
-	@PartitionKey(3)
+	@ClusteringColumn(0)
 	@CqlName(MESSAGE_DATE)
 	private LocalDate messageDate;
 	
-	@ClusteringColumn(0)
+	@ClusteringColumn(1)
 	@CqlName(MESSAGE_TIME)
 	private LocalTime messageTime;
 	
-	@ClusteringColumn(1)
+	@ClusteringColumn(2)
 	@CqlName(MESSAGE_INDEX)
 	private long messageIndex;
 	
