@@ -157,7 +157,7 @@ public class MessageBatchQueryProvider
 		if (!isLeftIndexSelected && filter.getTimestampFrom() != null)
 			select = FilterUtils.filterToWhere(ComparisonOperation.GREATER_OR_EQUALS, select.whereColumn(MESSAGE_INDEX),
 					LEFT_MESSAGE_INDEX);
-		
+
 		if (!isRightIndexSelected && filter.getTimestampTo() != null)
 			select = FilterUtils.filterToWhere(ComparisonOperation.LESS_OR_EQUALS, select.whereColumn(MESSAGE_INDEX),
 					RIGHT_MESSAGE_INDEX);
@@ -268,10 +268,8 @@ public class MessageBatchQueryProvider
 				long fromIndex = getNearestMessageIndexBefore(tmOperator, instanceId,
 						filter.getStreamName().getValue(), directionFilter.getValue(), ts, attributes);
 				
-				if (fromIndex == Long.MIN_VALUE)
-					fromIndex = getNearestMessageIndexAfter(tmOperator, instanceId,
-							filter.getStreamName().getValue(), directionFilter.getValue(), ts, attributes);
-				else
+				if (fromIndex != Long.MIN_VALUE)
+					// Find batch index by nearest message index before
 					fromIndex = getMessageBatchIndex(operator, instanceId, filter.getStreamName().getValue(),
 							directionFilter.getValue(), fromIndex, attributes);
 				
