@@ -174,6 +174,10 @@ public class StoredMessageBatch
 			}
 			else
 				messageIndex = lastMsg.getIndex()+1;
+			if (lastMsg.getTimestamp().isAfter(message.getTimestamp()))
+				throw new CradleStorageException(
+						"Message timestamp should be greater than last message timestamp in batch '" + lastMsg.getTimestamp()
+								+ "' but in your message it is '" + message.getTimestamp() + "'");
 		}
 		
 		StoredMessage msg = new StoredMessage(message, new StoredMessageId(message.getStreamName(), message.getDirection(), messageIndex));
