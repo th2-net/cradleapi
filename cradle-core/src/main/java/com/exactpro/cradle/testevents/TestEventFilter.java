@@ -121,23 +121,26 @@ public class TestEventFilter extends AbstractFilter
 	@Override
 	public String toString()
 	{
-		StringBuilder sb = new StringBuilder();;
+		StringBuilder sb = new StringBuilder();
 		if (getBookId() != null)
-			sb.append("bookId=").append(getBookId()).append(", ");
+			sb.append("bookId=").append(getBookId()).append(TO_STRING_DELIMITER);
 		if (scope != null)
-			sb.append("scope=").append(scope).append(", ");
+			sb.append("scope=").append(scope).append(TO_STRING_DELIMITER);
 		if (getFrom() != null)
-			sb.append("timestamp").append(getFrom()).append(", ");
+			sb.append("timestamp").append(getFrom()).append(TO_STRING_DELIMITER);
 		if (getTo() != null)
-			sb.append("timestamp").append(getTo()).append(", ");
+			sb.append("timestamp").append(getTo()).append(TO_STRING_DELIMITER);
 		if (parentId != null)
-			sb.append("parentId=").append(parentId).append(", ");
+			sb.append("parentId=").append(parentId).append(TO_STRING_DELIMITER);
 		if (getLimit() > 0)
-			sb.append("limit=").append(getLimit()).append(", ");
+			sb.append("limit=").append(getLimit()).append(TO_STRING_DELIMITER);
 		if (getOrder() != null)
-			sb.append("order=").append(getOrder()).append(", ");
+			sb.append("order=").append(getOrder()).append(TO_STRING_DELIMITER);
 		if (getPageId() != null)
-			sb.append("pageId=").append(getPageId().getName());
+			sb.append("pageId=").append(getPageId().getName()).append(TO_STRING_DELIMITER);
+		int last = sb.lastIndexOf(TO_STRING_DELIMITER);
+		if (last > -1)
+			sb.delete(last, last + TO_STRING_DELIMITER.length());
 		return sb.toString();
 	}
 	

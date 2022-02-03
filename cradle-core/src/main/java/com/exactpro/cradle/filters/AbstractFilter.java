@@ -26,6 +26,8 @@ import java.time.Instant;
 
 public abstract class AbstractFilter
 {
+	protected static final String TO_STRING_DELIMITER = ", ";
+
 	private final BookId bookId;
 	private final PageId pageId;
 	private FetchParameters fetchParameters;

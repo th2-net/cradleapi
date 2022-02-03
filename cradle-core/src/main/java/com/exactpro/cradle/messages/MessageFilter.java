@@ -116,23 +116,26 @@ public class MessageFilter extends AbstractFilter
 	{
 		StringBuilder sb = new StringBuilder();
 		if (getBookId() != null)
-			sb.append("bookId=").append(getBookId()).append(", ");
+			sb.append("bookId=").append(getBookId()).append(TO_STRING_DELIMITER);
 		if (sessionAlias != null)
-			sb.append("sessionAlias=").append(sessionAlias).append(", ");
+			sb.append("sessionAlias=").append(sessionAlias).append(TO_STRING_DELIMITER);
 		if (direction != null)
-			sb.append("direction=").append(direction).append(", ");
+			sb.append("direction=").append(direction).append(TO_STRING_DELIMITER);
 		if (getFrom() != null)
-			sb.append("timestamp").append(getFrom()).append(", ");
+			sb.append("timestamp").append(getFrom()).append(TO_STRING_DELIMITER);
 		if (getTo() != null)
-			sb.append("timestamp").append(getTo()).append(", ");
+			sb.append("timestamp").append(getTo()).append(TO_STRING_DELIMITER);
 		if (sequence != null)
-			sb.append("sequence").append(sequence).append(", ");
+			sb.append("sequence").append(sequence).append(TO_STRING_DELIMITER);
 		if (getLimit() > 0)
-			sb.append("limit=").append(getLimit()).append(", ");
+			sb.append("limit=").append(getLimit()).append(TO_STRING_DELIMITER);
 		if (getOrder() != null)
-			sb.append("order=").append(getOrder()).append(", ");
+			sb.append("order=").append(getOrder()).append(TO_STRING_DELIMITER);
 		if (getPageId() != null)
-			sb.append("pageId=").append(getPageId().getName());
+			sb.append("pageId=").append(getPageId().getName()).append(TO_STRING_DELIMITER);
+		int last = sb.lastIndexOf(TO_STRING_DELIMITER);
+		if (last > -1)
+			sb.delete(last, last + TO_STRING_DELIMITER.length());
 		return sb.toString();
 	}
 	
