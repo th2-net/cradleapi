@@ -133,9 +133,8 @@ public class MessageFilter extends AbstractFilter
 			sb.append("order=").append(getOrder()).append(TO_STRING_DELIMITER);
 		if (getPageId() != null)
 			sb.append("pageId=").append(getPageId().getName()).append(TO_STRING_DELIMITER);
-		int last = sb.lastIndexOf(TO_STRING_DELIMITER);
-		if (last > -1)
-			sb.delete(last, last + TO_STRING_DELIMITER.length());
+		if (sb.length() > 0)
+			sb.setLength(sb.length() - TO_STRING_DELIMITER.length());
 		return sb.toString();
 	}
 	
