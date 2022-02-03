@@ -121,24 +121,24 @@ public class TestEventFilter extends AbstractFilter
 	@Override
 	public String toString()
 	{
-		List<String> result = new ArrayList<>(10);
+		StringBuilder sb = new StringBuilder();;
 		if (getBookId() != null)
-			result.add("book=" + getBookId());
+			sb.append("bookId=").append(getBookId()).append(", ");
 		if (scope != null)
-			result.add("scope=" + scope);
+			sb.append("scope=").append(scope).append(", ");
 		if (getFrom() != null)
-			result.add("timestamp" + getFrom());
+			sb.append("timestamp").append(getFrom()).append(", ");
 		if (getTo() != null)
-			result.add("timestamp" + getTo());
+			sb.append("timestamp").append(getTo()).append(", ");
 		if (parentId != null)
-			result.add("parent ID=" + parentId);
+			sb.append("parentId=").append(parentId).append(", ");
 		if (getLimit() > 0)
-			result.add("limit=" + getLimit());
+			sb.append("limit=").append(getLimit()).append(", ");
 		if (getOrder() != null)
-			result.add("order=" + getOrder());
+			sb.append("order=").append(getOrder()).append(", ");
 		if (getPageId() != null)
-			result.add("page=" + getPageId());
-		return String.join(", ", result);
+			sb.append("pageId=").append(getPageId().getName());
+		return sb.toString();
 	}
 	
 	
