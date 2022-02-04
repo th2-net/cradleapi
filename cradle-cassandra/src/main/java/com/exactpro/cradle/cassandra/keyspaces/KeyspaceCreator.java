@@ -94,7 +94,7 @@ public abstract class KeyspaceCreator
 		awaitKeyspaceReady();
 	}
 
-	private void awaitKeyspaceReady() throws IOException
+	private void awaitKeyspaceReady() throws CradleStorageException
 	{
 		int timeout = 500;
 		int attempt = 0;
@@ -106,12 +106,12 @@ public abstract class KeyspaceCreator
 			}
 			catch (InterruptedException e)
 			{
-				throw new IOException("Awaiting of keyspace ready '"+keyspace+"' has been interrupted");
+				throw new CradleStorageException("Waiting for keyspace '"+keyspace+"' readiness has been interrupted", e);
 			}
 		}
 
 		if (getKeyspaceMetadata() == null)
-			throw new IOException(
+			throw new CradleStorageException(
 					"Keyspace '" + keyspace + "' unavailable after " + attempt * timeout + "ms of awaiting");
 	}
 

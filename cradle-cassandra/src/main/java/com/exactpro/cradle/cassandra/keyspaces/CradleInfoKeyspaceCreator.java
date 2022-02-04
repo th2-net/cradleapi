@@ -48,7 +48,7 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 	{
 		if (getKeyspaceMetadata() != null)
 		{
-			logger.info("Existing \"Cradle Info\" keyspace '{}' is in use", getKeyspace());
+			logger.info("\"Cradle Info\" keyspace '{}' already exists", getKeyspace());
 			return;
 		}
 		super.createAll();
