@@ -17,11 +17,10 @@
 package com.exactpro.cradle.cassandra.keyspaces;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 
+import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +54,7 @@ public abstract class KeyspaceCreator
 	protected abstract void createTables() throws IOException;
 	
 	
-	public void createAll() throws IOException
+	public void createAll() throws IOException, CradleStorageException
 	{
 		createKeyspace();
 		createTables();
@@ -78,11 +77,11 @@ public abstract class KeyspaceCreator
 	}
 	
 	
-	public void createKeyspace() throws IOException
+	public void createKeyspace() throws IOException, CradleStorageException
 	{
 		Optional<KeyspaceMetadata> meta = obtainKeyspaceMetadata();
 		if (meta.isPresent())
-			throw new IOException("Keyspace '" + keyspace + "' already exists");
+			throw new CradleStorageException("Keyspace '" + keyspace + "' already exists");
 
 		logger.info("Creating keyspace '{}'", keyspace);
 		CreateKeyspace createKs = settings.getNetworkTopologyStrategy() != null
