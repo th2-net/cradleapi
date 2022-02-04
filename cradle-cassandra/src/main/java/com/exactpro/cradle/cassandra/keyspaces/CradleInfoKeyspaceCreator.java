@@ -46,15 +46,12 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 	@Override
 	public void createAll() throws IOException, CradleStorageException
 	{
-		try
-		{
-			createKeyspace();
-			createTables();
-		}
-		catch (CradleStorageException e)
+		if (getKeyspaceMetadata() != null)
 		{
 			logger.info("Existing \"Cradle Info\" keyspace '{}' is in use", getKeyspace());
+			return;
 		}
+		super.createAll();
 	}
 
 	private void createBooks() throws IOException

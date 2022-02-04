@@ -18,6 +18,7 @@ package com.exactpro.cradle.cassandra.keyspaces;
 
 import java.io.IOException;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -89,9 +90,31 @@ public abstract class KeyspaceCreator
 				: SchemaBuilder.createKeyspace(keyspace).withSimpleStrategy(settings.getKeyspaceReplicationFactor());
 		queryExecutor.executeQuery(createKs.asCql(), true);
 		logger.info("Keyspace '{}' has been created", keyspace);
-		this.keyspaceMetadata = obtainKeyspaceMetadata().get();  //FIXME: keyspace creation may take time and it won't be available immediately
+
+		awaitKeyspaceReady();
 	}
-	
+
+	private void awaitKeyspaceReady() throws IOException
+	{
+		int timeout = 500;
+		int attempt = 0;
+		for (;getKeyspaceMetadata() == null && attempt < 5; attempt++)
+		{
+			try
+			{
+				TimeUnit.MILLISECONDS.sleep(timeout);
+			}
+			catch (InterruptedException e)
+			{
+				throw new IOException("Awaiting of keyspace ready '"+keyspace+"' has been interrupted");
+			}
+		}
+
+		if (getKeyspaceMetadata() == null)
+			throw new IOException(
+					"Keyspace '" + keyspace + "' unavailable after " + attempt * timeout + "ms of awaiting");
+	}
+
 	protected boolean isTableExists(String tableName)
 	{
 		return keyspaceMetadata.getTable(tableName).isPresent();
@@ -108,9 +131,7 @@ public abstract class KeyspaceCreator
 		if (keyspaceMetadata != null)
 			return keyspaceMetadata;
 		
-		Optional<KeyspaceMetadata> metadata = obtainKeyspaceMetadata();
-		if (metadata.isPresent())
-			keyspaceMetadata = metadata.get();
+		obtainKeyspaceMetadata().ifPresent(value -> keyspaceMetadata = value);
 		return keyspaceMetadata;
 	}
 	
