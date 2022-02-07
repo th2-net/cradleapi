@@ -120,8 +120,6 @@ public abstract class KeyspaceCreator
 			throw new CradleStorageException(
 					"Keyspace '" + keyspace + "' unavailable after " + attempt * keyspaceWaitTimeout +
 							"ms of awaiting");
-		
-		logger.debug("Keyspace '{}' was ready in {}ms after creation", keyspace, attempt * keyspaceWaitTimeout);
 	}
 	
 	protected boolean isTableExists(String tableName)
