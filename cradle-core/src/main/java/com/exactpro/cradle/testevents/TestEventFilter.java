@@ -121,7 +121,7 @@ public class TestEventFilter extends AbstractFilter
 	@Override
 	public String toString()
 	{
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder("[");
 		if (getBookId() != null)
 			sb.append("bookId=").append(getBookId()).append(TO_STRING_DELIMITER);
 		if (scope != null)
@@ -140,7 +140,7 @@ public class TestEventFilter extends AbstractFilter
 			sb.append("pageId=").append(getPageId().getName()).append(TO_STRING_DELIMITER);
 		if (sb.length() > 0)
 			sb.setLength(sb.length() - TO_STRING_DELIMITER.length());
-		return sb.toString();
+		return sb.append("]").toString();
 	}
 	
 	
