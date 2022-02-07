@@ -82,7 +82,6 @@ public class DetailedMessageBatchEntity extends MessageBatchEntity
 		this.setLastMessageIndex(batch.getLastMessage().getIndex());
 	}
 
-	// Parameter messageBatch must be created by CradleObjectFactory to have the correct batchSize
 	public StoredMessageBatch toStoredMessageBatch() throws IOException, CradleStorageException
 	{
 		MessageBatchRead messageBatch = new MessageBatchRead();
