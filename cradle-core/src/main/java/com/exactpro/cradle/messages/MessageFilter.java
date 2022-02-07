@@ -133,7 +133,7 @@ public class MessageFilter extends AbstractFilter
 			sb.append("order=").append(getOrder()).append(TO_STRING_DELIMITER);
 		if (getPageId() != null)
 			sb.append("pageId=").append(getPageId().getName()).append(TO_STRING_DELIMITER);
-		if (sb.length() > 0)
+		if (sb.length() > 1) //Not only first bracket
 			sb.setLength(sb.length() - TO_STRING_DELIMITER.length());
 		return sb.append("]").toString();
 	}
