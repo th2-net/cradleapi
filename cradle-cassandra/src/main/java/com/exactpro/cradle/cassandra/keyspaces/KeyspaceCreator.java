@@ -17,10 +17,11 @@
 package com.exactpro.cradle.cassandra.keyspaces;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,9 +38,13 @@ public abstract class KeyspaceCreator
 {
 	private static final Logger logger = LoggerFactory.getLogger(KeyspaceCreator.class);
 	
+	public static final int ATTEMPTS_KEYSPACE_WAITING = 5;
+	public static final long MINIMAL_KEYSPACE_WAIT_TIMEOUT = 500;
+	
 	private final String keyspace;
 	private final QueryExecutor queryExecutor;
 	private final CassandraStorageSettings settings;
+	private final long keyspaceWaitTimeout;
 	
 	private KeyspaceMetadata keyspaceMetadata;
 	
@@ -48,13 +53,13 @@ public abstract class KeyspaceCreator
 		this.keyspace = keyspace;
 		this.queryExecutor = queryExecutor;
 		this.settings = settings;
+		this.keyspaceWaitTimeout = Math.max(MINIMAL_KEYSPACE_WAIT_TIMEOUT, settings.getTimeout() / ATTEMPTS_KEYSPACE_WAITING);
 	}
-	
 	
 	protected abstract void createTables() throws IOException;
 	
 	
-	public void createAll() throws IOException
+	public void createAll() throws IOException, CradleStorageException
 	{
 		createKeyspace();
 		createTables();
@@ -77,24 +82,44 @@ public abstract class KeyspaceCreator
 	}
 	
 	
-	public void createKeyspace() throws IOException
+	public void createKeyspace() throws IOException, CradleStorageException
 	{
 		Optional<KeyspaceMetadata> meta = obtainKeyspaceMetadata();
-		if (!meta.isPresent())
+		if (meta.isPresent())
+			throw new CradleStorageException("Keyspace '" + keyspace + "' already exists");
+		
+		logger.info("Creating keyspace '{}'", keyspace);
+		CreateKeyspace createKs = settings.getNetworkTopologyStrategy() != null
+				? SchemaBuilder.createKeyspace(keyspace)
+				.withNetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap())
+				: SchemaBuilder.createKeyspace(keyspace).withSimpleStrategy(settings.getKeyspaceReplicationFactor());
+		queryExecutor.executeQuery(createKs.asCql(), true);
+		logger.info("Keyspace '{}' has been created", keyspace);
+		
+		awaitKeyspaceReady();
+	}
+	
+	private void awaitKeyspaceReady() throws CradleStorageException
+	{
+		int attempt = 0;
+		for (; getKeyspaceMetadata() == null && attempt < ATTEMPTS_KEYSPACE_WAITING; attempt++)
 		{
-			logger.info("Creating keyspace '{}'", keyspace);
-			CreateKeyspace createKs = settings.getNetworkTopologyStrategy() != null 
-					? SchemaBuilder.createKeyspace(keyspace).withNetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap()) 
-					: SchemaBuilder.createKeyspace(keyspace).withSimpleStrategy(settings.getKeyspaceReplicationFactor());
-			queryExecutor.executeQuery(createKs.asCql(), true);
-			logger.info("Keyspace '{}' has been created", keyspace);
-			this.keyspaceMetadata = obtainKeyspaceMetadata().get();  //FIXME: keyspace creation may take time and it won't be available immediately
+			logger.debug("[{}] attempt to wait {}ms for the readiness of the keyspace", attempt + 1, keyspaceWaitTimeout);
+			try
+			{
+				TimeUnit.MILLISECONDS.sleep(keyspaceWaitTimeout);
+			}
+			catch (InterruptedException e)
+			{
+				throw new CradleStorageException(
+						"Waiting for keyspace '" + keyspace + "' readiness has been interrupted", e);
+			}
 		}
-		else
-		{
-			logger.info("Keyspace '{}' already exists", keyspace);
-			this.keyspaceMetadata = meta.get();
-		}
+		
+		if (getKeyspaceMetadata() == null)
+			throw new CradleStorageException(
+					"Keyspace '" + keyspace + "' unavailable after " + attempt * keyspaceWaitTimeout +
+							"ms of awaiting");
 	}
 	
 	protected boolean isTableExists(String tableName)
@@ -113,9 +138,7 @@ public abstract class KeyspaceCreator
 		if (keyspaceMetadata != null)
 			return keyspaceMetadata;
 		
-		Optional<KeyspaceMetadata> metadata = obtainKeyspaceMetadata();
-		if (metadata.isPresent())
-			keyspaceMetadata = metadata.get();
+		obtainKeyspaceMetadata().ifPresent(value -> keyspaceMetadata = value);
 		return keyspaceMetadata;
 	}
 	

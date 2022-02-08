@@ -32,8 +32,8 @@ import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.BookToAdd;
 import com.exactpro.cradle.PageInfo;
-import com.exactpro.cradle.cassandra.CassandraBookToAdd;
 import com.exactpro.cradle.utils.CradleStorageException;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Contains information about book as stored in "cradle" keyspace
@@ -41,6 +41,8 @@ import com.exactpro.cradle.utils.CradleStorageException;
 @Entity
 public class BookEntity
 {
+	public static final String BOOK_NAME_PREFIX = "book_";
+
 	@PartitionKey(0)
 	@CqlName(NAME)
 	private String name;
@@ -65,7 +67,7 @@ public class BookEntity
 	{
 		name = book.getName();
 		fullName = book.getFullName();
-		keyspaceName = book instanceof CassandraBookToAdd ? ((CassandraBookToAdd)book).getKeyspace() : toKeyspaceName(name);
+		keyspaceName = toKeyspaceName(name);
 		desc = book.getDesc();
 		created = book.getCreated();
 	}
@@ -131,9 +133,11 @@ public class BookEntity
 		return new BookInfo(new BookId(name), fullName, desc, created, pages);
 	}
 	
-	
 	private String toKeyspaceName(String name)
 	{
-		return name.toLowerCase().replaceAll("[ \t]", "_");
+		// Usually, book name is already checked in addBook() method in CradleStorage and has no invalid characters.
+		// It's enough to convert name to lower case, add prefix and wrap it with "
+		String nameWithPrefix = BOOK_NAME_PREFIX.concat(name.toLowerCase());
+		return StringUtils.wrap(nameWithPrefix, '\"');
 	}
 }
