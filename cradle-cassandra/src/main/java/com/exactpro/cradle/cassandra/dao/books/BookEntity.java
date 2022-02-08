@@ -133,11 +133,11 @@ public class BookEntity
 		return new BookInfo(new BookId(name), fullName, desc, created, pages);
 	}
 	
-	
 	private String toKeyspaceName(String name)
 	{
-		return StringUtils.wrap(StringUtils.prependIfMissingIgnoreCase(
-				StringUtils.unwrap(name, '\"')
-				.toLowerCase().replaceAll("[ \t]", "_"), BOOK_NAME_PREFIX), '\"');
+		// Usually book name already checked in addBook() method in CradleStorage and hasn't invalid characters.
+		// Enough to convert name to lower case, add prefix and wrap it with "
+		String nameWithPrefix = StringUtils.join(BOOK_NAME_PREFIX, name.toLowerCase());
+		return StringUtils.wrap(nameWithPrefix, '\"');
 	}
 }

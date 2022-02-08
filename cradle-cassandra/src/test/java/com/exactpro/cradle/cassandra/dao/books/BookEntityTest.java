@@ -35,8 +35,7 @@ public class BookEntityTest
 				{"name", "\"book_name\""},
 				{"Name", "\"book_name\""},
 				{"NaMe", "\"book_name\""},
-				{"\"NaMe\"", "\"book_name\""},
-				{"\"book_NaMe\"", "\"book_name\""},
+				{"book_NaMe", "\"book_book_name\""},
 		};
 	}
 
