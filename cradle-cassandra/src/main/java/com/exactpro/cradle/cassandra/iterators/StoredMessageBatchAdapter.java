@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,24 +31,21 @@ public class StoredMessageBatchAdapter implements Iterable<StoredMessageBatch>
 	private final PagingSupplies pagingSupplies;
 	private final DetailedMessageBatchConverter converter;
 	private final String queryInfo;
-	private final CradleObjectsFactory objectsFactory;
 	private int limit;
 	
 	public StoredMessageBatchAdapter(MappedAsyncPagingIterable<DetailedMessageBatchEntity> entities,
-			PagingSupplies pagingSupplies, DetailedMessageBatchConverter converter, String queryInfo,
-			CradleObjectsFactory objectsFactory, int limit)
+			PagingSupplies pagingSupplies, DetailedMessageBatchConverter converter, String queryInfo, int limit)
 	{
 		this.entities = entities;
 		this.pagingSupplies = pagingSupplies;
 		this.converter = converter;
 		this.queryInfo = queryInfo;
-		this.objectsFactory = objectsFactory;
 		this.limit = limit;
 	}
 
 	@Override
 	public Iterator<StoredMessageBatch> iterator()
 	{
-		return new StoredMessageBatchIterator(entities, pagingSupplies, converter, queryInfo, objectsFactory, limit);
+		return new StoredMessageBatchIterator(entities, pagingSupplies, converter, queryInfo, limit);
 	}
 }
