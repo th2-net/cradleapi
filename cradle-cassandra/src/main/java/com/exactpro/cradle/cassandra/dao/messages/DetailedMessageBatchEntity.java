@@ -238,7 +238,7 @@ public class DetailedMessageBatchEntity extends MessageBatchEntity
 		@Override
 		public StoredMessage addMessage(MessageToStore message)
 		{
-			return super.addMessageInternal(message,  MessagesSizeCalculator.calculateMessageSizeInBatch(message));
+			return super.addMessageInternal(message,  calculateMessageSize(message));
 		}
 	}
 }
