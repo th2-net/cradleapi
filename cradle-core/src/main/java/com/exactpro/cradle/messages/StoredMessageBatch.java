@@ -39,10 +39,11 @@ public class StoredMessageBatch
 	private static final Logger logger = LoggerFactory.getLogger(StoredMessageBatch.class);
 	
 	public static final int DEFAULT_MAX_BATCH_SIZE = 1024*1024;  //1 Mb
+	private static final long EMPTY_BATCH_SIZE = MessagesSizeCalculator.calculateServiceMessageBatchSize(null);
 	
 	private StoredMessageBatchId id;
 	private final long maxBatchSize;
-	private long batchSize = MessagesSizeCalculator.calculateServiceMessageBatchSize(null);
+	private long batchSize;
 	private final List<StoredMessage> messages;
 	
 	public StoredMessageBatch()
@@ -102,7 +103,7 @@ public class StoredMessageBatch
 	 */
 	public long getBatchSize()
 	{
-		return batchSize;
+		return batchSize == 0 ? EMPTY_BATCH_SIZE : batchSize;
 	}
 	
 	/**
@@ -141,8 +142,8 @@ public class StoredMessageBatch
 
 	protected int calculateSizeAndCheckConstraints(MessageToStore message) throws CradleStorageException
 	{
-		int expectedMessageSize = calculateMessageSize(message);
-		if (!hasSpace(expectedMessageSize))
+		int expectedMessageSize = MessagesSizeCalculator.calculateMessageSizeInBatch(message);
+		if (!hasSpace(expectedMessageSize, message.getStreamName()))
 			throw new CradleStorageException("Batch has not enough space to hold given message");
 		
 		MessageUtils.validateMessage(message);
@@ -194,20 +195,12 @@ public class StoredMessageBatch
 		if (id == null)
 			id = new StoredMessageBatchId(message.getStreamName(), message.getDirection(), messageIndex);
 		StoredMessage msg = new StoredMessage(message, new StoredMessageId(message.getStreamName(), message.getDirection(), messageIndex));
+		// If there are no messages in batch, need to calculate the batch size taking into account the name of the stream of the added message
+		if (messages.isEmpty())
+			batchSize = MessagesSizeCalculator.calculateServiceMessageBatchSize(message.getStreamName());
 		messages.add(msg);
 		batchSize += expectedMessageSize;
 		return msg;
-	}
-	
-	protected int calculateMessageSize(MessageToStore message)
-	{
-		int expectedMessageSize = MessagesSizeCalculator.calculateMessageSizeInBatch(message);
-		// Batch without messages already has a size equal to MESSAGE_BATCH_CONST_VALUE.
-		// When adding the first message, the length of the stream name should be added to the batch size
-		if (messages.isEmpty())
-			expectedMessageSize += message.getStreamName() == null ? 0 : message.getStreamName().length();
-		
-		return expectedMessageSize;
 	}
 	
 	public StoredMessage getFirstMessage()
@@ -272,17 +265,20 @@ public class StoredMessageBatch
 	 */
 	public boolean hasSpace(MessageToStore message)
 	{
-		return getBatchSize() + MessagesSizeCalculator.calculateMessageSizeInBatch(message) <= maxBatchSize;
+		return hasSpace(MessagesSizeCalculator.calculateMessageSizeInBatch(message), message.getStreamName());
 	}
 
 	/**
 	 * Shows if batch has enough space to hold given message
 	 * @param expected expected size of given message
+	 * @param streamName stream name of expected message
 	 * @return true if batch has enough space to hold given message
 	 */
-	private boolean hasSpace(int expected)
+	private boolean hasSpace(int expected, String streamName)
 	{
-		return getBatchSize() + expected <= maxBatchSize;
+		long currentSize = messages.isEmpty()
+				? MessagesSizeCalculator.calculateServiceMessageBatchSize(streamName) : getBatchSize();
+		return currentSize + expected <= maxBatchSize;
 	}
 	
 
