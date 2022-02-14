@@ -31,6 +31,7 @@ public class StorageConstants
 			KEYSPACE_NAME = "keyspace_name",
 			DESCRIPTION = "description",
 			CREATED = "created",
+			SCHEMA_VERSION = "schema_version",
 			
 			MESSAGE_DATE = "message_date",
 			MESSAGE_TIME = "message_time",

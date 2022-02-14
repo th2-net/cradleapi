@@ -16,15 +16,6 @@
 
 package com.exactpro.cradle.cassandra.dao.books;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.CREATED;
-import static com.exactpro.cradle.cassandra.StorageConstants.DESCRIPTION;
-import static com.exactpro.cradle.cassandra.StorageConstants.FULLNAME;
-import static com.exactpro.cradle.cassandra.StorageConstants.KEYSPACE_NAME;
-import static com.exactpro.cradle.cassandra.StorageConstants.NAME;
-
-import java.time.Instant;
-import java.util.Collection;
-
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
@@ -34,6 +25,11 @@ import com.exactpro.cradle.BookToAdd;
 import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.apache.commons.lang3.StringUtils;
+
+import java.time.Instant;
+import java.util.Collection;
+
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 /**
  * Contains information about book as stored in "cradle" keyspace
@@ -58,18 +54,22 @@ public class BookEntity
 	
 	@CqlName(CREATED)
 	private Instant created;
-	
+
+	@CqlName(SCHEMA_VERSION)
+	private String schemaVersion;
+
 	public BookEntity()
 	{
 	}
 	
-	public BookEntity(BookToAdd book)
+	public BookEntity(BookToAdd book, String schemaVersion)
 	{
-		name = book.getName();
-		fullName = book.getFullName();
-		keyspaceName = toKeyspaceName(name);
-		desc = book.getDesc();
-		created = book.getCreated();
+		this.name = book.getName();
+		this.fullName = book.getFullName();
+		this.keyspaceName = toKeyspaceName(name);
+		this.desc = book.getDesc();
+		this.created = book.getCreated();
+		this.schemaVersion = schemaVersion;
 	}
 	
 	
@@ -126,8 +126,17 @@ public class BookEntity
 	{
 		this.created = created;
 	}
-	
-	
+
+
+	public String getSchemaVersion() {
+		return schemaVersion;
+	}
+
+	public void setSchemaVersion(String schemaVersion) {
+		this.schemaVersion = schemaVersion;
+	}
+
+
 	public BookInfo toBookInfo(Collection<PageInfo> pages) throws CradleStorageException
 	{
 		return new BookInfo(new BookId(name), fullName, desc, created, pages);
