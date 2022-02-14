@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,12 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.internal.core.util.concurrent.CompletableFutures;
 import com.exactpro.cradle.*;
-import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.BookOperators;
-import com.exactpro.cradle.cassandra.dao.CradleOperators;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageSession;
 import com.exactpro.cradle.cassandra.dao.cache.CachedSession;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.messages.converters.MessageBatchEntityConverter;
 import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
-import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -45,7 +42,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.zip.DataFormatException;
 
@@ -100,7 +96,8 @@ public class MessagesWorker extends Worker
 	{
 		MessageBatchesIteratorProvider provider =
 				new MessageBatchesIteratorProvider("get messages batches filtered by " + filter, filter,
-						getBookOps(book.getId()), book, composingService, selectQueryExecutor, readAttrs);
+						getBookOps(book.getId()), book, composingService, selectQueryExecutor,
+						composeReadAttrs(filter.getFetchParameters()));
 		return provider.nextIterator()
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, provider), composingService);
 	}
@@ -110,7 +107,8 @@ public class MessagesWorker extends Worker
 	{
 		MessagesIteratorProvider provider =
 				new MessagesIteratorProvider("get messages filtered by " + filter, filter,
-						ops.getOperators(book.getId()), book, composingService, selectQueryExecutor, readAttrs);
+						ops.getOperators(book.getId()), book, composingService, selectQueryExecutor,
+						composeReadAttrs(filter.getFetchParameters()));
 		return provider.nextIterator()
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, provider), composingService);
 	}
