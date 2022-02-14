@@ -169,6 +169,15 @@ public class CassandraCradleStorage extends CradleStorage
 		{
 			for (BookEntity bookEntity : ops.getCradleBookOperator().getAll(readAttrs))
 			{
+				if(!bookEntity.getSchemaVersion().equals(settings.getSchemaVersion())) {
+					logger.warn("Unsupported schema version for the book \"{}\". Expected: {}, found: {}. Skipping",
+							bookEntity.getName(),
+							settings.getSchemaVersion(),
+							bookEntity.getSchemaVersion()
+					);
+					continue;
+				}
+
 				BookId bookId = new BookId(bookEntity.getName());
 				ops.addOperators(bookId, bookEntity.getKeyspaceName());
 				Collection<PageInfo> pages = loadPageInfo(bookId);
