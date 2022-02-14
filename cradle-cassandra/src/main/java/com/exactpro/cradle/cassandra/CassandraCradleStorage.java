@@ -186,7 +186,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 			return entity.toBookInfo(pages);
 		} catch (Exception e) {
-			throw new IOException("Error while loading book", e);
+			throw new IOException(String.format("Error while loading book \"%s\"", entity.getName()), e);
 		}
 	}
 
