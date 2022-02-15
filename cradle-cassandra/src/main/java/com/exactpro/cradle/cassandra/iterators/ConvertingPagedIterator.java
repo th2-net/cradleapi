@@ -45,6 +45,10 @@ public abstract class ConvertingPagedIterator<R, E> implements Iterator<R>
 	
 	protected abstract R convertEntity(E entity) throws IOException;
 	
+	public void cancel()
+	{
+		it.cancel();
+	}
 	
 	@Override
 	public boolean hasNext()

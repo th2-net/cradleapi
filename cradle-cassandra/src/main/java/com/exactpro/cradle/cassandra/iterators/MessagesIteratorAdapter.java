@@ -20,6 +20,7 @@ import java.util.Iterator;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.PagingIterable;
+import com.exactpro.cradle.CradleResultSet;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.converters.DetailedMessageBatchConverter;
@@ -32,27 +33,25 @@ import com.exactpro.cradle.messages.StoredMessageFilter;
  * Converts {@link MessageBatchEntity} into {@link StoredMessage} while iterating.
  * Also applies given filter to exclude unnecessary results for iterator.
  */
-public class MessagesIteratorAdapter implements Iterable<StoredMessage>
+public class MessagesIteratorAdapter implements CradleResultSet<StoredMessage>
 {
-	private final StoredMessageFilter filter;
-	private final MappedAsyncPagingIterable<DetailedMessageBatchEntity> entities;
-	private final PagingSupplies pagingSupplies;
-	private final DetailedMessageBatchConverter converter;
-	private final String queryInfo;
+	private final MessagesIterator it;
 	
 	public MessagesIteratorAdapter(StoredMessageFilter filter, MappedAsyncPagingIterable<DetailedMessageBatchEntity> entities,
 			PagingSupplies pagingSupplies, DetailedMessageBatchConverter converter, String queryInfo)
 	{
-		this.filter = filter;
-		this.entities = entities;
-		this.pagingSupplies = pagingSupplies;
-		this.converter = converter;
-		this.queryInfo = queryInfo;
+		this.it = new MessagesIterator(filter, entities, pagingSupplies, converter, queryInfo);
 	}
 	
 	@Override
 	public Iterator<StoredMessage> iterator()
 	{
-		return new MessagesIterator(filter, entities, pagingSupplies, converter, queryInfo);
+		return it;
+	}
+	
+	@Override
+	public void cancel()
+	{
+		it.cancel();
 	}
 }

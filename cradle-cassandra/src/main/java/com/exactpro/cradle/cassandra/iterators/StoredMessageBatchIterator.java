@@ -17,7 +17,6 @@
 package com.exactpro.cradle.cassandra.iterators;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
-import com.exactpro.cradle.CradleObjectsFactory;
 import com.exactpro.cradle.cassandra.dao.messages.DetailedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.converters.DetailedMessageBatchConverter;
 import com.exactpro.cradle.cassandra.retries.PagingSupplies;
@@ -28,16 +27,13 @@ import java.io.IOException;
 
 public class StoredMessageBatchIterator extends ConvertingPagedIterator<StoredMessageBatch, DetailedMessageBatchEntity>
 {
-	private final CradleObjectsFactory objectsFactory;
 	private final int limit;
 	private long returnedEntities;
 	
 	public StoredMessageBatchIterator(MappedAsyncPagingIterable<DetailedMessageBatchEntity> rows,
-			PagingSupplies pagingSupplies, DetailedMessageBatchConverter converter, String queryInfo,
-			CradleObjectsFactory objectsFactory, int limit)
+			PagingSupplies pagingSupplies, DetailedMessageBatchConverter converter, String queryInfo, int limit)
 	{
 		super(rows, pagingSupplies, converter, queryInfo);
-		this.objectsFactory = objectsFactory;
 		this.limit = limit;
 	}
 

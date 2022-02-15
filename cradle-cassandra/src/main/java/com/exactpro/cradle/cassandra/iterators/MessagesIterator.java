@@ -17,7 +17,9 @@
 package com.exactpro.cradle.cassandra.iterators;
 
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.exactpro.cradle.CradleIterator;
 import com.exactpro.cradle.Order;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +31,7 @@ import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 
-public class MessagesIterator implements Iterator<StoredMessage>
+public class MessagesIterator implements CradleIterator<StoredMessage>
 {
 	private static final Logger logger = LoggerFactory.getLogger(MessagesIterator.class);
 	
@@ -38,6 +40,7 @@ public class MessagesIterator implements Iterator<StoredMessage>
 	private Iterator<StoredMessage> messagesIterator;
 	private long returnedMessages;
 	private StoredMessage nextMessage;
+	private volatile boolean isCanceled = false;
 	
 	public MessagesIterator(StoredMessageFilter filter, MappedAsyncPagingIterable<DetailedMessageBatchEntity> rows,
 			PagingSupplies pagingSupplies, DetailedMessageBatchConverter converter, String queryInfo)
@@ -80,6 +83,9 @@ public class MessagesIterator implements Iterator<StoredMessage>
 	@Override
 	public StoredMessage next()
 	{
+		if (isCanceled)
+			return null;
+		
 		if (nextMessage == null)  //Maybe, hasNext() wasn't called
 		{
 			if (!hasNext())
@@ -92,10 +98,16 @@ public class MessagesIterator implements Iterator<StoredMessage>
 		return result;
 	}
 	
+	@Override
+	public void cancel()
+	{
+		isCanceled = true;
+		batchIterator.cancel();
+	}
 	
 	private StoredMessage checkNext()
 	{
-		while (messagesIterator.hasNext())
+		while (!isCanceled && messagesIterator.hasNext())
 		{
 			StoredMessage msg = messagesIterator.next();
 			if (checkFilter(msg))

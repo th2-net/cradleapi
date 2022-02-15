@@ -19,30 +19,31 @@ package com.exactpro.cradle.cassandra.iterators;
 import java.util.Iterator;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
+import com.exactpro.cradle.CradleResultSet;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TimeTestEventConverter;
 import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 
-public class TimeTestEventsMetadataIteratorAdapter implements Iterable<StoredTestEventMetadata>
+public class TimeTestEventsMetadataIteratorAdapter implements CradleResultSet<StoredTestEventMetadata>
 {
-	private final MappedAsyncPagingIterable<TimeTestEventEntity> rows;
-	private final PagingSupplies pagingSupplies;
-	private final TimeTestEventConverter converter;
-	private final String queryInfo;
+	private final TimeTestEventsMetadataIterator it;
 	
 	public TimeTestEventsMetadataIteratorAdapter(MappedAsyncPagingIterable<TimeTestEventEntity> rows,
 			PagingSupplies pagingSupplies, TimeTestEventConverter converter, String queryInfo)
 	{
-		this.rows = rows;
-		this.pagingSupplies = pagingSupplies;
-		this.converter = converter;
-		this.queryInfo = queryInfo;
+		this.it = new TimeTestEventsMetadataIterator(rows, pagingSupplies, converter, queryInfo);
 	}
 	
 	@Override
 	public Iterator<StoredTestEventMetadata> iterator()
 	{
-		return new TimeTestEventsMetadataIterator(rows, pagingSupplies, converter, queryInfo);
+		return it;
+	}
+	
+	@Override
+	public void cancel()
+	{
+		it.cancel();
 	}
 }

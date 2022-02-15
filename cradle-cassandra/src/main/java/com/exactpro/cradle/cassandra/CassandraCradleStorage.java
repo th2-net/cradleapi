@@ -553,7 +553,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 
 	@Override
-	protected Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException
+	protected CradleResultSet<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException
 	{
 		try
 		{
@@ -566,7 +566,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter)
+	protected CompletableFuture<CradleResultSet<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter)
 	{
 		String queryInfo = "getting messages filtered by "+filter;
 		return doGetDetailedMessageBatchEntities(filter, queryInfo)
@@ -575,7 +575,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 
 	@Override
-	protected Iterable<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException
+	protected CradleResultSet<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException
 	{
 		try
 		{
@@ -588,12 +588,12 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter)
+	protected CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter)
 	{
 		String queryInfo = "getting message batches filtered by "+filter;
 		return doGetDetailedMessageBatchEntities(filter, queryInfo)
-				.thenApply(it -> new StoredMessageBatchAdapter(it, pagingSupplies, ops.getMessageBatchConverter(), queryInfo,
-						objectsFactory, filter == null ? 0 : filter.getLimit()));
+				.thenApply(it -> new StoredMessageBatchAdapter(it, pagingSupplies, ops.getMessageBatchConverter(),
+						queryInfo, filter == null ? 0 : filter.getLimit()));
 	}
 
 	private CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> doGetDetailedMessageBatchEntities(
@@ -607,7 +607,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Iterable<StoredTestEventMetadata> doGetRootTestEvents(Instant from, Instant to, Order order) 
+	protected CradleResultSet<StoredTestEventMetadata> doGetRootTestEvents(Instant from, Instant to, Order order)
 			throws CradleStorageException, IOException
 	{
 		try
@@ -625,7 +625,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetRootTestEventsAsync(Instant from, Instant to,
+	protected CompletableFuture<CradleResultSet<StoredTestEventMetadata>> doGetRootTestEventsAsync(Instant from, Instant to,
 			Order order) throws CradleStorageException
 	{
 		LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET),
@@ -650,7 +650,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 
 	@Override
-	protected Iterable<StoredTestEventMetadata> doGetTestEvents(StoredTestEventId parentId, Instant from, Instant to, Order order) 
+	protected CradleResultSet<StoredTestEventMetadata> doGetTestEvents(StoredTestEventId parentId, Instant from, Instant to, Order order)
 			throws CradleStorageException, IOException
 	{
 		try
@@ -668,7 +668,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsAsync(StoredTestEventId parentId,
+	protected CompletableFuture<CradleResultSet<StoredTestEventMetadata>> doGetTestEventsAsync(StoredTestEventId parentId,
 			Instant from, Instant to, Order order) throws CradleStorageException
 	{
 		LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET),
@@ -692,7 +692,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 
 	@Override
-	protected Iterable<StoredTestEventMetadata> doGetTestEvents(Instant from, Instant to, Order order) throws CradleStorageException, IOException
+	protected CradleResultSet<StoredTestEventMetadata> doGetTestEvents(Instant from, Instant to, Order order) throws CradleStorageException, IOException
 	{
 		try
 		{
@@ -709,7 +709,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsAsync(Instant from, Instant to, Order order)
+	protected CompletableFuture<CradleResultSet<StoredTestEventMetadata>> doGetTestEventsAsync(Instant from, Instant to, Order order)
 			throws CradleStorageException
 	{
 		LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET),

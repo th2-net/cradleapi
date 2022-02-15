@@ -19,30 +19,31 @@ package com.exactpro.cradle.cassandra.iterators;
 import java.util.Iterator;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
+import com.exactpro.cradle.CradleResultSet;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventChildConverter;
 import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 
-public class TestEventChildrenMetadataIteratorAdapter implements Iterable<StoredTestEventMetadata>
+public class TestEventChildrenMetadataIteratorAdapter implements CradleResultSet<StoredTestEventMetadata>
 {
-	private final MappedAsyncPagingIterable<TestEventChildEntity> rows;
-	private final PagingSupplies pagingSupplies;
-	private final TestEventChildConverter converter;
-	private final String queryInfo;
+	private final TestEventChildrenMetadataIterator it;
 	
 	public TestEventChildrenMetadataIteratorAdapter(MappedAsyncPagingIterable<TestEventChildEntity> rows,
 			PagingSupplies pagingSupplies, TestEventChildConverter converter, String queryInfo)
 	{
-		this.rows = rows;
-		this.pagingSupplies = pagingSupplies;
-		this.converter = converter;
-		this.queryInfo = queryInfo;
+		this.it = new TestEventChildrenMetadataIterator(rows, pagingSupplies, converter, queryInfo);
 	}
 	
 	@Override
 	public Iterator<StoredTestEventMetadata> iterator()
 	{
-		return new TestEventChildrenMetadataIterator(rows, pagingSupplies, converter, queryInfo);
+		return it;
+	}
+	
+	@Override
+	public void cancel()
+	{
+		it.cancel();
 	}
 }

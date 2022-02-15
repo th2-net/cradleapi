@@ -18,9 +18,13 @@ package com.exactpro.cradle.cassandra.iterators;
 
 import java.nio.ByteBuffer;
 import java.util.Iterator;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
+import com.exactpro.cradle.CradleIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,10 +43,12 @@ import com.exactpro.cradle.cassandra.retries.RetryUtils;
  * Wrapper for asynchronous paging iterable to get entities retrieved from Cassandra
  * @param <E> - class of entities obtained from Cassandra
  */
-public class PagedIterator<E> implements Iterator<E>
+public class PagedIterator<E> implements CradleIterator<E>
 {
 	private final Logger logger = LoggerFactory.getLogger(PagedIterator.class);
 	
+	private volatile CompletableFuture<? extends MappedAsyncPagingIterable<E>> nextPageFuture;
+	private volatile boolean isCanceled = false;
 	private MappedAsyncPagingIterable<E> rows;
 	private Iterator<E> rowsIterator;
 	private final PagingSupplies pagingSupplies;
@@ -54,7 +60,7 @@ public class PagedIterator<E> implements Iterator<E>
 		this.rows = rows;
 		this.rowsIterator = rows.currentPage().iterator();
 		this.pagingSupplies = pagingSupplies;
-		this.mapper = row -> converter.convert(row);
+		this.mapper = converter::convert;
 		this.queryInfo = queryInfo;
 	}
 	
@@ -62,6 +68,9 @@ public class PagedIterator<E> implements Iterator<E>
 	@Override
 	public boolean hasNext()
 	{
+		if (checkIsCancelled())
+			return false;
+			
 		if (!rowsIterator.hasNext())
 		{
 			try
@@ -87,24 +96,26 @@ public class PagedIterator<E> implements Iterator<E>
 	}
 	
 	
-	private Iterator<E> fetchNextIterator() throws IllegalStateException, InterruptedException, ExecutionException, CannotRetryException
+	private Iterator<E> fetchNextIterator()
+			throws IllegalStateException, InterruptedException, ExecutionException, CannotRetryException
 	{
-		if (rows.hasMorePages())
+		if (rows.hasMorePages() && !isCanceled)
 		{
 			logger.debug("Getting next result page for '{}'", queryInfo);
 			rows = fetchNextPage(rows);
-			return rows.currentPage().iterator();
+			return rows == null ? null : rows.currentPage().iterator();
 		}
 		return null;
 	}
 	
-	private MappedAsyncPagingIterable<E> fetchNextPage(MappedAsyncPagingIterable<E> rows) 
+	private MappedAsyncPagingIterable<E> fetchNextPage(MappedAsyncPagingIterable<E> rows)
 			throws CannotRetryException, IllegalStateException, InterruptedException, ExecutionException
 	{
 		if (pagingSupplies == null)
 		{
 			logger.debug("Fetching next result page for '{}' with default behavior", queryInfo);
-			return rows.fetchNextPage().toCompletableFuture().get();
+			setNextPageFuture(() -> rows.fetchNextPage().toCompletableFuture());
+			return nextPageFuture.get();
 		}
 		
 		ExecutionInfo ei = rows.getExecutionInfo();
@@ -118,20 +129,60 @@ public class PagedIterator<E> implements Iterator<E>
 		int retryCount = 0;
 		do
 		{
+			if (checkIsCancelled())
+				return null;
+			
 			try
 			{
-				return session.executeAsync(stmt).thenApply(next -> new AsyncPagingIterableWrapper<Row, E>(next, mapper))
-						.toCompletableFuture().get();
+				Statement<?> finalStmt = stmt;
+				setNextPageFuture(() -> session.executeAsync(finalStmt)
+						.thenApply(next -> new AsyncPagingIterableWrapper<Row, E>(next, mapper))
+						.toCompletableFuture());
+				return nextPageFuture.get();
+			}
+			catch (CancellationException e)
+			{
+				logger.debug("Getting next page from db has been cancelled", e);
+				return null;
 			}
 			catch (Exception e)
 			{
-				stmt = ei.getStatement().copy(newState).setPageSize(stmt.getPageSize()).setConsistencyLevel(stmt.getConsistencyLevel());
-				stmt = RetryUtils.applyPolicyVerdict(stmt, pagingSupplies.getExecPolicy().onError(stmt, queryInfo, e, retryCount));
+				stmt = ei.getStatement()
+						.copy(newState)
+						.setPageSize(stmt.getPageSize())
+						.setConsistencyLevel(stmt.getConsistencyLevel());
+				stmt = RetryUtils.applyPolicyVerdict(stmt,
+						pagingSupplies.getExecPolicy().onError(stmt, queryInfo, e, retryCount));
 				retryCount++;
-				logger.debug("Retrying next page request ({}) for '{}' with page size {} and CL {} after error: '{}'", 
+				logger.debug("Retrying next page request ({}) for '{}' with page size {} and CL {} after error: '{}'",
 						retryCount, queryInfo, stmt.getPageSize(), stmt.getConsistencyLevel(), e.getMessage());
 			}
 		}
 		while (true);
+	}
+	
+	private synchronized void setNextPageFuture(Supplier<CompletableFuture<? extends MappedAsyncPagingIterable<E>>> supplier)
+	{
+		if (isCanceled)
+			nextPageFuture = CompletableFuture.completedFuture(null);
+		
+		nextPageFuture = supplier.get();
+	}
+	
+	private synchronized boolean checkIsCancelled()
+	{
+		return isCanceled;
+	}
+	
+	@Override
+	public void cancel()
+	{
+		synchronized (this)
+		{
+			isCanceled = true;
+			if (nextPageFuture != null)
+				nextPageFuture.cancel(true);
+		}
+		logger.debug("Paged iteration has been cancelled");
 	}
 }
