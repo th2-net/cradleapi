@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
-import com.exactpro.cradle.messages.MessageToStoreBuilder;
-import com.exactpro.cradle.messages.StoredMessage;
-import com.exactpro.cradle.messages.StoredMessageMetadata;
+import com.exactpro.cradle.messages.*;
+import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +35,6 @@ import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.Transient;
 import com.exactpro.cradle.cassandra.CassandraCradleStorage;
-import com.exactpro.cradle.messages.StoredMessageBatch;
 
 /**
  * Contains all data about {@link StoredMessageBatch} to store in Cassandra
@@ -85,10 +83,9 @@ public class DetailedMessageBatchEntity extends MessageBatchEntity
 		this.setLastMessageIndex(batch.getLastMessage().getIndex());
 	}
 
-	// Parameter messageBatch must be created by CradleObjectFactory to have the correct batchSize
-	public StoredMessageBatch toStoredMessageBatch(StoredMessageBatch messageBatch)
-			throws IOException, CradleStorageException
+	public StoredMessageBatch toStoredMessageBatch() throws IOException, CradleStorageException
 	{
+		MessageBatchRead messageBatch = new MessageBatchRead();
 		for (StoredMessage storedMessage : toStoredMessages())
 		{
 			MessageToStoreBuilder builder = new MessageToStoreBuilder()
@@ -231,5 +228,17 @@ public class DetailedMessageBatchEntity extends MessageBatchEntity
 	public void setLastMessageIndex(long lastMessageIndex)
 	{
 		this.lastMessageIndex = lastMessageIndex;
+	}
+
+	/**
+	 * This class is only for access to internal addMessageInternal() method
+	 */
+	private static class MessageBatchRead extends StoredMessageBatch
+	{
+		@Override
+		public StoredMessage addMessage(MessageToStore message)
+		{
+			return super.addMessageInternal(message,  MessagesSizeCalculator.calculateMessageSizeInBatch(message));
+		}
 	}
 }
