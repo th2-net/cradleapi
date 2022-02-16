@@ -51,10 +51,19 @@ public class BookInfo
 		if (pages == null)
 			return;
 		
+		PageInfo notEndedPage = null;
 		for (PageInfo p : pages)
 		{
 			this.pages.put(p.getId(), p);
 			this.orderedPages.put(p.getStarted(), p);
+			if (p.getEnded() == null)
+			{
+				if (notEndedPage != null)
+					throw new CradleStorageException("Inconsistent state of book '"+id+"': "
+							+ "page '"+ notEndedPage.getId().getName()+"' is not ended, "
+							+ "but '"+p.getId().getName()+"' is not ended as well");
+				notEndedPage = p;
+			}
 		}
 	}
 	
