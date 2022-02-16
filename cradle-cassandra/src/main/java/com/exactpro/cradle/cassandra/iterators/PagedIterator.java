@@ -163,10 +163,7 @@ public class PagedIterator<E> implements CradleIterator<E>
 	
 	private synchronized void setNextPageFuture(Supplier<CompletableFuture<? extends MappedAsyncPagingIterable<E>>> supplier)
 	{
-		if (isCanceled)
-			nextPageFuture = CompletableFuture.completedFuture(null);
-		
-		nextPageFuture = supplier.get();
+		nextPageFuture = isCanceled ? CompletableFuture.completedFuture(null) : supplier.get();
 	}
 	
 	private synchronized boolean checkIsCancelled()
