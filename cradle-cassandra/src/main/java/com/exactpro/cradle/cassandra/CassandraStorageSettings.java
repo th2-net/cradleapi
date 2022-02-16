@@ -205,9 +205,6 @@ public class CassandraStorageSettings
 		return schemaVersion;
 	}
 
-	public void setSchemaVersion(String schemaVersion) {
-		this.schemaVersion = schemaVersion;
-	}
 
 	public String getBooksTable()
 	{
