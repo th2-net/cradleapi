@@ -200,11 +200,7 @@ public class CassandraCradleStorage extends CradleStorage
 					continue;
 				}
 
-				BookId bookId = new BookId(bookEntity.getName());
-				ops.addOperators(bookId, bookEntity.getKeyspaceName());
-				Collection<PageInfo> pages = loadPageInfo(bookId);
-				
-				result.add(bookEntity.toBookInfo(pages));
+				result.add(processBookEntity(bookEntity));
 			}
 		}
 		catch (Exception e)
