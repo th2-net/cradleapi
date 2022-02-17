@@ -28,17 +28,9 @@ import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.CradleOperators;
-import com.exactpro.cradle.cassandra.dao.books.BookEntity;
-import com.exactpro.cradle.cassandra.dao.books.PageEntity;
-import com.exactpro.cradle.cassandra.dao.books.PageNameEntity;
-import com.exactpro.cradle.cassandra.dao.books.PageNameOperator;
-import com.exactpro.cradle.cassandra.dao.books.PageOperator;
+import com.exactpro.cradle.cassandra.dao.books.*;
 import com.exactpro.cradle.cassandra.dao.messages.*;
-import com.exactpro.cradle.cassandra.dao.testevents.PageScopeEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.PageScopesOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.ScopeEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
+import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.BookKeyspaceCreator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
@@ -55,18 +47,19 @@ import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TimeUtils;
-
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.time.*;
+import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -196,8 +189,22 @@ public class CassandraCradleStorage extends CradleStorage
 		Collection<BookInfo> result = new ArrayList<>();
 		try
 		{
-			for (BookEntity bookEntity : ops.getCradleBookOperator().getAll(readAttrs)) {
-				result.add(processBookEntity(bookEntity));
+			for (BookEntity bookEntity : ops.getCradleBookOperator().getAll(readAttrs))
+			{
+				if(!bookEntity.getSchemaVersion().equals(settings.getSchemaVersion())) {
+					logger.warn("Unsupported schema version for the book \"{}\". Expected: {}, found: {}. Skipping",
+							bookEntity.getName(),
+							settings.getSchemaVersion(),
+							bookEntity.getSchemaVersion()
+					);
+					continue;
+				}
+
+				BookId bookId = new BookId(bookEntity.getName());
+				ops.addOperators(bookId, bookEntity.getKeyspaceName());
+				Collection<PageInfo> pages = loadPageInfo(bookId);
+				
+				result.add(bookEntity.toBookInfo(pages));
 			}
 		}
 		catch (Exception e)
@@ -210,7 +217,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected void doAddBook(BookToAdd newBook, BookId bookId) throws IOException
 	{
-		BookEntity bookEntity = new BookEntity(newBook);
+		BookEntity bookEntity = new BookEntity(newBook, settings.getSchemaVersion());
 		createBookKeyspace(bookEntity);
 		
 		try

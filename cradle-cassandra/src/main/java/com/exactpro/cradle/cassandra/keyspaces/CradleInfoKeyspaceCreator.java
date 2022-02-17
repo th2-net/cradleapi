@@ -62,6 +62,7 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 				.withColumn(FULLNAME, DataTypes.TEXT)
 				.withColumn(KEYSPACE_NAME, DataTypes.TEXT)
 				.withColumn(DESCRIPTION, DataTypes.TEXT)
-				.withColumn(CREATED, DataTypes.TIMESTAMP));
+				.withColumn(CREATED, DataTypes.TIMESTAMP)
+				.withColumn(SCHEMA_VERSION, DataTypes.TEXT));
 	}
 }
