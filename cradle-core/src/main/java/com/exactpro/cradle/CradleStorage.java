@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -358,8 +358,6 @@ public abstract class CradleStorage
 		PageInfo page = book.getPage(pageId);
 		if (page == null)
 			throw new CradleStorageException("Page '"+pageName+"' is not present in book '"+bookId+"'");
-		if (page.isActive())
-			throw new CradleStorageException("Page '"+pageName+"' is the active page and cannot be removed");
 		doRemovePage(page);
 		book.removePage(pageId);
 		logger.info("Page '{}' has been removed", pageId);
