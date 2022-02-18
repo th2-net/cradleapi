@@ -18,14 +18,21 @@ package com.exactpro.cradle.cassandra.dao;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
+import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
+import com.exactpro.cradle.cassandra.dao.books.BookEntity;
 import com.exactpro.cradle.cassandra.dao.books.CradleBookOperator;
 import com.exactpro.cradle.utils.CradleStorageException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CradleOperators
 {
+	private final Logger logger = LoggerFactory.getLogger (CradleOperators.class);
+
 	private final Map<BookId, BookOperators> bookOps;
 	private final CassandraDataMapper dataMapper;
 	private final CassandraStorageSettings settings;
@@ -41,11 +48,21 @@ public class CradleOperators
 		this.cradleBookOp = dataMapper.cradleBookOperator(infoKeyspace, settings.getBooksTable());
 	}
 	
-	public BookOperators getOperators(BookId bookId) throws CradleStorageException
+	public BookOperators getOperators(BookId bookId, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException
 	{
 		BookOperators result = bookOps.get(bookId);
-		if (result == null)
-			throw new CradleStorageException("No operators prepared for book '"+bookId+"'");
+
+		if (result == null) {
+			logger.info("No BookOperators found for book {} in cache, trying to refresh it", bookId);
+			BookEntity entity = cradleBookOp.get(bookId.getName(), readAttrs);
+			if (entity == null) {
+				throw new CradleStorageException("No operators prepared for book '"+bookId+"'");
+			}
+
+			addOperators(bookId, entity.getKeyspaceName());
+
+			result = bookOps.get(bookId);
+		}
 		return result;
 	}
 	

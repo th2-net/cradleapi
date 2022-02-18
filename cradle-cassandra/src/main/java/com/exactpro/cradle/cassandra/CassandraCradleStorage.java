@@ -83,6 +83,8 @@ public class CassandraCradleStorage extends CradleStorage
 	private SelectExecutionPolicy multiRowResultExecPolicy, singleRowResultExecPolicy;
 	private EventsWorker eventsWorker;
 	private MessagesWorker messagesWorker;
+	private BookCache bookCache;
+
 
 	public CassandraCradleStorage(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings, 
 			ExecutorService composingService) throws CradleStorageException
@@ -101,7 +103,12 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	private static final Consumer<Object> NOOP = whatever -> {};
-	
+
+	@Override
+	protected BookCache getBookCache() {
+		return bookCache;
+	}
+
 	@Override
 	protected void doInit(boolean prepareStorage) throws CradleStorageException
 	{
@@ -135,6 +142,8 @@ public class CassandraCradleStorage extends CradleStorage
 			WorkerSupplies ws = new WorkerSupplies(settings, ops, composingService, bpc, selectExecutor, writeAttrs, readAttrs);
 			eventsWorker = new EventsWorker(ws);
 			messagesWorker = new MessagesWorker(ws);
+
+			bookCache = new ReadThroughBookCache(ops, readAttrs, settings.getSchemaVersion());
 		}
 		catch (Exception e)
 		{
@@ -159,55 +168,6 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		else
 			logger.info("Already disconnected from Cassandra");
-	}
-
-	@Override
-	protected BookInfo loadBook (String bookName) throws IOException {
-		try {
-			BookEntity entity = ops.getCradleBookOperator().get(bookName, readAttrs);
-			return processBookEntity(entity);
-		} catch (Exception e) {
-			throw new IOException("Error while loading book", e);
-		}
-	}
-
-	private BookInfo processBookEntity (BookEntity entity) throws IOException {
-		try {
-			BookId bookId = new BookId(entity.getName());
-			ops.addOperators(bookId, entity.getKeyspaceName());
-			Collection<PageInfo> pages = loadPageInfo(bookId);
-
-			return entity.toBookInfo(pages);
-		} catch (Exception e) {
-			throw new IOException(String.format("Error while loading book \"%s\"", entity.getName()), e);
-		}
-	}
-
-	@Override
-	protected Collection<BookInfo> loadBooks() throws IOException
-	{
-		Collection<BookInfo> result = new ArrayList<>();
-		try
-		{
-			for (BookEntity bookEntity : ops.getCradleBookOperator().getAll(readAttrs))
-			{
-				if(!bookEntity.getSchemaVersion().equals(settings.getSchemaVersion())) {
-					logger.warn("Unsupported schema version for the book \"{}\". Expected: {}, found: {}. Skipping",
-							bookEntity.getName(),
-							settings.getSchemaVersion(),
-							bookEntity.getSchemaVersion()
-					);
-					continue;
-				}
-
-				result.add(processBookEntity(bookEntity));
-			}
-		}
-		catch (Exception e)
-		{
-			throw new IOException("Error while loading books", e);
-		}
-		return result;
 	}
 	
 	@Override
@@ -236,7 +196,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected void doAddPages(BookId bookId, List<PageInfo> pages, PageInfo lastPage)
 			throws CradleStorageException, IOException
 	{
-		BookOperators bookOps = ops.getOperators(bookId);
+		BookOperators bookOps = ops.getOperators(bookId, readAttrs);
 		PageOperator pageOp = bookOps.getPageOperator();
 		PageNameOperator pageNameOp = bookOps.getPageNameOperator();
 		
@@ -272,14 +232,14 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException, IOException
 	{
-		return loadPageInfo(bookId);
+		return bookCache.loadPageInfo(bookId);
 	}
 	
 	@Override
 	protected void doRemovePage(PageInfo page) throws CradleStorageException, IOException
 	{
 		PageId pageId = page.getId();
-		BookOperators bookOps = ops.getOperators(pageId.getBookId());
+		BookOperators bookOps = ops.getOperators(pageId.getBookId(), readAttrs);
 		
 		removeMessages(pageId, bookOps);
 		removeTestEvents(pageId, bookOps);
@@ -335,7 +295,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		PageId pageId = page.getId();
 		BookId bookId = pageId.getBookId();
-		BookOperators bookOps = ops.getOperators(bookId);
+		BookOperators bookOps = ops.getOperators(bookId, readAttrs);
 		try
 		{
 			TestEventEntity entity = eventsWorker.createEntity(event, pageId);
@@ -354,7 +314,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		PageId pageId = page.getId();
 		BookId bookId = pageId.getBookId();
-		BookOperators bookOps = ops.getOperators(bookId);
+		BookOperators bookOps = ops.getOperators(bookId, readAttrs);
 		return CompletableFuture.supplyAsync(() -> {
 					try
 					{
@@ -518,7 +478,7 @@ public class CassandraCradleStorage extends CradleStorage
 		BookOperators bookOps = null;
 		try
 		{
-			bookOps = ops.getOperators(bookId);
+			bookOps = ops.getOperators(bookId , readAttrs);
 			CompletableFuture<MappedAsyncPagingIterable<SessionEntity>> future =
 					bookOps.getSessionsOperator().get(bookId.getName(), readAttrs);
 			entities = selectExecutor.executeMappedMultiRowResultQuery(
@@ -590,7 +550,7 @@ public class CassandraCradleStorage extends CradleStorage
 		BookOperators bookOps = null;
 		try
 		{
-			bookOps = ops.getOperators(bookId);
+			bookOps = ops.getOperators(bookId, readAttrs);
 			CompletableFuture<MappedAsyncPagingIterable<ScopeEntity>> future =
 					bookOps.getScopeOperator().get(bookId.getName(), readAttrs);
 			entities = selectExecutor.executeMappedMultiRowResultQuery(() -> future,
@@ -697,25 +657,6 @@ public class CassandraCradleStorage extends CradleStorage
 	public Function<BoundStatementBuilder, BoundStatementBuilder> getStrictReadAttrs()
 	{
 		return strictReadAttrs;
-	}
-	
-	
-	private Collection<PageInfo> loadPageInfo(BookId bookId) throws IOException
-	{
-		Collection<PageInfo> result = new ArrayList<>();
-		try
-		{
-			for (PageEntity pageEntity : ops.getOperators(bookId).getPageOperator().getAll(bookId.getName(), readAttrs))
-			{
-				if (pageEntity.getRemoved() == null)
-					result.add(pageEntity.toPageInfo());
-			}
-		}
-		catch (Exception e)
-		{
-			throw new IOException("Error while loading pages of book '"+bookId+"'", e);
-		}
-		return result;
 	}
 	
 	protected CompletableFuture<Void> failEventAndParents(StoredTestEventId eventId)

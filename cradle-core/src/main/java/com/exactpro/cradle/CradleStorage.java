@@ -21,7 +21,6 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -51,20 +50,15 @@ public abstract class CradleStorage
 	public static final int DEFAULT_MAX_MESSAGE_BATCH_SIZE = 1024*1024,
 			DEFAULT_MAX_TEST_EVENT_BATCH_SIZE = DEFAULT_MAX_MESSAGE_BATCH_SIZE;
 
-	private final Map<BookId, BookInfo> books;
-	protected final BookAndPageChecker bpc;
+	protected BookAndPageChecker bpc;
 	private volatile boolean initialized = false,
 			disposed = false;
 	protected final ExecutorService composingService;
 	protected final boolean ownedComposingService;
 	protected final CradleEntitiesFactory entitiesFactory;
-	
-	
+
 	public CradleStorage(ExecutorService composingService, int maxMessageBatchSize, int maxTestEventBatchSize) throws CradleStorageException
 	{
-		books = new ConcurrentHashMap<>();
-		bpc = new BookAndPageChecker(books);
-		
 		if (composingService == null)
 		{
 			ownedComposingService = true;
@@ -84,12 +78,11 @@ public abstract class CradleStorage
 		this(null, DEFAULT_MAX_MESSAGE_BATCH_SIZE, DEFAULT_MAX_TEST_EVENT_BATCH_SIZE);
 	}
 	
-	
+
 	protected abstract void doInit(boolean prepareStorage) throws CradleStorageException;
+	protected abstract BookCache getBookCache ();
 	protected abstract void doDispose() throws CradleStorageException;
 
-	protected abstract Collection<BookInfo> loadBooks() throws IOException;
-	protected abstract BookInfo loadBook(String bookName) throws IOException;
 	protected abstract void doAddBook(BookToAdd newBook, BookId bookId) throws IOException;
 	protected abstract void doAddPages(BookId bookId, List<PageInfo> pages, PageInfo lastPage) throws CradleStorageException, IOException;
 	protected abstract Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException, IOException;
@@ -156,8 +149,7 @@ public abstract class CradleStorage
 		logger.info("Initializing storage");
 		
 		doInit(prepareStorage);
-		refreshBooks();
-		
+		bpc = new BookAndPageChecker(getBookCache());
 		initialized = true;
 		logger.info("Storage initialized");
 	}
@@ -215,16 +207,17 @@ public abstract class CradleStorage
 
 		BookId id = new BookId(book.getName());
 		logger.info("Adding book '{}' to storage", id);
-		if (books.containsKey(id))
+		if (bpc.checkBook(id))
 			throw new CradleStorageException("Book '"+id+"' is already present in storage");
 		
 		doAddBook(book, id);
 		BookInfo newBook = new BookInfo(id, book.getFullName(), book.getDesc(), book.getCreated(), null);
-		books.put(newBook.getId(), newBook);
+		getBookCache().updateCachedBook(newBook);
 		logger.info("Book '{}' has been added to storage", id);
 		
 		newBook = addPage(id, book.getFirstPageName(), book.getCreated(), book.getFirstPageComment());
-		books.put(newBook.getId(), newBook);
+		getBookCache().updateCachedBook(newBook);
+
 		return newBook;
 	}
 	
@@ -233,7 +226,7 @@ public abstract class CradleStorage
 	 */
 	public Collection<BookInfo> getBooks()
 	{
-		return Collections.unmodifiableCollection(books.values());
+		return Collections.unmodifiableCollection(getBookCache().getCachedBooks());
 	}
 	
 	/**
@@ -311,7 +304,7 @@ public abstract class CradleStorage
 		BookInfo book = bpc.getBook(bookId);
 		Collection<PageInfo> pages = doLoadPages(bookId);
 		book = new BookInfo(book.getId(), book.getFullName(), book.getDesc(), book.getCreated(), pages);
-		books.put(book.getId(), book);
+		getBookCache().updateCachedBook(book);
 		return book;
 	}
 
@@ -323,9 +316,9 @@ public abstract class CradleStorage
 	public Collection<BookInfo> refreshBooks() throws IOException
 	{
 		logger.info("Refreshing books from storage");
-		Collection<BookInfo> loaded = loadBooks();
+		Collection<BookInfo> loaded = getBookCache().loadBooks();
 		if (loaded != null)
-			loaded.forEach(bookInfo -> books.putIfAbsent(bookInfo.getId(), bookInfo));
+			loaded.forEach(bookInfo -> getBookCache().updateCachedBook(bookInfo));
 		return loaded;
 	}
 
@@ -338,11 +331,10 @@ public abstract class CradleStorage
 	public BookInfo refreshBook (String name) throws IOException {
 		logger.info("Refreshing book {} from storage", name);
 
-		BookInfo bookInfo = loadBook(name);
+		BookInfo bookInfo = getBookCache().loadBook(new BookId(name));
 
 		if (bookInfo != null) {
-			books.put(bookInfo.getId(), bookInfo);
-
+			getBookCache().updateCachedBook(bookInfo);
 		}
 
 		return bookInfo;

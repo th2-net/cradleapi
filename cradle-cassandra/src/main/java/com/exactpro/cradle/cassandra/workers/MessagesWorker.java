@@ -110,7 +110,7 @@ public class MessagesWorker extends Worker
 	{
 		MessagesIteratorProvider provider =
 				new MessagesIteratorProvider("get messages filtered by " + filter, filter,
-						ops.getOperators(book.getId()), book, composingService, selectQueryExecutor, readAttrs);
+						ops.getOperators(book.getId(), readAttrs), book, composingService, selectQueryExecutor, readAttrs);
 		return provider.nextIterator()
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, provider), composingService);
 	}

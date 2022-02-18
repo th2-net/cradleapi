@@ -17,26 +17,29 @@
 package com.exactpro.cradle;
 
 import java.time.Instant;
-import java.util.Map;
 
 import com.exactpro.cradle.utils.CradleStorageException;
 
 public class BookAndPageChecker
 {
-	private final Map<BookId, BookInfo> books;
+	private BookCache bookCache;
 	
-	public BookAndPageChecker(Map<BookId, BookInfo> books)
+	public BookAndPageChecker(BookCache bookCache)
 	{
-		this.books = books;
+		this.bookCache = bookCache;
 	}
 	
 	
 	public BookInfo getBook(BookId bookId) throws CradleStorageException
 	{
-		BookInfo result = books.get(bookId);
+		BookInfo result = bookCache.getBook(bookId);
 		if (result == null)
 			throw new CradleStorageException("Book '"+bookId+"' is unknown");
 		return result;
+	}
+
+	public boolean checkBook (BookId bookId) {
+		return bookCache.getBook(bookId) != null;
 	}
 	
 	public PageInfo findPage(BookId bookId, Instant timestamp) throws CradleStorageException

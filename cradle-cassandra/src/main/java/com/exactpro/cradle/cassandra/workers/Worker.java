@@ -61,7 +61,7 @@ public abstract class Worker
 	{
 		try
 		{
-			return ops.getOperators(bookId);
+			return ops.getOperators(bookId, readAttrs);
 		}
 		catch (CradleStorageException e)
 		{

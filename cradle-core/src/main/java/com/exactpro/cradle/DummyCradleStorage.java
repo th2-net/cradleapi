@@ -17,9 +17,12 @@
 package com.exactpro.cradle;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
@@ -35,9 +38,56 @@ import com.exactpro.cradle.utils.CradleStorageException;
  */
 public class DummyCradleStorage extends CradleStorage
 {
+	class DummyBookCache implements BookCache {
+
+		Map<BookId, BookInfo> books;
+
+		DummyBookCache () {
+			books = new ConcurrentHashMap<>();
+		}
+
+		@Override
+		public BookInfo getBook(BookId bookId) {
+			return books.get(bookId);
+		}
+
+		@Override
+		public Collection<PageInfo> loadPageInfo(BookId bookId) throws IOException {
+			return null;
+		}
+
+		@Override
+		public BookInfo loadBook(BookId bookId) throws IOException {
+			return null;
+		}
+
+		@Override
+		public Collection<BookInfo> loadBooks() throws IOException {
+			return null;
+		}
+
+		@Override
+		public void updateCachedBook(BookInfo bookInfo) {
+			books.put(bookInfo.getId(), bookInfo);
+		}
+
+		@Override
+		public Collection<BookInfo> getCachedBooks() {
+			return null;
+		}
+	}
+
+	private final DummyBookCache dummyBookCache;
+
+	@Override
+	protected BookCache getBookCache() {
+		return dummyBookCache;
+	}
+
 	public DummyCradleStorage() throws CradleStorageException
 	{
 		super();
+		dummyBookCache = new DummyBookCache();
 	}
 	
 	
@@ -49,18 +99,6 @@ public class DummyCradleStorage extends CradleStorage
 	@Override
 	protected void doDispose() throws CradleStorageException
 	{
-	}
-	
-	
-	@Override
-	protected Collection<BookInfo> loadBooks()
-	{
-		return null;
-	}
-
-	@Override
-	protected BookInfo loadBook(String bookName) throws IOException {
-		return null;
 	}
 
 	@Override
