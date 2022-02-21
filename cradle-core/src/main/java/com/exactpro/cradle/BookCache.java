@@ -26,7 +26,7 @@ import java.util.Collection;
  */
 
 public interface BookCache {
-    BookInfo getBook (BookId bookId);
+    BookInfo getBook (BookId bookId) throws IOException;
     Collection<PageInfo> loadPageInfo(BookId bookId) throws IOException;
     BookInfo loadBook (BookId bookId) throws IOException;
     Collection<BookInfo> loadBooks() throws IOException;

@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle;
 
+import java.io.IOException;
 import java.time.Instant;
 
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -32,14 +33,21 @@ public class BookAndPageChecker
 	
 	public BookInfo getBook(BookId bookId) throws CradleStorageException
 	{
-		BookInfo result = bookCache.getBook(bookId);
-		if (result == null)
+		try {
+			return bookCache.getBook(bookId);
+		} catch (IOException e) {
+			// Book was not found
 			throw new CradleStorageException("Book '"+bookId+"' is unknown");
-		return result;
+		}
 	}
 
 	public boolean checkBook (BookId bookId) {
-		return bookCache.getBook(bookId) != null;
+		try {
+			bookCache.getBook(bookId);
+			return true;
+		} catch (IOException e) {
+			return false;
+		}
 	}
 	
 	public PageInfo findPage(BookId bookId, Instant timestamp) throws CradleStorageException

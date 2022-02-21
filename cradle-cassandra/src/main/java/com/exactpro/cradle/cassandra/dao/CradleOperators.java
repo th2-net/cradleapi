@@ -53,7 +53,7 @@ public class CradleOperators
 		BookOperators result = bookOps.get(bookId);
 
 		if (result == null) {
-			logger.info("No BookOperators found for book {} in cache, trying to refresh it", bookId);
+			logger.info("{} book was absent in operators cache, trying to get it from DB", bookId);
 			BookEntity entity = cradleBookOp.get(bookId.getName(), readAttrs);
 			if (entity == null) {
 				throw new CradleStorageException("No operators prepared for book '"+bookId+"'");

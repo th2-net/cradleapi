@@ -26,12 +26,15 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 public class ReadThroughBookCache implements BookCache {
     private static final Logger logger = LoggerFactory.getLogger(ReadThroughBookCache.class);
+
+    private final String UNSUPPORTED_SCHEMA_VERSION_FORMAT = "Unsupported schema version for the book \"%s\". Expected: %s, found: %s";
 
     private final CradleOperators ops;
     private final Map<BookId, BookInfo> books;
@@ -47,13 +50,14 @@ public class ReadThroughBookCache implements BookCache {
         this.schemaVersion = schemaVersion;
     }
 
-    public BookInfo getBook (BookId bookId) {
+    public BookInfo getBook (BookId bookId) throws IOException {
         if (!books.containsKey(bookId)) {
-            logger.info("Could not find book named {} in cache, tyring getting from db", bookId.getName());
+            logger.info("Book '{}' is absent in cache, trying to get it from DB", bookId.getName());
             try {
                 books.put(bookId, loadBook(bookId));
             } catch (Exception e) {
-                logger.warn("Could not find book named {} in database", bookId.getName());
+                logger.warn("Could not find book named {} in database: {}", bookId.getName(), e);
+                throw e;
             }
         }
 
@@ -82,8 +86,12 @@ public class ReadThroughBookCache implements BookCache {
         try {
             BookEntity bookEntity = ops.getCradleBookOperator().get(bookId.getName(), readAttrs);
 
+            if (bookEntity == null) {
+                throw new IOException();
+            }
+
             if (!bookEntity.getSchemaVersion().equals(schemaVersion)) {
-                throw new IOException(String.format("Unsupported schema version for the book \"%s\". Expected: %s, found: %s. Skipping",
+                throw new Exception(String.format(UNSUPPORTED_SCHEMA_VERSION_FORMAT,
                         bookEntity.getName(),
                         schemaVersion,
                         bookEntity.getSchemaVersion()));
@@ -91,7 +99,7 @@ public class ReadThroughBookCache implements BookCache {
 
             return processBookEntity(bookEntity);
         } catch (Exception e) {
-            throw new IOException("Error while loading book", e);
+            throw new IOException(String.format("Error while loading book \"%s\"", bookId.getName()), e);
         }
     }
 
@@ -115,11 +123,10 @@ public class ReadThroughBookCache implements BookCache {
             for (BookEntity bookEntity : ops.getCradleBookOperator().getAll(readAttrs))
             {
                 if(!bookEntity.getSchemaVersion().equals(schemaVersion)) {
-                    logger.warn("Unsupported schema version for the book \"{}\". Expected: {}, found: {}. Skipping",
+                    logger.warn(String.format(UNSUPPORTED_SCHEMA_VERSION_FORMAT,
                             bookEntity.getName(),
                             schemaVersion,
-                            bookEntity.getSchemaVersion()
-                    );
+                            bookEntity.getSchemaVersion()));
                     continue;
                 }
 
@@ -140,6 +147,6 @@ public class ReadThroughBookCache implements BookCache {
 
     @Override
     public Collection<BookInfo> getCachedBooks() {
-        return books.values();
+        return Collections.unmodifiableCollection(books.values());
     }
 }
