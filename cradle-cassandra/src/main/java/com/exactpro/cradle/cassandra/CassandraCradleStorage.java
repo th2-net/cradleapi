@@ -126,8 +126,7 @@ public class CassandraCradleStorage extends CradleStorage
 			else
 				logger.info("Storage creation skipped");
 			
-			ops = createOperators(connection.getSession(), settings);
-			
+
 			Duration timeout = Duration.ofMillis(settings.getTimeout());
 			int resultPageSize = settings.getResultPageSize();
 			writeAttrs = builder -> builder.setConsistencyLevel(settings.getWriteConsistencyLevel())
@@ -138,6 +137,8 @@ public class CassandraCradleStorage extends CradleStorage
 			strictReadAttrs = builder -> builder.setConsistencyLevel(ConsistencyLevel.ALL)
 					.setTimeout(timeout)
 					.setPageSize(resultPageSize);
+			ops = createOperators(connection.getSession(), settings);
+
 
 			WorkerSupplies ws = new WorkerSupplies(settings, ops, composingService, bpc, selectExecutor, writeAttrs, readAttrs);
 			eventsWorker = new EventsWorker(ws);
@@ -196,7 +197,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected void doAddPages(BookId bookId, List<PageInfo> pages, PageInfo lastPage)
 			throws CradleStorageException, IOException
 	{
-		BookOperators bookOps = ops.getOperators(bookId, readAttrs);
+		BookOperators bookOps = ops.getOperators(bookId);
 		PageOperator pageOp = bookOps.getPageOperator();
 		PageNameOperator pageNameOp = bookOps.getPageNameOperator();
 		
@@ -239,7 +240,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected void doRemovePage(PageInfo page) throws CradleStorageException, IOException
 	{
 		PageId pageId = page.getId();
-		BookOperators bookOps = ops.getOperators(pageId.getBookId(), readAttrs);
+		BookOperators bookOps = ops.getOperators(pageId.getBookId());
 		
 		removeMessages(pageId, bookOps);
 		removeTestEvents(pageId, bookOps);
@@ -295,7 +296,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		PageId pageId = page.getId();
 		BookId bookId = pageId.getBookId();
-		BookOperators bookOps = ops.getOperators(bookId, readAttrs);
+		BookOperators bookOps = ops.getOperators(bookId);
 		try
 		{
 			TestEventEntity entity = eventsWorker.createEntity(event, pageId);
@@ -314,7 +315,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		PageId pageId = page.getId();
 		BookId bookId = pageId.getBookId();
-		BookOperators bookOps = ops.getOperators(bookId, readAttrs);
+		BookOperators bookOps = ops.getOperators(bookId);
 		return CompletableFuture.supplyAsync(() -> {
 					try
 					{
@@ -478,7 +479,7 @@ public class CassandraCradleStorage extends CradleStorage
 		BookOperators bookOps = null;
 		try
 		{
-			bookOps = ops.getOperators(bookId , readAttrs);
+			bookOps = ops.getOperators(bookId);
 			CompletableFuture<MappedAsyncPagingIterable<SessionEntity>> future =
 					bookOps.getSessionsOperator().get(bookId.getName(), readAttrs);
 			entities = selectExecutor.executeMappedMultiRowResultQuery(
@@ -550,7 +551,7 @@ public class CassandraCradleStorage extends CradleStorage
 		BookOperators bookOps = null;
 		try
 		{
-			bookOps = ops.getOperators(bookId, readAttrs);
+			bookOps = ops.getOperators(bookId);
 			CompletableFuture<MappedAsyncPagingIterable<ScopeEntity>> future =
 					bookOps.getScopeOperator().get(bookId.getName(), readAttrs);
 			entities = selectExecutor.executeMappedMultiRowResultQuery(() -> future,
@@ -602,7 +603,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CradleOperators createOperators(CqlSession session, CassandraStorageSettings settings)
 	{
 		CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(session).build();
-		return new CradleOperators(dataMapper, settings);
+		return new CradleOperators(dataMapper, settings, readAttrs);
 	}
 	
 	protected void createStorage() throws CradleStorageException

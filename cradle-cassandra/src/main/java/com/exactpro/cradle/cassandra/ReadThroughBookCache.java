@@ -69,7 +69,7 @@ public class ReadThroughBookCache implements BookCache {
         Collection<PageInfo> result = new ArrayList<>();
         try
         {
-            for (PageEntity pageEntity : ops.getOperators(bookId, readAttrs).getPageOperator().getAll(bookId.getName(), readAttrs))
+            for (PageEntity pageEntity : ops.getOperators(bookId).getPageOperator().getAll(bookId.getName(), readAttrs))
             {
                 if (pageEntity.getRemoved() == null)
                     result.add(pageEntity.toPageInfo());
