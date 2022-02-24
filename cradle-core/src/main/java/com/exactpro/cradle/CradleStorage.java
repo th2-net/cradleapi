@@ -198,7 +198,7 @@ public abstract class CradleStorage
 	 * @param book information about book to add and its first page
 	 * @return {@link BookInfo} containing all information about created book
 	 * @throws CradleStorageException if the book is already present
-	 * @throws IOException if book data writing failed
+	 * @throws IOException if book data writing failed, or
 	 */
 	public BookInfo addBook(BookToAdd book) throws CradleStorageException, IOException
 	{
@@ -311,7 +311,7 @@ public abstract class CradleStorage
 	/**
 	 * Getting information about books from storage and put it in internal cache
 	 * @return Collection of loaded books
-	 * @throws IOException if books data reading failed
+	 * @throws CradleStorageException if books data reading failed
 	 */
 	public Collection<BookInfo> refreshBooks() throws CradleStorageException
 	{
@@ -326,7 +326,7 @@ public abstract class CradleStorage
 	 * Getting information about specific book from storage and put it in internal cache
 	 * @param name of book to load
 	 * @return loaded book
-	 * @throws IOException if books data reading failed
+	 * @throws CradleStorageException if book data reading failed
 	 */
 	public BookInfo refreshBook (String name) throws CradleStorageException {
 		logger.info("Refreshing book {} from storage", name);
