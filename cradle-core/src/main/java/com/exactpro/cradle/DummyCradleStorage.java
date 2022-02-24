@@ -49,7 +49,7 @@ public class DummyCradleStorage extends CradleStorage
 		@Override
 		public BookInfo getBook(BookId bookId) throws CradleStorageException {
 			if (!books.containsKey(bookId)) {
-				throw new CradleStorageException("Book not found");
+				throw new CradleStorageException(String.format("Book %s is unknown", bookId.getName()));
 			}
 			return books.get(bookId);
 		}
