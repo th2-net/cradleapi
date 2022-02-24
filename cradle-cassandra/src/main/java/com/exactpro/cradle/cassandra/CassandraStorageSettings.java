@@ -19,12 +19,12 @@ package com.exactpro.cradle.cassandra;
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.cassandra.connection.NetworkTopologyStrategy;
-import com.exactpro.cradle.cassandra.retries.PageSizeAdjustingPolicy;
 import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
 
 public class CassandraStorageSettings
 {
 	public static final String CRADLE_INFO_KEYSPACE = "cradle_info",
+			SCHEMA_VERSION = "4.0.0",
 			BOOKS_TABLE = "books",
 			PAGES_TABLE = "pages",
 			PAGES_NAMES_TABLE = "pages_names",
@@ -54,6 +54,7 @@ public class CassandraStorageSettings
 	private final ConsistencyLevel writeConsistencyLevel,
 			readConsistencyLevel;
 	private String cradleInfoKeyspace,
+			schemaVersion,
 			booksTable,
 			pagesTable,
 			pagesNamesTable,
@@ -102,6 +103,7 @@ public class CassandraStorageSettings
 		this.readConsistencyLevel = readConsistencyLevel;
 
 		this.cradleInfoKeyspace = CRADLE_INFO_KEYSPACE;
+		this.schemaVersion = SCHEMA_VERSION;
 		this.booksTable = BOOKS_TABLE;
 		this.pagesTable = PAGES_TABLE;
 		this.pagesNamesTable = PAGES_NAMES_TABLE;
@@ -136,6 +138,7 @@ public class CassandraStorageSettings
 		this.readConsistencyLevel = settings.getReadConsistencyLevel();
 		
 		this.cradleInfoKeyspace = settings.getCradleInfoKeyspace();
+		this.schemaVersion = settings.getSchemaVersion();
 		this.booksTable = settings.getBooksTable();
 		this.pagesTable = settings.getPagesTable();
 		this.pagesNamesTable = settings.getPagesNamesTable();
@@ -195,6 +198,11 @@ public class CassandraStorageSettings
 	public void setCradleInfoKeyspace(String cradleInfoKeyspace)
 	{
 		this.cradleInfoKeyspace = cradleInfoKeyspace;
+	}
+
+
+	public String getSchemaVersion() {
+		return schemaVersion;
 	}
 
 

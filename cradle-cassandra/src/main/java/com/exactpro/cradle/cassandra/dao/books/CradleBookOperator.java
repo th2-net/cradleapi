@@ -16,14 +16,14 @@
 
 package com.exactpro.cradle.cassandra.dao.books;
 
-import java.util.function.Function;
-
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Select;
+
+import java.util.function.Function;
 
 @Dao
 public interface CradleBookOperator

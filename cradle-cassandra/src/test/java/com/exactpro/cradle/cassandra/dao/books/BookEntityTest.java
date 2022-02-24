@@ -22,7 +22,7 @@ import org.testng.annotations.Test;
 
 import java.time.Instant;
 
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
 
 public class BookEntityTest
 {
@@ -42,7 +42,7 @@ public class BookEntityTest
 	@Test(dataProvider = "nameProvider")
 	public void keyspaceNameTest(String name, String keyspaceName)
 	{
-		BookEntity entity = new BookEntity(new BookToAdd(name, Instant.now(), "firstPage"));
+		BookEntity entity = new BookEntity(new BookToAdd(name, Instant.now(), "firstPage"), "Test Version");
 		assertEquals(entity.getKeyspaceName(), keyspaceName);
 	}
 
