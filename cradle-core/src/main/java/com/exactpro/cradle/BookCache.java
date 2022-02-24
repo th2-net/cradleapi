@@ -15,6 +15,8 @@
  */
 package com.exactpro.cradle;
 
+import com.exactpro.cradle.utils.CradleStorageException;
+
 import java.io.IOException;
 import java.util.Collection;
 
@@ -26,10 +28,10 @@ import java.util.Collection;
  */
 
 public interface BookCache {
-    BookInfo getBook (BookId bookId) throws IOException;
-    Collection<PageInfo> loadPageInfo(BookId bookId) throws IOException;
-    BookInfo loadBook (BookId bookId) throws IOException;
-    Collection<BookInfo> loadBooks() throws IOException;
+    BookInfo getBook (BookId bookId) throws CradleStorageException;
+    Collection<PageInfo>    loadPageInfo(BookId bookId) throws CradleStorageException;
+    BookInfo loadBook (BookId bookId) throws CradleStorageException;
+    Collection<BookInfo> loadBooks() throws CradleStorageException;
     void updateCachedBook (BookInfo bookInfo);
     Collection<BookInfo> getCachedBooks ();
 }

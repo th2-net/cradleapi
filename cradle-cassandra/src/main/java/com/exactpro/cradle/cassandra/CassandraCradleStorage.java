@@ -231,13 +231,13 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException, IOException
+	protected Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException
 	{
 		return bookCache.loadPageInfo(bookId);
 	}
 	
 	@Override
-	protected void doRemovePage(PageInfo page) throws CradleStorageException, IOException
+	protected void doRemovePage(PageInfo page) throws CradleStorageException
 	{
 		PageId pageId = page.getId();
 		BookOperators bookOps = ops.getOperators(pageId.getBookId());

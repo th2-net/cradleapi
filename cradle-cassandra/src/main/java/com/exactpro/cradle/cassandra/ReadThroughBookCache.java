@@ -20,10 +20,10 @@ import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.dao.CradleOperators;
 import com.exactpro.cradle.cassandra.dao.books.BookEntity;
 import com.exactpro.cradle.cassandra.dao.books.PageEntity;
+import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -50,13 +50,13 @@ public class ReadThroughBookCache implements BookCache {
         this.schemaVersion = schemaVersion;
     }
 
-    public BookInfo getBook (BookId bookId) throws IOException {
+    public BookInfo getBook (BookId bookId) throws CradleStorageException {
         if (!books.containsKey(bookId)) {
             logger.info("Book '{}' is absent in cache, trying to get it from DB", bookId.getName());
             try {
                 books.put(bookId, loadBook(bookId));
-            } catch (Exception e) {
-                logger.warn("Could not find book named {} in database: {}", bookId.getName(), e);
+            } catch (CradleStorageException e) {
+                logger.warn("Could not load book named {}: {}", bookId.getName(), e);
                 throw e;
             }
         }
@@ -64,79 +64,62 @@ public class ReadThroughBookCache implements BookCache {
         return books.get(bookId);
     }
 
-    public Collection<PageInfo> loadPageInfo(BookId bookId) throws IOException
+    public Collection<PageInfo> loadPageInfo(BookId bookId) throws CradleStorageException
     {
         Collection<PageInfo> result = new ArrayList<>();
-        try
+        for (PageEntity pageEntity : ops.getOperators(bookId).getPageOperator().getAll(bookId.getName(), readAttrs))
         {
-            for (PageEntity pageEntity : ops.getOperators(bookId).getPageOperator().getAll(bookId.getName(), readAttrs))
-            {
-                if (pageEntity.getRemoved() == null)
-                    result.add(pageEntity.toPageInfo());
-            }
-        }
-        catch (Exception e)
-        {
-            throw new IOException("Error while loading pages of book '"+bookId+"'", e);
+            if (pageEntity.getRemoved() == null)
+                result.add(pageEntity.toPageInfo());
         }
         return result;
     }
 
-    public BookInfo loadBook (BookId bookId) throws IOException {
-        try {
-            BookEntity bookEntity = ops.getCradleBookOperator().get(bookId.getName(), readAttrs);
+    public BookInfo loadBook (BookId bookId) throws CradleStorageException {
+        BookEntity bookEntity = ops.getCradleBookOperator().get(bookId.getName(), readAttrs);
 
-            if (bookEntity == null) {
-                throw new IOException();
-            }
-
-            if (!bookEntity.getSchemaVersion().equals(schemaVersion)) {
-                throw new Exception(String.format(UNSUPPORTED_SCHEMA_VERSION_FORMAT,
-                        bookEntity.getName(),
-                        schemaVersion,
-                        bookEntity.getSchemaVersion()));
-            }
-
-            return processBookEntity(bookEntity);
-        } catch (Exception e) {
-            throw new IOException(String.format("Error while loading book \"%s\"", bookId.getName()), e);
+        if (bookEntity == null) {
+            throw new CradleStorageException(String.format("Book %s was not found in DB", bookId.getName()));
         }
+
+        if (!bookEntity.getSchemaVersion().equals(schemaVersion)) {
+            throw new CradleStorageException(String.format(UNSUPPORTED_SCHEMA_VERSION_FORMAT,
+                    bookEntity.getName(),
+                    schemaVersion,
+                    bookEntity.getSchemaVersion()));
+        }
+
+        return processBookEntity(bookEntity);
     }
 
-    private BookInfo processBookEntity (BookEntity entity) throws IOException {
-        try {
-            BookId bookId = new BookId(entity.getName());
-            ops.addOperators(bookId, entity.getKeyspaceName());
-            Collection<PageInfo> pages = loadPageInfo(bookId);
+    private BookInfo processBookEntity (BookEntity entity) throws CradleStorageException {
+        BookId bookId = new BookId(entity.getName());
+        ops.addOperators(bookId, entity.getKeyspaceName());
+        Collection<PageInfo> pages = loadPageInfo(bookId);
 
-            return entity.toBookInfo(pages);
-        } catch (Exception e) {
-            throw new IOException(String.format("Error while loading book \"%s\"", entity.getName()), e);
-        }
+        return entity.toBookInfo(pages);
     }
 
-    public Collection<BookInfo> loadBooks() throws IOException
+    public Collection<BookInfo> loadBooks() throws CradleStorageException
     {
         Collection<BookInfo> result = new ArrayList<>();
-        try
-        {
+
             for (BookEntity bookEntity : ops.getCradleBookOperator().getAll(readAttrs))
             {
-                if(!bookEntity.getSchemaVersion().equals(schemaVersion)) {
-                    logger.warn(String.format(UNSUPPORTED_SCHEMA_VERSION_FORMAT,
-                            bookEntity.getName(),
-                            schemaVersion,
-                            bookEntity.getSchemaVersion()));
-                    continue;
-                }
+                try {
+                    if(!bookEntity.getSchemaVersion().equals(schemaVersion)) {
+                        logger.warn(String.format(UNSUPPORTED_SCHEMA_VERSION_FORMAT,
+                                bookEntity.getName(),
+                                schemaVersion,
+                                bookEntity.getSchemaVersion()));
+                        continue;
+                    }
 
-                result.add(processBookEntity(bookEntity));
+                    result.add(processBookEntity(bookEntity));
+                } catch (CradleStorageException e) {
+                    logger.warn("Could not load book {}", bookEntity.getName());
+                }
             }
-        }
-        catch (Exception e)
-        {
-            throw new IOException("Error while loading books", e);
-        }
         return result;
     }
 

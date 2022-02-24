@@ -16,14 +16,16 @@
 
 package com.exactpro.cradle;
 
-import java.io.IOException;
 import java.time.Instant;
 
 import com.exactpro.cradle.utils.CradleStorageException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BookAndPageChecker
 {
-	private BookCache bookCache;
+	private final static Logger logger = LoggerFactory.getLogger(BookAndPageChecker.class);
+	private final BookCache bookCache;
 	
 	public BookAndPageChecker(BookCache bookCache)
 	{
@@ -35,9 +37,9 @@ public class BookAndPageChecker
 	{
 		try {
 			return bookCache.getBook(bookId);
-		} catch (IOException e) {
+		} catch (CradleStorageException e) {
 			// Book was not found
-			throw new CradleStorageException("Book '"+bookId+"' is unknown");
+			throw e;
 		}
 	}
 
@@ -45,7 +47,8 @@ public class BookAndPageChecker
 		try {
 			bookCache.getBook(bookId);
 			return true;
-		} catch (IOException e) {
+		} catch (CradleStorageException e) {
+			logger.info("Book {} does not exist in cradle", bookId.getName());
 			return false;
 		}
 	}

@@ -47,25 +47,25 @@ public class DummyCradleStorage extends CradleStorage
 		}
 
 		@Override
-		public BookInfo getBook(BookId bookId) throws IOException {
+		public BookInfo getBook(BookId bookId) throws CradleStorageException {
 			if (!books.containsKey(bookId)) {
-				throw new IOException("Book not found");
+				throw new CradleStorageException("Book not found");
 			}
 			return books.get(bookId);
 		}
 
 		@Override
-		public Collection<PageInfo> loadPageInfo(BookId bookId) throws IOException {
+		public Collection<PageInfo> loadPageInfo(BookId bookId) throws CradleStorageException {
 			return null;
 		}
 
 		@Override
-		public BookInfo loadBook(BookId bookId) throws IOException {
+		public BookInfo loadBook(BookId bookId) throws CradleStorageException {
 			return null;
 		}
 
 		@Override
-		public Collection<BookInfo> loadBooks() throws IOException {
+		public Collection<BookInfo> loadBooks() throws CradleStorageException {
 			return null;
 		}
 

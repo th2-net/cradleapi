@@ -313,7 +313,7 @@ public abstract class CradleStorage
 	 * @return Collection of loaded books
 	 * @throws IOException if books data reading failed
 	 */
-	public Collection<BookInfo> refreshBooks() throws IOException
+	public Collection<BookInfo> refreshBooks() throws CradleStorageException
 	{
 		logger.info("Refreshing books from storage");
 		Collection<BookInfo> loaded = getBookCache().loadBooks();
@@ -328,7 +328,7 @@ public abstract class CradleStorage
 	 * @return loaded book
 	 * @throws IOException if books data reading failed
 	 */
-	public BookInfo refreshBook (String name) throws IOException {
+	public BookInfo refreshBook (String name) throws CradleStorageException {
 		logger.info("Refreshing book {} from storage", name);
 
 		BookInfo bookInfo = getBookCache().loadBook(new BookId(name));
