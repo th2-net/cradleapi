@@ -44,13 +44,7 @@ public class BookAndPageChecker
 	}
 
 	public boolean checkBook (BookId bookId) {
-		try {
-			bookCache.getBook(bookId);
-			return true;
-		} catch (CradleStorageException e) {
-			logger.info("Book {} does not exist in cradle", bookId.getName());
-			return false;
-		}
+		return bookCache.checkBook(bookId);
 	}
 	
 	public PageInfo findPage(BookId bookId, Instant timestamp) throws CradleStorageException

@@ -55,6 +55,11 @@ public class DummyCradleStorage extends CradleStorage
 		}
 
 		@Override
+		public boolean checkBook(BookId bookId) {
+			return false;
+		}
+
+		@Override
 		public Collection<PageInfo> loadPageInfo(BookId bookId) throws CradleStorageException {
 			return null;
 		}

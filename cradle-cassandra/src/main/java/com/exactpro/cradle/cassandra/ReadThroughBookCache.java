@@ -64,6 +64,11 @@ public class ReadThroughBookCache implements BookCache {
         return books.get(bookId);
     }
 
+    @Override
+    public boolean checkBook(BookId bookId) {
+        return books.containsKey(bookId);
+    }
+
     public Collection<PageInfo> loadPageInfo(BookId bookId) throws CradleStorageException
     {
         Collection<PageInfo> result = new ArrayList<>();
@@ -109,15 +114,15 @@ public class ReadThroughBookCache implements BookCache {
                 try {
                     if(!bookEntity.getSchemaVersion().equals(schemaVersion)) {
                         logger.warn(String.format(UNSUPPORTED_SCHEMA_VERSION_FORMAT,
-                                bookEntity.getName(),
-                                schemaVersion,
-                                bookEntity.getSchemaVersion()));
+                            bookEntity.getName(),
+                            schemaVersion,
+                            bookEntity.getSchemaVersion()));
                         continue;
                     }
 
                     result.add(processBookEntity(bookEntity));
                 } catch (CradleStorageException e) {
-                    logger.warn("Could not load book {}", bookEntity.getName());
+                    logger.warn("Could not load book {}: {}", bookEntity.getName(), e);
                 }
             }
         return result;

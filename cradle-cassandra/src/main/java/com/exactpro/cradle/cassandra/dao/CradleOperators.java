@@ -58,7 +58,8 @@ public class CradleOperators
 			logger.info("operators were absent for book {}, creating operators", bookId);
 			BookEntity entity = cradleBookOp.get(bookId.getName(), readAttrs);
 			if (entity == null) {
-				throw new CradleStorageException("No operators prepared for book '"+bookId+"'");
+				logger.error("Book {} was not found in DB, can't create operators", bookId);
+				throw new CradleStorageException(String.format("Book %s was not found in DB", bookId));
 			}
 
 			addOperators(bookId, entity.getKeyspaceName());
