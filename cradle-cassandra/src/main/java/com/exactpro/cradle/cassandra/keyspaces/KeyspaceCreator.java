@@ -98,7 +98,7 @@ public abstract class KeyspaceCreator
 	private void awaitKeyspaceReady() throws CradleStorageException
 	{
 		int attempt = 0;
-		long timeRemaining = settings.getTimeout();
+		long timeRemaining = Math.max(KEYSPACE_WAIT_TIMEOUT, settings.getTimeout());
 
 		while(getKeyspaceMetadata() == null && timeRemaining > 0)
 		{
