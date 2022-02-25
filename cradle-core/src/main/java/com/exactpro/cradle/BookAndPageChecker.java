@@ -17,26 +17,34 @@
 package com.exactpro.cradle;
 
 import java.time.Instant;
-import java.util.Map;
 
 import com.exactpro.cradle.utils.CradleStorageException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BookAndPageChecker
 {
-	private final Map<BookId, BookInfo> books;
+	private final static Logger logger = LoggerFactory.getLogger(BookAndPageChecker.class);
+	private final BookCache bookCache;
 	
-	public BookAndPageChecker(Map<BookId, BookInfo> books)
+	public BookAndPageChecker(BookCache bookCache)
 	{
-		this.books = books;
+		this.bookCache = bookCache;
 	}
 	
 	
 	public BookInfo getBook(BookId bookId) throws CradleStorageException
 	{
-		BookInfo result = books.get(bookId);
-		if (result == null)
-			throw new CradleStorageException("Book '"+bookId+"' is unknown");
-		return result;
+		try {
+			return bookCache.getBook(bookId);
+		} catch (CradleStorageException e) {
+			// Book was not found
+			throw e;
+		}
+	}
+
+	public boolean checkBook (BookId bookId) {
+		return bookCache.checkBook(bookId);
 	}
 	
 	public PageInfo findPage(BookId bookId, Instant timestamp) throws CradleStorageException

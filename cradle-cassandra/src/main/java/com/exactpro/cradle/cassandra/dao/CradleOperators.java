@@ -18,25 +18,34 @@ package com.exactpro.cradle.cassandra.dao;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
+import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
+import com.exactpro.cradle.cassandra.dao.books.BookEntity;
 import com.exactpro.cradle.cassandra.dao.books.CradleBookOperator;
 import com.exactpro.cradle.utils.CradleStorageException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CradleOperators
 {
+	private final Logger logger = LoggerFactory.getLogger (CradleOperators.class);
+
 	private final Map<BookId, BookOperators> bookOps;
 	private final CassandraDataMapper dataMapper;
 	private final CassandraStorageSettings settings;
 	private final CradleBookOperator cradleBookOp;
+	private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
 	
-	public CradleOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings)
+	public CradleOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
 	{
 		bookOps = new ConcurrentHashMap<>();
 		this.dataMapper = dataMapper;
 		this.settings = settings;
-		
+		this.readAttrs = readAttrs;
+
 		String infoKeyspace = settings.getCradleInfoKeyspace();
 		this.cradleBookOp = dataMapper.cradleBookOperator(infoKeyspace, settings.getBooksTable());
 	}
@@ -44,8 +53,19 @@ public class CradleOperators
 	public BookOperators getOperators(BookId bookId) throws CradleStorageException
 	{
 		BookOperators result = bookOps.get(bookId);
-		if (result == null)
-			throw new CradleStorageException("No operators prepared for book '"+bookId+"'");
+
+		if (result == null) {
+			logger.info("operators were absent for book {}, creating operators", bookId);
+			BookEntity entity = cradleBookOp.get(bookId.getName(), readAttrs);
+			if (entity == null) {
+				logger.error("Book {} was not found in DB, can't create operators", bookId);
+				throw new CradleStorageException(String.format("Book %s was not found in DB", bookId));
+			}
+
+			addOperators(bookId, entity.getKeyspaceName());
+
+			result = bookOps.get(bookId);
+		}
 		return result;
 	}
 	

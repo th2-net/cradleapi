@@ -83,6 +83,8 @@ public class CassandraCradleStorage extends CradleStorage
 	private SelectExecutionPolicy multiRowResultExecPolicy, singleRowResultExecPolicy;
 	private EventsWorker eventsWorker;
 	private MessagesWorker messagesWorker;
+	private BookCache bookCache;
+
 
 	public CassandraCradleStorage(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings, 
 			ExecutorService composingService) throws CradleStorageException
@@ -101,7 +103,12 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	private static final Consumer<Object> NOOP = whatever -> {};
-	
+
+	@Override
+	protected BookCache getBookCache() {
+		return bookCache;
+	}
+
 	@Override
 	protected void doInit(boolean prepareStorage) throws CradleStorageException
 	{
@@ -119,8 +126,7 @@ public class CassandraCradleStorage extends CradleStorage
 			else
 				logger.info("Storage creation skipped");
 			
-			ops = createOperators(connection.getSession(), settings);
-			
+
 			Duration timeout = Duration.ofMillis(settings.getTimeout());
 			int resultPageSize = settings.getResultPageSize();
 			writeAttrs = builder -> builder.setConsistencyLevel(settings.getWriteConsistencyLevel())
@@ -131,10 +137,14 @@ public class CassandraCradleStorage extends CradleStorage
 			strictReadAttrs = builder -> builder.setConsistencyLevel(ConsistencyLevel.ALL)
 					.setTimeout(timeout)
 					.setPageSize(resultPageSize);
+			ops = createOperators(connection.getSession(), settings);
+
 
 			WorkerSupplies ws = new WorkerSupplies(settings, ops, composingService, bpc, selectExecutor, writeAttrs, readAttrs);
 			eventsWorker = new EventsWorker(ws);
 			messagesWorker = new MessagesWorker(ws);
+
+			bookCache = new ReadThroughBookCache(ops, readAttrs, settings.getSchemaVersion());
 		}
 		catch (Exception e)
 		{
@@ -159,37 +169,6 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		else
 			logger.info("Already disconnected from Cassandra");
-	}
-	
-	@Override
-	protected Collection<BookInfo> loadBooks() throws IOException
-	{
-		Collection<BookInfo> result = new ArrayList<>();
-		try
-		{
-			for (BookEntity bookEntity : ops.getCradleBookOperator().getAll(readAttrs))
-			{
-				if(!bookEntity.getSchemaVersion().equals(settings.getSchemaVersion())) {
-					logger.warn("Unsupported schema version for the book \"{}\". Expected: {}, found: {}. Skipping",
-							bookEntity.getName(),
-							settings.getSchemaVersion(),
-							bookEntity.getSchemaVersion()
-					);
-					continue;
-				}
-
-				BookId bookId = new BookId(bookEntity.getName());
-				ops.addOperators(bookId, bookEntity.getKeyspaceName());
-				Collection<PageInfo> pages = loadPageInfo(bookId);
-				
-				result.add(bookEntity.toBookInfo(pages));
-			}
-		}
-		catch (Exception e)
-		{
-			throw new IOException("Error while loading books", e);
-		}
-		return result;
 	}
 	
 	@Override
@@ -252,13 +231,13 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException, IOException
+	protected Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException
 	{
-		return loadPageInfo(bookId);
+		return bookCache.loadPageInfo(bookId);
 	}
 	
 	@Override
-	protected void doRemovePage(PageInfo page) throws CradleStorageException, IOException
+	protected void doRemovePage(PageInfo page) throws CradleStorageException
 	{
 		PageId pageId = page.getId();
 		BookOperators bookOps = ops.getOperators(pageId.getBookId());
@@ -624,7 +603,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CradleOperators createOperators(CqlSession session, CassandraStorageSettings settings)
 	{
 		CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(session).build();
-		return new CradleOperators(dataMapper, settings);
+		return new CradleOperators(dataMapper, settings, readAttrs);
 	}
 	
 	protected void createStorage() throws CradleStorageException
@@ -679,25 +658,6 @@ public class CassandraCradleStorage extends CradleStorage
 	public Function<BoundStatementBuilder, BoundStatementBuilder> getStrictReadAttrs()
 	{
 		return strictReadAttrs;
-	}
-	
-	
-	private Collection<PageInfo> loadPageInfo(BookId bookId) throws IOException
-	{
-		Collection<PageInfo> result = new ArrayList<>();
-		try
-		{
-			for (PageEntity pageEntity : ops.getOperators(bookId).getPageOperator().getAll(bookId.getName(), readAttrs))
-			{
-				if (pageEntity.getRemoved() == null)
-					result.add(pageEntity.toPageInfo());
-			}
-		}
-		catch (Exception e)
-		{
-			throw new IOException("Error while loading pages of book '"+bookId+"'", e);
-		}
-		return result;
 	}
 	
 	protected CompletableFuture<Void> failEventAndParents(StoredTestEventId eventId)
