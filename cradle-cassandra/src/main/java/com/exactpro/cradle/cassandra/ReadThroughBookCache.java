@@ -56,7 +56,7 @@ public class ReadThroughBookCache implements BookCache {
             try {
                 books.put(bookId, loadBook(bookId));
             } catch (CradleStorageException e) {
-                logger.warn("Could not load book named {}: {}", bookId.getName(), e);
+                logger.error("Could not load book named {}: {}", bookId.getName(), e);
                 throw e;
             }
         }
@@ -122,7 +122,7 @@ public class ReadThroughBookCache implements BookCache {
 
                     result.add(processBookEntity(bookEntity));
                 } catch (CradleStorageException e) {
-                    logger.warn("Could not load book {}: {}", bookEntity.getName(), e);
+                    logger.error("Could not load book {}: {}", bookEntity.getName(), e);
                 }
             }
         return result;
