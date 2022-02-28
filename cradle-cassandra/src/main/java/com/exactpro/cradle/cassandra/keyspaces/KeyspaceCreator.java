@@ -42,6 +42,7 @@ public abstract class KeyspaceCreator
 	private final String keyspace;
 	private final QueryExecutor queryExecutor;
 	private final CassandraStorageSettings settings;
+	private final long keyspaceReadinessTimeout;
 
 	private KeyspaceMetadata keyspaceMetadata;
 	
@@ -50,6 +51,7 @@ public abstract class KeyspaceCreator
 		this.keyspace = keyspace;
 		this.queryExecutor = queryExecutor;
 		this.settings = settings;
+		this.keyspaceReadinessTimeout = Math.max(KEYSPACE_WAIT_TIMEOUT, settings.getTimeout());
 	}
 	
 	protected abstract void createTables() throws IOException;
@@ -98,7 +100,7 @@ public abstract class KeyspaceCreator
 	private void awaitKeyspaceReady() throws CradleStorageException
 	{
 		int attempt = 0;
-		long timeRemaining = Math.max(KEYSPACE_WAIT_TIMEOUT, settings.getTimeout());
+		long timeRemaining = keyspaceReadinessTimeout;
 
 		while(getKeyspaceMetadata() == null && timeRemaining > 0)
 		{
@@ -118,7 +120,7 @@ public abstract class KeyspaceCreator
 		
 		if (getKeyspaceMetadata() == null)
 			throw new CradleStorageException(
-					"Keyspace '" + keyspace + "' unavailable after " + settings.getTimeout() + "ms of awaiting");
+					"Keyspace '" + keyspace + "' unavailable after " + keyspaceReadinessTimeout + "ms of awaiting");
 	}
 	
 	protected boolean isTableExists(String tableName)
