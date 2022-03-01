@@ -16,15 +16,6 @@
 
 package com.exactpro.cradle.cassandra.keyspaces;
 
-import java.io.IOException;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
-
-import com.exactpro.cradle.utils.CradleStorageException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
@@ -33,19 +24,26 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
+import com.exactpro.cradle.utils.CradleStorageException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 public abstract class KeyspaceCreator
 {
 	private static final Logger logger = LoggerFactory.getLogger(KeyspaceCreator.class);
 	
-	public static final int ATTEMPTS_KEYSPACE_WAITING = 5;
-	public static final long MINIMAL_KEYSPACE_WAIT_TIMEOUT = 500;
+	public static final long KEYSPACE_WAIT_TIMEOUT = 500;
 	
 	private final String keyspace;
 	private final QueryExecutor queryExecutor;
 	private final CassandraStorageSettings settings;
-	private final long keyspaceWaitTimeout;
-	
+	private final long keyspaceReadinessTimeout;
+
 	private KeyspaceMetadata keyspaceMetadata;
 	
 	public KeyspaceCreator(String keyspace, QueryExecutor queryExecutor, CassandraStorageSettings settings)
@@ -53,7 +51,7 @@ public abstract class KeyspaceCreator
 		this.keyspace = keyspace;
 		this.queryExecutor = queryExecutor;
 		this.settings = settings;
-		this.keyspaceWaitTimeout = Math.max(MINIMAL_KEYSPACE_WAIT_TIMEOUT, settings.getTimeout() / ATTEMPTS_KEYSPACE_WAITING);
+		this.keyspaceReadinessTimeout = Math.max(KEYSPACE_WAIT_TIMEOUT, settings.getTimeout());
 	}
 	
 	protected abstract void createTables() throws IOException;
@@ -102,12 +100,16 @@ public abstract class KeyspaceCreator
 	private void awaitKeyspaceReady() throws CradleStorageException
 	{
 		int attempt = 0;
-		for (; getKeyspaceMetadata() == null && attempt < ATTEMPTS_KEYSPACE_WAITING; attempt++)
+		long timeRemaining = keyspaceReadinessTimeout;
+
+		while(getKeyspaceMetadata() == null && timeRemaining > 0)
 		{
-			logger.debug("[{}] attempt to wait {}ms for the readiness of the keyspace", attempt + 1, keyspaceWaitTimeout);
+			attempt++;
+			logger.debug("[{}] attempt to wait {}ms for the readiness of the keyspace", attempt, KEYSPACE_WAIT_TIMEOUT);
 			try
 			{
-				TimeUnit.MILLISECONDS.sleep(keyspaceWaitTimeout);
+				TimeUnit.MILLISECONDS.sleep(Math.min(KEYSPACE_WAIT_TIMEOUT, timeRemaining));
+				timeRemaining -= KEYSPACE_WAIT_TIMEOUT;
 			}
 			catch (InterruptedException e)
 			{
@@ -118,8 +120,7 @@ public abstract class KeyspaceCreator
 		
 		if (getKeyspaceMetadata() == null)
 			throw new CradleStorageException(
-					"Keyspace '" + keyspace + "' unavailable after " + attempt * keyspaceWaitTimeout +
-							"ms of awaiting");
+					"Keyspace '" + keyspace + "' unavailable after " + keyspaceReadinessTimeout + "ms of awaiting");
 	}
 	
 	protected boolean isTableExists(String tableName)
