@@ -325,21 +325,6 @@ public abstract class CradleStorage
 	}
 
 	/**
-	 * Getting information about books from storage and put it in internal cache
-	 * @return Collection of loaded books
-	 * @throws CradleStorageException if books data reading failed
-	 * @throws IOException if data reading failed
-	 */
-	public Collection<BookInfo> refreshBooks() throws CradleStorageException, IOException
-	{
-		logger.info("Refreshing books from storage");
-		Collection<BookInfo> loaded = getBookCache().loadBooks();
-		if (loaded != null)
-			loaded.forEach(bookInfo -> getBookCache().updateCachedBook(bookInfo));
-		return loaded;
-	}
-
-	/**
 	 * Getting information about specific book from storage and put it in internal cache
 	 * @param name of book to load
 	 * @return loaded book
