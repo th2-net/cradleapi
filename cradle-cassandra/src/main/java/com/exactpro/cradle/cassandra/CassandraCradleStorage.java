@@ -66,6 +66,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class CassandraCradleStorage extends CradleStorage
 {
@@ -170,7 +171,14 @@ public class CassandraCradleStorage extends CradleStorage
 		else
 			logger.info("Already disconnected from Cassandra");
 	}
-	
+
+	@Override
+	protected List<BookListEntry> doListBooks() throws IOException {
+		return ops.getCradleBookOperator().getAll(readAttrs).all().stream()
+				.map(entity -> new BookListEntry(entity.getName(), entity.getSchemaVersion()))
+				.collect(Collectors.toList());
+	}
+
 	@Override
 	protected void doAddBook(BookToAdd newBook, BookId bookId) throws IOException
 	{

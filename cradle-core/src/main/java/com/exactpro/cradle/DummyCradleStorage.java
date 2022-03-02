@@ -110,6 +110,11 @@ public class DummyCradleStorage extends CradleStorage
 	}
 
 	@Override
+	protected List<BookListEntry> doListBooks() throws IOException {
+		return null;
+	}
+
+	@Override
 	protected void doAddBook(BookToAdd newBook, BookId bookId)
 	{
 	}

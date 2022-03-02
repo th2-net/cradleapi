@@ -83,6 +83,7 @@ public abstract class CradleStorage
 	protected abstract BookCache getBookCache ();
 	protected abstract void doDispose() throws CradleStorageException;
 
+	protected abstract List<BookListEntry> doListBooks () throws IOException;
 	protected abstract void doAddBook(BookToAdd newBook, BookId bookId) throws IOException;
 	protected abstract void doAddPages(BookId bookId, List<PageInfo> pages, PageInfo lastPage) throws CradleStorageException, IOException;
 	protected abstract Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException, IOException;
@@ -220,7 +221,22 @@ public abstract class CradleStorage
 
 		return newBook;
 	}
-	
+
+	/**
+	 * Gets list of books in underlying DB, does not validate them
+	 * or add to cache
+	 * @return Collection of BookListEntry which contains minimal information about books
+	 * @throws IOException if data
+	 */
+	public Collection<BookListEntry> listBooks () throws IOException {
+		try {
+			return doListBooks();
+		} catch (IOException e) {
+			logger.error("Could not list books: {}", e.getMessage());
+			throw e;
+		}
+	}
+
 	/**
 	 * @return collection of books currently available in storage
 	 */
