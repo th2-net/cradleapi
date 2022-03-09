@@ -27,7 +27,7 @@ public class BookPagesNamesChecker {
     // from 0x20 - 0x7E ascii symbols. Contain all latin character, numbers and printed symbols
     private static final Pattern PAGE_NAME_PATTERN = Pattern.compile("^[\\x20-\\x7E]+$");
 
-    public static final String INVALID_BOOK_NAME_TEXT = "Invalid book name: %s. Up to 48 alphanumeric characters and underscore are allowed.";
+    public static final String INVALID_BOOK_NAME_TEXT = "Invalid book name: %s. Up to 43 alphanumeric characters and underscore are allowed.";
     public static final String INVALID_PAGE_NAME_TEXT = "Invalid page name: %s. ASCII printable characters (alphanumeric and symbols) are allowed.";
 
 
