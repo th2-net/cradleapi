@@ -87,6 +87,7 @@ public abstract class CradleStorage
 	protected abstract void doAddBook(BookToAdd newBook, BookId bookId) throws IOException;
 	protected abstract void doAddPages(BookId bookId, List<PageInfo> pages, PageInfo lastPage) throws CradleStorageException, IOException;
 	protected abstract Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException, IOException;
+	protected abstract Collection<PageInfo> doListRemovedPages(BookId bookId) throws CradleStorageException;
 	protected abstract void doRemovePage(PageInfo page) throws CradleStorageException, IOException;
 	
 	
@@ -316,6 +317,22 @@ public abstract class CradleStorage
 		book = new BookInfo(book.getId(), book.getFullName(), book.getDesc(), book.getCreated(), pages);
 		getBookCache().updateCachedBook(book);
 		return book;
+	}
+
+	/**
+	 * @param bookId book of removed pages
+	 * @return collection of removed pages for given book
+	 * @throws CradleStorageException
+	 */
+	public Collection<PageInfo> listRemovedPages(BookId bookId) throws CradleStorageException {
+		logger.info("Getting Removed pages for book {}", bookId.getName());
+
+		try {
+			return doListRemovedPages(bookId);
+		} catch (CradleStorageException e) {
+			logger.error("Could not get removed pages for book {}", bookId.getName());
+			throw e;
+		}
 	}
 
 	/**
@@ -839,21 +856,23 @@ public abstract class CradleStorage
 			
 			if (prevPage != null)
 			{
+				// removed field is null siunce this page can not be deleted
 				if (!page.getStart().isAfter(prevPage.getStart()))
 					throw new CradleStorageException("Unordered pages: page '"+name+"' should start after page '"+prevPage.getName()+"'");
 				result.add(new PageInfo(new PageId(bookId, prevPage.getName()), 
 						prevPage.getStart(), 
 						page.getStart(), 
-						prevPage.getComment()));
+						prevPage.getComment(), null));
 			}
 			prevPage = page;
 		}
-		
+
+		// removed field is null siunce this page can not be deleted
 		if (prevPage != null)
 			result.add(new PageInfo(new PageId(bookId, prevPage.getName()), 
 					prevPage.getStart(), 
 					null, 
-					prevPage.getComment()));
+					prevPage.getComment(), null));
 		return result;
 	}
 	

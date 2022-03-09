@@ -30,7 +30,8 @@ import java.util.Collection;
 public interface BookCache {
     BookInfo getBook (BookId bookId) throws CradleStorageException;
     boolean checkBook (BookId bookId);
-    Collection<PageInfo>    loadPageInfo(BookId bookId) throws CradleStorageException;
+    Collection<PageInfo> loadPageInfo(BookId bookId) throws CradleStorageException;
+    Collection<PageInfo> loadRemovedPageInfo(BookId bookId) throws CradleStorageException;
     BookInfo loadBook (BookId bookId) throws CradleStorageException;
     void updateCachedBook (BookInfo bookInfo);
     Collection<BookInfo> getCachedBooks ();

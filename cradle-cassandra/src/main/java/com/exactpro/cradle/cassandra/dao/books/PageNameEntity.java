@@ -199,10 +199,4 @@ public class PageNameEntity
   		setEndTime(ldt.toLocalTime());
 		}
 	}
-	
-	
-	public PageInfo toPageInfo()
-	{
-		return new PageInfo(new PageId(new BookId(part), name), getStartTimestamp(), getEndTimestamp(), getComment());
-	}
 }

@@ -80,6 +80,18 @@ public class ReadThroughBookCache implements BookCache {
         return result;
     }
 
+    @Override
+    public Collection<PageInfo> loadRemovedPageInfo(BookId bookId) throws CradleStorageException {
+        Collection<PageInfo> result = new ArrayList<>();
+
+        for (PageEntity pageEntity : ops.getOperators(bookId).getPageOperator().getAll(bookId.getName(), readAttrs))
+        {
+            if (pageEntity.getRemoved() != null)
+                result.add(pageEntity.toPageInfo());
+        }
+        return result;
+    }
+
     public BookInfo loadBook (BookId bookId) throws CradleStorageException {
         BookEntity bookEntity = ops.getCradleBookOperator().get(bookId.getName(), readAttrs);
 

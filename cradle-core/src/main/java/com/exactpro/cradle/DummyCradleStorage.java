@@ -65,6 +65,11 @@ public class DummyCradleStorage extends CradleStorage
 		}
 
 		@Override
+		public Collection<PageInfo> loadRemovedPageInfo(BookId bookId) throws CradleStorageException {
+			return null;
+		}
+
+		@Override
 		public BookInfo loadBook(BookId bookId) throws CradleStorageException {
 			return null;
 		}
@@ -102,6 +107,11 @@ public class DummyCradleStorage extends CradleStorage
 	@Override
 	protected void doDispose() throws CradleStorageException
 	{
+	}
+
+	@Override
+	protected Collection<PageInfo> doListRemovedPages(BookId bookId) {
+		return null;
 	}
 
 	@Override
