@@ -105,29 +105,6 @@ public class ReadThroughBookCache implements BookCache {
         return entity.toBookInfo(pages);
     }
 
-    public Collection<BookInfo> loadBooks() throws CradleStorageException
-    {
-        Collection<BookInfo> result = new ArrayList<>();
-
-            for (BookEntity bookEntity : ops.getCradleBookOperator().getAll(readAttrs))
-            {
-                try {
-                    if(!bookEntity.getSchemaVersion().equals(schemaVersion)) {
-                        logger.warn(String.format(UNSUPPORTED_SCHEMA_VERSION_FORMAT,
-                            bookEntity.getName(),
-                            schemaVersion,
-                            bookEntity.getSchemaVersion()));
-                        continue;
-                    }
-
-                    result.add(processBookEntity(bookEntity));
-                } catch (CradleStorageException e) {
-                    logger.error("Could not load book {}: {}", bookEntity.getName(), e);
-                }
-            }
-        return result;
-    }
-
     @Override
     public void updateCachedBook(BookInfo bookInfo) {
         books.put(bookInfo.getId(), bookInfo);

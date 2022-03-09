@@ -83,6 +83,7 @@ public abstract class CradleStorage
 	protected abstract BookCache getBookCache ();
 	protected abstract void doDispose() throws CradleStorageException;
 
+	protected abstract Collection<BookListEntry> doListBooks ();
 	protected abstract void doAddBook(BookToAdd newBook, BookId bookId) throws IOException;
 	protected abstract void doAddPages(BookId bookId, List<PageInfo> pages, PageInfo lastPage) throws CradleStorageException, IOException;
 	protected abstract Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException, IOException;
@@ -220,7 +221,16 @@ public abstract class CradleStorage
 
 		return newBook;
 	}
-	
+
+	/**
+	 * Gets books listed in underlying DB, does not validate them
+	 * or add to cache
+	 * @return Collection of BookListEntry which contains minimal information about books
+	 */
+	public Collection<BookListEntry> listBooks () {
+		return doListBooks();
+	}
+
 	/**
 	 * @return collection of books currently available in storage
 	 */
@@ -306,21 +316,6 @@ public abstract class CradleStorage
 		book = new BookInfo(book.getId(), book.getFullName(), book.getDesc(), book.getCreated(), pages);
 		getBookCache().updateCachedBook(book);
 		return book;
-	}
-
-	/**
-	 * Getting information about books from storage and put it in internal cache
-	 * @return Collection of loaded books
-	 * @throws CradleStorageException if books data reading failed
-	 * @throws IOException if data reading failed
-	 */
-	public Collection<BookInfo> refreshBooks() throws CradleStorageException, IOException
-	{
-		logger.info("Refreshing books from storage");
-		Collection<BookInfo> loaded = getBookCache().loadBooks();
-		if (loaded != null)
-			loaded.forEach(bookInfo -> getBookCache().updateCachedBook(bookInfo));
-		return loaded;
 	}
 
 	/**

@@ -32,7 +32,6 @@ public interface BookCache {
     boolean checkBook (BookId bookId);
     Collection<PageInfo>    loadPageInfo(BookId bookId) throws CradleStorageException;
     BookInfo loadBook (BookId bookId) throws CradleStorageException;
-    Collection<BookInfo> loadBooks() throws CradleStorageException;
     void updateCachedBook (BookInfo bookInfo);
     Collection<BookInfo> getCachedBooks ();
 }

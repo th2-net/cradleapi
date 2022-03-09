@@ -70,11 +70,6 @@ public class DummyCradleStorage extends CradleStorage
 		}
 
 		@Override
-		public Collection<BookInfo> loadBooks() throws CradleStorageException {
-			return null;
-		}
-
-		@Override
 		public void updateCachedBook(BookInfo bookInfo) {
 			books.put(bookInfo.getId(), bookInfo);
 		}
@@ -107,6 +102,11 @@ public class DummyCradleStorage extends CradleStorage
 	@Override
 	protected void doDispose() throws CradleStorageException
 	{
+	}
+
+	@Override
+	protected Collection<BookListEntry> doListBooks() {
+		return null;
 	}
 
 	@Override
