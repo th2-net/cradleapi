@@ -105,7 +105,7 @@ public class DummyCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected List<BookListEntry> doListBooks() throws IOException {
+	protected Collection<BookListEntry> doListBooks() throws IOException {
 		return null;
 	}
 

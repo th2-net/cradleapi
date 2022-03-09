@@ -83,7 +83,7 @@ public abstract class CradleStorage
 	protected abstract BookCache getBookCache ();
 	protected abstract void doDispose() throws CradleStorageException;
 
-	protected abstract List<BookListEntry> doListBooks () throws IOException;
+	protected abstract Collection<BookListEntry> doListBooks () throws IOException;
 	protected abstract void doAddBook(BookToAdd newBook, BookId bookId) throws IOException;
 	protected abstract void doAddPages(BookId bookId, List<PageInfo> pages, PageInfo lastPage) throws CradleStorageException, IOException;
 	protected abstract Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException, IOException;
