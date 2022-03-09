@@ -226,7 +226,6 @@ public abstract class CradleStorage
 	 * Gets books listed in underlying DB, does not validate them
 	 * or add to cache
 	 * @return Collection of BookListEntry which contains minimal information about books
-	 * @throws IOException if data
 	 */
 	public Collection<BookListEntry> listBooks () {
 		return doListBooks();
