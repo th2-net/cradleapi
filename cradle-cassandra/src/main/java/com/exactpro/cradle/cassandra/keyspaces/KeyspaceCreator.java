@@ -16,14 +16,6 @@
 
 package com.exactpro.cradle.cassandra.keyspaces;
 
-import java.io.IOException;
-import java.time.Duration;
-import java.util.Optional;
-import java.util.function.Supplier;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
@@ -32,15 +24,26 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
+import com.exactpro.cradle.utils.CradleStorageException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 public abstract class KeyspaceCreator
 {
 	private static final Logger logger = LoggerFactory.getLogger(KeyspaceCreator.class);
 	
+	public static final long KEYSPACE_WAIT_TIMEOUT = 500;
+	
 	private final String keyspace;
 	private final QueryExecutor queryExecutor;
 	private final CassandraStorageSettings settings;
-	
+	private final long keyspaceReadinessTimeout;
+
 	private KeyspaceMetadata keyspaceMetadata;
 	
 	public KeyspaceCreator(String keyspace, QueryExecutor queryExecutor, CassandraStorageSettings settings)
@@ -48,13 +51,13 @@ public abstract class KeyspaceCreator
 		this.keyspace = keyspace;
 		this.queryExecutor = queryExecutor;
 		this.settings = settings;
+		this.keyspaceReadinessTimeout = Math.max(KEYSPACE_WAIT_TIMEOUT, settings.getTimeout());
 	}
-	
 	
 	protected abstract void createTables() throws IOException;
 	
 	
-	public void createAll() throws IOException
+	public void createAll() throws IOException, CradleStorageException
 	{
 		createKeyspace();
 		createTables();
@@ -77,24 +80,47 @@ public abstract class KeyspaceCreator
 	}
 	
 	
-	public void createKeyspace() throws IOException
+	public void createKeyspace() throws IOException, CradleStorageException
 	{
 		Optional<KeyspaceMetadata> meta = obtainKeyspaceMetadata();
-		if (!meta.isPresent())
+		if (meta.isPresent())
+			throw new CradleStorageException("Keyspace '" + keyspace + "' already exists");
+		
+		logger.info("Creating keyspace '{}'", keyspace);
+		CreateKeyspace createKs = settings.getNetworkTopologyStrategy() != null
+				? SchemaBuilder.createKeyspace(keyspace)
+				.withNetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap())
+				: SchemaBuilder.createKeyspace(keyspace).withSimpleStrategy(settings.getKeyspaceReplicationFactor());
+		queryExecutor.executeQuery(createKs.asCql(), true);
+		logger.info("Keyspace '{}' has been created", keyspace);
+		
+		awaitKeyspaceReady();
+	}
+	
+	private void awaitKeyspaceReady() throws CradleStorageException
+	{
+		int attempt = 0;
+		long timeRemaining = keyspaceReadinessTimeout;
+
+		while(getKeyspaceMetadata() == null && timeRemaining > 0)
 		{
-			logger.info("Creating keyspace '{}'", keyspace);
-			CreateKeyspace createKs = settings.getNetworkTopologyStrategy() != null 
-					? SchemaBuilder.createKeyspace(keyspace).withNetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap()) 
-					: SchemaBuilder.createKeyspace(keyspace).withSimpleStrategy(settings.getKeyspaceReplicationFactor());
-			queryExecutor.executeQuery(createKs.asCql(), true);
-			logger.info("Keyspace '{}' has been created", keyspace);
-			this.keyspaceMetadata = obtainKeyspaceMetadata().get();  //FIXME: keyspace creation may take time and it won't be available immediately
+			attempt++;
+			logger.debug("[{}] attempt to wait {}ms for the readiness of the keyspace", attempt, KEYSPACE_WAIT_TIMEOUT);
+			try
+			{
+				TimeUnit.MILLISECONDS.sleep(Math.min(KEYSPACE_WAIT_TIMEOUT, timeRemaining));
+				timeRemaining -= KEYSPACE_WAIT_TIMEOUT;
+			}
+			catch (InterruptedException e)
+			{
+				throw new CradleStorageException(
+						"Waiting for keyspace '" + keyspace + "' readiness has been interrupted", e);
+			}
 		}
-		else
-		{
-			logger.info("Keyspace '{}' already exists", keyspace);
-			this.keyspaceMetadata = meta.get();
-		}
+		
+		if (getKeyspaceMetadata() == null)
+			throw new CradleStorageException(
+					"Keyspace '" + keyspace + "' unavailable after " + keyspaceReadinessTimeout + "ms of awaiting");
 	}
 	
 	protected boolean isTableExists(String tableName)
@@ -113,9 +139,7 @@ public abstract class KeyspaceCreator
 		if (keyspaceMetadata != null)
 			return keyspaceMetadata;
 		
-		Optional<KeyspaceMetadata> metadata = obtainKeyspaceMetadata();
-		if (metadata.isPresent())
-			keyspaceMetadata = metadata.get();
+		obtainKeyspaceMetadata().ifPresent(value -> keyspaceMetadata = value);
 		return keyspaceMetadata;
 	}
 	

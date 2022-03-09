@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,17 +20,17 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.internal.core.util.concurrent.CompletableFutures;
 import com.exactpro.cradle.*;
-import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.BookOperators;
-import com.exactpro.cradle.cassandra.dao.CradleOperators;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageSession;
 import com.exactpro.cradle.cassandra.dao.cache.CachedSession;
 import com.exactpro.cradle.cassandra.dao.messages.*;
+import com.exactpro.cradle.cassandra.dao.messages.converters.MessageBatchEntityConverter;
 import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TimeUtils;
+import io.prometheus.client.Counter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,22 +42,53 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
+import java.util.zip.DataFormatException;
 
 import static com.exactpro.cradle.CradleStorage.EMPTY_MESSAGE_INDEX;
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
+import static java.lang.String.format;
 
 public class MessagesWorker extends Worker
 {
 	private static final Logger logger = LoggerFactory.getLogger(MessagesWorker.class);
 
-	public MessagesWorker(CassandraStorageSettings settings, CradleOperators ops,
-			ExecutorService composingService, BookAndPageChecker bpc,
-			Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
-			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
+	private static final Counter MESSAGE_READ_METRIC = Counter.build().name("cradle_message_readed")
+			.help("Fetched messages").labelNames(BOOK_ID, SESSION_ALIAS, DIRECTION).register();
+	private static final Counter MESSAGE_WRITE_METRIC = Counter.build().name("cradle_message_stored")
+			.help("Stored messages").labelNames(BOOK_ID, SESSION_ALIAS, DIRECTION).register();
+
+	public MessagesWorker(WorkerSupplies workerSupplies)
 	{
-		super(settings, ops, composingService, bpc, writeAttrs, readAttrs);
+		super(workerSupplies);
+	}
+
+	public static StoredMessageBatch mapMessageBatchEntity(PageId pageId, MessageBatchEntity entity)
+	{
+		try
+		{
+			StoredMessageBatch batch = entity.toStoredMessageBatch(pageId);
+			updateMessageReadMetrics(batch);
+			return batch;
+		}
+		catch (DataFormatException | IOException e)
+		{
+			throw new CompletionException("Error while converting message batch entity into stored message batch", e);
+		}
+	}
+
+	private static void updateMessageReadMetrics(StoredMessageBatch batch)
+	{
+		MESSAGE_READ_METRIC
+				.labels(batch.getId().getBookId().getName(), batch.getSessionAlias(), batch.getDirection().getLabel())
+				.inc(batch.getMessageCount());
+	}
+
+	private static void updateMessageWriteMetrics(MessageBatchEntity entity, BookId bookId)
+	{
+		MESSAGE_WRITE_METRIC
+				.labels(bookId.getName(), entity.getSessionAlias(), entity.getDirection())
+				.inc(entity.getMessageCount());
 	}
 
 	public CompletableFuture<CradleResultSet<StoredMessageBatch>> getMessageBatches(MessageFilter filter, BookInfo book)
@@ -65,7 +96,8 @@ public class MessagesWorker extends Worker
 	{
 		MessageBatchesIteratorProvider provider =
 				new MessageBatchesIteratorProvider("get messages batches filtered by " + filter, filter,
-						getBookOps(book.getId()), book, composingService, readAttrs);
+						getBookOps(book.getId()), book, composingService, selectQueryExecutor,
+						composeReadAttrs(filter.getFetchParameters()));
 		return provider.nextIterator()
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, provider), composingService);
 	}
@@ -75,7 +107,8 @@ public class MessagesWorker extends Worker
 	{
 		MessagesIteratorProvider provider =
 				new MessagesIteratorProvider("get messages filtered by " + filter, filter,
-						ops.getOperators(book.getId()), book, composingService, readAttrs);
+						ops.getOperators(book.getId()), book, composingService, selectQueryExecutor,
+						composeReadAttrs(filter.getFetchParameters()));
 		return provider.nextIterator()
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, provider), composingService);
 	}
@@ -88,8 +121,11 @@ public class MessagesWorker extends Worker
 		// Therefore, when current page has different start date, search in previous pages doesn't make sense
 		if (page == null || TimeUtils.toLocalTimestamp(page.getStarted()).toLocalDate().isBefore(messageDate))
 			return CompletableFuture.completedFuture(null);
-		return mbOperator.getNearestTimeAndSequenceBefore(page.getId().getName(), sessionAlias, direction,
-						messageDate, messageTime, sequence, readAttrs)
+		String queryInfo = format("get nearest time and sequence before %s for page '%s'",
+				TimeUtils.toInstant(messageDate, messageTime), page.getId().getName());
+		return selectQueryExecutor.executeSingleRowResultQuery(
+						() -> mbOperator.getNearestTimeAndSequenceBefore(page.getId().getName(), sessionAlias,
+								direction, messageDate, messageTime, sequence, readAttrs), Function.identity(), queryInfo)
 				.thenComposeAsync(row ->
 				{
 					if (row != null)
@@ -117,6 +153,7 @@ public class MessagesWorker extends Worker
 
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(id.getTimestamp());
 		BookOperators bookOps = getBookOps(bookId);
+		MessageBatchEntityConverter mbEntityConverter = bookOps.getMessageBatchEntityConverter();
 		MessageBatchOperator mbOperator = bookOps.getMessageBatchOperator();
 
 		return getNearestTimeAndSequenceBefore(bookInfo, bookInfo.getPage(pageId), mbOperator, id.getSessionAlias(),
@@ -128,25 +165,20 @@ public class MessagesWorker extends Worker
 						logger.debug("No message batches found by id '{}'", id);
 						return CompletableFuture.completedFuture(null);
 					}
-					return mbOperator
-							.get(pageId.getName(), id.getSessionAlias(), id.getDirection().getLabel(),
-									ldt.toLocalDate(), row.getLocalTime(MESSAGE_TIME), row.getLong(SEQUENCE), readAttrs)
-							.thenApplyAsync(e ->
+					return selectQueryExecutor.executeSingleRowResultQuery(
+									() -> mbOperator.get(pageId.getName(), id.getSessionAlias(),
+											id.getDirection().getLabel(), ldt.toLocalDate(),
+											row.getLocalTime(MESSAGE_TIME), row.getLong(SEQUENCE), readAttrs),
+									mbEntityConverter::getEntity,
+									format("get message batch for message with id '%s'", id))
+							.thenApplyAsync(entity ->
 							{
-								if (e == null)
+								if (entity == null)
 									return null;
-
-								try
-								{
-									StoredMessageBatch batch = e.toStoredMessageBatch(pageId);
-									logger.debug("Message batch with id '{}' found for message with id '{}'",
-											batch.getId(), id);
-									return batch;
-								}
-								catch (Exception ex)
-								{
-									throw new CompletionException(ex);
-								}
+								StoredMessageBatch batch = mapMessageBatchEntity(pageId, entity);
+								logger.debug("Message batch with id '{}' found for message with id '{}'",
+										batch.getId(), id);
+								return batch;
 							}, composingService);
 				}, composingService);
 	}
@@ -207,12 +239,13 @@ public class MessagesWorker extends Worker
 		return bookOps.getSessionsOperator().write(new SessionEntity(bookId.toString(), batch.getSessionAlias()), writeAttrs);
 	}
 
-	public CompletableFuture<MessageBatchEntity> storeMessageBatch(MessageBatchEntity entity, BookId bookId)
+	public CompletableFuture<Void> storeMessageBatch(MessageBatchEntity entity, BookId bookId)
 	{
 		BookOperators bookOps = getBookOps(bookId);
 		MessageBatchOperator mbOperator = bookOps.getMessageBatchOperator();
 
-		return mbOperator.write(entity, writeAttrs);
+		return mbOperator.write(entity, writeAttrs)
+				.thenAcceptAsync(result -> updateMessageWriteMetrics(entity, bookId), composingService);
 	}
 
 	public long getBoundarySequence(String sessionAlias, Direction direction, BookInfo book, boolean first)
@@ -224,18 +257,19 @@ public class MessagesWorker extends Worker
 
 		while (row == null && currentPage != null)
 		{
+			String page = currentPage.getId().getName();
+			String queryInfo = format("get %s sequence for page '%s', session alias '%s', " +
+					"direction '%s'", first ? "first" : "last", page, sessionAlias, direction);
 			try
 			{
-				row = first ? mbOp.getFirstSequence(currentPage.getId().getName(), sessionAlias, direction.getLabel(),
-						readAttrs).get()
-						: mbOp.getLastSequence(currentPage.getId().getName(), sessionAlias, direction.getLabel(),
-								readAttrs).get();
+				row = selectQueryExecutor.executeSingleRowResultQuery(
+						() -> first ? mbOp.getFirstSequence(page, sessionAlias, direction.getLabel(), readAttrs)
+								: mbOp.getLastSequence(page, sessionAlias, direction.getLabel(), readAttrs),
+						Function.identity(), queryInfo).get();
 			}
 			catch (InterruptedException | ExecutionException e)
 			{
-				String msg = String.format("Error occurs while getting %s sequence for page '%s', session alias '%s', " +
-						"direction '%s'", first ? "first" : "last", currentPage.getId().getName(), sessionAlias, direction);
-				throw new CradleStorageException(msg, e);
+				throw new CradleStorageException("Error occurs while " + queryInfo, e);
 			}
 
 			if (row == null)
@@ -244,8 +278,8 @@ public class MessagesWorker extends Worker
 		}
 		if (row == null)
 		{
-			logger.debug("There is no messages yet in book '{}' with session alias '{}' and direction '{}'", book.getId(),
-					sessionAlias, direction);
+			logger.debug("There is no messages yet in book '{}' with session alias '{}' and direction '{}'",
+					book.getId(), sessionAlias, direction);
 			return EMPTY_MESSAGE_INDEX;
 		}
 

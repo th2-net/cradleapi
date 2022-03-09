@@ -19,10 +19,12 @@ package com.exactpro.cradle.cassandra;
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.cassandra.connection.NetworkTopologyStrategy;
+import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
 
 public class CassandraStorageSettings
 {
 	public static final String CRADLE_INFO_KEYSPACE = "cradle_info",
+			SCHEMA_VERSION = "4.0.0",
 			BOOKS_TABLE = "books",
 			PAGES_TABLE = "pages",
 			PAGES_NAMES_TABLE = "pages_names",
@@ -46,11 +48,13 @@ public class CassandraStorageSettings
 			DEFAULT_SCOPES_CACHE_SIZE = 10,
 			DEFAULT_PAGE_SESSION_CACHE_SIZE = 100,
 			DEFAULT_PAGE_SCOPES_CACHE_SIZE = 100;
+
 	private final NetworkTopologyStrategy networkTopologyStrategy;
 	private final long timeout;
 	private final ConsistencyLevel writeConsistencyLevel,
 			readConsistencyLevel;
 	private String cradleInfoKeyspace,
+			schemaVersion,
 			booksTable,
 			pagesTable,
 			pagesNamesTable,
@@ -76,6 +80,8 @@ public class CassandraStorageSettings
 			scopesCacheSize,
 			pageSessionsCacheSize,
 			pageScopesCacheSize;
+
+	private SelectExecutionPolicy multiRowResultExecutionPolicy, singleRowResultExecutionPolicy;
 	
 	public CassandraStorageSettings()
 	{
@@ -97,6 +103,7 @@ public class CassandraStorageSettings
 		this.readConsistencyLevel = readConsistencyLevel;
 
 		this.cradleInfoKeyspace = CRADLE_INFO_KEYSPACE;
+		this.schemaVersion = SCHEMA_VERSION;
 		this.booksTable = BOOKS_TABLE;
 		this.pagesTable = PAGES_TABLE;
 		this.pagesNamesTable = PAGES_NAMES_TABLE;
@@ -131,6 +138,7 @@ public class CassandraStorageSettings
 		this.readConsistencyLevel = settings.getReadConsistencyLevel();
 		
 		this.cradleInfoKeyspace = settings.getCradleInfoKeyspace();
+		this.schemaVersion = settings.getSchemaVersion();
 		this.booksTable = settings.getBooksTable();
 		this.pagesTable = settings.getPagesTable();
 		this.pagesNamesTable = settings.getPagesNamesTable();
@@ -151,6 +159,8 @@ public class CassandraStorageSettings
 		this.maxUncompressedMessageBatchSize = settings.getMaxUncompressedMessageBatchSize();
 		this.maxTestEventBatchSize = settings.getMaxTestEventBatchSize();
 		this.maxUncompressedTestEventSize = settings.getMaxUncompressedTestEventSize();
+		this.singleRowResultExecutionPolicy = settings.getSingleRowResultExecutionPolicy();
+		this.multiRowResultExecutionPolicy = settings.getMultiRowResultExecutionPolicy();
 		
 		this.sessionsCacheSize = settings.getSessionsCacheSize();
 		this.pageSessionsCacheSize = settings.getPageSessionsCacheSize();
@@ -188,6 +198,11 @@ public class CassandraStorageSettings
 	public void setCradleInfoKeyspace(String cradleInfoKeyspace)
 	{
 		this.cradleInfoKeyspace = cradleInfoKeyspace;
+	}
+
+
+	public String getSchemaVersion() {
+		return schemaVersion;
 	}
 
 
@@ -441,5 +456,27 @@ public class CassandraStorageSettings
 	public void setPageScopesCacheSize(int pageScopesCacheSize)
 	{
 		this.pageScopesCacheSize = pageScopesCacheSize;
+	}
+
+	public SelectExecutionPolicy getMultiRowResultExecutionPolicy()
+	{
+		return multiRowResultExecutionPolicy;
+	}
+
+	public void setMultiRowResultExecutionPolicy(
+			SelectExecutionPolicy multiRowResultExecutionPolicy)
+	{
+		this.multiRowResultExecutionPolicy = multiRowResultExecutionPolicy;
+	}
+
+	public SelectExecutionPolicy getSingleRowResultExecutionPolicy()
+	{
+		return singleRowResultExecutionPolicy;
+	}
+
+	public void setSingleRowResultExecutionPolicy(
+			SelectExecutionPolicy singleRowResultExecutionPolicy)
+	{
+		this.singleRowResultExecutionPolicy = singleRowResultExecutionPolicy;
 	}
 }

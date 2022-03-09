@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,8 @@ public class TestEventUtilsTest
 		BookId book = new BookId("Book1");
 		String scope = "Scope1";
 		StoredTestEventId parentId = new StoredTestEventId(book, scope, Instant.now(), scope);
-		TestEventBatchToStore batch = new TestEventBatchToStore(new StoredTestEventId(book, scope, Instant.now(), "BatchID"), 
+		StoredTestEventId batchId = new StoredTestEventId(book, scope, Instant.now(), "BatchID");
+		TestEventBatchToStore batch = new TestEventBatchToStore(batchId,
 				"Batch", 
 				parentId,
 				1024);
@@ -46,6 +47,6 @@ public class TestEventUtilsTest
 				.build());
 		
 		byte[] bytes = TestEventUtils.serializeTestEvents(batch.getTestEvents());
-		TestEventUtils.deserializeTestEvents(bytes);
+		TestEventUtils.deserializeTestEvents(bytes, batchId);
 	}
 }

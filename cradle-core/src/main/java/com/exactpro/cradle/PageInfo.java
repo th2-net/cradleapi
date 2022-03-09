@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,14 +57,8 @@ public class PageInfo
 		return comment;
 	}
 	
-	public boolean isActive()
-	{
-		return ended == null;
-	}
-	
-	
 	public static PageInfo ended(PageInfo page, Instant endTimestamp)
 	{
-		return page == null || !page.isActive() ? page : new PageInfo(page.getId(), page.getStarted(), endTimestamp, page.getComment());
+		return page == null ? null : new PageInfo(page.getId(), page.getStarted(), endTimestamp, page.getComment());
 	}
 }

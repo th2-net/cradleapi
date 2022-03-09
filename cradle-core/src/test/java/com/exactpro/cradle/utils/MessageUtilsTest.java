@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,7 +73,7 @@ public class MessageUtilsTest
 	{
 		byte[] bytes = MessageUtils.serializeMessages(batch.getMessages());
 		
-		Collection<StoredMessage> restored = MessageUtils.deserializeMessages(bytes);
+		Collection<StoredMessage> restored = MessageUtils.deserializeMessages(bytes, batch.getId());
 		Iterator<StoredMessage> it = restored.iterator();
 		
 		Assert.assertEquals(it.next().getId(), msg1.getId(), "1st message ID");

@@ -16,15 +16,6 @@
 
 package com.exactpro.cradle.cassandra.dao.books;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.CREATED;
-import static com.exactpro.cradle.cassandra.StorageConstants.DESCRIPTION;
-import static com.exactpro.cradle.cassandra.StorageConstants.FULLNAME;
-import static com.exactpro.cradle.cassandra.StorageConstants.KEYSPACE_NAME;
-import static com.exactpro.cradle.cassandra.StorageConstants.NAME;
-
-import java.time.Instant;
-import java.util.Collection;
-
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
@@ -32,8 +23,13 @@ import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.BookToAdd;
 import com.exactpro.cradle.PageInfo;
-import com.exactpro.cradle.cassandra.CassandraBookToAdd;
 import com.exactpro.cradle.utils.CradleStorageException;
+import org.apache.commons.lang3.StringUtils;
+
+import java.time.Instant;
+import java.util.Collection;
+
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 /**
  * Contains information about book as stored in "cradle" keyspace
@@ -41,6 +37,8 @@ import com.exactpro.cradle.utils.CradleStorageException;
 @Entity
 public class BookEntity
 {
+	public static final String BOOK_NAME_PREFIX = "book_";
+
 	@PartitionKey(0)
 	@CqlName(NAME)
 	private String name;
@@ -56,18 +54,22 @@ public class BookEntity
 	
 	@CqlName(CREATED)
 	private Instant created;
-	
+
+	@CqlName(SCHEMA_VERSION)
+	private String schemaVersion;
+
 	public BookEntity()
 	{
 	}
 	
-	public BookEntity(BookToAdd book)
+	public BookEntity(BookToAdd book, String schemaVersion)
 	{
-		name = book.getName();
-		fullName = book.getFullName();
-		keyspaceName = book instanceof CassandraBookToAdd ? ((CassandraBookToAdd)book).getKeyspace() : toKeyspaceName(name);
-		desc = book.getDesc();
-		created = book.getCreated();
+		this.name = book.getName();
+		this.fullName = book.getFullName();
+		this.keyspaceName = toKeyspaceName(name);
+		this.desc = book.getDesc();
+		this.created = book.getCreated();
+		this.schemaVersion = schemaVersion;
 	}
 	
 	
@@ -124,16 +126,27 @@ public class BookEntity
 	{
 		this.created = created;
 	}
-	
-	
+
+
+	public String getSchemaVersion() {
+		return schemaVersion;
+	}
+
+	public void setSchemaVersion(String schemaVersion) {
+		this.schemaVersion = schemaVersion;
+	}
+
+
 	public BookInfo toBookInfo(Collection<PageInfo> pages) throws CradleStorageException
 	{
 		return new BookInfo(new BookId(name), fullName, desc, created, pages);
 	}
 	
-	
 	private String toKeyspaceName(String name)
 	{
-		return name.toLowerCase().replaceAll("[ \t]", "_");
+		// Usually, book name is already checked in addBook() method in CradleStorage and has no invalid characters.
+		// It's enough to convert name to lower case, add prefix and wrap it with "
+		String nameWithPrefix = BOOK_NAME_PREFIX.concat(name.toLowerCase());
+		return StringUtils.wrap(nameWithPrefix, '\"');
 	}
 }

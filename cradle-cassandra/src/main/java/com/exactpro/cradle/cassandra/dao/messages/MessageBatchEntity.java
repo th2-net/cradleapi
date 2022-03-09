@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -260,7 +260,7 @@ public class MessageBatchEntity extends CradleEntity
 		logger.debug("Creating message batch '{}' from entity", batchId);
 		
 		byte[] content = restoreContent(batchId);
-		List<StoredMessage> storedMessages = MessageUtils.deserializeMessages(content);
+		List<StoredMessage> storedMessages = MessageUtils.deserializeMessages(content, batchId);
 		return new StoredMessageBatch(storedMessages, pageId);
 	}
 	

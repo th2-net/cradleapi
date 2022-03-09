@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -51,20 +50,15 @@ public abstract class CradleStorage
 	public static final int DEFAULT_MAX_MESSAGE_BATCH_SIZE = 1024*1024,
 			DEFAULT_MAX_TEST_EVENT_BATCH_SIZE = DEFAULT_MAX_MESSAGE_BATCH_SIZE;
 
-	private final Map<BookId, BookInfo> books;
-	protected final BookAndPageChecker bpc;
+	protected BookAndPageChecker bpc;
 	private volatile boolean initialized = false,
 			disposed = false;
 	protected final ExecutorService composingService;
 	protected final boolean ownedComposingService;
 	protected final CradleEntitiesFactory entitiesFactory;
-	
-	
+
 	public CradleStorage(ExecutorService composingService, int maxMessageBatchSize, int maxTestEventBatchSize) throws CradleStorageException
 	{
-		books = new ConcurrentHashMap<>();
-		bpc = new BookAndPageChecker(books);
-		
 		if (composingService == null)
 		{
 			ownedComposingService = true;
@@ -84,11 +78,11 @@ public abstract class CradleStorage
 		this(null, DEFAULT_MAX_MESSAGE_BATCH_SIZE, DEFAULT_MAX_TEST_EVENT_BATCH_SIZE);
 	}
 	
-	
+
 	protected abstract void doInit(boolean prepareStorage) throws CradleStorageException;
+	protected abstract BookCache getBookCache ();
 	protected abstract void doDispose() throws CradleStorageException;
-	
-	protected abstract Collection<BookInfo> loadBooks() throws IOException;
+
 	protected abstract void doAddBook(BookToAdd newBook, BookId bookId) throws IOException;
 	protected abstract void doAddPages(BookId bookId, List<PageInfo> pages, PageInfo lastPage) throws CradleStorageException, IOException;
 	protected abstract Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException, IOException;
@@ -155,8 +149,7 @@ public abstract class CradleStorage
 		logger.info("Initializing storage");
 		
 		doInit(prepareStorage);
-		refreshBooks();
-		
+		bpc = new BookAndPageChecker(getBookCache());
 		initialized = true;
 		logger.info("Storage initialized");
 	}
@@ -214,16 +207,17 @@ public abstract class CradleStorage
 
 		BookId id = new BookId(book.getName());
 		logger.info("Adding book '{}' to storage", id);
-		if (books.containsKey(id))
+		if (bpc.checkBook(id))
 			throw new CradleStorageException("Book '"+id+"' is already present in storage");
 		
 		doAddBook(book, id);
 		BookInfo newBook = new BookInfo(id, book.getFullName(), book.getDesc(), book.getCreated(), null);
-		books.put(newBook.getId(), newBook);
+		getBookCache().updateCachedBook(newBook);
 		logger.info("Book '{}' has been added to storage", id);
 		
 		newBook = addPage(id, book.getFirstPageName(), book.getCreated(), book.getFirstPageComment());
-		books.put(newBook.getId(), newBook);
+		getBookCache().updateCachedBook(newBook);
+
 		return newBook;
 	}
 	
@@ -232,7 +226,7 @@ public abstract class CradleStorage
 	 */
 	public Collection<BookInfo> getBooks()
 	{
-		return Collections.unmodifiableCollection(books.values());
+		return Collections.unmodifiableCollection(getBookCache().getCachedBooks());
 	}
 	
 	/**
@@ -310,22 +304,41 @@ public abstract class CradleStorage
 		BookInfo book = bpc.getBook(bookId);
 		Collection<PageInfo> pages = doLoadPages(bookId);
 		book = new BookInfo(book.getId(), book.getFullName(), book.getDesc(), book.getCreated(), pages);
-		books.put(book.getId(), book);
+		getBookCache().updateCachedBook(book);
 		return book;
 	}
 
 	/**
 	 * Getting information about books from storage and put it in internal cache
 	 * @return Collection of loaded books
-	 * @throws IOException if books data reading failed
+	 * @throws CradleStorageException if books data reading failed
+	 * @throws IOException if data reading failed
 	 */
-	public Collection<BookInfo> refreshBooks() throws IOException
+	public Collection<BookInfo> refreshBooks() throws CradleStorageException, IOException
 	{
 		logger.info("Refreshing books from storage");
-		Collection<BookInfo> loaded = loadBooks();
+		Collection<BookInfo> loaded = getBookCache().loadBooks();
 		if (loaded != null)
-			loaded.forEach(bookInfo -> books.putIfAbsent(bookInfo.getId(), bookInfo));
+			loaded.forEach(bookInfo -> getBookCache().updateCachedBook(bookInfo));
 		return loaded;
+	}
+
+	/**
+	 * Getting information about specific book from storage and put it in internal cache
+	 * @param name of book to load
+	 * @return loaded book
+	 * @throws CradleStorageException if book data reading failed
+	 */
+	public BookInfo refreshBook (String name) throws CradleStorageException {
+		logger.info("Refreshing book {} from storage", name);
+
+		BookInfo bookInfo = getBookCache().loadBook(new BookId(name));
+
+		if (bookInfo != null) {
+			getBookCache().updateCachedBook(bookInfo);
+		}
+
+		return bookInfo;
 	}
 	
 	/**
@@ -346,8 +359,6 @@ public abstract class CradleStorage
 		PageInfo page = book.getPage(pageId);
 		if (page == null)
 			throw new CradleStorageException("Page '"+pageName+"' is not present in book '"+bookId+"'");
-		if (page.isActive())
-			throw new CradleStorageException("Page '"+pageName+"' is the active page and cannot be removed");
 		doRemovePage(page);
 		book.removePage(pageId);
 		logger.info("Page '{}' has been removed", pageId);

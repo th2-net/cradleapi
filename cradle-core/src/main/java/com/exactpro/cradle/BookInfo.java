@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,18 +51,18 @@ public class BookInfo
 		if (pages == null)
 			return;
 		
-		PageInfo activePage = null;
+		PageInfo notEndedPage = null;
 		for (PageInfo p : pages)
 		{
 			this.pages.put(p.getId(), p);
 			this.orderedPages.put(p.getStarted(), p);
-			if (p.isActive())
+			if (p.getEnded() == null)
 			{
-				if (activePage != null)
+				if (notEndedPage != null)
 					throw new CradleStorageException("Inconsistent state of book '"+id+"': "
-							+ "page '"+activePage.getId().getName()+"' is active, "
-							+ "but '"+p.getId().getName()+"' is active as well");
-				activePage = p;
+							+ "page '"+ notEndedPage.getId().getName()+"' is not ended, "
+							+ "but '"+p.getId().getName()+"' is not ended as well");
+				notEndedPage = p;
 			}
 		}
 	}

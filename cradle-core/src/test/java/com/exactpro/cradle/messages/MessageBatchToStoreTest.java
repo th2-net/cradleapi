@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 
+import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
@@ -116,7 +117,18 @@ public class MessageBatchToStoreTest
 					.content(content)
 					.build());
 	}
-	
+
+	@Test
+	public void batchIsFull1() throws CradleStorageException
+	{
+		MessageBatchToStore fullBySizeBatch = MessageBatchToStoreJoinTest.createFullBySizeBatch(book, sessionAlias,
+				1, direction, timestamp);
+
+		Assert.assertTrue(fullBySizeBatch.isFull(), "Batch indicates it is full");
+		Assert.assertEquals(fullBySizeBatch.getBatchSize(), MessageBatchToStoreJoinTest.MAX_SIZE);
+		Assert.assertEquals(fullBySizeBatch.getSpaceLeft(), 0);
+	}
+
 	@Test
 	public void batchIsFull() throws CradleStorageException
 	{
@@ -134,35 +146,40 @@ public class MessageBatchToStoreTest
 				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.timestamp(timestamp)
-				.content(content)
+				.content(new byte[MAX_SIZE - MessagesSizeCalculator.MESSAGE_BATCH_CONST_VALUE
+						- MessagesSizeCalculator.MESSAGE_LENGTH_IN_BATCH * 2
+						- MessagesSizeCalculator.MESSAGE_SIZE_CONST_VALUE * 2
+						- content.length])
 				.build());
-		
-		Assert.assertEquals(batch.isFull(), true, "Batch indicates it is full");
+
+		Assert.assertTrue(batch.isFull(), "Batch indicates it is full");
 	}
 	
 	@Test
 	public void batchCountsSpaceLeft() throws CradleStorageException
 	{
-		byte[] content = new byte[MAX_SIZE-1];
+		byte[] content = new byte[MAX_SIZE / 2];
 		MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE);
 		long left = batch.getSpaceLeft();
-		
-		batch.addMessage(builder
+
+		MessageToStore msg = builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.sequence(1)
 				.timestamp(timestamp)
 				.content(content)
-				.build());
+				.build();
+
+		batch.addMessage(msg);
 		
-		Assert.assertEquals(batch.getSpaceLeft(), left-content.length, "Batch counts space left");
+		Assert.assertEquals(batch.getSpaceLeft(), left - MessagesSizeCalculator.calculateMessageSizeInBatch(msg), "Batch counts space left");
 	}
 	
 	@Test
 	public void batchChecksSpaceLeft() throws CradleStorageException
 	{
-		byte[] content = new byte[MAX_SIZE-1];
+		byte[] content = new byte[MAX_SIZE/2];
 		MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE);
 		
 		MessageToStore msg = builder
@@ -174,8 +191,8 @@ public class MessageBatchToStoreTest
 				.content(content)
 				.build();
 		batch.addMessage(msg);
-		
-		Assert.assertEquals(batch.hasSpace(msg), false, "Batch shows if it has space to hold given message");
+
+		Assert.assertFalse(batch.hasSpace(msg), "Batch shows if it has space to hold given message");
 	}
 	
 	
@@ -347,12 +364,12 @@ public class MessageBatchToStoreTest
 				.build(), MAX_SIZE);
 		StoredMessage storedMsg = batch.getFirstMessage();
 		byte[] bytes = MessageUtils.serializeMessages(batch.getMessages());
-		StoredMessage msg = MessageUtils.deserializeMessages(bytes).iterator().next();
+		StoredMessage msg = MessageUtils.deserializeMessages(bytes, batch.id).iterator().next();
 		Assert.assertEquals(msg, storedMsg, "Message should be completely serialized/deserialized");
 	}
 	
 	
-	class IdData
+	static class IdData
 	{
 		final BookId book;
 		final String sessionAlias;

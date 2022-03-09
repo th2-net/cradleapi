@@ -28,38 +28,38 @@ import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.CradleOperators;
-import com.exactpro.cradle.cassandra.dao.books.BookEntity;
-import com.exactpro.cradle.cassandra.dao.books.PageEntity;
-import com.exactpro.cradle.cassandra.dao.books.PageNameEntity;
-import com.exactpro.cradle.cassandra.dao.books.PageNameOperator;
-import com.exactpro.cradle.cassandra.dao.books.PageOperator;
+import com.exactpro.cradle.cassandra.dao.books.*;
 import com.exactpro.cradle.cassandra.dao.messages.*;
-import com.exactpro.cradle.cassandra.dao.testevents.PageScopeEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.PageScopesOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.ScopeEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
+import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.BookKeyspaceCreator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
+import com.exactpro.cradle.cassandra.metrics.DriverMetrics;
+import com.exactpro.cradle.cassandra.retries.FixedNumberRetryPolicy;
+import com.exactpro.cradle.cassandra.retries.PageSizeAdjustingPolicy;
+import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
+import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.cassandra.workers.EventsWorker;
 import com.exactpro.cradle.cassandra.workers.MessagesWorker;
+import com.exactpro.cradle.cassandra.workers.WorkerSupplies;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TimeUtils;
-
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.time.*;
+import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -76,11 +76,15 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	private CradleOperators ops;
 	private QueryExecutor exec;
+	private SelectQueryExecutor selectExecutor;
 	private Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
 			readAttrs,
 			strictReadAttrs;
+	private SelectExecutionPolicy multiRowResultExecPolicy, singleRowResultExecPolicy;
 	private EventsWorker eventsWorker;
 	private MessagesWorker messagesWorker;
+	private BookCache bookCache;
+
 
 	public CassandraCradleStorage(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings, 
 			ExecutorService composingService) throws CradleStorageException
@@ -88,10 +92,23 @@ public class CassandraCradleStorage extends CradleStorage
 		super(composingService, storageSettings.getMaxMessageBatchSize(), storageSettings.getMaxTestEventBatchSize());
 		this.connection = new CassandraConnection(connectionSettings, storageSettings.getTimeout());
 		this.settings = storageSettings;
+
+		this.multiRowResultExecPolicy = settings.getMultiRowResultExecutionPolicy();
+		if (this.multiRowResultExecPolicy == null)
+			this.multiRowResultExecPolicy = new PageSizeAdjustingPolicy(settings.getResultPageSize(), 2);
+
+		this.singleRowResultExecPolicy = settings.getSingleRowResultExecutionPolicy();
+		if (this.singleRowResultExecPolicy == null)
+			this.singleRowResultExecPolicy = new FixedNumberRetryPolicy(5);
 	}
 
 	private static final Consumer<Object> NOOP = whatever -> {};
-	
+
+	@Override
+	protected BookCache getBookCache() {
+		return bookCache;
+	}
+
 	@Override
 	protected void doInit(boolean prepareStorage) throws CradleStorageException
 	{
@@ -99,16 +116,17 @@ public class CassandraCradleStorage extends CradleStorage
 		
 		try
 		{
+			DriverMetrics.register(connection.getSession());
 			exec = new QueryExecutor(connection.getSession(),
 					settings.getTimeout(), settings.getWriteConsistencyLevel(), settings.getReadConsistencyLevel());
-			
+			selectExecutor = new SelectQueryExecutor(connection.getSession(), composingService, multiRowResultExecPolicy,
+							singleRowResultExecPolicy);
 			if (prepareStorage)
 				createStorage();
 			else
 				logger.info("Storage creation skipped");
 			
-			ops = createOperators(connection.getSession(), settings);
-			
+
 			Duration timeout = Duration.ofMillis(settings.getTimeout());
 			int resultPageSize = settings.getResultPageSize();
 			writeAttrs = builder -> builder.setConsistencyLevel(settings.getWriteConsistencyLevel())
@@ -119,9 +137,14 @@ public class CassandraCradleStorage extends CradleStorage
 			strictReadAttrs = builder -> builder.setConsistencyLevel(ConsistencyLevel.ALL)
 					.setTimeout(timeout)
 					.setPageSize(resultPageSize);
-			
-			eventsWorker = new EventsWorker(settings, ops, composingService, bpc, writeAttrs, readAttrs);
-			messagesWorker = new MessagesWorker(settings, ops, composingService, bpc, writeAttrs, readAttrs);
+			ops = createOperators(connection.getSession(), settings);
+
+
+			WorkerSupplies ws = new WorkerSupplies(settings, ops, composingService, bpc, selectExecutor, writeAttrs, readAttrs);
+			eventsWorker = new EventsWorker(ws);
+			messagesWorker = new MessagesWorker(ws);
+
+			bookCache = new ReadThroughBookCache(ops, readAttrs, settings.getSchemaVersion());
 		}
 		catch (Exception e)
 		{
@@ -149,31 +172,9 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected Collection<BookInfo> loadBooks() throws IOException
-	{
-		Collection<BookInfo> result = new ArrayList<>();
-		try
-		{
-			for (BookEntity bookEntity : ops.getCradleBookOperator().getAll(readAttrs))
-			{
-				BookId bookId = new BookId(bookEntity.getName());
-				ops.addOperators(bookId, bookEntity.getKeyspaceName());
-				Collection<PageInfo> pages = loadPageInfo(bookId);
-				
-				result.add(bookEntity.toBookInfo(pages));
-			}
-		}
-		catch (Exception e)
-		{
-			throw new IOException("Error while loading books", e);
-		}
-		return result;
-	}
-	
-	@Override
 	protected void doAddBook(BookToAdd newBook, BookId bookId) throws IOException
 	{
-		BookEntity bookEntity = new BookEntity(newBook);
+		BookEntity bookEntity = new BookEntity(newBook, settings.getSchemaVersion());
 		createBookKeyspace(bookEntity);
 		
 		try
@@ -230,13 +231,13 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException, IOException
+	protected Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException
 	{
-		return loadPageInfo(bookId);
+		return bookCache.loadPageInfo(bookId);
 	}
 	
 	@Override
-	protected void doRemovePage(PageInfo page) throws CradleStorageException, IOException
+	protected void doRemovePage(PageInfo page) throws CradleStorageException
 	{
 		PageId pageId = page.getId();
 		BookOperators bookOps = ops.getOperators(pageId.getBookId());
@@ -474,20 +475,27 @@ public class CassandraCradleStorage extends CradleStorage
 	protected Collection<String> doGetSessionAliases(BookId bookId) throws IOException, CradleStorageException
 	{
 		MappedAsyncPagingIterable<SessionEntity> entities;
+		String queryInfo = String.format("Getting session aliases for book '%s'", bookId);
+		BookOperators bookOps = null;
 		try
 		{
-			entities = ops.getOperators(bookId).getSessionsOperator().get(bookId.getName(), readAttrs).get();
+			bookOps = ops.getOperators(bookId);
+			CompletableFuture<MappedAsyncPagingIterable<SessionEntity>> future =
+					bookOps.getSessionsOperator().get(bookId.getName(), readAttrs);
+			entities = selectExecutor.executeMappedMultiRowResultQuery(
+					() -> future, bookOps.getSessionEntityConverter()::getEntity, queryInfo).get();
 		}
 		catch (Exception e)
 		{
-			throw new CradleStorageException("Error occurred while getting session aliases for book '"+bookId+"'", e);
+			throw new CradleStorageException("Error occurred while " + StringUtils.uncapitalize(queryInfo), e);
 		}
 		
 		if (entities == null)
 			return Collections.emptySet();
 		
 		Collection<String> result = new HashSet<>();
-		PagedIterator<SessionEntity> it = new PagedIterator<>(entities);
+		PagedIterator<SessionEntity> it = new PagedIterator<>(entities, selectExecutor,
+				bookOps.getSessionEntityConverter()::getEntity, "Fetching next page with session aliases");
 		while (it.hasNext())
 			result.add(it.next().getSessionAlias());
 		return result;
@@ -539,20 +547,27 @@ public class CassandraCradleStorage extends CradleStorage
 	protected Collection<String> doGetScopes(BookId bookId) throws IOException, CradleStorageException
 	{
 		MappedAsyncPagingIterable<ScopeEntity> entities;
+		String queryInfo = String.format("get scopes for book '%s'", bookId);
+		BookOperators bookOps = null;
 		try
 		{
-			entities = ops.getOperators(bookId).getScopeOperator().get(bookId.getName(), readAttrs).get();
+			bookOps = ops.getOperators(bookId);
+			CompletableFuture<MappedAsyncPagingIterable<ScopeEntity>> future =
+					bookOps.getScopeOperator().get(bookId.getName(), readAttrs);
+			entities = selectExecutor.executeMappedMultiRowResultQuery(() -> future,
+					bookOps.getScopeEntityConverter()::getEntity, queryInfo).get();
 		}
 		catch (Exception e)
 		{
-			throw new IOException("Error while getting scopes for book '"+bookId+"'", e);
+			throw new IOException("Error while " + queryInfo, e);
 		}
 		
 		if (entities == null)
 			return Collections.emptySet();
 		
 		Collection<String> result = new HashSet<>();
-		PagedIterator<ScopeEntity> it = new PagedIterator<>(entities);
+		PagedIterator<ScopeEntity> it = new PagedIterator<>(entities, selectExecutor,
+				bookOps.getScopeEntityConverter()::getEntity, "Fetching next page of scopes");
 		while (it.hasNext())
 			result.add(it.next().getScope());
 		return result;
@@ -588,7 +603,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CradleOperators createOperators(CqlSession session, CassandraStorageSettings settings)
 	{
 		CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(session).build();
-		return new CradleOperators(dataMapper, settings);
+		return new CradleOperators(dataMapper, settings, readAttrs);
 	}
 	
 	protected void createStorage() throws CradleStorageException
@@ -643,25 +658,6 @@ public class CassandraCradleStorage extends CradleStorage
 	public Function<BoundStatementBuilder, BoundStatementBuilder> getStrictReadAttrs()
 	{
 		return strictReadAttrs;
-	}
-	
-	
-	private Collection<PageInfo> loadPageInfo(BookId bookId) throws IOException
-	{
-		Collection<PageInfo> result = new ArrayList<>();
-		try
-		{
-			for (PageEntity pageEntity : ops.getOperators(bookId).getPageOperator().getAll(bookId.getName(), readAttrs))
-			{
-				if (pageEntity.getRemoved() == null)
-					result.add(pageEntity.toPageInfo());
-			}
-		}
-		catch (Exception e)
-		{
-			throw new IOException("Error while loading pages of book '"+bookId+"'", e);
-		}
-		return result;
 	}
 	
 	protected CompletableFuture<Void> failEventAndParents(StoredTestEventId eventId)

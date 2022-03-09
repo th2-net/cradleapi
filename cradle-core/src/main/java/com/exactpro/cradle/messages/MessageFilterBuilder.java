@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,36 +16,20 @@
 
 package com.exactpro.cradle.messages;
 
-import java.time.Instant;
-
-import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.Direction;
-import com.exactpro.cradle.Order;
-import com.exactpro.cradle.PageId;
-import com.exactpro.cradle.filters.FilterForAny;
-import com.exactpro.cradle.filters.FilterForAnyBuilder;
-import com.exactpro.cradle.filters.FilterForGreater;
-import com.exactpro.cradle.filters.FilterForGreaterBuilder;
-import com.exactpro.cradle.filters.FilterForLess;
-import com.exactpro.cradle.filters.FilterForLessBuilder;
+import com.exactpro.cradle.*;
+import com.exactpro.cradle.filters.*;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
  * Builder of filter for stored messages.
  * Various combinations of filter conditions may have different performance because some operations are done on client side.
  */
-public class MessageFilterBuilder
+public class MessageFilterBuilder extends AbstractFilterBuilder<MessageFilterBuilder, MessageFilter>
 {
-	private BookId bookId;
 	private String sessionAlias;
 	private Direction direction;
-	private PageId pageId;
-	private FilterForGreater<Instant> timestampFrom;
-	private FilterForLess<Instant> timestampTo;
 	private FilterForAny<Long> sequence;
-	private int limit;
-	private Order order = Order.DIRECT;
-	
+
 	public MessageFilterBuilder()
 	{
 	}
@@ -73,12 +57,6 @@ public class MessageFilterBuilder
 	}
 	
 	
-	public MessageFilterBuilder bookId(BookId bookId)
-	{
-		this.bookId = bookId;
-		return this;
-	}
-	
 	public MessageFilterBuilder sessionAlias(String sessionAlias)
 	{
 		this.sessionAlias = sessionAlias;
@@ -91,62 +69,20 @@ public class MessageFilterBuilder
 		return this;
 	}
 	
-	public MessageFilterBuilder pageId(PageId pageId)
-	{
-		this.pageId = pageId;
-		return this;
-	}
-	
-	public FilterForGreaterBuilder<Instant, MessageFilterBuilder> timestampFrom()
-	{
-		FilterForGreater<Instant> f = new FilterForGreater<>();
-		timestampFrom = f;
-		return new FilterForGreaterBuilder<Instant, MessageFilterBuilder>(f, this);
-	}
-	
-	public FilterForLessBuilder<Instant, MessageFilterBuilder> timestampTo()
-	{
-		FilterForLess<Instant> f = new FilterForLess<>();
-		timestampTo = f;
-		return new FilterForLessBuilder<Instant, MessageFilterBuilder>(f, this);
-	}
-	
 	public FilterForAnyBuilder<Long, MessageFilterBuilder> sequence()
 	{
 		FilterForAny<Long> f = new FilterForAny<>();
 		sequence = f;
-		return new FilterForAnyBuilder<Long, MessageFilterBuilder>(f, this);
+		return new FilterForAnyBuilder<>(f, this);
 	}
 	
-	
-	/**
-	 * Sets maximum number of messages to get after filtering
-	 * @param limit max number of messages to return
-	 * @return the same builder instance to continue building chain
-	 */
-	public MessageFilterBuilder limit(int limit)
-	{
-		this.limit = limit;
-		return this;
-	}
-
-	public MessageFilterBuilder order(Order order)
-	{
-		this.order = order;
-		return this;
-	}
-	
-	
+	@Override
 	public MessageFilter build() throws CradleStorageException
 	{
 		try
 		{
-			MessageFilter result = createMessageFilter();
-			result.setTimestampFrom(timestampFrom);
-			result.setTimestampTo(timestampTo);
+			MessageFilter result = super.build();
 			result.setSequence(sequence);
-			result.setLimit(limit);
-			result.setOrder(order);
 			return result;
 		}
 		finally
@@ -154,23 +90,18 @@ public class MessageFilterBuilder
 			reset();
 		}
 	}
-	
-	
-	protected MessageFilter createMessageFilter() throws CradleStorageException
+
+	@Override
+	protected MessageFilter createFilterInstance() throws CradleStorageException
 	{
-		return new MessageFilter(bookId, sessionAlias, direction, pageId);
+		return new MessageFilter(getBookId(), sessionAlias, direction, getPageId());
 	}
-	
+
 	protected void reset()
 	{
-		bookId = null;
+		super.reset();
 		sessionAlias = null;
 		direction = null;
-		pageId = null;
-		timestampFrom = null;
-		timestampTo = null;
 		sequence = null;
-		limit = 0;
-		order = Order.DIRECT;
 	}
 }

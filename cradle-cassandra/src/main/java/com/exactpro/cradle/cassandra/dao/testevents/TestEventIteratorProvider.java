@@ -22,6 +22,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
+import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
+import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +38,8 @@ import com.exactpro.cradle.cassandra.utils.FilterUtils;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventFilter;
+
+import static com.exactpro.cradle.cassandra.workers.EventsWorker.mapTestEventEntity;
 
 public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 {
@@ -52,6 +56,8 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 	private final TestEventOperator op;
 	private final BookInfo book;
 	private final ExecutorService composingService;
+	private final SelectQueryExecutor selectQueryExecutor;
+	private final TestEventEntityConverter entityConverter;
 	private final PageInfo firstPage, lastPage;
 	private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
 	private final int limit;
@@ -59,13 +65,15 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 	private CassandraTestEventFilter cassandraFilter;
 	
 	public TestEventIteratorProvider(String requestInfo, TestEventFilter filter, BookOperators ops, BookInfo book,
-			ExecutorService composingService,
+			ExecutorService composingService,  SelectQueryExecutor selectQueryExecutor,
 			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
 	{
 		super(requestInfo);
 		this.op = ops.getTestEventOperator();
+		this.entityConverter = ops.getTestEventEntityConverter();
 		this.book = book;
 		this.composingService = composingService;
+		this.selectQueryExecutor = selectQueryExecutor;
 		this.firstPage = FilterUtils.findFirstPage(filter.getPageId(), filter.getStartTimestampFrom(), book);
 		this.lastPage = FilterUtils.findLastPage(filter.getPageId(), filter.getStartTimestampTo(), book);
 		this.readAttrs = readAttrs;
@@ -86,24 +94,15 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 		}
 		
 		logger.debug("Getting next iterator for '{}' by filter {}", getRequestInfo(), cassandraFilter);
-		return op.getByFilter(cassandraFilter, composingService, readAttrs)
+		return op.getByFilter(cassandraFilter, selectQueryExecutor, getRequestInfo(), readAttrs)
 				.thenApplyAsync(resultSet -> {
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
 					cassandraFilter = createNextFilter(cassandraFilter);
-					return new ConvertingPagedIterator<>(resultSet, limit, returned, entity -> {
-						try
-						{
-							return entity.toStoredTestEvent(pageId);
-						}
-						catch (Exception e)
-						{
-							throw new RuntimeException("Error while converting test event entity into Cradle test event", e);
-						}
-					});
+					return new ConvertingPagedIterator<>(resultSet, selectQueryExecutor, limit, returned,
+							entity -> mapTestEventEntity(pageId, entity), entityConverter::getEntity, getRequestInfo());
 				}, composingService);
 	}
-	
-	
+
 	private CassandraTestEventFilter createInitialFilter(TestEventFilter filter)
 	{
 		String parentId = getParentIdString(filter);

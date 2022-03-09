@@ -24,21 +24,36 @@ import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
+import com.exactpro.cradle.utils.CradleStorageException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 {
+	private static final Logger logger = LoggerFactory.getLogger(CradleInfoKeyspaceCreator.class);
+	
 	public CradleInfoKeyspaceCreator(QueryExecutor exec, CassandraStorageSettings settings)
 	{
 		super(settings.getCradleInfoKeyspace(), exec, settings);
 	}
-	
+
 	@Override
 	protected void createTables() throws IOException
 	{
 		createBooks();
 	}
-	
-	
+
+	@Override
+	public void createAll() throws IOException, CradleStorageException
+	{
+		if (getKeyspaceMetadata() != null)
+		{
+			logger.info("\"Cradle Info\" keyspace '{}' already exists", getKeyspace());
+			return;
+		}
+		super.createAll();
+	}
+
 	private void createBooks() throws IOException
 	{
 		String tableName = getSettings().getBooksTable();
@@ -47,6 +62,7 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 				.withColumn(FULLNAME, DataTypes.TEXT)
 				.withColumn(KEYSPACE_NAME, DataTypes.TEXT)
 				.withColumn(DESCRIPTION, DataTypes.TEXT)
-				.withColumn(CREATED, DataTypes.TIMESTAMP));
+				.withColumn(CREATED, DataTypes.TIMESTAMP)
+				.withColumn(SCHEMA_VERSION, DataTypes.TEXT));
 	}
 }

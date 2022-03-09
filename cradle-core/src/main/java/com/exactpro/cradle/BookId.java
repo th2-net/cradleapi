@@ -16,6 +16,8 @@
 
 package com.exactpro.cradle;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -29,7 +31,7 @@ public class BookId implements Serializable
 	
 	public BookId(String name)
 	{
-		this.name = name;
+		this.name = StringUtils.lowerCase(name);
 	}
 	
 	

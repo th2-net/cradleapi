@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,8 +66,21 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 		this.batch = batch;
 		this.pageId = pageId;
 	}
-	
-	
+
+	protected BatchedStoredTestEvent(StoredTestEventId id, String name, String type, StoredTestEventId parentId,
+									 Instant endTimestamp, boolean success, byte[] content,
+									 TestEventBatch batch, PageId pageId) {
+		this.id = id;
+		this.name = name;
+		this.type = type;
+		this.parentId = parentId;
+		this.endTimestamp = endTimestamp;
+		this.success = success;
+		this.content = content;
+		this.batch = batch;
+		this.pageId = pageId;
+	}
+
 	@Override
 	public StoredTestEventId getId()
 	{

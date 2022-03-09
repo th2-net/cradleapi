@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,24 +26,17 @@ import com.exactpro.cradle.*;
 import com.exactpro.cradle.filters.*;
 import com.exactpro.cradle.utils.CradleStorageException;
 
-public class MessageFilter
+public class MessageFilter extends AbstractFilter
 {
-	private final BookId bookId;
 	private final String sessionAlias;
 	private final Direction direction;
-	private final PageId pageId;
-	private FilterForGreater<Instant> timestampFrom;
-	private FilterForLess<Instant> timestampTo;
 	private FilterForAny<Long> sequence;
-	private int limit;
-	private Order order = Order.DIRECT;
-	
+
 	public MessageFilter(BookId bookId, String sessionAlias, Direction direction, PageId pageId) throws CradleStorageException
 	{
-		this.bookId = bookId;
+		super(bookId, pageId);
 		this.sessionAlias = sessionAlias;
 		this.direction = direction;
-		this.pageId = pageId;
 		validate();
 	}
 	
@@ -54,15 +47,10 @@ public class MessageFilter
 
 	public MessageFilter(MessageFilter copyFrom) throws CradleStorageException
 	{
-		this.bookId = copyFrom.getBookId();
+		super(copyFrom);
 		this.sessionAlias = copyFrom.getSessionAlias();
 		this.direction = copyFrom.getDirection();
-		this.timestampFrom = copyFrom.getTimestampFrom();
-		this.timestampTo = copyFrom.getTimestampTo();
 		this.sequence = copyFrom.getSequence();
-		this.limit = copyFrom.getLimit();
-		this.order = copyFrom.getOrder();
-		this.pageId = copyFrom.getPageId();
 		validate();
 	}
 	
@@ -82,14 +70,6 @@ public class MessageFilter
 		return MessageFilterBuilder.previous(messageId, limit);
 	}
 
-	
-	
-
-	public BookId getBookId()
-	{
-		return bookId;
-	}
-	
 	public String getSessionAlias()
 	{
 		return sessionAlias;
@@ -99,35 +79,28 @@ public class MessageFilter
 	{
 		return direction;
 	}
-	
-	public PageId getPageId()
-	{
-		return pageId;
-	}
-	
-	
+
 	public FilterForGreater<Instant> getTimestampFrom()
 	{
-		return timestampFrom;
+		return super.getFrom();
 	}
-	
+
 	public void setTimestampFrom(FilterForGreater<Instant> timestampFrom)
 	{
-		this.timestampFrom = timestampFrom;
+		super.setFrom(timestampFrom);
 	}
-	
-	
+
+
 	public FilterForLess<Instant> getTimestampTo()
 	{
-		return timestampTo;
+		return super.getTo();
 	}
-	
+
 	public void setTimestampTo(FilterForLess<Instant> timestampTo)
 	{
-		this.timestampTo = timestampTo;
+		super.setTo(timestampTo);
 	}
-	
-	
+
 	public FilterForAny<Long> getSequence()
 	{
 		return sequence;
@@ -138,64 +111,40 @@ public class MessageFilter
 		this.sequence = sequence;
 	}
 	
-	
-	public int getLimit()
-	{
-		return limit;
-	}
-	
-	public void setLimit(int limit)
-	{
-		this.limit = limit;
-	}
-	
-	
-	public Order getOrder()
-	{
-		return order;
-	}
-	
-	public void setOrder(Order order)
-	{
-		this.order = order == null ? Order.DIRECT : order;
-	}
-	
-	
 	@Override
 	public String toString()
 	{
-		List<String> result = new ArrayList<>(10);
-		if (bookId != null)
-			result.add("bookId=" + bookId);
+		StringBuilder sb = new StringBuilder("[");
+		if (getBookId() != null)
+			sb.append("bookId=").append(getBookId()).append(TO_STRING_DELIMITER);
 		if (sessionAlias != null)
-			result.add("sessionAlias=" + sessionAlias);
+			sb.append("sessionAlias=").append(sessionAlias).append(TO_STRING_DELIMITER);
 		if (direction != null)
-			result.add("direction=" + direction);
-		if (timestampFrom != null)
-			result.add("timestamp" + timestampFrom);
-		if (timestampTo != null)
-			result.add("timestamp" + timestampTo);
+			sb.append("direction=").append(direction).append(TO_STRING_DELIMITER);
+		if (getFrom() != null)
+			sb.append("timestamp").append(getFrom()).append(TO_STRING_DELIMITER);
+		if (getTo() != null)
+			sb.append("timestamp").append(getTo()).append(TO_STRING_DELIMITER);
 		if (sequence != null)
-			result.add("sequence" + sequence);
-		if (limit > 0)
-			result.add("limit=" + limit);
-		if (order != null)
-			result.add("order=" + order);
-		if (pageId != null)
-			result.add("pageId=" + pageId.getName());
-		return String.join(", ", result);
+			sb.append("sequence").append(sequence).append(TO_STRING_DELIMITER);
+		if (getLimit() > 0)
+			sb.append("limit=").append(getLimit()).append(TO_STRING_DELIMITER);
+		if (getOrder() != null)
+			sb.append("order=").append(getOrder()).append(TO_STRING_DELIMITER);
+		if (getPageId() != null)
+			sb.append("pageId=").append(getPageId().getName()).append(TO_STRING_DELIMITER);
+		if (sb.length() > 1) //Not only first bracket
+			sb.setLength(sb.length() - TO_STRING_DELIMITER.length());
+		return sb.append("]").toString();
 	}
 	
-	
-	private void validate() throws CradleStorageException
+	@Override
+	protected void validate() throws CradleStorageException
 	{
-		if (bookId == null)
-			throw new CradleStorageException("bookId is mandatory");
+		super.validate();
 		if (StringUtils.isEmpty(sessionAlias))
 			throw new CradleStorageException("sessionAlias is mandatory");
 		if (direction == null)
 			throw new CradleStorageException("direction is mandatory");
-		if (pageId != null && !pageId.getBookId().equals(bookId))
-			throw new CradleStorageException("pageId must be from book '"+bookId+"'");
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,15 +26,14 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang3.ArrayUtils;
+import com.exactpro.cradle.serialization.EventsSizeCalculator;
 
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.TestEventUtils;
 
 /**
  * Holds information about batch of test events prepared to be stored in Cradle
- * Events stored in the batch can refer to each other to form a hierarchy. No references to these events are possible outside of the batch and vice versa.
+ * Events stored in the batch can refer to each other to form a hierarchy. No references to these events are possible outside the batch and vice versa.
  * Root events in the batch should reference batch's parent.
  */
 public class TestEventBatchToStore extends TestEventToStore implements TestEventBatch
@@ -44,7 +43,7 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 	private final Map<StoredTestEventId, Collection<BatchedStoredTestEvent>> children = new HashMap<>();
 	private final Map<StoredTestEventId, Set<StoredMessageId>> messages = new HashMap<>();
 	private final int maxBatchSize;
-	private int batchSize = 0;
+	private int batchSize = EventsSizeCalculator.EVENT_BATCH_LEN_CONST;
 	
 	public TestEventBatchToStore(StoredTestEventId id, String name, StoredTestEventId parentId, int maxBatchSize) throws CradleStorageException
 	{
@@ -59,14 +58,15 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 		return new TestEventBatchToStoreBuilder(maxBatchSize);
 	}
 	
-	
+
+	@SuppressWarnings("ConstantConditions")
 	@Override
 	public Set<StoredMessageId> getMessages()
 	{
 		if (messages == null)  //This is the case when validateTestEvent() is called from super constructor
 			return null;
 		Set<StoredMessageId> result = new HashSet<>();
-		messages.values().forEach(c -> result.addAll(c));
+		messages.values().forEach(result::addAll);
 		return result;
 	}
 	
@@ -144,8 +144,8 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 	 */
 	public int getSpaceLeft()
 	{
-		int result = maxBatchSize-batchSize;
-		return result > 0 ? result : 0;
+		int result = maxBatchSize - batchSize;
+		return Math.max(result, 0);
 	}
 	
 	/**
@@ -155,8 +155,12 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 	 */
 	public boolean hasSpace(TestEventSingleToStore event)
 	{
-		byte[] content = event.getContent();
-		return ArrayUtils.isEmpty(content) || batchSize+content.length <= maxBatchSize;
+		return hasSpace(EventsSizeCalculator.calculateRecordSizeInBatch(event));
+	}
+
+	private boolean hasSpace(int eventLen)
+	{
+		return batchSize + eventLen <= maxBatchSize;
 	}
 	
 	
@@ -169,7 +173,8 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 	 */
 	public BatchedStoredTestEvent addTestEvent(TestEventSingleToStore event) throws CradleStorageException
 	{
-		if (!hasSpace(event))
+		int currEventSize = EventsSizeCalculator.calculateRecordSizeInBatch(event);
+		if (!hasSpace(currEventSize))
 			throw new CradleStorageException("Batch has not enough space to hold given test event");
 		
 		checkEvent(event);
@@ -199,12 +204,11 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 		else
 			rootEvents.add(result);
 		
-		if (event.getContent() != null)
-			batchSize += event.getContent().length;
+		batchSize += currEventSize;
 		
 		return result;
 	}
-	
+
 	private void updateBatchData(TestEventSingle event) throws CradleStorageException
 	{
 		Instant eventEnd = event.getEndTimestamp();
