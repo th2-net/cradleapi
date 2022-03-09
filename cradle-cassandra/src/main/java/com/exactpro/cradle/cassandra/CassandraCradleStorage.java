@@ -173,7 +173,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Collection<BookListEntry> doListBooks() throws IOException {
+	protected Collection<BookListEntry> doListBooks() {
 		return ops.getCradleBookOperator().getAll(readAttrs).all().stream()
 				.map(entity -> new BookListEntry(entity.getName(), entity.getSchemaVersion()))
 				.collect(Collectors.toList());
