@@ -17,7 +17,6 @@
 package com.exactpro.cradle;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -60,12 +59,7 @@ public class DummyCradleStorage extends CradleStorage
 		}
 
 		@Override
-		public Collection<PageInfo> loadPageInfo(BookId bookId) throws CradleStorageException {
-			return null;
-		}
-
-		@Override
-		public Collection<PageInfo> loadRemovedPageInfo(BookId bookId) throws CradleStorageException {
+		public Collection<PageInfo> loadPageInfo(BookId bookId, boolean loadRemoved) throws CradleStorageException {
 			return null;
 		}
 

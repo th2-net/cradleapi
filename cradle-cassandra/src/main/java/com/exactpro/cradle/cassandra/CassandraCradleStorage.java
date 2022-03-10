@@ -174,7 +174,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected Collection<PageInfo> doListRemovedPages(BookId bookId) throws CradleStorageException {
-			return getBookCache().loadRemovedPageInfo(bookId);
+			return getBookCache().loadPageInfo(bookId, true);
 	}
 
 	@Override
@@ -246,7 +246,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException
 	{
-		return bookCache.loadPageInfo(bookId);
+		return bookCache.loadPageInfo(bookId, false);
 	}
 	
 	@Override
