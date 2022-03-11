@@ -28,7 +28,7 @@ public class PageInfo
 			ended;
 	private final String comment;
 	private final Instant removed;
-	
+
 	public PageInfo(PageId id, Instant started, Instant ended, String comment, Instant removed)
 	{
 		this.id = id;
@@ -36,6 +36,15 @@ public class PageInfo
 		this.ended = ended;
 		this.comment = comment;
 		this.removed = removed;
+	}
+
+	public PageInfo(PageId id, Instant started, Instant ended, String comment)
+	{
+		this.id = id;
+		this.started = started;
+		this.ended = ended;
+		this.comment = comment;
+		this.removed = null;
 	}
 	
 	

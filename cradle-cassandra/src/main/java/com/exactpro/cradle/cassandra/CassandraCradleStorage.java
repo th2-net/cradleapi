@@ -173,7 +173,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Collection<PageInfo> doListRemovedPages(BookId bookId) throws CradleStorageException {
+	protected Collection<PageInfo> doGetAllPages(BookId bookId) throws CradleStorageException {
 			return getBookCache().loadPageInfo(bookId, true);
 	}
 

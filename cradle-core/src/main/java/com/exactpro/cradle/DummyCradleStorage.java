@@ -104,7 +104,7 @@ public class DummyCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Collection<PageInfo> doListRemovedPages(BookId bookId) {
+	protected Collection<PageInfo> doGetAllPages(BookId bookId) {
 		return null;
 	}
 
