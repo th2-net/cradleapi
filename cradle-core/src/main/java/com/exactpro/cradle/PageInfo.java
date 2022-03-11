@@ -27,13 +27,24 @@ public class PageInfo
 	private final Instant started,
 			ended;
 	private final String comment;
-	
+	private final Instant removed;
+
+	public PageInfo(PageId id, Instant started, Instant ended, String comment, Instant removed)
+	{
+		this.id = id;
+		this.started = started;
+		this.ended = ended;
+		this.comment = comment;
+		this.removed = removed;
+	}
+
 	public PageInfo(PageId id, Instant started, Instant ended, String comment)
 	{
 		this.id = id;
 		this.started = started;
 		this.ended = ended;
 		this.comment = comment;
+		this.removed = null;
 	}
 	
 	
@@ -56,9 +67,13 @@ public class PageInfo
 	{
 		return comment;
 	}
-	
+
+	public Instant getRemoved() {
+		return removed;
+	}
+
 	public static PageInfo ended(PageInfo page, Instant endTimestamp)
 	{
-		return page == null ? null : new PageInfo(page.getId(), page.getStarted(), endTimestamp, page.getComment());
+		return page == null ? null : new PageInfo(page.getId(), page.getStarted(), endTimestamp, page.getComment(), page.getRemoved());
 	}
 }

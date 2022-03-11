@@ -173,6 +173,11 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
+	protected Collection<PageInfo> doGetAllPages(BookId bookId) throws CradleStorageException {
+			return getBookCache().loadPageInfo(bookId, true);
+	}
+
+	@Override
 	protected Collection<BookListEntry> doListBooks() {
 		return ops.getCradleBookOperator().getAll(readAttrs).all().stream()
 				.map(entity -> new BookListEntry(entity.getName(), entity.getSchemaVersion()))
@@ -241,7 +246,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException
 	{
-		return bookCache.loadPageInfo(bookId);
+		return bookCache.loadPageInfo(bookId, false);
 	}
 	
 	@Override

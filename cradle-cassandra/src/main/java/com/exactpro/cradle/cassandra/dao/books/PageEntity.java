@@ -219,6 +219,6 @@ public class PageEntity
 	
 	public PageInfo toPageInfo()
 	{
-		return new PageInfo(new PageId(new BookId(part), name), getStartTimestamp(), getEndTimestamp(), getComment());
+		return new PageInfo(new PageId(new BookId(part), name), getStartTimestamp(), getEndTimestamp(), getComment(), getRemoved());
 	}
 }

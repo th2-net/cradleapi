@@ -69,13 +69,14 @@ public class ReadThroughBookCache implements BookCache {
         return books.containsKey(bookId);
     }
 
-    public Collection<PageInfo> loadPageInfo(BookId bookId) throws CradleStorageException
+    public Collection<PageInfo> loadPageInfo(BookId bookId, boolean loadRemoved) throws CradleStorageException
     {
         Collection<PageInfo> result = new ArrayList<>();
         for (PageEntity pageEntity : ops.getOperators(bookId).getPageOperator().getAll(bookId.getName(), readAttrs))
         {
-            if (pageEntity.getRemoved() == null)
+            if (loadRemoved || pageEntity.getRemoved() == null) {
                 result.add(pageEntity.toPageInfo());
+            }
         }
         return result;
     }
@@ -100,7 +101,7 @@ public class ReadThroughBookCache implements BookCache {
     private BookInfo processBookEntity (BookEntity entity) throws CradleStorageException {
         BookId bookId = new BookId(entity.getName());
         ops.addOperators(bookId, entity.getKeyspaceName());
-        Collection<PageInfo> pages = loadPageInfo(bookId);
+        Collection<PageInfo> pages = loadPageInfo(bookId, false);
 
         return entity.toBookInfo(pages);
     }
