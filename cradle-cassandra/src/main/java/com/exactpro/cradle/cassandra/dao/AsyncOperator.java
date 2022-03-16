@@ -20,9 +20,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import com.exactpro.cradle.cassandra.CassandraSemaphore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AsyncOperator<T>
 {
+	private static final Logger logger = LoggerFactory.getLogger(AsyncOperator.class);
+	
 	private final CassandraSemaphore semaphore;
 
 	public AsyncOperator(CassandraSemaphore semaphore)
@@ -38,6 +42,7 @@ public class AsyncOperator<T>
 		}
 		catch (InterruptedException e)
 		{
+			logger.error("Trying to acquire semaphore has been failed", e);
 			CompletableFuture<T> error = new CompletableFuture<>();
 			error.completeExceptionally(e);
 			return error;

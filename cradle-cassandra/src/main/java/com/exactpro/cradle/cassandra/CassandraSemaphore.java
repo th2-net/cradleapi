@@ -16,10 +16,15 @@
 
 package com.exactpro.cradle.cassandra;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.Semaphore;
 
 public class CassandraSemaphore
 {
+	private static final Logger logger = LoggerFactory.getLogger(CassandraSemaphore.class);
+	
 	private final int maxParallelQueries;
 	private final Semaphore semaphore;
 	
@@ -32,12 +37,14 @@ public class CassandraSemaphore
 	
 	public void acquireSemaphore() throws InterruptedException
 	{
+		logger.debug("Trying to acquire semaphore. Available permits: {}", semaphore.availablePermits());
 		semaphore.acquire();
 	}
 	
 	public void releaseSemaphore()
 	{
 		semaphore.release();
+		logger.debug("Semaphore released. Available permits: {}", semaphore.availablePermits());
 	}
 	
 	
