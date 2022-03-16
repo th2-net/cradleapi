@@ -45,10 +45,12 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	private final FilterForGreater<Instant> messageTimeFrom;
 	private final FilterForLess<Instant> messageTimeTo;
 	private final FilterForAny<Long> sequence;
+
+	private final Integer limit;
 	
 	public CassandraStoredMessageFilter(String page, String sessionAlias, String direction,
 			FilterForGreater<Instant> messageTimeFrom, FilterForLess<Instant> messageTimeTo,
-			FilterForAny<Long> sequence)
+			FilterForAny<Long> sequence, int limit)
 	{
 		this.page = page;
 		this.sessionAlias = sessionAlias;
@@ -56,6 +58,7 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 		this.messageTimeFrom = messageTimeFrom;
 		this.messageTimeTo = messageTimeTo;
 		this.sequence = sequence;
+		this.limit = limit;
 	}
 
 	@Override
@@ -74,6 +77,9 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 			if (messageTimeTo != null)
 				select = FilterUtils.timestampFilterToWhere(messageTimeTo.getOperation(), select, MESSAGE_DATE, MESSAGE_TIME, DATE_TO, TIME_TO);
 		}
+
+		select.limit(limit);
+
 		return select;
 	}
 

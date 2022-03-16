@@ -65,7 +65,7 @@ public class MessagesIteratorProvider extends AbstractMessageIteratorProvider<St
 				.thenApplyAsync(resultSet ->
 				{
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
-					cassandraFilter = createNextFilter(cassandraFilter);
+					cassandraFilter = createNextFilter(cassandraFilter, limit - returned.get());
 					return new ConvertingPagedIterator<>(resultSet, selectQueryExecutor, -1, new AtomicInteger(),
 							entity -> mapMessageBatchEntity(pageId, entity), messageBatchEntityConverter::getEntity,
 							"fetch next page of message batches");
