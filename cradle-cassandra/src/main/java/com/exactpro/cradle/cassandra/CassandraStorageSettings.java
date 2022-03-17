@@ -24,7 +24,7 @@ import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
 public class CassandraStorageSettings
 {
 	public static final String CRADLE_INFO_KEYSPACE = "cradle_info",
-			SCHEMA_VERSION = "4.0.0",
+			SCHEMA_VERSION = "4.1.0",
 			BOOKS_TABLE = "books",
 			PAGES_TABLE = "pages",
 			PAGES_NAMES_TABLE = "pages_names",
