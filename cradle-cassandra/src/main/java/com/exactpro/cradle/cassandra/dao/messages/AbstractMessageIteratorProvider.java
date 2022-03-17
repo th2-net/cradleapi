@@ -141,10 +141,10 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 	protected CassandraStoredMessageFilter createInitialFilter(MessageFilter filter)
 	{
 		return new CassandraStoredMessageFilter(firstPage.getId().getName(), filter.getSessionAlias(),
-				filter.getDirection().getLabel(), leftBoundFilter, rightBoundFilter, filter.getSequence());
+				filter.getDirection().getLabel(), leftBoundFilter, rightBoundFilter, filter.getSequence(), filter.getLimit());
 	}
 
-	protected CassandraStoredMessageFilter createNextFilter(CassandraStoredMessageFilter prevFilter)
+	protected CassandraStoredMessageFilter createNextFilter(CassandraStoredMessageFilter prevFilter, int updatedLimit)
 	{
 		PageInfo prevPage = book.getPage(new PageId(book.getId(), prevFilter.getPage()));
 		if (prevPage.equals(lastPage))
@@ -153,6 +153,6 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		PageInfo nextPage = book.getNextPage(prevPage.getStarted());
 
 		return new CassandraStoredMessageFilter(nextPage.getId().getName(), prevFilter.getSessionAlias(),
-				prevFilter.getDirection(), leftBoundFilter, rightBoundFilter, prevFilter.getSequence());
+				prevFilter.getDirection(), leftBoundFilter, rightBoundFilter, prevFilter.getSequence(), updatedLimit);
 	}
 }
