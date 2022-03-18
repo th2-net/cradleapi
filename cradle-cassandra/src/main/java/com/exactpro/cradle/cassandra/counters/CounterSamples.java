@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class CounterSamples {
-    private final Map<LocalTime, FrameCounter> samples;
+    private final Map<LocalTime, TimeFrameCounter> samples;
     private final FrameType frameType;
 
     CounterSamples(FrameType frameType) {
@@ -32,8 +32,8 @@ public class CounterSamples {
         this.frameType = frameType;
     }
 
-    public synchronized Collection<FrameCounter> extractAll() {
-        Collection<FrameCounter> result = samples.values();
+    public synchronized Collection<TimeFrameCounter> extractAll() {
+        Collection<TimeFrameCounter> result = samples.values();
         result.clear();
         return result;
     }
@@ -41,10 +41,10 @@ public class CounterSamples {
     public synchronized void update(LocalTime time, Counter counter) {
         LocalTime frameStart = frameType.getFrameStart(time);
         if (samples.containsKey(frameStart)) {
-            FrameCounter frameCounter = samples.get(frameStart);
+            TimeFrameCounter frameCounter = samples.get(frameStart);
             frameCounter.incrementBy(counter);
         } else {
-            samples.put(frameStart, new FrameCounter(frameStart, counter));
+            samples.put(frameStart, new TimeFrameCounter(frameStart, counter));
         }
     }
 }

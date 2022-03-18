@@ -19,20 +19,25 @@ import com.exactpro.cradle.Counter;
 
 import java.time.LocalTime;
 
-public class FrameCounter {
+public class TimeFrameCounter {
 
     private final LocalTime frameStart;
     private Counter counter;
 
-    FrameCounter(LocalTime frameStart, Counter counter) {
+    TimeFrameCounter(LocalTime frameStart, Counter counter) {
         this.frameStart = frameStart;
         this.counter = counter;
     }
 
+    public LocalTime getFrameStart() {
+        return frameStart;
+    }
+
+    public Counter getCounter() {
+        return counter;
+    }
+
     public synchronized void incrementBy(Counter value) {
-        Counter updated = new Counter(
-                counter.getEntityCount() + value.getEntityCount(),
-                counter.getEntitySize() + value.getEntitySize());
-        counter = updated;
+        counter = counter.incrementedBy(value);
     }
 }

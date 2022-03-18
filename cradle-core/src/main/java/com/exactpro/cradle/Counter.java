@@ -31,4 +31,11 @@ public class Counter {
     public long getEntitySize() {
         return entitySize;
     }
+
+    public Counter incrementedBy(Counter value) {
+        return new Counter(
+                this.getEntityCount() + value.getEntityCount(),
+                this.getEntitySize() + value.getEntitySize());
+    }
+
 }
