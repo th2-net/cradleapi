@@ -18,13 +18,13 @@ package com.exactpro.cradle.cassandra.counters;
 import com.exactpro.cradle.Counter;
 import com.exactpro.cradle.FrameType;
 
-import java.time.LocalTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 public class CounterSamples {
-    private final Map<LocalTime, TimeFrameCounter> samples;
+    private final Map<Instant, TimeFrameCounter> samples;
     private final FrameType frameType;
 
     CounterSamples(FrameType frameType) {
@@ -38,8 +38,8 @@ public class CounterSamples {
         return result;
     }
 
-    public synchronized void update(LocalTime time, Counter counter) {
-        LocalTime frameStart = frameType.getFrameStart(time);
+    public synchronized void update(Instant time, Counter counter) {
+        Instant frameStart = frameType.getFrameStart(time);
         if (samples.containsKey(frameStart)) {
             TimeFrameCounter frameCounter = samples.get(frameStart);
             frameCounter.incrementBy(counter);

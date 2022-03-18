@@ -17,19 +17,19 @@ package com.exactpro.cradle.cassandra.counters;
 
 import com.exactpro.cradle.Counter;
 
-import java.time.LocalTime;
+import java.time.Instant;
 
 public class TimeFrameCounter {
 
-    private final LocalTime frameStart;
+    private final Instant frameStart;
     private Counter counter;
 
-    TimeFrameCounter(LocalTime frameStart, Counter counter) {
+    TimeFrameCounter(Instant frameStart, Counter counter) {
         this.frameStart = frameStart;
         this.counter = counter;
     }
 
-    public LocalTime getFrameStart() {
+    public Instant getFrameStart() {
         return frameStart;
     }
 
