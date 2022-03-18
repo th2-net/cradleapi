@@ -287,15 +287,16 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected CompletableFuture<Void> doStoreTestEventAsync(StoredTestEvent event)
 	{
-		CompletableFuture<Void> future = new AsyncOperator<Void>(semaphore).getFuture(() -> storeEvent(event))
-						.thenAcceptAsync(r -> storeTimeEvent(event));
+		return new AsyncOperator<Void>(semaphore).getFuture(() -> {
+			CompletableFuture<Void> future = storeEvent(event).thenAcceptAsync(r -> storeTimeEvent(event));
+			if (event.getParentId() != null)
+				future.thenAcceptAsync(r -> storeEventInParent(event))
+						.thenAcceptAsync(r -> storeEventDateInParent(event));
+			else
+				future.thenAcceptAsync(r -> storeRootEvent(event));
+			return future;
+		});
 
-		if (event.getParentId() != null)
-			future.thenAcceptAsync(r -> storeEventInParent(event)).thenAcceptAsync(r -> storeEventDateInParent(event));
-		else
-			future.thenAcceptAsync(r -> storeRootEvent(event));
-
-		return future;
 	}
 
 	@Override
