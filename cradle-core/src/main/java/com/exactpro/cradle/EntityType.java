@@ -16,19 +16,25 @@
 package com.exactpro.cradle;
 
 public enum EntityType {
-    MESSAGE((byte) 1),
-    EVENT((byte) 2);
+    MESSAGE(1),
+    EVENT(2);
 
     private final byte value;
-    EntityType(byte value) {
-        this.value = value;
+    EntityType(int value) {
+        this.value = (byte) value;
     }
 
     public byte getValue() {
         return value;
     }
 
-    public EntityType from(byte value) {
+    /**
+     * Returns EntityType form value
+     * @param value
+     * @return EntityType that corresponds to given value
+     * @throws IllegalArgumentException if value does not match any entity type
+     */
+    public static EntityType from(byte value) {
         for (EntityType e: values())
             if (e.getValue() == value)
                 return e;

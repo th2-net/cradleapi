@@ -15,22 +15,52 @@
  */
 package com.exactpro.cradle;
 
+import java.time.LocalTime;
+
 public enum FrameType {
-    TYPE_100MS((byte) 1),
-    TYPE_SECOND((byte) 2),
-    TYPE_MINUTE((byte) 3),
-    TYPE_HOUR((byte) 4);
+    TYPE_100MS(1, 100),
+    TYPE_SECOND(2, 1000),
+    TYPE_MINUTE(3, 60 * 1000),
+    TYPE_HOUR(4, 60 * 60 * 1000);
 
     private final byte value;
-    FrameType(byte value) {
-        this.value = value;
+    private final long frameNanos;
+    FrameType(int value, long millis) {
+        this.value = (byte) value;
+        this.frameNanos = millis * 1_000_000;
     }
 
     public byte getValue() {
         return value;
     }
 
-    public FrameType from(byte value) {
+    /**
+     * Calculates start time (inclusive) for the given time
+     * @param time for which frame start is calculated
+     * @return start time(inclusive) for a given time
+     */
+    public LocalTime getFrameStart(LocalTime time) {
+        long nanos = time.toNanoOfDay();
+        long nanosAdjusted = (nanos / frameNanos) * frameNanos;
+        return LocalTime.ofNanoOfDay(nanosAdjusted);
+    }
+
+    /**
+     * Calculates end time (exclusive) for the given time
+     * @param time for which frame end is calculated
+     * @return end time(excluseve) for a given time
+     */
+    public LocalTime getFrameEnd(LocalTime time) {
+        return getFrameStart(time.plusNanos(frameNanos));
+    }
+
+    /**
+     * Returns FrameType form value
+     * @param value
+     * @return FrameType that corresponds to given value
+     * @throws IllegalArgumentException if value does not match any frame type
+     */
+    public static FrameType from(int value) {
         for (FrameType e: values())
             if (e.getValue() == value)
                 return e;
