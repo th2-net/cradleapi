@@ -1102,18 +1102,19 @@ public class CassandraCradleStorage extends CradleStorage
 		LocalDate ld = ldt.toLocalDate();
 		LocalTime lt = ldt.toLocalTime();
 
-		CompletableFuture<AsyncResultSet> result1 = new AsyncOperator<AsyncResultSet>(semaphore)
-				.getFuture(() -> ops.getTestEventOperator().updateStatus(instanceUuid, id, success, writeAttrs)),
-				result2 = new AsyncOperator<AsyncResultSet>(semaphore)
-						.getFuture(() -> ops.getTimeTestEventOperator().updateStatus(instanceUuid, ld, lt, id, success, writeAttrs));
-		CompletableFuture<AsyncResultSet> result3;
+		CompletableFuture<Void> future =
+				ops.getTestEventOperator().updateStatus(instanceUuid, id, success, writeAttrs)
+						.thenAccept(r -> {});
+		future.thenAcceptAsync(r -> ops.getTimeTestEventOperator()
+				.updateStatus(instanceUuid, ld, lt, id, success, writeAttrs));
+
 		if (parentId != null)
-			result3 = new AsyncOperator<AsyncResultSet>(semaphore)
-					.getFuture(() -> ops.getTestEventChildrenOperator().updateStatus(instanceUuid, parentId, ld, lt, id, success, writeAttrs));
+			future.thenAcceptAsync(r -> ops.getTestEventChildrenOperator()
+					.updateStatus(instanceUuid, parentId, ld, lt, id, success, writeAttrs));
 		else
-			result3 = new AsyncOperator<AsyncResultSet>(semaphore)
-					.getFuture(() -> ops.getRootTestEventOperator().updateStatus(instanceUuid, ld, lt, id, success, writeAttrs));
-		return CompletableFuture.allOf(result1, result2, result3);
+			future.thenAcceptAsync(
+					r -> ops.getRootTestEventOperator().updateStatus(instanceUuid, ld, lt, id, success, writeAttrs));
+		return future;
 	}
 
 	protected CompletableFuture<Void> failEventAndParents(StoredTestEventId eventId)
