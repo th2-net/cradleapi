@@ -36,7 +36,8 @@ public class CassandraStorageSettings
 			PAGE_SCOPES_TABLE = "page_scopes",
 			TEST_EVENT_PARENT_INDEX = "test_event_parent_index",
 			LABELS_TABLE = "labels",
-			INTERVALS_TABLE = "intervals";
+			INTERVALS_TABLE = "intervals",
+			STATISTICS_TABLE = "statistics";
 	public static final long DEFAULT_TIMEOUT = 5000;
 	public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
 	public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1,
@@ -66,7 +67,8 @@ public class CassandraStorageSettings
 			pageScopesTable,
 			testEventParentIndex,
 			labelsTable,
-			intervalsTable;
+			intervalsTable,
+			statisticsTable;
 	private int keyspaceReplicationFactor;
 	
 	private int maxParallelQueries,
@@ -116,6 +118,7 @@ public class CassandraStorageSettings
 		this.testEventParentIndex = TEST_EVENT_PARENT_INDEX;
 		this.labelsTable = LABELS_TABLE;
 		this.intervalsTable = INTERVALS_TABLE;
+		this.statisticsTable = STATISTICS_TABLE;
 		
 		this.keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
 		this.maxParallelQueries = DEFAULT_MAX_PARALLEL_QUERIES;
@@ -151,7 +154,8 @@ public class CassandraStorageSettings
 		this.testEventParentIndex = settings.getTestEventParentIndex();
 		this.labelsTable = settings.getLabelsTable();
 		this.intervalsTable = settings.getIntervalsTable();
-		
+		this.statisticsTable = settings.getStatisticsTable();
+
 		this.keyspaceReplicationFactor = settings.getKeyspaceReplicationFactor();
 		this.maxParallelQueries = settings.getMaxParallelQueries();
 		this.resultPageSize = settings.getResultPageSize();
@@ -335,6 +339,15 @@ public class CassandraStorageSettings
 	public void setIntervalsTable(String intervalsTable)
 	{
 		this.intervalsTable = intervalsTable;
+	}
+
+
+	public String getStatisticsTable() {
+		return statisticsTable;
+	}
+
+	public void setStatisticsTable(String statisticsTable) {
+		this.statisticsTable = statisticsTable;
 	}
 
 
