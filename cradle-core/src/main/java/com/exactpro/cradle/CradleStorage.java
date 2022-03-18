@@ -296,15 +296,13 @@ public abstract class CradleStorage
 			return future;
 		
 		logger.debug("Updating parents of test event {} asynchronously", event.getId());
-		return future.thenAcceptAsync(voidResult ->
-						doUpdateParentTestEventsAsync(event)
+		return doUpdateParentTestEventsAsync(event)
 								.whenComplete((r, error) -> {
 									if (error != null)
 										logger.error("Error while updating parent of test event "+event.getId()+" asynchronously", error);
 									else
 										logger.debug("Parents of test event {} have been updated asynchronously", event.getId());
-								})
-				);
+								});
 	}
 
 	/**
