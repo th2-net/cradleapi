@@ -56,7 +56,13 @@ public class StorageConstants
 			TYPE = "type",
 			MESSAGES = "messages",
 			MESSAGES_PAGE = "messages_page",
-			
+
+			ENTITY_TYPE = "entity_type",
+			FRAME_TYPE = "frame_type",
+			FRAME_START = "frame_start",
+			ENTITY_COUNT = "entity_count",
+			ENTITY_SIZE = "entity_size",
+
 			START_TIMESTAMP = "start_timestamp",
 			END_TIMESTAMP = "end_timestamp",
 			BATCH_ID = "batch_id",
