@@ -284,7 +284,7 @@ public abstract class CradleStorage
 			throw new IOException("Invalid test event", e);
 		}
 		
-		CompletableFuture<Void> result1 = doStoreTestEventAsync(event)
+		CompletableFuture<Void> future = doStoreTestEventAsync(event)
 				.whenComplete((r, error) -> {
 					if (error != null)
 						logger.error("Error while storing test event "+event.getId()+" asynchronously", error);
@@ -293,17 +293,18 @@ public abstract class CradleStorage
 				});
 		
 		if (event.getParentId() == null)
-			return result1;
+			return future;
 		
 		logger.debug("Updating parents of test event {} asynchronously", event.getId());
-		CompletableFuture<Void> result2 = doUpdateParentTestEventsAsync(event)
-				.whenComplete((r, error) -> {
-					if (error != null)
-						logger.error("Error while updating parent of test event "+event.getId()+" asynchronously", error);
-					else
-						logger.debug("Parents of test event {} have been updated asynchronously", event.getId());
-				});
-		return CompletableFuture.allOf(result1, result2);
+		return future.thenAcceptAsync(voidResult ->
+						doUpdateParentTestEventsAsync(event)
+								.whenComplete((r, error) -> {
+									if (error != null)
+										logger.error("Error while updating parent of test event "+event.getId()+" asynchronously", error);
+									else
+										logger.debug("Parents of test event {} have been updated asynchronously", event.getId());
+								})
+				);
 	}
 
 	/**

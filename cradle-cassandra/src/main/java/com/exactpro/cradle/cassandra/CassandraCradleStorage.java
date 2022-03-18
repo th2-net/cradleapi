@@ -287,18 +287,15 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected CompletableFuture<Void> doStoreTestEventAsync(StoredTestEvent event)
 	{
-		List<CompletableFuture<Void>> futures = new ArrayList<>();
-		futures.add(storeEvent(event).thenAccept(r -> {}));
-		futures.add(storeTimeEvent(event).thenAccept(r -> {}));
-		if (event.getParentId() != null)
-		{
-			futures.add(storeEventInParent(event).thenAccept(r -> {}));
-			futures.add(storeEventDateInParent(event).thenAccept(r -> {}));
-		}
-		else
-			futures.add(storeRootEvent(event).thenAccept(r -> {}));
+		CompletableFuture<Void> future = new AsyncOperator<Void>(semaphore).getFuture(() -> storeEvent(event))
+						.thenAcceptAsync(r -> storeTimeEvent(event));
 
-		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+		if (event.getParentId() != null)
+			future.thenAcceptAsync(r -> storeEventInParent(event)).thenAcceptAsync(r -> storeEventDateInParent(event));
+		else
+			future.thenAcceptAsync(r -> storeRootEvent(event));
+
+		return future;
 	}
 
 	@Override
@@ -963,44 +960,40 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 	}
 	
-	protected CompletableFuture<DetailedTestEventEntity> storeEvent(StoredTestEvent event)
+	protected CompletableFuture<Void> storeEvent(StoredTestEvent event)
 	{
-		return new AsyncOperator<DetailedTestEventEntity>(semaphore).getFuture(() -> {
-			DetailedTestEventEntity entity;
-			try
-			{
-				entity = new DetailedTestEventEntity(event, instanceUuid);
-			}
-			catch (IOException e)
-			{
-				CompletableFuture<DetailedTestEventEntity> error = new CompletableFuture<>();
-				error.completeExceptionally(e);
-				return error;
-			}
+		DetailedTestEventEntity entity;
+		try
+		{
+			entity = new DetailedTestEventEntity(event, instanceUuid);
+		}
+		catch (IOException e)
+		{
+			CompletableFuture<Void> error = new CompletableFuture<>();
+			error.completeExceptionally(e);
+			return error;
+		}
 
-			logger.trace("Executing test event storing query");
-			return ops.getTestEventOperator().write(entity, writeAttrs);
-		});
+		logger.trace("Executing test event storing query");
+		return ops.getTestEventOperator().write(entity, writeAttrs).thenAccept(r -> {});
 	}
 
-	protected CompletableFuture<TimeTestEventEntity> storeTimeEvent(StoredTestEvent event)
+	protected CompletableFuture<Void> storeTimeEvent(StoredTestEvent event)
 	{
-		return new AsyncOperator<TimeTestEventEntity>(semaphore).getFuture(() -> {
-			TimeTestEventEntity timeEntity;
-			try
-			{
-				timeEntity = new TimeTestEventEntity(event, instanceUuid);
-			}
-			catch (IOException e)
-			{
-				CompletableFuture<TimeTestEventEntity> error = new CompletableFuture<>();
-				error.completeExceptionally(e);
-				return error;
-			}
+		TimeTestEventEntity timeEntity;
+		try
+		{
+			timeEntity = new TimeTestEventEntity(event, instanceUuid);
+		}
+		catch (IOException e)
+		{
+			CompletableFuture<Void> error = new CompletableFuture<>();
+			error.completeExceptionally(e);
+			return error;
+		}
 
-			logger.trace("Executing time/event storing query");
-			return ops.getTimeTestEventOperator().writeTestEvent(timeEntity, writeAttrs);
-		});
+		logger.trace("Executing time/event storing query");
+		return ops.getTimeTestEventOperator().writeTestEvent(timeEntity, writeAttrs).thenAccept(r -> {});
 	}
 
 	protected CompletableFuture<RootTestEventEntity> storeRootEvent(StoredTestEvent event)
@@ -1013,34 +1006,30 @@ public class CassandraCradleStorage extends CradleStorage
 		});
 	}
 
-	protected CompletableFuture<TestEventChildEntity> storeEventInParent(StoredTestEvent event)
+	protected CompletableFuture<Void> storeEventInParent(StoredTestEvent event)
 	{
-		return new AsyncOperator<TestEventChildEntity>(semaphore).getFuture(() -> {
-			TestEventChildEntity entity;
-			try
-			{
-				entity = new TestEventChildEntity(event, instanceUuid);
-			}
-			catch (IOException e)
-			{
-				CompletableFuture<TestEventChildEntity> error = new CompletableFuture<>();
-				error.completeExceptionally(e);
-				return error;
-			}
+		TestEventChildEntity entity;
+		try
+		{
+			entity = new TestEventChildEntity(event, instanceUuid);
+		}
+		catch (IOException e)
+		{
+			CompletableFuture<Void> error = new CompletableFuture<>();
+			error.completeExceptionally(e);
+			return error;
+		}
 
-			logger.trace("Executing parent/event storing query");
-			return ops.getTestEventChildrenOperator().writeTestEvent(entity, writeAttrs);
-		});
+		logger.trace("Executing parent/event storing query");
+		return ops.getTestEventChildrenOperator().writeTestEvent(entity, writeAttrs).thenAccept(r -> {});
 	}
 
-	protected CompletableFuture<TestEventChildDateEntity> storeEventDateInParent(StoredTestEvent event)
+	protected CompletableFuture<Void> storeEventDateInParent(StoredTestEvent event)
 	{
-		return new AsyncOperator<TestEventChildDateEntity>(semaphore).getFuture(() -> {
-			TestEventChildDateEntity entity = new TestEventChildDateEntity(event, instanceUuid);
+		TestEventChildDateEntity entity = new TestEventChildDateEntity(event, instanceUuid);
 
-			logger.trace("Executing parent/event date storing query");
-			return ops.getTestEventChildrenDatesOperator().writeTestEventDate(entity, writeAttrs);
-		});
+		logger.trace("Executing parent/event date storing query");
+		return ops.getTestEventChildrenDatesOperator().writeTestEventDate(entity, writeAttrs).thenAccept(r -> {});
 	}
 
 
