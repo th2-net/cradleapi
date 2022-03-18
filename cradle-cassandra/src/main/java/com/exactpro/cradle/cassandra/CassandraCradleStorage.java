@@ -42,6 +42,7 @@ import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.cassandra.workers.EventsWorker;
 import com.exactpro.cradle.cassandra.workers.MessagesWorker;
+import com.exactpro.cradle.cassandra.workers.StatisticsWorker;
 import com.exactpro.cradle.cassandra.workers.WorkerSupplies;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
@@ -85,6 +86,7 @@ public class CassandraCradleStorage extends CradleStorage
 	private EventsWorker eventsWorker;
 	private MessagesWorker messagesWorker;
 	private BookCache bookCache;
+	private StatisticsWorker statisticsWorker;
 
 
 	public CassandraCradleStorage(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings, 
@@ -144,8 +146,11 @@ public class CassandraCradleStorage extends CradleStorage
 			WorkerSupplies ws = new WorkerSupplies(settings, ops, composingService, bpc, selectExecutor, writeAttrs, readAttrs);
 			eventsWorker = new EventsWorker(ws);
 			messagesWorker = new MessagesWorker(ws);
+			statisticsWorker = new StatisticsWorker(ops, settings.getCounterPersistanceInterval());
+			statisticsWorker.start();
 
 			bookCache = new ReadThroughBookCache(ops, readAttrs, settings.getSchemaVersion());
+
 		}
 		catch (Exception e)
 		{
@@ -156,6 +161,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected void doDispose() throws CradleStorageException
 	{
+		statisticsWorker.stop();
 		if (connection.isRunning())
 		{
 			logger.info("Disconnecting from Cassandra...");
