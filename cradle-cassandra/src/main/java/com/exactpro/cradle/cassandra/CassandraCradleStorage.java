@@ -1119,15 +1119,29 @@ public class CassandraCradleStorage extends CradleStorage
 
 	protected CompletableFuture<Void> failEventAndParents(StoredTestEventId eventId)
 	{
-		return getTestEventAsync(eventId)
-				.thenComposeAsync((event) -> {
-					if (event == null || !event.isSuccess())  //Invalid event ID or event is already failed, which means that its parents are already updated
-						return CompletableFuture.completedFuture(null);
+		CompletableFuture<Void> future = new AsyncOperator<Void>(semaphore).getFuture(CompletableFuture::new);
+		return failEventAndParents(eventId, future);
+	}
 
-					CompletableFuture<Void> update = doUpdateEventStatusAsync(event, false);
-					if (event.getParentId() != null)
-						return update.thenComposeAsync((u) -> failEventAndParents(event.getParentId()));
-					return update;
-				});
+	private CompletableFuture<Void> failEventAndParents(StoredTestEventId eventId, CompletableFuture<Void> future)
+	{
+		getTestEventAsync(eventId).whenCompleteAsync((event, error) ->
+		{
+			if (error != null)
+				future.completeExceptionally(error);
+			else
+			{
+				if (event == null || !event.isSuccess())
+				{  //Invalid event ID or event is already failed, which means that its parents are already updated
+					future.complete(null);
+					return;
+				}
+				future.thenComposeAsync(r -> doUpdateEventStatusAsync(event, false));
+				if (event.getParentId() != null)
+					future.thenComposeAsync(u -> failEventAndParents(event.getParentId(), future));
+			}
+		});
+
+		return future;
 	}
 }
