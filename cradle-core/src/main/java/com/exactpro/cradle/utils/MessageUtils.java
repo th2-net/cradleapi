@@ -16,21 +16,21 @@
 
 package com.exactpro.cradle.utils;
 
+import com.exactpro.cradle.messages.CradleMessage;
+import com.exactpro.cradle.messages.StoredMessage;
+import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.serialization.MessageCommonParams;
+import com.exactpro.cradle.serialization.MessageDeserializer;
+import com.exactpro.cradle.serialization.MessageSerializer;
+import com.exactpro.cradle.serialization.SerializedEntityData;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 import java.util.zip.DataFormatException;
-
-import com.exactpro.cradle.messages.CradleMessage;
-import com.exactpro.cradle.serialization.MessageCommonParams;
-import com.exactpro.cradle.serialization.MessageDeserializer;
-import com.exactpro.cradle.serialization.MessageSerializer;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
-
-import com.exactpro.cradle.messages.StoredMessage;
-import com.exactpro.cradle.messages.StoredMessageId;
 
 public class MessageUtils
 {
@@ -60,12 +60,12 @@ public class MessageUtils
 	}
 	
 	/**
-	 * Serializes messages, skipping non-meaningful or calculatable fields
+	 * Serializes messages, skipping non-meaningful or calculable fields
 	 * @param messages to serialize
-	 * @return array of bytes, containing serialized messages
+	 * @return {@link SerializedEntityData} containing serialized messages.
 	 * @throws IOException if serialization failed
 	 */
-	public static byte[] serializeMessages(Collection<StoredMessage> messages) throws IOException
+	public static SerializedEntityData serializeMessages(Collection<StoredMessage> messages) throws IOException
 	{
 		return serializer.serializeBatch(messages);
 	}

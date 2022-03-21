@@ -18,18 +18,19 @@ package com.exactpro.cradle.serialization;
 
 import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.TestEventSingleToStore;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
-import static com.exactpro.cradle.serialization.Serialization.EventBatchConst.*;
-import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateEventRecordSize;
 import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateBatchEventSize;
-import static com.exactpro.cradle.serialization.SerializationUtils.printBody;
-import static com.exactpro.cradle.serialization.SerializationUtils.printInstant;
-import static com.exactpro.cradle.serialization.SerializationUtils.printSingleBoolean;
-import static com.exactpro.cradle.serialization.SerializationUtils.printString;
+import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateEventRecordSize;
+import static com.exactpro.cradle.serialization.Serialization.EventBatchConst.*;
+import static com.exactpro.cradle.serialization.SerializationUtils.*;
 
 public class EventBatchSerializer {
 
@@ -64,11 +65,12 @@ public class EventBatchSerializer {
 	}
 
 
-	public byte[] serializeEventBatch (Collection<BatchedStoredTestEvent> batch) throws SerializationException {
+	public SerializedEntityData serializeEventBatch (Collection<BatchedStoredTestEvent> batch) throws SerializationException {
 		SerializationBatchSizes sizes = calculateBatchEventSize(batch);
 		ByteBuffer buffer = ByteBuffer.allocate(sizes.total);
-		serializeEventBatch(batch, buffer, sizes);
-		return buffer.array();
+		List<SerializedEntityMetadata> serializedEventMetadata = serializeEventBatch(batch, buffer, sizes);
+
+		return new SerializedEntityData(serializedEventMetadata, buffer.array());
 	}
 
 	public void serializeEventBatch (Collection<BatchedStoredTestEvent> batch, ByteBuffer buffer) throws SerializationException {
@@ -76,8 +78,11 @@ public class EventBatchSerializer {
 		serializeEventBatch(batch, buffer, eventBatchSizes);
 	}
 
-	public void serializeEventBatch (Collection<BatchedStoredTestEvent> batch, ByteBuffer buffer,
-									 SerializationBatchSizes eventBatchSizes) throws SerializationException {
+	public List<SerializedEntityMetadata> serializeEventBatch (
+			Collection<BatchedStoredTestEvent> batch, ByteBuffer buffer, SerializationBatchSizes eventBatchSizes
+	) throws SerializationException {
+
+		List<SerializedEntityMetadata> serializedEventMetadata = new ArrayList<>(batch.size());
 
 		buffer.putInt(EVENT_BATCH_MAGIC);
 		buffer.put(EVENT_BATCH_PROTOCOL_VER);
@@ -85,10 +90,23 @@ public class EventBatchSerializer {
 		buffer.putInt(batch.size());
 		int i = 0;
 		for (BatchedStoredTestEvent event : batch) {
-			buffer.putInt(eventBatchSizes.entities[i]);
+			int eventSize = eventBatchSizes.entities[i];
+
+			buffer.putInt(eventSize);
 			this.serializeEventRecord(event, buffer);
+			serializedEventMetadata.add(new SerializedEntityMetadata(event.getStartTimestamp(), eventSize));
 			i++;
 		}
+
+		return Collections.unmodifiableList(serializedEventMetadata);
 	}
 
+	public SerializedEntityData serializeEvent(TestEventSingleToStore testEvent) {
+		byte[] eventContent = testEvent.getContent();
+		SerializedEntityMetadata serializedEventMetadata = new SerializedEntityMetadata(
+				testEvent.getStartTimestamp(), eventContent == null ? 0 : eventContent.length
+		);
+
+		return new SerializedEntityData(Collections.singletonList(serializedEventMetadata), eventContent);
+	}
 }

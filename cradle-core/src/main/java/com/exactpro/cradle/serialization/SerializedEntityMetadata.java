@@ -1,4 +1,4 @@
-package com.exactpro.cradle.cassandra;
+package com.exactpro.cradle.serialization;
 
 import java.time.Instant;
 

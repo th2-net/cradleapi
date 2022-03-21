@@ -16,22 +16,21 @@
 
 package com.exactpro.cradle.messages;
 
-import java.io.IOException;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.List;
-
+import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
+import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.MessageUtils;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import com.exactpro.cradle.Direction;
-import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.MessageUtils;
+import java.io.IOException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.List;
 
 public class MessageBatchToStoreTest
 {
@@ -363,7 +362,7 @@ public class MessageBatchToStoreTest
 				.content(messageContent)
 				.build(), MAX_SIZE);
 		StoredMessage storedMsg = batch.getFirstMessage();
-		byte[] bytes = MessageUtils.serializeMessages(batch.getMessages());
+		byte[] bytes = MessageUtils.serializeMessages(batch.getMessages()).getSerializedData();
 		StoredMessage msg = MessageUtils.deserializeMessages(bytes, batch.id).iterator().next();
 		Assert.assertEquals(msg, storedMsg, "Message should be completely serialized/deserialized");
 	}

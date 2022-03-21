@@ -13,30 +13,12 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 @Entity
 public class StatisticsEntity {
 
-    @PartitionKey(0)
-    @CqlName(SESSION_ALIAS)
     private String sessionAlias;
-
-    @PartitionKey(1)
-    @CqlName(DIRECTION)
     private String direction;
-
-    @PartitionKey(2)
-    @CqlName(ENTITY_TYPE)
     private Byte entityType;
-
-    @PartitionKey(3)
-    @CqlName(FRAME_TYPE)
     private Byte frameType;
-
-    @ClusteringColumn(1)
-    @CqlName(FRAME_START)
-    private Instant instant;
-
-    @CqlName(ENTITY_COUNT)
+    private Instant frameStart;
     private Long entityCount;
-
-    @CqlName(ENTITY_SIZE)
     private Long entitySize;
 
     public StatisticsEntity() {
@@ -47,6 +29,8 @@ public class StatisticsEntity {
         return new Counter(entityCount, entitySize);
     }
 
+    @PartitionKey(0)
+    @CqlName(SESSION_ALIAS)
     public String getSessionAlias() {
         return sessionAlias;
     }
@@ -55,6 +39,8 @@ public class StatisticsEntity {
         this.sessionAlias = sessionAlias;
     }
 
+    @PartitionKey(1)
+    @CqlName(DIRECTION)
     public String getDirection() {
         return direction;
     }
@@ -63,6 +49,8 @@ public class StatisticsEntity {
         this.direction = direction;
     }
 
+    @PartitionKey(2)
+    @CqlName(ENTITY_TYPE)
     public Byte getEntityType() {
         return entityType;
     }
@@ -71,6 +59,8 @@ public class StatisticsEntity {
         this.entityType = entityType;
     }
 
+    @PartitionKey(3)
+    @CqlName(FRAME_TYPE)
     public Byte getFrameType() {
         return frameType;
     }
@@ -79,14 +69,18 @@ public class StatisticsEntity {
         this.frameType = frameType;
     }
 
-    public Instant getInstant() {
-        return instant;
+    @ClusteringColumn(1)
+    @CqlName(FRAME_START)
+    public Instant getFrameStart() {
+        return frameStart;
     }
 
-    public void setInstant(Instant instant) {
-        this.instant = instant;
+
+    public void setFrameStart(Instant frameStart) {
+        this.frameStart = frameStart;
     }
 
+    @CqlName(ENTITY_COUNT)
     public Long getEntityCount() {
         return entityCount;
     }
@@ -95,6 +89,7 @@ public class StatisticsEntity {
         this.entityCount = entityCount;
     }
 
+    @CqlName(ENTITY_SIZE)
     public Long getEntitySize() {
         return entitySize;
     }
