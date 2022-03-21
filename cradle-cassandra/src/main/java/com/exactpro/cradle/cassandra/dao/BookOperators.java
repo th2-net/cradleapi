@@ -54,6 +54,7 @@ public class BookOperators
 	private final TestEventOperator testEventOperator;
 	private final PageScopesOperator pageScopesOperator;
 	private final IntervalOperator intervalOperator;
+	private final StatisticsOperator statisticsOperator;
 
 	private final SessionEntityConverter sessionEntityConverter;
 	private final ScopeEntityConverter scopeEntityConverter;
@@ -61,6 +62,7 @@ public class BookOperators
 	private final PageSessionEntityConverter pageSessionEntityConverter;
 	private final TestEventEntityConverter testEventEntityConverter;
 	private final PageScopeEntityConverter pageScopeEntityConverter;
+	private final StatisticsEntityConverter statisticsEntityConverter;
 	
 	private final LimitedCache<CachedSession> sessionsCache;
 	private final LimitedCache<CachedPageSession> pageSessionsCache;
@@ -81,6 +83,7 @@ public class BookOperators
 		pageSessionsOperator = dataMapper.pageSessionsOperator(keyspace, settings.getPageSessionsTable());
 		testEventOperator = dataMapper.testEventOperator(keyspace, settings.getTestEventsTable());
 		pageScopesOperator = dataMapper.pageScopesOperator(keyspace, settings.getPageScopesTable());
+		statisticsOperator = dataMapper.statisticsOperator(keyspace, settings.getStatisticsTable());
 		
 		intervalOperator = dataMapper.intervalOperator(keyspace, settings.getIntervalsTable());
 
@@ -90,6 +93,7 @@ public class BookOperators
 		pageSessionEntityConverter = dataMapper.pageSessionEntityConverter();
 		testEventEntityConverter = dataMapper.testEventEntityConverter();
 		pageScopeEntityConverter = dataMapper.pageScopeEntityConverter();
+		statisticsEntityConverter = dataMapper.statisticsEntityConverter();
 
 		sessionsCache = new LimitedCache<>(settings.getSessionsCacheSize());
 		pageSessionsCache = new LimitedCache<>(settings.getPageSessionsCacheSize());
