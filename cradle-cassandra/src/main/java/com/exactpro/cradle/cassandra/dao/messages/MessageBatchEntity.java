@@ -25,6 +25,8 @@ import com.exactpro.cradle.messages.MessageBatch;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.serialization.SerializedEntityData;
+import com.exactpro.cradle.serialization.SerializedEntityMetadata;
 import com.exactpro.cradle.utils.CompressionUtils;
 import com.exactpro.cradle.utils.MessageUtils;
 import com.exactpro.cradle.utils.TimeUtils;
@@ -85,7 +87,8 @@ public class MessageBatchEntity extends CradleEntity
 
 	@CqlName(LAST_SEQUENCE)
 	private long lastSequence;
-	
+
+	private List<SerializedEntityMetadata> serializedMessageMetadata;
 	
 	public MessageBatchEntity()
 	{
@@ -94,15 +97,17 @@ public class MessageBatchEntity extends CradleEntity
 	public MessageBatchEntity(MessageBatch batch, PageId pageId, int maxUncompressedSize) throws IOException
 	{
 		logger.debug("Creating entity from message batch '{}'", batch.getId());
-		
-		byte[] batchContent = MessageUtils.serializeMessages(batch.getMessages());
+
+		SerializedEntityData serializedEntityData = MessageUtils.serializeMessages(batch.getMessages());
+
+		byte[] batchContent = serializedEntityData.getSerializedData();
 		boolean compressed = batchContent.length > maxUncompressedSize;
 		if (compressed)
 		{
 			logger.trace("Compressing content of message batch '{}'", batch.getId());
 			batchContent = CompressionUtils.compressData(batchContent);
 		}
-		
+
 		setPage(pageId.getName());
 		StoredMessageId id = batch.getId();
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(id.getTimestamp());
@@ -121,6 +126,7 @@ public class MessageBatchEntity extends CradleEntity
 		setCompressed(compressed);
 		//TODO: setLabels(batch.getLabels());
 		setContent(ByteBuffer.wrap(batchContent));
+		setSerializedMessageMetadata(serializedEntityData.getSerializedEntityMetadata());
 	}
 
 	public String getPage()
@@ -251,8 +257,17 @@ public class MessageBatchEntity extends CradleEntity
 		setLastMessageDate(ldt.toLocalDate());
 		setLastMessageTime(ldt.toLocalTime());
 	}
-	
-	
+
+	@Transient
+	public List<SerializedEntityMetadata> getSerializedMessageMetadata() {
+		return serializedMessageMetadata;
+	}
+
+	@Transient
+	public void setSerializedMessageMetadata(List<SerializedEntityMetadata> serializedMessageMetadata) {
+		this.serializedMessageMetadata = serializedMessageMetadata;
+	}
+
 	public StoredMessageBatch toStoredMessageBatch(PageId pageId)
 			throws DataFormatException, IOException
 	{
