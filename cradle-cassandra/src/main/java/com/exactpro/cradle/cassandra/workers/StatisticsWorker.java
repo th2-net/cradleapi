@@ -72,9 +72,9 @@ public class StatisticsWorker implements Runnable {
         logger.info("Shutting down StatisticsWorker executor");
         executorService.shutdown();
         try {
-            logger.info("Waiting StatisticsWorker jobs to complete");
+            logger.debug("Waiting StatisticsWorker jobs to complete");
             executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
-            logger.info("StatisticsWorker shutdown complete");
+            logger.debug("StatisticsWorker shutdown complete");
         } catch (InterruptedException e) {
             logger.error("Interrupted while waiting jobs to complete");
         }
