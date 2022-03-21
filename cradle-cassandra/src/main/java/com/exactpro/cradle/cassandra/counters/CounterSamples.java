@@ -34,7 +34,7 @@ public class CounterSamples {
 
     public synchronized Collection<TimeFrameCounter> extractAll() {
         Collection<TimeFrameCounter> result = samples.values();
-        result.clear();
+        samples.clear();
         return result;
     }
 
