@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -223,13 +224,13 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (!(o instanceof MessageKey)) return false;
 
             MessageKey that = (MessageKey) o;
 
-            if (sessionAlias != null ? !sessionAlias.equals(that.sessionAlias) : that.sessionAlias != null)
+            if (!Objects.equals(sessionAlias, that.sessionAlias))
                 return false;
-            return direction != null ? direction.equals(that.direction) : that.direction == null;
+            return Objects.equals(direction, that.direction);
         }
 
         @Override
