@@ -54,6 +54,7 @@ public class BookOperators
 	private final TestEventOperator testEventOperator;
 	private final PageScopesOperator pageScopesOperator;
 	private final IntervalOperator intervalOperator;
+	private final StatisticsOperator statisticsOperator;
 
 	private final SessionEntityConverter sessionEntityConverter;
 	private final ScopeEntityConverter scopeEntityConverter;
@@ -61,6 +62,7 @@ public class BookOperators
 	private final PageSessionEntityConverter pageSessionEntityConverter;
 	private final TestEventEntityConverter testEventEntityConverter;
 	private final PageScopeEntityConverter pageScopeEntityConverter;
+	private final StatisticsEntityConverter statisticsEntityConverter;
 	
 	private final LimitedCache<CachedSession> sessionsCache;
 	private final LimitedCache<CachedPageSession> pageSessionsCache;
@@ -83,6 +85,7 @@ public class BookOperators
 		pageScopesOperator = dataMapper.pageScopesOperator(keyspace, settings.getPageScopesTable());
 		
 		intervalOperator = dataMapper.intervalOperator(keyspace, settings.getIntervalsTable());
+		statisticsOperator = dataMapper.createStatisticsOperator(keyspace, settings.getStatisticsTable());
 
 		sessionEntityConverter = dataMapper.sessionEntityConverter();
 		scopeEntityConverter = dataMapper.scopeEntityConverter();
@@ -90,6 +93,7 @@ public class BookOperators
 		pageSessionEntityConverter = dataMapper.pageSessionEntityConverter();
 		testEventEntityConverter = dataMapper.testEventEntityConverter();
 		pageScopeEntityConverter = dataMapper.pageScopeEntityConverter();
+		statisticsEntityConverter = dataMapper.statisticsEntityConverter();
 
 		sessionsCache = new LimitedCache<>(settings.getSessionsCacheSize());
 		pageSessionsCache = new LimitedCache<>(settings.getPageSessionsCacheSize());
@@ -148,6 +152,10 @@ public class BookOperators
 		return intervalOperator;
 	}
 
+	public StatisticsOperator getStatisticsOperator() {
+		return statisticsOperator;
+	}
+
 	public SessionEntityConverter getSessionEntityConverter()
 	{
 		return sessionEntityConverter;
@@ -176,6 +184,10 @@ public class BookOperators
 	public PageScopeEntityConverter getPageScopeEntityConverter()
 	{
 		return pageScopeEntityConverter;
+	}
+
+	public StatisticsEntityConverter getStatisticsEntityConverter() {
+		return statisticsEntityConverter;
 	}
 
 	public LimitedCache<CachedSession> getSessionsCache()

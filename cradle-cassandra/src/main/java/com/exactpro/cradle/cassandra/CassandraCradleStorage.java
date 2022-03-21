@@ -24,17 +24,16 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
-import com.exactpro.cradle.cassandra.dao.BookOperators;
-import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
-import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
-import com.exactpro.cradle.cassandra.dao.CradleOperators;
+import com.exactpro.cradle.cassandra.dao.*;
 import com.exactpro.cradle.cassandra.dao.books.*;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
+import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.BookKeyspaceCreator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
 import com.exactpro.cradle.cassandra.metrics.DriverMetrics;
+import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
 import com.exactpro.cradle.cassandra.retries.FixedNumberRetryPolicy;
 import com.exactpro.cradle.cassandra.retries.PageSizeAdjustingPolicy;
 import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
@@ -64,6 +63,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -584,6 +584,32 @@ public class CassandraCradleStorage extends CradleStorage
 		while (it.hasNext())
 			result.add(it.next().getScope());
 		return result;
+	}
+
+	public CompletableFuture<CassandraCradleResultSet<Counter>> doGetCounters (BookId bookId, String sessionAlias, Direction direction, EntityType entityType,
+																			   FrameType frameType, Instant frameStart, Instant frameEnd) throws CradleStorageException {
+		String queryInfo = String.format("Getting counters for sessionAlias-%s, direction-%s, entityType-%s, frameType-%s from %s to %s",
+				sessionAlias,
+				direction.name(),
+				entityType.name(),
+				frameType.name(),
+				frameStart.toString(),
+				frameEnd.toString());
+
+		//TODO: match intervals to granularity
+
+		var iteratorProvider = new CounterSampleIteratorProvider(queryInfo);
+		var operators = ops.getOperators(bookId);
+		var statsOperator = operators.getStatisticsOperator();
+		var statsConverter = operators.getStatisticsEntityConverter();
+		return statsOperator.getStatistics(sessionAlias,
+				direction.getLabel(), entityType.getValue(),
+				frameType.getValue(), frameStart, frameEnd, readAttrs)
+				.thenApplyAsync(rs ->
+						new ConvertingPagedIterator<>(rs, selectExecutor,
+								-1, new AtomicInteger(0),
+								StatisticsEntity::toCounter, statsConverter::getEntity, queryInfo))
+				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, iteratorProvider));
 	}
 	
 	
