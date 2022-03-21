@@ -152,6 +152,10 @@ public class BookOperators
 		return intervalOperator;
 	}
 
+	public StatisticsOperator getStatisticsOperator() {
+		return statisticsOperator;
+	}
+
 	public SessionEntityConverter getSessionEntityConverter()
 	{
 		return sessionEntityConverter;
@@ -180,6 +184,10 @@ public class BookOperators
 	public PageScopeEntityConverter getPageScopeEntityConverter()
 	{
 		return pageScopeEntityConverter;
+	}
+
+	public StatisticsEntityConverter getStatisticsEntityConverter() {
+		return statisticsEntityConverter;
 	}
 
 	public LimitedCache<CachedSession> getSessionsCache()
