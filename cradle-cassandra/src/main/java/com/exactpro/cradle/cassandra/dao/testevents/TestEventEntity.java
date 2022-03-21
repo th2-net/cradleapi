@@ -16,7 +16,18 @@
 
 package com.exactpro.cradle.cassandra.dao.testevents;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
+import com.datastax.oss.driver.api.mapper.annotations.*;
+import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.PageId;
+import com.exactpro.cradle.cassandra.dao.CradleEntity;
+import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.serialization.SerializedEntityData;
+import com.exactpro.cradle.serialization.SerializedEntityMetadata;
+import com.exactpro.cradle.testevents.*;
+import com.exactpro.cradle.utils.*;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -25,34 +36,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.zip.DataFormatException;
 
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
-import com.datastax.oss.driver.api.mapper.annotations.CqlName;
-import com.datastax.oss.driver.api.mapper.annotations.Entity;
-import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
-import com.datastax.oss.driver.api.mapper.annotations.Transient;
-import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.PageId;
-import com.exactpro.cradle.cassandra.dao.CradleEntity;
-import com.exactpro.cradle.messages.StoredMessageId;
-import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
-import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.StoredTestEventBatch;
-import com.exactpro.cradle.testevents.StoredTestEventId;
-import com.exactpro.cradle.testevents.StoredTestEventSingle;
-import com.exactpro.cradle.testevents.TestEventToStore;
-import com.exactpro.cradle.utils.CompressionUtils;
-import com.exactpro.cradle.utils.CradleIdException;
-import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.TestEventUtils;
-import com.exactpro.cradle.utils.TimeUtils;
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 /**
  * Contains data of {@link StoredTestEvent} to write to or to obtain from Cassandra
@@ -110,8 +99,9 @@ public class TestEventEntity extends CradleEntity
 	
 	@CqlName(MESSAGES)
 	private ByteBuffer messages;
-	
-	
+
+	private List<SerializedEntityMetadata> serializedEventMetadata;
+
 	public TestEventEntity()
 	{
 	}
@@ -119,8 +109,10 @@ public class TestEventEntity extends CradleEntity
 	public TestEventEntity(TestEventToStore event, PageId pageId, int maxUncompressedSize) throws IOException
 	{
 		logger.debug("Creating entity from test event '{}'", event.getId());
-		
-		byte[] content = TestEventUtils.getTestEventContent(event);
+
+		SerializedEntityData serializedEventData = TestEventUtils.getTestEventContent(event);
+
+		byte[] content = serializedEventData.getSerializedData();
 		boolean compressed;
 		if (content != null && content.length > maxUncompressedSize)
 		{
@@ -158,6 +150,8 @@ public class TestEventEntity extends CradleEntity
 		//TODO: this.setLabels(event.getLabels());
 		if (content != null)
 			setContent(ByteBuffer.wrap(content));
+
+		setSerializedEventMetadata(serializedEventData.getSerializedEntityMetadata());
 	}
 	
 	
@@ -366,7 +360,17 @@ public class TestEventEntity extends CradleEntity
 			setEndTime(null);
 		}
 	}
-	
+
+	@Transient
+	public List<SerializedEntityMetadata> getSerializedEventMetadata() {
+		return serializedEventMetadata;
+	}
+
+	@Transient
+	public void setSerializedEventMetadata(List<SerializedEntityMetadata> serializedEventMetadata) {
+		this.serializedEventMetadata = serializedEventMetadata;
+	}
+
 
 	public ByteBuffer getMessages()
 	{

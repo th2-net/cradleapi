@@ -16,6 +16,14 @@
 
 package com.exactpro.cradle.utils;
 
+import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.serialization.*;
+import com.exactpro.cradle.testevents.*;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -23,15 +31,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.zip.DataFormatException;
-
-import com.exactpro.cradle.serialization.*;
-import com.exactpro.cradle.testevents.*;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.messages.StoredMessageId;
 
 public class TestEventUtils
 {
@@ -95,9 +94,16 @@ public class TestEventUtils
 	 * @return array of bytes, containing serialized events
 	 * @throws IOException if serialization failed
 	 */
-	public static byte[] serializeTestEvents(Collection<BatchedStoredTestEvent> testEvents) throws IOException
+	public static SerializedEntityData serializeTestEvents(Collection<BatchedStoredTestEvent> testEvents) throws IOException
 	{
 		return serializer.serializeEventBatch(testEvents);
+	}
+
+	/**
+	 * Serializes a single test event.
+	 */
+	public static SerializedEntityData serializeTestEvent(TestEventSingleToStore testEvent) throws IOException {
+		return serializer.serializeEvent(testEvent);
 	}
 	
 	/**
@@ -153,14 +159,14 @@ public class TestEventUtils
 	 * @return bytes of test event content
 	 * @throws IOException if batch children serialization failed
 	 */
-	public static byte[] getTestEventContent(TestEventToStore event) throws IOException
+	public static SerializedEntityData getTestEventContent(TestEventToStore event) throws IOException
 	{
 		if (event.isBatch())
 		{
 			logger.trace("Serializing children of test event batch '{}'", event.getId());
 			return serializeTestEvents(event.asBatch().getTestEvents());
 		}
-		return event.asSingle().getContent();
+		return serializeTestEvent(event.asSingle());
 	}
 	
 	
