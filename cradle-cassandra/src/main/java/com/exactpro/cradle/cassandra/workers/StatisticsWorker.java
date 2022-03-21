@@ -172,13 +172,24 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
         logger.trace("executing StatisticsWorker job");
 
         try {
-            // persist all cached entity counters
             for (BookId bookId: bookEntityCounterCache.keySet()) {
+
+                // persist all cached entity counters
                 EntityCounterCache entityCounters = bookEntityCounterCache.get(bookId);
                 for (FrameType frameType : FrameType.values()) {
                     for (EntityType entityType : EntityType.values()) {
                         Collection<TimeFrameCounter> counters = entityCounters.get(entityType).getCounterSamples(frameType).extractAll();
                         counters.forEach(counter -> persistEntityCounters(bookId, entityType, frameType, counter));
+                    }
+                }
+
+                // persist all cached message counters
+                MessageCounterCache messageCounters = bookMessageCounterCache.get(bookId);
+                for (MessageKey key :messageCounters.keySet()) {
+                    CounterCache counterCache = messageCounters.get(key);
+                    for (FrameType frameType : FrameType.values()) {
+                        Collection<TimeFrameCounter> counters = counterCache.getCounterSamples(frameType).extractAll();
+                        counters.forEach(counter -> persistMessageCounters(bookId, key, frameType, counter));
                     }
                 }
             }
