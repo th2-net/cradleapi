@@ -19,7 +19,7 @@ public interface StatisticsOperator {
             ENTITY_TYPE + "=:entityType AND " +
             FRAME_TYPE + "=:frameType AND " +
             FRAME_START + ">=:frameStart AND " +
-            FRAME_START + "<=:frameEnd")
+            FRAME_START + "<:frameEnd")
     CompletableFuture<MappedAsyncPagingIterable<StatisticsEntity>> getStatistics (
             String sessionAlias,
             String direction,

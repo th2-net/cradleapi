@@ -135,6 +135,21 @@ public abstract class CradleStorage
 			throws CradleStorageException;
 	
 	protected abstract Collection<String> doGetScopes(BookId bookId) throws IOException, CradleStorageException;
+
+	protected abstract CompletableFuture<CradleResultSet<Counter>> doGetCountersAsync (BookId bookId,
+																					   String sessionAlias,
+																					   Direction direction,
+																					   EntityType entityType,
+																					   FrameType frameType,
+																					   Instant frameStart,
+																					   Instant frameEnd) throws CradleStorageException;
+	protected abstract CradleResultSet<Counter> doGetCounters (BookId bookId,
+															   String sessionAlias,
+															   Direction direction,
+															   EntityType entityType,
+															   FrameType frameType,
+															   Instant frameStart,
+															   Instant frameEnd) throws CradleStorageException, IOException;
 	
 	
 	/**
@@ -802,7 +817,50 @@ public abstract class CradleStorage
 		logger.debug("Scopes for book '{}' got", bookId);
 		return result;
 	}
-	
+
+	/**
+	 * Gets counters for entity densities for specified granularity and time frame asynchronously
+	 * @param bookId identifier for book
+	 * @param sessionAlias session alias
+	 * @param direction direction
+	 * @param entityType entityType
+	 * @param frameType frameType
+	 * @param frameStart start of frame inclusive
+	 * @param frameEnd end of frame inclusive
+	 * @throws CradleStorageException if given book ID is invalid
+	 */
+	public CompletableFuture<CradleResultSet<Counter>> getCountersAsync (BookId bookId,
+																		 String sessionAlias,
+																		 Direction direction,
+																		 EntityType entityType,
+																		 FrameType frameType,
+																		 Instant frameStart,
+																		 Instant frameEnd) throws CradleStorageException {
+		return doGetCountersAsync(bookId, sessionAlias, direction, entityType, frameType, frameStart, frameEnd);
+	}
+
+	/**
+	 * Gets counters for entity densities for specified granularity and time frame
+	 * @param bookId identifier for book
+	 * @param sessionAlias session alias
+	 * @param direction direction
+	 * @param entityType entityType
+	 * @param frameType frameType
+	 * @param frameStart start of frame inclusive
+	 * @param frameEnd end of frame inclusive
+	 * @throws CradleStorageException if given book ID is invalid
+	 */
+	public CradleResultSet<Counter> getCounters (BookId bookId,
+												 String sessionAlias,
+												 Direction direction,
+												 EntityType entityType,
+												 FrameType frameType,
+												 Instant frameStart,
+												 Instant frameEnd) throws CradleStorageException, IOException {
+		return doGetCounters(bookId, sessionAlias, direction, entityType, frameType, frameStart, frameEnd);
+	}
+
+
 	
 	public final void updateEventStatus(StoredTestEvent event, boolean success) throws IOException
 	{
