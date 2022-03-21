@@ -13,18 +13,16 @@ import java.util.function.Function;
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 @Dao
-public interface StatisticsOperator {
+public interface MessageStatisticsOperator {
 
     @Query("SELECT * FROM ${qualifiedTableId}  WHERE " + SESSION_ALIAS + "=:sessionAlias AND " +
             DIRECTION + "=:direction AND " +
-            ENTITY_TYPE + "=:entityType AND " +
             FRAME_TYPE + "=:frameType AND " +
             FRAME_START + ">=:frameStart AND " +
             FRAME_START + "<=:frameEnd")
-    CompletableFuture<MappedAsyncPagingIterable<StatisticsEntity>> getStatistics (
+    CompletableFuture<MappedAsyncPagingIterable<MessageStatisticsEntity>> getStatistics (
             String sessionAlias,
             String direction,
-            Byte entityType,
             Byte frameType,
             Instant frameStart,
             Instant frameEnd,

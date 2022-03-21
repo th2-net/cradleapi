@@ -52,7 +52,8 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 		createLabelsTable();
 		createIntervals();
 
-		createStatistics();
+		createMessageStatistics();
+		createEntityStatistics();
 	}
 
 
@@ -196,16 +197,27 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withColumn(INTERVAL_PROCESSED, DataTypes.BOOLEAN));
 	}
 
-	private void createStatistics() throws IOException
+	private void createMessageStatistics() throws IOException
 	{
-		String tableName = getSettings().getStatisticsTable();
+		String tableName = getSettings().getMessageStatisticsTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(SESSION_ALIAS, DataTypes.TEXT)
 				.withPartitionKey(DIRECTION, DataTypes.TEXT)
+				.withPartitionKey(FRAME_TYPE, DataTypes.TINYINT)
+				.withClusteringColumn(FRAME_START, DataTypes.TIMESTAMP)
+				.withColumn(ENTITY_COUNT, DataTypes.COUNTER)
+				.withColumn(ENTITY_SIZE, DataTypes.COUNTER));
+	}
+
+	private void createEntityStatistics() throws IOException
+	{
+		String tableName = getSettings().getEntityStatisticsTable();
+		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(ENTITY_TYPE, DataTypes.TINYINT)
 				.withPartitionKey(FRAME_TYPE, DataTypes.TINYINT)
 				.withClusteringColumn(FRAME_START, DataTypes.TIMESTAMP)
 				.withColumn(ENTITY_COUNT, DataTypes.COUNTER)
 				.withColumn(ENTITY_SIZE, DataTypes.COUNTER));
 	}
+
 }
