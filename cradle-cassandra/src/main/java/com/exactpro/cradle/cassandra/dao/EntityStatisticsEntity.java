@@ -11,17 +11,15 @@ import java.time.Instant;
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 @Entity
-public class StatisticsEntity {
+public class EntityStatisticsEntity {
 
-    private String sessionAlias;
-    private String direction;
     private Byte entityType;
     private Byte frameType;
     private Instant frameStart;
     private Long entityCount;
     private Long entitySize;
 
-    public StatisticsEntity() {
+    public EntityStatisticsEntity() {
 
     }
 
@@ -30,26 +28,6 @@ public class StatisticsEntity {
     }
 
     @PartitionKey(0)
-    @CqlName(SESSION_ALIAS)
-    public String getSessionAlias() {
-        return sessionAlias;
-    }
-
-    public void setSessionAlias(String sessionAlias) {
-        this.sessionAlias = sessionAlias;
-    }
-
-    @PartitionKey(1)
-    @CqlName(DIRECTION)
-    public String getDirection() {
-        return direction;
-    }
-
-    public void setDirection(String direction) {
-        this.direction = direction;
-    }
-
-    @PartitionKey(2)
     @CqlName(ENTITY_TYPE)
     public Byte getEntityType() {
         return entityType;
@@ -59,7 +37,7 @@ public class StatisticsEntity {
         this.entityType = entityType;
     }
 
-    @PartitionKey(3)
+    @PartitionKey(1)
     @CqlName(FRAME_TYPE)
     public Byte getFrameType() {
         return frameType;
@@ -69,7 +47,7 @@ public class StatisticsEntity {
         this.frameType = frameType;
     }
 
-    @ClusteringColumn(1)
+    @ClusteringColumn(2)
     @CqlName(FRAME_START)
     public Instant getFrameStart() {
         return frameStart;

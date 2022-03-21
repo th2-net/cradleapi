@@ -4,5 +4,5 @@ import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.exactpro.cradle.cassandra.EntityConverter;
 
 @Dao
-public interface StatisticsEntityConverter extends EntityConverter<StatisticsEntity> {
+public interface EntityStatisticsEntityConverter extends EntityConverter<EntityStatisticsEntity> {
 }

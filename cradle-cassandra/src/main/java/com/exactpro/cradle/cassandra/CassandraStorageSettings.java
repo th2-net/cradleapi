@@ -37,7 +37,8 @@ public class CassandraStorageSettings
 			TEST_EVENT_PARENT_INDEX = "test_event_parent_index",
 			LABELS_TABLE = "labels",
 			INTERVALS_TABLE = "intervals",
-			STATISTICS_TABLE = "statistics";
+			MESSAGE_STATISTICS_TABLE = "message_statistics",
+			ENTITY_STATISTICS_TABLE = "entity_statistics";
 	public static final long DEFAULT_TIMEOUT = 5000;
 	public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
 	public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1,
@@ -68,7 +69,8 @@ public class CassandraStorageSettings
 			testEventParentIndex,
 			labelsTable,
 			intervalsTable,
-			statisticsTable;
+			messageStatisticsTable,
+			entityStatisticsTable;
 	private int keyspaceReplicationFactor;
 	
 	private int maxParallelQueries,
@@ -118,7 +120,8 @@ public class CassandraStorageSettings
 		this.testEventParentIndex = TEST_EVENT_PARENT_INDEX;
 		this.labelsTable = LABELS_TABLE;
 		this.intervalsTable = INTERVALS_TABLE;
-		this.statisticsTable = STATISTICS_TABLE;
+		this.messageStatisticsTable = MESSAGE_STATISTICS_TABLE;
+		this.entityStatisticsTable = ENTITY_STATISTICS_TABLE;
 		
 		this.keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
 		this.maxParallelQueries = DEFAULT_MAX_PARALLEL_QUERIES;
@@ -154,7 +157,8 @@ public class CassandraStorageSettings
 		this.testEventParentIndex = settings.getTestEventParentIndex();
 		this.labelsTable = settings.getLabelsTable();
 		this.intervalsTable = settings.getIntervalsTable();
-		this.statisticsTable = settings.getStatisticsTable();
+		this.messageStatisticsTable = settings.getMessageStatisticsTable();
+		this.entityStatisticsTable = settings.getEntityStatisticsTable();
 
 		this.keyspaceReplicationFactor = settings.getKeyspaceReplicationFactor();
 		this.maxParallelQueries = settings.getMaxParallelQueries();
@@ -342,14 +346,21 @@ public class CassandraStorageSettings
 	}
 
 
-	public String getStatisticsTable() {
-		return statisticsTable;
+	public String getMessageStatisticsTable() {
+		return messageStatisticsTable;
 	}
 
-	public void setStatisticsTable(String statisticsTable) {
-		this.statisticsTable = statisticsTable;
+	public void setMessageStatisticsTable(String messageStatisticsTable) {
+		this.messageStatisticsTable = messageStatisticsTable;
 	}
 
+	public String getEntityStatisticsTable() {
+		return entityStatisticsTable;
+	}
+
+	public void setEntityStatisticsTable(String entityStatisticsTable) {
+		this.entityStatisticsTable = entityStatisticsTable;
+	}
 
 	public int getKeyspaceReplicationFactor()
 	{
