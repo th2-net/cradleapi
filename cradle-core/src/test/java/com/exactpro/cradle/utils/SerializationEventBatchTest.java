@@ -30,7 +30,10 @@ import org.testng.annotations.Test;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
 
 import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateBatchEventSize;
 import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateEventRecordSize;
@@ -73,7 +76,7 @@ public class SerializationEventBatchTest {
 		EventBatchCommonParams commonParams = createCommonParams();
 		List<BatchedStoredTestEvent> build = createBatchEvents(commonParams);
 		EventBatchSerializer serializer = new EventBatchSerializer();
-		byte[] serialize = serializer.serializeEventBatch(build);
+		byte[] serialize = serializer.serializeEventBatch(build).getSerializedData();
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
 		List<BatchedStoredTestEvent> deserialize = deserializer.deserializeBatchEntries(serialize, commonParams);
 		Assertions.assertThat(build).usingRecursiveFieldByFieldElementComparator().isEqualTo(deserialize);

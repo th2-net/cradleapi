@@ -16,15 +16,14 @@
 
 package com.exactpro.cradle.utils;
 
-import java.io.IOException;
-import java.time.Instant;
-
-import org.testng.annotations.Test;
-
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
 import com.exactpro.cradle.testevents.TestEventToStore;
+import org.testng.annotations.Test;
+
+import java.io.IOException;
+import java.time.Instant;
 
 public class TestEventUtilsTest
 {
@@ -46,7 +45,7 @@ public class TestEventUtilsTest
 				.parentId(parentId)
 				.build());
 		
-		byte[] bytes = TestEventUtils.serializeTestEvents(batch.getTestEvents());
+		byte[] bytes = TestEventUtils.serializeTestEvents(batch.getTestEvents()).getSerializedData();
 		TestEventUtils.deserializeTestEvents(bytes, batchId);
 	}
 }

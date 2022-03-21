@@ -177,7 +177,7 @@ public class SerializationMessageTest {
 		MessageSerializer serializer = new MessageSerializer();
 		MessageCommonParams commonParams = getCommonParams();
 		List<StoredMessage> initBatch = getBatch(commonParams);
-		byte[] serialize = serializer.serializeBatch(initBatch);
+		byte[] serialize = serializer.serializeBatch(initBatch).getSerializedData();
 		MessageDeserializer deserializer = new MessageDeserializer();
 		List<StoredMessage> deserialize = deserializer.deserializeBatch(serialize, commonParams);
 		Assert.assertEquals(deserialize, initBatch);
@@ -188,7 +188,7 @@ public class SerializationMessageTest {
 		MessageSerializer serializer = new MessageSerializer();
 		MessageCommonParams commonParams = getCommonParams();
 		List<StoredMessage> initBatch = Collections.emptyList();
-		byte[] serialize = serializer.serializeBatch(initBatch);
+		byte[] serialize = serializer.serializeBatch(initBatch).getSerializedData();
 		MessageDeserializer deserializer = new MessageDeserializer();
 		List<StoredMessage> deserialize = deserializer.deserializeBatch(serialize, commonParams);
 		Assert.assertEquals(deserialize, initBatch);
