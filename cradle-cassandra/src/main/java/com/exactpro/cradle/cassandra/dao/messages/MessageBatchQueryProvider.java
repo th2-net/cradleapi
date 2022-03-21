@@ -157,7 +157,7 @@ public class MessageBatchQueryProvider
 		if (!isLeftIndexSelected && filter.getTimestampFrom() != null)
 			select = FilterUtils.filterToWhere(ComparisonOperation.GREATER_OR_EQUALS, select.whereColumn(MESSAGE_INDEX),
 					LEFT_MESSAGE_INDEX);
-		
+
 		if (!isRightIndexSelected && filter.getTimestampTo() != null)
 			select = FilterUtils.filterToWhere(ComparisonOperation.LESS_OR_EQUALS, select.whereColumn(MESSAGE_INDEX),
 					RIGHT_MESSAGE_INDEX);
@@ -219,7 +219,7 @@ public class MessageBatchQueryProvider
 		if (directionFilter != null)
 			builder = builder.setString(DIRECTION, directionFilter.getValue().getLabel());
 
-		long leftIndex = 0L;
+		long leftIndex = Long.MIN_VALUE;
 		long rightIndex = Long.MAX_VALUE;
 		if (filter.getIndex() != null)
 		{
@@ -267,8 +267,12 @@ public class MessageBatchQueryProvider
 			{
 				long fromIndex = getNearestMessageIndexBefore(tmOperator, instanceId,
 						filter.getStreamName().getValue(), directionFilter.getValue(), ts, attributes);
-				fromIndex = getMessageBatchIndex(operator, instanceId, filter.getStreamName().getValue(),
-						directionFilter.getValue(), fromIndex, attributes);
+				
+				if (fromIndex != Long.MIN_VALUE)
+					// Find batch index by nearest message index before
+					fromIndex = getMessageBatchIndex(operator, instanceId, filter.getStreamName().getValue(),
+							directionFilter.getValue(), fromIndex, attributes);
+				
 				if (fromIndex >= leftIndex)
 					builder = builder.setLong(LEFT_MESSAGE_INDEX, fromIndex);
 			}
@@ -304,7 +308,7 @@ public class MessageBatchQueryProvider
 		LocalDateTime ldt = LocalDateTime.ofInstant(instant, TIMEZONE_OFFSET);
 		TimeMessageEntity entity = tmOperator.getNearestMessageBefore(instanceId, streamName, ldt.toLocalDate(),
 				direction.getLabel(), ldt.toLocalTime(), attributes).get();
-		return entity == null ? 0L : entity.getMessageIndex();
+		return entity == null ? Long.MIN_VALUE : entity.getMessageIndex();
 	}
 
 	private long getMessageBatchIndex(MessageBatchOperator mbOperator, UUID instanceId, String streamName,
@@ -313,7 +317,7 @@ public class MessageBatchQueryProvider
 	{
 		Row row =
 				mbOperator.getBatchIndex(instanceId, streamName, direction.getLabel(), messageIndex, attributes).get();
-		return row == null ? 0L : row.getLong(MESSAGE_INDEX);
+		return row == null ? Long.MIN_VALUE : row.getLong(MESSAGE_INDEX);
 	}
 	
 	private long getNearestMessageIndexAfter(TimeMessageOperator tmOperator, UUID instanceId, String streamName,

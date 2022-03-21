@@ -62,7 +62,7 @@ public class StoredMessageBatchIterator extends ConvertingPagedIterator<StoredMe
 	{
 		try
 		{
-			return entity.toStoredMessageBatch(objectsFactory.createMessageBatch());
+			return entity.toStoredMessageBatch();
 		}
 		catch (CradleStorageException e)
 		{

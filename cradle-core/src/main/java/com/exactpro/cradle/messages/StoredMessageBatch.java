@@ -135,12 +135,18 @@ public class StoredMessageBatch
 	 */
 	public StoredMessage addMessage(MessageToStore message) throws CradleStorageException
 	{
+		checkBatchConstraints(message);
+
+		return addMessageInternal(message);
+	}
+
+	protected void checkBatchConstraints(MessageToStore message) throws CradleStorageException
+	{
 		if (!hasSpace(message))
 			throw new CradleStorageException("Batch has not enough space to hold given message");
 		
 		MessageUtils.validateMessage(message);
 		
-		long messageIndex;
 		if (id == null)
 		{
 			String sm = message.getStreamName();
@@ -152,37 +158,44 @@ public class StoredMessageBatch
 				throw new CradleStorageException("Message direction for first message in batch must be set");
 			if (i < 0)
 				throw new CradleStorageException("Message index for first message in batch cannot be negative");
-			
-			id = new StoredMessageBatchId(sm, d, i);
-			messageIndex = message.getIndex();
 		}
 		else
 		{
 			if (!id.getStreamName().equals(message.getStreamName()))
-				throw new CradleStorageException("Batch contains messages of stream with name '"+id.getStreamName()+"', but in your message it is '"+message.getStreamName()+"'");
+				throw new CradleStorageException("Batch contains messages of stream with name '" + id.getStreamName() +
+						"', but in your message it is '" + message.getStreamName() + "'");
 			if (id.getDirection() != message.getDirection())
-				throw new CradleStorageException("Batch contains messages with direction "+id.getDirection()+", but in your message it is "+message.getDirection());
-			
+				throw new CradleStorageException("Batch contains messages with direction " + id.getDirection() +
+						", but in your message it is " + message.getDirection());
+
 			StoredMessage lastMsg = getLastMessage();
 			if (message.getIndex() > 0)  //I.e. message index is set
 			{
-				messageIndex = message.getIndex();
+				long messageIndex = message.getIndex();
 				if (messageIndex <= lastMsg.getIndex())
-					throw new CradleStorageException("Message index should be greater than "+lastMsg.getIndex()+" for the batch to contain sequenced messages, but in your message it is "+messageIndex);
+					throw new CradleStorageException("Message index should be greater than "+lastMsg.getIndex()+
+							" for the batch to contain sequenced messages, but in your message it is "+messageIndex);
 				if (messageIndex != lastMsg.getIndex()+1)
-					logger.warn("Message index should be "+(lastMsg.getIndex()+1)+" for the batch to contain strictly sequenced messages, but in your message it is "+messageIndex);
+					logger.debug("Message index should be "+(lastMsg.getIndex()+1)+
+							" for the batch to contain strictly sequenced messages, but in your message it is "+messageIndex);
 			}
-			else
-				messageIndex = lastMsg.getIndex()+1;
+			if (lastMsg.getTimestamp().isAfter(message.getTimestamp()))
+				throw new CradleStorageException(
+						"Message timestamp should be greater than last message timestamp in batch '" + lastMsg.getTimestamp()
+								+ "' but in your message it is '" + message.getTimestamp() + "'");
 		}
-		
+	}
+
+	protected StoredMessage addMessageInternal(MessageToStore message)
+	{
+		long messageIndex = message.getIndex() >= 0 ? message.getIndex() : getLastMessage().getIndex()+1;
+		if (id == null)
+			id = new StoredMessageBatchId(message.getStreamName(), message.getDirection(), messageIndex);
 		StoredMessage msg = new StoredMessage(message, new StoredMessageId(message.getStreamName(), message.getDirection(), messageIndex));
 		messages.add(msg);
 		batchSize += msg.getContent().length;
 		return msg;
 	}
-	
-	
 	
 	public StoredMessage getFirstMessage()
 	{

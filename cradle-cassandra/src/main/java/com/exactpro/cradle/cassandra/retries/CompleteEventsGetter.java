@@ -24,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.exactpro.cradle.CradleObjectsFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,13 +48,16 @@ public class CompleteEventsGetter
 	private final TestEventOperator operator;
 	private final TestEventConverter converter;
 	private final PagingSupplies pagingSupplies;
+	private final CradleObjectsFactory objectsFactory;
 	
-	public CompleteEventsGetter(UUID instanceId, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs, SelectExecutionPolicy execPolicy,
-			TestEventOperator operator, TestEventConverter converter, PagingSupplies pagingSupplies)
+	public CompleteEventsGetter(UUID instanceId, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs,
+			SelectExecutionPolicy execPolicy, CradleObjectsFactory objectsFactory, TestEventOperator operator,
+			TestEventConverter converter, PagingSupplies pagingSupplies)
 	{
 		this.instanceId = instanceId;
 		this.readAttrs = readAttrs;
 		this.execPolicy = execPolicy;
+		this.objectsFactory = objectsFactory;
 		this.operator = operator;
 		this.converter = converter;
 		this.pagingSupplies = pagingSupplies;
@@ -73,7 +77,7 @@ public class CompleteEventsGetter
 	private Collection<StoredTestEventWrapper> toCollection(MappedAsyncPagingIterable<TestEventEntity> rs, String queryInfo)
 	{
 		Collection<StoredTestEventWrapper> result = new ArrayList<>();
-		new TestEventDataIteratorAdapter(rs, pagingSupplies, converter, queryInfo).forEach(event -> result.add(event));
+		new TestEventDataIteratorAdapter(rs, objectsFactory, pagingSupplies, converter, queryInfo).forEach(result::add);
 		return result;
 	}
 	
