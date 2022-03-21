@@ -15,7 +15,7 @@
  */
 package com.exactpro.cradle;
 
-import java.time.LocalTime;
+import java.time.Instant;
 
 public enum FrameType {
     TYPE_100MS(1, 100),
@@ -24,10 +24,10 @@ public enum FrameType {
     TYPE_HOUR(4, 60 * 60 * 1000);
 
     private final byte value;
-    private final long frameNanos;
-    FrameType(int value, long millis) {
+    private final long millisInFrame;
+    FrameType(int value, long millisInFrame) {
         this.value = (byte) value;
-        this.frameNanos = millis * 1_000_000;
+        this.millisInFrame = millisInFrame;
     }
 
     public byte getValue() {
@@ -39,10 +39,10 @@ public enum FrameType {
      * @param time for which frame start is calculated
      * @return start time(inclusive) for a given time
      */
-    public LocalTime getFrameStart(LocalTime time) {
-        long nanos = time.toNanoOfDay();
-        long nanosAdjusted = (nanos / frameNanos) * frameNanos;
-        return LocalTime.ofNanoOfDay(nanosAdjusted);
+    public Instant getFrameStart(Instant time) {
+        long millis = time.toEpochMilli();
+        long millisAdjusted = (millis / millisInFrame) * millisInFrame;
+        return Instant.ofEpochMilli(millisAdjusted);
     }
 
     /**
@@ -50,8 +50,8 @@ public enum FrameType {
      * @param time for which frame end is calculated
      * @return end time(excluseve) for a given time
      */
-    public LocalTime getFrameEnd(LocalTime time) {
-        return getFrameStart(time.plusNanos(frameNanos));
+    public Instant getFrameEnd(Instant time) {
+        return getFrameStart(time.plusMillis(millisInFrame));
     }
 
     /**
