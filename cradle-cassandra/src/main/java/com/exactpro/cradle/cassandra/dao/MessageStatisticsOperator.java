@@ -31,25 +31,12 @@ public interface MessageStatisticsOperator {
 
     @Update
     @Query("UPDATE ${qualifiedTableId}  SET entity_count = entity_count + :count, entity_size = entity_size + :size WHERE " +
-            ENTITY_TYPE + "=:entityType AND " +
-            FRAME_TYPE + "=:frameType AND " +
-            FRAME_START + "=:frameStart")
-    void updateEntities(
-            Byte entityType,
-            Byte frameType,
-            Instant frameStart,
-            long count,
-            long size,
-            Function<BoundStatementBuilder, BoundStatementBuilder> attributes
-    );
-    @Update
-    @Query("UPDATE ${qualifiedTableId}  SET entity_count = entity_count + :count, entity_size = entity_size + :size WHERE " +
             SESSION_ALIAS + "=:sessionAlias AND " +
             DIRECTION + "=:direction AND " +
             ENTITY_TYPE + "=:entityType AND " +
             FRAME_TYPE + "=:frameType AND " +
             FRAME_START + "=:frameStart")
-    void updateMessages(
+    void update(
             String sessionAlias,
             String direction,
             Byte frameType,

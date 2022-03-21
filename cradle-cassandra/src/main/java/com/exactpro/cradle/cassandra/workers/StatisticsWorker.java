@@ -131,8 +131,8 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
     private void persistEntityCounters(BookId bookId, EntityType entityType, FrameType frameType, TimeFrameCounter counter) {
         try {
-            logger.trace("Persisting counter for %s:%s:%s:%s", bookId, entityType, frameType, counter.getFrameStart());
-            ops.getOperators(bookId).getStatisticsOperator().updateEntities(
+            logger.trace("Persisting counter for {}:{}:{}:{}", bookId, entityType, frameType, counter.getFrameStart());
+            ops.getOperators(bookId).getEntityStatisticsOperator().update(
                     entityType.getValue(),
                     frameType.getValue(),
                     counter.getFrameStart(),
@@ -150,8 +150,8 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
     private void persistMessageCounters(BookId bookId, MessageKey key, FrameType frameType, TimeFrameCounter counter) {
         try {
-            logger.trace("Persisting counter for %s:%s:%s:%s:%s", bookId, key.getSessionAlias(), key.getDirection(), frameType, counter.getFrameStart());
-            ops.getOperators(bookId).getStatisticsOperator().updateMessages(
+            logger.trace("Persisting counter for {}:{}:{}:{}:{}", bookId, key.getSessionAlias(), key.getDirection(), frameType, counter.getFrameStart());
+            ops.getOperators(bookId).getMessageStatisticsOperator().update(
                     key.getSessionAlias(),
                     key.getDirection(),
                     frameType.getValue(),
@@ -162,7 +162,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
             );
         } catch (Exception e) {
             logger.error("Exception persisting counter, retry scheduled", e);
-            EntityCounterCache entityCounters = bookEntityCounterCache.get(bookId);
+            MessageCounterCache entityCounters = bookMessageCounterCache.get(bookId);
             entityCounters.get(key).getCounterSamples(frameType).update(counter.getFrameStart(), counter.getCounter());
         }
     }
