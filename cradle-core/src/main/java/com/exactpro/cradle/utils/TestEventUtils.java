@@ -156,7 +156,7 @@ public class TestEventUtils
 	/**
 	 * Returns content of given test event as bytes. If the event is a batch, child events are serialized and returned as bytes
 	 * @param event whose content to get
-	 * @return bytes of test event content
+	 * @return {@link SerializedEntityData} containing test event content.
 	 * @throws IOException if batch children serialization failed
 	 */
 	public static SerializedEntityData getTestEventContent(TestEventToStore event) throws IOException

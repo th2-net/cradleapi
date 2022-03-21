@@ -62,7 +62,7 @@ public class MessageUtils
 	/**
 	 * Serializes messages, skipping non-meaningful or calculable fields
 	 * @param messages to serialize
-	 * @return array of bytes, containing serialized messages
+	 * @return {@link SerializedEntityData} containing serialized messages.
 	 * @throws IOException if serialization failed
 	 */
 	public static SerializedEntityData serializeMessages(Collection<StoredMessage> messages) throws IOException

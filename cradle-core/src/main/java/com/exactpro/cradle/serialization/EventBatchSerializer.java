@@ -79,8 +79,7 @@ public class EventBatchSerializer {
 	}
 
 	public List<SerializedEntityMetadata> serializeEventBatch (
-			Collection<BatchedStoredTestEvent> batch, ByteBuffer buffer,
-			SerializationBatchSizes eventBatchSizes
+			Collection<BatchedStoredTestEvent> batch, ByteBuffer buffer, SerializationBatchSizes eventBatchSizes
 	) throws SerializationException {
 
 		List<SerializedEntityMetadata> serializedEventMetadata = new ArrayList<>(batch.size());
