@@ -62,6 +62,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -693,6 +694,119 @@ public class CassandraCradleStorage extends CradleStorage
 		try
 		{
 			return doGetCountersAsync(bookId, entityType, frameType, frameStart, frameEnd).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting " + queryInfo, e);
+		}
+	}
+
+	@Override
+	protected CompletableFuture<Counter> doGetMessageCountAsync(BookId bookId, String sessionAlias, Direction direction, Instant frameStart, Instant frameEnd) throws CradleStorageException {
+		return null;
+	}
+
+	@Override
+	protected Counter doGetMessageCount(BookId bookId, String sessionAlias, Direction direction, Instant frameStart, Instant frameEnd) throws CradleStorageException, IOException {
+		String queryInfo = String.format("Cumulative count for Messages with sessionAlias-%s, direction-%s, from %s to %s",
+				sessionAlias,
+				direction.name(),
+				frameStart.toString(),
+				frameEnd.toString());
+		try
+		{
+			return doGetMessageCountAsync(bookId, sessionAlias, direction, frameStart, frameEnd).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting " + queryInfo, e);
+		}
+	}
+
+	@Override
+	protected CompletableFuture<Counter> doGetCountAsync(BookId bookId, EntityType entityType, Instant frameStart, Instant frameEnd) throws CradleStorageException {
+		String queryInfo = String.format("Cumulative count for %s with from %s to %s",
+				entityType.name(),
+				frameStart.toString(),
+				frameEnd.toString());
+
+		logger.info("Getting {}", queryInfo);
+
+		int frameValue = 4;
+		FrameType frameType = FrameType.from(frameValue);
+		// Adjust frame for frame start value
+		while (frameValue > 0 && !frameType.getFrameStart(frameStart).equals(frameStart)) {
+			frameValue --;
+			frameType = FrameType.from(frameValue);
+		}
+		frameValue = frameValue == 0 ? 1 : frameValue;
+
+		List<CompletableFuture<CradleResultSet<Counter>>> queries = new ArrayList<>();
+		// Create requests for smaller frame types at the start
+		Instant start = frameStart, end;
+		while (frameValue < 4) {
+			start = frameType.getFrameStart(frameStart);
+			end = FrameType.from(frameValue + 1).getFrameEnd(frameStart);
+
+			if (end.isAfter(frameEnd)) {
+				break;
+			}
+
+			queries.add(getCountersAsync(bookId, entityType, frameType, start, end));
+
+			frameValue ++;
+			frameType = FrameType.from(frameValue);
+			start = frameType.getFrameStart(frameStart);
+		}
+
+		// Create request for biggest possible frame type
+		end = FrameType.from(frameValue).getFrameEnd(frameEnd);
+		queries.add(getCountersAsync(bookId, entityType, frameType, start, end));
+
+		// Create requests for smaller frame types at the end
+		while (frameValue > 0 && !frameType.getFrameStart(frameStart).equals(frameStart)) {
+			start = end;
+			if (frameValue != 1) {
+				end = frameType.getFrameStart(frameEnd);
+			} else {
+				end = frameType.getFrameEnd(frameEnd);
+			}
+
+			queries.add(getCountersAsync(bookId, entityType, frameType, start, end));
+			frameValue --;
+			frameType = FrameType.from(frameValue);
+		}
+
+		// Accumulate counters
+		return CompletableFuture.supplyAsync(() -> {
+			Counter sum = new Counter(0, 0);
+			for (var el : queries) {
+				try {
+					var result = el.get();
+
+					while (result.hasNext()) {
+						result.next().add(result.next());
+					}
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				} catch (ExecutionException e) {
+					e.printStackTrace();
+				}
+			}
+
+			return sum;
+		}, composingService);
+	}
+
+	@Override
+	protected Counter doGetCount(BookId bookId, EntityType entityType, Instant frameStart, Instant frameEnd) throws CradleStorageException, IOException {
+		String queryInfo = String.format("Cumulative count for %s with from %s to %s",
+				entityType.name(),
+				frameStart.toString(),
+				frameEnd.toString());
+		try
+		{
+			return doGetCountAsync(bookId, entityType, frameStart, frameEnd).get();
 		}
 		catch (Exception e)
 		{
