@@ -21,41 +21,50 @@ import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.messages.StoredMessageMetadata;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import static com.exactpro.cradle.serialization.Serialization.MessageBatchConst.*;
-import static com.exactpro.cradle.serialization.SerializationUtils.printBody;
-import static com.exactpro.cradle.serialization.SerializationUtils.printInstant;
-import static com.exactpro.cradle.serialization.SerializationUtils.printString;
+import static com.exactpro.cradle.serialization.SerializationUtils.*;
 
 public class MessageSerializer {
 
-	public byte[] serializeBatch(Collection<StoredMessage> batch) throws SerializationException {
+	public SerializedEntityData serializeBatch(Collection<StoredMessage> batch) throws SerializationException {
 		SerializationBatchSizes messageBatchSizes = MessagesSizeCalculator.calculateMessageBatchSize(batch);
 		ByteBuffer buffer = ByteBuffer.allocate(messageBatchSizes.total);
 		
-		this.serializeBatch(batch, buffer, messageBatchSizes);
-		
-		return buffer.array();
+		List<SerializedEntityMetadata> serializedMessageMetadata = this.serializeBatch(batch, buffer, messageBatchSizes);
+
+		return new SerializedEntityData(serializedMessageMetadata, buffer.array());
 	}
 
-	public void serializeBatch(Collection<StoredMessage> batch, ByteBuffer buffer, SerializationBatchSizes messageBatchSizes) throws SerializationException {
+	public List<SerializedEntityMetadata> serializeBatch(
+			Collection<StoredMessage> batch, ByteBuffer buffer, SerializationBatchSizes messageBatchSizes
+	) throws SerializationException {
 
 		if (messageBatchSizes == null) {
 			messageBatchSizes = MessagesSizeCalculator.calculateMessageBatchSize(batch);
 		}
-		
+
+		List<SerializedEntityMetadata> serializedMessageMetadata = new ArrayList<>(batch.size());
+
 		buffer.putInt(MESSAGE_BATCH_MAGIC);
 		buffer.put(MESSAGE_PROTOCOL_VER);
 		
 		buffer.putInt(batch.size());
 		int i = 0;
 		for (StoredMessage message : batch) {
-			buffer.putInt(messageBatchSizes.entities[i]);
+			int messageSize = messageBatchSizes.entities[i];
+
+			buffer.putInt(messageSize);
 			this.serialize(message, buffer);
+			serializedMessageMetadata.add(new SerializedEntityMetadata(message.getTimestamp(), messageSize));
 			i++;
 		}
+
+		return serializedMessageMetadata;
 	}
 	
 	public byte[] serialize(StoredMessage message) throws SerializationException {

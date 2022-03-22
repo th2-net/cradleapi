@@ -16,20 +16,19 @@
 
 package com.exactpro.cradle.utils;
 
-import java.io.IOException;
-import java.time.Instant;
-import java.util.Collection;
-import java.util.Iterator;
-
+import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.messages.MessageBatchToStore;
+import com.exactpro.cradle.messages.MessageToStoreBuilder;
+import com.exactpro.cradle.messages.StoredMessage;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import com.exactpro.cradle.Direction;
-import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.messages.MessageToStoreBuilder;
-import com.exactpro.cradle.messages.StoredMessage;
-import com.exactpro.cradle.messages.MessageBatchToStore;
+import java.io.IOException;
+import java.time.Instant;
+import java.util.Collection;
+import java.util.Iterator;
 
 public class MessageUtilsTest
 {
@@ -71,7 +70,7 @@ public class MessageUtilsTest
 	@Test
 	public void messageIds() throws IOException
 	{
-		byte[] bytes = MessageUtils.serializeMessages(batch.getMessages());
+		byte[] bytes = MessageUtils.serializeMessages(batch.getMessages()).getSerializedData();
 		
 		Collection<StoredMessage> restored = MessageUtils.deserializeMessages(bytes, batch.getId());
 		Iterator<StoredMessage> it = restored.iterator();
@@ -83,7 +82,7 @@ public class MessageUtilsTest
 	@Test
 	public void oneMessageId() throws IOException
 	{
-		byte[] bytes = MessageUtils.serializeMessages(batch.getMessages());
+		byte[] bytes = MessageUtils.serializeMessages(batch.getMessages()).getSerializedData();
 		StoredMessage restored = MessageUtils.deserializeOneMessage(bytes, msg2.getId());
 		Assert.assertEquals(restored.getId(), msg2.getId(), "ID of requested message");
 	}
