@@ -29,9 +29,7 @@ import com.exactpro.cradle.serialization.SerializedEntityMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -54,18 +52,6 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
         this.interval = persistanceInterval;
         this.bookMessageCounterCache = new BookMessageCounterCache();
         this.bookEntityCounterCache = new BookEntityCounterCache();
-    }
-
-
-    private EntityCounterCache createEntityCounters() {
-        EntityCounterCache entityCounters = new EntityCounterCache();
-        for (EntityType t : EntityType.values())
-            entityCounters.put(t, new CounterCache());
-        return entityCounters;
-    }
-
-    private MessageCounterCache createMessageCounters() {
-        return new MessageCounterCache();
     }
 
 
@@ -100,6 +86,13 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
     }
 
 
+    private EntityCounterCache createEntityCounters() {
+        EntityCounterCache entityCounters = new EntityCounterCache();
+        for (EntityType t : EntityType.values())
+            entityCounters.put(t, new CounterCache());
+        return entityCounters;
+    }
+
     @Override
     public void updateEntityBatchStatistics(BookId bookId, EntityType entityType, Collection<SerializedEntityMetadata> batchMetadata) {
 
@@ -113,12 +106,16 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
         });
     }
 
+    private MessageCounterCache createMessageCounters() {
+        return new MessageCounterCache();
+    }
+
     @Override
     public void updateMessageBatchStatistics(BookId bookId, String sessionAlias, String direction, Collection<SerializedEntityMetadata> batchMetadata) {
 
         MessageCounterCache messageCounters = bookMessageCounterCache.computeIfAbsent(bookId, k -> createMessageCounters());
         MessageKey key = new MessageKey(sessionAlias, direction);
-        CounterCache counters = messageCounters.computeIfAbsent(key, k -> new CounterCache());
+        CounterCache counters = messageCounters.get(key);
         batchMetadata.forEach(meta -> {
             Counter counter = new Counter(1, meta.getSerializedEntitySize());
             for (FrameType t : FrameType.values()) {
@@ -186,8 +183,11 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
                 // persist all cached message counters
                 MessageCounterCache messageCounters = bookMessageCounterCache.get(bookId);
-                for (MessageKey key :messageCounters.keySet()) {
-                    CounterCache counterCache = messageCounters.get(key);
+                Collection<MessageKey> messageKeys = messageCounters.keys();
+                for (MessageKey key : messageKeys) {
+                    CounterCache counterCache = messageCounters.extract(key);
+                    if (counterCache == null)
+                        continue;
                     for (FrameType frameType : FrameType.values()) {
                         Collection<TimeFrameCounter> counters = counterCache.getCounterSamples(frameType).extractAll();
                         counters.forEach(counter -> persistMessageCounters(bookId, key, frameType, counter));
@@ -201,8 +201,25 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
         logger.trace("StatisticsWorker job complete");
     }
 
-    private static class MessageCounterCache extends HashMap<MessageKey, CounterCache> {}
-    private static class EntityCounterCache extends HashMap<EntityType, CounterCache> {}
+    private static class MessageCounterCache {
+        private Map<MessageKey, CounterCache> cache = new HashMap<>();
+        synchronized void put(MessageKey key, CounterCache counters) {
+            cache.put(key, counters);
+        }
+        synchronized CounterCache get(MessageKey key) {
+            return cache.computeIfAbsent(key, k -> new CounterCache());
+        }
+        synchronized CounterCache extract(MessageKey key) {
+            CounterCache result = cache.get(key);
+            cache.remove(key);
+            return result;
+        }
+        synchronized Collection<MessageKey> keys() {
+            return new HashSet<>(cache.keySet());
+        }
+    }
+
+    private static class EntityCounterCache extends ConcurrentHashMap<EntityType, CounterCache> {}
     private static class BookMessageCounterCache extends ConcurrentHashMap<BookId, MessageCounterCache> {}
     private static class BookEntityCounterCache extends ConcurrentHashMap<BookId, EntityCounterCache> {}
     private static class MessageKey {
