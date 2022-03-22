@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class StatisticsWorker implements Runnable, EntityStatisticsCollector, MessageStatisticsCollector {
@@ -118,8 +119,18 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
 
     private void persistEntityCounters(BookId bookId, EntityType entityType, FrameType frameType, TimeFrameCounter counter) {
+
+        final Consumer<Throwable> exceptionHandler = (Throwable e) -> {
+            logger.error("Exception persisting entity counter, rescheduling", e);
+            getBookCounterCaches(bookId)
+                .getEntityCounterCache()
+                .forEntityType(entityType)
+                .getCounterSamples(frameType)
+                .update(counter.getFrameStart(), counter.getCounter());
+        };
+
         try {
-            logger.trace("Persisting counter for {}:{}:{}:{}", bookId, entityType, frameType, counter.getFrameStart());
+            logger.trace("Persisting entity counter for {}:{}:{}:{}", bookId, entityType, frameType, counter.getFrameStart());
             ops.getOperators(bookId).getEntityStatisticsOperator().update(
                     entityType.getValue(),
                     frameType.getValue(),
@@ -127,18 +138,29 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
                     counter.getCounter().getEntityCount(),
                     counter.getCounter().getEntitySize(),
                     writeAttrs
-            );
+            ).whenComplete((result, e) -> {
+                if (e != null)
+                    exceptionHandler.accept(e);
+            });
         } catch (Exception e) {
-            logger.error("Exception persisting counter, retry scheduled", e);
-            BookCounterCaches.EntityCounterCache entityCounters = getBookCounterCaches(bookId).getEntityCounterCache();
-            entityCounters.forEntityType(entityType).getCounterSamples(frameType).update(counter.getFrameStart(), counter.getCounter());
+            exceptionHandler.accept(e);
         }
     }
 
 
     private void persistMessageCounters(BookId bookId, BookCounterCaches.MessageKey key, FrameType frameType, TimeFrameCounter counter) {
+
+        final Consumer<Throwable> exceptionHandler = (Throwable e) -> {
+            logger.error("Exception persisting message counter, rescheduling", e);
+            getBookCounterCaches(bookId)
+                .getMessageCounterCache()
+                .get(key)
+                .getCounterSamples(frameType)
+                .update(counter.getFrameStart(), counter.getCounter());
+        };
+
         try {
-            logger.trace("Persisting counter for {}:{}:{}:{}:{}", bookId, key.getSessionAlias(), key.getDirection(), frameType, counter.getFrameStart());
+            logger.trace("Persisting message counter for {}:{}:{}:{}:{}", bookId, key.getSessionAlias(), key.getDirection(), frameType, counter.getFrameStart());
             ops.getOperators(bookId).getMessageStatisticsOperator().update(
                     key.getSessionAlias(),
                     key.getDirection(),
@@ -147,11 +169,12 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
                     counter.getCounter().getEntityCount(),
                     counter.getCounter().getEntitySize(),
                     writeAttrs
-            );
+            ).whenComplete((result, e) -> {
+                if (e != null)
+                    exceptionHandler.accept(e);
+            });
         } catch (Exception e) {
-            logger.error("Exception persisting counter, retry scheduled", e);
-            BookCounterCaches.MessageCounterCache messageCounters = getBookCounterCaches(bookId).getMessageCounterCache();
-            messageCounters.get(key).getCounterSamples(frameType).update(counter.getFrameStart(), counter.getCounter());
+            exceptionHandler.accept(e);
         }
     }
 

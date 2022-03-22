@@ -35,7 +35,7 @@ public interface MessageStatisticsOperator {
             DIRECTION + "=:direction AND " +
             FRAME_TYPE + "=:frameType AND " +
             FRAME_START + "=:frameStart")
-    void update(
+    CompletableFuture<Void> update(
             String sessionAlias,
             String direction,
             Byte frameType,

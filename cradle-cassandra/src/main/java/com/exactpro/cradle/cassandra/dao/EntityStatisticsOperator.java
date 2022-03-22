@@ -33,7 +33,7 @@ public interface EntityStatisticsOperator {
             ENTITY_TYPE + "=:entityType AND " +
             FRAME_TYPE + "=:frameType AND " +
             FRAME_START + "=:frameStart")
-    void update(
+    CompletableFuture<Void> update(
             Byte entityType,
             Byte frameType,
             Instant frameStart,
