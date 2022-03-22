@@ -287,12 +287,12 @@ public class DummyCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<CradleResultSet<Counter>> doGetCountersAsync(BookId bookId, String sessionAlias, Direction direction, EntityType entityType, FrameType frameType, Instant frameStart, Instant frameEnd) throws CradleStorageException {
+	protected CompletableFuture<CradleResultSet<Counter>> doGetMessageCountersAsync(BookId bookId, String sessionAlias, Direction direction, FrameType frameType, Instant frameStart, Instant frameEnd) throws CradleStorageException {
 		return null;
 	}
 
 	@Override
-	protected CradleResultSet<Counter> doGetCounters(BookId bookId, String sessionAlias, Direction direction, EntityType entityType, FrameType frameType, Instant frameStart, Instant frameEnd) throws CradleStorageException, IOException {
+	protected CradleResultSet<Counter> doGetMessageCounters(BookId bookId, String sessionAlias, Direction direction, FrameType frameType, Instant frameStart, Instant frameEnd) throws CradleStorageException, IOException {
 		return null;
 	}
 
