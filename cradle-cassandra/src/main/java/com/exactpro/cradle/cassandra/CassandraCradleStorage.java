@@ -593,7 +593,7 @@ public class CassandraCradleStorage extends CradleStorage
 																					FrameType frameType,
 																					Instant frameStart,
 																					Instant frameEnd) throws CradleStorageException {
-		String queryInfo = String.format("Counters for Messages with sessionAlias-%s, direction-%s, entityType-%s, frameType-%s from %s to %s",
+		String queryInfo = String.format("Counters for Messages with sessionAlias-%s, direction-%s, frameType-%s from %s to %s",
 				sessionAlias,
 				direction.name(),
 				frameType.name(),
@@ -625,6 +625,8 @@ public class CassandraCradleStorage extends CradleStorage
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, null));
 	}
 
+
+
 	@Override
 	protected CradleResultSet<Counter> doGetMessageCounters(BookId bookId,
 															String sessionAlias,
@@ -647,8 +649,57 @@ public class CassandraCradleStorage extends CradleStorage
 			throw new IOException("Error while getting " + queryInfo, e);
 		}
 	}
-	
-	
+
+	@Override
+	protected CompletableFuture<CradleResultSet<Counter>> doGetCountersAsync(BookId bookId, EntityType entityType, FrameType frameType, Instant frameStart, Instant frameEnd) throws CradleStorageException {
+		String queryInfo = String.format("Counters for %s with frameType-%s from %s to %s",
+				entityType.name(),
+				frameType.name(),
+				frameStart.toString(),
+				frameEnd.toString());
+
+		logger.info("Getting {}", queryInfo);
+
+		var actualStart = frameType.getFrameStart(frameStart);
+		var actualEnd = frameType.getFrameEnd(frameEnd);
+
+		var operators = ops.getOperators(bookId);
+		var entityStatsOperator = operators.getEntityStatisticsOperator();
+		var entityStatsConverter = operators.getEntityStatisticsEntityConverter();
+
+		return entityStatsOperator.getStatistics(
+						entityType.getValue(),
+						frameType.getValue(),
+						actualStart,
+						actualEnd,
+						readAttrs)
+				.thenApplyAsync(rs ->
+						new ConvertingPagedIterator<>(rs,
+								selectExecutor,
+								-1,
+								new AtomicInteger(0),
+								EntityStatisticsEntity::toCounter, entityStatsConverter::getEntity, queryInfo))
+				// Iterator provider should be null, since no several queries are needed
+				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, null));
+	}
+
+	@Override
+	protected CradleResultSet<Counter> doGetCounters(BookId bookId, EntityType entityType, FrameType frameType, Instant frameStart, Instant frameEnd) throws CradleStorageException, IOException {
+		String queryInfo = String.format("Counters for %s with frameType-%s from %s to %s",
+				entityType.name(),
+				frameType.name(),
+				frameStart.toString(),
+				frameEnd.toString());
+		try
+		{
+			return doGetCountersAsync(bookId, entityType, frameType, frameStart, frameEnd).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting " + queryInfo, e);
+		}
+	}
+
 	@Override
 	public IntervalsWorker getIntervalsWorker(PageId pageId)
 	{

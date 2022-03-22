@@ -148,6 +148,19 @@ public abstract class CradleStorage
 																	 FrameType frameType,
 																	 Instant frameStart,
 																	 Instant frameEnd) throws CradleStorageException, IOException;
+
+	protected abstract CompletableFuture<CradleResultSet<Counter>> doGetCountersAsync(BookId bookId,
+																					  EntityType entityType,
+																					  FrameType frameType,
+																					  Instant frameStart,
+																					  Instant frameEnd) throws CradleStorageException;
+	protected abstract CradleResultSet<Counter> doGetCounters(BookId bookId,
+															  EntityType entityType,
+															  FrameType frameType,
+															  Instant frameStart,
+															  Instant frameEnd) throws CradleStorageException, IOException;
+
+
 	
 	
 	/**
@@ -817,7 +830,7 @@ public abstract class CradleStorage
 	}
 
 	/**
-	 * Gets counters for entity densities for specified granularity and time frame asynchronously
+	 * Gets counters for message densities for specified granularity and time frame asynchronously
 	 * @param bookId identifier for book
 	 * @param sessionAlias session alias
 	 * @param direction direction
@@ -835,7 +848,7 @@ public abstract class CradleStorage
 	}
 
 	/**
-	 * Gets counters for entity densities for specified granularity and time frame
+	 * Gets counters for message densities for specified granularity and time frame
 	 * @param bookId identifier for book
 	 * @param sessionAlias session alias
 	 * @param direction direction
@@ -853,7 +866,39 @@ public abstract class CradleStorage
 		return doGetMessageCounters(bookId, sessionAlias, direction, frameType, frameStart, frameEnd);
 	}
 
+	/**
+	 * Gets counters for entity densities for specified granularity and time frame asynchronously
+	 * @param bookId identifier for book
+	 * @param entityType entity type
+	 * @param frameType frameType
+	 * @param frameStart start of frame inclusive
+	 * @param frameEnd end of frame inclusive
+	 * @throws CradleStorageException if given book ID is invalid
+	 */
+	public CompletableFuture<CradleResultSet<Counter>> getCountersAsync (BookId bookId,
+																	EntityType entityType,
+																	FrameType frameType,
+																	Instant frameStart,
+																	Instant frameEnd) throws CradleStorageException {
+		return doGetCountersAsync(bookId, entityType, frameType, frameStart, frameEnd);
+	}
 
+	/**
+	 * Gets counters for entity densities for specified granularity and time frame
+	 * @param bookId identifier for book
+	 * @param entityType entity type
+	 * @param frameType frameType
+	 * @param frameStart start of frame inclusive
+	 * @param frameEnd end of frame inclusive
+	 * @throws CradleStorageException if given book ID is invalid
+	 */
+	public CradleResultSet<Counter> getCounters (BookId bookId,
+												 EntityType entityType,
+												 FrameType frameType,
+												 Instant frameStart,
+												 Instant frameEnd) throws CradleStorageException, IOException {
+		return doGetCounters(bookId, entityType, frameType, frameStart, frameEnd);
+	}
 	
 	public final void updateEventStatus(StoredTestEvent event, boolean success) throws IOException
 	{

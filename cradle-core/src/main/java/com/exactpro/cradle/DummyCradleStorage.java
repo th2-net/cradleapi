@@ -296,6 +296,15 @@ public class DummyCradleStorage extends CradleStorage
 		return null;
 	}
 
+	@Override
+	protected CompletableFuture<CradleResultSet<Counter>> doGetCountersAsync(BookId bookId, EntityType entityType, FrameType frameType, Instant frameStart, Instant frameEnd) throws CradleStorageException {
+		return null;
+	}
+
+	@Override
+	protected CradleResultSet<Counter> doGetCounters(BookId bookId, EntityType entityType, FrameType frameType, Instant frameStart, Instant frameEnd) throws CradleStorageException, IOException {
+		return null;
+	}
 
 	@Override
 	public IntervalsWorker getIntervalsWorker(PageId pageId)
