@@ -33,7 +33,7 @@ public class TimeFrameCounter {
         return frameStart;
     }
 
-    public Counter getCounter() {
+    public synchronized Counter getCounter() {
         return counter;
     }
 

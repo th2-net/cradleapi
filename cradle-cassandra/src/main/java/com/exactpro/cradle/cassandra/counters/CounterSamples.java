@@ -21,6 +21,7 @@ import com.exactpro.cradle.FrameType;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 
 public class CounterSamples {
@@ -33,7 +34,7 @@ public class CounterSamples {
     }
 
     public synchronized Collection<TimeFrameCounter> extractAll() {
-        Collection<TimeFrameCounter> result = samples.values();
+        Collection<TimeFrameCounter> result = new LinkedList(samples.values());
         samples.clear();
         return result;
     }
