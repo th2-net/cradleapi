@@ -33,7 +33,6 @@ public interface MessageStatisticsOperator {
     @Query("UPDATE ${qualifiedTableId}  SET entity_count = entity_count + :count, entity_size = entity_size + :size WHERE " +
             SESSION_ALIAS + "=:sessionAlias AND " +
             DIRECTION + "=:direction AND " +
-            ENTITY_TYPE + "=:entityType AND " +
             FRAME_TYPE + "=:frameType AND " +
             FRAME_START + "=:frameStart")
     void update(
