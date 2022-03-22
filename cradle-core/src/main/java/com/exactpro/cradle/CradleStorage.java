@@ -821,7 +821,6 @@ public abstract class CradleStorage
 	 * @param bookId identifier for book
 	 * @param sessionAlias session alias
 	 * @param direction direction
-	 * @param entityType entityType
 	 * @param frameStart start of frame inclusive
 	 * @param frameEnd end of frame inclusive
 	 * @throws CradleStorageException if given book ID is invalid
@@ -829,7 +828,6 @@ public abstract class CradleStorage
 	public CompletableFuture<CradleResultSet<Counter>> getMessageCountersAsync(BookId bookId,
 																			   String sessionAlias,
 																			   Direction direction,
-																			   EntityType entityType,
 																			   FrameType frameType,
 																			   Instant frameStart,
 																			   Instant frameEnd) throws CradleStorageException {
@@ -841,7 +839,6 @@ public abstract class CradleStorage
 	 * @param bookId identifier for book
 	 * @param sessionAlias session alias
 	 * @param direction direction
-	 * @param entityType entityType
 	 * @param frameType frameType
 	 * @param frameStart start of frame inclusive
 	 * @param frameEnd end of frame inclusive
