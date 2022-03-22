@@ -20,6 +20,7 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.internal.core.util.concurrent.CompletableFutures;
 import com.exactpro.cradle.*;
+import com.exactpro.cradle.cassandra.counters.MessageStatisticsCollector;
 import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageSession;
 import com.exactpro.cradle.cassandra.dao.cache.CachedSession;
@@ -28,6 +29,7 @@ import com.exactpro.cradle.cassandra.dao.messages.converters.MessageBatchEntityC
 import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
+import com.exactpro.cradle.serialization.SerializedEntityMetadata;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TimeUtils;
 import io.prometheus.client.Counter;
@@ -38,6 +40,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -58,9 +61,11 @@ public class MessagesWorker extends Worker
 	private static final Counter MESSAGE_WRITE_METRIC = Counter.build().name("cradle_message_stored")
 			.help("Stored messages").labelNames(BOOK_ID, SESSION_ALIAS, DIRECTION).register();
 
-	public MessagesWorker(WorkerSupplies workerSupplies)
+	private final MessageStatisticsCollector messageStatisticsCollector;
+	public MessagesWorker(WorkerSupplies workerSupplies, MessageStatisticsCollector messageStatisticsCollector)
 	{
 		super(workerSupplies);
+		this.messageStatisticsCollector = messageStatisticsCollector;
 	}
 
 	public static StoredMessageBatch mapMessageBatchEntity(PageId pageId, MessageBatchEntity entity)
@@ -243,8 +248,10 @@ public class MessagesWorker extends Worker
 	{
 		BookOperators bookOps = getBookOps(bookId);
 		MessageBatchOperator mbOperator = bookOps.getMessageBatchOperator();
+		List<SerializedEntityMetadata> meta = entity.getSerializedMessageMetadata();
 
 		return mbOperator.write(entity, writeAttrs)
+				.thenAccept(result -> messageStatisticsCollector.updateMessageBatchStatistics(bookId, entity.getSessionAlias(), entity.getDirection(), meta))
 				.thenAcceptAsync(result -> updateMessageWriteMetrics(entity, bookId), composingService);
 	}
 
