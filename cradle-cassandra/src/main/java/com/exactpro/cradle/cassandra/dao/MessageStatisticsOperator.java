@@ -18,7 +18,7 @@ public interface MessageStatisticsOperator {
             DIRECTION + "=:direction AND " +
             FRAME_TYPE + "=:frameType AND " +
             FRAME_START + ">=:frameStart AND " +
-            FRAME_START + "<=:frameEnd")
+            FRAME_START + "<:frameEnd")
     CompletableFuture<MappedAsyncPagingIterable<MessageStatisticsEntity>> getStatistics (
             String sessionAlias,
             String direction,

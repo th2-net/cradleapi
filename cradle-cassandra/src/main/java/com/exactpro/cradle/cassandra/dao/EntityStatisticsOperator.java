@@ -18,7 +18,7 @@ public interface EntityStatisticsOperator {
             ENTITY_TYPE + "=:entityType AND " +
             FRAME_TYPE + "=:frameType AND " +
             FRAME_START + ">=:frameStart AND " +
-            FRAME_START + "<=:frameEnd")
+            FRAME_START + "<:frameEnd")
     CompletableFuture<MappedAsyncPagingIterable<EntityStatisticsEntity>> getStatistics (
             Byte entityType,
             Byte frameType,
