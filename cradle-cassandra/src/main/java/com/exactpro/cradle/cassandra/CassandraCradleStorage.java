@@ -608,12 +608,11 @@ public class CassandraCradleStorage extends CradleStorage
 		var actualEnd = frameType.getFrameEnd(frameEnd);
 
 		var operators = ops.getOperators(bookId);
-		var statsOperator = operators.getStatisticsOperator();
-		var statsConverter = operators.getStatisticsEntityConverter();
+		var statsOperator = operators.getMessageStatisticsOperator();
+		var statsConverter = operators.getMessageStatisticsEntityConverter();
 
 		return statsOperator.getStatistics(sessionAlias,
 						direction.getLabel(),
-						entityType.getValue(),
 						frameType.getValue(),
 						actualStart,
 						actualEnd,
@@ -623,7 +622,7 @@ public class CassandraCradleStorage extends CradleStorage
 								selectExecutor,
 								-1,
 								new AtomicInteger(0),
-								StatisticsEntity::toCounter, statsConverter::getEntity, queryInfo))
+								MessageStatisticsEntity::toCounter, statsConverter::getEntity, queryInfo))
 				// Iterator provider should be null, since no several queries are needed
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, null));
 	}
