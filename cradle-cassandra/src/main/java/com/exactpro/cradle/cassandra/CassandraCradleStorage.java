@@ -53,6 +53,7 @@ import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TimeUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +64,6 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -719,95 +719,21 @@ public class CassandraCradleStorage extends CradleStorage
 
 		logger.info("Getting {}", queryInfo);
 
-		int frameValue = 4;
-		FrameType frameType = FrameType.from(frameValue);
-		/*
-		  Adjust frame for frame start value
-		  i.e. if start time is on second mark
-		  we should start with FrameType.SECOND frames
-		 */
-		while (frameValue > 0 && !frameType.getFrameStart(start).equals(start)) {
-			frameValue --;
-			frameType = FrameType.from(frameValue);
-		}
-		frameValue = frameValue == 0 ? 1 : frameValue;
-
-		List<CompletableFuture<CradleResultSet<CounterSample>>> queries = new ArrayList<>();
-		/*
-			Create requests for smaller frame types at the start
-		 	Should try to increase granularity until
-			we're at the biggest possible frames
-		 */
-		Instant fStart = start, fEnd;
-		while (frameValue < 4) {
-			frameType = FrameType.from(frameValue);
-			fStart = frameType.getFrameStart(fStart);
-			fEnd = FrameType.from(frameValue + 1).getFrameEnd(fStart);
-
-			if (fEnd.isAfter(end)) {
-				break;
-			}
-
-			if (!fStart.equals(fEnd)) {
-				queries.add(getMessageCountersAsync(bookId, sessionAlias, direction, frameType, fStart, fEnd));
-			}
-
-			fStart = fEnd;
-			frameValue ++;
-		}
-
-		// Create request for biggest possible frame type
-		fEnd = FrameType.from(frameValue).getFrameStart(end);
-		if (!fStart.equals(fEnd)) {
-			queries.add(getMessageCountersAsync(bookId, sessionAlias, direction, frameType, fStart, fEnd));
-		}
-
-		// Create requests for smaller frame types at the end
-		while (frameValue > 0 && !frameType.getFrameStart(start).equals(start)) {
-			/*
-				each step we should decrease granularity and fill
-				interval with smaller frames
-			 */
-			frameValue --;
-			frameType = FrameType.from(frameValue);
-
-			fStart = fEnd;
-			/*
-				Unless we are querying the smallest granularity,
-				we should leave interval for smaller frames
-			 */
-			if (frameValue != 0) {
-				fEnd = frameType.getFrameStart(end);
-			} else {
-				fEnd = frameType.getFrameEnd(end);
-			}
-
-			/*
-				Current granularity exhausted interval,
-				i.e. end was set at second etc.
-			 */
-			if (end.isBefore(fEnd)) {
-				break;
-			}
-
-			if (!fStart.equals(fEnd)) {
-				queries.add(getMessageCountersAsync(bookId, sessionAlias, direction, frameType, fStart, fEnd));
-			}
-		}
+		List<ImmutableTriple<FrameType, Instant, Instant>> slices = sliceInterval(start, end);
 
 		// Accumulate counters
 		return CompletableFuture.supplyAsync(() -> {
 			Counter sum = new Counter(0, 0);
-			for (var el : queries) {
+			for (var el : slices) {
 				try {
-					var result = el.get();
+					CradleResultSet<CounterSample> res = getMessageCounters(bookId, sessionAlias, direction, el.getLeft(), el.getMiddle(), el.getRight());
 
-					while (result.hasNext()) {
-						sum.add(result.next().getCounter());
+					while (res.hasNext()) {
+						sum.add(res.next().getCounter());
 					}
-				} catch (InterruptedException e) {
+				} catch (CradleStorageException e) {
 					e.printStackTrace();
-				} catch (ExecutionException e) {
+				} catch (IOException e) {
 					e.printStackTrace();
 				}
 			}
@@ -833,15 +759,8 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 	}
 
-
-	@Override
-	protected CompletableFuture<Counter> doGetCountAsync(BookId bookId, EntityType entityType, Instant start, Instant end) throws CradleStorageException {
-		String queryInfo = String.format("Cumulative count for %s with from %s to %s",
-				entityType.name(),
-				start.toString(),
-				end.toString());
-
-		logger.info("Getting {}", queryInfo);
+	private List<ImmutableTriple<FrameType, Instant, Instant>> sliceInterval (Instant start, Instant end) {
+		List<ImmutableTriple<FrameType, Instant, Instant>> slices = new ArrayList<>();
 
 		int frameValue = 4;
 		FrameType frameType = FrameType.from(frameValue);
@@ -873,7 +792,7 @@ public class CassandraCradleStorage extends CradleStorage
 			}
 
 			if (!fStart.equals(fEnd)) {
-				queries.add(getCountersAsync(bookId, entityType, frameType, fStart, fEnd));
+				slices.add(new ImmutableTriple<>(frameType, fStart, fEnd));
 			}
 
 			fStart = fEnd;
@@ -883,7 +802,7 @@ public class CassandraCradleStorage extends CradleStorage
 		// Create request for biggest possible frame type
 		fEnd = FrameType.from(frameValue).getFrameStart(end);
 		if (!fStart.equals(fEnd)) {
-			queries.add(getCountersAsync(bookId, entityType, frameType, fStart, fEnd));
+			slices.add(new ImmutableTriple<>(frameType, fStart, fEnd));
 		}
 
 		// Create requests for smaller frame types at the end
@@ -915,23 +834,37 @@ public class CassandraCradleStorage extends CradleStorage
 			}
 
 			if (!fStart.equals(fEnd)) {
-				queries.add(getCountersAsync(bookId, entityType, frameType, fStart, fEnd));
+				slices.add(new ImmutableTriple<>(frameType, fStart, fEnd));
 			}
 		}
+
+		return slices;
+	}
+
+	@Override
+	protected CompletableFuture<Counter> doGetCountAsync(BookId bookId, EntityType entityType, Instant start, Instant end) throws CradleStorageException {
+		String queryInfo = String.format("Cumulative count for %s with from %s to %s",
+				entityType.name(),
+				start.toString(),
+				end.toString());
+
+		logger.info("Getting {}", queryInfo);
+
+		List<ImmutableTriple<FrameType, Instant, Instant>> slices = sliceInterval(start, end);
 
 		// Accumulate counters
 		return CompletableFuture.supplyAsync(() -> {
 			Counter sum = new Counter(0, 0);
-			for (var el : queries) {
+			for (var el : slices) {
 				try {
-					var result = el.get();
+					CradleResultSet<CounterSample> res = getCounters(bookId, entityType, el.getLeft(), el.getMiddle(), el.getRight());
 
-					while (result.hasNext()) {
-						sum.add(result.next().getCounter());
+					while (res.hasNext()) {
+						sum.add(res.next().getCounter());
 					}
-				} catch (InterruptedException e) {
+				} catch (CradleStorageException e) {
 					e.printStackTrace();
-				} catch (ExecutionException e) {
+				} catch (IOException e) {
 					e.printStackTrace();
 				}
 			}
