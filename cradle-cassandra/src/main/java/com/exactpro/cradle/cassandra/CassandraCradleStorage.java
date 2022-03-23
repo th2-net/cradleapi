@@ -709,6 +709,16 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 	}
 
+	@Override
+	protected CompletableFuture<Counter> doGetMessageCountAsync(BookId bookId, String sessionAlias, Direction direction, Instant start, Instant end) throws CradleStorageException {
+		return null;
+	}
+
+	@Override
+	protected Counter doGetMessageCount(BookId bookId, String sessionAlias, Direction direction, Instant start, Instant end) throws CradleStorageException, IOException {
+		return null;
+	}
+
 
 	@Override
 	protected CompletableFuture<Counter> doGetCountAsync(BookId bookId, EntityType entityType, Instant start, Instant end) throws CradleStorageException {
@@ -740,24 +750,27 @@ public class CassandraCradleStorage extends CradleStorage
 		 */
 		Instant fStart = start, fEnd;
 		while (frameValue < 4) {
-			fStart = frameType.getFrameStart(start);
-			fEnd = FrameType.from(frameValue + 1).getFrameEnd(start);
+			frameType = FrameType.from(frameValue);
+			fStart = frameType.getFrameStart(fStart);
+			fEnd = FrameType.from(frameValue + 1).getFrameEnd(fStart);
 
 			if (fEnd.isAfter(end)) {
 				break;
 			}
 
-			queries.add(getCountersAsync(bookId, entityType, frameType, fStart, fEnd));
+			if (!fStart.equals(fEnd)) {
+				queries.add(getCountersAsync(bookId, entityType, frameType, fStart, fEnd));
+			}
 
-
+			fStart = fEnd;
 			frameValue ++;
-			frameType = FrameType.from(frameValue);
-			fStart = frameType.getFrameStart(start);
 		}
 
 		// Create request for biggest possible frame type
 		fEnd = FrameType.from(frameValue).getFrameStart(end);
-		queries.add(getCountersAsync(bookId, entityType, frameType, fStart, fEnd));
+		if (!fStart.equals(fEnd)) {
+			queries.add(getCountersAsync(bookId, entityType, frameType, fStart, fEnd));
+		}
 
 		// Create requests for smaller frame types at the end
 		while (frameValue > 0 && !frameType.getFrameStart(start).equals(start)) {
@@ -787,7 +800,9 @@ public class CassandraCradleStorage extends CradleStorage
 				break;
 			}
 
-			queries.add(getCountersAsync(bookId, entityType, frameType, fStart, fEnd));
+			if (!fStart.equals(fEnd)) {
+				queries.add(getCountersAsync(bookId, entityType, frameType, fStart, fEnd));
+			}
 		}
 
 		// Accumulate counters
