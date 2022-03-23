@@ -18,11 +18,15 @@ package com.exactpro.cradle.cassandra.workers;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.zip.DataFormatException;
 
+import com.exactpro.cradle.EntityType;
+import com.exactpro.cradle.cassandra.counters.EntityStatisticsCollector;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
+import com.exactpro.cradle.serialization.SerializedEntityMetadata;
 import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
 import io.prometheus.client.Counter;
@@ -57,9 +61,11 @@ public class EventsWorker extends Worker
 	private static final Counter EVENTS_STORE_METRIC = Counter.build().name("cradle_test_events_stored")
 			.help("Stored test events").labelNames(BOOK_ID, SCOPE).register();
 
-	public EventsWorker(WorkerSupplies workerSupplies)
+	private final EntityStatisticsCollector entityStatisticsCollector;
+	public EventsWorker(WorkerSupplies workerSupplies, EntityStatisticsCollector entityStatisticsCollector)
 	{
 		super(workerSupplies);
+		this.entityStatisticsCollector = entityStatisticsCollector;
 	}
 
 	public static StoredTestEvent mapTestEventEntity(PageId pageId, TestEventEntity entity)
@@ -96,7 +102,11 @@ public class EventsWorker extends Worker
 	public CompletableFuture<Void> storeEntity(TestEventEntity entity, BookId bookId)
 	{
 		TestEventOperator op = getBookOps(bookId).getTestEventOperator();
-		return op.write(entity, writeAttrs).thenAcceptAsync(result -> updateEventWriteMetrics(entity, bookId));
+		List<SerializedEntityMetadata> meta = entity.getSerializedEventMetadata();
+
+		return op.write(entity, writeAttrs)
+				.thenAccept(result -> entityStatisticsCollector.updateEntityBatchStatistics(bookId, EntityType.EVENT, meta))
+				.thenAcceptAsync(result -> updateEventWriteMetrics(entity, bookId));
 	}
 	
 	public CompletableFuture<ScopeEntity> storeScope(TestEventToStore event, BookOperators bookOps)

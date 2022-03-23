@@ -136,25 +136,25 @@ public abstract class CradleStorage
 	
 	protected abstract Collection<String> doGetScopes(BookId bookId) throws IOException, CradleStorageException;
 
-	protected abstract CompletableFuture<CradleResultSet<Counter>> doGetMessageCountersAsync(BookId bookId,
+	protected abstract CompletableFuture<CradleResultSet<CounterSample>> doGetMessageCountersAsync(BookId bookId,
 																							 String sessionAlias,
 																							 Direction direction,
 																							 FrameType frameType,
 																							 Instant frameStart,
 																							 Instant frameEnd) throws CradleStorageException;
-	protected abstract CradleResultSet<Counter> doGetMessageCounters(BookId bookId,
+	protected abstract CradleResultSet<CounterSample> doGetMessageCounters(BookId bookId,
 																	 String sessionAlias,
 																	 Direction direction,
 																	 FrameType frameType,
 																	 Instant frameStart,
 																	 Instant frameEnd) throws CradleStorageException, IOException;
 
-	protected abstract CompletableFuture<CradleResultSet<Counter>> doGetCountersAsync(BookId bookId,
+	protected abstract CompletableFuture<CradleResultSet<CounterSample>> doGetCountersAsync(BookId bookId,
 																					  EntityType entityType,
 																					  FrameType frameType,
 																					  Instant frameStart,
 																					  Instant frameEnd) throws CradleStorageException;
-	protected abstract CradleResultSet<Counter> doGetCounters(BookId bookId,
+	protected abstract CradleResultSet<CounterSample> doGetCounters(BookId bookId,
 															  EntityType entityType,
 															  FrameType frameType,
 															  Instant start,
@@ -858,7 +858,7 @@ public abstract class CradleStorage
 	 * @param frameEnd end of frame inclusive
 	 * @throws CradleStorageException if given book ID is invalid
 	 */
-	public CompletableFuture<CradleResultSet<Counter>> getMessageCountersAsync(BookId bookId,
+	public CompletableFuture<CradleResultSet<CounterSample>> getMessageCountersAsync(BookId bookId,
 																			   String sessionAlias,
 																			   Direction direction,
 																			   FrameType frameType,
@@ -877,7 +877,7 @@ public abstract class CradleStorage
 	 * @param frameEnd end of frame inclusive
 	 * @throws CradleStorageException if given book ID is invalid
 	 */
-	public CradleResultSet<Counter> getMessageCounters(BookId bookId,
+	public CradleResultSet<CounterSample> getMessageCounters(BookId bookId,
 													   String sessionAlias,
 													   Direction direction,
 													   FrameType frameType,
@@ -895,7 +895,7 @@ public abstract class CradleStorage
 	 * @param frameEnd end of frame inclusive
 	 * @throws CradleStorageException if given book ID is invalid
 	 */
-	public CompletableFuture<CradleResultSet<Counter>> getCountersAsync (BookId bookId,
+	public CompletableFuture<CradleResultSet<CounterSample>> getCountersAsync (BookId bookId,
 																	EntityType entityType,
 																	FrameType frameType,
 																	Instant frameStart,
@@ -912,7 +912,7 @@ public abstract class CradleStorage
 	 * @param frameEnd end of frame inclusive
 	 * @throws CradleStorageException if given book ID is invalid
 	 */
-	public CradleResultSet<Counter> getCounters (BookId bookId,
+	public CradleResultSet<CounterSample> getCounters (BookId bookId,
 												 EntityType entityType,
 												 FrameType frameType,
 												 Instant frameStart,
