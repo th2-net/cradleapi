@@ -60,7 +60,10 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
@@ -626,9 +629,7 @@ public class CassandraCradleStorage extends CradleStorage
 								selectExecutor,
 								-1,
 								new AtomicInteger(0),
-								messageStatsEntity -> new CounterSample(messageStatsEntity.getFrameStart(),
-										messageStatsEntity.toCounter(),
-										FrameType.from(messageStatsEntity.getFrameType())),
+								MessageStatisticsEntity::toCounterSample,
 								messageStatsConverter::getEntity, queryInfo))
 				// Iterator provider should be null, since no several queries are needed
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, null));
@@ -642,7 +643,7 @@ public class CassandraCradleStorage extends CradleStorage
 															Direction direction,
 															FrameType frameType,
 															Instant frameStart,
-															Instant frameEnd) throws CradleStorageException, IOException {
+															Instant frameEnd) throws IOException {
 		String queryInfo = String.format("Counters for Messages with sessionAlias-%s, direction-%s, frameType-%s from %s to %s",
 				sessionAlias,
 				direction.name(),
@@ -687,9 +688,7 @@ public class CassandraCradleStorage extends CradleStorage
 								selectExecutor,
 								-1,
 								new AtomicInteger(0),
-								statsEntity -> new CounterSample(statsEntity.getFrameStart(),
-										statsEntity.toCounter(),
-										FrameType.from(statsEntity.getFrameType())),
+								EntityStatisticsEntity::toCounterSample,
 								entityStatsConverter::getEntity, queryInfo))
 				// Iterator provider should be null, since no several queries are needed
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, null));
