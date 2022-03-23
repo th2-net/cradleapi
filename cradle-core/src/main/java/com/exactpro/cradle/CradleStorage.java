@@ -919,7 +919,14 @@ public abstract class CradleStorage
 												 Instant frameEnd) throws CradleStorageException, IOException {
 		return doGetCounters(bookId, entityType, frameType, frameStart, frameEnd);
 	}
-	
+
+	public CompletableFuture<Counter> getCountAsync (BookId bookId,
+													 EntityType entityType,
+													 Instant start,
+													 Instant end) throws CradleStorageException {
+		return doGetCountAsync(bookId, entityType, start, end);
+	}
+
 	public final void updateEventStatus(StoredTestEvent event, boolean success) throws IOException
 	{
 		logger.debug("Updating status of event {}", event.getId());

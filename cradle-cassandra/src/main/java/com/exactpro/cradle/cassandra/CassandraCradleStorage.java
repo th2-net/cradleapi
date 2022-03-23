@@ -734,7 +734,11 @@ public class CassandraCradleStorage extends CradleStorage
 
 		int frameValue = 4;
 		FrameType frameType = FrameType.from(frameValue);
-		// Adjust frame for frame start value
+		/*
+		  Adjust frame for frame start value
+		  i.e. if start time is on second mark
+		  we should start with FrameType.SECOND frames
+		 */
 		while (frameValue > 0 && !frameType.getFrameStart(frameStart).equals(frameStart)) {
 			frameValue --;
 			frameType = FrameType.from(frameValue);
@@ -742,7 +746,11 @@ public class CassandraCradleStorage extends CradleStorage
 		frameValue = frameValue == 0 ? 1 : frameValue;
 
 		List<CompletableFuture<CradleResultSet<Counter>>> queries = new ArrayList<>();
-		// Create requests for smaller frame types at the start
+		/*
+			Create requests for smaller frame types at the start
+		 	Should try to increase granularity until
+			we're at the biggest possible frames
+		 */
 		Instant start = frameStart, end;
 		while (frameValue < 4) {
 			start = frameType.getFrameStart(frameStart);
@@ -754,27 +762,45 @@ public class CassandraCradleStorage extends CradleStorage
 
 			queries.add(getCountersAsync(bookId, entityType, frameType, start, end));
 
+
 			frameValue ++;
 			frameType = FrameType.from(frameValue);
 			start = frameType.getFrameStart(frameStart);
 		}
 
 		// Create request for biggest possible frame type
-		end = FrameType.from(frameValue).getFrameEnd(frameEnd);
+		end = FrameType.from(frameValue).getFrameStart(frameEnd);
 		queries.add(getCountersAsync(bookId, entityType, frameType, start, end));
 
 		// Create requests for smaller frame types at the end
 		while (frameValue > 0 && !frameType.getFrameStart(frameStart).equals(frameStart)) {
+			/*
+				each step we should decrease granularity and fill
+				interval with smaller frames
+			 */
+			frameValue --;
+			frameType = FrameType.from(frameValue);
+
 			start = end;
-			if (frameValue != 1) {
+			/*
+				Unless we are querying the smallest granularity,
+				we should leave interval for smaller frames
+			 */
+			if (frameValue != 0) {
 				end = frameType.getFrameStart(frameEnd);
 			} else {
 				end = frameType.getFrameEnd(frameEnd);
 			}
 
+			/*
+				Current granularity exhausted interval,
+				i.e. end was set at second etc.
+			 */
+			if (frameEnd.isBefore(end)) {
+				break;
+			}
+
 			queries.add(getCountersAsync(bookId, entityType, frameType, start, end));
-			frameValue --;
-			frameType = FrameType.from(frameValue);
 		}
 
 		// Accumulate counters
@@ -785,7 +811,7 @@ public class CassandraCradleStorage extends CradleStorage
 					var result = el.get();
 
 					while (result.hasNext()) {
-						result.next().add(result.next());
+						sum.add(result.next());
 					}
 				} catch (InterruptedException e) {
 					e.printStackTrace();
