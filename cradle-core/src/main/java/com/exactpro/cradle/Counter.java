@@ -16,17 +16,12 @@
 package com.exactpro.cradle;
 
 public class Counter {
-    private long entityCount;
-    private long entitySize;
+    private final long entityCount;
+    private final long entitySize;
 
     public Counter(long entityCount, long entitySize) {
         this.entityCount = entityCount;
         this.entitySize = entitySize;
-    }
-
-    public void add (Counter counter) {
-        this.entityCount += counter.getEntityCount();
-        this.entitySize += counter.getEntitySize();
     }
 
     public long getEntityCount() {

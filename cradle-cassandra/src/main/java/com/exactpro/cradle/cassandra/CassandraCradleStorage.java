@@ -811,7 +811,7 @@ public class CassandraCradleStorage extends CradleStorage
 					CradleResultSet<CounterSample> res = getMessageCounters(bookId, sessionAlias, direction, el.getLeft(), el.getMiddle(), el.getRight());
 
 					while (res.hasNext()) {
-						sum.add(res.next().getCounter());
+						sum = sum.incrementedBy(res.next().getCounter());
 					}
 				} catch (CradleStorageException | IOException e) {
 					logger.error("Error while getting {}, cause - {}", queryInfo, e.getCause());
@@ -858,7 +858,7 @@ public class CassandraCradleStorage extends CradleStorage
 					CradleResultSet<CounterSample> res = getCounters(bookId, entityType, el.getLeft(), el.getMiddle(), el.getRight());
 
 					while (res.hasNext()) {
-						sum.add(res.next().getCounter());
+						sum = sum.incrementedBy(res.next().getCounter());
 					}
 				} catch (CradleStorageException | IOException e) {
 					logger.error("Error while getting {}, cause - {}", queryInfo, e.getCause());
