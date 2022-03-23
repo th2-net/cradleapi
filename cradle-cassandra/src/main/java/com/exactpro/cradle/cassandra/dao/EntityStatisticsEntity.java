@@ -5,6 +5,8 @@ import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.exactpro.cradle.Counter;
+import com.exactpro.cradle.CounterSample;
+import com.exactpro.cradle.FrameType;
 
 import java.time.Instant;
 
@@ -23,8 +25,8 @@ public class EntityStatisticsEntity {
 
     }
 
-    public Counter toCounter () {
-        return new Counter(entityCount, entitySize);
+    public CounterSample toCounterSample () {
+        return new CounterSample(FrameType.from(frameType), frameStart, new Counter(entityCount, entitySize));
     }
 
     @PartitionKey(0)

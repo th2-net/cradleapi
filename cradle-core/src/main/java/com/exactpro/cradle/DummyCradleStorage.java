@@ -17,6 +17,7 @@
 package com.exactpro.cradle;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -284,8 +285,27 @@ public class DummyCradleStorage extends CradleStorage
 	{
 		return null;
 	}
-	
-	
+
+	@Override
+	protected CompletableFuture<CradleResultSet<CounterSample>> doGetMessageCountersAsync(BookId bookId, String sessionAlias, Direction direction, FrameType frameType, Instant frameStart, Instant frameEnd) throws CradleStorageException {
+		return null;
+	}
+
+	@Override
+	protected CradleResultSet<CounterSample> doGetMessageCounters(BookId bookId, String sessionAlias, Direction direction, FrameType frameType, Instant frameStart, Instant frameEnd) throws CradleStorageException, IOException {
+		return null;
+	}
+
+	@Override
+	protected CompletableFuture<CradleResultSet<CounterSample>> doGetCountersAsync(BookId bookId, EntityType entityType, FrameType frameType, Instant frameStart, Instant frameEnd) throws CradleStorageException {
+		return null;
+	}
+
+	@Override
+	protected CradleResultSet<CounterSample> doGetCounters(BookId bookId, EntityType entityType, FrameType frameType, Instant frameStart, Instant frameEnd) throws CradleStorageException, IOException {
+		return null;
+	}
+
 	@Override
 	public IntervalsWorker getIntervalsWorker(PageId pageId)
 	{

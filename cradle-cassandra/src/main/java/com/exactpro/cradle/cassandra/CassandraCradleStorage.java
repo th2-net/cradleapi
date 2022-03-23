@@ -24,17 +24,16 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
-import com.exactpro.cradle.cassandra.dao.BookOperators;
-import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
-import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
-import com.exactpro.cradle.cassandra.dao.CradleOperators;
+import com.exactpro.cradle.cassandra.dao.*;
 import com.exactpro.cradle.cassandra.dao.books.*;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
+import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.BookKeyspaceCreator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
 import com.exactpro.cradle.cassandra.metrics.DriverMetrics;
+import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
 import com.exactpro.cradle.cassandra.retries.FixedNumberRetryPolicy;
 import com.exactpro.cradle.cassandra.retries.PageSizeAdjustingPolicy;
 import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
@@ -61,10 +60,14 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -591,8 +594,123 @@ public class CassandraCradleStorage extends CradleStorage
 			result.add(it.next().getScope());
 		return result;
 	}
-	
-	
+
+	@Override
+	protected CompletableFuture<CradleResultSet<CounterSample>> doGetMessageCountersAsync(BookId bookId,
+																					String sessionAlias,
+																					Direction direction,
+																					FrameType frameType,
+																					Instant frameStart,
+																					Instant frameEnd) throws CradleStorageException {
+		String queryInfo = String.format("Counters for Messages with sessionAlias-%s, direction-%s, frameType-%s from %s to %s",
+				sessionAlias,
+				direction.name(),
+				frameType.name(),
+				frameStart.toString(),
+				frameEnd.toString());
+
+		logger.info("Getting {}", queryInfo);
+
+		Instant actualStart = frameType.getFrameStart(frameStart);
+		Instant actualEnd = frameType.getFrameEnd(frameEnd);
+
+		BookOperators operators = ops.getOperators(bookId);
+		MessageStatisticsOperator messageStatsOperator = operators.getMessageStatisticsOperator();
+		MessageStatisticsEntityConverter messageStatsConverter = operators.getMessageStatisticsEntityConverter();
+
+		return messageStatsOperator.getStatistics(sessionAlias,
+						direction.getLabel(),
+						frameType.getValue(),
+						actualStart,
+						actualEnd,
+						readAttrs)
+				.thenApplyAsync(rs ->
+						new ConvertingPagedIterator<>(rs,
+								selectExecutor,
+								-1,
+								new AtomicInteger(0),
+								MessageStatisticsEntity::toCounterSample,
+								messageStatsConverter::getEntity, queryInfo))
+				// Iterator provider should be null, since no several queries are needed
+				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, null));
+	}
+
+
+
+	@Override
+	protected CradleResultSet<CounterSample> doGetMessageCounters(BookId bookId,
+															String sessionAlias,
+															Direction direction,
+															FrameType frameType,
+															Instant frameStart,
+															Instant frameEnd) throws IOException {
+		String queryInfo = String.format("Counters for Messages with sessionAlias-%s, direction-%s, frameType-%s from %s to %s",
+				sessionAlias,
+				direction.name(),
+				frameType.name(),
+				frameStart.toString(),
+				frameEnd.toString());
+		try
+		{
+			return doGetMessageCountersAsync(bookId, sessionAlias, direction, frameType, frameStart, frameEnd).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting " + queryInfo, e);
+		}
+	}
+
+	@Override
+	protected CompletableFuture<CradleResultSet<CounterSample>> doGetCountersAsync(BookId bookId, EntityType entityType, FrameType frameType, Instant frameStart, Instant frameEnd) throws CradleStorageException {
+		String queryInfo = String.format("Counters for %s with frameType-%s from %s to %s",
+				entityType.name(),
+				frameType.name(),
+				frameStart.toString(),
+				frameEnd.toString());
+
+		logger.info("Getting {}", queryInfo);
+
+		Instant actualStart = frameType.getFrameStart(frameStart);
+		Instant actualEnd = frameType.getFrameEnd(frameEnd);
+
+		BookOperators operators = ops.getOperators(bookId);
+		EntityStatisticsOperator entityStatsOperator = operators.getEntityStatisticsOperator();
+		EntityStatisticsEntityConverter entityStatsConverter = operators.getEntityStatisticsEntityConverter();
+
+		return entityStatsOperator.getStatistics(
+						entityType.getValue(),
+						frameType.getValue(),
+						actualStart,
+						actualEnd,
+						readAttrs)
+				.thenApplyAsync(rs ->
+						new ConvertingPagedIterator<>(rs,
+								selectExecutor,
+								-1,
+								new AtomicInteger(0),
+								EntityStatisticsEntity::toCounterSample,
+								entityStatsConverter::getEntity, queryInfo))
+				// Iterator provider should be null, since no several queries are needed
+				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, null));
+	}
+
+	@Override
+	protected CradleResultSet<CounterSample> doGetCounters(BookId bookId, EntityType entityType, FrameType frameType, Instant frameStart, Instant frameEnd) throws CradleStorageException, IOException {
+		String queryInfo = String.format("Counters for %s with frameType-%s from %s to %s",
+				entityType.name(),
+				frameType.name(),
+				frameStart.toString(),
+				frameEnd.toString());
+		try
+		{
+			return doGetCountersAsync(bookId, entityType, frameType, frameStart, frameEnd).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting " + queryInfo, e);
+		}
+	}
+
 	@Override
 	public IntervalsWorker getIntervalsWorker(PageId pageId)
 	{
