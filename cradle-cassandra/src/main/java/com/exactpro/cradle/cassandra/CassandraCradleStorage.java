@@ -709,56 +709,6 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 	}
 
-	@Override
-	protected CompletableFuture<Counter> doGetMessageCountAsync(BookId bookId, String sessionAlias, Direction direction, Instant start, Instant end) throws CradleStorageException {
-		String queryInfo = String.format("Cumulative count for Messages with session_alias-%s, direction-%s from %s to %s",
-				sessionAlias,
-				direction,
-				start.toString(),
-				end.toString());
-
-		logger.info("Getting {}", queryInfo);
-
-		List<ImmutableTriple<FrameType, Instant, Instant>> slices = sliceInterval(start, end);
-
-		// Accumulate counters
-		return CompletableFuture.supplyAsync(() -> {
-			Counter sum = new Counter(0, 0);
-			for (var el : slices) {
-				try {
-					CradleResultSet<CounterSample> res = getMessageCounters(bookId, sessionAlias, direction, el.getLeft(), el.getMiddle(), el.getRight());
-
-					while (res.hasNext()) {
-						sum.add(res.next().getCounter());
-					}
-				} catch (CradleStorageException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-
-			return sum;
-		}, composingService);
-	}
-
-	@Override
-	protected Counter doGetMessageCount(BookId bookId, String sessionAlias, Direction direction, Instant start, Instant end) throws CradleStorageException, IOException {
-		String queryInfo = String.format("Cumulative count for Messages with session_alias-%s, direction-%s from %s to %s",
-				sessionAlias,
-				direction,
-				start.toString(),
-				end.toString());
-		try
-		{
-			return doGetMessageCountAsync(bookId, sessionAlias, direction, start, end).get();
-		}
-		catch (Exception e)
-		{
-			throw new IOException("Error while getting " + queryInfo, e);
-		}
-	}
-
 	private List<ImmutableTriple<FrameType, Instant, Instant>> sliceInterval (Instant start, Instant end) {
 		List<ImmutableTriple<FrameType, Instant, Instant>> slices = new ArrayList<>();
 
@@ -842,6 +792,54 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
+	protected CompletableFuture<Counter> doGetMessageCountAsync(BookId bookId, String sessionAlias, Direction direction, Instant start, Instant end) throws CradleStorageException {
+		String queryInfo = String.format("Cumulative count for Messages with session_alias-%s, direction-%s from %s to %s",
+				sessionAlias,
+				direction,
+				start.toString(),
+				end.toString());
+
+		logger.info("Getting {}", queryInfo);
+
+		List<ImmutableTriple<FrameType, Instant, Instant>> slices = sliceInterval(start, end);
+
+		// Accumulate counters
+		return CompletableFuture.supplyAsync(() -> {
+			Counter sum = new Counter(0, 0);
+			for (var el : slices) {
+				try {
+					CradleResultSet<CounterSample> res = getMessageCounters(bookId, sessionAlias, direction, el.getLeft(), el.getMiddle(), el.getRight());
+
+					while (res.hasNext()) {
+						sum.add(res.next().getCounter());
+					}
+				} catch (CradleStorageException | IOException e) {
+					logger.error("Error while getting {}, cause - {}", queryInfo, e.getCause());
+				}
+			}
+
+			return sum;
+		}, composingService);
+	}
+
+	@Override
+	protected Counter doGetMessageCount(BookId bookId, String sessionAlias, Direction direction, Instant start, Instant end) throws CradleStorageException, IOException {
+		String queryInfo = String.format("Cumulative count for Messages with session_alias-%s, direction-%s from %s to %s",
+				sessionAlias,
+				direction,
+				start.toString(),
+				end.toString());
+		try
+		{
+			return doGetMessageCountAsync(bookId, sessionAlias, direction, start, end).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting " + queryInfo, e);
+		}
+	}
+
+	@Override
 	protected CompletableFuture<Counter> doGetCountAsync(BookId bookId, EntityType entityType, Instant start, Instant end) throws CradleStorageException {
 		String queryInfo = String.format("Cumulative count for %s with from %s to %s",
 				entityType.name(),
@@ -862,10 +860,8 @@ public class CassandraCradleStorage extends CradleStorage
 					while (res.hasNext()) {
 						sum.add(res.next().getCounter());
 					}
-				} catch (CradleStorageException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
+				} catch (CradleStorageException | IOException e) {
+					logger.error("Error while getting {}, cause - {}", queryInfo, e.getCause());
 				}
 			}
 
