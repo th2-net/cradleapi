@@ -602,12 +602,12 @@ public class CassandraCradleStorage extends CradleStorage
 
 		logger.info("Getting {}", queryInfo);
 
-		var actualStart = frameType.getFrameStart(frameStart);
-		var actualEnd = frameType.getFrameEnd(frameEnd);
+		Instant actualStart = frameType.getFrameStart(frameStart);
+		Instant actualEnd = frameType.getFrameEnd(frameEnd);
 
-		var operators = ops.getOperators(bookId);
-		var messageStatsOperator = operators.getMessageStatisticsOperator();
-		var messageStatsConverter = operators.getMessageStatisticsEntityConverter();
+		BookOperators operators = ops.getOperators(bookId);
+		MessageStatisticsOperator messageStatsOperator = operators.getMessageStatisticsOperator();
+		MessageStatisticsEntityConverter messageStatsConverter = operators.getMessageStatisticsEntityConverter();
 
 		return messageStatsOperator.getStatistics(sessionAlias,
 						direction.getLabel(),
@@ -660,12 +660,12 @@ public class CassandraCradleStorage extends CradleStorage
 
 		logger.info("Getting {}", queryInfo);
 
-		var actualStart = frameType.getFrameStart(frameStart);
-		var actualEnd = frameType.getFrameEnd(frameEnd);
+		Instant actualStart = frameType.getFrameStart(frameStart);
+		Instant actualEnd = frameType.getFrameEnd(frameEnd);
 
-		var operators = ops.getOperators(bookId);
-		var entityStatsOperator = operators.getEntityStatisticsOperator();
-		var entityStatsConverter = operators.getEntityStatisticsEntityConverter();
+		BookOperators operators = ops.getOperators(bookId);
+		EntityStatisticsOperator entityStatsOperator = operators.getEntityStatisticsOperator();
+		EntityStatisticsEntityConverter entityStatsConverter = operators.getEntityStatisticsEntityConverter();
 
 		return entityStatsOperator.getStatistics(
 						entityType.getValue(),
