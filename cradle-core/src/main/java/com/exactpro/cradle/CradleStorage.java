@@ -921,12 +921,70 @@ public abstract class CradleStorage
 	}
 
 
-
+	/**
+	 * Gets accumulated counter for given interval asynchronously
+	 * @param bookId identifier for book
+	 * @param entityType entity type
+	 * @param start start of time interval inclusive
+	 * @param end end of time interval exclusive
+	 * @throws CradleStorageException if given book ID is invalid
+	 */
 	public CompletableFuture<Counter> getCountAsync (BookId bookId,
 													 EntityType entityType,
 													 Instant start,
 													 Instant end) throws CradleStorageException {
 		return doGetCountAsync(bookId, entityType, start, end);
+	}
+
+	/**
+	 * Gets accumulated counter for messages with
+	 * given fields and interval asynchronously
+	 * @param bookId identifier for book
+	 * @param sessionAlias session alias
+	 * @param direction direction
+	 * @param start start of time interval inclusive
+	 * @param end end of time interval exclusive
+	 * @throws CradleStorageException if given book ID is invalid
+	 */
+	public CompletableFuture<Counter> getMessageCountAsync (BookId bookId,
+															String sessionAlias,
+															Direction direction,
+															Instant start,
+															Instant end) throws CradleStorageException {
+		return doGetMessageCountAsync(bookId, sessionAlias, direction, start, end);
+	}
+
+	/**
+	 * Gets accumulated counter for given interval
+	 * @param bookId identifier for book
+	 * @param entityType entity type
+	 * @param start start of time interval inclusive
+	 * @param end end of time interval exclusive
+	 * @throws CradleStorageException if given book ID is invalid
+	 */
+	public Counter getCount (BookId bookId,
+							 EntityType entityType,
+							 Instant start,
+							 Instant end) throws CradleStorageException, IOException {
+		return doGetCount(bookId, entityType, start, end);
+	}
+
+	/**
+	 * Gets accumulated counter for messages with
+	 * given fields and interval
+	 * @param bookId identifier for book
+	 * @param sessionAlias session alias
+	 * @param direction direction
+	 * @param start start of time interval inclusive
+	 * @param end end of time interval exclusive
+	 * @throws CradleStorageException if given book ID is invalid
+	 */
+	public Counter getMessageCount (BookId bookId,
+									String sessionAlias,
+									Direction direction,
+									Instant start,
+									Instant end) throws CradleStorageException, IOException {
+		return doGetMessageCount(bookId, sessionAlias, direction, start, end);
 	}
 
 	public final void updateEventStatus(StoredTestEvent event, boolean success) throws IOException

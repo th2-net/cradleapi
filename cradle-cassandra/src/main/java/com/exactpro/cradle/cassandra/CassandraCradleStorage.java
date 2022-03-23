@@ -711,12 +711,126 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<Counter> doGetMessageCountAsync(BookId bookId, String sessionAlias, Direction direction, Instant start, Instant end) throws CradleStorageException {
-		return null;
+		String queryInfo = String.format("Cumulative count for Messages with session_alias-%s, direction-%s from %s to %s",
+				sessionAlias,
+				direction,
+				start.toString(),
+				end.toString());
+
+		logger.info("Getting {}", queryInfo);
+
+		int frameValue = 4;
+		FrameType frameType = FrameType.from(frameValue);
+		/*
+		  Adjust frame for frame start value
+		  i.e. if start time is on second mark
+		  we should start with FrameType.SECOND frames
+		 */
+		while (frameValue > 0 && !frameType.getFrameStart(start).equals(start)) {
+			frameValue --;
+			frameType = FrameType.from(frameValue);
+		}
+		frameValue = frameValue == 0 ? 1 : frameValue;
+
+		List<CompletableFuture<CradleResultSet<CounterSample>>> queries = new ArrayList<>();
+		/*
+			Create requests for smaller frame types at the start
+		 	Should try to increase granularity until
+			we're at the biggest possible frames
+		 */
+		Instant fStart = start, fEnd;
+		while (frameValue < 4) {
+			frameType = FrameType.from(frameValue);
+			fStart = frameType.getFrameStart(fStart);
+			fEnd = FrameType.from(frameValue + 1).getFrameEnd(fStart);
+
+			if (fEnd.isAfter(end)) {
+				break;
+			}
+
+			if (!fStart.equals(fEnd)) {
+				queries.add(getMessageCountersAsync(bookId, sessionAlias, direction, frameType, fStart, fEnd));
+			}
+
+			fStart = fEnd;
+			frameValue ++;
+		}
+
+		// Create request for biggest possible frame type
+		fEnd = FrameType.from(frameValue).getFrameStart(end);
+		if (!fStart.equals(fEnd)) {
+			queries.add(getMessageCountersAsync(bookId, sessionAlias, direction, frameType, fStart, fEnd));
+		}
+
+		// Create requests for smaller frame types at the end
+		while (frameValue > 0 && !frameType.getFrameStart(start).equals(start)) {
+			/*
+				each step we should decrease granularity and fill
+				interval with smaller frames
+			 */
+			frameValue --;
+			frameType = FrameType.from(frameValue);
+
+			fStart = fEnd;
+			/*
+				Unless we are querying the smallest granularity,
+				we should leave interval for smaller frames
+			 */
+			if (frameValue != 0) {
+				fEnd = frameType.getFrameStart(end);
+			} else {
+				fEnd = frameType.getFrameEnd(end);
+			}
+
+			/*
+				Current granularity exhausted interval,
+				i.e. end was set at second etc.
+			 */
+			if (end.isBefore(fEnd)) {
+				break;
+			}
+
+			if (!fStart.equals(fEnd)) {
+				queries.add(getMessageCountersAsync(bookId, sessionAlias, direction, frameType, fStart, fEnd));
+			}
+		}
+
+		// Accumulate counters
+		return CompletableFuture.supplyAsync(() -> {
+			Counter sum = new Counter(0, 0);
+			for (var el : queries) {
+				try {
+					var result = el.get();
+
+					while (result.hasNext()) {
+						sum.add(result.next().getCounter());
+					}
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				} catch (ExecutionException e) {
+					e.printStackTrace();
+				}
+			}
+
+			return sum;
+		}, composingService);
 	}
 
 	@Override
 	protected Counter doGetMessageCount(BookId bookId, String sessionAlias, Direction direction, Instant start, Instant end) throws CradleStorageException, IOException {
-		return null;
+		String queryInfo = String.format("Cumulative count for Messages with session_alias-%s, direction-%s from %s to %s",
+				sessionAlias,
+				direction,
+				start.toString(),
+				end.toString());
+		try
+		{
+			return doGetMessageCountAsync(bookId, sessionAlias, direction, start, end).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting " + queryInfo, e);
+		}
 	}
 
 
