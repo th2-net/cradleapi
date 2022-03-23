@@ -757,7 +757,7 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		frameValue = frameValue == 0 ? 1 : frameValue;
 
-		List<CompletableFuture<CradleResultSet<Counter>>> queries = new ArrayList<>();
+		List<CompletableFuture<CradleResultSet<CounterSample>>> queries = new ArrayList<>();
 		/*
 			Create requests for smaller frame types at the start
 		 	Should try to increase granularity until
@@ -823,7 +823,7 @@ public class CassandraCradleStorage extends CradleStorage
 					var result = el.get();
 
 					while (result.hasNext()) {
-						sum.add(result.next());
+						sum.add(result.next().getCounter());
 					}
 				} catch (InterruptedException e) {
 					e.printStackTrace();
