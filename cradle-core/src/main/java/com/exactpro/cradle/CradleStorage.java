@@ -157,30 +157,30 @@ public abstract class CradleStorage
 	protected abstract CradleResultSet<Counter> doGetCounters(BookId bookId,
 															  EntityType entityType,
 															  FrameType frameType,
-															  Instant frameStart,
+															  Instant start,
 															  Instant frameEnd) throws CradleStorageException, IOException;
 
 	protected abstract CompletableFuture<Counter> doGetMessageCountAsync(BookId bookId,
 																		 String sessionAlias,
 																		 Direction direction,
-																		 Instant frameStart,
-																		 Instant frameEnd) throws CradleStorageException;
+																		 Instant start,
+																		 Instant end) throws CradleStorageException;
 
 	protected abstract Counter doGetMessageCount(BookId bookId,
 												 String sessionAlias,
 												 Direction direction,
-												 Instant frameStart,
-												 Instant frameEnd) throws CradleStorageException, IOException;
+												 Instant start,
+												 Instant end) throws CradleStorageException, IOException;
 
 	protected abstract CompletableFuture<Counter> doGetCountAsync (BookId bookId,
 																   EntityType entityType,
-																   Instant frameStart,
-																   Instant frameEnd) throws CradleStorageException;
+																   Instant start,
+																   Instant end) throws CradleStorageException;
 
 	protected abstract Counter doGetCount (BookId bookId,
 										   EntityType entityType,
-										   Instant frameStart,
-										   Instant frameEnd) throws CradleStorageException, IOException;
+										   Instant start,
+										   Instant end) throws CradleStorageException, IOException;
 	
 	
 	/**

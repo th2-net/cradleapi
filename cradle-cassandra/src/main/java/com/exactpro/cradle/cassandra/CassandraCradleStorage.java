@@ -702,20 +702,20 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Counter> doGetMessageCountAsync(BookId bookId, String sessionAlias, Direction direction, Instant frameStart, Instant frameEnd) throws CradleStorageException {
+	protected CompletableFuture<Counter> doGetMessageCountAsync(BookId bookId, String sessionAlias, Direction direction, Instant start, Instant end) throws CradleStorageException {
 		return null;
 	}
 
 	@Override
-	protected Counter doGetMessageCount(BookId bookId, String sessionAlias, Direction direction, Instant frameStart, Instant frameEnd) throws CradleStorageException, IOException {
+	protected Counter doGetMessageCount(BookId bookId, String sessionAlias, Direction direction, Instant start, Instant end) throws CradleStorageException, IOException {
 		String queryInfo = String.format("Cumulative count for Messages with sessionAlias-%s, direction-%s, from %s to %s",
 				sessionAlias,
 				direction.name(),
-				frameStart.toString(),
-				frameEnd.toString());
+				start.toString(),
+				end.toString());
 		try
 		{
-			return doGetMessageCountAsync(bookId, sessionAlias, direction, frameStart, frameEnd).get();
+			return doGetMessageCountAsync(bookId, sessionAlias, direction, start, end).get();
 		}
 		catch (Exception e)
 		{
@@ -724,11 +724,11 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Counter> doGetCountAsync(BookId bookId, EntityType entityType, Instant frameStart, Instant frameEnd) throws CradleStorageException {
+	protected CompletableFuture<Counter> doGetCountAsync(BookId bookId, EntityType entityType, Instant start, Instant end) throws CradleStorageException {
 		String queryInfo = String.format("Cumulative count for %s with from %s to %s",
 				entityType.name(),
-				frameStart.toString(),
-				frameEnd.toString());
+				start.toString(),
+				end.toString());
 
 		logger.info("Getting {}", queryInfo);
 
@@ -739,7 +739,7 @@ public class CassandraCradleStorage extends CradleStorage
 		  i.e. if start time is on second mark
 		  we should start with FrameType.SECOND frames
 		 */
-		while (frameValue > 0 && !frameType.getFrameStart(frameStart).equals(frameStart)) {
+		while (frameValue > 0 && !frameType.getFrameStart(start).equals(start)) {
 			frameValue --;
 			frameType = FrameType.from(frameValue);
 		}
@@ -751,29 +751,29 @@ public class CassandraCradleStorage extends CradleStorage
 		 	Should try to increase granularity until
 			we're at the biggest possible frames
 		 */
-		Instant start = frameStart, end;
+		Instant fStart = start, fEnd;
 		while (frameValue < 4) {
-			start = frameType.getFrameStart(frameStart);
-			end = FrameType.from(frameValue + 1).getFrameEnd(frameStart);
+			fStart = frameType.getFrameStart(start);
+			fEnd = FrameType.from(frameValue + 1).getFrameEnd(start);
 
-			if (end.isAfter(frameEnd)) {
+			if (fEnd.isAfter(end)) {
 				break;
 			}
 
-			queries.add(getCountersAsync(bookId, entityType, frameType, start, end));
+			queries.add(getCountersAsync(bookId, entityType, frameType, fStart, fEnd));
 
 
 			frameValue ++;
 			frameType = FrameType.from(frameValue);
-			start = frameType.getFrameStart(frameStart);
+			fStart = frameType.getFrameStart(start);
 		}
 
 		// Create request for biggest possible frame type
-		end = FrameType.from(frameValue).getFrameStart(frameEnd);
-		queries.add(getCountersAsync(bookId, entityType, frameType, start, end));
+		fEnd = FrameType.from(frameValue).getFrameStart(end);
+		queries.add(getCountersAsync(bookId, entityType, frameType, fStart, fEnd));
 
 		// Create requests for smaller frame types at the end
-		while (frameValue > 0 && !frameType.getFrameStart(frameStart).equals(frameStart)) {
+		while (frameValue > 0 && !frameType.getFrameStart(start).equals(start)) {
 			/*
 				each step we should decrease granularity and fill
 				interval with smaller frames
@@ -781,26 +781,26 @@ public class CassandraCradleStorage extends CradleStorage
 			frameValue --;
 			frameType = FrameType.from(frameValue);
 
-			start = end;
+			fStart = fEnd;
 			/*
 				Unless we are querying the smallest granularity,
 				we should leave interval for smaller frames
 			 */
 			if (frameValue != 0) {
-				end = frameType.getFrameStart(frameEnd);
+				fEnd = frameType.getFrameStart(end);
 			} else {
-				end = frameType.getFrameEnd(frameEnd);
+				fEnd = frameType.getFrameEnd(end);
 			}
 
 			/*
 				Current granularity exhausted interval,
 				i.e. end was set at second etc.
 			 */
-			if (frameEnd.isBefore(end)) {
+			if (end.isBefore(fEnd)) {
 				break;
 			}
 
-			queries.add(getCountersAsync(bookId, entityType, frameType, start, end));
+			queries.add(getCountersAsync(bookId, entityType, frameType, fStart, fEnd));
 		}
 
 		// Accumulate counters
@@ -825,14 +825,14 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Counter doGetCount(BookId bookId, EntityType entityType, Instant frameStart, Instant frameEnd) throws CradleStorageException, IOException {
+	protected Counter doGetCount(BookId bookId, EntityType entityType, Instant start, Instant end) throws CradleStorageException, IOException {
 		String queryInfo = String.format("Cumulative count for %s with from %s to %s",
 				entityType.name(),
-				frameStart.toString(),
-				frameEnd.toString());
+				start.toString(),
+				end.toString());
 		try
 		{
-			return doGetCountAsync(bookId, entityType, frameStart, frameEnd).get();
+			return doGetCountAsync(bookId, entityType, start, end).get();
 		}
 		catch (Exception e)
 		{
