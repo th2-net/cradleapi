@@ -49,7 +49,8 @@ public class CassandraStorageSettings
 			DEFAULT_SESSIONS_CACHE_SIZE = 100,
 			DEFAULT_SCOPES_CACHE_SIZE = 10,
 			DEFAULT_PAGE_SESSION_CACHE_SIZE = 100,
-			DEFAULT_PAGE_SCOPES_CACHE_SIZE = 100;
+			DEFAULT_PAGE_SCOPES_CACHE_SIZE = 100,
+			DEFAULT_COUNTER_PERSISTANE_INTERVAL_MS = 1000;
 
 	private final NetworkTopologyStrategy networkTopologyStrategy;
 	private final long timeout;
@@ -83,7 +84,8 @@ public class CassandraStorageSettings
 			sessionsCacheSize,
 			scopesCacheSize,
 			pageSessionsCacheSize,
-			pageScopesCacheSize;
+			pageScopesCacheSize,
+			counterPersistanceInterval;
 
 	private SelectExecutionPolicy multiRowResultExecutionPolicy, singleRowResultExecutionPolicy;
 	
@@ -134,6 +136,7 @@ public class CassandraStorageSettings
 		this.pageSessionsCacheSize = DEFAULT_PAGE_SESSION_CACHE_SIZE;
 		this.scopesCacheSize = DEFAULT_SCOPES_CACHE_SIZE;
 		this.pageScopesCacheSize = DEFAULT_PAGE_SCOPES_CACHE_SIZE;
+		this.counterPersistanceInterval = DEFAULT_COUNTER_PERSISTANE_INTERVAL_MS;
 	}
 
 	public CassandraStorageSettings(CassandraStorageSettings settings)
@@ -174,6 +177,7 @@ public class CassandraStorageSettings
 		this.pageSessionsCacheSize = settings.getPageSessionsCacheSize();
 		this.scopesCacheSize = settings.getScopesCacheSize();
 		this.pageScopesCacheSize = settings.getPageScopesCacheSize();
+		this.counterPersistanceInterval = settings.getCounterPersistanceInterval();
 	}
 	
 	
@@ -480,6 +484,14 @@ public class CassandraStorageSettings
 	public void setPageScopesCacheSize(int pageScopesCacheSize)
 	{
 		this.pageScopesCacheSize = pageScopesCacheSize;
+	}
+
+	public int getCounterPersistanceInterval() {
+		return counterPersistanceInterval;
+	}
+
+	public void setCounterPersistanceInterval(int counterPersistanceInterval) {
+		this.counterPersistanceInterval = counterPersistanceInterval;
 	}
 
 	public SelectExecutionPolicy getMultiRowResultExecutionPolicy()

@@ -31,4 +31,28 @@ public class Counter {
     public long getEntitySize() {
         return entitySize;
     }
+
+    public Counter incrementedBy(Counter value) {
+        return new Counter(
+                this.getEntityCount() + value.getEntityCount(),
+                this.getEntitySize() + value.getEntitySize());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Counter)) return false;
+
+        Counter counter = (Counter) o;
+
+        if (getEntityCount() != counter.getEntityCount()) return false;
+        return getEntitySize() == counter.getEntitySize();
+    }
+
+    @Override
+    public int hashCode() {
+        int result = (int) (getEntityCount() ^ (getEntityCount() >>> 32));
+        result = 31 * result + (int) (getEntitySize() ^ (getEntitySize() >>> 32));
+        return result;
+    }
 }
