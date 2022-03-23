@@ -157,8 +157,9 @@ public abstract class CradleStorage
 	protected abstract CradleResultSet<CounterSample> doGetCounters(BookId bookId,
 															  EntityType entityType,
 															  FrameType frameType,
-															  Instant start,
+															  Instant frameStart,
 															  Instant frameEnd) throws CradleStorageException, IOException;
+
 
 	protected abstract CompletableFuture<Counter> doGetMessageCountAsync(BookId bookId,
 																		 String sessionAlias,
@@ -181,7 +182,6 @@ public abstract class CradleStorage
 										   EntityType entityType,
 										   Instant start,
 										   Instant end) throws CradleStorageException, IOException;
-	
 	
 	/**
 	 * Initializes internal objects of storage and prepares it to access data, i.e. creates needed connections and facilities.
@@ -919,6 +919,8 @@ public abstract class CradleStorage
 												 Instant frameEnd) throws CradleStorageException, IOException {
 		return doGetCounters(bookId, entityType, frameType, frameStart, frameEnd);
 	}
+
+
 
 	public CompletableFuture<Counter> getCountAsync (BookId bookId,
 													 EntityType entityType,

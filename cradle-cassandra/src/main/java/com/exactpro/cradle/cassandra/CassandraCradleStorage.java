@@ -627,9 +627,7 @@ public class CassandraCradleStorage extends CradleStorage
 								selectExecutor,
 								-1,
 								new AtomicInteger(0),
-								messageStatsEntity -> new CounterSample(messageStatsEntity.getFrameStart(),
-										messageStatsEntity.toCounter(),
-										FrameType.from(messageStatsEntity.getFrameType())),
+								MessageStatisticsEntity::toCounterSample,
 								messageStatsConverter::getEntity, queryInfo))
 				// Iterator provider should be null, since no several queries are needed
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, null));
@@ -643,7 +641,7 @@ public class CassandraCradleStorage extends CradleStorage
 															Direction direction,
 															FrameType frameType,
 															Instant frameStart,
-															Instant frameEnd) throws CradleStorageException, IOException {
+															Instant frameEnd) throws IOException {
 		String queryInfo = String.format("Counters for Messages with sessionAlias-%s, direction-%s, frameType-%s from %s to %s",
 				sessionAlias,
 				direction.name(),
@@ -688,9 +686,7 @@ public class CassandraCradleStorage extends CradleStorage
 								selectExecutor,
 								-1,
 								new AtomicInteger(0),
-								statsEntity -> new CounterSample(statsEntity.getFrameStart(),
-										statsEntity.toCounter(),
-										FrameType.from(statsEntity.getFrameType())),
+								EntityStatisticsEntity::toCounterSample,
 								entityStatsConverter::getEntity, queryInfo))
 				// Iterator provider should be null, since no several queries are needed
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, null));
@@ -713,27 +709,6 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 	}
 
-	@Override
-	protected CompletableFuture<Counter> doGetMessageCountAsync(BookId bookId, String sessionAlias, Direction direction, Instant start, Instant end) throws CradleStorageException {
-		return null;
-	}
-
-	@Override
-	protected Counter doGetMessageCount(BookId bookId, String sessionAlias, Direction direction, Instant start, Instant end) throws CradleStorageException, IOException {
-		String queryInfo = String.format("Cumulative count for Messages with sessionAlias-%s, direction-%s, from %s to %s",
-				sessionAlias,
-				direction.name(),
-				start.toString(),
-				end.toString());
-		try
-		{
-			return doGetMessageCountAsync(bookId, sessionAlias, direction, start, end).get();
-		}
-		catch (Exception e)
-		{
-			throw new IOException("Error while getting " + queryInfo, e);
-		}
-	}
 
 	@Override
 	protected CompletableFuture<Counter> doGetCountAsync(BookId bookId, EntityType entityType, Instant start, Instant end) throws CradleStorageException {

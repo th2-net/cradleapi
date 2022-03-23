@@ -8,10 +8,10 @@ public class CounterSample {
     private final Counter counter;
     private final FrameType frameType;
 
-    public CounterSample(Instant frameStart, Counter counter, FrameType frameType) {
+    public CounterSample(FrameType frameType, Instant frameStart, Counter counter) {
+        this.frameType = frameType;
         this.frameStart = frameStart;
         this.counter = counter;
-        this.frameType = frameType;
     }
 
     public Instant getFrameStart() {
