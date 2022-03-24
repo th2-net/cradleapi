@@ -66,12 +66,4 @@ public enum FrameType {
                 return e;
         throw new IllegalArgumentException(String.format("No frame type associated with value (%d)", value));
     }
-
-    public static FrameType smallestFrame () {
-        return FrameType.TYPE_100MS;
-    }
-
-    public static FrameType biggestFrame () {
-        return FrameType.TYPE_HOUR;
-    }
 }

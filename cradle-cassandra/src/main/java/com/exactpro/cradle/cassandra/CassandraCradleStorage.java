@@ -61,6 +61,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.TemporalUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -709,30 +710,32 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 	}
 
-	private List<ImmutableTriple<FrameType, Instant, Instant>> sliceInterval (Instant start, Instant end) {
+	public static List<ImmutableTriple<FrameType, Instant, Instant>> sliceInterval (Instant start, Instant end) {
 		List<ImmutableTriple<FrameType, Instant, Instant>> slices = new ArrayList<>();
 
-		int frameValue = 4;
+		int minFrameValue = 1;
+		int maxFrameValue = FrameType.values().length;
+		int frameValue = maxFrameValue;
+		start = FrameType.from(minFrameValue).getFrameStart(start);
+		end = FrameType.from(minFrameValue).getFrameEnd(end).minusMillis(1);
+
 		FrameType frameType = FrameType.from(frameValue);
 		/*
 		  Adjust frame for frame start value
 		  i.e. if start time is on second mark
 		  we should start with FrameType.SECOND frames
 		 */
-		while (frameValue > 0 && !frameType.getFrameStart(start).equals(start)) {
+		while (frameValue > minFrameValue && !frameType.getFrameStart(start).equals(start)) {
 			frameValue --;
 			frameType = FrameType.from(frameValue);
 		}
-		frameValue = frameValue == 0 ? 1 : frameValue;
-
-		List<CompletableFuture<CradleResultSet<CounterSample>>> queries = new ArrayList<>();
 		/*
 			Create requests for smaller frame types at the start
 		 	Should try to increase granularity until
 			we're at the biggest possible frames
 		 */
 		Instant fStart = start, fEnd;
-		while (frameValue < 4) {
+		while (frameValue < maxFrameValue) {
 			frameType = FrameType.from(frameValue);
 			fStart = frameType.getFrameStart(fStart);
 			fEnd = FrameType.from(frameValue + 1).getFrameEnd(fStart);
@@ -750,6 +753,7 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 
 		// Create request for biggest possible frame type
+		frameType = FrameType.from(frameValue);
 		fEnd = FrameType.from(frameValue).getFrameStart(end);
 		if (!fStart.equals(fEnd)) {
 			slices.add(new ImmutableTriple<>(frameType, fStart, fEnd));
