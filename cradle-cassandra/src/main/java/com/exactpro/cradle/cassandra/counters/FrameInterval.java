@@ -1,6 +1,7 @@
 package com.exactpro.cradle.cassandra.counters;
 
 import com.exactpro.cradle.FrameType;
+import com.exactpro.cradle.counters.Interval;
 
 import java.util.Objects;
 

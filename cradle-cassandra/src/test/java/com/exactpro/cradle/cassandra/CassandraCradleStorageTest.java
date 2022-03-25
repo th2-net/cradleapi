@@ -2,7 +2,7 @@ package com.exactpro.cradle.cassandra;
 
 import com.exactpro.cradle.FrameType;
 import com.exactpro.cradle.cassandra.counters.FrameInterval;
-import com.exactpro.cradle.cassandra.counters.Interval;
+import com.exactpro.cradle.counters.Interval;
 import org.testng.annotations.Test;
 
 import java.time.Instant;

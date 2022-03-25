@@ -25,7 +25,7 @@ import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
 import com.exactpro.cradle.cassandra.counters.FrameInterval;
-import com.exactpro.cradle.cassandra.counters.Interval;
+import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.cassandra.dao.*;
 import com.exactpro.cradle.cassandra.dao.books.*;
 import com.exactpro.cradle.cassandra.dao.messages.*;
@@ -45,6 +45,8 @@ import com.exactpro.cradle.cassandra.workers.EventsWorker;
 import com.exactpro.cradle.cassandra.workers.MessagesWorker;
 import com.exactpro.cradle.cassandra.workers.StatisticsWorker;
 import com.exactpro.cradle.cassandra.workers.WorkerSupplies;
+import com.exactpro.cradle.counters.Counter;
+import com.exactpro.cradle.counters.CounterSample;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
@@ -596,11 +598,11 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<CradleResultSet<CounterSample>> doGetMessageCountersAsync(BookId bookId,
-																					String sessionAlias,
-																					Direction direction,
-																					FrameType frameType,
-																					Instant frameStart,
-																					Instant frameEnd) throws CradleStorageException {
+																						  String sessionAlias,
+																						  Direction direction,
+																						  FrameType frameType,
+																						  Instant frameStart,
+																						  Instant frameEnd) throws CradleStorageException {
 		String queryInfo = String.format("Counters for Messages with sessionAlias-%s, direction-%s, frameType-%s from %s to %s",
 				sessionAlias,
 				direction.name(),

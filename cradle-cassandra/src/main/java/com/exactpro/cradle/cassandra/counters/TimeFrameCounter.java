@@ -15,7 +15,7 @@
  */
 package com.exactpro.cradle.cassandra.counters;
 
-import com.exactpro.cradle.Counter;
+import com.exactpro.cradle.counters.Counter;
 
 import java.time.Instant;
 

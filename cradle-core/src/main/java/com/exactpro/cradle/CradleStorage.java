@@ -24,6 +24,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.exactpro.cradle.counters.Counter;
+import com.exactpro.cradle.counters.CounterSample;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.utils.BookPagesNamesChecker;
@@ -137,11 +139,11 @@ public abstract class CradleStorage
 	protected abstract Collection<String> doGetScopes(BookId bookId) throws IOException, CradleStorageException;
 
 	protected abstract CompletableFuture<CradleResultSet<CounterSample>> doGetMessageCountersAsync(BookId bookId,
-																							 String sessionAlias,
-																							 Direction direction,
-																							 FrameType frameType,
-																							 Instant frameStart,
-																							 Instant frameEnd) throws CradleStorageException;
+																								   String sessionAlias,
+																								   Direction direction,
+																								   FrameType frameType,
+																								   Instant frameStart,
+																								   Instant frameEnd) throws CradleStorageException;
 	protected abstract CradleResultSet<CounterSample> doGetMessageCounters(BookId bookId,
 																	 String sessionAlias,
 																	 Direction direction,

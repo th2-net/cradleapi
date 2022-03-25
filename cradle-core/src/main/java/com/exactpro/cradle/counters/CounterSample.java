@@ -1,4 +1,7 @@
-package com.exactpro.cradle;
+package com.exactpro.cradle.counters;
+
+import com.exactpro.cradle.FrameType;
+import com.exactpro.cradle.counters.Counter;
 
 import java.time.Instant;
 

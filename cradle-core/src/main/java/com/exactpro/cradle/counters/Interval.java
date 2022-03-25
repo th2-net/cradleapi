@@ -1,4 +1,4 @@
-package com.exactpro.cradle.cassandra.counters;
+package com.exactpro.cradle.counters;
 
 import java.time.Instant;
 import java.util.Objects;
