@@ -57,6 +57,7 @@ import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.swing.plaf.synth.SynthUI;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -713,21 +714,22 @@ public class CassandraCradleStorage extends CradleStorage
 	public static List<ImmutableTriple<FrameType, Instant, Instant>> sliceInterval (Instant start, Instant end) {
 		List<ImmutableTriple<FrameType, Instant, Instant>> slices = new ArrayList<>();
 
-		int minFrameValue = 1;
-		int maxFrameValue = FrameType.values().length;
-		int frameValue = maxFrameValue;
-		start = FrameType.from(minFrameValue).getFrameStart(start);
-		end = FrameType.from(minFrameValue).getFrameEnd(end).minusMillis(1);
+		FrameType[] frameTypes = FrameType.values();
+		int minFrameIndex = 0;
+		int maxFrameIndex = FrameType.values().length - 1;
+		int frameIndex = maxFrameIndex;
+		start = frameTypes[minFrameIndex].getFrameStart(start);
+		end = frameTypes[minFrameIndex].getFrameEnd(end).minusMillis(1);
 
-		FrameType frameType = FrameType.from(frameValue);
+		FrameType frameType = frameTypes[frameIndex];
 		/*
 		  Adjust frame for frame start value
 		  i.e. if start time is on second mark
 		  we should start with FrameType.SECOND frames
 		 */
-		while (frameValue > minFrameValue && !frameType.getFrameStart(start).equals(start)) {
-			frameValue --;
-			frameType = FrameType.from(frameValue);
+		while (frameIndex > minFrameIndex && !frameType.getFrameStart(start).equals(start)) {
+			frameIndex --;
+			frameType = frameTypes[frameIndex];
 		}
 		/*
 			Create requests for smaller frame types at the start
@@ -735,10 +737,10 @@ public class CassandraCradleStorage extends CradleStorage
 			we're at the biggest possible frames
 		 */
 		Instant fStart = start, fEnd;
-		while (frameValue < maxFrameValue) {
-			frameType = FrameType.from(frameValue);
+		while (frameIndex < maxFrameIndex) {
+			frameType = frameTypes[frameIndex];
 			fStart = frameType.getFrameStart(fStart);
-			fEnd = FrameType.from(frameValue + 1).getFrameEnd(fStart);
+			fEnd = frameTypes[frameIndex + 1].getFrameEnd(fStart);
 
 			if (fEnd.isAfter(end)) {
 				break;
@@ -749,36 +751,31 @@ public class CassandraCradleStorage extends CradleStorage
 			}
 
 			fStart = fEnd;
-			frameValue ++;
+			frameIndex ++;
 		}
 
 		// Create request for biggest possible frame type
-		frameType = FrameType.from(frameValue);
-		fEnd = FrameType.from(frameValue).getFrameStart(end);
+		frameType = frameTypes[frameIndex];
+		fEnd = frameTypes[frameIndex].getFrameStart(end);
 		if (!fStart.equals(fEnd)) {
 			slices.add(new ImmutableTriple<>(frameType, fStart, fEnd));
 		}
 
 		// Create requests for smaller frame types at the end
-		while (frameValue > 0 && !frameType.getFrameStart(start).equals(start)) {
+		while (frameIndex > -1 && !frameType.getFrameStart(start).equals(start)) {
 			/*
 				each step we should decrease granularity and fill
 				interval with smaller frames
 			 */
-			frameValue --;
-			frameType = FrameType.from(frameValue);
+			frameIndex --;
+			frameType = frameTypes[frameIndex];
 
 			fStart = fEnd;
 			/*
 				Unless we are querying the smallest granularity,
 				we should leave interval for smaller frames
 			 */
-			if (frameValue != 0) {
-				fEnd = frameType.getFrameStart(end);
-			} else {
-				fEnd = frameType.getFrameEnd(end);
-			}
-
+			fEnd = frameType.getFrameStart(end);
 			/*
 				Current granularity exhausted interval,
 				i.e. end was set at second etc.
