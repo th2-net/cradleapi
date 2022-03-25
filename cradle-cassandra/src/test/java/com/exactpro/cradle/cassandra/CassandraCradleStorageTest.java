@@ -15,8 +15,8 @@ public class CassandraCradleStorageTest {
     @Test
     private void testEmptyInterval () {
         Instant start, end;
-        start = Instant.parse("2022-03-22T17:05:37.113Z");
-        end  = Instant.parse("2022-03-22T17:05:37.116Z");
+        start = Instant.parse("2022-03-22T17:05:37.100Z");
+        end  = Instant.parse("2022-03-22T17:05:37.100Z");
 
         List<ImmutableTriple<FrameType, Instant, Instant>> actual, expected;
         actual = CassandraCradleStorage.sliceInterval(start, end);
@@ -39,7 +39,7 @@ public class CassandraCradleStorageTest {
                 Instant.parse("2022-03-22T17:05:38.000Z")));
         expected.add(new ImmutableTriple<>(FrameType.TYPE_100MS,
                 Instant.parse("2022-03-22T17:05:38.000Z"),
-                Instant.parse("2022-03-22T17:05:38.500Z")));
+                Instant.parse("2022-03-22T17:05:38.600Z")));
 
         assertEquals(actual, expected);
     }
@@ -115,7 +115,7 @@ public class CassandraCradleStorageTest {
                 Instant.parse("2022-03-22T17:05:40.000Z")));
         expected.add(new ImmutableTriple<>(FrameType.TYPE_100MS,
                 Instant.parse("2022-03-22T17:05:40.000Z"),
-                Instant.parse("2022-03-22T17:05:40.200Z")));
+                Instant.parse("2022-03-22T17:05:40.300Z")));
 
         assertEquals(actual, expected);
     }
@@ -143,7 +143,7 @@ public class CassandraCradleStorageTest {
                 Instant.parse("2022-03-22T17:15:40.000Z")));
         expected.add(new ImmutableTriple<>(FrameType.TYPE_100MS,
                 Instant.parse("2022-03-22T17:15:40.000Z"),
-                Instant.parse("2022-03-22T17:15:40.200Z")));
+                Instant.parse("2022-03-22T17:15:40.300Z")));
 
         assertEquals(actual, expected);
     }
@@ -155,7 +155,32 @@ public class CassandraCradleStorageTest {
         final Instant end   = Instant.parse("2022-03-22T20:15:40.250Z");
 
         final List<ImmutableTriple<FrameType, Instant, Instant>> actual = CassandraCradleStorage.sliceInterval(start, end);
-        validateSlices(actual, start, end, 7);
+        List<ImmutableTriple<FrameType, Instant, Instant>> expected;
+        expected = new ArrayList<>();
+        expected.add(new ImmutableTriple<>(FrameType.TYPE_100MS,
+                Instant.parse("2022-03-22T17:05:37.100Z"),
+                Instant.parse("2022-03-22T17:05:38.000Z")));
+        expected.add(new ImmutableTriple<>(FrameType.TYPE_SECOND,
+                Instant.parse("2022-03-22T17:05:38.000Z"),
+                Instant.parse("2022-03-22T17:06:00.000Z")));
+        expected.add(new ImmutableTriple<>(FrameType.TYPE_MINUTE,
+                Instant.parse("2022-03-22T17:06:00.000Z"),
+                Instant.parse("2022-03-22T18:00:00.000Z")));
+        expected.add(new ImmutableTriple<>(FrameType.TYPE_HOUR,
+                Instant.parse("2022-03-22T18:00:00.000Z"),
+                Instant.parse("2022-03-22T20:00:00.000Z")));
+        expected.add(new ImmutableTriple<>(FrameType.TYPE_MINUTE,
+                Instant.parse("2022-03-22T20:00:00.000Z"),
+                Instant.parse("2022-03-22T20:15:00.000Z")));
+        expected.add(new ImmutableTriple<>(FrameType.TYPE_SECOND,
+                Instant.parse("2022-03-22T20:15:00.000Z"),
+                Instant.parse("2022-03-22T20:15:40.000Z")));
+        expected.add(new ImmutableTriple<>(FrameType.TYPE_100MS,
+                Instant.parse("2022-03-22T20:15:40.000Z"),
+                Instant.parse("2022-03-22T20:15:40.300Z")));
+
+        validateSlices(expected, start, end, 7);
+        assertEquals(actual, expected);
     }
 
 

@@ -34,6 +34,9 @@ public enum FrameType {
         return value;
     }
 
+    public long getMillisInFrame () {
+        return millisInFrame;
+    }
     /**
      * Calculates start time (inclusive) for the given time
      * @param time for which frame start is calculated

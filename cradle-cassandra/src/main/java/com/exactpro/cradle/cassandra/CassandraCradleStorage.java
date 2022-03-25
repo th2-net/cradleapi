@@ -719,7 +719,9 @@ public class CassandraCradleStorage extends CradleStorage
 		int maxFrameIndex = FrameType.values().length - 1;
 		int frameIndex = maxFrameIndex;
 		start = frameTypes[minFrameIndex].getFrameStart(start);
-		end = frameTypes[minFrameIndex].getFrameEnd(end).minusMillis(1);
+		end = frameTypes[minFrameIndex].getFrameStart
+				(end.plusMillis(frameTypes[minFrameIndex].getMillisInFrame()).minusMillis(1));
+
 
 		FrameType frameType = frameTypes[frameIndex];
 		/*
