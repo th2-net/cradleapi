@@ -24,6 +24,8 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
+import com.exactpro.cradle.cassandra.counters.FrameInterval;
+import com.exactpro.cradle.cassandra.counters.Interval;
 import com.exactpro.cradle.cassandra.dao.*;
 import com.exactpro.cradle.cassandra.dao.books.*;
 import com.exactpro.cradle.cassandra.dao.messages.*;
@@ -53,16 +55,13 @@ import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TimeUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.plaf.synth.SynthUI;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.temporal.TemporalUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -711,8 +710,8 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 	}
 
-	public static List<ImmutableTriple<FrameType, Instant, Instant>> sliceInterval (Instant start, Instant end) {
-		List<ImmutableTriple<FrameType, Instant, Instant>> slices = new ArrayList<>();
+	public static List<FrameInterval> sliceInterval (Instant start, Instant end) {
+		List<FrameInterval> slices = new ArrayList<>();
 
 		FrameType[] frameTypes = FrameType.values();
 		int minFrameIndex = 0;
@@ -749,7 +748,7 @@ public class CassandraCradleStorage extends CradleStorage
 			}
 
 			if (!fStart.equals(fEnd)) {
-				slices.add(new ImmutableTriple<>(frameType, fStart, fEnd));
+				slices.add(new FrameInterval(frameType, new Interval(fStart, fEnd)));
 			}
 
 			fStart = fEnd;
@@ -760,7 +759,7 @@ public class CassandraCradleStorage extends CradleStorage
 		frameType = frameTypes[frameIndex];
 		fEnd = frameTypes[frameIndex].getFrameStart(end);
 		if (!fStart.equals(fEnd)) {
-			slices.add(new ImmutableTriple<>(frameType, fStart, fEnd));
+			slices.add(new FrameInterval(frameType, new Interval(fStart, fEnd)));
 		}
 
 		// Create requests for smaller frame types at the end
@@ -787,7 +786,7 @@ public class CassandraCradleStorage extends CradleStorage
 			}
 
 			if (!fStart.equals(fEnd)) {
-				slices.add(new ImmutableTriple<>(frameType, fStart, fEnd));
+				slices.add(new FrameInterval(frameType, new Interval(fStart, fEnd)));
 			}
 		}
 
@@ -804,15 +803,20 @@ public class CassandraCradleStorage extends CradleStorage
 
 		logger.info("Getting {}", queryInfo);
 
-		List<ImmutableTriple<FrameType, Instant, Instant>> slices = sliceInterval(start, end);
+		List<FrameInterval> slices = sliceInterval(start, end);
 
 		// Accumulate counters
 		return CompletableFuture.supplyAsync(() -> {
 			Counter sum = new Counter(0, 0);
 			for (var el : slices) {
 				try {
-					CradleResultSet<CounterSample> res = getMessageCounters(bookId, sessionAlias, direction, el.getLeft(), el.getMiddle(), el.getRight());
-
+					CradleResultSet<CounterSample> res = getMessageCounters(bookId,
+							sessionAlias,
+							direction,
+							el.getFrameType(),
+							el.getInterval().getStart(),
+							el.getInterval().getEnd()
+							);
 					while (res.hasNext()) {
 						sum = sum.incrementedBy(res.next().getCounter());
 					}
@@ -851,14 +855,18 @@ public class CassandraCradleStorage extends CradleStorage
 
 		logger.info("Getting {}", queryInfo);
 
-		List<ImmutableTriple<FrameType, Instant, Instant>> slices = sliceInterval(start, end);
+		List<FrameInterval> slices = sliceInterval(start, end);
 
 		// Accumulate counters
 		return CompletableFuture.supplyAsync(() -> {
 			Counter sum = new Counter(0, 0);
 			for (var el : slices) {
 				try {
-					CradleResultSet<CounterSample> res = getCounters(bookId, entityType, el.getLeft(), el.getMiddle(), el.getRight());
+					CradleResultSet<CounterSample> res = getCounters(bookId,
+							entityType,
+							el.getFrameType(),
+							el.getInterval().getStart(),
+							el.getInterval().getEnd());
 
 					while (res.hasNext()) {
 						sum = sum.incrementedBy(res.next().getCounter());
