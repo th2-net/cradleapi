@@ -35,7 +35,7 @@ public class CassandraCradleStorageTest {
         end  = Instant.parse("2022-03-22T17:05:37.100Z");
 
         List<FrameInterval> actual, expected;
-        actual = CassandraCradleStorage.sliceInterval(start, end);
+        actual = CassandraCradleStorage.sliceInterval(new Interval(start, end));
         expected = new ArrayList<>();
 
         assertEquals(actual, expected);
@@ -48,7 +48,7 @@ public class CassandraCradleStorageTest {
         end  = Instant.parse("2022-03-22T17:05:38.596Z");
 
         List<FrameInterval> actual, expected;
-        actual = CassandraCradleStorage.sliceInterval(start, end);
+        actual = CassandraCradleStorage.sliceInterval(new Interval(start, end));
         expected = new ArrayList<>();
         expected.add(new FrameInterval(FrameType.TYPE_100MS,
                 new Interval(Instant.parse("2022-03-22T17:05:37.100Z"),
@@ -67,7 +67,7 @@ public class CassandraCradleStorageTest {
         end  = Instant.parse("2022-03-22T17:06:59.000Z");
 
         List<FrameInterval> actual, expected;
-        actual = CassandraCradleStorage.sliceInterval(start, end);
+        actual = CassandraCradleStorage.sliceInterval(new Interval(start, end));
         expected = new ArrayList<>();
         expected.add(new FrameInterval(FrameType.TYPE_SECOND,
                 new Interval(Instant.parse("2022-03-22T17:05:25.000Z"),
@@ -86,7 +86,7 @@ public class CassandraCradleStorageTest {
         end  = Instant.parse("2022-03-22T18:23:00.000Z");
 
         List<FrameInterval> actual, expected;
-        actual = CassandraCradleStorage.sliceInterval(start, end);
+        actual = CassandraCradleStorage.sliceInterval(new Interval(start, end));
         expected = new ArrayList<>();
         expected.add(new FrameInterval(FrameType.TYPE_MINUTE,
                 new Interval(Instant.parse("2022-03-22T17:05:00.000Z"),
@@ -105,7 +105,7 @@ public class CassandraCradleStorageTest {
         end  = Instant.parse("2022-03-24T20:00:00.420Z");
 
         List<FrameInterval> actual, expected;
-        actual = CassandraCradleStorage.sliceInterval(start, end);
+        actual = CassandraCradleStorage.sliceInterval(new Interval(start, end));
         expected = new ArrayList<>();
         expected.add(new FrameInterval(FrameType.TYPE_HOUR,
                 new Interval(Instant.parse("2022-03-22T17:00:00.000Z"),
@@ -121,7 +121,7 @@ public class CassandraCradleStorageTest {
         end  = Instant.parse("2022-03-22T17:05:40.250Z");
 
         List<FrameInterval> actual, expected;
-        actual = CassandraCradleStorage.sliceInterval(start, end);
+        actual = CassandraCradleStorage.sliceInterval(new Interval(start, end));
         expected = new ArrayList<>();
         expected.add(new FrameInterval(FrameType.TYPE_100MS,
                 new Interval(Instant.parse("2022-03-22T17:05:37.100Z"),
@@ -143,7 +143,7 @@ public class CassandraCradleStorageTest {
         end  = Instant.parse("2022-03-22T17:15:40.250Z");
 
         List<FrameInterval> actual, expected;
-        actual = CassandraCradleStorage.sliceInterval(start, end);
+        actual = CassandraCradleStorage.sliceInterval(new Interval(start, end));
         expected = new ArrayList<>();
         expected.add(new FrameInterval(FrameType.TYPE_100MS,
                 new Interval(Instant.parse("2022-03-22T17:05:37.100Z"),
@@ -170,7 +170,7 @@ public class CassandraCradleStorageTest {
         final Instant start = Instant.parse("2022-03-22T17:05:37.128Z");
         final Instant end   = Instant.parse("2022-03-22T20:15:40.250Z");
 
-        final List<FrameInterval> actual = CassandraCradleStorage.sliceInterval(start, end);
+        final List<FrameInterval> actual = CassandraCradleStorage.sliceInterval(new Interval(start, end));
         List<FrameInterval> expected;
         expected = new ArrayList<>();
         expected.add(new FrameInterval(FrameType.TYPE_100MS,

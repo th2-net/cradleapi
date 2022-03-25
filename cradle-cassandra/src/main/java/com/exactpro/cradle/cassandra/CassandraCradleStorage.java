@@ -601,19 +601,18 @@ public class CassandraCradleStorage extends CradleStorage
 																						  String sessionAlias,
 																						  Direction direction,
 																						  FrameType frameType,
-																						  Instant frameStart,
-																						  Instant frameEnd) throws CradleStorageException {
+																						  Interval interval) throws CradleStorageException {
 		String queryInfo = String.format("Counters for Messages with sessionAlias-%s, direction-%s, frameType-%s from %s to %s",
 				sessionAlias,
 				direction.name(),
 				frameType.name(),
-				frameStart.toString(),
-				frameEnd.toString());
+				interval.getStart().toString(),
+				interval.getEnd().toString());
 
 		logger.info("Getting {}", queryInfo);
 
-		Instant actualStart = frameType.getFrameStart(frameStart);
-		Instant actualEnd = frameType.getFrameEnd(frameEnd);
+		Instant actualStart = frameType.getFrameStart(interval.getStart());
+		Instant actualEnd = frameType.getFrameEnd(interval.getEnd());
 
 		BookOperators operators = ops.getOperators(bookId);
 		MessageStatisticsOperator messageStatsOperator = operators.getMessageStatisticsOperator();
@@ -640,20 +639,19 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CradleResultSet<CounterSample> doGetMessageCounters(BookId bookId,
-															String sessionAlias,
-															Direction direction,
-															FrameType frameType,
-															Instant frameStart,
-															Instant frameEnd) throws IOException {
+																  String sessionAlias,
+																  Direction direction,
+																  FrameType frameType,
+																  Interval interval) throws IOException {
 		String queryInfo = String.format("Counters for Messages with sessionAlias-%s, direction-%s, frameType-%s from %s to %s",
 				sessionAlias,
 				direction.name(),
 				frameType.name(),
-				frameStart.toString(),
-				frameEnd.toString());
+				interval.getStart().toString(),
+				interval.getEnd().toString());
 		try
 		{
-			return doGetMessageCountersAsync(bookId, sessionAlias, direction, frameType, frameStart, frameEnd).get();
+			return doGetMessageCountersAsync(bookId, sessionAlias, direction, frameType, interval).get();
 		}
 		catch (Exception e)
 		{
@@ -662,17 +660,20 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<CradleResultSet<CounterSample>> doGetCountersAsync(BookId bookId, EntityType entityType, FrameType frameType, Instant frameStart, Instant frameEnd) throws CradleStorageException {
+	protected CompletableFuture<CradleResultSet<CounterSample>> doGetCountersAsync(BookId bookId,
+																				   EntityType entityType,
+																				   FrameType frameType,
+																				   Interval interval) throws CradleStorageException {
 		String queryInfo = String.format("Counters for %s with frameType-%s from %s to %s",
 				entityType.name(),
 				frameType.name(),
-				frameStart.toString(),
-				frameEnd.toString());
+				interval.getStart().toString(),
+				interval.getEnd().toString());
 
 		logger.info("Getting {}", queryInfo);
 
-		Instant actualStart = frameType.getFrameStart(frameStart);
-		Instant actualEnd = frameType.getFrameEnd(frameEnd);
+		Instant actualStart = frameType.getFrameStart(interval.getStart());
+		Instant actualEnd = frameType.getFrameEnd(interval.getEnd());
 
 		BookOperators operators = ops.getOperators(bookId);
 		EntityStatisticsOperator entityStatsOperator = operators.getEntityStatisticsOperator();
@@ -696,15 +697,18 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CradleResultSet<CounterSample> doGetCounters(BookId bookId, EntityType entityType, FrameType frameType, Instant frameStart, Instant frameEnd) throws CradleStorageException, IOException {
+	protected CradleResultSet<CounterSample> doGetCounters(BookId bookId,
+														   EntityType entityType,
+														   FrameType frameType,
+														   Interval interval) throws CradleStorageException, IOException {
 		String queryInfo = String.format("Counters for %s with frameType-%s from %s to %s",
 				entityType.name(),
 				frameType.name(),
-				frameStart.toString(),
-				frameEnd.toString());
+				interval.getStart().toString(),
+				interval.getEnd().toString());
 		try
 		{
-			return doGetCountersAsync(bookId, entityType, frameType, frameStart, frameEnd).get();
+			return doGetCountersAsync(bookId, entityType, frameType, interval).get();
 		}
 		catch (Exception e)
 		{
@@ -712,16 +716,16 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 	}
 
-	public static List<FrameInterval> sliceInterval (Instant start, Instant end) {
+	public static List<FrameInterval> sliceInterval (Interval interval) {
 		List<FrameInterval> slices = new ArrayList<>();
 
 		FrameType[] frameTypes = FrameType.values();
 		int minFrameIndex = 0;
 		int maxFrameIndex = FrameType.values().length - 1;
 		int frameIndex = maxFrameIndex;
-		start = frameTypes[minFrameIndex].getFrameStart(start);
-		end = frameTypes[minFrameIndex].getFrameStart
-				(end.plusMillis(frameTypes[minFrameIndex].getMillisInFrame()).minusMillis(1));
+		Instant start = frameTypes[minFrameIndex].getFrameStart(interval.getStart());
+		Instant end = frameTypes[minFrameIndex].getFrameStart(
+				interval.getEnd().plusMillis(frameTypes[minFrameIndex].getMillisInFrame()).minusMillis(1));
 
 
 		FrameType frameType = frameTypes[frameIndex];
@@ -796,16 +800,19 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Counter> doGetMessageCountAsync(BookId bookId, String sessionAlias, Direction direction, Instant start, Instant end) throws CradleStorageException {
+	protected CompletableFuture<Counter> doGetMessageCountAsync(BookId bookId,
+																String sessionAlias,
+																Direction direction,
+																Interval interval) throws CradleStorageException {
 		String queryInfo = String.format("Cumulative count for Messages with session_alias-%s, direction-%s from %s to %s",
 				sessionAlias,
 				direction,
-				start.toString(),
-				end.toString());
+				interval.getStart().toString(),
+				interval.getEnd().toString());
 
 		logger.info("Getting {}", queryInfo);
 
-		List<FrameInterval> slices = sliceInterval(start, end);
+		List<FrameInterval> slices = sliceInterval(interval);
 
 		// Accumulate counters
 		return CompletableFuture.supplyAsync(() -> {
@@ -816,9 +823,7 @@ public class CassandraCradleStorage extends CradleStorage
 							sessionAlias,
 							direction,
 							el.getFrameType(),
-							el.getInterval().getStart(),
-							el.getInterval().getEnd()
-							);
+							el.getInterval());
 					while (res.hasNext()) {
 						sum = sum.incrementedBy(res.next().getCounter());
 					}
@@ -832,15 +837,15 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Counter doGetMessageCount(BookId bookId, String sessionAlias, Direction direction, Instant start, Instant end) throws CradleStorageException, IOException {
+	protected Counter doGetMessageCount(BookId bookId, String sessionAlias, Direction direction, Interval interval) throws CradleStorageException, IOException {
 		String queryInfo = String.format("Cumulative count for Messages with session_alias-%s, direction-%s from %s to %s",
 				sessionAlias,
 				direction,
-				start.toString(),
-				end.toString());
+				interval.getStart().toString(),
+				interval.getEnd().toString());
 		try
 		{
-			return doGetMessageCountAsync(bookId, sessionAlias, direction, start, end).get();
+			return doGetMessageCountAsync(bookId, sessionAlias, direction, interval).get();
 		}
 		catch (Exception e)
 		{
@@ -849,15 +854,15 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Counter> doGetCountAsync(BookId bookId, EntityType entityType, Instant start, Instant end) throws CradleStorageException {
+	protected CompletableFuture<Counter> doGetCountAsync(BookId bookId, EntityType entityType, Interval interval) throws CradleStorageException {
 		String queryInfo = String.format("Cumulative count for %s with from %s to %s",
 				entityType.name(),
-				start.toString(),
-				end.toString());
+				interval.getStart().toString(),
+				interval.getEnd().toString());
 
 		logger.info("Getting {}", queryInfo);
 
-		List<FrameInterval> slices = sliceInterval(start, end);
+		List<FrameInterval> slices = sliceInterval(interval);
 
 		// Accumulate counters
 		return CompletableFuture.supplyAsync(() -> {
@@ -867,8 +872,7 @@ public class CassandraCradleStorage extends CradleStorage
 					CradleResultSet<CounterSample> res = getCounters(bookId,
 							entityType,
 							el.getFrameType(),
-							el.getInterval().getStart(),
-							el.getInterval().getEnd());
+							el.getInterval());
 
 					while (res.hasNext()) {
 						sum = sum.incrementedBy(res.next().getCounter());
@@ -883,14 +887,14 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Counter doGetCount(BookId bookId, EntityType entityType, Instant start, Instant end) throws CradleStorageException, IOException {
+	protected Counter doGetCount(BookId bookId, EntityType entityType, Interval interval) throws CradleStorageException, IOException {
 		String queryInfo = String.format("Cumulative count for %s with from %s to %s",
 				entityType.name(),
-				start.toString(),
-				end.toString());
+				interval.getStart().toString(),
+				interval.getEnd().toString());
 		try
 		{
-			return doGetCountAsync(bookId, entityType, start, end).get();
+			return doGetCountAsync(bookId, entityType, interval).get();
 		}
 		catch (Exception e)
 		{
