@@ -16,26 +16,52 @@
 
 package com.exactpro.cradle.cassandra.keyspaces;
 
+import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
+import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
+import com.exactpro.cradle.cassandra.dao.BooksStatusEntity;
+import com.exactpro.cradle.cassandra.dao.CradleBooksStatusOperator;
+import com.exactpro.cradle.cassandra.dao.books.BookEntity;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 public class BookKeyspaceCreator extends KeyspaceCreator
 {
+	private static final Logger logger = LoggerFactory.getLogger(BookKeyspaceCreator.class);
+
+	private CradleBooksStatusOperator statusOperator;
+	private String bookName;
+	private List<String> createdTables;
 
 	public BookKeyspaceCreator(String keyspace, QueryExecutor exec, CassandraStorageSettings settings)
 	{
 		super(keyspace, exec, settings);
 	}
+
+	public BookKeyspaceCreator(BookEntity bookEntity, QueryExecutor exec, CassandraStorageSettings settings, CradleBooksStatusOperator statusOperator)
+	{
+		super(bookEntity.getKeyspaceName(), exec, settings);
+		this.statusOperator = statusOperator;
+		this.bookName = bookEntity.getName();
+	}
 	
 	@Override
 	protected void createTables() throws IOException
 	{
+		PagingIterable<BooksStatusEntity> statuses = statusOperator.getBookStatuses(bookName);
+		createdTables = statuses.all().stream().map(BooksStatusEntity::getTableName).collect(Collectors.toList());
+
 		createPages();
 		createPagesNames();
 		
@@ -220,4 +246,12 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withColumn(ENTITY_SIZE, DataTypes.COUNTER));
 	}
 
+	@Override
+	protected void createTable(String tableName, Supplier<CreateTable> query) throws IOException {
+		if (createdTables.contains(tableName)) {
+			logger.info("{}.{} table was already created from cradle, skipping", getKeyspace(), tableName);
+		}
+		super.createTable(tableName, query);
+		statusOperator.saveBookStatus(new BooksStatusEntity(bookName, tableName, Instant.now()));
+	}
 }

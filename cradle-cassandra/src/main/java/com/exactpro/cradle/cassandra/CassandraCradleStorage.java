@@ -214,6 +214,7 @@ public class CassandraCradleStorage extends CradleStorage
 			throw new IOException("Error while writing info of book '"+bookId+"'", e);
 		}
 		ops.addOperators(bookId, bookEntity.getKeyspaceName());
+		ops.getCradleBookStatusOp().deleteBookStatuses(bookId.getName());
 	}
 	
 	@Override

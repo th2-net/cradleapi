@@ -41,6 +41,7 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 	protected void createTables() throws IOException
 	{
 		createBooks();
+		createBooksStatus();
 	}
 
 	@Override
@@ -64,5 +65,14 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 				.withColumn(DESCRIPTION, DataTypes.TEXT)
 				.withColumn(CREATED, DataTypes.TIMESTAMP)
 				.withColumn(SCHEMA_VERSION, DataTypes.TEXT));
+	}
+
+	private void createBooksStatus() throws IOException
+	{
+		String tableName = getSettings().getBooksStatusTable();
+		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(BOOK_NAME, DataTypes.TEXT)
+				.withColumn(TABLE_NAME, DataTypes.TEXT)
+				.withColumn(CREATED, DataTypes.TIMESTAMP));
 	}
 }

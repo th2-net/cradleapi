@@ -155,6 +155,8 @@ public abstract class KeyspaceCreator
 	
 	protected void createTable(String tableName, Supplier<CreateTable> query) throws IOException
 	{
+		
+
 		if (isTableExists(tableName))
 		{
 			logger.info("Table '{}' already exists", tableName);
