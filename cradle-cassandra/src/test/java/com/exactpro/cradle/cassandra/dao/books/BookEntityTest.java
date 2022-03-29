@@ -30,12 +30,12 @@ public class BookEntityTest
 	protected Object[][] nameProvider()
 	{
 		return new Object[][] {
-				{"_", "\"book__\""},
-				{"4", "\"book_4\""},
-				{"name", "\"book_name\""},
-				{"Name", "\"book_name\""},
-				{"NaMe", "\"book_name\""},
-				{"book_NaMe", "\"book_book_name\""},
+				{"_", "book__"},
+				{"4", "book_4"},
+				{"name", "book_name"},
+				{"Name", "book_name"},
+				{"NaMe", "book_name"},
+				{"book_NaMe", "book_book_name"},
 		};
 	}
 
