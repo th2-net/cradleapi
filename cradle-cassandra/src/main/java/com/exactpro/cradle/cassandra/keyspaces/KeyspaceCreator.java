@@ -83,9 +83,11 @@ public abstract class KeyspaceCreator
 	public void createKeyspace() throws IOException, CradleStorageException
 	{
 		Optional<KeyspaceMetadata> meta = obtainKeyspaceMetadata();
-		if (meta.isPresent())
-			throw new CradleStorageException("Keyspace '" + keyspace + "' already exists");
-		
+		if (meta.isPresent()) {
+			logger.info("Keyspace \"{}\" already exists, skipping keyspace creation", keyspace);
+			return;
+		}
+
 		logger.info("Creating keyspace '{}'", keyspace);
 		CreateKeyspace createKs = settings.getNetworkTopologyStrategy() != null
 				? SchemaBuilder.createKeyspace(keyspace)
@@ -155,8 +157,6 @@ public abstract class KeyspaceCreator
 	
 	protected void createTable(String tableName, Supplier<CreateTable> query) throws IOException
 	{
-		
-
 		if (isTableExists(tableName))
 		{
 			logger.info("Table '{}' already exists", tableName);
