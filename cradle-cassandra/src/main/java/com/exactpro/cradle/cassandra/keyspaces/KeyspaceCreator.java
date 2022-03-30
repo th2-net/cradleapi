@@ -127,12 +127,12 @@ public abstract class KeyspaceCreator
 	
 	protected boolean isTableExists(String tableName)
 	{
-		return keyspaceMetadata.getTable(tableName).isPresent();
+		return getKeyspaceMetadata().getTable(tableName).isPresent();
 	}
 	
 	protected boolean isIndexExists(String indexName, String tableName)
 	{
-		Optional<TableMetadata> tableMetadata = keyspaceMetadata.getTable(tableName);
+		Optional<TableMetadata> tableMetadata = getKeyspaceMetadata().getTable(tableName);
 		return tableMetadata.isPresent() && tableMetadata.get().getIndexes().containsKey(CqlIdentifier.fromCql(indexName));
 	}
 	
@@ -152,7 +152,7 @@ public abstract class KeyspaceCreator
 	
 	protected boolean isColumnExists(String tableName, String columnName)
 	{
-		return keyspaceMetadata.getTable(tableName).get().getColumn(columnName).isPresent();
+		return getKeyspaceMetadata().getTable(tableName).get().getColumn(columnName).isPresent();
 	}
 	
 	protected void createTable(String tableName, Supplier<CreateTable> query) throws IOException

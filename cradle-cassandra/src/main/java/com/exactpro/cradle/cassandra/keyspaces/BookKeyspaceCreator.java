@@ -250,6 +250,7 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 	protected void createTable(String tableName, Supplier<CreateTable> query) throws IOException {
 		if (createdTables.contains(tableName)) {
 			logger.info("{}.{} table was already created from cradle, skipping", getKeyspace(), tableName);
+			return;
 		}
 		super.createTable(tableName, query);
 		statusOperator.saveBookStatus(new BooksStatusEntity(bookName, tableName, Instant.now()));
