@@ -16,11 +16,11 @@
 
 package com.exactpro.cradle.cassandra.keyspaces;
 
-import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
+import com.exactpro.cradle.cassandra.dao.BookStatusType;
 import com.exactpro.cradle.cassandra.dao.BooksStatusEntity;
 import com.exactpro.cradle.cassandra.dao.CradleBooksStatusOperator;
 import com.exactpro.cradle.cassandra.dao.books.BookEntity;
@@ -42,7 +42,9 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 
 	private CradleBooksStatusOperator statusOperator;
 	private String bookName;
+	private String bookSchemaVersion;
 	private List<String> createdTables;
+	private List<String> createdIndexes;
 
 	public BookKeyspaceCreator(String keyspace, QueryExecutor exec, CassandraStorageSettings settings)
 	{
@@ -54,13 +56,27 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 		super(bookEntity.getKeyspaceName(), exec, settings);
 		this.statusOperator = statusOperator;
 		this.bookName = bookEntity.getName();
+		this.bookSchemaVersion = bookEntity.getSchemaVersion();
 	}
 	
 	@Override
 	protected void createTables() throws IOException
 	{
-		PagingIterable<BooksStatusEntity> statuses = statusOperator.getBookStatuses(bookName);
-		createdTables = statuses.all().stream().map(BooksStatusEntity::getTableName).collect(Collectors.toList());
+		List<BooksStatusEntity> statuses = statusOperator.getBookStatuses(bookName).all();
+		createdTables = statuses.stream()
+				.filter(el -> el.getObjectType().equals(BookStatusType.TABLE.getLabel()))
+				.map(BooksStatusEntity::getObjectName).collect(Collectors.toList());
+		createdIndexes = statuses.stream()
+				.filter(el -> el.getObjectType().equals(BookStatusType.INDEX.getLabel()))
+				.map(BooksStatusEntity::getObjectName).collect(Collectors.toList());
+
+		if (!statuses.isEmpty()) {
+			String persistedSchemaVersion = statuses.get(0).getSchemaVersion();
+			if (!persistedSchemaVersion.equals(bookSchemaVersion)) {
+				logger.error("Existing tables have different schema_version ({}). Current schema_version {}", persistedSchemaVersion, bookSchemaVersion);
+				throw new IOException(String.format("Different schema_version(%s) table was found", persistedSchemaVersion));
+			}
+		}
 
 		createPages();
 		createPagesNames();
@@ -253,6 +269,26 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 			return;
 		}
 		super.createTable(tableName, query);
-		statusOperator.saveBookStatus(new BooksStatusEntity(bookName, tableName, Instant.now()));
+		statusOperator.saveBookStatus(new BooksStatusEntity(
+				bookName,
+				BookStatusType.TABLE.getLabel(),
+				tableName,
+				Instant.now(),
+				bookSchemaVersion));
+	}
+
+	@Override
+	protected void createIndex(String indexName, String tableName, String columnName) throws IOException {
+		if (createdIndexes.contains(indexName)) {
+			logger.info("{}.{} index was already created from cradle, skipping", tableName, indexName);
+			return;
+		}
+		super.createIndex(indexName, tableName, columnName);
+		statusOperator.saveBookStatus(new BooksStatusEntity(
+				bookName,
+				BookStatusType.INDEX.getLabel(),
+				indexName,
+				Instant.now(),
+				bookSchemaVersion));
 	}
 }

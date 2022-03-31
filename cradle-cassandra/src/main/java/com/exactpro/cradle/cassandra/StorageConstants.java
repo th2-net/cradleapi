@@ -84,5 +84,6 @@ public class StorageConstants
 			ROOT = "root",
 			PARENT_ID = "parent_id",
 			BOOK_NAME = "book_name",
-			TABLE_NAME = "table_name";
+			OBJECT_TYPE = "object_type",
+			OBJECT_NAME = "object_name";
 }
