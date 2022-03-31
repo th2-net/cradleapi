@@ -24,6 +24,8 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
+import com.exactpro.cradle.cassandra.counters.FrameInterval;
+import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.cassandra.dao.*;
 import com.exactpro.cradle.cassandra.dao.books.*;
 import com.exactpro.cradle.cassandra.dao.messages.*;
@@ -43,6 +45,8 @@ import com.exactpro.cradle.cassandra.workers.EventsWorker;
 import com.exactpro.cradle.cassandra.workers.MessagesWorker;
 import com.exactpro.cradle.cassandra.workers.StatisticsWorker;
 import com.exactpro.cradle.cassandra.workers.WorkerSupplies;
+import com.exactpro.cradle.counters.Counter;
+import com.exactpro.cradle.counters.CounterSample;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
@@ -60,10 +64,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
@@ -597,22 +598,21 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<CradleResultSet<CounterSample>> doGetMessageCountersAsync(BookId bookId,
-																					String sessionAlias,
-																					Direction direction,
-																					FrameType frameType,
-																					Instant frameStart,
-																					Instant frameEnd) throws CradleStorageException {
+																						  String sessionAlias,
+																						  Direction direction,
+																						  FrameType frameType,
+																						  Interval interval) throws CradleStorageException {
 		String queryInfo = String.format("Counters for Messages with sessionAlias-%s, direction-%s, frameType-%s from %s to %s",
 				sessionAlias,
 				direction.name(),
 				frameType.name(),
-				frameStart.toString(),
-				frameEnd.toString());
+				interval.getStart().toString(),
+				interval.getEnd().toString());
 
 		logger.info("Getting {}", queryInfo);
 
-		Instant actualStart = frameType.getFrameStart(frameStart);
-		Instant actualEnd = frameType.getFrameEnd(frameEnd);
+		Instant actualStart = frameType.getFrameStart(interval.getStart());
+		Instant actualEnd = frameType.getFrameEnd(interval.getEnd());
 
 		BookOperators operators = ops.getOperators(bookId);
 		MessageStatisticsOperator messageStatsOperator = operators.getMessageStatisticsOperator();
@@ -639,20 +639,19 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CradleResultSet<CounterSample> doGetMessageCounters(BookId bookId,
-															String sessionAlias,
-															Direction direction,
-															FrameType frameType,
-															Instant frameStart,
-															Instant frameEnd) throws IOException {
+																  String sessionAlias,
+																  Direction direction,
+																  FrameType frameType,
+																  Interval interval) throws IOException {
 		String queryInfo = String.format("Counters for Messages with sessionAlias-%s, direction-%s, frameType-%s from %s to %s",
 				sessionAlias,
 				direction.name(),
 				frameType.name(),
-				frameStart.toString(),
-				frameEnd.toString());
+				interval.getStart().toString(),
+				interval.getEnd().toString());
 		try
 		{
-			return doGetMessageCountersAsync(bookId, sessionAlias, direction, frameType, frameStart, frameEnd).get();
+			return doGetMessageCountersAsync(bookId, sessionAlias, direction, frameType, interval).get();
 		}
 		catch (Exception e)
 		{
@@ -661,17 +660,20 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<CradleResultSet<CounterSample>> doGetCountersAsync(BookId bookId, EntityType entityType, FrameType frameType, Instant frameStart, Instant frameEnd) throws CradleStorageException {
+	protected CompletableFuture<CradleResultSet<CounterSample>> doGetCountersAsync(BookId bookId,
+																				   EntityType entityType,
+																				   FrameType frameType,
+																				   Interval interval) throws CradleStorageException {
 		String queryInfo = String.format("Counters for %s with frameType-%s from %s to %s",
 				entityType.name(),
 				frameType.name(),
-				frameStart.toString(),
-				frameEnd.toString());
+				interval.getStart().toString(),
+				interval.getEnd().toString());
 
 		logger.info("Getting {}", queryInfo);
 
-		Instant actualStart = frameType.getFrameStart(frameStart);
-		Instant actualEnd = frameType.getFrameEnd(frameEnd);
+		Instant actualStart = frameType.getFrameStart(interval.getStart());
+		Instant actualEnd = frameType.getFrameEnd(interval.getEnd());
 
 		BookOperators operators = ops.getOperators(bookId);
 		EntityStatisticsOperator entityStatsOperator = operators.getEntityStatisticsOperator();
@@ -695,15 +697,204 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CradleResultSet<CounterSample> doGetCounters(BookId bookId, EntityType entityType, FrameType frameType, Instant frameStart, Instant frameEnd) throws CradleStorageException, IOException {
+	protected CradleResultSet<CounterSample> doGetCounters(BookId bookId,
+														   EntityType entityType,
+														   FrameType frameType,
+														   Interval interval) throws CradleStorageException, IOException {
 		String queryInfo = String.format("Counters for %s with frameType-%s from %s to %s",
 				entityType.name(),
 				frameType.name(),
-				frameStart.toString(),
-				frameEnd.toString());
+				interval.getStart().toString(),
+				interval.getEnd().toString());
 		try
 		{
-			return doGetCountersAsync(bookId, entityType, frameType, frameStart, frameEnd).get();
+			return doGetCountersAsync(bookId, entityType, frameType, interval).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting " + queryInfo, e);
+		}
+	}
+
+	public static List<FrameInterval> sliceInterval (Interval interval) {
+		List<FrameInterval> slices = new ArrayList<>();
+
+		FrameType[] frameTypes = FrameType.values();
+		int minFrameIndex = 0;
+		int maxFrameIndex = FrameType.values().length - 1;
+		int frameIndex = maxFrameIndex;
+		Instant start = frameTypes[minFrameIndex].getFrameStart(interval.getStart());
+		Instant end = frameTypes[minFrameIndex].getFrameStart(
+				interval.getEnd().plusMillis(frameTypes[minFrameIndex].getMillisInFrame()).minusMillis(1));
+
+
+		FrameType frameType = frameTypes[frameIndex];
+		/*
+		  Adjust frame for frame start value
+		  i.e. if start time is on second mark
+		  we should start with FrameType.SECOND frames
+		 */
+		while (frameIndex > minFrameIndex && !frameType.getFrameStart(start).equals(start)) {
+			frameIndex --;
+			frameType = frameTypes[frameIndex];
+		}
+		/*
+			Create requests for smaller frame types at the start
+		 	Should try to increase granularity until
+			we're at the biggest possible frames
+		 */
+		Instant fStart = start, fEnd;
+		while (frameIndex < maxFrameIndex) {
+			frameType = frameTypes[frameIndex];
+			fStart = frameType.getFrameStart(fStart);
+			fEnd = frameTypes[frameIndex + 1].getFrameEnd(fStart);
+
+			if (fEnd.isAfter(end)) {
+				break;
+			}
+
+			if (!fStart.equals(fEnd)) {
+				slices.add(new FrameInterval(frameType, new Interval(fStart, fEnd)));
+			}
+
+			fStart = fEnd;
+			frameIndex ++;
+		}
+
+		// Create request for biggest possible frame type
+		frameType = frameTypes[frameIndex];
+		fEnd = frameTypes[frameIndex].getFrameStart(end);
+		if (!fStart.equals(fEnd)) {
+			slices.add(new FrameInterval(frameType, new Interval(fStart, fEnd)));
+		}
+
+		// Create requests for smaller frame types at the end
+		while (frameIndex > -1 && !frameType.getFrameStart(start).equals(start)) {
+			/*
+				each step we should decrease granularity and fill
+				interval with smaller frames
+			 */
+			frameIndex --;
+			frameType = frameTypes[frameIndex];
+
+			fStart = fEnd;
+			/*
+				Unless we are querying the smallest granularity,
+				we should leave interval for smaller frames
+			 */
+			fEnd = frameType.getFrameStart(end);
+			/*
+				Current granularity exhausted interval,
+				i.e. end was set at second etc.
+			 */
+			if (end.isBefore(fEnd)) {
+				break;
+			}
+
+			if (!fStart.equals(fEnd)) {
+				slices.add(new FrameInterval(frameType, new Interval(fStart, fEnd)));
+			}
+		}
+
+		return slices;
+	}
+
+	@Override
+	protected CompletableFuture<Counter> doGetMessageCountAsync(BookId bookId,
+																String sessionAlias,
+																Direction direction,
+																Interval interval) throws CradleStorageException {
+		String queryInfo = String.format("Cumulative count for Messages with session_alias-%s, direction-%s from %s to %s",
+				sessionAlias,
+				direction,
+				interval.getStart().toString(),
+				interval.getEnd().toString());
+
+		logger.info("Getting {}", queryInfo);
+
+		List<FrameInterval> slices = sliceInterval(interval);
+
+		// Accumulate counters
+		return CompletableFuture.supplyAsync(() -> {
+			Counter sum = new Counter(0, 0);
+			for (var el : slices) {
+				try {
+					CradleResultSet<CounterSample> res = getMessageCounters(bookId,
+							sessionAlias,
+							direction,
+							el.getFrameType(),
+							el.getInterval());
+					while (res.hasNext()) {
+						sum = sum.incrementedBy(res.next().getCounter());
+					}
+				} catch (CradleStorageException | IOException e) {
+					logger.error("Error while getting {}, cause - {}", queryInfo, e.getCause());
+				}
+			}
+
+			return sum;
+		}, composingService);
+	}
+
+	@Override
+	protected Counter doGetMessageCount(BookId bookId, String sessionAlias, Direction direction, Interval interval) throws CradleStorageException, IOException {
+		String queryInfo = String.format("Cumulative count for Messages with session_alias-%s, direction-%s from %s to %s",
+				sessionAlias,
+				direction,
+				interval.getStart().toString(),
+				interval.getEnd().toString());
+		try
+		{
+			return doGetMessageCountAsync(bookId, sessionAlias, direction, interval).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting " + queryInfo, e);
+		}
+	}
+
+	@Override
+	protected CompletableFuture<Counter> doGetCountAsync(BookId bookId, EntityType entityType, Interval interval) throws CradleStorageException {
+		String queryInfo = String.format("Cumulative count for %s with from %s to %s",
+				entityType.name(),
+				interval.getStart().toString(),
+				interval.getEnd().toString());
+
+		logger.info("Getting {}", queryInfo);
+
+		List<FrameInterval> slices = sliceInterval(interval);
+
+		// Accumulate counters
+		return CompletableFuture.supplyAsync(() -> {
+			Counter sum = new Counter(0, 0);
+			for (var el : slices) {
+				try {
+					CradleResultSet<CounterSample> res = getCounters(bookId,
+							entityType,
+							el.getFrameType(),
+							el.getInterval());
+
+					while (res.hasNext()) {
+						sum = sum.incrementedBy(res.next().getCounter());
+					}
+				} catch (CradleStorageException | IOException e) {
+					logger.error("Error while getting {}, cause - {}", queryInfo, e.getCause());
+				}
+			}
+
+			return sum;
+		}, composingService);
+	}
+
+	@Override
+	protected Counter doGetCount(BookId bookId, EntityType entityType, Interval interval) throws CradleStorageException, IOException {
+		String queryInfo = String.format("Cumulative count for %s with from %s to %s",
+				entityType.name(),
+				interval.getStart().toString(),
+				interval.getEnd().toString());
+		try
+		{
+			return doGetCountAsync(bookId, entityType, interval).get();
 		}
 		catch (Exception e)
 		{

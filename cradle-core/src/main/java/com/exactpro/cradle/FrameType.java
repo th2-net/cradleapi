@@ -34,6 +34,9 @@ public enum FrameType {
         return value;
     }
 
+    public long getMillisInFrame () {
+        return millisInFrame;
+    }
     /**
      * Calculates start time (inclusive) for the given time
      * @param time for which frame start is calculated
@@ -65,13 +68,5 @@ public enum FrameType {
             if (e.getValue() == value)
                 return e;
         throw new IllegalArgumentException(String.format("No frame type associated with value (%d)", value));
-    }
-
-    public static FrameType smallestFrame () {
-        return FrameType.TYPE_100MS;
-    }
-
-    public static FrameType biggestFrame () {
-        return FrameType.TYPE_HOUR;
     }
 }

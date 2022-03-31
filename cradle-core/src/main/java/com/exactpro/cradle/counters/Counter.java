@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.exactpro.cradle;
+package com.exactpro.cradle.counters;
 
 public class Counter {
     private final long entityCount;

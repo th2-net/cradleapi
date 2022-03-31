@@ -17,7 +17,7 @@ package com.exactpro.cradle.cassandra.workers;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.Counter;
+import com.exactpro.cradle.counters.Counter;
 import com.exactpro.cradle.EntityType;
 import com.exactpro.cradle.FrameType;
 import com.exactpro.cradle.cassandra.counters.*;

@@ -4,8 +4,8 @@ import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
-import com.exactpro.cradle.Counter;
-import com.exactpro.cradle.CounterSample;
+import com.exactpro.cradle.counters.Counter;
+import com.exactpro.cradle.counters.CounterSample;
 import com.exactpro.cradle.FrameType;
 
 import java.time.Instant;

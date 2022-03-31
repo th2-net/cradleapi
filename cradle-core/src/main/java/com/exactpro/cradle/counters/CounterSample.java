@@ -13,18 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.exactpro.cradle.cassandra.counters;
+package com.exactpro.cradle.counters;
 
+import com.exactpro.cradle.FrameType;
 import com.exactpro.cradle.counters.Counter;
 
 import java.time.Instant;
 
-public class TimeFrameCounter {
+public class CounterSample {
 
     private final Instant frameStart;
-    private Counter counter;
+    private final Counter counter;
+    private final FrameType frameType;
 
-    TimeFrameCounter(Instant frameStart, Counter counter) {
+    public CounterSample(FrameType frameType, Instant frameStart, Counter counter) {
+        this.frameType = frameType;
         this.frameStart = frameStart;
         this.counter = counter;
     }
@@ -33,11 +36,11 @@ public class TimeFrameCounter {
         return frameStart;
     }
 
-    public synchronized Counter getCounter() {
+    public Counter getCounter() {
         return counter;
     }
 
-    public synchronized void incrementBy(Counter value) {
-        counter = counter.incrementedBy(value);
+    public FrameType getFrameType() {
+        return frameType;
     }
 }
