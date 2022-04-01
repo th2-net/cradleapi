@@ -90,7 +90,7 @@ public abstract class KeyspaceCreator
 
 		logger.info("Creating keyspace '{}'", keyspace);
 		CreateKeyspace createKs = settings.getNetworkTopologyStrategy() != null
-				? SchemaBuilder.createKeyspace(keyspace)
+				? SchemaBuilder.createKeyspace(keyspace).ifNotExists()
 				.withNetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap())
 				: SchemaBuilder.createKeyspace(keyspace).withSimpleStrategy(settings.getKeyspaceReplicationFactor());
 		queryExecutor.executeQuery(createKs.asCql(), true);
