@@ -16,10 +16,6 @@
 
 package com.exactpro.cradle.cassandra.keyspaces;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
-
-import java.io.IOException;
-
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
@@ -27,6 +23,10 @@ import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 {
@@ -50,7 +50,6 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 		if (getKeyspaceMetadata() != null)
 		{
 			logger.info("\"Cradle Info\" keyspace '{}' already exists", getKeyspace());
-			return;
 		}
 		super.createAll();
 	}
