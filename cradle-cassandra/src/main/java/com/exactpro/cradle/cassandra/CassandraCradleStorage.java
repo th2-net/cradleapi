@@ -197,13 +197,13 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected void doAddBook(BookToAdd newBook, BookId bookId) throws IOException
 	{
+		BookEntity bookEntity = new BookEntity(newBook, settings.getSchemaVersion());
 		if (ops.getCradleBookOperator().get(newBook.getName(), readAttrs) != null) {
 			logger.info("Book {} already exists, skipping creation", newBook.getName());
+		} else {
+			createBookKeyspace(bookEntity);
 		}
 
-		BookEntity bookEntity = new BookEntity(newBook, settings.getSchemaVersion());
-		createBookKeyspace(bookEntity);
-		
 		try
 		{
 			if (!ops.getCradleBookOperator().write(bookEntity, writeAttrs).wasApplied())
