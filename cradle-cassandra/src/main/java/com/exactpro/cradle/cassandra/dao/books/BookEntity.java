@@ -24,7 +24,6 @@ import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.BookToAdd;
 import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.utils.CradleStorageException;
-import org.apache.commons.lang3.StringUtils;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -145,8 +144,7 @@ public class BookEntity
 	private String toKeyspaceName(String name)
 	{
 		// Usually, book name is already checked in addBook() method in CradleStorage and has no invalid characters.
-		// It's enough to convert name to lower case, add prefix and wrap it with "
-		String nameWithPrefix = BOOK_NAME_PREFIX.concat(name.toLowerCase());
-		return StringUtils.wrap(nameWithPrefix, '\"');
+		// It's enough to convert name to lower case and add prefix.
+		return BOOK_NAME_PREFIX.concat(name.toLowerCase());
 	}
 }
