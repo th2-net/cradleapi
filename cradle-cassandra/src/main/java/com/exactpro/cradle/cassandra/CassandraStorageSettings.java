@@ -28,6 +28,7 @@ public class CassandraStorageSettings
 	public static final String DEFAULT_KEYSPACE = "cradle",
 			INSTANCES_TABLE_DEFAULT_NAME = "instances",
 			MESSAGES_TABLE_DEFAULT_NAME = "messages",
+			GROUPED_MESSAGES_TABLE_DEFAULT_NAME = "grouped_messages",
 			PROCESSED_MESSAGES_TABLE_DEFAULT_NAME = "processed_messages",
 			TIME_MESSAGES_TABLE_DEFAULT_NAME = "messages_timestamps",
 			TEST_EVENTS_TABLE_DEFAULT_NAME = "test_events",
@@ -44,6 +45,7 @@ public class CassandraStorageSettings
 	
 	private final String keyspace;
 	private String messagesTableName,
+			groupedMessagesTableName,
 			timeMessagesTableName,
 			processedMessagesTableName,
 			testEventsTableName,
@@ -67,6 +69,7 @@ public class CassandraStorageSettings
 		this.messagesTableName = MESSAGES_TABLE_DEFAULT_NAME;
 		this.processedMessagesTableName = PROCESSED_MESSAGES_TABLE_DEFAULT_NAME;
 		this.timeMessagesTableName = TIME_MESSAGES_TABLE_DEFAULT_NAME;
+		this.groupedMessagesTableName = GROUPED_MESSAGES_TABLE_DEFAULT_NAME;
 		this.testEventsTableName = TEST_EVENTS_TABLE_DEFAULT_NAME;
 		this.timeTestEventsTableName = TIME_TEST_EVENTS_TABLE_DEFAULT_NAME;
 		this.rootTestEventsTableName = ROOT_TEST_EVENTS_TABLE_DEFAULT_NAME;
@@ -268,5 +271,15 @@ public class CassandraStorageSettings
 	public void setMaxTestEventBatchSize(long maxTestEventBatchSize)
 	{
 		this.maxTestEventBatchSize = maxTestEventBatchSize;
+	}
+	
+	public String getGroupedMessagesTableName()
+	{
+		return groupedMessagesTableName;
+	}
+	
+	public void setGroupedMessagesTableName(String groupedMessagesTableName)
+	{
+		this.groupedMessagesTableName = groupedMessagesTableName;
 	}
 }

@@ -65,7 +65,9 @@ public abstract class CradleStorage
 	
 	
 	protected abstract void doStoreMessageBatch(StoredMessageBatch batch) throws IOException;
+	protected abstract void doStoreGroupedMessageBatch(StoredMessageBatch batch, String groupName) throws IOException;
 	protected abstract CompletableFuture<Void> doStoreMessageBatchAsync(StoredMessageBatch batch);
+	protected abstract CompletableFuture<Void> doStoreGroupedMessageBatchAsync(StoredMessageBatch batch, String groupName);
 	protected abstract void doStoreTimeMessage(StoredMessage message) throws IOException;
 	protected abstract CompletableFuture<Void> doStoreTimeMessageAsync(StoredMessage message);
 	protected abstract void doStoreProcessedMessageBatch(StoredMessageBatch batch) throws IOException;
@@ -200,7 +202,15 @@ public abstract class CradleStorage
 		storeTimeMessages(batch.getMessages());
 		logger.debug("Message batch {} has been stored", batch.getId());
 	}
-
+	
+	public final void storeGroupedMessageBatch(StoredMessageBatch batch, String groupName) throws IOException
+	{
+		logger.debug("Storing message batch {} to group {}", batch.getId(), groupName);
+		doStoreMessageBatch(batch);
+		logger.debug("Storing time/message data for batch {}", batch.getId());
+		storeTimeMessages(batch.getMessages());
+		logger.debug("Message batch {} has been stored", batch.getId());
+	}
 
 	/**
 	 * Asynchronously writes data about given message batch to storage.

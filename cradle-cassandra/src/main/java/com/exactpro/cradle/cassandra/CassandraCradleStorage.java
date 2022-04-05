@@ -203,13 +203,58 @@ public class CassandraCradleStorage extends CradleStorage
 			throw new IOException("Error while storing message batch "+batch.getId(), e);
 		}
 	}
-
+	
+	@Override
+	protected void doStoreGroupedMessageBatch(StoredMessageBatch batch, String groupName) throws IOException
+	{
+		try
+		{
+			doStoreGroupedMessageBatchAsync(batch, groupName).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while storing message batch "+batch.getId(), e);
+		}
+	}
+	
 	@Override
 	protected CompletableFuture<Void> doStoreMessageBatchAsync(StoredMessageBatch batch)
 	{
-		return writeMessage(batch, true);
+		logger.debug("Creating detailed message batch entity from message batch with id {}", batch.getId());
+		DetailedMessageBatchEntity entity;
+		try
+		{
+			entity = new DetailedMessageBatchEntity(batch, instanceUuid);
+		}
+		catch (IOException e)
+		{
+			CompletableFuture<Void> error = new CompletableFuture<>();
+			error.completeExceptionally(e);
+			return error;
+		}
+		return new AsyncOperator<Void>(semaphore).getFuture(() -> doWriteMessage(entity, true));
 	}
-
+	
+	@Override
+	protected CompletableFuture<Void> doStoreGroupedMessageBatchAsync(StoredMessageBatch batch, String groupName)
+	{
+		logger.debug("Creating grouped message batch entity from message batch with id {} and group {}",
+				batch.getId(), groupName);
+		GroupedMessageBatchEntity entity;
+		try
+		{
+			entity = new GroupedMessageBatchEntity(batch, instanceUuid, groupName);
+		}
+		catch (IOException e)
+		{
+			CompletableFuture<Void> error = new CompletableFuture<>();
+			error.completeExceptionally(e);
+			return error;
+		}
+		return new AsyncOperator<Void>(semaphore).getFuture(() -> doWriteMessage(entity.getBatchEntity(), true))
+				.thenComposeAsync(r -> doWriteGroupedMessage(entity));
+	}
+	
 	@Override
 	protected void doStoreTimeMessage(StoredMessage message) throws IOException
 	{
@@ -252,7 +297,19 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected CompletableFuture<Void> doStoreProcessedMessageBatchAsync(StoredMessageBatch batch)
 	{
-		return writeMessage(batch, false);
+		logger.debug("Creating detailed message batch entity from message batch with id {}", batch.getId());
+		DetailedMessageBatchEntity entity;
+		try
+		{
+			entity = new DetailedMessageBatchEntity(batch, instanceUuid);
+		}
+		catch (IOException e)
+		{
+			CompletableFuture<Void> error = new CompletableFuture<>();
+			error.completeExceptionally(e);
+			return error;
+		}
+		return new AsyncOperator<Void>(semaphore).getFuture(() -> doWriteMessage(entity, false));
 	}
 
 
@@ -859,33 +916,22 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		return semaphore;
 	}
-
-
-	private CompletableFuture<Void> writeMessage(StoredMessageBatch batch, boolean rawMessage)
+	
+	
+	private CompletableFuture<Void> doWriteMessage(DetailedMessageBatchEntity entity, boolean rawMessage)
 	{
-		CompletableFuture<DetailedMessageBatchEntity> future = new AsyncOperator<DetailedMessageBatchEntity>(semaphore)
-				.getFuture(() ->
-				{
-					DetailedMessageBatchEntity entity;
-					try
-					{
-						entity = new DetailedMessageBatchEntity(batch, instanceUuid);
-					}
-					catch (IOException e)
-					{
-						CompletableFuture<DetailedMessageBatchEntity> error = new CompletableFuture<>();
-						error.completeExceptionally(e);
-						return error;
-					}
-
-					logger.trace("Executing message batch storing query");
-					MessageBatchOperator op =
-							rawMessage ? ops.getMessageBatchOperator() : ops.getProcessedMessageBatchOperator();
-					return op.writeMessageBatch(entity, writeAttrs);
-				});
-		return future.thenAcceptAsync(e -> {});
+		logger.trace("Executing message batch storing query");
+		MessageBatchOperator op =
+				rawMessage ? ops.getMessageBatchOperator() : ops.getProcessedMessageBatchOperator();
+		return op.writeMessageBatch(entity, writeAttrs).thenAcceptAsync(r->{});
 	}
-
+	
+	private CompletableFuture<Void> doWriteGroupedMessage(GroupedMessageBatchEntity entity)
+	{
+		logger.trace("Executing grouped message batch storing query");
+		return ops.getGroupedMessageBatchOperator().writeMessageBatch(entity, writeAttrs);
+	}
+	
 	private CompletableFuture<DetailedMessageBatchEntity> readMessageBatchEntity(StoredMessageId messageId,
 			boolean rawMessage)
 	{

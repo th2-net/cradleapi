@@ -20,9 +20,11 @@ import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
 import com.exactpro.cradle.cassandra.dao.intervals.converters.DateTimeEventEntityConverter;
 import com.exactpro.cradle.cassandra.dao.intervals.converters.IntervalConverter;
+import com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
 import com.exactpro.cradle.cassandra.dao.messages.converters.DetailedMessageBatchConverter;
+import com.exactpro.cradle.cassandra.dao.messages.converters.GroupedMessageBatchConverter;
 import com.exactpro.cradle.cassandra.dao.messages.converters.TimeMessageConverter;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenDatesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
@@ -36,12 +38,14 @@ public class CassandraOperators
 {
 	private final MessageBatchOperator messageBatchOperator, 
 			processedMessageBatchOperator;
+	private final GroupedMessageBatchOperator groupedMessageBatchOperator;
 	private final TimeMessageOperator timeMessageOperator;
 	private final TestEventOperator testEventOperator;
 	private final TimeTestEventOperator timeTestEventOperator;
 	private final TestEventChildrenDatesOperator testEventChildrenDatesOperator;
 	private final IntervalOperator intervalOperator;
 	private final DetailedMessageBatchConverter messageBatchConverter;
+	private final GroupedMessageBatchConverter groupedMessageBatchConverter;
 	private final TestEventConverter testEventConverter;
 	private final DetailedTestEventConverter detailedTestEventConverter;
 	private final TestEventMetadataConverter testEventMetadataConverter;
@@ -53,6 +57,7 @@ public class CassandraOperators
 	public CassandraOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings)
 	{
 		messageBatchOperator = dataMapper.messageBatchOperator(settings.getKeyspace(), settings.getMessagesTableName());
+		groupedMessageBatchOperator = dataMapper.groupedMessageBatchOperator(settings.getKeyspace(), settings.getGroupedMessagesTableName());
 		processedMessageBatchOperator = dataMapper.messageBatchOperator(settings.getKeyspace(), settings.getProcessedMessagesTableName());
 		timeMessageOperator = dataMapper.timeMessageOperator(settings.getKeyspace(), settings.getTimeMessagesTableName());
 		testEventOperator = dataMapper.testEventOperator(settings.getKeyspace(), settings.getTestEventsTableName());
@@ -61,6 +66,7 @@ public class CassandraOperators
 		intervalOperator = dataMapper.intervalOperator(settings.getKeyspace(), settings.getIntervalsTableName());
 
 		messageBatchConverter = dataMapper.detailedMessageBatchConverter();
+		groupedMessageBatchConverter = dataMapper.groupedMessageBatchConverter();
 		testEventConverter = dataMapper.testEventConverter();
 		detailedTestEventConverter = dataMapper.detailedTestEventConverter();
 		testEventMetadataConverter = dataMapper.testEventMetadataConverter();
@@ -73,6 +79,11 @@ public class CassandraOperators
 	public MessageBatchOperator getMessageBatchOperator()
 	{
 		return messageBatchOperator;
+	}
+	
+	public GroupedMessageBatchOperator getGroupedMessageBatchOperator()
+	{
+		return groupedMessageBatchOperator;
 	}
 	
 	public MessageBatchOperator getProcessedMessageBatchOperator()
@@ -106,6 +117,11 @@ public class CassandraOperators
 	public DetailedMessageBatchConverter getMessageBatchConverter()
 	{
 		return messageBatchConverter;
+	}
+	
+	public GroupedMessageBatchConverter getGroupedMessageBatchConverter()
+	{
+		return groupedMessageBatchConverter;
 	}
 	
 	public TestEventConverter getTestEventConverter()
