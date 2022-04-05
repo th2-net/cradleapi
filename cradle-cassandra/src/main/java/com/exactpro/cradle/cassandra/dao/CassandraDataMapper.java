@@ -42,6 +42,8 @@ public interface CassandraDataMapper
 	@DaoFactory
 	CradleBookOperator cradleBookOperator(@DaoKeyspace String keyspace, @DaoTable String booksTable);
 
+	@DaoFactory
+	CradleBooksStatusOperator cradleBooksStatusOperator(@DaoKeyspace String keyspace, @DaoTable String bookStatusOperator);
 	
 	//*** Operators for book's keyspace ***
 	

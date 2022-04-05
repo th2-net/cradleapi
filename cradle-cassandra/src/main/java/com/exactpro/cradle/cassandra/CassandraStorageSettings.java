@@ -26,6 +26,7 @@ public class CassandraStorageSettings
 	public static final String CRADLE_INFO_KEYSPACE = "cradle_info",
 			SCHEMA_VERSION = "4.1.0",
 			BOOKS_TABLE = "books",
+			BOOKS_STATUS_TABLE = "books_status",
 			PAGES_TABLE = "pages",
 			PAGES_NAMES_TABLE = "pages_names",
 			MESSAGES_TABLE = "messages",
@@ -59,6 +60,7 @@ public class CassandraStorageSettings
 	private String cradleInfoKeyspace,
 			schemaVersion,
 			booksTable,
+			booksStatusTable,
 			pagesTable,
 			pagesNamesTable,
 			messagesTable,
@@ -111,6 +113,7 @@ public class CassandraStorageSettings
 		this.cradleInfoKeyspace = CRADLE_INFO_KEYSPACE;
 		this.schemaVersion = SCHEMA_VERSION;
 		this.booksTable = BOOKS_TABLE;
+		this.booksStatusTable = BOOKS_STATUS_TABLE;
 		this.pagesTable = PAGES_TABLE;
 		this.pagesNamesTable = PAGES_NAMES_TABLE;
 		this.messagesTable = MESSAGES_TABLE;
@@ -124,7 +127,7 @@ public class CassandraStorageSettings
 		this.intervalsTable = INTERVALS_TABLE;
 		this.messageStatisticsTable = MESSAGE_STATISTICS_TABLE;
 		this.entityStatisticsTable = ENTITY_STATISTICS_TABLE;
-		
+
 		this.keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
 		this.maxParallelQueries = DEFAULT_MAX_PARALLEL_QUERIES;
 		this.resultPageSize = DEFAULT_RESULT_PAGE_SIZE;
@@ -149,6 +152,7 @@ public class CassandraStorageSettings
 		this.cradleInfoKeyspace = settings.getCradleInfoKeyspace();
 		this.schemaVersion = settings.getSchemaVersion();
 		this.booksTable = settings.getBooksTable();
+		this.booksStatusTable = settings.getBooksStatusTable();
 		this.pagesTable = settings.getPagesTable();
 		this.pagesNamesTable = settings.getPagesNamesTable();
 		this.messagesTable = settings.getMessagesTable();
@@ -228,6 +232,13 @@ public class CassandraStorageSettings
 		this.booksTable = booksTable;
 	}
 
+	public String getBooksStatusTable () {
+		return booksStatusTable;
+	}
+
+	public void setBooksStatusTable (String booksStatusTable) {
+		this.booksStatusTable = booksStatusTable;
+	}
 
 	public String getPagesTable()
 	{

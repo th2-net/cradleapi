@@ -198,8 +198,12 @@ public class CassandraCradleStorage extends CradleStorage
 	protected void doAddBook(BookToAdd newBook, BookId bookId) throws IOException
 	{
 		BookEntity bookEntity = new BookEntity(newBook, settings.getSchemaVersion());
-		createBookKeyspace(bookEntity);
-		
+		if (ops.getCradleBookOperator().get(newBook.getName(), readAttrs) != null) {
+			logger.info("Book {} already exists, skipping creation", newBook.getName());
+		} else {
+			createBookKeyspace(bookEntity);
+		}
+
 		try
 		{
 			if (!ops.getCradleBookOperator().write(bookEntity, writeAttrs).wasApplied())
@@ -214,6 +218,8 @@ public class CassandraCradleStorage extends CradleStorage
 			throw new IOException("Error while writing info of book '"+bookId+"'", e);
 		}
 		ops.addOperators(bookId, bookEntity.getKeyspaceName());
+
+		ops.getCradleBookStatusOp().deleteBookStatuses(bookId.getName());
 	}
 	
 	@Override
@@ -954,7 +960,8 @@ public class CassandraCradleStorage extends CradleStorage
 		try
 		{
 			logger.info("Creating storage for book '{}'", name);
-			new BookKeyspaceCreator(bookEntity.getKeyspaceName(), exec, settings).createAll();
+//			new BookKeyspaceCreator(bookEntity.getKeyspaceName(), exec, settings).createAll();
+			new BookKeyspaceCreator(bookEntity, exec, settings, ops.getCradleBookStatusOp()).createAll();
 			logger.info("Storage creation for book '{}' finished", name);
 		}
 		catch (Exception e)

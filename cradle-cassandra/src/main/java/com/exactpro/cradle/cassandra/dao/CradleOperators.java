@@ -37,6 +37,7 @@ public class CradleOperators
 	private final CassandraDataMapper dataMapper;
 	private final CassandraStorageSettings settings;
 	private final CradleBookOperator cradleBookOp;
+	private final CradleBooksStatusOperator cradleBookStatusOp;
 	private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
 	
 	public CradleOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
@@ -48,6 +49,7 @@ public class CradleOperators
 
 		String infoKeyspace = settings.getCradleInfoKeyspace();
 		this.cradleBookOp = dataMapper.cradleBookOperator(infoKeyspace, settings.getBooksTable());
+		this.cradleBookStatusOp = dataMapper.cradleBooksStatusOperator(infoKeyspace, settings.getBooksStatusTable());
 	}
 	
 	public BookOperators getOperators(BookId bookId) throws CradleStorageException
@@ -79,5 +81,9 @@ public class CradleOperators
 	public CradleBookOperator getCradleBookOperator()
 	{
 		return cradleBookOp;
+	}
+
+	public CradleBooksStatusOperator getCradleBookStatusOp() {
+		return cradleBookStatusOp;
 	}
 }

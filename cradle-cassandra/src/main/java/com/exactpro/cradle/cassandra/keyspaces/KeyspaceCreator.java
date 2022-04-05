@@ -83,12 +83,14 @@ public abstract class KeyspaceCreator
 	public void createKeyspace() throws IOException, CradleStorageException
 	{
 		Optional<KeyspaceMetadata> meta = obtainKeyspaceMetadata();
-		if (meta.isPresent())
-			throw new CradleStorageException("Keyspace '" + keyspace + "' already exists");
-		
+		if (meta.isPresent()) {
+			logger.info("Keyspace \"{}\" already exists, skipping keyspace creation", keyspace);
+			return;
+		}
+
 		logger.info("Creating keyspace '{}'", keyspace);
 		CreateKeyspace createKs = settings.getNetworkTopologyStrategy() != null
-				? SchemaBuilder.createKeyspace(keyspace)
+				? SchemaBuilder.createKeyspace(keyspace).ifNotExists()
 				.withNetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap())
 				: SchemaBuilder.createKeyspace(keyspace).withSimpleStrategy(settings.getKeyspaceReplicationFactor());
 		queryExecutor.executeQuery(createKs.asCql(), true);
@@ -125,12 +127,12 @@ public abstract class KeyspaceCreator
 	
 	protected boolean isTableExists(String tableName)
 	{
-		return keyspaceMetadata.getTable(tableName).isPresent();
+		return getKeyspaceMetadata().getTable(tableName).isPresent();
 	}
 	
 	protected boolean isIndexExists(String indexName, String tableName)
 	{
-		Optional<TableMetadata> tableMetadata = keyspaceMetadata.getTable(tableName);
+		Optional<TableMetadata> tableMetadata = getKeyspaceMetadata().getTable(tableName);
 		return tableMetadata.isPresent() && tableMetadata.get().getIndexes().containsKey(CqlIdentifier.fromCql(indexName));
 	}
 	
@@ -150,7 +152,7 @@ public abstract class KeyspaceCreator
 	
 	protected boolean isColumnExists(String tableName, String columnName)
 	{
-		return keyspaceMetadata.getTable(tableName).get().getColumn(columnName).isPresent();
+		return getKeyspaceMetadata().getTable(tableName).get().getColumn(columnName).isPresent();
 	}
 	
 	protected void createTable(String tableName, Supplier<CreateTable> query) throws IOException

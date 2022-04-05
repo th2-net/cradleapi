@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,6 @@
 
 package com.exactpro.cradle.cassandra.keyspaces;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
-
-import java.io.IOException;
-
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
@@ -27,6 +23,10 @@ import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+
+import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 {
@@ -41,6 +41,7 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 	protected void createTables() throws IOException
 	{
 		createBooks();
+		createBooksStatus();
 	}
 
 	@Override
@@ -49,7 +50,6 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 		if (getKeyspaceMetadata() != null)
 		{
 			logger.info("\"Cradle Info\" keyspace '{}' already exists", getKeyspace());
-			return;
 		}
 		super.createAll();
 	}
@@ -62,6 +62,17 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 				.withColumn(FULLNAME, DataTypes.TEXT)
 				.withColumn(KEYSPACE_NAME, DataTypes.TEXT)
 				.withColumn(DESCRIPTION, DataTypes.TEXT)
+				.withColumn(CREATED, DataTypes.TIMESTAMP)
+				.withColumn(SCHEMA_VERSION, DataTypes.TEXT));
+	}
+
+	private void createBooksStatus() throws IOException
+	{
+		String tableName = getSettings().getBooksStatusTable();
+		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(BOOK_NAME, DataTypes.TEXT)
+				.withClusteringColumn(OBJECT_TYPE, DataTypes.TEXT)
+				.withClusteringColumn(OBJECT_NAME, DataTypes.TEXT)
 				.withColumn(CREATED, DataTypes.TIMESTAMP)
 				.withColumn(SCHEMA_VERSION, DataTypes.TEXT));
 	}
