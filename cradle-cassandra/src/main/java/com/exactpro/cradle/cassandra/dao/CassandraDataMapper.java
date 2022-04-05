@@ -75,6 +75,12 @@ public interface CassandraDataMapper
 	IntervalOperator intervalOperator(@DaoKeyspace String keyspace, @DaoTable String intervalsTable);
 
 	@DaoFactory
+    MessageStatisticsOperator messageStatisticsOperator(@DaoKeyspace String keyspace, @DaoTable String statisticsTable);
+
+	@DaoFactory
+	EntityStatisticsOperator entityStatisticsOperator(@DaoKeyspace String keyspace, @DaoTable String statisticsTable);
+
+	@DaoFactory
 	SessionEntityConverter sessionEntityConverter();
 
 	@DaoFactory
@@ -91,4 +97,10 @@ public interface CassandraDataMapper
 
 	@DaoFactory
 	PageSessionEntityConverter pageSessionEntityConverter();
+
+	@DaoFactory
+	MessageStatisticsEntityConverter messageStatisticsEntityConverter();
+
+	@DaoFactory
+	EntityStatisticsEntityConverter entityStatisticsEntityConverter();
 }

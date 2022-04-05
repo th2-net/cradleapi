@@ -16,17 +16,18 @@
 
 package com.exactpro.cradle.cassandra.keyspaces;
 
-import java.io.IOException;
-
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 
+import java.io.IOException;
+
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 public class BookKeyspaceCreator extends KeyspaceCreator
 {
+
 	public BookKeyspaceCreator(String keyspace, QueryExecutor exec, CassandraStorageSettings settings)
 	{
 		super(keyspace, exec, settings);
@@ -50,6 +51,9 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 		
 		createLabelsTable();
 		createIntervals();
+
+		createMessageStatistics();
+		createEntityStatistics();
 	}
 
 
@@ -192,4 +196,28 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withColumn(RECOVERY_STATE_JSON, DataTypes.TEXT)
 				.withColumn(INTERVAL_PROCESSED, DataTypes.BOOLEAN));
 	}
+
+	private void createMessageStatistics() throws IOException
+	{
+		String tableName = getSettings().getMessageStatisticsTable();
+		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(SESSION_ALIAS, DataTypes.TEXT)
+				.withPartitionKey(DIRECTION, DataTypes.TEXT)
+				.withPartitionKey(FRAME_TYPE, DataTypes.TINYINT)
+				.withClusteringColumn(FRAME_START, DataTypes.TIMESTAMP)
+				.withColumn(ENTITY_COUNT, DataTypes.COUNTER)
+				.withColumn(ENTITY_SIZE, DataTypes.COUNTER));
+	}
+
+	private void createEntityStatistics() throws IOException
+	{
+		String tableName = getSettings().getEntityStatisticsTable();
+		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(ENTITY_TYPE, DataTypes.TINYINT)
+				.withPartitionKey(FRAME_TYPE, DataTypes.TINYINT)
+				.withClusteringColumn(FRAME_START, DataTypes.TIMESTAMP)
+				.withColumn(ENTITY_COUNT, DataTypes.COUNTER)
+				.withColumn(ENTITY_SIZE, DataTypes.COUNTER));
+	}
+
 }

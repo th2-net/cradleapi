@@ -54,6 +54,8 @@ public class BookOperators
 	private final TestEventOperator testEventOperator;
 	private final PageScopesOperator pageScopesOperator;
 	private final IntervalOperator intervalOperator;
+	private final MessageStatisticsOperator messageStatisticsOperator;
+	private final EntityStatisticsOperator entityStatisticsOperator;
 
 	private final SessionEntityConverter sessionEntityConverter;
 	private final ScopeEntityConverter scopeEntityConverter;
@@ -61,7 +63,9 @@ public class BookOperators
 	private final PageSessionEntityConverter pageSessionEntityConverter;
 	private final TestEventEntityConverter testEventEntityConverter;
 	private final PageScopeEntityConverter pageScopeEntityConverter;
-	
+	private final MessageStatisticsEntityConverter messageStatisticsEntityConverter;
+	private final EntityStatisticsEntityConverter entityStatisticsEntityConverter;
+
 	private final LimitedCache<CachedSession> sessionsCache;
 	private final LimitedCache<CachedPageSession> pageSessionsCache;
 	private final LimitedCache<CachedScope> scopesCache;
@@ -81,7 +85,9 @@ public class BookOperators
 		pageSessionsOperator = dataMapper.pageSessionsOperator(keyspace, settings.getPageSessionsTable());
 		testEventOperator = dataMapper.testEventOperator(keyspace, settings.getTestEventsTable());
 		pageScopesOperator = dataMapper.pageScopesOperator(keyspace, settings.getPageScopesTable());
-		
+		messageStatisticsOperator = dataMapper.messageStatisticsOperator(keyspace, settings.getMessageStatisticsTable());
+		entityStatisticsOperator = dataMapper.entityStatisticsOperator(keyspace, settings.getEntityStatisticsTable());
+
 		intervalOperator = dataMapper.intervalOperator(keyspace, settings.getIntervalsTable());
 
 		sessionEntityConverter = dataMapper.sessionEntityConverter();
@@ -90,6 +96,8 @@ public class BookOperators
 		pageSessionEntityConverter = dataMapper.pageSessionEntityConverter();
 		testEventEntityConverter = dataMapper.testEventEntityConverter();
 		pageScopeEntityConverter = dataMapper.pageScopeEntityConverter();
+		messageStatisticsEntityConverter = dataMapper.messageStatisticsEntityConverter();
+		entityStatisticsEntityConverter = dataMapper.entityStatisticsEntityConverter();
 
 		sessionsCache = new LimitedCache<>(settings.getSessionsCacheSize());
 		pageSessionsCache = new LimitedCache<>(settings.getPageSessionsCacheSize());
@@ -148,6 +156,14 @@ public class BookOperators
 		return intervalOperator;
 	}
 
+	public MessageStatisticsOperator getMessageStatisticsOperator() {
+		return messageStatisticsOperator;
+	}
+
+	public EntityStatisticsOperator getEntityStatisticsOperator() {
+		return entityStatisticsOperator;
+	}
+
 	public SessionEntityConverter getSessionEntityConverter()
 	{
 		return sessionEntityConverter;
@@ -176,6 +192,14 @@ public class BookOperators
 	public PageScopeEntityConverter getPageScopeEntityConverter()
 	{
 		return pageScopeEntityConverter;
+	}
+
+	public MessageStatisticsEntityConverter getMessageStatisticsEntityConverter() {
+		return messageStatisticsEntityConverter;
+	}
+
+	public EntityStatisticsEntityConverter getEntityStatisticsEntityConverter() {
+		return entityStatisticsEntityConverter;
 	}
 
 	public LimitedCache<CachedSession> getSessionsCache()

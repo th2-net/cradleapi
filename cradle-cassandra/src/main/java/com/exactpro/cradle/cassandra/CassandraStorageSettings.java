@@ -24,7 +24,7 @@ import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
 public class CassandraStorageSettings
 {
 	public static final String CRADLE_INFO_KEYSPACE = "cradle_info",
-			SCHEMA_VERSION = "4.0.0",
+			SCHEMA_VERSION = "4.1.0",
 			BOOKS_TABLE = "books",
 			PAGES_TABLE = "pages",
 			PAGES_NAMES_TABLE = "pages_names",
@@ -36,7 +36,9 @@ public class CassandraStorageSettings
 			PAGE_SCOPES_TABLE = "page_scopes",
 			TEST_EVENT_PARENT_INDEX = "test_event_parent_index",
 			LABELS_TABLE = "labels",
-			INTERVALS_TABLE = "intervals";
+			INTERVALS_TABLE = "intervals",
+			MESSAGE_STATISTICS_TABLE = "message_statistics",
+			ENTITY_STATISTICS_TABLE = "entity_statistics";
 	public static final long DEFAULT_TIMEOUT = 5000;
 	public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
 	public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1,
@@ -47,7 +49,8 @@ public class CassandraStorageSettings
 			DEFAULT_SESSIONS_CACHE_SIZE = 100,
 			DEFAULT_SCOPES_CACHE_SIZE = 10,
 			DEFAULT_PAGE_SESSION_CACHE_SIZE = 100,
-			DEFAULT_PAGE_SCOPES_CACHE_SIZE = 100;
+			DEFAULT_PAGE_SCOPES_CACHE_SIZE = 100,
+			DEFAULT_COUNTER_PERSISTANE_INTERVAL_MS = 1000;
 
 	private final NetworkTopologyStrategy networkTopologyStrategy;
 	private final long timeout;
@@ -66,7 +69,9 @@ public class CassandraStorageSettings
 			pageScopesTable,
 			testEventParentIndex,
 			labelsTable,
-			intervalsTable;
+			intervalsTable,
+			messageStatisticsTable,
+			entityStatisticsTable;
 	private int keyspaceReplicationFactor;
 	
 	private int maxParallelQueries,
@@ -79,7 +84,8 @@ public class CassandraStorageSettings
 			sessionsCacheSize,
 			scopesCacheSize,
 			pageSessionsCacheSize,
-			pageScopesCacheSize;
+			pageScopesCacheSize,
+			counterPersistanceInterval;
 
 	private SelectExecutionPolicy multiRowResultExecutionPolicy, singleRowResultExecutionPolicy;
 	
@@ -116,6 +122,8 @@ public class CassandraStorageSettings
 		this.testEventParentIndex = TEST_EVENT_PARENT_INDEX;
 		this.labelsTable = LABELS_TABLE;
 		this.intervalsTable = INTERVALS_TABLE;
+		this.messageStatisticsTable = MESSAGE_STATISTICS_TABLE;
+		this.entityStatisticsTable = ENTITY_STATISTICS_TABLE;
 		
 		this.keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
 		this.maxParallelQueries = DEFAULT_MAX_PARALLEL_QUERIES;
@@ -128,6 +136,7 @@ public class CassandraStorageSettings
 		this.pageSessionsCacheSize = DEFAULT_PAGE_SESSION_CACHE_SIZE;
 		this.scopesCacheSize = DEFAULT_SCOPES_CACHE_SIZE;
 		this.pageScopesCacheSize = DEFAULT_PAGE_SCOPES_CACHE_SIZE;
+		this.counterPersistanceInterval = DEFAULT_COUNTER_PERSISTANE_INTERVAL_MS;
 	}
 
 	public CassandraStorageSettings(CassandraStorageSettings settings)
@@ -151,7 +160,9 @@ public class CassandraStorageSettings
 		this.testEventParentIndex = settings.getTestEventParentIndex();
 		this.labelsTable = settings.getLabelsTable();
 		this.intervalsTable = settings.getIntervalsTable();
-		
+		this.messageStatisticsTable = settings.getMessageStatisticsTable();
+		this.entityStatisticsTable = settings.getEntityStatisticsTable();
+
 		this.keyspaceReplicationFactor = settings.getKeyspaceReplicationFactor();
 		this.maxParallelQueries = settings.getMaxParallelQueries();
 		this.resultPageSize = settings.getResultPageSize();
@@ -166,6 +177,7 @@ public class CassandraStorageSettings
 		this.pageSessionsCacheSize = settings.getPageSessionsCacheSize();
 		this.scopesCacheSize = settings.getScopesCacheSize();
 		this.pageScopesCacheSize = settings.getPageScopesCacheSize();
+		this.counterPersistanceInterval = settings.getCounterPersistanceInterval();
 	}
 	
 	
@@ -338,6 +350,22 @@ public class CassandraStorageSettings
 	}
 
 
+	public String getMessageStatisticsTable() {
+		return messageStatisticsTable;
+	}
+
+	public void setMessageStatisticsTable(String messageStatisticsTable) {
+		this.messageStatisticsTable = messageStatisticsTable;
+	}
+
+	public String getEntityStatisticsTable() {
+		return entityStatisticsTable;
+	}
+
+	public void setEntityStatisticsTable(String entityStatisticsTable) {
+		this.entityStatisticsTable = entityStatisticsTable;
+	}
+
 	public int getKeyspaceReplicationFactor()
 	{
 		return keyspaceReplicationFactor;
@@ -456,6 +484,14 @@ public class CassandraStorageSettings
 	public void setPageScopesCacheSize(int pageScopesCacheSize)
 	{
 		this.pageScopesCacheSize = pageScopesCacheSize;
+	}
+
+	public int getCounterPersistanceInterval() {
+		return counterPersistanceInterval;
+	}
+
+	public void setCounterPersistanceInterval(int counterPersistanceInterval) {
+		this.counterPersistanceInterval = counterPersistanceInterval;
 	}
 
 	public SelectExecutionPolicy getMultiRowResultExecutionPolicy()
