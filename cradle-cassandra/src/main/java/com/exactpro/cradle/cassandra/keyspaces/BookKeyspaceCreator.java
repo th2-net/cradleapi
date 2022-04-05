@@ -16,6 +16,8 @@
 
 package com.exactpro.cradle.cassandra.keyspaces;
 
+import java.io.IOException;
+
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
@@ -58,7 +60,7 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 		this.bookName = bookEntity.getName();
 		this.bookSchemaVersion = bookEntity.getSchemaVersion();
 	}
-	
+
 	@Override
 	protected void createTables() throws IOException
 	{

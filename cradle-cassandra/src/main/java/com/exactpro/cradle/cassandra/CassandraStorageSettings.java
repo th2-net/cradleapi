@@ -24,7 +24,7 @@ import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
 public class CassandraStorageSettings
 {
 	public static final String CRADLE_INFO_KEYSPACE = "cradle_info",
-			SCHEMA_VERSION = "4.2.0",
+			SCHEMA_VERSION = "4.1.0",
 			BOOKS_TABLE = "books",
 			BOOKS_STATUS_TABLE = "books_status",
 			PAGES_TABLE = "pages",
@@ -127,7 +127,7 @@ public class CassandraStorageSettings
 		this.intervalsTable = INTERVALS_TABLE;
 		this.messageStatisticsTable = MESSAGE_STATISTICS_TABLE;
 		this.entityStatisticsTable = ENTITY_STATISTICS_TABLE;
-		
+
 		this.keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
 		this.maxParallelQueries = DEFAULT_MAX_PARALLEL_QUERIES;
 		this.resultPageSize = DEFAULT_RESULT_PAGE_SIZE;
