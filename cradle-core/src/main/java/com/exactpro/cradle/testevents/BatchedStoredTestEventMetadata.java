@@ -49,8 +49,18 @@ public class BatchedStoredTestEventMetadata implements StoredTestEvent, Serializ
 		
 		this.batch = batch;
 	}
-	
-	
+
+	protected BatchedStoredTestEventMetadata(StoredTestEventId id, String name, String type, StoredTestEventId parentId, Instant startTimestamp, Instant endTimestamp, boolean success, StoredTestEventBatchMetadata batch) {
+		this.id = id;
+		this.name = name;
+		this.type = type;
+		this.parentId = parentId;
+		this.startTimestamp = startTimestamp;
+		this.endTimestamp = endTimestamp;
+		this.success = success;
+		this.batch = batch;
+	}
+
 	@Override
 	public StoredTestEventId getId()
 	{

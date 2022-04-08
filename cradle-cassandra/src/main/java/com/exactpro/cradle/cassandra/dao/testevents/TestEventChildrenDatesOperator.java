@@ -20,6 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
@@ -37,5 +38,6 @@ public interface TestEventChildrenDatesOperator
 
 	@Query("SELECT " + START_DATE + " FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND "
 			+ PARENT_ID + "=:parentId")
-	ResultSet get(UUID instanceId, String parentId, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<MappedAsyncPagingIterable<DateEventEntity>> get(UUID instanceId, String parentId,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

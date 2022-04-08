@@ -33,14 +33,14 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 public interface TimeMessageOperator
 {
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
-			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction AND "+MESSAGE_DATE+"=:messageDate AND "
-			+MESSAGE_TIME+">=:messageTime ORDER BY "+MESSAGE_TIME+" ASC, "+MESSAGE_INDEX+" ASC limit 1")
+			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction AND ("+MESSAGE_DATE+", "
+			+MESSAGE_TIME+")>=(:messageDate, :messageTime) ORDER BY " + MESSAGE_DATE + " ASC, " +MESSAGE_TIME+" ASC, "+MESSAGE_INDEX+" ASC limit 1")
 	CompletableFuture<TimeMessageEntity> getNearestMessageAfter(UUID instanceId, String streamName, LocalDate messageDate, String direction, 
 			LocalTime messageTime, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
-			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction AND "+MESSAGE_DATE+"=:messageDate AND "
-			+MESSAGE_TIME+"<=:messageTime ORDER BY "+MESSAGE_TIME+" DESC, "+MESSAGE_INDEX+" DESC limit 1")
+			+INSTANCE_ID+"=:instanceId AND "+STREAM_NAME+"=:streamName AND "+DIRECTION+"=:direction AND ("+MESSAGE_DATE+", "
+			+MESSAGE_TIME+")<=(:messageDate, :messageTime) ORDER BY " + MESSAGE_DATE + " DESC, "+MESSAGE_TIME+" DESC, "+MESSAGE_INDEX+" DESC limit 1")
 	CompletableFuture<TimeMessageEntity> getNearestMessageBefore(UUID instanceId, String streamName, LocalDate messageDate, String direction, 
 			LocalTime messageTime, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	

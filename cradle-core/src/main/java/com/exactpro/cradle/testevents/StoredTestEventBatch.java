@@ -27,6 +27,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.serialization.EventsSizeCalculator;
 import org.apache.commons.lang3.ArrayUtils;
 
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -49,7 +50,7 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 	private Instant startTimestamp,
 			endTimestamp;
 	private boolean success = true;
-	private long batchSize = 0;
+	private long batchSize = EventsSizeCalculator.BATCH_LEN_CONST;
 	private final Map<StoredTestEventId, Collection<StoredMessageId>> messageIds = new HashMap<>();
 
 	public StoredTestEventBatch(TestEventBatchToStore batchData, long maxBatchSize) throws CradleStorageException
@@ -186,8 +187,12 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 	 */
 	public boolean hasSpace(StoredTestEventWithContent event)
 	{
-		byte[] content = event.getContent();
-		return ArrayUtils.isEmpty(content) || batchSize+content.length <= maxBatchSize;
+		return batchSize + EventsSizeCalculator.calculateRecordSizeInBatch(event) <= maxBatchSize;
+	}
+
+	private boolean hasSpace(int eventLen)
+	{
+		return batchSize+eventLen <= maxBatchSize;
 	}
 	
 	
@@ -226,7 +231,8 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 	
 	private BatchedStoredTestEvent addStoredTestEvent(StoredTestEventWithContent event) throws CradleStorageException
 	{
-		if (!hasSpace(event))
+		int expectedSize = EventsSizeCalculator.calculateRecordSizeInBatch(event);
+		if (!hasSpace(expectedSize))
 			throw new CradleStorageException("Batch has not enough space to hold given test event");
 		
 		TestEventUtils.validateTestEvent(event, true);
@@ -261,8 +267,7 @@ public class StoredTestEventBatch extends MinimalStoredTestEvent implements Stor
 		else
 			rootEvents.add(result);
 		
-		if (event.getContent() != null)
-			batchSize += event.getContent().length;
+		batchSize += expectedSize;
 		return result;
 	}
 

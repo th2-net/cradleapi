@@ -54,8 +54,21 @@ public class BatchedStoredTestEvent implements StoredTestEventWithContent, Seria
 
 		this.batch = batch;
 	}
-	
-	
+
+	protected BatchedStoredTestEvent(StoredTestEventId id, String name, String type, StoredTestEventId parentId,
+									 Instant startTimestamp, Instant endTimestamp, boolean success,
+									 byte[] content, StoredTestEventBatch batch) {
+		this.id = id;
+		this.name = name;
+		this.type = type;
+		this.parentId = parentId;
+		this.startTimestamp = startTimestamp;
+		this.endTimestamp = endTimestamp;
+		this.success = success;
+		this.content = content;
+		this.batch = batch;
+	}
+
 	@Override
 	public StoredTestEventId getId()
 	{

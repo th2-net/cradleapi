@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package com.exactpro.cradle.messages;
 import java.time.Instant;
 import java.util.*;
 
-import org.apache.commons.lang3.ArrayUtils;
+import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,16 +39,16 @@ public class StoredMessageBatch
 	private static final Logger logger = LoggerFactory.getLogger(StoredMessageBatch.class);
 	
 	public static final int DEFAULT_MAX_BATCH_SIZE = 1024*1024;  //1 Mb
+	private static final long EMPTY_BATCH_SIZE = MessagesSizeCalculator.calculateServiceMessageBatchSize(null);
 	
 	private StoredMessageBatchId id;
 	private final long maxBatchSize;
-	private long batchSize = 0;
+	private long batchSize;
 	private final List<StoredMessage> messages;
 	
 	public StoredMessageBatch()
 	{
-		this.messages = createMessagesList();
-		this.maxBatchSize = DEFAULT_MAX_BATCH_SIZE;
+		this(DEFAULT_MAX_BATCH_SIZE);
 	}
 	
 	public StoredMessageBatch(long maxBatchSize)
@@ -103,7 +103,7 @@ public class StoredMessageBatch
 	 */
 	public long getBatchSize()
 	{
-		return batchSize;
+		return batchSize == 0 ? EMPTY_BATCH_SIZE : batchSize;
 	}
 	
 	/**
@@ -135,12 +135,19 @@ public class StoredMessageBatch
 	 */
 	public StoredMessage addMessage(MessageToStore message) throws CradleStorageException
 	{
-		if (!hasSpace(message))
+		int messageSize = calculateSizeAndCheckConstraints(message);
+		
+		return addMessageInternal(message, messageSize);
+	}
+
+	protected int calculateSizeAndCheckConstraints(MessageToStore message) throws CradleStorageException
+	{
+		int expectedMessageSize = MessagesSizeCalculator.calculateMessageSizeInBatch(message);
+		if (!hasSpace(expectedMessageSize, message.getStreamName()))
 			throw new CradleStorageException("Batch has not enough space to hold given message");
 		
 		MessageUtils.validateMessage(message);
 		
-		long messageIndex;
 		if (id == null)
 		{
 			String sm = message.getStreamName();
@@ -152,37 +159,49 @@ public class StoredMessageBatch
 				throw new CradleStorageException("Message direction for first message in batch must be set");
 			if (i < 0)
 				throw new CradleStorageException("Message index for first message in batch cannot be negative");
-			
-			id = new StoredMessageBatchId(sm, d, i);
-			messageIndex = message.getIndex();
 		}
 		else
 		{
 			if (!id.getStreamName().equals(message.getStreamName()))
-				throw new CradleStorageException("Batch contains messages of stream with name '"+id.getStreamName()+"', but in your message it is '"+message.getStreamName()+"'");
+				throw new CradleStorageException("Batch contains messages of stream with name '" + id.getStreamName() +
+						"', but in your message it is '" + message.getStreamName() + "'");
 			if (id.getDirection() != message.getDirection())
-				throw new CradleStorageException("Batch contains messages with direction "+id.getDirection()+", but in your message it is "+message.getDirection());
-			
+				throw new CradleStorageException("Batch contains messages with direction " + id.getDirection() +
+						", but in your message it is " + message.getDirection());
+
 			StoredMessage lastMsg = getLastMessage();
 			if (message.getIndex() > 0)  //I.e. message index is set
 			{
-				messageIndex = message.getIndex();
+				long messageIndex = message.getIndex();
 				if (messageIndex <= lastMsg.getIndex())
-					throw new CradleStorageException("Message index should be greater than "+lastMsg.getIndex()+" for the batch to contain sequenced messages, but in your message it is "+messageIndex);
+					throw new CradleStorageException("Message index should be greater than "+lastMsg.getIndex()+
+							" for the batch to contain sequenced messages, but in your message it is "+messageIndex);
 				if (messageIndex != lastMsg.getIndex()+1)
-					logger.warn("Message index should be "+(lastMsg.getIndex()+1)+" for the batch to contain strictly sequenced messages, but in your message it is "+messageIndex);
+					logger.debug("Message index should be "+(lastMsg.getIndex()+1)+
+							" for the batch to contain strictly sequenced messages, but in your message it is "+messageIndex);
 			}
-			else
-				messageIndex = lastMsg.getIndex()+1;
+			if (lastMsg.getTimestamp().isAfter(message.getTimestamp()))
+				throw new CradleStorageException(
+						"Message timestamp should be should be not less than last message timestamp in batch '"
+								+ lastMsg.getTimestamp() + "' but in your message it is '" + message.getTimestamp() + "'");
 		}
 		
-		StoredMessage msg = new StoredMessage(message, new StoredMessageId(message.getStreamName(), message.getDirection(), messageIndex));
-		messages.add(msg);
-		batchSize += msg.getContent().length;
-		return msg;
+		return expectedMessageSize;
 	}
 	
-	
+	protected StoredMessage addMessageInternal(MessageToStore message, int expectedMessageSize)
+	{
+		long messageIndex = message.getIndex() >= 0 ? message.getIndex() : getLastMessage().getIndex()+1;
+		if (id == null)
+			id = new StoredMessageBatchId(message.getStreamName(), message.getDirection(), messageIndex);
+		StoredMessage msg = new StoredMessage(message, new StoredMessageId(message.getStreamName(), message.getDirection(), messageIndex));
+		// If there are no messages in batch, need to calculate the batch size taking into account the name of the stream of the added message
+		if (messages.isEmpty())
+			batchSize = MessagesSizeCalculator.calculateServiceMessageBatchSize(message.getStreamName());
+		messages.add(msg);
+		batchSize += expectedMessageSize;
+		return msg;
+	}
 	
 	public StoredMessage getFirstMessage()
 	{
@@ -226,7 +245,7 @@ public class StoredMessageBatch
 	 */
 	public boolean isFull()
 	{
-		return batchSize >= maxBatchSize;
+		return getBatchSize() >= maxBatchSize;
 	}
 	
 	/**
@@ -235,7 +254,7 @@ public class StoredMessageBatch
 	 */
 	public long getSpaceLeft()
 	{
-		long result = maxBatchSize-batchSize;
+		long result = maxBatchSize-getBatchSize();
 		return result > 0 ? result : 0;
 	}
 	
@@ -246,15 +265,27 @@ public class StoredMessageBatch
 	 */
 	public boolean hasSpace(MessageToStore message)
 	{
-		byte[] content = message.getContent();
-		return ArrayUtils.isEmpty(content) || batchSize+content.length <= maxBatchSize;
+		return hasSpace(MessagesSizeCalculator.calculateMessageSizeInBatch(message), message.getStreamName());
+	}
+
+	/**
+	 * Shows if batch has enough space to hold given message
+	 * @param expected expected size of given message
+	 * @param streamName stream name of expected message
+	 * @return true if batch has enough space to hold given message
+	 */
+	private boolean hasSpace(int expected, String streamName)
+	{
+		long currentSize = messages.isEmpty()
+				? MessagesSizeCalculator.calculateServiceMessageBatchSize(streamName) : getBatchSize();
+		return currentSize + expected <= maxBatchSize;
 	}
 	
 
   /**
    *
    * @param batch the batch to add to the current one.
-   *              The batch to add must contains message with same stream name and direction as the current one.
+   *              The batch to add must contain message with same stream name and direction as the current one.
    *              The index of the first message in the [batch] should be greater
    *              than the last message index in the current batch.
    * @return true if the result batch meets the restriction for message count and batch size
@@ -274,7 +305,8 @@ public class StoredMessageBatch
 		if (isFull() || batch.isFull()) {
 			return false;
 		}
-		long resultSize = batchSize + batch.batchSize;
+		long resultSize = batchSize + batch.messages.stream().mapToInt(MessagesSizeCalculator::calculateMessageSizeInBatch).sum();
+		
 		if (resultSize > maxBatchSize) {
 			// cannot add because of size limit
 			return false;
