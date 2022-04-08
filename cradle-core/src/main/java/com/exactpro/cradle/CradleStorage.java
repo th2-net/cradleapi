@@ -677,7 +677,15 @@ public abstract class CradleStorage
 		return result;
 	}
 
-
+	
+	/**
+	 * Allows to asynchronously obtain iterable object to enumerate stored message batches,
+	 * grouped by a given group in a time range
+	 * @param groupName defines group
+	 * @param from left boundary of timestamps range
+	 * @param to right boundary of timestamps range
+	 * @return future to obtain iterable object to enumerate message batches
+	 */
 	public final CompletableFuture<Iterable<StoredMessageBatch>> getGroupedMessageBatchesAsync(String groupName,
 			Instant from, Instant to)
 	{
