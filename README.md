@@ -1,4 +1,4 @@
-# cradleapi (3.1.0)
+# Cradle API (3.1.1)
 
 ## Overview
 
@@ -37,7 +37,7 @@ repositories {
 To use Cradle API, add the following dependency to your project:
 ```
 dependencies {
-	implementation 'com.exactpro.th2:cradle-cassandra:3.0.0'
+	implementation 'com.exactpro.th2:cradle-cassandra:3.1.1'
 	...
 }
 ```
@@ -139,3 +139,19 @@ A test event can have a reference to its parent, thus forming a hierarchical str
 Events in a batch can have a reference only to the parent of the batch or other test events from the same batch. Events outside of the batch should not reference events within the batch.
 
 Test events have mandatory parameters that are verified when storing an event. These are: id, name (for non-batch events), start timestamp.
+
+## Release notes
+
+### 3.1.1 (This version requires migration from previous versions)
+
++ Changed serialization algorithm for events and message batches
++ Added retries for `doGetNearestMessageId()` and 'getMessage()'  methods
++ Replaced recursive calls in `MessagesIterator` with loop
++ Added check for timestamp of message when added to batch
++ Table `messages_timestamps` has been added instead of `time_messages` (need migrate data from time_messages to messages_timestamps)
+
+### 3.0.0
+
++ Event metadata, event body and collection of linked message ids are stored in the same table `time_test_events`
++ Implemented method `getFirstMessageIndex(String, Directiion)` that retrieves first stored message index for given stream and direction
++ Upgraded to Cassandra Java Driver 4.6.1, excluded unused dependencies.
