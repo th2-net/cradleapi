@@ -50,10 +50,12 @@ import com.exactpro.cradle.testevents.*;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.MessageUtils;
 
+import com.exactpro.cradle.utils.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.time.*;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -597,12 +599,39 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
+	protected Iterable<StoredMessageBatch> doGetGroupedMessageBatches(String groupName, Instant from, Instant to)
+			throws IOException
+	{
+		try
+		{
+			return doGetGroupedMessageBatchesAsync(groupName, from, to).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException(format("Error while getting message batches grouped by %s between %s and %s",
+					groupName, from, to), e);
+		}
+	}
+
+	@Override
 	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(StoredMessageFilter filter)
 	{
 		String queryInfo = "getting message batches filtered by "+filter;
 		return doGetDetailedMessageBatchEntities(filter, queryInfo)
 				.thenApply(it -> new StoredMessageBatchAdapter(it, pagingSupplies, ops.getMessageBatchConverter(),
 						queryInfo, filter == null ? 0 : filter.getLimit()));
+	}
+
+	@Override
+	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetGroupedMessageBatchesAsync(String groupName,
+			Instant from, Instant to)
+	{
+		Instant shiftedFrom = from.minus(settings.getMaxMessageBatchDurationLimit(), ChronoUnit.SECONDS);
+		String queryInfo = format("fetching grouped message batches by group '%s' between %s and %s", groupName,
+				shiftedFrom, to);
+		return doGetGroupedMessageBatchEntities(groupName, shiftedFrom, to, queryInfo)
+				.thenApplyAsync(it -> new GroupedMessageBatchAdapter(it, pagingSupplies,
+						ops.getGroupedMessageBatchConverter(), queryInfo, from, to));
 	}
 
 	private CompletableFuture<MappedAsyncPagingIterable<DetailedMessageBatchEntity>> doGetDetailedMessageBatchEntities(
@@ -613,6 +642,18 @@ public class CassandraCradleStorage extends CradleStorage
 		return selectExecutor.executeMultiRowResultQuery(
 				() -> mbOp.filterMessages(instanceUuid, filter, mbOp, tmOp, readAttrs),
 				ops.getMessageBatchConverter(), queryInfo);
+	}
+
+	private CompletableFuture<MappedAsyncPagingIterable<GroupedMessageBatchEntity>> doGetGroupedMessageBatchEntities(
+			String groupName, Instant from, Instant to, String queryInfo)
+	{
+		GroupedMessageBatchOperator gmOp = ops.getGroupedMessageBatchOperator();
+		LocalDateTime ldtFrom = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET);
+		LocalDateTime ldtTo = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
+		return selectExecutor.executeMultiRowResultQuery(
+				() -> gmOp.getByTimeRange(instanceUuid, groupName, ldtFrom.toLocalDate(), ldtFrom.toLocalTime(),
+						ldtTo.toLocalDate(), ldtTo.toLocalTime(), readAttrs),
+				ops.getGroupedMessageBatchConverter(), queryInfo);
 	}
 
 	@Override

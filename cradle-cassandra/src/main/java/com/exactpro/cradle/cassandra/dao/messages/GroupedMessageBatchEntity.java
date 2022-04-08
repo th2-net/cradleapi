@@ -75,51 +75,32 @@ public class GroupedMessageBatchEntity
 	{
 		this.group = group;
 	}
-	
+
 	@ClusteringColumn(0)
 	@CqlName(MESSAGE_DATE)
 	public LocalDate getMessageDate()
 	{
 		return batchEntity.getFirstMessageDate();
 	}
-	
+
 	public void setMessageDate(LocalDate messageDate)
 	{
 		batchEntity.setFirstMessageDate(messageDate);
 	}
-	
+
 	@ClusteringColumn(1)
 	@CqlName(MESSAGE_TIME)
 	public LocalTime getMessageTime()
 	{
 		return batchEntity.getFirstMessageTime();
 	}
-	
+
 	public void setMessageTime(LocalTime messageTime)
 	{
 		batchEntity.setFirstMessageTime(messageTime);
 	}
-	
+
 	@ClusteringColumn(2)
-	@CqlName(LAST_MESSAGE_DATE)
-	public LocalDate getLastMessageDate()
-	{
-		return batchEntity.getLastMessageDate();
-	}
-	
-	public void setLastMessageDate(LocalDate lastMessageDate)
-	{
-		batchEntity.setLastMessageDate(lastMessageDate);
-	}
-	
-	@ClusteringColumn(3)
-	@CqlName(LAST_MESSAGE_TIME)
-	public LocalTime getLastMessageTime()
-	{
-		return batchEntity.getLastMessageTime();
-	}
-	
-	@ClusteringColumn(4)
 	@CqlName(STREAM_NAME)
 	public String getStreamName()
 	{
@@ -131,7 +112,7 @@ public class GroupedMessageBatchEntity
 		batchEntity.setStreamName(streamName);
 	}
 	
-	@ClusteringColumn(5)
+	@ClusteringColumn(3)
 	@CqlName(DIRECTION)
 	public String getDirection()
 	{
@@ -143,7 +124,7 @@ public class GroupedMessageBatchEntity
 		batchEntity.setDirection(direction);
 	}
 	
-	@ClusteringColumn(6)
+	@ClusteringColumn(4)
 	@CqlName(MESSAGE_INDEX)
 	public long getMessageIndex()
 	{
@@ -153,6 +134,24 @@ public class GroupedMessageBatchEntity
 	public void setMessageIndex(long messageIndex)
 	{
 		batchEntity.setMessageIndex(messageIndex);
+	}
+	
+	// Columns
+	@CqlName(LAST_MESSAGE_DATE)
+	public LocalDate getLastMessageDate()
+	{
+		return batchEntity.getLastMessageDate();
+	}
+
+	public void setLastMessageDate(LocalDate lastMessageDate)
+	{
+		batchEntity.setLastMessageDate(lastMessageDate);
+	}
+
+	@CqlName(LAST_MESSAGE_TIME)
+	public LocalTime getLastMessageTime()
+	{
+		return batchEntity.getLastMessageTime();
 	}
 	
 	@CqlName(COMPRESSED)
@@ -245,13 +244,13 @@ public class GroupedMessageBatchEntity
 	}
 	
 	@Transient
-	public Instant getMessageTimestamp()
+	public Instant getFirstMessageTimestamp()
 	{
 		return batchEntity.getFirstMessageTimestamp();
 	}
 	
 	@Transient
-	public void setMessageTimestamp(Instant timestamp)
+	public void setFirstMessageTimestamp(Instant timestamp)
 	{
 		batchEntity.setFirstMessageTimestamp(timestamp);
 	}

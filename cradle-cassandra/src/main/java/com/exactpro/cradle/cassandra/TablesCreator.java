@@ -105,11 +105,6 @@ public class TablesCreator
 		createMessagesTable(settings.getMessagesTableName());
 	}
 	
-	public void createGroupedMessagesTable() throws IOException
-	{
-		createGroupedMessagesTable(settings.getGroupedMessagesTableName());
-	}
-	
 	public void createProcessedMessagesTable() throws IOException
 	{
 		createMessagesTable(settings.getProcessedMessagesTableName());
@@ -237,34 +232,33 @@ public class TablesCreator
 		logger.info("Table '{}' has been created", name);
 	}
 	
-	private void createGroupedMessagesTable(String name) throws IOException
+	public void createGroupedMessagesTable() throws IOException
 	{
+		String name = settings.getGroupedMessagesTableName();
 		if (isTableExists(name))
 			return;
 		
 		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), name).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
 				.withPartitionKey(STREAM_GROUP, DataTypes.TEXT)
-				
+
 				.withClusteringColumn(MESSAGE_DATE, DataTypes.DATE)
 				.withClusteringColumn(MESSAGE_TIME, DataTypes.TIME)
-				.withColumn(FIRST_MESSAGE_DATE, DataTypes.DATE)
-				.withColumn(FIRST_MESSAGE_TIME, DataTypes.TIME)
 				.withClusteringColumn(STREAM_NAME, DataTypes.TEXT)
 				.withClusteringColumn(DIRECTION, DataTypes.TEXT)
 				.withClusteringColumn(MESSAGE_INDEX, DataTypes.BIGINT)
-				
+
+				.withColumn(LAST_MESSAGE_DATE, DataTypes.DATE)
+				.withColumn(LAST_MESSAGE_TIME, DataTypes.TIME)
 				.withColumn(STORED_DATE, DataTypes.DATE)
 				.withColumn(STORED_TIME, DataTypes.TIME)
 				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
 				.withColumn(CONTENT, DataTypes.BLOB)
 				.withColumn(MESSAGE_COUNT, DataTypes.INT)
 				.withColumn(LAST_MESSAGE_INDEX, DataTypes.BIGINT)
+				
 				.withClusteringOrder(MESSAGE_DATE, ClusteringOrder.ASC)
 				.withClusteringOrder(MESSAGE_TIME, ClusteringOrder.ASC)
-				.withClusteringOrder(LAST_MESSAGE_DATE, ClusteringOrder.ASC)
-				.withClusteringOrder(LAST_MESSAGE_TIME, ClusteringOrder.ASC)
-				.withClusteringOrder(STREAM_NAME, ClusteringOrder.ASC)
 				.withClusteringOrder(STREAM_NAME, ClusteringOrder.ASC)
 				.withClusteringOrder(DIRECTION, ClusteringOrder.ASC)
 				.withClusteringOrder(MESSAGE_INDEX, ClusteringOrder.ASC);

@@ -22,6 +22,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import com.exactpro.cradle.intervals.IntervalsWorker;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,7 +110,11 @@ public abstract class CradleStorage
 	
 	protected abstract Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException;
 	protected abstract CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter);
+	protected abstract CompletableFuture<Iterable<StoredMessageBatch>> doGetGroupedMessageBatchesAsync(String groupName,
+			Instant from, Instant to);
 	protected abstract Iterable<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException;
+	protected abstract Iterable<StoredMessageBatch> doGetGroupedMessageBatches(String groupName, Instant from, Instant to)
+			throws IOException;
 	protected abstract CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(
 			StoredMessageFilter filter);
 
@@ -206,7 +211,7 @@ public abstract class CradleStorage
 	public final void storeGroupedMessageBatch(StoredMessageBatch batch, String groupName) throws IOException
 	{
 		logger.debug("Storing message batch {} to group {}", batch.getId(), groupName);
-		doStoreMessageBatch(batch);
+		doStoreGroupedMessageBatch(batch, groupName);
 		logger.debug("Storing time/message data for batch {}", batch.getId());
 		storeTimeMessages(batch.getMessages());
 		logger.debug("Message batch {} has been stored", batch.getId());
@@ -628,6 +633,31 @@ public abstract class CradleStorage
 
 
 	/**
+	 * Allows to enumerate stored message batches grouped by a given group in a time range
+	 * @param groupName defines group
+	 * @param from left boundary of timestamps range
+	 * @param to right boundary of timestamps range
+	 * @return iterable object to enumerate message batches
+	 * @throws CradleStorageException if some params are missing 
+	 * @throws IOException if data retrieval failed
+	 */
+	public final Iterable<StoredMessageBatch> getGroupedMessageBatches(String groupName, Instant from, Instant to)
+			throws CradleStorageException, IOException
+	{
+		logger.debug("Getting message batches grouped by '{}' between {} and {}", groupName, from, to);
+		if (groupName == null)
+			throw new CradleStorageException("Group name should be specified");
+		
+		if (from == null || to == null)
+			throw new CradleStorageException("Both boundaries (from and to) should be specified");
+
+		Iterable<StoredMessageBatch> result = doGetGroupedMessageBatches(groupName, from, to);
+		logger.debug("Prepared iterator for message batches grouped by {} between {} and {}", groupName, from, to);
+		return result;
+	}
+
+
+	/**
 	 * Allows to asynchronously obtain iterable object to enumerate stored messages,
 	 * optionally filtering them by given conditions
 	 *
@@ -645,6 +675,31 @@ public abstract class CradleStorage
 						logger.debug("Iterator for messages filtered by {} got asynchronously", filter);
 				});
 		return result;
+	}
+
+
+	public final CompletableFuture<Iterable<StoredMessageBatch>> getGroupedMessageBatchesAsync(String groupName,
+			Instant from, Instant to)
+	{
+		logger.debug("Getting message batches grouped by '{}' between {} and {} asynchronously", groupName, from, to);
+		if (groupName == null)
+			return CompletableFuture.failedFuture(new CradleStorageException("Group name should be specified"));
+
+		if (from == null || to == null)
+			return CompletableFuture.failedFuture(
+					new CradleStorageException("Both boundaries (from and to) should be specified"));
+
+		return doGetGroupedMessageBatchesAsync(groupName, from, to)
+				.whenComplete((r, error) ->
+				{
+					if (error != null)
+						logger.error("Error while getting message batches grouped by '" + groupName + "' between " +
+								from + " and " + to + " asynchronously", error);
+					else
+						logger.debug(
+								"Iterator for message batches grouped by '{}' between {} and {} got asynchronously",
+								groupName, from, to);
+		});
 	}
 
 	/**

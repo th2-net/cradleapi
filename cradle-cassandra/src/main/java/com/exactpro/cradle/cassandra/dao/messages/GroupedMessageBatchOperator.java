@@ -35,10 +35,10 @@ public interface GroupedMessageBatchOperator
 {
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
 			+INSTANCE_ID+"=:instanceId AND "+ STREAM_GROUP +"=:groupName"+
-			" AND (" + MESSAGE_DATE + ", " + MESSAGE_TIME +")>=(:dateFrom, timeFrom)"+
-			" AND (" + MESSAGE_DATE + ", " + MESSAGE_TIME +")<=(:dateTo, timeTo)")
+			" AND (" + MESSAGE_DATE + ", " + MESSAGE_TIME +")>=(:dateFrom, :timeFrom)"+
+			" AND (" + MESSAGE_DATE + ", " + MESSAGE_TIME +")<=(:dateTo, :timeTo)")
 	CompletableFuture<MappedAsyncPagingIterable<GroupedMessageBatchEntity>> getByTimeRange(UUID instanceId,
-			String groupName, String direction, LocalDate dateFrom, LocalTime timeFrom, LocalDate dateTo,
+			String groupName, LocalDate dateFrom, LocalTime timeFrom, LocalDate dateTo,
 			LocalTime timeTo, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
