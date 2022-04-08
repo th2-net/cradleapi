@@ -22,6 +22,8 @@ import com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.utils.CradleStorageException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -29,6 +31,8 @@ import java.util.Iterator;
 
 public class GroupedMessageBatchIterator implements Iterator<StoredMessageBatch>
 {
+	private static final Logger logger = LoggerFactory.getLogger(GroupedMessageBatchIterator.class);
+	
 	private final Instant filterFrom, filterTo;
 	private final PagedIterator<GroupedMessageBatchEntity> it;
 	private StoredMessageBatch nextCandidate;
@@ -65,6 +69,12 @@ public class GroupedMessageBatchIterator implements Iterator<StoredMessageBatch>
 				}
 				return true;
 			}
+
+			if (logger.isTraceEnabled())
+				logger.trace(
+						"Batch with id '{}:{}:{}' has been skipped because him first timestamp {} > {} OR last timestamp {} < {}",
+						entity.getStreamName(), entity.getDirection(), entity.getMessageIndex(),
+						entity.getFirstMessageTimestamp(), filterTo, entity.getLastMessageTimestamp(), filterFrom);
 		}
 		
 		return false;
