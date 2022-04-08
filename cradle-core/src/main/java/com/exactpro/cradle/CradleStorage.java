@@ -207,16 +207,8 @@ public abstract class CradleStorage
 		storeTimeMessages(batch.getMessages());
 		logger.debug("Message batch {} has been stored", batch.getId());
 	}
-	
-	public final void storeGroupedMessageBatch(StoredMessageBatch batch, String groupName) throws IOException
-	{
-		logger.debug("Storing message batch {} to group {}", batch.getId(), groupName);
-		doStoreGroupedMessageBatch(batch, groupName);
-		logger.debug("Storing time/message data for batch {}", batch.getId());
-		storeTimeMessages(batch.getMessages());
-		logger.debug("Message batch {} has been stored", batch.getId());
-	}
 
+	
 	/**
 	 * Asynchronously writes data about given message batch to storage.
 	 *
@@ -228,7 +220,7 @@ public abstract class CradleStorage
 		logger.debug("Storing message batch {} asynchronously", batch.getId());
 		CompletableFuture<Void> batchStoring = doStoreMessageBatchAsync(batch),
 				timeStoring = storeTimeMessagesAsync(batch.getMessages());
-		
+
 		return CompletableFuture.allOf(batchStoring, timeStoring)
 				.whenComplete((r, error) -> {
 					if (error != null)
@@ -237,6 +229,47 @@ public abstract class CradleStorage
 						logger.debug("Message batch {} has been stored asynchronously", batch.getId());
 				});
 	}
+
+
+	/**
+	 * Writes data about given message batch grouped by provided group to storage.
+	 *
+	 * @param batch data to write
+	 * @param groupName group name
+	 * @throws IOException if data writing failed
+	 */
+	public final void storeGroupedMessageBatch(StoredMessageBatch batch, String groupName) throws IOException
+	{
+		logger.debug("Storing message batch {} grouped by '{}'", batch.getId(), groupName);
+		doStoreGroupedMessageBatch(batch, groupName);
+		logger.debug("Storing time/message data for batch {}", batch.getId());
+		storeTimeMessages(batch.getMessages());
+		logger.debug("Message batch {} grouped by '{}' has been stored", batch.getId(), groupName);
+	}
+
+
+	/**
+	 * Asynchronously writes data about given message batch grouped by provided group to storage.
+	 *
+	 * @param batch data to write
+	 * @param groupName group name
+	 * @return future to get know if storing was successful   
+	 */
+	public final CompletableFuture<Void> storeGroupedMessageBatchAsync(StoredMessageBatch batch, String groupName)
+	{
+		logger.debug("Storing message batch {} grouped by '{}' asynchronously", batch.getId(), groupName);
+		return doStoreGroupedMessageBatchAsync(batch, groupName)
+				.thenComposeAsync(r -> storeTimeMessagesAsync(batch.getMessages()))
+				.whenComplete((r, error) -> {
+					if (error != null)
+						logger.error("Error while storing message batch " + batch.getId() + " grouped by '"
+								+ groupName + "' asynchronously", error);
+					else
+						logger.debug("Message batch {} grouped by '{}' has been stored asynchronously",
+								batch.getId(), groupName);
+				});
+	}
+
 
 	/**
 	 * Writes data about given processed message batch to storage.
