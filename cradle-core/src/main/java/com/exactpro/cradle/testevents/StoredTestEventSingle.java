@@ -35,9 +35,9 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 	private final byte[] content;
 	
 	public StoredTestEventSingle(StoredTestEventId id, String name, String type, StoredTestEventId parentId,
-			Instant endTimestamp, boolean success, byte[] eventContent, Set<StoredMessageId> eventMessages, PageId pageId, String error)
+			Instant endTimestamp, boolean success, byte[] eventContent, Set<StoredMessageId> eventMessages, PageId pageId, String error, Instant recDate)
 	{
-		super(id, name, type, parentId, pageId, error);
+		super(id, name, type, parentId, pageId, error, recDate);
 		
 		this.endTimestamp = endTimestamp;
 		this.success = success;
@@ -56,7 +56,7 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 	public StoredTestEventSingle(TestEventSingle event, PageId pageId)
 	{
 		this(event.getId(), event.getName(), event.getType(), event.getParentId(),
-				event.getEndTimestamp(), event.isSuccess(), event.getContent(), event.getMessages(), pageId, null);
+				event.getEndTimestamp(), event.isSuccess(), event.getContent(), event.getMessages(), pageId, null, null);
 	}
 	
 	

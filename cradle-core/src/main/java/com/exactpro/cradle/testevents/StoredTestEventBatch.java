@@ -48,9 +48,9 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 	public StoredTestEventBatch(StoredTestEventId id, String name, String type, StoredTestEventId parentId,
 			Collection<BatchedStoredTestEvent> batchEvents, 
 			Map<StoredTestEventId, Set<StoredMessageId>> messages, 
-			PageId pageId, String error) throws CradleStorageException
+			PageId pageId, String error, Instant recDate) throws CradleStorageException
 	{
-		super(id, name, type, parentId, pageId, error);
+		super(id, name, type, parentId, pageId, error, recDate);
 		
 		Map<StoredTestEventId, BatchedStoredTestEvent> allEvents = new LinkedHashMap<>();
 		Collection<BatchedStoredTestEvent> roots = new ArrayList<>();
@@ -102,7 +102,7 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 	public StoredTestEventBatch(TestEventBatch batch, PageId pageId) throws CradleStorageException
 	{
 		this(batch.getId(), batch.getName(), batch.getType(), batch.getParentId(),
-				batch.getTestEvents(), batch.getBatchMessages(), pageId, null);
+				batch.getTestEvents(), batch.getBatchMessages(), pageId, null, null);
 	}
 	
 	@Override

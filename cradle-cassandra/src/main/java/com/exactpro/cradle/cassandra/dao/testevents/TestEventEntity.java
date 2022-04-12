@@ -100,6 +100,9 @@ public class TestEventEntity extends CradleEntity
 	@CqlName(MESSAGES)
 	private ByteBuffer messages;
 
+	@CqlName(REC_DATE)
+	private Instant recDate;
+
 	private List<SerializedEntityMetadata> serializedEventMetadata;
 
 	public TestEventEntity()
@@ -361,6 +364,14 @@ public class TestEventEntity extends CradleEntity
 		}
 	}
 
+	public Instant getRecDate() {
+		return recDate;
+	}
+
+	public void setRecDate(Instant recDate) {
+		this.recDate = recDate;
+	}
+
 	@Transient
 	public List<SerializedEntityMetadata> getSerializedEventMetadata() {
 		return serializedEventMetadata;
@@ -448,7 +459,7 @@ public class TestEventEntity extends CradleEntity
 	{
 		Set<StoredMessageId> messages = restoreMessages(pageId.getBookId());
 		return new StoredTestEventSingle(eventId, getName(), getType(), createParentId(),
-				getEndTimestamp(), isSuccess(), content, messages, pageId, null);
+				getEndTimestamp(), isSuccess(), content, messages, pageId, null, recDate);
 	}
 	
 	private StoredTestEventBatch toStoredTestEventBatch(PageId pageId, StoredTestEventId eventId, byte[] content) 
@@ -457,6 +468,6 @@ public class TestEventEntity extends CradleEntity
 		Collection<BatchedStoredTestEvent> children = TestEventUtils.deserializeTestEvents(content, eventId);
 		Map<StoredTestEventId, Set<StoredMessageId>> messages = restoreBatchMessages(pageId.getBookId());
 		return new StoredTestEventBatch(eventId, getName(), getType(), createParentId(),
-				children, messages, pageId, null);
+				children, messages, pageId, null, recDate);
 	}
 }

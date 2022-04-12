@@ -287,7 +287,7 @@ public class MessageBatchEntity extends CradleEntity
 		
 		byte[] content = restoreContent(batchId);
 		List<StoredMessage> storedMessages = MessageUtils.deserializeMessages(content, batchId);
-		return new StoredMessageBatch(storedMessages, pageId);
+		return new StoredMessageBatch(storedMessages, pageId, recDate);
 	}
 	
 	
