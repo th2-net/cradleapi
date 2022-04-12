@@ -154,7 +154,6 @@ public class CassandraCradleStorage extends CradleStorage
 			statisticsWorker.start();
 
 			bookCache = new ReadThroughBookCache(ops, readAttrs, settings.getSchemaVersion());
-
 		}
 		catch (Exception e)
 		{
@@ -906,6 +905,28 @@ public class CassandraCradleStorage extends CradleStorage
 		{
 			throw new IOException("Error while getting " + queryInfo, e);
 		}
+	}
+
+	@Override
+	protected void doUpdatePageComment(BookId bookId, String pageName, String comment) throws CradleStorageException {
+		PageOperator pageOperator = ops.getOperators(bookId).getPageOperator();
+		PageNameOperator pageNameOperator = ops.getOperators(bookId).getPageNameOperator();
+
+		PageNameEntity pageNameEntity = pageNameOperator.get(bookId.getName(), pageName).one();
+		if (pageNameEntity == null) {
+			throw new CradleStorageException(String.format("Page with name %s not found in book %s", pageName, bookId.getName()));
+		}
+
+		PageEntity pageEntity = pageOperator.get(bookId.getName(),
+				pageNameEntity.getStartDate(),
+				pageNameEntity.getStartTime().minusNanos(1),
+				readAttrs).one();
+
+		pageNameEntity.setComment(comment);
+		pageEntity.setComment(comment);
+
+		pageNameOperator.update(pageNameEntity, readAttrs);
+		pageOperator.update(pageEntity, readAttrs);
 	}
 
 	@Override

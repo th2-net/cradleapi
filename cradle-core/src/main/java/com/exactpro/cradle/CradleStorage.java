@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle;
 
+import java.awt.print.Book;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -177,7 +178,9 @@ public abstract class CradleStorage
 	protected abstract Counter doGetCount (BookId bookId,
 										   EntityType entityType,
 										   Interval interval) throws CradleStorageException, IOException;
-	
+
+	protected abstract void doUpdatePageComment (BookId bookId, String pageName, String comment) throws CradleStorageException;
+
 	/**
 	 * Initializes internal objects of storage and prepares it to access data, i.e. creates needed connections and facilities.
 	 * @param prepareStorage if underlying physical storage should be created, if absent
@@ -964,6 +967,18 @@ public abstract class CradleStorage
 									Direction direction,
 									Interval interval) throws CradleStorageException, IOException {
 		return doGetMessageCount(bookId, sessionAlias, direction, interval);
+	}
+
+	/**
+	 *	Updates comment field for page
+	 * @param bookId Identifier for book
+	 * @param pageName name of page to update
+	 * @param comment updated comment value for page
+	 * @throws CradleStorageException
+	 */
+	public void updatePageComment (BookId bookId, String pageName, String comment) throws CradleStorageException {
+		bpc.getBook(bookId);
+		doUpdatePageComment(bookId, pageName, comment);
 	}
 
 	public final void updateEventStatus(StoredTestEvent event, boolean success) throws IOException
