@@ -181,6 +181,10 @@ public abstract class CradleStorage
 
 	protected abstract void doUpdatePageComment (BookId bookId, String pageName, String comment) throws CradleStorageException;
 
+	protected abstract void doUpdatePageName (BookId bookId, String pageName, String newPageName) throws CradleStorageException;
+
+
+
 	/**
 	 * Initializes internal objects of storage and prepares it to access data, i.e. creates needed connections and facilities.
 	 * @param prepareStorage if underlying physical storage should be created, if absent
@@ -979,6 +983,18 @@ public abstract class CradleStorage
 	public void updatePageComment (BookId bookId, String pageName, String comment) throws CradleStorageException {
 		bpc.getBook(bookId);
 		doUpdatePageComment(bookId, pageName, comment);
+	}
+
+	/**
+	 *	Updates page name
+	 * @param bookId Identifier for book
+	 * @param pageName name of page to update
+	 * @param newPageName name after update
+	 * @throws CradleStorageException
+	 */
+	public void updatePageName (BookId bookId, String pageName, String newPageName) throws CradleStorageException {
+		bpc.getBook(bookId);
+		doUpdatePageName(bookId, pageName, newPageName);
 	}
 
 	public final void updateEventStatus(StoredTestEvent event, boolean success) throws IOException

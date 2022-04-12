@@ -930,6 +930,29 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
+	protected void doUpdatePageName(BookId bookId, String oldPageName, String newPageName) throws CradleStorageException {
+		PageOperator pageOperator = ops.getOperators(bookId).getPageOperator();
+		PageNameOperator pageNameOperator = ops.getOperators(bookId).getPageNameOperator();
+
+		PageNameEntity pageNameEntity = pageNameOperator.get(bookId.getName(), oldPageName).one();
+		if (pageNameEntity == null) {
+			throw new CradleStorageException(String.format("Page with name %s not found in book %s", oldPageName, bookId.getName()));
+		}
+
+		PageEntity pageEntity = pageOperator.get(bookId.getName(),
+				pageNameEntity.getStartDate(),
+				pageNameEntity.getStartTime().minusNanos(1),
+				readAttrs).one();
+
+		pageEntity.setName(newPageName);
+		pageNameEntity.setName(newPageName);
+		pageNameOperator.remove(bookId.getName(), oldPageName, readAttrs);
+
+		pageNameOperator.writeNew(pageNameEntity, readAttrs);
+		pageOperator.update(pageEntity, readAttrs);
+	}
+
+	@Override
 	public IntervalsWorker getIntervalsWorker(PageId pageId)
 	{
 		return null; //TODO: implement
