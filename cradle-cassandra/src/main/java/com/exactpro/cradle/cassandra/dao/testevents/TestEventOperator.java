@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Delete;
@@ -48,8 +49,8 @@ public interface TestEventOperator
 			SelectQueryExecutor selectQueryExecutor, String queryInfo,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Insert
-	CompletableFuture<TestEventEntity> write(TestEventEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	@QueryProvider(providerClass = TestEvenInserter.class, entityHelpers = TestEventEntity.class, providerMethod = "insert")
+	CompletableFuture<AsyncResultSet> write(TestEventEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+PAGE+"=:page AND "+SCOPE+"=:scope "
 			+ "AND "+START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:id")
