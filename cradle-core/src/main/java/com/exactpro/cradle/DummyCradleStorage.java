@@ -330,13 +330,13 @@ public class DummyCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected void doUpdatePageComment(BookId bookId, String pageName, String comment) throws CradleStorageException {
-
+	protected PageInfo doUpdatePageComment(BookId bookId, String pageName, String comment) throws CradleStorageException {
+		return null;
 	}
 
 	@Override
-	protected void doUpdatePageName(BookId bookId, String pageName, String newPageName) throws CradleStorageException {
-
+	protected PageInfo doUpdatePageName(BookId bookId, String pageName, String newPageName) throws CradleStorageException {
+		return null;
 	}
 
 	@Override

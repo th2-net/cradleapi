@@ -60,6 +60,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.awt.print.Book;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -908,7 +909,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected void doUpdatePageComment(BookId bookId, String pageName, String comment) throws CradleStorageException {
+	protected PageInfo doUpdatePageComment(BookId bookId, String pageName, String comment) throws CradleStorageException {
 		PageOperator pageOperator = ops.getOperators(bookId).getPageOperator();
 		PageNameOperator pageNameOperator = ops.getOperators(bookId).getPageNameOperator();
 
@@ -930,10 +931,12 @@ public class CassandraCradleStorage extends CradleStorage
 		} catch (Exception e) {
 			throw new CradleStorageException(String.format("Failed to update page comment, this might result in broken state, try again. %s", e.getCause()));
 		}
+
+		return pageEntity.toPageInfo();
 	}
 
 	@Override
-	protected void doUpdatePageName(BookId bookId, String oldPageName, String newPageName) throws CradleStorageException {
+	protected PageInfo doUpdatePageName(BookId bookId, String oldPageName, String newPageName) throws CradleStorageException {
 		PageOperator pageOperator = ops.getOperators(bookId).getPageOperator();
 		PageNameOperator pageNameOperator = ops.getOperators(bookId).getPageNameOperator();
 
@@ -957,6 +960,8 @@ public class CassandraCradleStorage extends CradleStorage
 		} catch (Exception e) {
 			throw new CradleStorageException(String.format("Failed to update page name, this might result in broken state, try again. %s", e.getCause()));
 		}
+
+		return pageEntity.toPageInfo();
 	}
 
 	@Override
