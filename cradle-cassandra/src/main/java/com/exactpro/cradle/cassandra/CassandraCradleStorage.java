@@ -924,9 +924,12 @@ public class CassandraCradleStorage extends CradleStorage
 
 		pageNameEntity.setComment(comment);
 		pageEntity.setComment(comment);
-
-		pageNameOperator.update(pageNameEntity, readAttrs);
-		pageOperator.update(pageEntity, readAttrs);
+		try {
+			pageNameOperator.update(pageNameEntity, readAttrs);
+			pageOperator.update(pageEntity, readAttrs);
+		} catch (Exception e) {
+			throw new CradleStorageException(String.format("Failed to update page comment, this might result in broken state, try again. %s", e.getCause()));
+		}
 	}
 
 	@Override
@@ -948,8 +951,12 @@ public class CassandraCradleStorage extends CradleStorage
 		pageNameEntity.setName(newPageName);
 		pageNameOperator.remove(bookId.getName(), oldPageName, readAttrs);
 
-		pageNameOperator.writeNew(pageNameEntity, readAttrs);
-		pageOperator.update(pageEntity, readAttrs);
+		try {
+			pageNameOperator.writeNew(pageNameEntity, readAttrs);
+			pageOperator.update(pageEntity, readAttrs);
+		} catch (Exception e) {
+			throw new CradleStorageException(String.format("Failed to update page name, this might result in broken state, try again. %s", e.getCause()));
+		}
 	}
 
 	@Override
