@@ -980,9 +980,16 @@ public abstract class CradleStorage
 	 * @param comment updated comment value for page
 	 * @throws CradleStorageException
 	 */
-	public void updatePageComment (BookId bookId, String pageName, String comment) throws CradleStorageException {
+	public void updatePageComment (BookId bookId, String pageName, String comment) throws CradleStorageException, IOException {
 		bpc.getBook(bookId);
 		doUpdatePageComment(bookId, pageName, comment);
+		try {
+			logger.info("Page store updated, refreshing cache");
+			refreshPages(bookId);
+		} catch (Exception e) {
+			logger.error("Page was edited but cache wasn't refreshed, try to refresh pages");
+			throw  e;
+		}
 	}
 
 	/**
@@ -992,9 +999,17 @@ public abstract class CradleStorage
 	 * @param newPageName name after update
 	 * @throws CradleStorageException
 	 */
-	public void updatePageName (BookId bookId, String pageName, String newPageName) throws CradleStorageException {
+	public void updatePageName (BookId bookId, String pageName, String newPageName) throws CradleStorageException, IOException {
 		bpc.getBook(bookId);
 		doUpdatePageName(bookId, pageName, newPageName);
+
+		try {
+			logger.info("Page store updated, refreshing cache");
+			refreshPages(bookId);
+		} catch (Exception e) {
+			logger.error("Page was edited but cache wasn't refreshed, try to refresh pages");
+			throw  e;
+		}
 	}
 
 	public final void updateEventStatus(StoredTestEvent event, boolean success) throws IOException
