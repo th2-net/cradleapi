@@ -914,14 +914,18 @@ public class CassandraCradleStorage extends CradleStorage
 		PageNameOperator pageNameOperator = ops.getOperators(bookId).getPageNameOperator();
 
 		PageNameEntity pageNameEntity = pageNameOperator.get(bookId.getName(), pageName).one();
-		if (pageNameEntity == null) {
-			throw new CradleStorageException(String.format("Page with name %s not found in book %s", pageName, bookId.getName()));
+		PageEntity pageEntity = null;
+		if (pageNameEntity != null) {
+			pageEntity = pageOperator.get(bookId.getName(),
+					pageNameEntity.getStartDate(),
+					pageNameEntity.getStartTime().minusNanos(1),
+					readAttrs).one();
 		}
 
-		PageEntity pageEntity = pageOperator.get(bookId.getName(),
-				pageNameEntity.getStartDate(),
-				pageNameEntity.getStartTime().minusNanos(1),
-				readAttrs).one();
+		if (pageEntity == null ||
+				!pageEntity.getName().equals(pageNameEntity.getName())) {
+			throw new CradleStorageException(String.format("Page with name %s not found in book %s", pageName, bookId.getName()));
+		}
 
 		pageNameEntity.setComment(comment);
 		pageEntity.setComment(comment);
@@ -941,14 +945,18 @@ public class CassandraCradleStorage extends CradleStorage
 		PageNameOperator pageNameOperator = ops.getOperators(bookId).getPageNameOperator();
 
 		PageNameEntity pageNameEntity = pageNameOperator.get(bookId.getName(), oldPageName).one();
-		if (pageNameEntity == null) {
-			throw new CradleStorageException(String.format("Page with name %s not found in book %s", oldPageName, bookId.getName()));
+		PageEntity pageEntity = null;
+		if (pageNameEntity != null) {
+			pageEntity = pageOperator.get(bookId.getName(),
+					pageNameEntity.getStartDate(),
+					pageNameEntity.getStartTime().minusNanos(1),
+					readAttrs).one();
 		}
 
-		PageEntity pageEntity = pageOperator.get(bookId.getName(),
-				pageNameEntity.getStartDate(),
-				pageNameEntity.getStartTime().minusNanos(1),
-				readAttrs).one();
+		if (pageEntity == null ||
+				!pageEntity.getName().equals(pageNameEntity.getName())) {
+			throw new CradleStorageException(String.format("Page with name %s not found in book %s", oldPageName, bookId.getName()));
+		}
 
 		pageEntity.setName(newPageName);
 		pageNameEntity.setName(newPageName);
