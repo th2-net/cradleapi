@@ -36,6 +36,7 @@ public class StorageConstants
 			MESSAGE_DATE = "message_date",
 			MESSAGE_TIME = "message_time",
 			SESSION_ALIAS = "session_alias",
+			ALIAS_GROUP = "alias_group",
 			DIRECTION = "direction",
 			SEQUENCE = "sequence",
 			LAST_MESSAGE_DATE = "last_message_date",

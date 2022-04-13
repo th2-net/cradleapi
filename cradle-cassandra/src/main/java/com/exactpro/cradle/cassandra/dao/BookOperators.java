@@ -25,8 +25,10 @@ import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
 import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
 import com.exactpro.cradle.cassandra.dao.cache.CachedSession;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
+import com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.PageSessionsOperator;
 import com.exactpro.cradle.cassandra.dao.messages.SessionsOperator;
+import com.exactpro.cradle.cassandra.dao.messages.converters.GroupedMessageBatchEntityConverter;
 import com.exactpro.cradle.cassandra.dao.messages.converters.MessageBatchEntityConverter;
 import com.exactpro.cradle.cassandra.dao.messages.converters.PageSessionEntityConverter;
 import com.exactpro.cradle.cassandra.dao.messages.converters.SessionEntityConverter;
@@ -50,6 +52,7 @@ public class BookOperators
 	private final ScopeOperator scopeOperator;
 
 	private final MessageBatchOperator messageBatchOperator;
+	private final GroupedMessageBatchOperator groupedMessageBatchOperator;
 	private final PageSessionsOperator pageSessionsOperator;
 	private final TestEventOperator testEventOperator;
 	private final PageScopesOperator pageScopesOperator;
@@ -60,6 +63,7 @@ public class BookOperators
 	private final SessionEntityConverter sessionEntityConverter;
 	private final ScopeEntityConverter scopeEntityConverter;
 	private final MessageBatchEntityConverter messageBatchEntityConverter;
+	private final GroupedMessageBatchEntityConverter groupedMessageBatchEntityConverter;
 	private final PageSessionEntityConverter pageSessionEntityConverter;
 	private final TestEventEntityConverter testEventEntityConverter;
 	private final PageScopeEntityConverter pageScopeEntityConverter;
@@ -82,6 +86,7 @@ public class BookOperators
 		scopeOperator = dataMapper.scopeOperator(keyspace, settings.getScopesTable());
 		
 		messageBatchOperator = dataMapper.messageBatchOperator(keyspace, settings.getMessagesTable());
+		groupedMessageBatchOperator = dataMapper.groupedMessageBatchOperator(keyspace, settings.getGroupedMessagesTable());
 		pageSessionsOperator = dataMapper.pageSessionsOperator(keyspace, settings.getPageSessionsTable());
 		testEventOperator = dataMapper.testEventOperator(keyspace, settings.getTestEventsTable());
 		pageScopesOperator = dataMapper.pageScopesOperator(keyspace, settings.getPageScopesTable());
@@ -93,6 +98,7 @@ public class BookOperators
 		sessionEntityConverter = dataMapper.sessionEntityConverter();
 		scopeEntityConverter = dataMapper.scopeEntityConverter();
 		messageBatchEntityConverter = dataMapper.messageBatchEntityConverter();
+		groupedMessageBatchEntityConverter = dataMapper.groupedMessageBatchEntityConverter();
 		pageSessionEntityConverter = dataMapper.pageSessionEntityConverter();
 		testEventEntityConverter = dataMapper.testEventEntityConverter();
 		pageScopeEntityConverter = dataMapper.pageScopeEntityConverter();
@@ -136,6 +142,11 @@ public class BookOperators
 		return messageBatchOperator;
 	}
 
+	public GroupedMessageBatchOperator getGroupedMessageBatchOperator()
+	{
+		return groupedMessageBatchOperator;
+	}
+
 	public PageSessionsOperator getPageSessionsOperator()
 	{
 		return pageSessionsOperator;
@@ -177,6 +188,11 @@ public class BookOperators
 	public MessageBatchEntityConverter getMessageBatchEntityConverter()
 	{
 		return messageBatchEntityConverter;
+	}
+
+	public GroupedMessageBatchEntityConverter getGroupedMessageBatchEntityConverter()
+	{
+		return groupedMessageBatchEntityConverter;
 	}
 
 	public PageSessionEntityConverter getPageSessionEntityConverter()

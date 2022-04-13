@@ -107,6 +107,19 @@ public class MessagesWorker extends Worker
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, provider), composingService);
 	}
 
+	public CompletableFuture<CradleResultSet<StoredMessageBatch>> getGroupedMessageBatches(GroupedMessageFilter filter,
+			BookInfo book, long maxMessageBatchDurationLimit)
+			throws CradleStorageException
+	{
+		GroupedMessageIteratorProvider provider =
+				new GroupedMessageIteratorProvider("get messages batches filtered by " + filter,
+						maxMessageBatchDurationLimit, filter,
+						getBookOps(book.getId()), book, composingService, selectQueryExecutor,
+						composeReadAttrs(filter.getFetchParameters()));
+		return provider.nextIterator()
+				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, provider), composingService);
+	}
+
 	public CompletableFuture<CradleResultSet<StoredMessage>> getMessages(MessageFilter filter, BookInfo book)
 			throws CradleStorageException
 	{
@@ -206,9 +219,15 @@ public class MessagesWorker extends Worker
 				}, composingService);
 	}
 
-	public MessageBatchEntity createEntity(MessageBatchToStore batch, PageId pageId) throws IOException
+	public MessageBatchEntity createMessageBatchEntity(MessageBatchToStore batch, PageId pageId) throws IOException
 	{
 		return new MessageBatchEntity(batch, pageId, settings.getMaxUncompressedMessageBatchSize());
+	}
+	
+	public GroupedMessageBatchEntity createGroupedMessageBatchEntity(MessageBatchToStore batch, PageId pageId, String groupName)
+			throws IOException
+	{
+		return new GroupedMessageBatchEntity(createMessageBatchEntity(batch, pageId), groupName);
 	}
 
 	public CompletableFuture<PageSessionEntity> storePageSession(MessageBatchToStore batch, PageId pageId)
@@ -253,6 +272,19 @@ public class MessagesWorker extends Worker
 		return mbOperator.write(entity, writeAttrs)
 				.thenAccept(result -> messageStatisticsCollector.updateMessageBatchStatistics(bookId, entity.getSessionAlias(), entity.getDirection(), meta))
 				.thenAcceptAsync(result -> updateMessageWriteMetrics(entity, bookId), composingService);
+	}
+
+	public CompletableFuture<GroupedMessageBatchEntity> storeGroupedMessageBatch(GroupedMessageBatchEntity entity, BookId bookId)
+	{
+		BookOperators bookOps = getBookOps(bookId);
+		GroupedMessageBatchOperator gmbOperator = bookOps.getGroupedMessageBatchOperator();
+		List<SerializedEntityMetadata> meta = entity.getSerializedMessageMetadata();
+
+		return gmbOperator.write(entity, writeAttrs)
+				.thenAccept(result -> messageStatisticsCollector.updateMessageBatchStatistics(bookId,
+						entity.getSessionAlias(), entity.getDirection(), meta))
+				.thenAcceptAsync(result -> updateMessageWriteMetrics(entity.getMessageBatchEntity(), bookId), composingService)
+				.thenApplyAsync(result -> entity, composingService);
 	}
 
 	public long getBoundarySequence(String sessionAlias, Direction direction, BookInfo book, boolean first)
