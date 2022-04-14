@@ -27,17 +27,40 @@ import java.time.Instant;
 public class GroupedMessageFilter extends AbstractFilter
 {
 	private final String groupName;
-	
-	protected GroupedMessageFilter(BookId bookId, PageId pageId, String groupName)
+
+	public GroupedMessageFilter(BookId bookId, String groupName)
+	{
+		super(bookId);
+		this.groupName = groupName;
+	}
+
+	public GroupedMessageFilter(BookId bookId, PageId pageId, String groupName)
 	{
 		super(bookId, pageId);
 		this.groupName = groupName;
 	}
 
-	protected GroupedMessageFilter(GroupedMessageFilter copyFrom)
+	public GroupedMessageFilter(GroupedMessageFilter copyFrom)
 	{
 		super(copyFrom);
 		this.groupName = copyFrom.groupName;
+	}
+	
+	public static GroupedMessageFilterBuilder builder()
+	{
+		return new GroupedMessageFilterBuilder();
+	}
+
+	@Override
+	public void setFrom(FilterForGreater<Instant> from)
+	{
+		super.setFrom(from);
+	}
+
+	@Override
+	public void setTo(FilterForLess<Instant> to)
+	{
+		super.setTo(to);
 	}
 
 	public String getGroupName()

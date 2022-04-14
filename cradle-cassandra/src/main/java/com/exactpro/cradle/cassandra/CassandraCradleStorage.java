@@ -25,7 +25,6 @@ import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
 import com.exactpro.cradle.cassandra.counters.FrameInterval;
-import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.cassandra.dao.*;
 import com.exactpro.cradle.cassandra.dao.books.*;
 import com.exactpro.cradle.cassandra.dao.messages.*;
@@ -47,6 +46,7 @@ import com.exactpro.cradle.cassandra.workers.StatisticsWorker;
 import com.exactpro.cradle.cassandra.workers.WorkerSupplies;
 import com.exactpro.cradle.counters.Counter;
 import com.exactpro.cradle.counters.CounterSample;
+import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
@@ -96,7 +96,8 @@ public class CassandraCradleStorage extends CradleStorage
 	public CassandraCradleStorage(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings, 
 			ExecutorService composingService) throws CradleStorageException
 	{
-		super(composingService, storageSettings.getMaxMessageBatchSize(), storageSettings.getMaxTestEventBatchSize());
+		super(composingService, storageSettings.getMaxMessageBatchSize(),
+				storageSettings.getMaxMessageBatchDurationLimit(), storageSettings.getMaxTestEventBatchSize());
 		this.connection = new CassandraConnection(connectionSettings, storageSettings.getTimeout());
 		this.settings = storageSettings;
 
@@ -525,11 +526,17 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CradleResultSet<StoredMessageBatch> doGetGroupedMessageBatches(GroupedMessageFilter filter,
-			BookInfo book)
+	protected CradleResultSet<StoredMessageBatch> doGetGroupedMessageBatches(GroupedMessageFilter filter, BookInfo book)
 			throws IOException, CradleStorageException
 	{
-		return null;
+		try
+		{
+			return doGetGroupedMessageBatchesAsync(filter, book).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting grouped message batches filtered by "+filter, e);
+		}
 	}
 
 	@Override

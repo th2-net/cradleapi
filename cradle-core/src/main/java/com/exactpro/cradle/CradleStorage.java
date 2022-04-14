@@ -62,7 +62,8 @@ public abstract class CradleStorage
 	protected final boolean ownedComposingService;
 	protected final CradleEntitiesFactory entitiesFactory;
 
-	public CradleStorage(ExecutorService composingService, int maxMessageBatchSize, int maxTestEventBatchSize) throws CradleStorageException
+	public CradleStorage(ExecutorService composingService, int maxMessageBatchSize, long maxMessageBatchDuration,
+			int maxTestEventBatchSize) throws CradleStorageException
 	{
 		if (composingService == null)
 		{
@@ -75,12 +76,13 @@ public abstract class CradleStorage
 			this.composingService = composingService;
 		}
 		
-		entitiesFactory = new CradleEntitiesFactory(maxMessageBatchSize, maxTestEventBatchSize);
+		entitiesFactory = new CradleEntitiesFactory(maxMessageBatchSize, maxMessageBatchDuration, maxTestEventBatchSize);
 	}
 	
 	public CradleStorage() throws CradleStorageException
 	{
-		this(null, DEFAULT_MAX_MESSAGE_BATCH_SIZE, DEFAULT_MAX_TEST_EVENT_BATCH_SIZE);
+		this(null, DEFAULT_MAX_MESSAGE_BATCH_SIZE, DEFAULT_MAX_MESSAGE_BATCH_DURATION_LIMIT_SECONDS,
+				DEFAULT_MAX_TEST_EVENT_BATCH_SIZE);
 	}
 	
 
