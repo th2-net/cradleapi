@@ -97,7 +97,7 @@ public class TestEventEntityTest
 		StoredTestEvent newEvent = entity.toStoredTestEvent(page);
 		
 		RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
-		config.ignoreFieldsMatchingRegexes("pageId", ".*\\.pageId", "error", ".*\\.error");
+		config.ignoreFieldsMatchingRegexes("pageId", ".*\\.pageId", "error", ".*\\.error", "recDate", ".*\\.recDate");
 		
 		Assertions.assertThat(newEvent)
 				.usingRecursiveComparison(config)

@@ -17,6 +17,7 @@
 package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.mapper.annotations.*;
@@ -26,7 +27,6 @@ import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
@@ -72,9 +72,9 @@ public interface MessageBatchOperator
 			SelectQueryExecutor selectExecutor, String queryInfo,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-	@Insert
-	CompletableFuture<MessageBatchEntity> write(MessageBatchEntity batch,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	@QueryProvider(providerClass = MessageBatchInserter.class, entityHelpers = MessageBatchEntity.class, providerMethod = "insert")
+	CompletableFuture<AsyncResultSet> write(MessageBatchEntity batch,
+											Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Delete(entityClass = MessageBatchEntity.class)
 	void remove(String page, String sessionAlias, String direction, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);

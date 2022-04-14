@@ -88,6 +88,9 @@ public class MessageBatchEntity extends CradleEntity
 	@CqlName(LAST_SEQUENCE)
 	private long lastSequence;
 
+	@CqlName(REC_DATE)
+	private Instant recDate;
+
 	private List<SerializedEntityMetadata> serializedMessageMetadata;
 	
 	public MessageBatchEntity()
@@ -230,6 +233,14 @@ public class MessageBatchEntity extends CradleEntity
 		this.lastSequence = lastSequence;
 	}
 
+	public Instant getRecDate() {
+		return recDate;
+	}
+
+	public void setRecDate(Instant recDate) {
+		this.recDate = recDate;
+	}
+
 	@Transient
 	public Instant getFirstMessageTimestamp()
 	{
@@ -276,7 +287,7 @@ public class MessageBatchEntity extends CradleEntity
 		
 		byte[] content = restoreContent(batchId);
 		List<StoredMessage> storedMessages = MessageUtils.deserializeMessages(content, batchId);
-		return new StoredMessageBatch(storedMessages, pageId);
+		return new StoredMessageBatch(storedMessages, pageId, recDate);
 	}
 	
 	
