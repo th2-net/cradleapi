@@ -330,6 +330,16 @@ public class DummyCradleStorage extends CradleStorage
 	}
 
 	@Override
+	protected PageInfo doUpdatePageComment(BookId bookId, String pageName, String comment) throws CradleStorageException {
+		return null;
+	}
+
+	@Override
+	protected PageInfo doUpdatePageName(BookId bookId, String pageName, String newPageName) throws CradleStorageException {
+		return null;
+	}
+
+	@Override
 	public IntervalsWorker getIntervalsWorker(PageId pageId)
 	{
 		return null;
