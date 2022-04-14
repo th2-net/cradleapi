@@ -981,16 +981,16 @@ public abstract class CradleStorage
 	 */
 	public PageInfo updatePageComment (BookId bookId, String pageName, String comment) throws CradleStorageException, IOException {
 		bpc.getBook(bookId);
-		PageInfo pageInfo = doUpdatePageComment(bookId, pageName, comment);
+		PageInfo updatedPageInfo = doUpdatePageComment(bookId, pageName, comment);
 
 		try {
-			refreshPage(new PageId(bookId, pageName), pageInfo);
+			updatePage(new PageId(bookId, pageName), updatedPageInfo);
 		} catch (Exception e) {
 			logger.error("Page was edited but cache wasn't refreshed, try to refresh pages");
 			throw  e;
 		}
 
-		return pageInfo;
+		return updatedPageInfo;
 	}
 
 	/**
@@ -1002,19 +1002,19 @@ public abstract class CradleStorage
 	 */
 	public PageInfo updatePageName (BookId bookId, String pageName, String newPageName) throws CradleStorageException, IOException {
 		bpc.getBook(bookId);
-		PageInfo pageInfo = doUpdatePageName(bookId, pageName, newPageName);
+		PageInfo updatedPageInfo = doUpdatePageName(bookId, pageName, newPageName);
 
 		try {
-			refreshPage(new PageId(bookId, pageName), pageInfo);
+			updatePage(new PageId(bookId, pageName), updatedPageInfo);
 		} catch (Exception e) {
 			logger.error("Page was edited but cache wasn't refreshed, try to refresh pages");
 			throw  e;
 		}
 
-		return pageInfo;
+		return updatedPageInfo;
 	}
 
-	private void refreshPage (PageId pageId, PageInfo updatedPageInfo) throws CradleStorageException {
+	private void updatePage(PageId pageId, PageInfo updatedPageInfo) throws CradleStorageException {
 		BookInfo bookInfo = bpc.getBook(pageId.getBookId());
 
 		bookInfo.removePage(pageId);
