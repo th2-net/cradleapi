@@ -26,8 +26,8 @@ import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
+import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.filters.FilterForGreater;
-import com.exactpro.cradle.filters.FilterForGreaterBuilder;
 import com.exactpro.cradle.messages.GroupedMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -54,6 +54,7 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredMessa
 	private final ExecutorService composingService;
 	private final SelectQueryExecutor selectQueryExecutor;
 	private final GroupedMessageFilter filter;
+	private FilterForGreater<Instant> shiftedLeftBound;
 	private PageInfo firstPage, lastPage;
 	private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
 	private final int limit;
@@ -77,20 +78,32 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredMessa
 		this.filter = filter;
 		this.limit = filter.getLimit();
 		this.returned = new AtomicInteger();
-		this.firstPage = FilterUtils.findFirstPage(filter.getPageId(), filter.getFrom(), book);
+		this.shiftedLeftBound = calculateShifted(filter.getFrom());
+		this.firstPage = FilterUtils.findFirstPage(filter.getPageId(), shiftedLeftBound, book);
 		this.lastPage = FilterUtils.findLastPage(filter.getPageId(), filter.getTo(), book);
 		this.cassandraFilter = createInitialFilter(filter);
 	}
 
 	private CassandraGroupedMessageFilter createInitialFilter(GroupedMessageFilter filter)
 	{
-		// Need a left shift to get batches that may have started earlier
-		FilterForGreater<Instant> shiftedFrom = filter.getFrom();
-		if (shiftedFrom != null)
-			shiftedFrom.setValue(shiftedFrom.getValue().minus(maxMessageBatchDurationLimit, ChronoUnit.SECONDS));
-		
 		return new CassandraGroupedMessageFilter(firstPage.getId().getName(), filter.getGroupName(),
-				shiftedFrom, filter.getTo(), filter.getLimit());
+				shiftedLeftBound, filter.getTo(), filter.getLimit());
+	}
+
+	// Need a left shift to get batches that may have started earlier
+	private FilterForGreater<Instant> calculateShifted(FilterForGreater<Instant> from)
+	{
+		if (from == null)
+			return null;
+		
+		Instant shiftedValue = from.getValue().minus(maxMessageBatchDurationLimit, ChronoUnit.SECONDS);
+		FilterForGreater<Instant> result = new FilterForGreater<>(shiftedValue);
+		if (from.getOperation() == ComparisonOperation.GREATER)
+			result.setGreater();
+		else 
+			result.setGreaterOrEquals();
+		
+		return result;
 	}
 
 	protected CassandraGroupedMessageFilter createNextFilter(CassandraGroupedMessageFilter prevFilter, int updatedLimit)
@@ -122,7 +135,7 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredMessa
 				{
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
 					// Updated limit should be smaller, since we already got entities from previous batch
-					cassandraFilter = createNextFilter(cassandraFilter, limit - returned.get());
+					cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(),0));
 					return new ConvertingPagedIterator<>(resultSet, selectQueryExecutor, limit, returned,
 							entity -> mapMessageBatchEntity(pageId, entity.getMessageBatchEntity()), converter::getEntity,
 							"fetch next page of message batches");
