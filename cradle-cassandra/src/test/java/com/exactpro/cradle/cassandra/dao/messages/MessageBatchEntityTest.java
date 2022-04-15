@@ -46,7 +46,7 @@ public class MessageBatchEntityTest
 				.content(createContent(40))
 				.metadata("key_test", "value_test")
 				.build(), 200, 600);
-		StoredMessageBatch storedBatch = new StoredMessageBatch(batch.getMessages(), pageId);
+		StoredMessageBatch storedBatch = new StoredMessageBatch(batch.getMessages(), pageId, null);
 		
 		MessageBatchEntity entity = new MessageBatchEntity(batch, pageId, 2000);
 		StoredMessageBatch batchFromEntity = entity.toStoredMessageBatch(pageId);

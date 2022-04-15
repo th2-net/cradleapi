@@ -32,7 +32,8 @@ public class StorageConstants
 			DESCRIPTION = "description",
 			CREATED = "created",
 			SCHEMA_VERSION = "schema_version",
-			
+
+			REC_DATE = "rec_date",
 			MESSAGE_DATE = "message_date",
 			MESSAGE_TIME = "message_time",
 			SESSION_ALIAS = "session_alias",

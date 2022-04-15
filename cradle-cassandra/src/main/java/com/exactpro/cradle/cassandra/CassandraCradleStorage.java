@@ -155,7 +155,6 @@ public class CassandraCradleStorage extends CradleStorage
 			statisticsWorker.start();
 
 			bookCache = new ReadThroughBookCache(ops, readAttrs, settings.getSchemaVersion());
-
 		}
 		catch (Exception e)
 		{
@@ -973,6 +972,66 @@ public class CassandraCradleStorage extends CradleStorage
 		{
 			throw new IOException("Error while getting " + queryInfo, e);
 		}
+	}
+
+	@Override
+	protected PageInfo doUpdatePageComment(BookId bookId, String pageName, String comment) throws CradleStorageException {
+		PageOperator pageOperator = ops.getOperators(bookId).getPageOperator();
+		PageNameOperator pageNameOperator = ops.getOperators(bookId).getPageNameOperator();
+
+		PageNameEntity pageNameEntity = pageNameOperator.get(bookId.getName(), pageName).one();
+		if (pageNameEntity == null)
+			throw new CradleStorageException(String.format("Page \"%s\" not found in book \"%s\"", pageName, bookId.getName()));
+
+		PageEntity pageEntity = pageOperator.get(bookId.getName(),
+					pageNameEntity.getStartDate(),
+					pageNameEntity.getStartTime().minusNanos(1),
+					readAttrs).one();
+
+		if (pageEntity == null || !pageEntity.getName().equals(pageNameEntity.getName()))
+			throw new CradleStorageException(String.format("Inconsistent data for page \"%s\" in book %s", pageName, bookId.getName()));
+
+		pageNameEntity.setComment(comment);
+		pageEntity.setComment(comment);
+		try {
+			pageNameOperator.update(pageNameEntity, readAttrs);
+			pageOperator.update(pageEntity, readAttrs);
+		} catch (Exception e) {
+			throw new CradleStorageException(String.format("Failed to update page comment, this might result in broken state, try again. %s", e.getCause()));
+		}
+
+		return pageEntity.toPageInfo();
+	}
+
+	@Override
+	protected PageInfo doUpdatePageName(BookId bookId, String oldPageName, String newPageName) throws CradleStorageException {
+		PageOperator pageOperator = ops.getOperators(bookId).getPageOperator();
+		PageNameOperator pageNameOperator = ops.getOperators(bookId).getPageNameOperator();
+
+		PageNameEntity pageNameEntity = pageNameOperator.get(bookId.getName(), oldPageName).one();
+		if (pageNameEntity == null)
+			throw new CradleStorageException(String.format("Page \"%s\" not found in book \"%s\"", oldPageName, bookId.getName()));
+
+		PageEntity pageEntity = pageOperator.get(bookId.getName(),
+				pageNameEntity.getStartDate(),
+				pageNameEntity.getStartTime().minusNanos(1),
+				readAttrs).one();
+
+		if (pageEntity == null || !pageEntity.getName().equals(pageNameEntity.getName()))
+			throw new CradleStorageException(String.format("Inconsistent data for page \"%s\" in book %s", oldPageName, bookId.getName()));
+
+		pageEntity.setName(newPageName);
+		pageNameEntity.setName(newPageName);
+		pageNameOperator.remove(bookId.getName(), oldPageName, readAttrs);
+
+		try {
+			pageNameOperator.writeNew(pageNameEntity, readAttrs);
+			pageOperator.update(pageEntity, readAttrs);
+		} catch (Exception e) {
+			throw new CradleStorageException(String.format("Failed to update page name, this might result in broken state, try again. %s", e.getCause()));
+		}
+
+		return pageEntity.toPageInfo();
 	}
 
 	@Override

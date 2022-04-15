@@ -162,7 +162,8 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withColumn(MESSAGE_COUNT, DataTypes.INT)
 				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
 				.withColumn(LABELS, DataTypes.setOf(DataTypes.TEXT))
-				.withColumn(CONTENT, DataTypes.BLOB));
+				.withColumn(CONTENT, DataTypes.BLOB)
+				.withColumn(REC_DATE, DataTypes.TIMESTAMP));
 	}
 	
 	private void createGroupedMessages() throws IOException
@@ -220,7 +221,8 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
 				.withColumn(MESSAGES, DataTypes.BLOB)
 				.withColumn(LABELS, DataTypes.setOf(DataTypes.TEXT))
-				.withColumn(CONTENT, DataTypes.BLOB));
+				.withColumn(CONTENT, DataTypes.BLOB)
+				.withColumn(REC_DATE, DataTypes.TIMESTAMP));
 	}
 	
 	private void createPageScopes() throws IOException

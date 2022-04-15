@@ -19,6 +19,8 @@ package com.exactpro.cradle.testevents;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.utils.CradleStorageException;
 
+import java.time.Instant;
+
 /**
  * Holds information about test event stored in Cradle.
  * Can be a single event or a batch of events.
@@ -33,8 +35,9 @@ public abstract class StoredTestEvent implements TestEvent
 	private final StoredTestEventId parentId;
 	private final PageId pageId;
 	private final String error;
+	private final Instant recDate;
 	
-	public StoredTestEvent(StoredTestEventId id, String name, String type, StoredTestEventId parentId, PageId pageId, String error)
+	public StoredTestEvent(StoredTestEventId id, String name, String type, StoredTestEventId parentId, PageId pageId, String error, Instant recDate)
 	{
 		this.id = id;
 		this.name = name;
@@ -42,14 +45,15 @@ public abstract class StoredTestEvent implements TestEvent
 		this.parentId = parentId;
 		this.pageId = pageId;
 		this.error = error;
+		this.recDate = recDate;
 	}
 	
 	public StoredTestEvent(TestEvent event, PageId pageId)
 	{
-		this(event.getId(), event.getName(), event.getType(), event.getParentId(), pageId, null);
+		this(event.getId(), event.getName(), event.getType(), event.getParentId(), pageId, null, null);
 	}
-	
-	
+
+
 	public static StoredTestEventSingle single(TestEventSingleToStore event, PageId pageId) throws CradleStorageException
 	{
 		return new StoredTestEventSingle(event, pageId);
@@ -95,7 +99,10 @@ public abstract class StoredTestEvent implements TestEvent
 	{
 		return error;
 	}
-	
+
+	public Instant getRecDate() {
+		return recDate;
+	}
 	
 	public final boolean isSingle()
 	{

@@ -189,7 +189,13 @@ public abstract class CradleStorage
 	protected abstract Counter doGetCount (BookId bookId,
 										   EntityType entityType,
 										   Interval interval) throws CradleStorageException, IOException;
-	
+
+	protected abstract PageInfo doUpdatePageComment (BookId bookId, String pageName, String comment) throws CradleStorageException;
+
+	protected abstract PageInfo doUpdatePageName (BookId bookId, String pageName, String newPageName) throws CradleStorageException;
+
+
+
 	/**
 	 * Initializes internal objects of storage and prepares it to access data, i.e. creates needed connections and facilities.
 	 * @param prepareStorage if underlying physical storage should be created, if absent
@@ -1058,6 +1064,55 @@ public abstract class CradleStorage
 									Direction direction,
 									Interval interval) throws CradleStorageException, IOException {
 		return doGetMessageCount(bookId, sessionAlias, direction, interval);
+	}
+
+	/**
+	 *	Updates comment field for page
+	 * @param bookId Identifier for book
+	 * @param pageName name of page to update
+	 * @param comment updated comment value for page
+	 * @throws CradleStorageException
+	 */
+	public PageInfo updatePageComment (BookId bookId, String pageName, String comment) throws CradleStorageException, IOException {
+		bpc.getBook(bookId);
+		PageInfo updatedPageInfo = doUpdatePageComment(bookId, pageName, comment);
+
+		try {
+			updatePage(new PageId(bookId, pageName), updatedPageInfo);
+		} catch (Exception e) {
+			logger.error("Page was edited but cache wasn't refreshed, try to refresh pages");
+			throw  e;
+		}
+
+		return updatedPageInfo;
+	}
+
+	/**
+	 *	Updates page name
+	 * @param bookId Identifier for book
+	 * @param pageName name of page to update
+	 * @param newPageName name after update
+	 * @throws CradleStorageException
+	 */
+	public PageInfo updatePageName (BookId bookId, String pageName, String newPageName) throws CradleStorageException, IOException {
+		bpc.getBook(bookId);
+		PageInfo updatedPageInfo = doUpdatePageName(bookId, pageName, newPageName);
+
+		try {
+			updatePage(new PageId(bookId, pageName), updatedPageInfo);
+		} catch (Exception e) {
+			logger.error("Page was edited but cache wasn't refreshed, try to refresh pages");
+			throw  e;
+		}
+
+		return updatedPageInfo;
+	}
+
+	private void updatePage(PageId pageId, PageInfo updatedPageInfo) throws CradleStorageException {
+		BookInfo bookInfo = bpc.getBook(pageId.getBookId());
+
+		bookInfo.removePage(pageId);
+		bookInfo.addPage(updatedPageInfo);
 	}
 
 	public final void updateEventStatus(StoredTestEvent event, boolean success) throws IOException

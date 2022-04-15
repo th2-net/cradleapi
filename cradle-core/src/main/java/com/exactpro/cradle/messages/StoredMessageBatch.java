@@ -31,14 +31,16 @@ public class StoredMessageBatch implements MessageBatch
 	protected StoredMessageId id;
 	protected int batchSize;
 	protected final List<StoredMessage> messages;
+	private final Instant recDate;
 
 	public StoredMessageBatch()
 	{
-		this(null, null);
+		this(null, null, null);
 	}
 
-	public StoredMessageBatch(Collection<StoredMessage> messages, PageId pageId)
+	public StoredMessageBatch(Collection<StoredMessage> messages, PageId pageId, Instant recDate)
 	{
+		this.recDate = recDate;
 		this.messages = createMessagesList(messages, pageId);
 		if (messages == null || messages.isEmpty()) {
 			batchSize = MessagesSizeCalculator.calculateMessageBatchSize(Collections.emptyList()).total;
@@ -117,6 +119,11 @@ public class StoredMessageBatch implements MessageBatch
 	{
 		StoredMessage m = getLastMessage();
 		return m != null ? m.getTimestamp() : null;
+	}
+
+
+	public Instant getRecDate() {
+		return recDate;
 	}
 
 	@Override

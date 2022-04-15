@@ -18,16 +18,17 @@ package com.exactpro.cradle.cassandra.dao.books;
 
 import java.util.function.Function;
 
+import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.mapper.annotations.Dao;
-import com.datastax.oss.driver.api.mapper.annotations.Delete;
-import com.datastax.oss.driver.api.mapper.annotations.Insert;
-import com.datastax.oss.driver.api.mapper.annotations.Update;
+import com.datastax.oss.driver.api.mapper.annotations.*;
 
 @Dao
 public interface PageNameOperator
 {
+	@Select
+	PagingIterable<PageNameEntity> get (String part, String name);
+
 	@Insert(ifNotExists = true)
 	ResultSet writeNew(PageNameEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
