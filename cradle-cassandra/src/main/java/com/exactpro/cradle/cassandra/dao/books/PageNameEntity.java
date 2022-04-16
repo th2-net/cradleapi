@@ -16,8 +16,6 @@
 
 package com.exactpro.cradle.cassandra.dao.books;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
-
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -27,35 +25,42 @@ import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.datastax.oss.driver.api.mapper.annotations.Transient;
-import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.utils.TimeUtils;
 
 @Entity
 public class PageNameEntity
 {
+	public static final String FIELD_PART = "part",
+			FIELD_NAME = "name",
+			FIELD_START_DATE = "start_date",
+			FIELD_START_TIME = "start_time",
+			FIELD_COMMENT = "comment",
+			FIELD_END_DATE = "end_date",
+			FIELD_END_TIME = "end_time";
+
+
 	@PartitionKey(0)
-	@CqlName(PART)
+	@CqlName(FIELD_PART)
 	private String part;
 	
 	@PartitionKey(1)
-	@CqlName(NAME)
+	@CqlName(FIELD_NAME)
 	private String name;
 	
-	@CqlName(START_DATE)
+	@CqlName(FIELD_START_DATE)
 	private LocalDate startDate;
 	
-	@CqlName(START_TIME)
+	@CqlName(FIELD_START_TIME)
 	private LocalTime startTime;
 	
-	@CqlName(COMMENT)
+	@CqlName(FIELD_COMMENT)
 	private String comment;
 	
-	@CqlName(END_DATE)
+	@CqlName(FIELD_END_DATE)
 	private LocalDate endDate;
 	
-	@CqlName(END_TIME)
+	@CqlName(FIELD_END_TIME)
 	private LocalTime endTime;
 	
 	

@@ -12,7 +12,7 @@ import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
+import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.*;
 
 public class TestEvenInserter {
 
@@ -26,27 +26,27 @@ public class TestEvenInserter {
 
     public CompletableFuture<AsyncResultSet> insert(TestEventEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes) {
         BoundStatementBuilder builder = insertStatement.boundStatementBuilder()
-                .setString(PAGE, testEvent.getPage())
-                .setString(SCOPE, testEvent.getScope())
+                .setString(FIELD_PAGE, testEvent.getPage())
+                .setString(FIELD_SCOPE, testEvent.getScope())
 
-                .setLocalDate(START_DATE, testEvent.getStartDate())
-                .setLocalTime(START_TIME, testEvent.getStartTime())
-                .setString(ID, testEvent.getId())
+                .setLocalDate(FIELD_START_DATE, testEvent.getStartDate())
+                .setLocalTime(FIELD_START_TIME, testEvent.getStartTime())
+                .setString(FIELD_ID, testEvent.getId())
 
-                .setString(NAME, testEvent.getName())
-                .setString(TYPE, testEvent.getType())
-                .setBoolean(SUCCESS, testEvent.isSuccess())
-                .setBoolean(ROOT, testEvent.isRoot())
-                .setString(PARENT_ID, testEvent.getParentId())
-                .setBoolean(EVENT_BATCH, testEvent.isEventBatch())
-                .setInt(EVENT_COUNT, testEvent.getEventCount())
-                .setLocalDate(END_DATE, testEvent.getEndDate())
-                .setLocalTime(END_TIME, testEvent.getEndTime())
-                .setBoolean(COMPRESSED, testEvent.isCompressed())
-                .setByteBuffer(MESSAGES, testEvent.getMessages())
-                .setSet(LABELS, testEvent.getLabels(), String.class)
-                .setByteBuffer(CONTENT, testEvent.getContent())
-                .setInstant(REC_DATE, Instant.now());
+                .setString(FIELD_NAME, testEvent.getName())
+                .setString(FIELD_TYPE, testEvent.getType())
+                .setBoolean(FIELD_SUCCESS, testEvent.isSuccess())
+                .setBoolean(FIELD_ROOT, testEvent.isRoot())
+                .setString(FIELD_PARENT_ID, testEvent.getParentId())
+                .setBoolean(FIELD_EVENT_BATCH, testEvent.isEventBatch())
+                .setInt(FIELD_EVENT_COUNT, testEvent.getEventCount())
+                .setLocalDate(FIELD_END_DATE, testEvent.getEndDate())
+                .setLocalTime(FIELD_END_TIME, testEvent.getEndTime())
+                .setBoolean(FIELD_COMPRESSED, testEvent.isCompressed())
+                .setByteBuffer(FIELD_MESSAGES, testEvent.getMessages())
+                .setSet(FIELD_LABELS, testEvent.getLabels(), String.class)
+                .setByteBuffer(FIELD_CONTENT, testEvent.getContent())
+                .setInstant(FIELD_REC_DATE, Instant.now());
 
 
         attributes.apply(builder);

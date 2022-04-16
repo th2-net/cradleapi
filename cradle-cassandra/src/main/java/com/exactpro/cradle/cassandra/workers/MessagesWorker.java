@@ -49,7 +49,7 @@ import java.util.function.Function;
 import java.util.zip.DataFormatException;
 
 import static com.exactpro.cradle.CradleStorage.EMPTY_MESSAGE_INDEX;
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.*;
 import static java.lang.String.format;
 
 public class MessagesWorker extends Worker
@@ -173,7 +173,7 @@ public class MessagesWorker extends Worker
 					return selectQueryExecutor.executeSingleRowResultQuery(
 									() -> mbOperator.get(pageId.getName(), id.getSessionAlias(),
 											id.getDirection().getLabel(), ldt.toLocalDate(),
-											row.getLocalTime(MESSAGE_TIME), row.getLong(SEQUENCE), readAttrs),
+											row.getLocalTime(FIELD_MESSAGE_TIME), row.getLong(FIELD_SEQUENCE), readAttrs),
 									mbEntityConverter::getEntity,
 									format("get message batch for message with id '%s'", id))
 							.thenApplyAsync(entity ->
@@ -290,6 +290,6 @@ public class MessagesWorker extends Worker
 			return EMPTY_MESSAGE_INDEX;
 		}
 
-		return row.getLong(first ? SEQUENCE : LAST_SEQUENCE);
+		return row.getLong(first ? FIELD_SEQUENCE : FIELD_LAST_SEQUENCE);
 	}
 }

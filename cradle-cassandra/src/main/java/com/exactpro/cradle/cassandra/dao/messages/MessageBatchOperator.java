@@ -29,8 +29,7 @@ import java.time.LocalTime;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
-
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.*;
 @Dao
 public interface MessageBatchOperator
 {
@@ -39,31 +38,31 @@ public interface MessageBatchOperator
 			String direction, LocalDate messageDate, LocalTime messageTime, long sequence,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-	@Query("SELECT " + SEQUENCE + ", " + MESSAGE_TIME + " FROM ${qualifiedTableId} WHERE " + PAGE + "=:page"
-			+ " AND " + SESSION_ALIAS + "=:sessionAlias AND " + DIRECTION + "=:direction AND "
-			+ MESSAGE_DATE + "=:messageDate AND (" + MESSAGE_TIME + ", " + SEQUENCE + ")<=(:messageTime, :sequence)"
-			+ " ORDER BY " + MESSAGE_DATE + " DESC, " + MESSAGE_TIME + " DESC, " + SEQUENCE + " DESC LIMIT 1")
+	@Query("SELECT " + FIELD_SEQUENCE + ", " + FIELD_MESSAGE_TIME + " FROM ${qualifiedTableId} WHERE " + FIELD_PAGE + "=:page"
+			+ " AND " + FIELD_SESSION_ALIAS + "=:sessionAlias AND " + FIELD_DIRECTION + "=:direction AND "
+			+ FIELD_MESSAGE_DATE + "=:messageDate AND (" + FIELD_MESSAGE_TIME + ", " + FIELD_SEQUENCE + ")<=(:messageTime, :sequence)"
+			+ " ORDER BY " + FIELD_MESSAGE_DATE + " DESC, " + FIELD_MESSAGE_TIME + " DESC, " + FIELD_SEQUENCE + " DESC LIMIT 1")
 	CompletableFuture<Row> getNearestTimeAndSequenceBefore(String page, String sessionAlias,
 			String direction, LocalDate messageDate, LocalTime messageTime, long sequence,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-	@Query("SELECT " + MESSAGE_TIME + " FROM ${qualifiedTableId} WHERE " + PAGE + "=:page"
-			+ " AND " + SESSION_ALIAS + "=:sessionAlias AND " + DIRECTION + "=:direction AND "
-			+ MESSAGE_DATE + "=:messageDate AND " + MESSAGE_TIME + "<=:messageTime"
-			+ " ORDER BY " + MESSAGE_DATE + " DESC, " + MESSAGE_TIME + " DESC, " + SEQUENCE + " DESC LIMIT 1")
+	@Query("SELECT " + FIELD_MESSAGE_TIME + " FROM ${qualifiedTableId} WHERE " + FIELD_PAGE + "=:page"
+			+ " AND " + FIELD_SESSION_ALIAS + "=:sessionAlias AND " + FIELD_DIRECTION + "=:direction AND "
+			+ FIELD_MESSAGE_DATE + "=:messageDate AND " + FIELD_MESSAGE_TIME + "<=:messageTime"
+			+ " ORDER BY " + FIELD_MESSAGE_DATE + " DESC, " + FIELD_MESSAGE_TIME + " DESC, " + FIELD_SEQUENCE + " DESC LIMIT 1")
 	CompletableFuture<Row> getNearestTime(String page, String sessionAlias,
 			String direction, LocalDate messageDate, LocalTime messageTime,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-	@Query("SELECT " + LAST_SEQUENCE + " FROM ${qualifiedTableId} WHERE " + PAGE + "=:page"
-			+ " AND " + SESSION_ALIAS + "=:sessionAlias AND " + DIRECTION + "=:direction "
-			+ " ORDER BY " + MESSAGE_DATE + " DESC, " + MESSAGE_TIME + " DESC, " + SEQUENCE + " DESC LIMIT 1" )
+	@Query("SELECT " + FIELD_LAST_SEQUENCE + " FROM ${qualifiedTableId} WHERE " + FIELD_PAGE + "=:page"
+			+ " AND " + FIELD_SESSION_ALIAS + "=:sessionAlias AND " + FIELD_DIRECTION + "=:direction "
+			+ " ORDER BY " + FIELD_MESSAGE_DATE + " DESC, " + FIELD_MESSAGE_TIME + " DESC, " + FIELD_SEQUENCE + " DESC LIMIT 1" )
 	CompletableFuture<Row> getLastSequence(String page, String sessionAlias, String direction,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-	@Query("SELECT " + SEQUENCE + " FROM ${qualifiedTableId} WHERE " + PAGE + "=:page"
-			+ " AND " + SESSION_ALIAS + "=:sessionAlias AND " + DIRECTION + "=:direction "
-			+ " ORDER BY " + MESSAGE_DATE + " ASC, " + MESSAGE_TIME + " ASC, " + SEQUENCE + " ASC LIMIT 1" )
+	@Query("SELECT " + FIELD_SEQUENCE + " FROM ${qualifiedTableId} WHERE " + FIELD_PAGE + "=:page"
+			+ " AND " + FIELD_SESSION_ALIAS + "=:sessionAlias AND " + FIELD_DIRECTION + "=:direction "
+			+ " ORDER BY " + FIELD_MESSAGE_DATE + " ASC, " + FIELD_MESSAGE_TIME + " ASC, " + FIELD_SEQUENCE + " ASC LIMIT 1" )
 	CompletableFuture<Row> getFirstSequence(String page, String sessionAlias, String direction,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 

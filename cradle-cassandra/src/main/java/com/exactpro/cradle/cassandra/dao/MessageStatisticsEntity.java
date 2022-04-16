@@ -25,11 +25,14 @@ import com.exactpro.cradle.FrameType;
 
 import java.time.Instant;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
-
 @Entity
 public class MessageStatisticsEntity {
-
+    public static final String FIELD_SESSION_ALIAS = "session_alias",
+            FIELD_DIRECTION = "direction",
+            FIELD_FRAME_TYPE = "frame_type",
+            FIELD_FRAME_START = "frame_start",
+            FIELD_ENTITY_COUNT = "entity_count",
+            FIELD_ENTITY_SIZE = "entity_size";
     private String sessionAlias;
     private String direction;
     private Byte frameType;
@@ -45,7 +48,7 @@ public class MessageStatisticsEntity {
     }
 
     @PartitionKey(0)
-    @CqlName(SESSION_ALIAS)
+    @CqlName(FIELD_SESSION_ALIAS)
     public String getSessionAlias() {
         return sessionAlias;
     }
@@ -55,7 +58,7 @@ public class MessageStatisticsEntity {
     }
 
     @PartitionKey(1)
-    @CqlName(DIRECTION)
+    @CqlName(FIELD_DIRECTION)
     public String getDirection() {
         return direction;
     }
@@ -65,7 +68,7 @@ public class MessageStatisticsEntity {
     }
 
     @PartitionKey(2)
-    @CqlName(FRAME_TYPE)
+    @CqlName(FIELD_FRAME_TYPE)
     public Byte getFrameType() {
         return frameType;
     }
@@ -75,7 +78,7 @@ public class MessageStatisticsEntity {
     }
 
     @ClusteringColumn(3)
-    @CqlName(FRAME_START)
+    @CqlName(FIELD_FRAME_START)
     public Instant getFrameStart() {
         return frameStart;
     }
@@ -85,7 +88,7 @@ public class MessageStatisticsEntity {
         this.frameStart = frameStart;
     }
 
-    @CqlName(ENTITY_COUNT)
+    @CqlName(FIELD_ENTITY_COUNT)
     public Long getEntityCount() {
         return entityCount;
     }
@@ -94,7 +97,7 @@ public class MessageStatisticsEntity {
         this.entityCount = entityCount;
     }
 
-    @CqlName(ENTITY_SIZE)
+    @CqlName(FIELD_ENTITY_SIZE)
     public Long getEntitySize() {
         return entitySize;
     }

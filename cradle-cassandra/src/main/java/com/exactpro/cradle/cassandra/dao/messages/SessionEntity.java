@@ -21,18 +21,17 @@ import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.PART;
-import static com.exactpro.cradle.cassandra.StorageConstants.SESSION_ALIAS;
-
 @Entity
 public class SessionEntity
 {
+	public static final String FIELD_PART = "part",
+			FIELD_SESSION_ALIAS = "session_alias";
 	@PartitionKey(0)
-	@CqlName(PART)
+	@CqlName(FIELD_PART)
 	private String part;
 
 	@ClusteringColumn(0)
-	@CqlName(SESSION_ALIAS)
+	@CqlName(FIELD_SESSION_ALIAS)
 	private String sessionAlias;
 
 	public SessionEntity()

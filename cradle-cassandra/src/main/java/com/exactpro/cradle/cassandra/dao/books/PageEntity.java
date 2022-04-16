@@ -16,8 +16,6 @@
 
 package com.exactpro.cradle.cassandra.dao.books;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
-
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -36,31 +34,39 @@ import com.exactpro.cradle.utils.TimeUtils;
 @Entity
 public class PageEntity
 {
+	public static final String FIELD_PART = "part",
+			FIELD_START_DATE = "start_date",
+			FIELD_START_TIME = "start_time",
+			FIELD_NAME = "name",
+			FIELD_COMMENT = "comment",
+			FIELD_END_DATE = "end_date",
+			FIELD_END_TIME = "end_time",
+			FIELD_REMOVED = "removed";
 	@PartitionKey(0)
-	@CqlName(PART)
+	@CqlName(FIELD_PART)
 	private String part;
 	
 	@ClusteringColumn(0)
-	@CqlName(START_DATE)
+	@CqlName(FIELD_START_DATE)
 	private LocalDate startDate;
 	
 	@ClusteringColumn(1)
-	@CqlName(START_TIME)
+	@CqlName(FIELD_START_TIME)
 	private LocalTime startTime;
 	
-	@CqlName(NAME)
+	@CqlName(FIELD_NAME)
 	private String name;
 	
-	@CqlName(COMMENT)
+	@CqlName(FIELD_COMMENT)
 	private String comment;
 	
-	@CqlName(END_DATE)
+	@CqlName(FIELD_END_DATE)
 	private LocalDate endDate;
 	
-	@CqlName(END_TIME)
+	@CqlName(FIELD_END_TIME)
 	private LocalTime endTime;
 	
-	@CqlName(REMOVED)
+	@CqlName(FIELD_REMOVED)
 	private Instant removed;
 	
 	

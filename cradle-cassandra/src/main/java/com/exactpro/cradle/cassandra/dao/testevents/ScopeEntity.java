@@ -16,8 +16,6 @@
 
 package com.exactpro.cradle.cassandra.dao.testevents;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.PART;
-import static com.exactpro.cradle.cassandra.StorageConstants.SCOPE;
 
 import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
@@ -27,12 +25,14 @@ import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 @Entity
 public class ScopeEntity
 {
+	public static final String FIELD_PART = "part",
+			FIELD_SCOPE = "scope";
 	@PartitionKey(0)
-	@CqlName(PART)
+	@CqlName(FIELD_PART)
 	private String part;
 	
 	@ClusteringColumn(0)
-	@CqlName(SCOPE)
+	@CqlName(FIELD_SCOPE)
 	private String scope;
 	
 	public ScopeEntity()

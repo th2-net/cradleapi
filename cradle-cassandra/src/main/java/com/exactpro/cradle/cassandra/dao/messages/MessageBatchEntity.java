@@ -42,7 +42,6 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.zip.DataFormatException;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 /**
  * Contains all data about {@link MessageBatch} to store in Cassandra
@@ -51,44 +50,57 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 public class MessageBatchEntity extends CradleEntity
 {
 	private static final Logger logger = LoggerFactory.getLogger(MessageBatchEntity.class);
-	
+
+	public static final String FIELD_PAGE = "page",
+			FIELD_SESSION_ALIAS = "session_alias",
+			FIELD_DIRECTION = "direction",
+			FIELD_MESSAGE_DATE = "message_date",
+			FIELD_MESSAGE_TIME = "message_time",
+			FIELD_SEQUENCE = "sequence",
+			FIELD_LAST_MESSAGE_DATE = "last_message_date",
+			FIELD_LAST_MESSAGE_TIME = "last_message_time",
+			FIELD_MESSAGE_COUNT = "message_count",
+			FIELD_LAST_SEQUENCE = "last_sequence",
+			FIELD_REC_DATE = "rec_date";
+
+
 	@PartitionKey(0)
-	@CqlName(PAGE)
+	@CqlName(FIELD_PAGE)
 	private String page;
 
 	@PartitionKey(1)
-	@CqlName(SESSION_ALIAS)
+	@CqlName(FIELD_SESSION_ALIAS)
 	private String sessionAlias;
 
 	@PartitionKey(2)
-	@CqlName(DIRECTION)
+	@CqlName(FIELD_DIRECTION)
 	private String direction;
 
 	@ClusteringColumn(0)
-	@CqlName(MESSAGE_DATE)
+	@CqlName(FIELD_MESSAGE_DATE)
 	private LocalDate messageDate;
 
 	@ClusteringColumn(1)
-	@CqlName(MESSAGE_TIME)
+	@CqlName(FIELD_MESSAGE_TIME)
 	private LocalTime messageTime;
 
 	@ClusteringColumn(2)
-	@CqlName(SEQUENCE)
+	@CqlName(FIELD_SEQUENCE)
 	private long sequence;
 
-	@CqlName(LAST_MESSAGE_DATE)
+	@CqlName(FIELD_LAST_MESSAGE_DATE)
 	private LocalDate lastMessageDate;
 
-	@CqlName(LAST_MESSAGE_TIME)
+	@CqlName(FIELD_LAST_MESSAGE_TIME)
 	private LocalTime lastMessageTime;
 
-	@CqlName(MESSAGE_COUNT)
+	@CqlName(FIELD_MESSAGE_COUNT)
 	private int messageCount;
 
-	@CqlName(LAST_SEQUENCE)
+	@CqlName(FIELD_LAST_SEQUENCE)
 	private long lastSequence;
 
-	@CqlName(REC_DATE)
+	@CqlName(FIELD_REC_DATE)
 	private Instant recDate;
 
 	private List<SerializedEntityMetadata> serializedMessageMetadata;
