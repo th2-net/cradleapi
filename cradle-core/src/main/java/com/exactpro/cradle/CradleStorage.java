@@ -196,9 +196,11 @@ public abstract class CradleStorage
 	/**
 	 * Writes data about given message batch to storage.
 	 *
+	 * @deprecated This method is deprecated. use StoreGroupedMessageBatch instead
 	 * @param batch data to write
 	 * @throws IOException if data writing failed
 	 */
+	@Deprecated
 	public final void storeMessageBatch(StoredMessageBatch batch) throws IOException
 	{
 		logger.debug("Storing message batch {}", batch.getId());
@@ -212,9 +214,11 @@ public abstract class CradleStorage
 	/**
 	 * Asynchronously writes data about given message batch to storage.
 	 *
+	 * @deprecated This method is deprecated. use StoreGroupedMessageBatchAsync instead
 	 * @param batch data to write
 	 * @return future to get know if storing was successful
 	 */
+	@Deprecated
 	public final CompletableFuture<Void> storeMessageBatchAsync(StoredMessageBatch batch)
 	{
 		logger.debug("Storing message batch {} asynchronously", batch.getId());
@@ -277,6 +281,7 @@ public abstract class CradleStorage
 	 * @param batch data to write
 	 * @throws IOException if data writing failed
 	 */
+	@Deprecated
 	public final void storeProcessedMessageBatch(StoredMessageBatch batch) throws IOException
 	{
 		logger.debug("Storing processed message batch {}", batch.getId());
@@ -289,6 +294,7 @@ public abstract class CradleStorage
 	 * @param batch data to write
 	 * @return future to get know if storing was successful
 	 */
+	@Deprecated
 	public final CompletableFuture<Void> storeProcessedMessageBatchAsync(StoredMessageBatch batch)
 	{
 		logger.debug("Storing processed message batch {} asynchronously", batch.getId());
