@@ -36,7 +36,7 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatchEntity>
 {
-	private static final String DATE_FROM = "dateFrom", DATE_TO = "dateTo",
+	public static final String DATE_FROM = "dateFrom", DATE_TO = "dateTo",
 			TIME_FROM = "timeFrom", TIME_TO = "timeTo",
 			SEQ_FROM = "seqFrom", SEQ_TO = "seqTo";
 

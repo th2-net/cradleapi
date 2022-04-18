@@ -25,7 +25,6 @@ import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
 import com.exactpro.cradle.cassandra.counters.FrameInterval;
-import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.cassandra.dao.*;
 import com.exactpro.cradle.cassandra.dao.books.*;
 import com.exactpro.cradle.cassandra.dao.messages.*;
@@ -47,6 +46,7 @@ import com.exactpro.cradle.cassandra.workers.StatisticsWorker;
 import com.exactpro.cradle.cassandra.workers.WorkerSupplies;
 import com.exactpro.cradle.counters.Counter;
 import com.exactpro.cradle.counters.CounterSample;
+import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
@@ -96,7 +96,8 @@ public class CassandraCradleStorage extends CradleStorage
 	public CassandraCradleStorage(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings, 
 			ExecutorService composingService) throws CradleStorageException
 	{
-		super(composingService, storageSettings.getMaxMessageBatchSize(), storageSettings.getMaxTestEventBatchSize());
+		super(composingService, storageSettings.getMaxMessageBatchSize(),
+				storageSettings.getMaxMessageBatchDurationLimit(), storageSettings.getMaxTestEventBatchSize());
 		this.connection = new CassandraConnection(connectionSettings, storageSettings.getTimeout());
 		this.settings = storageSettings;
 
@@ -284,8 +285,30 @@ public class CassandraCradleStorage extends CradleStorage
 
 		try
 		{
-			MessageBatchEntity entity = messagesWorker.createEntity(batch, pageId);
+			MessageBatchEntity entity = messagesWorker.createMessageBatchEntity(batch, pageId);
 			messagesWorker.storeMessageBatch(entity, bookId).get();
+			messagesWorker.storeSession(batch).get();
+			messagesWorker.storePageSession(batch, pageId).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while storing message batch "+batch.getId(), e);
+		}
+	}
+
+	@Override
+	protected void doStoreGroupedMessageBatch(MessageBatchToStore batch, PageInfo page, String groupName)
+			throws IOException
+	{
+		PageId pageId = page.getId();
+		BookId bookId = pageId.getBookId();
+
+		try
+		{
+			GroupedMessageBatchEntity entity = messagesWorker.createGroupedMessageBatchEntity(batch, pageId, groupName);
+			messagesWorker.storeMessageBatch(entity.getMessageBatchEntity(), bookId).get();
+			messagesWorker.storeGroupedMessageBatch(new GroupedMessageBatchEntity(entity.getMessageBatchEntity(),
+					groupName), bookId).get();
 			messagesWorker.storeSession(batch).get();
 			messagesWorker.storePageSession(batch, pageId).get();
 		}
@@ -305,7 +328,7 @@ public class CassandraCradleStorage extends CradleStorage
 				{
 					try
 					{
-						return messagesWorker.createEntity(batch, pageId);
+						return messagesWorker.createMessageBatchEntity(batch, pageId);
 					}
 					catch (IOException e)
 					{
@@ -317,8 +340,32 @@ public class CassandraCradleStorage extends CradleStorage
 				.thenComposeAsync(r -> messagesWorker.storePageSession(batch, pageId), composingService)
 				.thenAccept(NOOP);
 	}
-	
-	
+
+	@Override
+	protected CompletableFuture<Void> doStoreGroupedMessageBatchAsync(MessageBatchToStore batch, PageInfo page,
+			String groupName) throws IOException, CradleStorageException
+	{
+		PageId pageId = page.getId();
+		BookId bookId = pageId.getBookId();
+
+		return CompletableFuture.supplyAsync(() ->
+		{
+			try
+			{
+				return messagesWorker.createGroupedMessageBatchEntity(batch, pageId, groupName);
+			}
+			catch (IOException e)
+			{
+				throw new CompletionException(e);
+			}
+		}, composingService)
+				.thenComposeAsync(entity -> messagesWorker.storeGroupedMessageBatch(entity, bookId))
+				.thenComposeAsync(entity -> messagesWorker.storeMessageBatch(entity.getMessageBatchEntity(), bookId), composingService)
+				.thenComposeAsync(r -> messagesWorker.storeSession(batch), composingService)
+				.thenComposeAsync(r -> messagesWorker.storePageSession(batch, pageId), composingService)
+				.thenAccept(NOOP);
+	}
+
 	@Override
 	protected void doStoreTestEvent(TestEventToStore event, PageInfo page) throws IOException, CradleStorageException
 	{
@@ -478,12 +525,32 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
+	protected CradleResultSet<StoredMessageBatch> doGetGroupedMessageBatches(GroupedMessageFilter filter, BookInfo book)
+			throws IOException, CradleStorageException
+	{
+		try
+		{
+			return doGetGroupedMessageBatchesAsync(filter, book).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting grouped message batches filtered by "+filter, e);
+		}
+	}
+
+	@Override
 	protected CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetMessageBatchesAsync(MessageFilter filter, BookInfo book)
 			throws CradleStorageException
 	{
 		return messagesWorker.getMessageBatches(filter, book);
 	}
 
+	@Override
+	protected CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetGroupedMessageBatchesAsync(
+			GroupedMessageFilter filter, BookInfo book) throws CradleStorageException
+	{
+		return messagesWorker.getGroupedMessageBatches(filter, book, getSettings().getMaxMessageBatchDurationLimit());
+	}
 
 	@Override
 	protected long doGetLastSequence(String sessionAlias, Direction direction, BookId bookId)
