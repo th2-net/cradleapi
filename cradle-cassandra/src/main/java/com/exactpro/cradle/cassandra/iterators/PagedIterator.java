@@ -54,7 +54,7 @@ public class PagedIterator<E> implements Iterator<E>
 		this.rows = rows;
 		this.rowsIterator = rows.currentPage().iterator();
 		this.pagingSupplies = pagingSupplies;
-		this.mapper = row -> converter.convert(row);
+		this.mapper = converter::convert;
 		this.queryInfo = queryInfo;
 	}
 	

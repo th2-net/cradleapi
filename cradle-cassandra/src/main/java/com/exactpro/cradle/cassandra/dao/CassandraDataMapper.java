@@ -23,9 +23,11 @@ import com.datastax.oss.driver.api.mapper.annotations.Mapper;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
 import com.exactpro.cradle.cassandra.dao.intervals.converters.DateTimeEventEntityConverter;
 import com.exactpro.cradle.cassandra.dao.intervals.converters.IntervalConverter;
+import com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
 import com.exactpro.cradle.cassandra.dao.messages.converters.DetailedMessageBatchConverter;
+import com.exactpro.cradle.cassandra.dao.messages.converters.GroupedMessageBatchConverter;
 import com.exactpro.cradle.cassandra.dao.messages.converters.TimeMessageConverter;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenDatesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
@@ -43,6 +45,12 @@ public interface CassandraDataMapper
 	
 	@DaoFactory
 	DetailedMessageBatchConverter detailedMessageBatchConverter();
+	
+	@DaoFactory
+	GroupedMessageBatchOperator groupedMessageBatchOperator(@DaoKeyspace String keyspace, @DaoTable String groupedMessagesTable);
+	
+	@DaoFactory
+	GroupedMessageBatchConverter groupedMessageBatchConverter();
 	
 	@DaoFactory
 	TimeMessageOperator timeMessageOperator(@DaoKeyspace String keyspace, @DaoTable String timeMessagesTable);

@@ -18,6 +18,7 @@ package com.exactpro.cradle.messages;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 
@@ -212,6 +213,27 @@ public class StoredMessageBatchTest
 	{
 		StoredMessageBatch batch = new StoredMessageBatch();
 		batch.addMessage(msg);
+	}
+	
+	@Test(expectedExceptions = {CradleStorageException.class},
+			expectedExceptionsMessageRegExp = "Max timestamp .*")
+	public void batchDurationValidate() throws CradleStorageException
+	{
+		StoredMessageBatch batch = new StoredMessageBatch();
+		Instant firstMessageTimestamp = Instant.now();
+		batch.addMessage(builder.streamName(streamName)
+				.direction(direction)
+				.timestamp(firstMessageTimestamp)
+				.content("content".getBytes())
+				.index(1L)
+				.build());
+		batch.addMessage(builder.streamName(streamName)
+				.direction(direction)
+				.timestamp(firstMessageTimestamp.plus(StoredMessageBatch.DEFAULT_MAX_MESSAGE_BATCH_DURATION_SEC,
+						ChronoUnit.SECONDS).plus(1, ChronoUnit.NANOS))
+				.content("content".getBytes())
+				.index(2L)
+				.build());
 	}
 	
 	@Test

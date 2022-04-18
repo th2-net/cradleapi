@@ -50,6 +50,7 @@ public class TablesCreator
 		createKeyspace();
 		createInstancesTable();
 		createMessagesTable();
+		createGroupedMessagesTable();
 		createProcessedMessagesTable();
 		createTimeMessagesTable();
 		createTestEventsTable();
@@ -230,7 +231,42 @@ public class TablesCreator
 		exec.executeQuery(create.asCql(), true);
 		logger.info("Table '{}' has been created", name);
 	}
+	
+	public void createGroupedMessagesTable() throws IOException
+	{
+		String name = settings.getGroupedMessagesTableName();
+		if (isTableExists(name))
+			return;
+		
+		CreateTableWithOptions create = SchemaBuilder.createTable(settings.getKeyspace(), name).ifNotExists()
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				.withPartitionKey(STREAM_GROUP, DataTypes.TEXT)
 
+				.withClusteringColumn(MESSAGE_DATE, DataTypes.DATE)
+				.withClusteringColumn(MESSAGE_TIME, DataTypes.TIME)
+				.withClusteringColumn(STREAM_NAME, DataTypes.TEXT)
+				.withClusteringColumn(DIRECTION, DataTypes.TEXT)
+				.withClusteringColumn(MESSAGE_INDEX, DataTypes.BIGINT)
+
+				.withColumn(LAST_MESSAGE_DATE, DataTypes.DATE)
+				.withColumn(LAST_MESSAGE_TIME, DataTypes.TIME)
+				.withColumn(STORED_DATE, DataTypes.DATE)
+				.withColumn(STORED_TIME, DataTypes.TIME)
+				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
+				.withColumn(CONTENT, DataTypes.BLOB)
+				.withColumn(MESSAGE_COUNT, DataTypes.INT)
+				.withColumn(LAST_MESSAGE_INDEX, DataTypes.BIGINT)
+				
+				.withClusteringOrder(MESSAGE_DATE, ClusteringOrder.ASC)
+				.withClusteringOrder(MESSAGE_TIME, ClusteringOrder.ASC)
+				.withClusteringOrder(STREAM_NAME, ClusteringOrder.ASC)
+				.withClusteringOrder(DIRECTION, ClusteringOrder.ASC)
+				.withClusteringOrder(MESSAGE_INDEX, ClusteringOrder.ASC);
+		
+		exec.executeQuery(create.asCql(), true);
+		logger.info("Table '{}' has been created", name);
+	}
+	
 	public void createIntervalsTable() throws IOException
 	{
 		String tableName = settings.getIntervalsTableName();

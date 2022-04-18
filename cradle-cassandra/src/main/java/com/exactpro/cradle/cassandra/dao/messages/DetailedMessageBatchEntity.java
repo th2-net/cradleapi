@@ -85,7 +85,7 @@ public class DetailedMessageBatchEntity extends MessageBatchEntity
 
 	public StoredMessageBatch toStoredMessageBatch() throws IOException, CradleStorageException
 	{
-		MessageBatchRead messageBatch = new MessageBatchRead();
+		StoredMessageBatch messageBatch = new StoredMessageBatch();
 		for (StoredMessage storedMessage : toStoredMessages())
 		{
 			MessageToStoreBuilder builder = new MessageToStoreBuilder()

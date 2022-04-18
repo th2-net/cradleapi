@@ -16,7 +16,9 @@
 
 package com.exactpro.cradle.messages;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
@@ -39,24 +41,31 @@ public class StoredMessageBatch
 	private static final Logger logger = LoggerFactory.getLogger(StoredMessageBatch.class);
 	
 	public static final int DEFAULT_MAX_BATCH_SIZE = 1024*1024;  //1 Mb
+	public static final long DEFAULT_MAX_MESSAGE_BATCH_DURATION_SEC = 600;
 	private static final long EMPTY_BATCH_SIZE = MessagesSizeCalculator.calculateServiceMessageBatchSize(null);
 	
 	private StoredMessageBatchId id;
-	private final long maxBatchSize;
+	private final long maxBatchSize, maxDuration;
 	private long batchSize;
+	private Instant maxMessageTimestamp;
 	private final List<StoredMessage> messages;
 	
 	public StoredMessageBatch()
 	{
-		this(DEFAULT_MAX_BATCH_SIZE);
+		this(DEFAULT_MAX_BATCH_SIZE, DEFAULT_MAX_MESSAGE_BATCH_DURATION_SEC);
+	}
+
+	public StoredMessageBatch(long maxBatchSize)
+	{
+		this(maxBatchSize, DEFAULT_MAX_MESSAGE_BATCH_DURATION_SEC);
 	}
 	
-	public StoredMessageBatch(long maxBatchSize)
+	public StoredMessageBatch(long maxBatchSize, long maxDuration)
 	{
 		this.messages = createMessagesList();
 		this.maxBatchSize = maxBatchSize;
+		this.maxDuration = maxDuration;
 	}
-	
 	
 	public static StoredMessageBatch singleton(MessageToStore message) throws CradleStorageException
 	{
@@ -126,6 +135,17 @@ public class StoredMessageBatch
 	}
 
 	/**
+	 * @return Duration between first and last message timestamps stored in the batch
+	 */
+	public Duration getBatchDuration()
+	{
+		if (messages.size()<2)
+			return Duration.ZERO;
+
+		return Duration.between(messages.get(0).getTimestamp(), messages.get(getMessageCount() - 1).getTimestamp());
+	}
+
+	/**
 	 * Adds message to the batch. Batch will add correct message ID by itself, verifying message to match batch conditions.
 	 * Messages can be added to batch until {@link #isFull()} returns true.
 	 * Result of this method should be used for all further operations on the message
@@ -182,8 +202,13 @@ public class StoredMessageBatch
 			}
 			if (lastMsg.getTimestamp().isAfter(message.getTimestamp()))
 				throw new CradleStorageException(
-						"Message timestamp should be should be not less than last message timestamp in batch '"
+						"Message timestamp should be not less than last message timestamp in batch '"
 								+ lastMsg.getTimestamp() + "' but in your message it is '" + message.getTimestamp() + "'");
+			
+			if (message.getTimestamp().isAfter(maxMessageTimestamp))
+				throw new CradleStorageException("Max timestamp shold be not greater than '" + maxMessageTimestamp +
+						"' because max duration of batch is " + maxDuration + " seconds, but in your message it is '" +
+						message.getTimestamp() + "'");
 		}
 		
 		return expectedMessageSize;
@@ -192,8 +217,12 @@ public class StoredMessageBatch
 	protected StoredMessage addMessageInternal(MessageToStore message, int expectedMessageSize)
 	{
 		long messageIndex = message.getIndex() >= 0 ? message.getIndex() : getLastMessage().getIndex()+1;
+		// Add first message
 		if (id == null)
+		{
 			id = new StoredMessageBatchId(message.getStreamName(), message.getDirection(), messageIndex);
+			maxMessageTimestamp = message.getTimestamp().plus(maxDuration, ChronoUnit.SECONDS);
+		}
 		StoredMessage msg = new StoredMessage(message, new StoredMessageId(message.getStreamName(), message.getDirection(), messageIndex));
 		// If there are no messages in batch, need to calculate the batch size taking into account the name of the stream of the added message
 		if (messages.isEmpty())

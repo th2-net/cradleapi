@@ -21,6 +21,7 @@ public class StorageConstants
 	public static final String ID = "id",
 			NAME = "name",
 			STREAM_NAME = "stream_name",
+			STREAM_GROUP = "stream_group",
 			INSTANCE_ID = "instance_id",
 			DIRECTION = "direction",
 			STORED_DATE = "stored_date",
