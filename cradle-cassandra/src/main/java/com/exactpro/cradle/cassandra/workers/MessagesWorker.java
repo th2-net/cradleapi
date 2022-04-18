@@ -281,8 +281,7 @@ public class MessagesWorker extends Worker
 		List<SerializedEntityMetadata> meta = entity.getSerializedMessageMetadata();
 
 		return gmbOperator.write(entity, writeAttrs)
-				.thenAccept(result -> messageStatisticsCollector.updateMessageBatchStatistics(bookId,
-						entity.getSessionAlias(), entity.getDirection(), meta))
+				.thenAccept(result -> messageStatisticsCollector.updateMessageBatchStatistics(bookId, entity.getGroup(), entity.getDirection(), meta))
 				.thenAcceptAsync(result -> updateMessageWriteMetrics(entity.getMessageBatchEntity(), bookId), composingService)
 				.thenApplyAsync(result -> entity, composingService);
 	}
