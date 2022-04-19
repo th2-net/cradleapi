@@ -51,17 +51,17 @@ public class MessageBatchEntity extends CradleEntity
 {
 	private static final Logger logger = LoggerFactory.getLogger(MessageBatchEntity.class);
 
-	public static final String FIELD_PAGE = "page",
-			FIELD_SESSION_ALIAS = "session_alias",
-			FIELD_DIRECTION = "direction",
-			FIELD_MESSAGE_DATE = "message_date",
-			FIELD_MESSAGE_TIME = "message_time",
-			FIELD_SEQUENCE = "sequence",
-			FIELD_LAST_MESSAGE_DATE = "last_message_date",
-			FIELD_LAST_MESSAGE_TIME = "last_message_time",
-			FIELD_MESSAGE_COUNT = "message_count",
-			FIELD_LAST_SEQUENCE = "last_sequence",
-			FIELD_REC_DATE = "rec_date";
+	public static final String FIELD_PAGE = "page";
+	public static final String FIELD_SESSION_ALIAS = "session_alias";
+	public static final String FIELD_DIRECTION = "direction";
+	public static final String FIELD_MESSAGE_DATE = "message_date";
+	public static final String FIELD_MESSAGE_TIME = "message_time";
+	public static final String FIELD_SEQUENCE = "sequence";
+	public static final String FIELD_LAST_MESSAGE_DATE = "last_message_date";
+	public static final String FIELD_LAST_MESSAGE_TIME = "last_message_time";
+	public static final String FIELD_MESSAGE_COUNT = "message_count";
+	public static final String FIELD_LAST_SEQUENCE = "last_sequence";
+	public static final String  FIELD_REC_DATE = "rec_date";
 
 
 	@PartitionKey(0)

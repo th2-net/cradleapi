@@ -28,11 +28,11 @@ import java.time.Instant;
 @Entity
 public class EntityStatisticsEntity {
 
-    public static final String FIELD_ENTITY_TYPE = "entity_type",
-            FIELD_FRAME_TYPE = "frame_type",
-            FIELD_FRAME_START = "frame_start",
-            FIELD_ENTITY_COUNT = "entity_count",
-            FIELD_ENTITY_SIZE = "entity_size";
+    public static final String FIELD_ENTITY_TYPE = "entity_type";
+    public static final String FIELD_FRAME_TYPE = "frame_type";
+    public static final String FIELD_FRAME_START = "frame_start";
+    public static final String FIELD_ENTITY_COUNT = "entity_count";
+    public static final String FIELD_ENTITY_SIZE = "entity_size";
     private Byte entityType;
     private Byte frameType;
     private Instant frameStart;

@@ -35,18 +35,18 @@ public class IntervalEntity {
     private static final Logger logger = LoggerFactory.getLogger(IntervalEntity.class);
     public static final ZoneOffset TIMEZONE_OFFSET = ZoneOffset.UTC;
 
-    public static final String FIELD_PAGE = "page",
-            FIELD_INTERVAL_START_DATE = "interval_start_date",
-            FIELD_CRAWLER_NAME = "crawler_name",
-            FIELD_CRAWLER_VERSION = "crawler_version",
-            FIELD_CRAWLER_TYPE = "crawler_type",
-            FIELD_INTERVAL_START_TIME = "interval_start_time",
-            FIELD_INTERVAL_END_DATE = "interval_end_date",
-            FIELD_INTERVAL_END_TIME = "interval_end_time",
-            FIELD_INTERVAL_LAST_UPDATE_DATE = "interval_last_update_date",
-            FIELD_INTERVAL_LAST_UPDATE_TIME = "interval_last_update_time",
-            FIELD_RECOVERY_STATE_JSON = "recovery_state_json",
-            FIELD_INTERVAL_PROCESSED = "interval_processed";
+    public static final String FIELD_PAGE = "page";
+    public static final String FIELD_INTERVAL_START_DATE = "interval_start_date";
+    public static final String FIELD_CRAWLER_NAME = "crawler_name";
+    public static final String FIELD_CRAWLER_VERSION = "crawler_version";
+    public static final String FIELD_CRAWLER_TYPE = "crawler_type";
+    public static final String FIELD_INTERVAL_START_TIME = "interval_start_time";
+    public static final String FIELD_INTERVAL_END_DATE = "interval_end_date";
+    public static final String FIELD_INTERVAL_END_TIME = "interval_end_time";
+    public static final String FIELD_INTERVAL_LAST_UPDATE_DATE = "interval_last_update_date";
+    public static final String FIELD_INTERVAL_LAST_UPDATE_TIME = "interval_last_update_time";
+    public static final String FIELD_RECOVERY_STATE_JSON = "recovery_state_json";
+    public static final String FIELD_INTERVAL_PROCESSED = "interval_processed";
 
     @PartitionKey(0)
     @CqlName(FIELD_PAGE)

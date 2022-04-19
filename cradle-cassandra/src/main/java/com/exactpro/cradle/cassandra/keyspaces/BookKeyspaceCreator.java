@@ -28,6 +28,7 @@ import com.exactpro.cradle.cassandra.dao.books.PageEntity;
 import com.exactpro.cradle.cassandra.dao.books.PageNameEntity;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalEntity;
 import com.exactpro.cradle.cassandra.dao.labels.LabelEntity;
+import com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.PageSessionEntity;
 import com.exactpro.cradle.cassandra.dao.messages.SessionEntity;
@@ -176,22 +177,22 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 	{
 		String tableName = getSettings().getGroupedMessagesTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(PAGE, DataTypes.TEXT)
-				.withPartitionKey(ALIAS_GROUP, DataTypes.TEXT)
+				.withPartitionKey(GroupedMessageBatchEntity.FIELD_PAGE, DataTypes.TEXT)
+				.withPartitionKey(GroupedMessageBatchEntity.FIELD_ALIAS_GROUP, DataTypes.TEXT)
 
-				.withClusteringColumn(MESSAGE_DATE, DataTypes.DATE)
-				.withClusteringColumn(MESSAGE_TIME, DataTypes.TIME)
-				.withClusteringColumn(SESSION_ALIAS, DataTypes.TEXT)
-				.withClusteringColumn(DIRECTION, DataTypes.TEXT)
-				.withClusteringColumn(SEQUENCE, DataTypes.BIGINT)
+				.withClusteringColumn(GroupedMessageBatchEntity.FIELD_MESSAGE_DATE, DataTypes.DATE)
+				.withClusteringColumn(GroupedMessageBatchEntity.FIELD_MESSAGE_TIME, DataTypes.TIME)
+				.withClusteringColumn(GroupedMessageBatchEntity.FIELD_SESSION_ALIAS, DataTypes.TEXT)
+				.withClusteringColumn(GroupedMessageBatchEntity.FIELD_DIRECTION, DataTypes.TEXT)
+				.withClusteringColumn(GroupedMessageBatchEntity.FIELD_SEQUENCE, DataTypes.BIGINT)
 
-				.withColumn(LAST_MESSAGE_DATE, DataTypes.DATE)
-				.withColumn(LAST_MESSAGE_TIME, DataTypes.TIME)
-				.withColumn(LAST_SEQUENCE, DataTypes.BIGINT)
-				.withColumn(MESSAGE_COUNT, DataTypes.INT)
-				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
-				.withColumn(LABELS, DataTypes.setOf(DataTypes.TEXT))
-				.withColumn(CONTENT, DataTypes.BLOB));
+				.withColumn(GroupedMessageBatchEntity.FIELD_LAST_MESSAGE_DATE, DataTypes.DATE)
+				.withColumn(GroupedMessageBatchEntity.FIELD_LAST_MESSAGE_TIME, DataTypes.TIME)
+				.withColumn(GroupedMessageBatchEntity.FIELD_LAST_SEQUENCE, DataTypes.BIGINT)
+				.withColumn(GroupedMessageBatchEntity.FIELD_MESSAGE_COUNT, DataTypes.INT)
+				.withColumn(GroupedMessageBatchEntity.FIELD_COMPRESSED, DataTypes.BOOLEAN)
+				.withColumn(GroupedMessageBatchEntity.FIELD_LABELS, DataTypes.setOf(DataTypes.TEXT))
+				.withColumn(GroupedMessageBatchEntity.FIELD_CONTENT, DataTypes.BLOB));
 	}
 
 	private void createPageSessions() throws IOException

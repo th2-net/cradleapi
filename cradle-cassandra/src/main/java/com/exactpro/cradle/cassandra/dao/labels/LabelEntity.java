@@ -11,8 +11,8 @@ import org.slf4j.LoggerFactory;
 public class LabelEntity {
     private static final Logger logger = LoggerFactory.getLogger(LabelEntity.class);
 
-    public static final String FIELD_PAGE = "page",
-            FIELD_NAME = "name";
+    public static final String FIELD_PAGE = "page";
+    public static final String FIELD_NAME = "name";
 
     @PartitionKey(0)
     @CqlName(FIELD_PAGE)

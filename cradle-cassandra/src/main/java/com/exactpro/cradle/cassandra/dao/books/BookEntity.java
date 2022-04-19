@@ -34,13 +34,13 @@ import java.util.Collection;
 @Entity
 public class BookEntity
 {
-	public static final String BOOK_NAME_PREFIX = "book_",
-			FIELD_NAME = "name",
-			FIELD_FULLNAME = "fullname",
-			FIELD_KEYSPACE_NAME = "keyspace_name",
-			FIELD_DESCRIPTION = "description",
-			FIELD_CREATED = "created",
-			FIELD_SCHEMA_VERSION = "schema_version";
+	public static final String BOOK_NAME_PREFIX = "book_";
+	public static final String FIELD_NAME = "name";
+	public static final String FIELD_FULLNAME = "fullname";
+	public static final String FIELD_KEYSPACE_NAME = "keyspace_name";
+	public static final String FIELD_DESCRIPTION = "description";
+	public static final String FIELD_CREATED = "created";
+	public static final String FIELD_SCHEMA_VERSION = "schema_version";
 
 	@PartitionKey(0)
 	@CqlName(FIELD_NAME)

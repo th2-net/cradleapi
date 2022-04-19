@@ -31,13 +31,13 @@ import com.exactpro.cradle.utils.TimeUtils;
 @Entity
 public class PageNameEntity
 {
-	public static final String FIELD_PART = "part",
-			FIELD_NAME = "name",
-			FIELD_START_DATE = "start_date",
-			FIELD_START_TIME = "start_time",
-			FIELD_COMMENT = "comment",
-			FIELD_END_DATE = "end_date",
-			FIELD_END_TIME = "end_time";
+	public static final String FIELD_PART = "part";
+	public static final String FIELD_NAME = "name";
+	public static final String FIELD_START_DATE = "start_date";
+	public static final String FIELD_START_TIME = "start_time";
+	public static final String FIELD_COMMENT = "comment";
+	public static final String FIELD_END_DATE = "end_date";
+	public static final String FIELD_END_TIME = "end_time";
 
 
 	@PartitionKey(0)

@@ -28,9 +28,9 @@ import com.exactpro.cradle.messages.StoredMessageId;
 @Entity
 public class PageSessionEntity
 {
-	public static final String FIELD_PAGE = "page",
-			FIELD_SESSION_ALIAS = "session_alias",
-			FIELD_DIRECTION = "direction";
+	public static final String FIELD_PAGE = "page";
+	public static final String FIELD_SESSION_ALIAS = "session_alias";
+	public static final String FIELD_DIRECTION = "direction";
 
 	@PartitionKey(0)
 	@CqlName(FIELD_PAGE)

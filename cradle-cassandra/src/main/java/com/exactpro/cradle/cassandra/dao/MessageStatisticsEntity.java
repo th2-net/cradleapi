@@ -27,12 +27,12 @@ import java.time.Instant;
 
 @Entity
 public class MessageStatisticsEntity {
-    public static final String FIELD_SESSION_ALIAS = "session_alias",
-            FIELD_DIRECTION = "direction",
-            FIELD_FRAME_TYPE = "frame_type",
-            FIELD_FRAME_START = "frame_start",
-            FIELD_ENTITY_COUNT = "entity_count",
-            FIELD_ENTITY_SIZE = "entity_size";
+    public static final String FIELD_SESSION_ALIAS = "session_alias";
+    public static final String FIELD_DIRECTION = "direction";
+    public static final String FIELD_FRAME_TYPE = "frame_type";
+    public static final String FIELD_FRAME_START = "frame_start";
+    public static final String FIELD_ENTITY_COUNT = "entity_count";
+    public static final String FIELD_ENTITY_SIZE = "entity_size";
     private String sessionAlias;
     private String direction;
     private Byte frameType;

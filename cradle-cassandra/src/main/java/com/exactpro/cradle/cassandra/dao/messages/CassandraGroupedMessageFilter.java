@@ -26,7 +26,7 @@ import com.exactpro.cradle.filters.FilterForLess;
 import java.time.Instant;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
+import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.*;
 import static com.exactpro.cradle.cassandra.dao.messages.CassandraStoredMessageFilter.*;
 
 public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMessageBatchEntity>
@@ -55,13 +55,13 @@ public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMes
 	@Override
 	public Select addConditions(Select select)
 	{
-		select = select.whereColumn(PAGE).isEqualTo(bindMarker())
-				.whereColumn(ALIAS_GROUP).isEqualTo(bindMarker());
+		select = select.whereColumn(FIELD_PAGE).isEqualTo(bindMarker())
+				.whereColumn(FIELD_ALIAS_GROUP).isEqualTo(bindMarker());
 
 		if (messageTimeFrom != null)
-			select = FilterUtils.timestampFilterToWhere(messageTimeFrom.getOperation(), select, MESSAGE_DATE, MESSAGE_TIME, DATE_FROM, TIME_FROM);
+			select = FilterUtils.timestampFilterToWhere(messageTimeFrom.getOperation(), select, FIELD_MESSAGE_DATE, FIELD_MESSAGE_TIME, DATE_FROM, TIME_FROM);
 		if (messageTimeTo != null)
-			select = FilterUtils.timestampFilterToWhere(messageTimeTo.getOperation(), select, MESSAGE_DATE, MESSAGE_TIME, DATE_TO, TIME_TO);
+			select = FilterUtils.timestampFilterToWhere(messageTimeTo.getOperation(), select, FIELD_MESSAGE_DATE, FIELD_MESSAGE_TIME, DATE_TO, TIME_TO);
 
 		if (limit != 0) {
 			select.limit(limit);
@@ -73,8 +73,8 @@ public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMes
 	@Override
 	public BoundStatementBuilder bindParameters(BoundStatementBuilder builder)
 	{
-		builder = builder.setString(PAGE, page)
-				.setString(ALIAS_GROUP, groupName);
+		builder = builder.setString(FIELD_PAGE, page)
+				.setString(FIELD_ALIAS_GROUP, groupName);
 		
 		if (messageTimeFrom != null)
 			builder = FilterUtils.bindTimestamp(messageTimeFrom.getValue(), builder, DATE_FROM, TIME_FROM);

@@ -24,8 +24,8 @@ import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 @Entity
 public class SessionEntity
 {
-	public static final String FIELD_PART = "part",
-			FIELD_SESSION_ALIAS = "session_alias";
+	public static final String FIELD_PART = "part";
+	public static final String FIELD_SESSION_ALIAS = "session_alias";
 	@PartitionKey(0)
 	@CqlName(FIELD_PART)
 	private String part;

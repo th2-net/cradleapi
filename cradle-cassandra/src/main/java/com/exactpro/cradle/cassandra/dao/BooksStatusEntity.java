@@ -24,11 +24,11 @@ import java.time.Instant;
 
 @Entity
 public class BooksStatusEntity {
-    public static final String FIELD_BOOK_NAME = "book_name",
-            FIELD_OBJECT_TYPE = "object_type",
-            FIELD_OBJECT_NAME = "object_name",
-            FIELD_CREATED = "created",
-            FIELD_SCHEMA_VERSION = "schema_version";
+    public static final String FIELD_BOOK_NAME = "book_name";
+    public static final String FIELD_OBJECT_TYPE = "object_type";
+    public static final String FIELD_OBJECT_NAME = "object_name";
+    public static final String FIELD_CREATED = "created";
+    public static final String FIELD_SCHEMA_VERSION = "schema_version";
     private String bookName;
     private String objectType;
     private String objectName;

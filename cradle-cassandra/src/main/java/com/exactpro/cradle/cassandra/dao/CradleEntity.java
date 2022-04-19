@@ -27,9 +27,9 @@ import com.datastax.oss.driver.api.mapper.annotations.CqlName;
  */
 public abstract class CradleEntity
 {
-	public static final String FIELD_COMPRESSED = "compressed",
-			FIELD_LABELS = "labels",
-			FIELD_CONTENT = "z_content";
+	public static final String FIELD_COMPRESSED = "compressed";
+	public static final String FIELD_LABELS = "labels";
+	public static final String FIELD_CONTENT = "z_content";
 
 	@CqlName(FIELD_COMPRESSED)
 	private boolean compressed;
