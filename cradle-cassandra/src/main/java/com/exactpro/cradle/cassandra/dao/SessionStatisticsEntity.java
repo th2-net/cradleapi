@@ -14,7 +14,7 @@ public class SessionStatisticsEntity {
     public static final String FIELD_RECORD_TYPE = "record_type";
     public static final String FIELD_FRAME_TYPE = "frame_type";
     public static final String FIELD_FRAME_START = "frame_start";
-    public static final String FIELD_SESSION = "session";
+    public static final String FIELD_SESSION = "session_alias";
 
     private String page;
     private Byte recordType;
