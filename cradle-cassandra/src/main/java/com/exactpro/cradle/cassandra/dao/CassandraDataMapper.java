@@ -21,9 +21,11 @@ import com.exactpro.cradle.cassandra.dao.books.CradleBookOperator;
 import com.exactpro.cradle.cassandra.dao.books.PageNameOperator;
 import com.exactpro.cradle.cassandra.dao.books.PageOperator;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
+import com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.PageSessionsOperator;
 import com.exactpro.cradle.cassandra.dao.messages.SessionsOperator;
+import com.exactpro.cradle.cassandra.dao.messages.converters.GroupedMessageBatchEntityConverter;
 import com.exactpro.cradle.cassandra.dao.messages.converters.MessageBatchEntityConverter;
 import com.exactpro.cradle.cassandra.dao.messages.converters.PageSessionEntityConverter;
 import com.exactpro.cradle.cassandra.dao.messages.converters.SessionEntityConverter;
@@ -62,6 +64,9 @@ public interface CassandraDataMapper
 	
 	@DaoFactory
 	MessageBatchOperator messageBatchOperator(@DaoKeyspace String keyspace, @DaoTable String messagesTable);
+	
+	@DaoFactory
+	GroupedMessageBatchOperator groupedMessageBatchOperator(@DaoKeyspace String keyspace, @DaoTable String groupedMessagesTable);
 
 	@DaoFactory
 	PageSessionsOperator pageSessionsOperator(@DaoKeyspace String keyspace, @DaoTable String pageSessionsTable);
@@ -91,6 +96,9 @@ public interface CassandraDataMapper
 	@DaoFactory
 	MessageBatchEntityConverter messageBatchEntityConverter();
 
+	@DaoFactory
+	GroupedMessageBatchEntityConverter groupedMessageBatchEntityConverter();
+	
 	@DaoFactory
 	TestEventEntityConverter testEventEntityConverter();
 
