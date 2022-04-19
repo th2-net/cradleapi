@@ -17,11 +17,8 @@
 package com.exactpro.cradle.cassandra.dao.testevents;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
-import static com.exactpro.cradle.cassandra.StorageConstants.PAGE;
-import static com.exactpro.cradle.cassandra.StorageConstants.SCOPE;
-import static com.exactpro.cradle.cassandra.StorageConstants.START_DATE;
-import static com.exactpro.cradle.cassandra.StorageConstants.START_TIME;
-import static com.exactpro.cradle.cassandra.StorageConstants.PARENT_ID;
+
+import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.*;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -62,15 +59,15 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
 	@Override
 	public Select addConditions(Select select)
 	{
-		select = select.whereColumn(PAGE).isEqualTo(bindMarker())
-				.whereColumn(SCOPE).isEqualTo(bindMarker());
+		select = select.whereColumn(FIELD_PAGE).isEqualTo(bindMarker())
+				.whereColumn(FIELD_SCOPE).isEqualTo(bindMarker());
 		
 		if (startTimestampFrom != null)
-			select = FilterUtils.timestampFilterToWhere(startTimestampFrom.getOperation(), select, START_DATE, START_TIME, START_DATE_FROM, START_TIME_FROM);
+			select = FilterUtils.timestampFilterToWhere(startTimestampFrom.getOperation(), select, FIELD_START_DATE, FIELD_START_TIME, START_DATE_FROM, START_TIME_FROM);
 		if (startTimestampTo != null)
-			select = FilterUtils.timestampFilterToWhere(startTimestampTo.getOperation(), select, START_DATE, START_TIME, START_DATE_TO, START_TIME_TO);
+			select = FilterUtils.timestampFilterToWhere(startTimestampTo.getOperation(), select, FIELD_START_DATE, FIELD_START_TIME, START_DATE_TO, START_TIME_TO);
 		if (parentId != null)
-			select = select.whereColumn(PARENT_ID).isEqualTo(bindMarker());
+			select = select.whereColumn(FIELD_PARENT_ID).isEqualTo(bindMarker());
 		
 		return select;
 	}
@@ -78,15 +75,15 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
 	@Override
 	public BoundStatementBuilder bindParameters(BoundStatementBuilder builder)
 	{
-		builder = builder.setString(PAGE, page)
-				.setString(SCOPE, scope);
+		builder = builder.setString(FIELD_PAGE, page)
+				.setString(FIELD_SCOPE, scope);
 		
 		if (startTimestampFrom != null)
 			builder = FilterUtils.bindTimestamp(startTimestampFrom.getValue(), builder, START_DATE_FROM, START_TIME_FROM);
 		if (startTimestampTo != null)
 			builder = FilterUtils.bindTimestamp(startTimestampTo.getValue(), builder, START_DATE_TO, START_TIME_TO);
 		if (parentId != null)
-			builder = builder.setString(PARENT_ID, parentId);
+			builder = builder.setString(FIELD_PARENT_ID, parentId);
 		
 		return builder;
 	}

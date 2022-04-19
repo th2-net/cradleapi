@@ -22,10 +22,19 @@ import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
-import com.exactpro.cradle.cassandra.dao.BookStatusType;
-import com.exactpro.cradle.cassandra.dao.BooksStatusEntity;
-import com.exactpro.cradle.cassandra.dao.CradleBooksStatusOperator;
+import com.exactpro.cradle.cassandra.dao.*;
 import com.exactpro.cradle.cassandra.dao.books.BookEntity;
+import com.exactpro.cradle.cassandra.dao.books.PageEntity;
+import com.exactpro.cradle.cassandra.dao.books.PageNameEntity;
+import com.exactpro.cradle.cassandra.dao.intervals.IntervalEntity;
+import com.exactpro.cradle.cassandra.dao.labels.LabelEntity;
+import com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
+import com.exactpro.cradle.cassandra.dao.messages.PageSessionEntity;
+import com.exactpro.cradle.cassandra.dao.messages.SessionEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.PageScopeEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.ScopeEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,8 +43,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 public class BookKeyspaceCreator extends KeyspaceCreator
 {
@@ -105,187 +112,187 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 	{
 		String tableName = getSettings().getPagesTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(PART, DataTypes.TEXT)
-				.withClusteringColumn(START_DATE, DataTypes.DATE)
-				.withClusteringColumn(START_TIME, DataTypes.TIME)
-				.withColumn(NAME, DataTypes.TEXT)
-				.withColumn(COMMENT, DataTypes.TEXT)
-				.withColumn(END_DATE, DataTypes.DATE)
-				.withColumn(END_TIME, DataTypes.TIME)
-				.withColumn(REMOVED, DataTypes.TIMESTAMP));
+				.withPartitionKey(PageEntity.FIELD_PART, DataTypes.TEXT)
+				.withClusteringColumn(PageEntity.FIELD_START_DATE, DataTypes.DATE)
+				.withClusteringColumn(PageEntity.FIELD_START_TIME, DataTypes.TIME)
+				.withColumn(PageEntity.FIELD_NAME, DataTypes.TEXT)
+				.withColumn(PageEntity.FIELD_COMMENT, DataTypes.TEXT)
+				.withColumn(PageEntity.FIELD_END_DATE, DataTypes.DATE)
+				.withColumn(PageEntity.FIELD_END_TIME, DataTypes.TIME)
+				.withColumn(PageEntity.FIELD_REMOVED, DataTypes.TIMESTAMP));
 	}
 	
 	private void createPagesNames() throws IOException
 	{
 		String tableName = getSettings().getPagesNamesTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(PART, DataTypes.TEXT)
-				.withPartitionKey(NAME, DataTypes.TEXT)
-				.withColumn(START_DATE, DataTypes.DATE)
-				.withColumn(START_TIME, DataTypes.TIME)
-				.withColumn(COMMENT, DataTypes.TEXT)
-				.withColumn(END_DATE, DataTypes.DATE)
-				.withColumn(END_TIME, DataTypes.TIME));
+				.withPartitionKey(PageNameEntity.FIELD_PART, DataTypes.TEXT)
+				.withPartitionKey(PageNameEntity.FIELD_NAME, DataTypes.TEXT)
+				.withColumn(PageNameEntity.FIELD_START_DATE, DataTypes.DATE)
+				.withColumn(PageNameEntity.FIELD_START_TIME, DataTypes.TIME)
+				.withColumn(PageNameEntity.FIELD_COMMENT, DataTypes.TEXT)
+				.withColumn(PageNameEntity.FIELD_END_DATE, DataTypes.DATE)
+				.withColumn(PageNameEntity.FIELD_END_TIME, DataTypes.TIME));
 	}
 	
 	private void createSessions() throws IOException
 	{
 		String tableName = getSettings().getSessionsTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(PART, DataTypes.TEXT)
-				.withClusteringColumn(SESSION_ALIAS, DataTypes.TEXT));
+				.withPartitionKey(SessionEntity.FIELD_PART, DataTypes.TEXT)
+				.withClusteringColumn(SessionEntity.FIELD_SESSION_ALIAS, DataTypes.TEXT));
 	}
 	
 	private void createScopes() throws IOException
 	{
 		String tableName = getSettings().getScopesTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(PART, DataTypes.TEXT)
-				.withClusteringColumn(SCOPE, DataTypes.TEXT));
+				.withPartitionKey(ScopeEntity.FIELD_PART, DataTypes.TEXT)
+				.withClusteringColumn(ScopeEntity.FIELD_SCOPE, DataTypes.TEXT));
 	}
 
 	private void createMessages() throws IOException
 	{
 		String tableName = getSettings().getMessagesTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(PAGE, DataTypes.TEXT)
-				.withPartitionKey(SESSION_ALIAS, DataTypes.TEXT)
-				.withPartitionKey(DIRECTION, DataTypes.TEXT)
+				.withPartitionKey(MessageBatchEntity.FIELD_PAGE, DataTypes.TEXT)
+				.withPartitionKey(MessageBatchEntity.FIELD_SESSION_ALIAS, DataTypes.TEXT)
+				.withPartitionKey(MessageBatchEntity.FIELD_DIRECTION, DataTypes.TEXT)
 
-				.withClusteringColumn(MESSAGE_DATE, DataTypes.DATE)
-				.withClusteringColumn(MESSAGE_TIME, DataTypes.TIME)
-				.withClusteringColumn(SEQUENCE, DataTypes.BIGINT)
+				.withClusteringColumn(MessageBatchEntity.FIELD_MESSAGE_DATE, DataTypes.DATE)
+				.withClusteringColumn(MessageBatchEntity.FIELD_MESSAGE_TIME, DataTypes.TIME)
+				.withClusteringColumn(MessageBatchEntity.FIELD_SEQUENCE, DataTypes.BIGINT)
 				
-				.withColumn(LAST_MESSAGE_DATE, DataTypes.DATE)
-				.withColumn(LAST_MESSAGE_TIME, DataTypes.TIME)
-				.withColumn(LAST_SEQUENCE, DataTypes.BIGINT)
-				.withColumn(MESSAGE_COUNT, DataTypes.INT)
-				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
-				.withColumn(LABELS, DataTypes.setOf(DataTypes.TEXT))
-				.withColumn(CONTENT, DataTypes.BLOB)
-				.withColumn(REC_DATE, DataTypes.TIMESTAMP));
+				.withColumn(MessageBatchEntity.FIELD_LAST_MESSAGE_DATE, DataTypes.DATE)
+				.withColumn(MessageBatchEntity.FIELD_LAST_MESSAGE_TIME, DataTypes.TIME)
+				.withColumn(MessageBatchEntity.FIELD_LAST_SEQUENCE, DataTypes.BIGINT)
+				.withColumn(MessageBatchEntity.FIELD_MESSAGE_COUNT, DataTypes.INT)
+				.withColumn(MessageBatchEntity.FIELD_COMPRESSED, DataTypes.BOOLEAN)
+				.withColumn(MessageBatchEntity.FIELD_LABELS, DataTypes.setOf(DataTypes.TEXT))
+				.withColumn(MessageBatchEntity.FIELD_CONTENT, DataTypes.BLOB)
+				.withColumn(MessageBatchEntity.FIELD_REC_DATE, DataTypes.TIMESTAMP));
 	}
 	
 	private void createGroupedMessages() throws IOException
 	{
 		String tableName = getSettings().getGroupedMessagesTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(PAGE, DataTypes.TEXT)
-				.withPartitionKey(ALIAS_GROUP, DataTypes.TEXT)
+				.withPartitionKey(GroupedMessageBatchEntity.FIELD_PAGE, DataTypes.TEXT)
+				.withPartitionKey(GroupedMessageBatchEntity.FIELD_ALIAS_GROUP, DataTypes.TEXT)
 
-				.withClusteringColumn(MESSAGE_DATE, DataTypes.DATE)
-				.withClusteringColumn(MESSAGE_TIME, DataTypes.TIME)
-				.withClusteringColumn(SESSION_ALIAS, DataTypes.TEXT)
-				.withClusteringColumn(DIRECTION, DataTypes.TEXT)
-				.withClusteringColumn(SEQUENCE, DataTypes.BIGINT)
+				.withClusteringColumn(GroupedMessageBatchEntity.FIELD_MESSAGE_DATE, DataTypes.DATE)
+				.withClusteringColumn(GroupedMessageBatchEntity.FIELD_MESSAGE_TIME, DataTypes.TIME)
+				.withClusteringColumn(GroupedMessageBatchEntity.FIELD_SESSION_ALIAS, DataTypes.TEXT)
+				.withClusteringColumn(GroupedMessageBatchEntity.FIELD_DIRECTION, DataTypes.TEXT)
+				.withClusteringColumn(GroupedMessageBatchEntity.FIELD_SEQUENCE, DataTypes.BIGINT)
 
-				.withColumn(LAST_MESSAGE_DATE, DataTypes.DATE)
-				.withColumn(LAST_MESSAGE_TIME, DataTypes.TIME)
-				.withColumn(LAST_SEQUENCE, DataTypes.BIGINT)
-				.withColumn(MESSAGE_COUNT, DataTypes.INT)
-				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
-				.withColumn(LABELS, DataTypes.setOf(DataTypes.TEXT))
-				.withColumn(CONTENT, DataTypes.BLOB));
+				.withColumn(GroupedMessageBatchEntity.FIELD_LAST_MESSAGE_DATE, DataTypes.DATE)
+				.withColumn(GroupedMessageBatchEntity.FIELD_LAST_MESSAGE_TIME, DataTypes.TIME)
+				.withColumn(GroupedMessageBatchEntity.FIELD_LAST_SEQUENCE, DataTypes.BIGINT)
+				.withColumn(GroupedMessageBatchEntity.FIELD_MESSAGE_COUNT, DataTypes.INT)
+				.withColumn(GroupedMessageBatchEntity.FIELD_COMPRESSED, DataTypes.BOOLEAN)
+				.withColumn(GroupedMessageBatchEntity.FIELD_LABELS, DataTypes.setOf(DataTypes.TEXT))
+				.withColumn(GroupedMessageBatchEntity.FIELD_CONTENT, DataTypes.BLOB));
 	}
 
 	private void createPageSessions() throws IOException
 	{
 		String tableName = getSettings().getPageSessionsTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(PAGE, DataTypes.TEXT)
+				.withPartitionKey(PageSessionEntity.FIELD_PAGE, DataTypes.TEXT)
 
-				.withClusteringColumn(SESSION_ALIAS, DataTypes.TEXT)
-				.withClusteringColumn(DIRECTION, DataTypes.TEXT));
+				.withClusteringColumn(PageSessionEntity.FIELD_SESSION_ALIAS, DataTypes.TEXT)
+				.withClusteringColumn(PageSessionEntity.FIELD_DIRECTION, DataTypes.TEXT));
 	}
 	
 	private void createTestEvents() throws IOException
 	{
 		String tableName = getSettings().getTestEventsTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(PAGE, DataTypes.TEXT)
-				.withPartitionKey(SCOPE, DataTypes.TEXT)
+				.withPartitionKey(TestEventEntity.FIELD_PAGE, DataTypes.TEXT)
+				.withPartitionKey(TestEventEntity.FIELD_SCOPE, DataTypes.TEXT)
 				
-				.withClusteringColumn(START_DATE, DataTypes.DATE)
-				.withClusteringColumn(START_TIME, DataTypes.TIME)
-				.withClusteringColumn(ID, DataTypes.TEXT)
+				.withClusteringColumn(TestEventEntity.FIELD_START_DATE, DataTypes.DATE)
+				.withClusteringColumn(TestEventEntity.FIELD_START_TIME, DataTypes.TIME)
+				.withClusteringColumn(TestEventEntity.FIELD_ID, DataTypes.TEXT)
 				
-				.withColumn(NAME, DataTypes.TEXT)
-				.withColumn(TYPE, DataTypes.TEXT)
-				.withColumn(SUCCESS, DataTypes.BOOLEAN)
-				.withColumn(ROOT, DataTypes.BOOLEAN)
-				.withColumn(PARENT_ID, DataTypes.TEXT)
-				.withColumn(EVENT_BATCH, DataTypes.BOOLEAN)
-				.withColumn(EVENT_COUNT, DataTypes.INT)
-				.withColumn(END_DATE, DataTypes.DATE)
-				.withColumn(END_TIME, DataTypes.TIME)
-				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
-				.withColumn(MESSAGES, DataTypes.BLOB)
-				.withColumn(LABELS, DataTypes.setOf(DataTypes.TEXT))
-				.withColumn(CONTENT, DataTypes.BLOB)
-				.withColumn(REC_DATE, DataTypes.TIMESTAMP));
+				.withColumn(TestEventEntity.FIELD_NAME, DataTypes.TEXT)
+				.withColumn(TestEventEntity.FIELD_TYPE, DataTypes.TEXT)
+				.withColumn(TestEventEntity.FIELD_SUCCESS, DataTypes.BOOLEAN)
+				.withColumn(TestEventEntity.FIELD_ROOT, DataTypes.BOOLEAN)
+				.withColumn(TestEventEntity.FIELD_PARENT_ID, DataTypes.TEXT)
+				.withColumn(TestEventEntity.FIELD_EVENT_BATCH, DataTypes.BOOLEAN)
+				.withColumn(TestEventEntity.FIELD_EVENT_COUNT, DataTypes.INT)
+				.withColumn(TestEventEntity.FIELD_END_DATE, DataTypes.DATE)
+				.withColumn(TestEventEntity.FIELD_END_TIME, DataTypes.TIME)
+				.withColumn(TestEventEntity.FIELD_COMPRESSED, DataTypes.BOOLEAN)
+				.withColumn(TestEventEntity.FIELD_MESSAGES, DataTypes.BLOB)
+				.withColumn(TestEventEntity.FIELD_LABELS, DataTypes.setOf(DataTypes.TEXT))
+				.withColumn(TestEventEntity.FIELD_CONTENT, DataTypes.BLOB)
+				.withColumn(TestEventEntity.FIELD_REC_DATE, DataTypes.TIMESTAMP));
 	}
 	
 	private void createPageScopes() throws IOException
 	{
 		String tableName = getSettings().getPageScopesTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(PAGE, DataTypes.TEXT)
-				.withClusteringColumn(SCOPE, DataTypes.TEXT));
+				.withPartitionKey(PageScopeEntity.FIELD_PAGE, DataTypes.TEXT)
+				.withClusteringColumn(PageScopeEntity.FIELD_SCOPE, DataTypes.TEXT));
 	}
 	
 	private void createTestEventParentIndex() throws IOException
 	{
 		CassandraStorageSettings settings = getSettings();
-		createIndex(settings.getTestEventParentIndex(), settings.getTestEventsTable(), PARENT_ID);
+		createIndex(settings.getTestEventParentIndex(), settings.getTestEventsTable(), TestEventEntity.FIELD_PARENT_ID);
 	}
 	
 	private void createLabelsTable() throws IOException
 	{
 		String tableName = getSettings().getLabelsTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(PAGE, DataTypes.TEXT)
-				.withClusteringColumn(NAME, DataTypes.TEXT));
+				.withPartitionKey(LabelEntity.FIELD_PAGE, DataTypes.TEXT)
+				.withClusteringColumn(LabelEntity.FIELD_NAME, DataTypes.TEXT));
 	}
 	
 	private void createIntervals() throws IOException
 	{
 		String tableName = getSettings().getIntervalsTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(PAGE, DataTypes.TEXT)
-				.withPartitionKey(INTERVAL_START_DATE, DataTypes.DATE)
-				.withClusteringColumn(CRAWLER_NAME, DataTypes.TEXT)
-				.withClusteringColumn(CRAWLER_VERSION, DataTypes.TEXT)
-				.withClusteringColumn(CRAWLER_TYPE, DataTypes.TEXT)
-				.withClusteringColumn(INTERVAL_START_TIME, DataTypes.TIME)
-				.withColumn(INTERVAL_END_DATE, DataTypes.DATE)
-				.withColumn(INTERVAL_END_TIME, DataTypes.TIME)
-				.withColumn(INTERVAL_LAST_UPDATE_DATE, DataTypes.DATE)
-				.withColumn(INTERVAL_LAST_UPDATE_TIME, DataTypes.TIME)
-				.withColumn(RECOVERY_STATE_JSON, DataTypes.TEXT)
-				.withColumn(INTERVAL_PROCESSED, DataTypes.BOOLEAN));
+				.withPartitionKey(IntervalEntity.FIELD_PAGE, DataTypes.TEXT)
+				.withPartitionKey(IntervalEntity.FIELD_INTERVAL_START_DATE, DataTypes.DATE)
+				.withClusteringColumn(IntervalEntity.FIELD_CRAWLER_NAME, DataTypes.TEXT)
+				.withClusteringColumn(IntervalEntity.FIELD_CRAWLER_VERSION, DataTypes.TEXT)
+				.withClusteringColumn(IntervalEntity.FIELD_CRAWLER_TYPE, DataTypes.TEXT)
+				.withClusteringColumn(IntervalEntity.FIELD_INTERVAL_START_TIME, DataTypes.TIME)
+				.withColumn(IntervalEntity.FIELD_INTERVAL_END_DATE, DataTypes.DATE)
+				.withColumn(IntervalEntity.FIELD_INTERVAL_END_TIME, DataTypes.TIME)
+				.withColumn(IntervalEntity.FIELD_INTERVAL_LAST_UPDATE_DATE, DataTypes.DATE)
+				.withColumn(IntervalEntity.FIELD_INTERVAL_LAST_UPDATE_TIME, DataTypes.TIME)
+				.withColumn(IntervalEntity.FIELD_RECOVERY_STATE_JSON, DataTypes.TEXT)
+				.withColumn(IntervalEntity.FIELD_INTERVAL_PROCESSED, DataTypes.BOOLEAN));
 	}
 
 	private void createMessageStatistics() throws IOException
 	{
 		String tableName = getSettings().getMessageStatisticsTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(SESSION_ALIAS, DataTypes.TEXT)
-				.withPartitionKey(DIRECTION, DataTypes.TEXT)
-				.withPartitionKey(FRAME_TYPE, DataTypes.TINYINT)
-				.withClusteringColumn(FRAME_START, DataTypes.TIMESTAMP)
-				.withColumn(ENTITY_COUNT, DataTypes.COUNTER)
-				.withColumn(ENTITY_SIZE, DataTypes.COUNTER));
+				.withPartitionKey(MessageStatisticsEntity.FIELD_SESSION_ALIAS, DataTypes.TEXT)
+				.withPartitionKey(MessageStatisticsEntity.FIELD_DIRECTION, DataTypes.TEXT)
+				.withPartitionKey(MessageStatisticsEntity.FIELD_FRAME_TYPE, DataTypes.TINYINT)
+				.withClusteringColumn(MessageStatisticsEntity.FIELD_FRAME_START, DataTypes.TIMESTAMP)
+				.withColumn(MessageStatisticsEntity.FIELD_ENTITY_COUNT, DataTypes.COUNTER)
+				.withColumn(MessageStatisticsEntity.FIELD_ENTITY_SIZE, DataTypes.COUNTER));
 	}
 
 	private void createEntityStatistics() throws IOException
 	{
 		String tableName = getSettings().getEntityStatisticsTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(ENTITY_TYPE, DataTypes.TINYINT)
-				.withPartitionKey(FRAME_TYPE, DataTypes.TINYINT)
-				.withClusteringColumn(FRAME_START, DataTypes.TIMESTAMP)
-				.withColumn(ENTITY_COUNT, DataTypes.COUNTER)
-				.withColumn(ENTITY_SIZE, DataTypes.COUNTER));
+				.withPartitionKey(EntityStatisticsEntity.FIELD_ENTITY_TYPE, DataTypes.TINYINT)
+				.withPartitionKey(EntityStatisticsEntity.FIELD_FRAME_TYPE, DataTypes.TINYINT)
+				.withClusteringColumn(EntityStatisticsEntity.FIELD_FRAME_START, DataTypes.TIMESTAMP)
+				.withColumn(EntityStatisticsEntity.FIELD_ENTITY_COUNT, DataTypes.COUNTER)
+				.withColumn(EntityStatisticsEntity.FIELD_ENTITY_SIZE, DataTypes.COUNTER));
 	}
 
 	@Override

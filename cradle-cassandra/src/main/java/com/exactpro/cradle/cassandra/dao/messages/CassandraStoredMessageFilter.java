@@ -32,7 +32,8 @@ import java.util.List;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.tuple;
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
+
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.*;
 
 public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatchEntity>
 {
@@ -77,18 +78,18 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	@Override
 	public Select addConditions(Select select)
 	{
-		select = select.whereColumn(PAGE).isEqualTo(bindMarker())
-			.whereColumn(SESSION_ALIAS).isEqualTo(bindMarker())
-			.whereColumn(DIRECTION).isEqualTo(bindMarker());
+		select = select.whereColumn(FIELD_PAGE).isEqualTo(bindMarker())
+			.whereColumn(FIELD_SESSION_ALIAS).isEqualTo(bindMarker())
+			.whereColumn(FIELD_DIRECTION).isEqualTo(bindMarker());
 		
 		if (sequence != null)
 			select = addMessageIdConditions(select);
 		else
 		{
 			if (messageTimeFrom != null)
-				select = FilterUtils.timestampFilterToWhere(messageTimeFrom.getOperation(), select, MESSAGE_DATE, MESSAGE_TIME, DATE_FROM, TIME_FROM);
+				select = FilterUtils.timestampFilterToWhere(messageTimeFrom.getOperation(), select, FIELD_MESSAGE_DATE, FIELD_MESSAGE_TIME, DATE_FROM, TIME_FROM);
 			if (messageTimeTo != null)
-				select = FilterUtils.timestampFilterToWhere(messageTimeTo.getOperation(), select, MESSAGE_DATE, MESSAGE_TIME, DATE_TO, TIME_TO);
+				select = FilterUtils.timestampFilterToWhere(messageTimeTo.getOperation(), select, FIELD_MESSAGE_DATE, FIELD_MESSAGE_TIME, DATE_TO, TIME_TO);
 		}
 
 		if (limit != 0) {
@@ -101,9 +102,9 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	@Override
 	public BoundStatementBuilder bindParameters(BoundStatementBuilder builder)
 	{
-		builder = builder.setString(PAGE, page)
-				.setString(SESSION_ALIAS, sessionAlias)
-				.setString(DIRECTION, direction);
+		builder = builder.setString(FIELD_PAGE, page)
+				.setString(FIELD_SESSION_ALIAS, sessionAlias)
+				.setString(FIELD_DIRECTION, direction);
 		
 		if (sequence != null)
 			builder = bindMessageIdParameters(builder);
@@ -160,7 +161,7 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	
 	private MultiColumnRelationBuilder<Select> selectWithMessageId(Select select)
 	{
-		return select.whereColumns(MESSAGE_DATE, MESSAGE_TIME, SEQUENCE);
+		return select.whereColumns(FIELD_MESSAGE_DATE, FIELD_MESSAGE_TIME, FIELD_SEQUENCE);
 	}
 	
 	private Select addMessageIdConditions(Select select)
@@ -172,12 +173,12 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 			case LESS_OR_EQUALS:
 				select = selectWithMessageId(select).isLessThanOrEqualTo(tuple(bindMarker(DATE_TO), bindMarker(TIME_TO), bindMarker(SEQ_TO)));
 				if (messageTimeFrom != null)
-					select = FilterUtils.timestampFilterToWhere(ComparisonOperation.GREATER_OR_EQUALS, select, MESSAGE_DATE, MESSAGE_TIME, DATE_FROM, TIME_FROM);
+					select = FilterUtils.timestampFilterToWhere(ComparisonOperation.GREATER_OR_EQUALS, select, FIELD_MESSAGE_DATE, FIELD_MESSAGE_TIME, DATE_FROM, TIME_FROM);
 				break;
 			default:
 				select = selectWithMessageId(select).isGreaterThanOrEqualTo(tuple(bindMarker(DATE_FROM), bindMarker(TIME_FROM), bindMarker(SEQ_FROM)));
 				if (messageTimeTo != null)
-					select = FilterUtils.timestampFilterToWhere(ComparisonOperation.LESS_OR_EQUALS, select, MESSAGE_DATE, MESSAGE_TIME, DATE_TO, TIME_TO);
+					select = FilterUtils.timestampFilterToWhere(ComparisonOperation.LESS_OR_EQUALS, select, FIELD_MESSAGE_DATE, FIELD_MESSAGE_TIME, DATE_TO, TIME_TO);
 		}
 		return select;
 	}

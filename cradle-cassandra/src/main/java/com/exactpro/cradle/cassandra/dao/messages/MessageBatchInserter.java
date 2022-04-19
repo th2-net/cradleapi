@@ -12,7 +12,8 @@ import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.*;
+
 
 public class MessageBatchInserter {
 
@@ -26,22 +27,22 @@ public class MessageBatchInserter {
 
     public CompletableFuture<AsyncResultSet> insert(MessageBatchEntity messageBatch, Function<BoundStatementBuilder, BoundStatementBuilder> attributes) {
         BoundStatementBuilder builder = insertStatement.boundStatementBuilder()
-                .setString(PAGE, messageBatch.getPage())
-                .setString(SESSION_ALIAS, messageBatch.getSessionAlias())
-                .setString(DIRECTION, messageBatch.getDirection())
+                .setString(FIELD_PAGE, messageBatch.getPage())
+                .setString(FIELD_SESSION_ALIAS, messageBatch.getSessionAlias())
+                .setString(FIELD_DIRECTION, messageBatch.getDirection())
 
-                .setLocalDate(MESSAGE_DATE, messageBatch.getMessageDate())
-                .setLocalTime(MESSAGE_TIME, messageBatch.getMessageTime())
-                .setLong(SEQUENCE, messageBatch.getSequence())
+                .setLocalDate(FIELD_MESSAGE_DATE, messageBatch.getMessageDate())
+                .setLocalTime(FIELD_MESSAGE_TIME, messageBatch.getMessageTime())
+                .setLong(FIELD_SEQUENCE, messageBatch.getSequence())
 
-                .setLocalDate(LAST_MESSAGE_DATE, messageBatch.getLastMessageDate())
-                .setLocalTime(LAST_MESSAGE_TIME, messageBatch.getLastMessageTime())
-                .setLong(LAST_SEQUENCE, messageBatch.getLastSequence())
-                .setInt(MESSAGE_COUNT, messageBatch.getMessageCount())
-                .setBoolean(COMPRESSED, messageBatch.isCompressed())
-                .setSet(LABELS, messageBatch.getLabels(), String.class)
-                .setByteBuffer(CONTENT, messageBatch.getContent())
-                .setInstant(REC_DATE, Instant.now());
+                .setLocalDate(FIELD_LAST_MESSAGE_DATE, messageBatch.getLastMessageDate())
+                .setLocalTime(FIELD_LAST_MESSAGE_TIME, messageBatch.getLastMessageTime())
+                .setLong(FIELD_LAST_SEQUENCE, messageBatch.getLastSequence())
+                .setInt(FIELD_MESSAGE_COUNT, messageBatch.getMessageCount())
+                .setBoolean(FIELD_COMPRESSED, messageBatch.isCompressed())
+                .setSet(FIELD_LABELS, messageBatch.getLabels(), String.class)
+                .setByteBuffer(FIELD_CONTENT, messageBatch.getContent())
+                .setInstant(FIELD_REC_DATE, Instant.now());
 
 
         attributes.apply(builder);

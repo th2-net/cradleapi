@@ -41,8 +41,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.zip.DataFormatException;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
-
 /**
  * Contains data of {@link StoredTestEvent} to write to or to obtain from Cassandra
  */
@@ -50,57 +48,72 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 public class TestEventEntity extends CradleEntity
 {
 	private static final Logger logger = LoggerFactory.getLogger(TestEventEntity.class);
-	
+	public static final String FIELD_PAGE = "page",
+			FIELD_SCOPE = "scope",
+			FIELD_START_DATE = "start_date",
+			FIELD_START_TIME = "start_time",
+			FIELD_ID = "id",
+			FIELD_NAME = "name",
+			FIELD_TYPE = "type",
+			FIELD_SUCCESS = "success",
+			FIELD_ROOT = "root",
+			FIELD_PARENT_ID = "parent_id",
+			FIELD_EVENT_BATCH = "event_batch",
+			FIELD_EVENT_COUNT = "event_count",
+			FIELD_END_DATE = "end_date",
+			FIELD_END_TIME = "end_time",
+			FIELD_MESSAGES = "messages",
+			FIELD_REC_DATE = "rec_date";
 	@PartitionKey(0)
-	@CqlName(PAGE)
+	@CqlName(FIELD_PAGE)
 	private String page;
 	
 	@PartitionKey(1)
-	@CqlName(SCOPE)
+	@CqlName(FIELD_SCOPE)
 	private String scope;
 	
 	@ClusteringColumn(0)
-	@CqlName(START_DATE)
+	@CqlName(FIELD_START_DATE)
 	private LocalDate startDate;
 	
 	@ClusteringColumn(1)
-	@CqlName(START_TIME)
+	@CqlName(FIELD_START_TIME)
 	private LocalTime startTime;
 	
 	@ClusteringColumn(2)
-	@CqlName(ID)
+	@CqlName(FIELD_ID)
 	private String id;
 	
-	@CqlName(NAME)
+	@CqlName(FIELD_NAME)
 	private String name;
 	
-	@CqlName(TYPE)
+	@CqlName(FIELD_TYPE)
 	private String type;
 	
-	@CqlName(SUCCESS)
+	@CqlName(FIELD_SUCCESS)
 	private boolean success;
 	
-	@CqlName(ROOT)
+	@CqlName(FIELD_ROOT)
 	private boolean root;
 	
-	@CqlName(PARENT_ID)
+	@CqlName(FIELD_PARENT_ID)
 	private String parentId;
 
-	@CqlName(EVENT_BATCH)
+	@CqlName(FIELD_EVENT_BATCH)
 	private boolean eventBatch;
 	
-	@CqlName(EVENT_COUNT)
+	@CqlName(FIELD_EVENT_COUNT)
 	private int eventCount;
 	
-	@CqlName(END_DATE)
+	@CqlName(FIELD_END_DATE)
 	private LocalDate endDate;
-	@CqlName(END_TIME)
+	@CqlName(FIELD_END_TIME)
 	private LocalTime endTime;
 	
-	@CqlName(MESSAGES)
+	@CqlName(FIELD_MESSAGES)
 	private ByteBuffer messages;
 
-	@CqlName(REC_DATE)
+	@CqlName(FIELD_REC_DATE)
 	private Instant recDate;
 
 	private List<SerializedEntityMetadata> serializedEventMetadata;

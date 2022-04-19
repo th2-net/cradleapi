@@ -25,16 +25,16 @@ import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
+import static com.exactpro.cradle.cassandra.dao.EntityStatisticsEntity.*;
 
 @Dao
 public interface EntityStatisticsOperator {
 
     @Query("SELECT * FROM ${qualifiedTableId}  WHERE " +
-            ENTITY_TYPE + "=:entityType AND " +
-            FRAME_TYPE + "=:frameType AND " +
-            FRAME_START + ">=:frameStart AND " +
-            FRAME_START + "<:frameEnd")
+            FIELD_ENTITY_TYPE + "=:entityType AND " +
+            FIELD_FRAME_TYPE + "=:frameType AND " +
+            FIELD_FRAME_START + ">=:frameStart AND " +
+            FIELD_FRAME_START + "<:frameEnd")
     CompletableFuture<MappedAsyncPagingIterable<EntityStatisticsEntity>> getStatistics (
             Byte entityType,
             Byte frameType,
@@ -45,9 +45,9 @@ public interface EntityStatisticsOperator {
 
     @Update
     @Query("UPDATE ${qualifiedTableId}  SET entity_count = entity_count + :count, entity_size = entity_size + :size WHERE " +
-            ENTITY_TYPE + "=:entityType AND " +
-            FRAME_TYPE + "=:frameType AND " +
-            FRAME_START + "=:frameStart")
+            FIELD_ENTITY_TYPE + "=:entityType AND " +
+            FIELD_FRAME_TYPE + "=:frameType AND " +
+            FIELD_FRAME_START + "=:frameStart")
     CompletableFuture<Void> update(
             Byte entityType,
             Byte frameType,
