@@ -19,14 +19,14 @@ package com.exactpro.cradle.cassandra.keyspaces;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
+import com.exactpro.cradle.cassandra.dao.BooksStatusEntity;
+import com.exactpro.cradle.cassandra.dao.books.BookEntity;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 {
@@ -58,22 +58,22 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 	{
 		String tableName = getSettings().getBooksTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(NAME, DataTypes.TEXT)
-				.withColumn(FULLNAME, DataTypes.TEXT)
-				.withColumn(KEYSPACE_NAME, DataTypes.TEXT)
-				.withColumn(DESCRIPTION, DataTypes.TEXT)
-				.withColumn(CREATED, DataTypes.TIMESTAMP)
-				.withColumn(SCHEMA_VERSION, DataTypes.TEXT));
+				.withPartitionKey(BookEntity.FIELD_NAME, DataTypes.TEXT)
+				.withColumn(BookEntity.FIELD_FULLNAME, DataTypes.TEXT)
+				.withColumn(BookEntity.FIELD_KEYSPACE_NAME, DataTypes.TEXT)
+				.withColumn(BookEntity.FIELD_DESCRIPTION, DataTypes.TEXT)
+				.withColumn(BookEntity.FIELD_CREATED, DataTypes.TIMESTAMP)
+				.withColumn(BookEntity.FIELD_SCHEMA_VERSION, DataTypes.TEXT));
 	}
 
 	private void createBooksStatus() throws IOException
 	{
 		String tableName = getSettings().getBooksStatusTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(BOOK_NAME, DataTypes.TEXT)
-				.withClusteringColumn(OBJECT_TYPE, DataTypes.TEXT)
-				.withClusteringColumn(OBJECT_NAME, DataTypes.TEXT)
-				.withColumn(CREATED, DataTypes.TIMESTAMP)
-				.withColumn(SCHEMA_VERSION, DataTypes.TEXT));
+				.withPartitionKey(BooksStatusEntity.FIELD_BOOK_NAME, DataTypes.TEXT)
+				.withClusteringColumn(BooksStatusEntity.FIELD_OBJECT_TYPE, DataTypes.TEXT)
+				.withClusteringColumn(BooksStatusEntity.FIELD_OBJECT_NAME, DataTypes.TEXT)
+				.withColumn(BooksStatusEntity.FIELD_CREATED, DataTypes.TIMESTAMP)
+				.withColumn(BooksStatusEntity.FIELD_SCHEMA_VERSION, DataTypes.TEXT));
 	}
 }

@@ -18,6 +18,7 @@ package com.exactpro.cradle.messages;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
@@ -37,16 +38,19 @@ public class MessageBatchToStore extends StoredMessageBatch
 	private static final Logger logger = LoggerFactory.getLogger(MessageBatchToStore.class);
 	
 	private final int maxBatchSize;
+	private final long maxMessageBatchDurationInSeconds;
+	private Instant maxMessageTimestamp;
 	private LocalDate batchDate;
 	
-	public MessageBatchToStore(int maxBatchSize)
+	public MessageBatchToStore(int maxBatchSize, long maxMessageBatchDurationInSeconds)
 	{
 		this.maxBatchSize = maxBatchSize;
+		this.maxMessageBatchDurationInSeconds = maxMessageBatchDurationInSeconds;
 	}
 	
-	public static MessageBatchToStore singleton(MessageToStore message, int maxBatchSize) throws CradleStorageException
+	public static MessageBatchToStore singleton(MessageToStore message, int maxBatchSize, long maxMessageBatchDurationInSeconds) throws CradleStorageException
 	{
-		MessageBatchToStore result = new MessageBatchToStore(maxBatchSize);
+		MessageBatchToStore result = new MessageBatchToStore(maxBatchSize, maxMessageBatchDurationInSeconds);
 		result.addMessage(message);
 		return result;
 	}
@@ -117,6 +121,7 @@ public class MessageBatchToStore extends StoredMessageBatch
 			
 			id = new StoredMessageId(message.getBookId(), message.getSessionAlias(), message.getDirection(), message.getTimestamp(), i);
 			batchDate = TimeUtils.toLocalTimestamp(id.getTimestamp()).toLocalDate();
+			maxMessageTimestamp = id.getTimestamp().plus(maxMessageBatchDurationInSeconds, ChronoUnit.SECONDS);
 			messageSeq = i;
 		}
 		else
@@ -137,8 +142,13 @@ public class MessageBatchToStore extends StoredMessageBatch
 			StoredMessage lastMsg = getLastMessage();
 			
 			if (lastMsg.getTimestamp().isAfter(message.getTimestamp()))
-				throw new CradleStorageException("Message timestamp should be not before "+lastMsg.getTimestamp()+", "
+				throw new CradleStorageException("Message timestamp should not be before "+lastMsg.getTimestamp()+", "
 						+ "but in your message it is "+message.getTimestamp());
+			
+			if (message.getTimestamp().isAfter(maxMessageTimestamp))
+				throw new CradleStorageException("Message timestamp should not be after " + maxMessageTimestamp
+						+ " because max batch duration is " + maxMessageBatchDurationInSeconds
+						+ " seconds, but in your message it is " + message.getTimestamp());
 			
 			if (message.getSequence() > 0)  //I.e. message sequence is set
 			{

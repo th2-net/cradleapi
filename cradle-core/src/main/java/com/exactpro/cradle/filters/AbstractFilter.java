@@ -29,16 +29,21 @@ public abstract class AbstractFilter
 	protected static final String TO_STRING_DELIMITER = ", ";
 
 	private final BookId bookId;
-	private final PageId pageId;
+	private PageId pageId;
 	private FetchParameters fetchParameters;
 	private FilterForGreater<Instant> from;
 	private FilterForLess<Instant> to;
 	private int limit;
 	private Order order = Order.DIRECT;
 
-	protected AbstractFilter(BookId bookId, PageId pageId)
+	protected AbstractFilter(BookId bookId)
 	{
 		this.bookId = bookId;
+	}
+	
+	protected AbstractFilter(BookId bookId, PageId pageId)
+	{
+		this(bookId);
 		this.pageId = pageId;
 	}
 
@@ -63,6 +68,10 @@ public abstract class AbstractFilter
 		return pageId;
 	}
 
+	public void setPageId(PageId pageId)
+	{
+		this.pageId = pageId;
+	}
 
 	protected FilterForGreater<Instant> getFrom()
 	{

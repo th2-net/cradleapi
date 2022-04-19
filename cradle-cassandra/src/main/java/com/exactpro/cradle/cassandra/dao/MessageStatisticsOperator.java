@@ -23,16 +23,16 @@ import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
+import static com.exactpro.cradle.cassandra.dao.MessageStatisticsEntity.*;
 
 @Dao
 public interface MessageStatisticsOperator {
 
-    @Query("SELECT * FROM ${qualifiedTableId}  WHERE " + SESSION_ALIAS + "=:sessionAlias AND " +
-            DIRECTION + "=:direction AND " +
-            FRAME_TYPE + "=:frameType AND " +
-            FRAME_START + ">=:frameStart AND " +
-            FRAME_START + "<:frameEnd")
+    @Query("SELECT * FROM ${qualifiedTableId}  WHERE " + FIELD_SESSION_ALIAS + "=:sessionAlias AND " +
+            FIELD_DIRECTION + "=:direction AND " +
+            FIELD_FRAME_TYPE + "=:frameType AND " +
+            FIELD_FRAME_START + ">=:frameStart AND " +
+            FIELD_FRAME_START + "<:frameEnd")
     CompletableFuture<MappedAsyncPagingIterable<MessageStatisticsEntity>> getStatistics (
             String sessionAlias,
             String direction,
@@ -50,8 +50,8 @@ public interface MessageStatisticsOperator {
             String direction,
             Byte frameType,
             Instant frameStart,
-            @CqlName(ENTITY_COUNT) long count,
-            @CqlName(ENTITY_SIZE) long size,
+            @CqlName(FIELD_ENTITY_COUNT) long count,
+            @CqlName(FIELD_ENTITY_SIZE) long size,
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes
     );
 

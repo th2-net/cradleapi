@@ -29,49 +29,36 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
-public class FilteredMessageIterator implements Iterator<StoredMessage>
+public class FilteredMessageIterator extends MappedIterator<StoredMessageBatch, StoredMessage>
 {
-	private final int limit;
-	private final AtomicInteger returned;
-	private final Iterator<StoredMessage> it;
+	private FilterForAny<Long> sequence;
+	private FilterForGreater<Instant> timestampFrom;
+	private FilterForLess<Instant> timestampTo;
 
 	public FilteredMessageIterator(Iterator<StoredMessageBatch> batchIterator, MessageFilter filter, int limit,
 			AtomicInteger returned)
 	{
-		this.limit = limit;
-		this.returned = returned;
-		Predicate<StoredMessage> filterPredicate = createFilterPredicate(filter);
-		this.it = Streams.stream(batchIterator)
+		super(batchIterator, limit, returned);
+		sequence = filter == null ? null : filter.getSequence();
+		timestampFrom = filter == null ? null : filter.getTimestampFrom();
+		timestampTo = filter == null ? null : filter.getTimestampTo();
+	}
+
+	@Override
+	Iterator<StoredMessage> createTargetIterator(Iterator<StoredMessageBatch> sourceIterator)
+	{
+		Predicate<StoredMessage> filterPredicate = createFilterPredicate();
+		return Streams.stream(sourceIterator)
 				.flatMap(b -> b.getMessages().stream())
 				.filter(filterPredicate)
 				.iterator();
 	}
 
-	private Predicate<StoredMessage> createFilterPredicate(MessageFilter filter)
+	private Predicate<StoredMessage> createFilterPredicate()
 	{
-		if (filter == null)
-			return storedMessage -> true;
-
-		FilterForAny<Long> sequence = filter.getSequence();
-		FilterForGreater<Instant> timestampFrom = filter.getTimestampFrom();
-		FilterForLess<Instant> timestampTo = filter.getTimestampTo();
-
 		return storedMessage ->
 					(sequence == null || sequence.check(storedMessage.getId().getSequence()))
 					&& (timestampFrom == null || timestampFrom.check(storedMessage.getTimestamp()))
 					&& (timestampTo == null || timestampTo.check(storedMessage.getTimestamp()));
-	}
-
-	@Override
-	public boolean hasNext()
-	{
-		return (limit <= 0 || returned.get() < limit) && it.hasNext();
-	}
-
-	@Override
-	public StoredMessage next()
-	{
-		returned.incrementAndGet();
-		return it.next();
 	}
 }

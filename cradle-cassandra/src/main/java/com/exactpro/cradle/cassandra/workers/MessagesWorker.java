@@ -49,7 +49,7 @@ import java.util.function.Function;
 import java.util.zip.DataFormatException;
 
 import static com.exactpro.cradle.CradleStorage.EMPTY_MESSAGE_INDEX;
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.*;
 import static java.lang.String.format;
 
 public class MessagesWorker extends Worker
@@ -101,6 +101,19 @@ public class MessagesWorker extends Worker
 	{
 		MessageBatchesIteratorProvider provider =
 				new MessageBatchesIteratorProvider("get messages batches filtered by " + filter, filter,
+						getBookOps(book.getId()), book, composingService, selectQueryExecutor,
+						composeReadAttrs(filter.getFetchParameters()));
+		return provider.nextIterator()
+				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, provider), composingService);
+	}
+
+	public CompletableFuture<CradleResultSet<StoredMessageBatch>> getGroupedMessageBatches(GroupedMessageFilter filter,
+			BookInfo book, long maxMessageBatchDurationLimit)
+			throws CradleStorageException
+	{
+		GroupedMessageIteratorProvider provider =
+				new GroupedMessageIteratorProvider("get messages batches filtered by " + filter,
+						maxMessageBatchDurationLimit, filter,
 						getBookOps(book.getId()), book, composingService, selectQueryExecutor,
 						composeReadAttrs(filter.getFetchParameters()));
 		return provider.nextIterator()
@@ -173,7 +186,7 @@ public class MessagesWorker extends Worker
 					return selectQueryExecutor.executeSingleRowResultQuery(
 									() -> mbOperator.get(pageId.getName(), id.getSessionAlias(),
 											id.getDirection().getLabel(), ldt.toLocalDate(),
-											row.getLocalTime(MESSAGE_TIME), row.getLong(SEQUENCE), readAttrs),
+											row.getLocalTime(FIELD_MESSAGE_TIME), row.getLong(FIELD_SEQUENCE), readAttrs),
 									mbEntityConverter::getEntity,
 									format("get message batch for message with id '%s'", id))
 							.thenApplyAsync(entity ->
@@ -206,9 +219,15 @@ public class MessagesWorker extends Worker
 				}, composingService);
 	}
 
-	public MessageBatchEntity createEntity(MessageBatchToStore batch, PageId pageId) throws IOException
+	public MessageBatchEntity createMessageBatchEntity(MessageBatchToStore batch, PageId pageId) throws IOException
 	{
 		return new MessageBatchEntity(batch, pageId, settings.getMaxUncompressedMessageBatchSize());
+	}
+	
+	public GroupedMessageBatchEntity createGroupedMessageBatchEntity(MessageBatchToStore batch, PageId pageId, String groupName)
+			throws IOException
+	{
+		return new GroupedMessageBatchEntity(createMessageBatchEntity(batch, pageId), groupName);
 	}
 
 	public CompletableFuture<PageSessionEntity> storePageSession(MessageBatchToStore batch, PageId pageId)
@@ -255,6 +274,18 @@ public class MessagesWorker extends Worker
 				.thenAcceptAsync(result -> updateMessageWriteMetrics(entity, bookId), composingService);
 	}
 
+	public CompletableFuture<GroupedMessageBatchEntity> storeGroupedMessageBatch(GroupedMessageBatchEntity entity, BookId bookId)
+	{
+		BookOperators bookOps = getBookOps(bookId);
+		GroupedMessageBatchOperator gmbOperator = bookOps.getGroupedMessageBatchOperator();
+		List<SerializedEntityMetadata> meta = entity.getSerializedMessageMetadata();
+
+		return gmbOperator.write(entity, writeAttrs)
+				.thenAccept(result -> messageStatisticsCollector.updateMessageBatchStatistics(bookId, entity.getGroup(), entity.getDirection(), meta))
+				.thenAcceptAsync(result -> updateMessageWriteMetrics(entity.getMessageBatchEntity(), bookId), composingService)
+				.thenApplyAsync(result -> entity, composingService);
+	}
+
 	public long getBoundarySequence(String sessionAlias, Direction direction, BookInfo book, boolean first)
 			throws CradleStorageException
 	{
@@ -290,6 +321,6 @@ public class MessagesWorker extends Worker
 			return EMPTY_MESSAGE_INDEX;
 		}
 
-		return row.getLong(first ? SEQUENCE : LAST_SEQUENCE);
+		return row.getLong(first ? FIELD_SEQUENCE : FIELD_LAST_SEQUENCE);
 	}
 }
