@@ -107,10 +107,10 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
 
     @Override
-    public void updateMessageBatchStatistics(BookId bookId, String sessionAlias, String direction, Collection<SerializedEntityMetadata> batchMetadata) {
+    public void updateMessageBatchStatistics(BookId bookId,String page, String sessionAlias, String direction, Collection<SerializedEntityMetadata> batchMetadata) {
         CounterCache counters = getBookCounterCaches(bookId)
                 .getMessageCounterCache()
-                .get(new BookCounterCaches.MessageKey(sessionAlias, direction));
+                .get(new BookCounterCaches.MessageKey(page, sessionAlias, direction));
         updateCounters(counters, batchMetadata);
 
         // update entity statistics separately
@@ -162,6 +162,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
         try {
             logger.trace("Persisting message counter for {}:{}:{}:{}:{}", bookId, key.getSessionAlias(), key.getDirection(), frameType, counter.getFrameStart());
             ops.getOperators(bookId).getMessageStatisticsOperator().update(
+                    key.getPage(),
                     key.getSessionAlias(),
                     key.getDirection(),
                     frameType.getValue(),

@@ -30,6 +30,7 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 @Entity
 public class MessageStatisticsEntity {
 
+    private String page;
     private String sessionAlias;
     private String direction;
     private Byte frameType;
@@ -43,8 +44,15 @@ public class MessageStatisticsEntity {
     public CounterSample toCounterSample () {
         return new CounterSample(FrameType.from(frameType), frameStart, new Counter(entityCount, entitySize));
     }
-
     @PartitionKey(0)
+    @CqlName(PAGE)
+    public String getPage(){
+        return page;
+    }
+
+    public void setPage(String page) { this.page = page; }
+
+    @PartitionKey(1)
     @CqlName(SESSION_ALIAS)
     public String getSessionAlias() {
         return sessionAlias;
@@ -54,7 +62,7 @@ public class MessageStatisticsEntity {
         this.sessionAlias = sessionAlias;
     }
 
-    @PartitionKey(1)
+    @PartitionKey(2)
     @CqlName(DIRECTION)
     public String getDirection() {
         return direction;
@@ -64,7 +72,7 @@ public class MessageStatisticsEntity {
         this.direction = direction;
     }
 
-    @PartitionKey(2)
+    @PartitionKey(3)
     @CqlName(FRAME_TYPE)
     public Byte getFrameType() {
         return frameType;
@@ -74,7 +82,7 @@ public class MessageStatisticsEntity {
         this.frameType = frameType;
     }
 
-    @ClusteringColumn(3)
+    @ClusteringColumn(4)
     @CqlName(FRAME_START)
     public Instant getFrameStart() {
         return frameStart;

@@ -28,12 +28,14 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 @Dao
 public interface MessageStatisticsOperator {
 
-    @Query("SELECT * FROM ${qualifiedTableId}  WHERE " + SESSION_ALIAS + "=:sessionAlias AND " +
+    @Query("SELECT * FROM ${qualifiedTableId}  WHERE " + PAGE + "=:page AND " +
+            SESSION_ALIAS + "=:sessionAlias AND " +
             DIRECTION + "=:direction AND " +
             FRAME_TYPE + "=:frameType AND " +
             FRAME_START + ">=:frameStart AND " +
             FRAME_START + "<:frameEnd")
     CompletableFuture<MappedAsyncPagingIterable<MessageStatisticsEntity>> getStatistics (
+            String page,
             String sessionAlias,
             String direction,
             Byte frameType,
@@ -46,6 +48,7 @@ public interface MessageStatisticsOperator {
 
     @Increment(entityClass = MessageStatisticsEntity.class)
     CompletableFuture<Void> update(
+            String page,
             String sessionAlias,
             String direction,
             Byte frameType,

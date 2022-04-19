@@ -269,6 +269,7 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 	{
 		String tableName = getSettings().getMessageStatisticsTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(PAGE,DataTypes.TEXT)
 				.withPartitionKey(SESSION_ALIAS, DataTypes.TEXT)
 				.withPartitionKey(DIRECTION, DataTypes.TEXT)
 				.withPartitionKey(FRAME_TYPE, DataTypes.TINYINT)
