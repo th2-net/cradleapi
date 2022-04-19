@@ -27,6 +27,7 @@ import java.util.concurrent.Executors;
 import com.exactpro.cradle.counters.Counter;
 import com.exactpro.cradle.counters.CounterSample;
 import com.exactpro.cradle.counters.Interval;
+import com.exactpro.cradle.filters.AbstractFilter;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.utils.BookPagesNamesChecker;
@@ -50,6 +51,7 @@ public abstract class CradleStorage
 	private static final Logger logger = LoggerFactory.getLogger(CradleStorage.class);
 	public static final ZoneOffset TIMEZONE_OFFSET = ZoneOffset.UTC;
 	public static final long EMPTY_MESSAGE_INDEX = -1L;
+	public static final long DEFAULT_MAX_MESSAGE_BATCH_DURATION_LIMIT_SECONDS = 600L;
 	public static final int DEFAULT_MAX_MESSAGE_BATCH_SIZE = 1024*1024,
 			DEFAULT_MAX_TEST_EVENT_BATCH_SIZE = DEFAULT_MAX_MESSAGE_BATCH_SIZE;
 
@@ -60,7 +62,8 @@ public abstract class CradleStorage
 	protected final boolean ownedComposingService;
 	protected final CradleEntitiesFactory entitiesFactory;
 
-	public CradleStorage(ExecutorService composingService, int maxMessageBatchSize, int maxTestEventBatchSize) throws CradleStorageException
+	public CradleStorage(ExecutorService composingService, int maxMessageBatchSize, long maxMessageBatchDuration,
+			int maxTestEventBatchSize) throws CradleStorageException
 	{
 		if (composingService == null)
 		{
@@ -73,12 +76,13 @@ public abstract class CradleStorage
 			this.composingService = composingService;
 		}
 		
-		entitiesFactory = new CradleEntitiesFactory(maxMessageBatchSize, maxTestEventBatchSize);
+		entitiesFactory = new CradleEntitiesFactory(maxMessageBatchSize, maxMessageBatchDuration, maxTestEventBatchSize);
 	}
 	
 	public CradleStorage() throws CradleStorageException
 	{
-		this(null, DEFAULT_MAX_MESSAGE_BATCH_SIZE, DEFAULT_MAX_TEST_EVENT_BATCH_SIZE);
+		this(null, DEFAULT_MAX_MESSAGE_BATCH_SIZE, DEFAULT_MAX_MESSAGE_BATCH_DURATION_LIMIT_SECONDS,
+				DEFAULT_MAX_TEST_EVENT_BATCH_SIZE);
 	}
 	
 
@@ -95,8 +99,12 @@ public abstract class CradleStorage
 	
 	
 	protected abstract void doStoreMessageBatch(MessageBatchToStore batch, PageInfo page) throws IOException, CradleStorageException;
+	protected abstract void doStoreGroupedMessageBatch(MessageBatchToStore batch, PageInfo page, String groupName)
+			throws IOException;
 	protected abstract CompletableFuture<Void> doStoreMessageBatchAsync(MessageBatchToStore batch, PageInfo page) 
 			throws IOException, CradleStorageException;
+	protected abstract CompletableFuture<Void> doStoreGroupedMessageBatchAsync(MessageBatchToStore batch, PageInfo page,
+			String groupName) throws IOException, CradleStorageException;
 	
 	
 	protected abstract void doStoreTestEvent(TestEventToStore event, PageInfo page) throws IOException, CradleStorageException;
@@ -120,7 +128,11 @@ public abstract class CradleStorage
 			throws CradleStorageException;
 	protected abstract CradleResultSet<StoredMessageBatch> doGetMessageBatches(MessageFilter filter, BookInfo book) 
 			throws IOException, CradleStorageException;
+	protected abstract CradleResultSet<StoredMessageBatch> doGetGroupedMessageBatches(GroupedMessageFilter filter, BookInfo book) 
+			throws IOException, CradleStorageException;
 	protected abstract CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetMessageBatchesAsync(MessageFilter filter,
+			BookInfo book) throws CradleStorageException;
+	protected abstract CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetGroupedMessageBatchesAsync(GroupedMessageFilter filter,
 			BookInfo book) throws CradleStorageException;
 	
 	protected abstract long doGetLastSequence(String sessionAlias, Direction direction, BookId bookId)
@@ -448,6 +460,17 @@ public abstract class CradleStorage
 		doStoreMessageBatch(batch, page);
 		logger.debug("Message batch {} has been stored", id);
 	}
+
+	
+	public final void storeGroupedMessageBatch(MessageBatchToStore batch, String groupName)
+			throws CradleStorageException, IOException
+	{
+		StoredMessageId id = batch.getId();
+		logger.debug("Storing message batch {} grouped by {}", id, groupName);
+		PageInfo page = bpc.findPage(id.getBookId(), id.getTimestamp());
+		doStoreGroupedMessageBatch(batch, page, groupName);
+		logger.debug("Message batch {} grouped by {} has been stored", id, groupName);
+	}
 	
 	
 	/**
@@ -472,8 +495,35 @@ public abstract class CradleStorage
 			}, composingService);
 		return result;
 	}
-	
-	
+
+	/**
+	 * Asynchronously writes data about given message batch to current page grouped by provided group name
+	 * @param batch data to write
+	 * @param groupName group name
+	 * @return future to get know if storing was successful
+	 * @throws CradleStorageException if given parameters are invalid
+	 * @throws IOException if data writing failed
+	 */
+	public final CompletableFuture<Void> storeGroupedMessageBatchAsync(MessageBatchToStore batch, String groupName)
+			throws CradleStorageException, IOException
+	{
+		if (groupName == null)
+			throw new CradleStorageException("'groupName' is required parameter and can not be null");
+		
+		StoredMessageId id = batch.getId();
+		logger.debug("Storing message batch {} grouped by {} asynchronously", id, groupName);
+		PageInfo page = bpc.findPage(id.getBookId(), id.getTimestamp());
+		CompletableFuture<Void> result = doStoreGroupedMessageBatchAsync(batch, page, groupName);
+		result.whenCompleteAsync((r, error) -> {
+			if (error != null)
+				logger.error("Error while storing message batch "+id+" grouped by "+groupName+" asynchronously", error);
+			else
+				logger.debug("Message batch {} grouped by {} has been stored asynchronously", id, groupName);
+		}, composingService);
+		return result;
+	}
+
+
 	/**
 	 * Writes data about given test event to current page
 	 * @param event data to write
@@ -672,6 +722,27 @@ public abstract class CradleStorage
 		logger.debug("Got result set with message batches filtered by {}", filter);
 		return result;
 	}
+
+
+	/**
+	 * Allows enumerating stored message batches filtering them by given conditions
+	 * @param filter defines conditions to filter message batches by
+	 * @return result set to enumerate message batches
+	 * @throws IOException if data retrieval failed
+	 * @throws CradleStorageException if filter is invalid
+	 */
+	public final CradleResultSet<StoredMessageBatch> getGroupedMessageBatches(GroupedMessageFilter filter)
+			throws CradleStorageException, IOException
+	{
+		logger.debug("Filtering grouped message batches by {}", filter);
+		checkAbstractFilter(filter);
+
+		BookInfo book = bpc.getBook(filter.getBookId());
+		CradleResultSet<StoredMessageBatch> result = doGetGroupedMessageBatches(filter, book);
+		logger.debug("Got result set with grouped message batches filtered by {}", filter);
+		return result;
+	}
+	
 	
 	/**
 	 * Allows to asynchronously obtain result set to enumerate stored message batches filtering them by given conditions
@@ -687,6 +758,29 @@ public abstract class CradleStorage
 		
 		BookInfo book = bpc.getBook(filter.getBookId());
 		CompletableFuture<CradleResultSet<StoredMessageBatch>> result = doGetMessageBatchesAsync(filter, book);
+		result.whenCompleteAsync((r, error) -> {
+				if (error != null)
+					logger.error("Error while getting message batches filtered by "+filter+" asynchronously", error);
+				else
+					logger.debug("Result set with message batches filtered by {} got asynchronously", filter);
+			}, composingService);
+		return result;
+	}
+	
+	
+	/**
+	 * Allows to asynchronously obtain result set to enumerate stored message batches filtering them by given conditions
+	 * @param filter defines conditions to filter message batches by
+	 * @return future to obtain result set to enumerate message batches
+	 * @throws CradleStorageException if filter is invalid
+	 */
+	public final CompletableFuture<CradleResultSet<StoredMessageBatch>> getGroupedMessageBatchesAsync(GroupedMessageFilter filter) throws CradleStorageException
+	{
+		logger.debug("Asynchronously getting grouped message batches filtered by {}", filter);
+		checkAbstractFilter(filter);
+		
+		BookInfo book = bpc.getBook(filter.getBookId());
+		CompletableFuture<CradleResultSet<StoredMessageBatch>> result = doGetGroupedMessageBatchesAsync(filter, book);
 		result.whenCompleteAsync((r, error) -> {
 				if (error != null)
 					logger.error("Error while getting message batches filtered by "+filter+" asynchronously", error);
@@ -1093,19 +1187,23 @@ public abstract class CradleStorage
 	
 	private boolean checkFilter(MessageFilter filter) throws CradleStorageException
 	{
-		BookInfo book = bpc.getBook(filter.getBookId());
-		if (filter.getPageId() != null)
-			bpc.checkPage(filter.getPageId(), book.getId());
+		checkAbstractFilter(filter);
 		
 		//TODO: add more checks
 		return true;
+	}
+
+	private void checkAbstractFilter(AbstractFilter filter) throws CradleStorageException
+	{
+		BookInfo book = bpc.getBook(filter.getBookId());
+		if (filter.getPageId() != null)
+			bpc.checkPage(filter.getPageId(), book.getId());
 	}
 	
 	private boolean checkFilter(TestEventFilter filter) throws CradleStorageException
 	{
 		BookInfo book = bpc.getBook(filter.getBookId());
-		if (filter.getPageId() != null)
-			bpc.checkPage(filter.getPageId(), book.getId());
+		checkAbstractFilter(filter);
 		
 		if (filter.getParentId() != null && !book.getId().equals(filter.getParentId().getBookId()))
 			throw new CradleStorageException("Requested book ("+book.getId()+") doesn't match book of requested parent ("+filter.getParentId()+")");

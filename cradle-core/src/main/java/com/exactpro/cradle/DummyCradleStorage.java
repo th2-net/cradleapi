@@ -143,14 +143,28 @@ public class DummyCradleStorage extends CradleStorage
 	protected void doStoreMessageBatch(MessageBatchToStore batch, PageInfo page) throws IOException
 	{
 	}
-	
+
+	@Override
+	protected void doStoreGroupedMessageBatch(MessageBatchToStore batch, PageInfo page, String groupName)
+			throws IOException
+	{
+		
+	}
+
 	@Override
 	protected CompletableFuture<Void> doStoreMessageBatchAsync(MessageBatchToStore batch,
 			PageInfo page)
 	{
 		return CompletableFuture.completedFuture(null);
 	}
-	
+
+	@Override
+	protected CompletableFuture<Void> doStoreGroupedMessageBatchAsync(MessageBatchToStore batch, PageInfo page,
+			String groupName) throws IOException, CradleStorageException
+	{
+		return null;
+	}
+
 	@Override
 	protected void doStoreTestEvent(TestEventToStore event, PageInfo page) throws IOException
 	{
@@ -227,15 +241,30 @@ public class DummyCradleStorage extends CradleStorage
 	{
 		return null;
 	}
-	
+
+	@Override
+	protected CradleResultSet<StoredMessageBatch> doGetGroupedMessageBatches(GroupedMessageFilter filter,
+			BookInfo book)
+			throws IOException, CradleStorageException
+	{
+		return null;
+	}
+
 	@Override
 	protected CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetMessageBatchesAsync(MessageFilter filter,
 			BookInfo book)
 	{
 		return CompletableFuture.completedFuture(null);
 	}
-	
-	
+
+	@Override
+	protected CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetGroupedMessageBatchesAsync(
+			GroupedMessageFilter filter, BookInfo book) throws CradleStorageException
+	{
+		return null;
+	}
+
+
 	@Override
 	protected long doGetLastSequence(String sessionAlias, Direction direction, BookId bookId) throws IOException
 	{

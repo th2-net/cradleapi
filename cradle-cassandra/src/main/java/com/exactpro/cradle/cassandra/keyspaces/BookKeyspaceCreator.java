@@ -87,6 +87,7 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 		createScopes();
 		
 		createMessages();
+		createGroupedMessages();
 		createPageSessions();
 		
 		createTestEvents();
@@ -166,6 +167,28 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withColumn(LABELS, DataTypes.setOf(DataTypes.TEXT))
 				.withColumn(CONTENT, DataTypes.BLOB)
 				.withColumn(REC_DATE, DataTypes.TIMESTAMP));
+	}
+	
+	private void createGroupedMessages() throws IOException
+	{
+		String tableName = getSettings().getGroupedMessagesTable();
+		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(PAGE, DataTypes.TEXT)
+				.withPartitionKey(ALIAS_GROUP, DataTypes.TEXT)
+
+				.withClusteringColumn(MESSAGE_DATE, DataTypes.DATE)
+				.withClusteringColumn(MESSAGE_TIME, DataTypes.TIME)
+				.withClusteringColumn(SESSION_ALIAS, DataTypes.TEXT)
+				.withClusteringColumn(DIRECTION, DataTypes.TEXT)
+				.withClusteringColumn(SEQUENCE, DataTypes.BIGINT)
+
+				.withColumn(LAST_MESSAGE_DATE, DataTypes.DATE)
+				.withColumn(LAST_MESSAGE_TIME, DataTypes.TIME)
+				.withColumn(LAST_SEQUENCE, DataTypes.BIGINT)
+				.withColumn(MESSAGE_COUNT, DataTypes.INT)
+				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
+				.withColumn(LABELS, DataTypes.setOf(DataTypes.TEXT))
+				.withColumn(CONTENT, DataTypes.BLOB));
 	}
 
 	private void createPageSessions() throws IOException
