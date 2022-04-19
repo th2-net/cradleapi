@@ -22,11 +22,13 @@ import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 
 import java.time.Instant;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
-
 @Entity
 public class BooksStatusEntity {
-
+    public static final String FIELD_BOOK_NAME = "book_name";
+    public static final String FIELD_OBJECT_TYPE = "object_type";
+    public static final String FIELD_OBJECT_NAME = "object_name";
+    public static final String FIELD_CREATED = "created";
+    public static final String FIELD_SCHEMA_VERSION = "schema_version";
     private String bookName;
     private String objectType;
     private String objectName;
@@ -46,7 +48,7 @@ public class BooksStatusEntity {
     }
 
     @PartitionKey(0)
-    @CqlName(BOOK_NAME)
+    @CqlName(FIELD_BOOK_NAME)
     public String getBookName() {
         return bookName;
     }
@@ -56,7 +58,7 @@ public class BooksStatusEntity {
     }
 
     @ClusteringColumn(1)
-    @CqlName(OBJECT_TYPE)
+    @CqlName(FIELD_OBJECT_TYPE)
     public String getObjectType() {
         return objectType;
     }
@@ -66,7 +68,7 @@ public class BooksStatusEntity {
     }
 
     @ClusteringColumn(2)
-    @CqlName(OBJECT_NAME)
+    @CqlName(FIELD_OBJECT_NAME)
     public String getObjectName() {
         return objectName;
     }
@@ -75,6 +77,7 @@ public class BooksStatusEntity {
         this.objectName = objectName;
     }
 
+    @CqlName(FIELD_CREATED)
     public Instant getCreated() {
         return created;
     }
@@ -83,7 +86,7 @@ public class BooksStatusEntity {
         this.created = created;
     }
 
-    @CqlName(SCHEMA_VERSION)
+    @CqlName(FIELD_SCHEMA_VERSION)
     public String getSchemaVersion() {
         return schemaVersion;
     }

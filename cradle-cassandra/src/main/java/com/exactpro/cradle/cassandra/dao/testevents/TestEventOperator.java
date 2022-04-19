@@ -31,13 +31,13 @@ import java.time.LocalTime;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
+import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.*;
 
 @Dao
 public interface TestEventOperator
 {
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+PAGE+"=:page AND "+SCOPE+"=:scope "
-			+ "AND "+START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:id")
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+ FIELD_PAGE +"=:page AND "+ FIELD_SCOPE +"=:scope "
+			+ "AND "+ FIELD_START_DATE +"=:startDate AND "+ FIELD_START_TIME +"=:startTime AND "+ FIELD_ID +"=:id")
 	CompletableFuture<TestEventEntity> get(String page, String scope, 
 			LocalDate startDate, LocalTime startTime, String id, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
@@ -50,8 +50,8 @@ public interface TestEventOperator
 	@QueryProvider(providerClass = TestEvenInserter.class, entityHelpers = TestEventEntity.class, providerMethod = "insert")
 	CompletableFuture<AsyncResultSet> write(TestEventEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+PAGE+"=:page AND "+SCOPE+"=:scope "
-			+ "AND "+START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:id")
+	@Query("UPDATE ${qualifiedTableId} SET "+ FIELD_SUCCESS +"=:success WHERE "+ FIELD_PAGE +"=:page AND "+ FIELD_SCOPE +"=:scope "
+			+ "AND "+ FIELD_START_DATE +"=:startDate AND "+ FIELD_START_TIME +"=:startTime AND "+ FIELD_ID +"=:id")
 	CompletableFuture<Void> updateStatus(String page, String scope, 
 			LocalDate startDate, LocalTime startTime, String id, 
 			boolean success,

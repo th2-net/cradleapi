@@ -28,8 +28,6 @@ import com.exactpro.cradle.utils.CradleStorageException;
 import java.time.Instant;
 import java.util.Collection;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
-
 /**
  * Contains information about book as stored in "cradle" keyspace
  */
@@ -37,24 +35,30 @@ import static com.exactpro.cradle.cassandra.StorageConstants.*;
 public class BookEntity
 {
 	public static final String BOOK_NAME_PREFIX = "book_";
+	public static final String FIELD_NAME = "name";
+	public static final String FIELD_FULLNAME = "fullname";
+	public static final String FIELD_KEYSPACE_NAME = "keyspace_name";
+	public static final String FIELD_DESCRIPTION = "description";
+	public static final String FIELD_CREATED = "created";
+	public static final String FIELD_SCHEMA_VERSION = "schema_version";
 
 	@PartitionKey(0)
-	@CqlName(NAME)
+	@CqlName(FIELD_NAME)
 	private String name;
 	
-	@CqlName(FULLNAME)
+	@CqlName(FIELD_FULLNAME)
 	private String fullName;
 	
-	@CqlName(KEYSPACE_NAME)
+	@CqlName(FIELD_KEYSPACE_NAME)
 	private String keyspaceName;
 	
-	@CqlName(DESCRIPTION)
+	@CqlName(FIELD_DESCRIPTION)
 	private String desc;
 	
-	@CqlName(CREATED)
+	@CqlName(FIELD_CREATED)
 	private Instant created;
 
-	@CqlName(SCHEMA_VERSION)
+	@CqlName(FIELD_SCHEMA_VERSION)
 	private String schemaVersion;
 
 	public BookEntity()

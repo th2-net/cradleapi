@@ -16,8 +16,7 @@
 
 package com.exactpro.cradle.cassandra.dao.testevents;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.PAGE;
-import static com.exactpro.cradle.cassandra.StorageConstants.SCOPE;
+
 
 import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
@@ -27,12 +26,15 @@ import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 @Entity
 public class PageScopeEntity
 {
+	public static final String FIELD_PAGE = "page",
+			FIELD_SCOPE = "scope";
+
 	@PartitionKey(0)
-	@CqlName(PAGE)
+	@CqlName(FIELD_PAGE)
 	private String page;
 	
 	@ClusteringColumn(0)
-	@CqlName(SCOPE)
+	@CqlName(FIELD_SCOPE)
 	private String scope;
 	
 	public PageScopeEntity()

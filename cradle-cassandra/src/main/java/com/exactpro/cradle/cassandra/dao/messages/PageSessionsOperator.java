@@ -23,8 +23,7 @@ import com.datastax.oss.driver.api.mapper.annotations.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
-
+import static com.exactpro.cradle.cassandra.dao.messages.PageSessionEntity.*;
 @Dao
 public interface PageSessionsOperator
 {
@@ -32,8 +31,8 @@ public interface PageSessionsOperator
 	PagingIterable<PageSessionEntity> get(String page,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + PAGE + "=:page AND " + SESSION_ALIAS + "=:sessionAlias AND " +
-	DIRECTION + "=:direction ORDER BY " + SESSION_ALIAS + " DESC LIMIT 1")
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + FIELD_PAGE + "=:page AND " + FIELD_SESSION_ALIAS + "=:sessionAlias AND " +
+			FIELD_DIRECTION + "=:direction ORDER BY " + FIELD_SESSION_ALIAS + " DESC LIMIT 1")
 	CompletableFuture<PageSessionEntity> getLast(String page, String sessionAlias, String direction,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	

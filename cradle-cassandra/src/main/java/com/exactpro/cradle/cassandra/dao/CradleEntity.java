@@ -16,7 +16,6 @@
 
 package com.exactpro.cradle.cassandra.dao;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 import java.nio.ByteBuffer;
 import java.util.Set;
@@ -28,11 +27,15 @@ import com.datastax.oss.driver.api.mapper.annotations.CqlName;
  */
 public abstract class CradleEntity
 {
-	@CqlName(COMPRESSED)
+	public static final String FIELD_COMPRESSED = "compressed";
+	public static final String FIELD_LABELS = "labels";
+	public static final String FIELD_CONTENT = "z_content";
+
+	@CqlName(FIELD_COMPRESSED)
 	private boolean compressed;
-	@CqlName(LABELS)
+	@CqlName(FIELD_LABELS)
 	private Set<String> labels;
-	@CqlName(CONTENT)
+	@CqlName(FIELD_CONTENT)
 	private ByteBuffer content;
 	
 	

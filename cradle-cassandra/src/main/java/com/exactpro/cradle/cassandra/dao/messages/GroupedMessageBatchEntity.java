@@ -29,11 +29,23 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Set;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
-
 @Entity
 public class GroupedMessageBatchEntity
 {
+	public static final String FIELD_PAGE = "page";
+	public static final String FIELD_ALIAS_GROUP = "alias_group";
+	public static final String FIELD_MESSAGE_DATE = "message_date";
+	public static final String FIELD_MESSAGE_TIME = "message_time";
+	public static final String FIELD_SESSION_ALIAS = "session_alias";
+	public static final String FIELD_DIRECTION = "direction";
+	public static final String FIELD_SEQUENCE = "sequence";
+	public static final String FIELD_COMPRESSED = "compressed";
+	public static final String FIELD_LABELS = "labels";
+	public static final String FIELD_CONTENT = "z_content";
+	public static final String FIELD_LAST_MESSAGE_DATE = "last_message_date";
+	public static final String FIELD_LAST_MESSAGE_TIME = "last_message_time";
+	public static final String FIELD_MESSAGE_COUNT = "message_count";
+	public static final String FIELD_LAST_SEQUENCE = "last_sequence";
 	private String group;
 	
 	@Transient
@@ -57,7 +69,7 @@ public class GroupedMessageBatchEntity
 	}
 
 	@PartitionKey(0)
-	@CqlName(PAGE)
+	@CqlName(FIELD_PAGE)
 	public String getPage()
 	{
 		return batchEntity.getPage();
@@ -69,7 +81,7 @@ public class GroupedMessageBatchEntity
 	}
 	
 	@PartitionKey(1)
-	@CqlName(ALIAS_GROUP)
+	@CqlName(FIELD_ALIAS_GROUP)
 	public String getGroup()
 	{
 		return group;
@@ -81,7 +93,7 @@ public class GroupedMessageBatchEntity
 	}
 
 	@ClusteringColumn(0)
-	@CqlName(MESSAGE_DATE)
+	@CqlName(FIELD_MESSAGE_DATE)
 	public LocalDate getMessageDate()
 	{
 		return batchEntity.getMessageDate();
@@ -93,7 +105,7 @@ public class GroupedMessageBatchEntity
 	}
 
 	@ClusteringColumn(1)
-	@CqlName(MESSAGE_TIME)
+	@CqlName(FIELD_MESSAGE_TIME)
 	public LocalTime getMessageTime()
 	{
 		return batchEntity.getMessageTime();
@@ -105,7 +117,7 @@ public class GroupedMessageBatchEntity
 	}
 	
 	@ClusteringColumn(2)
-	@CqlName(SESSION_ALIAS)
+	@CqlName(FIELD_SESSION_ALIAS)
 	public String getSessionAlias()
 	{
 		return batchEntity.getSessionAlias();
@@ -117,7 +129,7 @@ public class GroupedMessageBatchEntity
 	}
 	
 	@ClusteringColumn(3)
-	@CqlName(DIRECTION)
+	@CqlName(FIELD_DIRECTION)
 	public String getDirection()
 	{
 		return batchEntity.getDirection();
@@ -129,7 +141,7 @@ public class GroupedMessageBatchEntity
 	}
 
 	@ClusteringColumn(4)
-	@CqlName(SEQUENCE)
+	@CqlName(FIELD_SEQUENCE)
 	public long getSequence()
 	{
 		return batchEntity.getSequence();
@@ -140,7 +152,7 @@ public class GroupedMessageBatchEntity
 		batchEntity.setSequence(sequence);
 	}
 	
-	@CqlName(COMPRESSED)
+	@CqlName(FIELD_COMPRESSED)
 	public boolean isCompressed()
 	{
 		return batchEntity.isCompressed();
@@ -151,7 +163,7 @@ public class GroupedMessageBatchEntity
 		batchEntity.setCompressed(compressed);
 	}
 
-	@CqlName(LABELS)
+	@CqlName(FIELD_LABELS)
 	public Set<String> getLabels()
 	{
 		return batchEntity.getLabels();
@@ -162,7 +174,7 @@ public class GroupedMessageBatchEntity
 		batchEntity.setLabels(labels);
 	}
 
-	@CqlName(CONTENT)
+	@CqlName(FIELD_CONTENT)
 	public ByteBuffer getContent()
 	{
 		return batchEntity.getContent();
@@ -173,7 +185,7 @@ public class GroupedMessageBatchEntity
 		batchEntity.setContent(content);
 	}
 
-	@CqlName(LAST_MESSAGE_DATE)
+	@CqlName(FIELD_LAST_MESSAGE_DATE)
 	public LocalDate getLastMessageDate()
 	{
 		return batchEntity.getLastMessageDate();
@@ -184,7 +196,7 @@ public class GroupedMessageBatchEntity
 		batchEntity.setLastMessageDate(lastMessageDate);
 	}
 
-	@CqlName(LAST_MESSAGE_TIME)
+	@CqlName(FIELD_LAST_MESSAGE_TIME)
 	public LocalTime getLastMessageTime()
 	{
 		return batchEntity.getLastMessageTime();
@@ -195,7 +207,7 @@ public class GroupedMessageBatchEntity
 		batchEntity.setLastMessageTime(lastMessageTime);
 	}
 
-	@CqlName(MESSAGE_COUNT)
+	@CqlName(FIELD_MESSAGE_COUNT)
 	public int getMessageCount()
 	{
 		return batchEntity.getMessageCount();
@@ -206,7 +218,7 @@ public class GroupedMessageBatchEntity
 		batchEntity.setMessageCount(messageCount);
 	}
 
-	@CqlName(LAST_SEQUENCE)
+	@CqlName(FIELD_LAST_SEQUENCE)
 	public long getLastSequence()
 	{
 		return batchEntity.getLastSequence();
