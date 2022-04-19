@@ -25,6 +25,7 @@ import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.BookStatusType;
 import com.exactpro.cradle.cassandra.dao.BooksStatusEntity;
 import com.exactpro.cradle.cassandra.dao.CradleBooksStatusOperator;
+import com.exactpro.cradle.cassandra.dao.SessionStatisticsEntity;
 import com.exactpro.cradle.cassandra.dao.books.BookEntity;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import org.slf4j.Logger;
@@ -36,7 +37,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
-import static com.exactpro.cradle.cassandra.dao.SessionStatisticsEntity.*;
 
 public class BookKeyspaceCreator extends KeyspaceCreator
 {
@@ -272,11 +272,11 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 	{
 		String tableName = getSettings().getSessionStatisticsTable();
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(FIELD_PAGE, DataTypes.TEXT)
-				.withPartitionKey(FIELD_RECORD_TYPE, DataTypes.TINYINT)
-				.withPartitionKey(FIELD_FRAME_TYPE, DataTypes.TINYINT)
-				.withClusteringColumn(FIELD_FRAME_START, DataTypes.TIMESTAMP)
-				.withClusteringColumn(FIELD_SESSION, DataTypes.TEXT));
+				.withPartitionKey(SessionStatisticsEntity.FIELD_PAGE, DataTypes.TEXT)
+				.withPartitionKey(SessionStatisticsEntity.FIELD_RECORD_TYPE, DataTypes.TINYINT)
+				.withPartitionKey(SessionStatisticsEntity.FIELD_FRAME_TYPE, DataTypes.TINYINT)
+				.withClusteringColumn(SessionStatisticsEntity.FIELD_FRAME_START, DataTypes.TIMESTAMP)
+				.withClusteringColumn(SessionStatisticsEntity.FIELD_SESSION, DataTypes.TEXT));
 	}
 
 	@Override
