@@ -59,7 +59,7 @@ public enum FrameType {
 
     /**
      * Returns FrameType form value
-     * @param value
+     * @param value some FrameType written in int
      * @return FrameType that corresponds to given value
      * @throws IllegalArgumentException if value does not match any frame type
      */

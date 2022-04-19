@@ -30,7 +30,7 @@ public enum EntityType {
 
     /**
      * Returns EntityType form value
-     * @param value
+     * @param value some Entity written in byte
      * @return EntityType that corresponds to given value
      * @throws IllegalArgumentException if value does not match any entity type
      */
