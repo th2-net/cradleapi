@@ -15,29 +15,23 @@
  */
 package com.exactpro.cradle.cassandra.counters;
 
-import com.exactpro.cradle.counters.Counter;
+import com.exactpro.cradle.FrameType;
 
-import java.time.Instant;
+import java.util.EnumMap;
+import java.util.Map;
 
-public class TimeFrameCounter {
+public class TimeFrameRecordCache<V> {
 
-    private final Instant frameStart;
-    private Counter counter;
+    private final Map<FrameType, TimeFrameRecordSamples<V>> cache;
 
-    TimeFrameCounter(Instant frameStart, Counter counter) {
-        this.frameStart = frameStart;
-        this.counter = counter;
+    public TimeFrameRecordCache(TimeFrameRecordFactory<V> recordFactory) {
+        cache = new EnumMap<>(FrameType.class);
+        for (FrameType t: FrameType.values())
+            cache.put(t, new TimeFrameRecordSamples<>(t, recordFactory));
     }
 
-    public Instant getFrameStart() {
-        return frameStart;
-    }
 
-    public synchronized Counter getCounter() {
-        return counter;
-    }
-
-    public synchronized void incrementBy(Counter value) {
-        counter = counter.incrementedBy(value);
+    public TimeFrameRecordSamples<V> getRecordSamples(FrameType type) {
+        return cache.get(type);
     }
 }

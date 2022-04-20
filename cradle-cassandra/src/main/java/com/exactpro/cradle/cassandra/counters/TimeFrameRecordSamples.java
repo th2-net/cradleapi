@@ -15,7 +15,6 @@
  */
 package com.exactpro.cradle.cassandra.counters;
 
-import com.exactpro.cradle.counters.Counter;
 import com.exactpro.cradle.FrameType;
 
 import java.time.Instant;
@@ -24,28 +23,30 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
-public class CounterSamples {
-    private final Map<Instant, TimeFrameCounter> samples;
+public class TimeFrameRecordSamples<V> {
     private final FrameType frameType;
+    private final Map<Instant, TimeFrameRecord<V>> samples;
+    private final TimeFrameRecordFactory<V> recordFactory;
 
-    CounterSamples(FrameType frameType) {
+    TimeFrameRecordSamples(FrameType frameType, TimeFrameRecordFactory<V> recordFactory) {
         samples = new HashMap<>();
         this.frameType = frameType;
+        this.recordFactory = recordFactory;
     }
 
-    public synchronized Collection<TimeFrameCounter> extractAll() {
-        Collection<TimeFrameCounter> result = new LinkedList(samples.values());
+    public synchronized Collection<TimeFrameRecord<V>> extractAll() {
+        Collection<TimeFrameRecord<V>> result = new LinkedList<>(samples.values());
         samples.clear();
         return result;
     }
 
-    public synchronized void update(Instant time, Counter counter) {
+    public synchronized void update(Instant time, V record) {
         Instant frameStart = frameType.getFrameStart(time);
         if (samples.containsKey(frameStart)) {
-            TimeFrameCounter frameCounter = samples.get(frameStart);
-            frameCounter.incrementBy(counter);
+            TimeFrameRecord<V> frameRecord = samples.get(frameStart);
+            frameRecord.update(record);
         } else {
-            samples.put(frameStart, new TimeFrameCounter(frameStart, counter));
+            samples.put(frameStart, recordFactory.create(frameStart, record));
         }
     }
 }
