@@ -91,12 +91,16 @@ public class BookStatisticsRecordsCaches {
 
 
     public static class MessageKey implements RecordKey{
+        private final String page;
         private final String sessionAlias;
         private final String direction;
-        public MessageKey(String sessionAlias, String direction) {
+        public MessageKey(String page, String sessionAlias, String direction) {
             this.sessionAlias = sessionAlias;
             this.direction = direction;
+            this.page = page;
         }
+
+        public String getPage() { return page; }
 
         public String getSessionAlias() {
             return sessionAlias;
