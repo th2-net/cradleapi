@@ -88,6 +88,9 @@ public interface CassandraDataMapper
 	EntityStatisticsOperator entityStatisticsOperator(@DaoKeyspace String keyspace, @DaoTable String statisticsTable);
 
 	@DaoFactory
+	SessionStatisticsOperator sessionStatisticsOperator(@DaoKeyspace String keyspace, @DaoTable String statisticsTable);
+
+	@DaoFactory
 	SessionEntityConverter sessionEntityConverter();
 
 	@DaoFactory
@@ -113,4 +116,7 @@ public interface CassandraDataMapper
 
 	@DaoFactory
 	EntityStatisticsEntityConverter entityStatisticsEntityConverter();
+
+	@DaoFactory
+	SessionStatisticsEntityConverter sessionStatisticsEntityConverter();
 }

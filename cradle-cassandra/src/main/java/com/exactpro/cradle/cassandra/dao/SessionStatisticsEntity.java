@@ -25,6 +25,14 @@ public class SessionStatisticsEntity {
     public SessionStatisticsEntity() {
     }
 
+    public SessionStatisticsEntity(String page, Byte recordType, Byte frameType, Instant frameStart, String session) {
+        this.page = page;
+        this.recordType = recordType;
+        this.frameType = frameType;
+        this.frameStart = frameStart;
+        this.session = session;
+    }
+
     @PartitionKey(1)
     @CqlName(FIELD_PAGE)
     public String getPage() {

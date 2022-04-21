@@ -27,7 +27,7 @@ public class TimeFrameCounterTest {
     @Test
     void testFrameStart() {
         Instant t = Instant.parse("2022-03-15T23:59:58.987Z");
-        TimeFrameCounter tfc = new TimeFrameCounter(t, new Counter(123, 345));
+        CounterTimeFrameRecord tfc = new CounterTimeFrameRecord(t, new Counter(123, 345));
         assertEquals(tfc.getFrameStart(), t);
     }
 
@@ -35,8 +35,8 @@ public class TimeFrameCounterTest {
     void testCounter() {
         Counter counter = new Counter(123, 456);
         Instant t = Instant.parse("2022-03-15T23:59:58.987Z");
-        TimeFrameCounter tfc = new TimeFrameCounter(t, counter);
-        assertEquals(tfc.getCounter(), counter);
+        CounterTimeFrameRecord tfc = new CounterTimeFrameRecord(t, counter);
+        assertEquals(tfc.getRecord(), counter);
     }
 
     @Test
@@ -45,9 +45,9 @@ public class TimeFrameCounterTest {
         long ec2 = 4813491, es2 = 9027073;
         Instant t = Instant.parse("2022-03-15T23:59:58.987Z");
 
-        TimeFrameCounter tfc = new TimeFrameCounter(t, new Counter(ec1, es1));
-        tfc.incrementBy(new Counter(ec2, es2));
+        CounterTimeFrameRecord tfc = new CounterTimeFrameRecord(t, new Counter(ec1, es1));
+        tfc.update(new Counter(ec2, es2));
         Counter counter = new Counter(ec1 + ec2, es1 + es2);
-        assertEquals(tfc.getCounter(), counter);
+        assertEquals(tfc.getRecord(), counter);
     }
 }

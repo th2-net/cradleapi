@@ -21,6 +21,7 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.internal.core.util.concurrent.CompletableFutures;
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.counters.MessageStatisticsCollector;
+import com.exactpro.cradle.cassandra.counters.SessionStatisticsCollector;
 import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageSession;
 import com.exactpro.cradle.cassandra.dao.cache.CachedSession;
@@ -62,10 +63,14 @@ public class MessagesWorker extends Worker
 			.help("Stored messages").labelNames(BOOK_ID, SESSION_ALIAS, DIRECTION).register();
 
 	private final MessageStatisticsCollector messageStatisticsCollector;
-	public MessagesWorker(WorkerSupplies workerSupplies, MessageStatisticsCollector messageStatisticsCollector)
+	private final SessionStatisticsCollector sessionStatisticsCollector;
+	public MessagesWorker(WorkerSupplies workerSupplies
+			, MessageStatisticsCollector messageStatisticsCollector
+			, SessionStatisticsCollector sessionStatisticsCollector)
 	{
 		super(workerSupplies);
 		this.messageStatisticsCollector = messageStatisticsCollector;
+		this.sessionStatisticsCollector = sessionStatisticsCollector;
 	}
 
 	public static StoredMessageBatch mapMessageBatchEntity(PageId pageId, MessageBatchEntity entity)
@@ -271,6 +276,7 @@ public class MessagesWorker extends Worker
 
 		return mbOperator.write(entity, writeAttrs)
 				.thenAccept(result -> messageStatisticsCollector.updateMessageBatchStatistics(bookId, entity.getSessionAlias(), entity.getDirection(), meta))
+				.thenAcceptAsync(result -> sessionStatisticsCollector.updateSessionStatistics(bookId, entity.getPage(), SessionRecordType.SESSION, entity.getSessionAlias(), meta))
 				.thenAcceptAsync(result -> updateMessageWriteMetrics(entity, bookId), composingService);
 	}
 
@@ -282,6 +288,7 @@ public class MessagesWorker extends Worker
 
 		return gmbOperator.write(entity, writeAttrs)
 				.thenAccept(result -> messageStatisticsCollector.updateMessageBatchStatistics(bookId, entity.getGroup(), entity.getDirection(), meta))
+				.thenAcceptAsync(result -> sessionStatisticsCollector.updateSessionStatistics(bookId, entity.getPage(), SessionRecordType.SESSION_GROUP, entity.getGroup(), meta))
 				.thenAcceptAsync(result -> updateMessageWriteMetrics(entity.getMessageBatchEntity(), bookId), composingService)
 				.thenApplyAsync(result -> entity, composingService);
 	}
