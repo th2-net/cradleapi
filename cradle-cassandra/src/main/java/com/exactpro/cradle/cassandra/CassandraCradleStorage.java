@@ -684,11 +684,14 @@ public class CassandraCradleStorage extends CradleStorage
 		logger.info("Getting {}", queryInfo);
 		BookOperators operators = ops.getOperators(bookId);
 		MessageStatisticsIteratorProvider iteratorProvider = new MessageStatisticsIteratorProvider(queryInfo,
-				operators, ,
+				operators,
+				refreshBook(bookId.getName()),
 				composingService,
 				selectExecutor,
 				sessionAlias,
-				direction,);
+				direction,
+				new FrameInterval(frameType, interval),
+				readAttrs);
 
 		return iteratorProvider.nextIterator()
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, iteratorProvider), composingService);

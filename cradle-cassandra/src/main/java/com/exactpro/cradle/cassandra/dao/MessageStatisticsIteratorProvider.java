@@ -12,6 +12,7 @@ import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
 import com.exactpro.cradle.counters.Counter;
+import com.exactpro.cradle.counters.CounterSample;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.messages.MessageFilter;
 
@@ -22,7 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-public class MessageStatisticsIteratorProvider extends IteratorProvider<Counter> {
+public class MessageStatisticsIteratorProvider extends IteratorProvider<CounterSample> {
     private String requestInfo;
     private BookOperators ops;
     private BookInfo book;
@@ -55,7 +56,7 @@ public class MessageStatisticsIteratorProvider extends IteratorProvider<Counter>
     }
 
     @Override
-    public CompletableFuture<Iterator<Counter>> nextIterator() {
+    public CompletableFuture<Iterator<CounterSample>> nextIterator() {
         if(currentPage == null || frameInterval.getInterval().getEnd().isBefore(currentPage.getStarted()) ){
             return CompletableFuture.completedFuture(null);
         }
@@ -75,12 +76,14 @@ public class MessageStatisticsIteratorProvider extends IteratorProvider<Counter>
                         readAttrs)
                 .thenApplyAsync(rs -> {
                             currentPage = book.getNextPage(currentPage.getStarted());
+
                             return new ConvertingPagedIterator<>(rs,
                                     selectQueryExecutor,
                                     -1,
                                     new AtomicInteger(0),
                                     MessageStatisticsEntity::toCounterSample,
-                                    messageStatsConverter::getEntity, requestInfo);
+                                    messageStatsConverter::getEntity,
+                                    requestInfo);
                         }, composingService);
     }
 }
