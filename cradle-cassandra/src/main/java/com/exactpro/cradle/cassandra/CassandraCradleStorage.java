@@ -25,6 +25,7 @@ import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
 import com.exactpro.cradle.cassandra.counters.FrameInterval;
+import com.exactpro.cradle.cassandra.counters.SessionRecordFrameInterval;
 import com.exactpro.cradle.cassandra.dao.*;
 import com.exactpro.cradle.cassandra.dao.books.*;
 import com.exactpro.cradle.cassandra.dao.messages.*;
@@ -35,6 +36,7 @@ import com.exactpro.cradle.cassandra.keyspaces.BookKeyspaceCreator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
 import com.exactpro.cradle.cassandra.metrics.DriverMetrics;
 import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
+import com.exactpro.cradle.cassandra.resultset.SessionsStatisticsIteratorProvider;
 import com.exactpro.cradle.cassandra.retries.FixedNumberRetryPolicy;
 import com.exactpro.cradle.cassandra.retries.PageSizeAdjustingPolicy;
 import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
@@ -60,6 +62,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.awt.print.Book;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -972,6 +975,67 @@ public class CassandraCradleStorage extends CradleStorage
 		{
 			throw new IOException("Error while getting " + queryInfo, e);
 		}
+	}
+
+	private CompletableFuture<CradleResultSet<String >> doGetSessionsAsync (BookId bookId, Interval interval, SessionRecordType recordType) throws CradleStorageException {
+		String queryInfo = String.format("%s Aliases in book %s from %s to %s",
+				recordType.name(),
+				bookId.getName(),
+				interval.getStart().toString(),
+				interval.getEnd().toString());
+
+		List<SessionRecordFrameInterval> sessionRecordFrameIntervals = sliceInterval(interval)
+				.stream().map(el -> new SessionRecordFrameInterval(
+						el.getFrameType(),
+						el.getInterval(),
+						recordType))
+				.collect(Collectors.toList());
+
+		SessionsStatisticsIteratorProvider iteratorProvider = new SessionsStatisticsIteratorProvider(
+				queryInfo,
+				ops.getOperators(bookId),
+				refreshBook(bookId.getName()),
+				composingService,
+				selectExecutor,
+				readAttrs,
+				sessionRecordFrameIntervals);
+
+		return iteratorProvider.nextIterator()
+				.thenApplyAsync(it -> new CassandraCradleResultSet<>(it, iteratorProvider));
+	}
+
+	@Override
+	protected CompletableFuture<CradleResultSet<String>> doGetSessionAliasesAsync(BookId bookId, Interval interval) throws CradleStorageException {
+		return doGetSessionsAsync(bookId, interval, SessionRecordType.SESSION);
+	}
+
+	@Override
+	protected CradleResultSet<String> doGetSessionAliases(BookId bookId, Interval interval) throws CradleStorageException {
+		try
+		{
+			return doGetSessionAliasesAsync(bookId, interval).get();
+		}
+		catch (Exception e)
+		{
+			throw new CradleStorageException("Error while getting Session Aliases", e);
+		}
+	}
+
+	@Override
+	protected CradleResultSet<String> doGetSessionGroups(BookId bookId, Interval interval) throws CradleStorageException {
+		try
+		{
+			return doGetSessionGroupsAsync(bookId, interval).get();
+		}
+		catch (Exception e)
+		{
+			throw new CradleStorageException("Error while getting Session Groups", e);
+		}
+	}
+
+	@Override
+	protected CompletableFuture<CradleResultSet<String>> doGetSessionGroupsAsync(BookId bookId, Interval interval) throws CradleStorageException {
+		return doGetSessionsAsync(bookId, interval, SessionRecordType.SESSION_GROUP);
 	}
 
 	@Override

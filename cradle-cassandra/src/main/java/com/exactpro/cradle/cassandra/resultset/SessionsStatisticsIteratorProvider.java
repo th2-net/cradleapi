@@ -13,8 +13,10 @@ import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
 import com.exactpro.cradle.filters.FilterForGreater;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -29,7 +31,7 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
     private final ExecutorService composingService;
     private final SelectQueryExecutor selectQueryExecutor;
     private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
-    private final SessionRecordFrameInterval sessionRecordFrameInterval;
+    private final List<SessionRecordFrameInterval> sessionRecordFrameIntervals;
     private final Set<Long> set;
     private PageInfo curPage;
 
@@ -39,24 +41,34 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
                                                ExecutorService composingService,
                                                SelectQueryExecutor selectQueryExecutor,
                                                Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs,
-                                               SessionRecordFrameInterval sessionRecordFrameInterval) {
+                                               List<SessionRecordFrameInterval> sessionRecordFrameIntervals) {
         super(requestInfo);
         this.bookOperators = bookOperators;
         this.bookInfo = bookInfo;
         this.composingService = composingService;
         this.selectQueryExecutor = selectQueryExecutor;
         this.readAttrs = readAttrs;
-        this.sessionRecordFrameInterval = sessionRecordFrameInterval;
+        this.sessionRecordFrameIntervals = sessionRecordFrameIntervals;
         this.set = new HashSet<>();
 
-        this.curPage = FilterUtils.findFirstPage(null, FilterForGreater.forGreater(sessionRecordFrameInterval.getInterval().getStart()), bookInfo);
+        this.curPage = FilterUtils.findFirstPage(null, FilterForGreater.forGreater(sessionRecordFrameIntervals.get(0).getInterval().getStart()), bookInfo);
     }
 
     @Override
     public CompletableFuture<Iterator<String>> nextIterator() {
+        SessionRecordFrameInterval sessionRecordFrameInterval = sessionRecordFrameIntervals.get(0);
+
         if (curPage == null || curPage.getStarted().isAfter(sessionRecordFrameInterval.getInterval().getEnd())) {
-            return CompletableFuture.completedFuture(null);
+            if (sessionRecordFrameIntervals.isEmpty()) {
+                return CompletableFuture.completedFuture(null);
+            }
+
+            sessionRecordFrameIntervals.remove(0);
+            return nextIterator();
         }
+
+        Instant actualStart = sessionRecordFrameInterval.getFrameType().getFrameStart(sessionRecordFrameInterval.getInterval().getStart());
+        Instant actualEnd = sessionRecordFrameInterval.getFrameType().getFrameEnd(sessionRecordFrameInterval.getInterval().getEnd());
 
         SessionStatisticsOperator sessionStatisticsOperator = bookOperators.getSessionStatisticsOperator();
         SessionStatisticsEntityConverter converter = bookOperators.getSessionStatisticsEntityConverter();
@@ -64,8 +76,8 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
         return sessionStatisticsOperator.getStatistics(curPage.getId().getName(),
                         sessionRecordFrameInterval.getSessionRecordType().getValue(),
                         sessionRecordFrameInterval.getFrameType().getValue(),
-                        sessionRecordFrameInterval.getInterval().getStart(),
-                        sessionRecordFrameInterval.getInterval().getEnd(),
+                        actualStart,
+                        actualEnd,
                         readAttrs).thenApplyAsync(rs -> {
                                 curPage = bookInfo.getNextPage(curPage.getStarted());
 
@@ -75,7 +87,7 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
                                         new AtomicInteger(0),
                                         SessionStatisticsEntity::getSession,
                                         converter::getEntity,
-                                        (obj) -> Long.valueOf(obj.hashCode()),
+                                        (str) -> Long.valueOf(str.hashCode()),
                                         set,
                                         getRequestInfo());
                                 }, composingService);
