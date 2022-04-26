@@ -1071,6 +1071,7 @@ public abstract class CradleStorage
 									String sessionAlias,
 									Direction direction,
 									Interval interval) throws CradleStorageException, IOException {
+
 		return doGetMessageCount(bookId, page, sessionAlias, direction, interval);
 	}
 
