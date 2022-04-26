@@ -152,13 +152,11 @@ public abstract class CradleStorage
 	protected abstract Collection<String> doGetScopes(BookId bookId) throws IOException, CradleStorageException;
 
 	protected abstract CompletableFuture<CradleResultSet<CounterSample>> doGetMessageCountersAsync(BookId bookId,
-																								   String page,
 																								   String sessionAlias,
 																								   Direction direction,
 																								   FrameType frameType,
 																								   Interval interval) throws CradleStorageException;
 	protected abstract CradleResultSet<CounterSample> doGetMessageCounters(BookId bookId,
-																		   String page,
 																		   String sessionAlias,
 																		   Direction direction,
 																		   FrameType frameType,
@@ -175,13 +173,11 @@ public abstract class CradleStorage
 
 
 	protected abstract CompletableFuture<Counter> doGetMessageCountAsync(BookId bookId,
-																		 String page,
 																		 String sessionAlias,
 																		 Direction direction,
 																		 Interval interval) throws CradleStorageException;
 
 	protected abstract Counter doGetMessageCount(BookId bookId,
-												 String page,
 												 String sessionAlias,
 												 Direction direction,
 												 Interval interval) throws CradleStorageException, IOException;
@@ -957,12 +953,11 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if given book ID is invalid
 	 */
 	public CompletableFuture<CradleResultSet<CounterSample>> getMessageCountersAsync(BookId bookId,
-																			   String page,
 																			   String sessionAlias,
 																			   Direction direction,
 																			   FrameType frameType,
 																			   Interval interval) throws CradleStorageException {
-		return doGetMessageCountersAsync(bookId, page, sessionAlias, direction, frameType, interval);
+		return doGetMessageCountersAsync(bookId,  sessionAlias, direction, frameType, interval);
 	}
 
 	/**
@@ -975,12 +970,11 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if given book ID is invalid
 	 */
 	public CradleResultSet<CounterSample> getMessageCounters(BookId bookId,
-													   String page,
 													   String sessionAlias,
 													   Direction direction,
 													   FrameType frameType,
 													   Interval interval) throws CradleStorageException, IOException {
-		return doGetMessageCounters(bookId, page, sessionAlias, direction, frameType, interval);
+		return doGetMessageCounters(bookId, sessionAlias, direction, frameType, interval);
 	}
 
 	/**
@@ -1037,11 +1031,10 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if given book ID is invalid
 	 */
 	public CompletableFuture<Counter> getMessageCountAsync (BookId bookId,
-															String page,
 															String sessionAlias,
 															Direction direction,
 															Interval interval) throws CradleStorageException {
-		return doGetMessageCountAsync(bookId, page, sessionAlias, direction, interval);
+		return doGetMessageCountAsync(bookId, sessionAlias, direction, interval);
 	}
 
 	/**
@@ -1072,7 +1065,7 @@ public abstract class CradleStorage
 									Direction direction,
 									Interval interval) throws CradleStorageException, IOException {
 
-		return doGetMessageCount(bookId, page, sessionAlias, direction, interval);
+		return doGetMessageCount(bookId, sessionAlias, direction, interval);
 	}
 
 	/**

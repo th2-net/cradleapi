@@ -319,12 +319,12 @@ public class DummyCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<CradleResultSet<CounterSample>> doGetMessageCountersAsync(BookId bookId, String page, String sessionAlias, Direction direction, FrameType frameType, Interval interval) throws CradleStorageException {
+	protected CompletableFuture<CradleResultSet<CounterSample>> doGetMessageCountersAsync(BookId bookId, String sessionAlias, Direction direction, FrameType frameType, Interval interval) throws CradleStorageException {
 		return null;
 	}
 
 	@Override
-	protected CradleResultSet<CounterSample> doGetMessageCounters(BookId bookId, String page, String sessionAlias, Direction direction, FrameType frameType, Interval interval) throws CradleStorageException, IOException {
+	protected CradleResultSet<CounterSample> doGetMessageCounters(BookId bookId, String sessionAlias, Direction direction, FrameType frameType, Interval interval) throws CradleStorageException, IOException {
 		return null;
 	}
 
@@ -339,12 +339,12 @@ public class DummyCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Counter> doGetMessageCountAsync(BookId bookId, String page, String sessionAlias, Direction direction, Interval interval) throws CradleStorageException {
+	protected CompletableFuture<Counter> doGetMessageCountAsync(BookId bookId, String sessionAlias, Direction direction, Interval interval) throws CradleStorageException {
 		return null;
 	}
 
 	@Override
-	protected Counter doGetMessageCount(BookId bookId, String page, String sessionAlias, Direction direction, Interval interval) throws CradleStorageException, IOException {
+	protected Counter doGetMessageCount(BookId bookId, String sessionAlias, Direction direction, Interval interval) throws CradleStorageException, IOException {
 		return null;
 	}
 

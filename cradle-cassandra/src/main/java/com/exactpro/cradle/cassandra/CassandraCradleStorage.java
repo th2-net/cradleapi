@@ -670,7 +670,6 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<CradleResultSet<CounterSample>> doGetMessageCountersAsync(BookId bookId,
-																						  String page,
 																						  String sessionAlias,
 																						  Direction direction,
 																						  FrameType frameType,
@@ -683,7 +682,13 @@ public class CassandraCradleStorage extends CradleStorage
 				interval.getEnd().toString());
 
 		logger.info("Getting {}", queryInfo);
-		MessageStatisticsIteratorProvider iteratorProvider = new MessageStatisticsIteratorProvider(queryInfo,);
+		BookOperators operators = ops.getOperators(bookId);
+		MessageStatisticsIteratorProvider iteratorProvider = new MessageStatisticsIteratorProvider(queryInfo,
+				operators, ,
+				composingService,
+				selectExecutor,
+				sessionAlias,
+				direction,);
 
 		return iteratorProvider.nextIterator()
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, iteratorProvider), composingService);
@@ -716,7 +721,6 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CradleResultSet<CounterSample> doGetMessageCounters(BookId bookId,
-																  String page,
 																  String sessionAlias,
 																  Direction direction,
 																  FrameType frameType,
@@ -729,7 +733,7 @@ public class CassandraCradleStorage extends CradleStorage
 				interval.getEnd().toString());
 		try
 		{
-			return doGetMessageCountersAsync(bookId, page, sessionAlias, direction, frameType, interval).get();
+			return doGetMessageCountersAsync(bookId, sessionAlias, direction, frameType, interval).get();
 		}
 		catch (Exception e)
 		{
@@ -879,7 +883,6 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<Counter> doGetMessageCountAsync(BookId bookId,
-																String page,
 																String sessionAlias,
 																Direction direction,
 																Interval interval) throws CradleStorageException {
@@ -899,7 +902,6 @@ public class CassandraCradleStorage extends CradleStorage
 			for (var el : slices) {
 				try {
 					CradleResultSet<CounterSample> res = getMessageCounters(bookId,
-							page,
 							sessionAlias,
 							direction,
 							el.getFrameType(),
@@ -917,7 +919,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Counter doGetMessageCount(BookId bookId, String page, String sessionAlias, Direction direction, Interval interval) throws CradleStorageException, IOException {
+	protected Counter doGetMessageCount(BookId bookId, String sessionAlias, Direction direction, Interval interval) throws CradleStorageException, IOException {
 		String queryInfo = String.format("Cumulative count for Messages with session_alias-%s, direction-%s from %s to %s",
 				sessionAlias,
 				direction,
@@ -925,7 +927,7 @@ public class CassandraCradleStorage extends CradleStorage
 				interval.getEnd().toString());
 		try
 		{
-			return doGetMessageCountAsync(bookId, page, sessionAlias, direction, interval).get();
+			return doGetMessageCountAsync(bookId, sessionAlias, direction, interval).get();
 		}
 		catch (Exception e)
 		{
