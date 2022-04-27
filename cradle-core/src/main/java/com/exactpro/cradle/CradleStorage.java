@@ -381,7 +381,7 @@ public abstract class CradleStorage
 	/**
 	 * @param bookId book of removed pages
 	 * @return collection of removed pages for given book
-	 * @throws CradleStorageException
+	 * @throws CradleStorageException  If there was problem loading pages
 	 */
 	public Collection<PageInfo> getAllPages(BookId bookId) throws CradleStorageException {
 		logger.info("Getting Removed pages for book {}", bookId.getName());
@@ -949,7 +949,9 @@ public abstract class CradleStorage
 	 * @param bookId identifier for book
 	 * @param sessionAlias session alias
 	 * @param direction direction
+	 * @param frameType frame type
 	 * @param interval time interval
+	 * @return returns CounterSamples for message densities
 	 * @throws CradleStorageException if given book ID is invalid
 	 */
 	public CompletableFuture<CradleResultSet<CounterSample>> getMessageCountersAsync(BookId bookId,
@@ -967,7 +969,9 @@ public abstract class CradleStorage
 	 * @param direction direction
 	 * @param frameType frameType
 	 * @param interval time interval
+	 * @return returns CounterSamples for message densities
 	 * @throws CradleStorageException if given book ID is invalid
+	 * @throws IOException if there is a problem with input/output
 	 */
 	public CradleResultSet<CounterSample> getMessageCounters(BookId bookId,
 													   String sessionAlias,
@@ -983,6 +987,7 @@ public abstract class CradleStorage
 	 * @param entityType entity type
 	 * @param frameType frameType
 	 * @param interval time interval
+	 * @return returns CounterSamples for entity densities
 	 * @throws CradleStorageException if given book ID is invalid
 	 */
 	public CompletableFuture<CradleResultSet<CounterSample>> getCountersAsync (BookId bookId,
@@ -998,7 +1003,9 @@ public abstract class CradleStorage
 	 * @param entityType entity type
 	 * @param frameType frameType
 	 * @param interval time interval
+	 * @return returns CounterSamples for entity densities
 	 * @throws CradleStorageException if given book ID is invalid
+	 * @throws IOException if there is a problem with input/output
 	 */
 	public CradleResultSet<CounterSample> getCounters (BookId bookId,
 													   EntityType entityType,
@@ -1013,6 +1020,7 @@ public abstract class CradleStorage
 	 * @param bookId identifier for book
 	 * @param entityType entity type
 	 * @param interval time interval
+	 * @return returns Counter for given interval
 	 * @throws CradleStorageException if given book ID is invalid
 	 */
 	public CompletableFuture<Counter> getCountAsync (BookId bookId,
@@ -1028,6 +1036,7 @@ public abstract class CradleStorage
 	 * @param sessionAlias session alias
 	 * @param direction direction
 	 * @param interval time interval
+	 * @return returns Counter for given messages
 	 * @throws CradleStorageException if given book ID is invalid
 	 */
 	public CompletableFuture<Counter> getMessageCountAsync (BookId bookId,
@@ -1042,7 +1051,9 @@ public abstract class CradleStorage
 	 * @param bookId identifier for book
 	 * @param entityType entity type
 	 * @param interval time interval
+	 * @return returns Counter for given interval
 	 * @throws CradleStorageException if given book ID is invalid
+	 * @throws IOException if there is a problem with input/output
 	 */
 	public Counter getCount (BookId bookId,
 							 EntityType entityType,
@@ -1057,7 +1068,9 @@ public abstract class CradleStorage
 	 * @param sessionAlias session alias
 	 * @param direction direction
 	 * @param interval time interval
+	 * @return returns Counter for given messages
 	 * @throws CradleStorageException if given book ID is invalid
+	 * @throws IOException if there is a problem with input/output
 	 */
 	public Counter getMessageCount (BookId bookId,
 									String page,
@@ -1073,7 +1086,9 @@ public abstract class CradleStorage
 	 * @param bookId Identifier for book
 	 * @param pageName name of page to update
 	 * @param comment updated comment value for page
-	 * @throws CradleStorageException
+	 * @return returns PageInfo of updated page
+	 * @throws CradleStorageException Page was edited but cache wasn't refreshed, try to refresh pages
+	 * @throws IOException if there is a problem with input/output
 	 */
 	public PageInfo updatePageComment (BookId bookId, String pageName, String comment) throws CradleStorageException, IOException {
 		bpc.getBook(bookId);
@@ -1094,7 +1109,9 @@ public abstract class CradleStorage
 	 * @param bookId Identifier for book
 	 * @param pageName name of page to update
 	 * @param newPageName name after update
-	 * @throws CradleStorageException
+	 * @return returns PageInfo of updated page
+	 * @throws CradleStorageException Page was edited but cache wasn't refreshed, try to refresh pages
+	 * @throws IOException if there is a problem with input/output
 	 */
 	public PageInfo updatePageName (BookId bookId, String pageName, String newPageName) throws CradleStorageException, IOException {
 		bpc.getBook(bookId);
