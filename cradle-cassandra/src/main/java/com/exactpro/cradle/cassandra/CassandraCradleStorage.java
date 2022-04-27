@@ -25,7 +25,6 @@ import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
 import com.exactpro.cradle.cassandra.counters.FrameInterval;
-import com.exactpro.cradle.cassandra.counters.SessionRecordFrameInterval;
 import com.exactpro.cradle.cassandra.dao.*;
 import com.exactpro.cradle.cassandra.dao.books.*;
 import com.exactpro.cradle.cassandra.dao.messages.*;
@@ -983,12 +982,7 @@ public class CassandraCradleStorage extends CradleStorage
 				interval.getStart().toString(),
 				interval.getEnd().toString());
 
-		List<SessionRecordFrameInterval> sessionRecordFrameIntervals = sliceInterval(interval)
-				.stream().map(el -> new SessionRecordFrameInterval(
-						el.getFrameType(),
-						el.getInterval(),
-						recordType))
-				.collect(Collectors.toList());
+		List<FrameInterval> frameIntervals = sliceInterval(interval);
 
 		SessionsStatisticsIteratorProvider iteratorProvider = new SessionsStatisticsIteratorProvider(
 				queryInfo,
@@ -997,7 +991,8 @@ public class CassandraCradleStorage extends CradleStorage
 				composingService,
 				selectExecutor,
 				readAttrs,
-				sessionRecordFrameIntervals);
+				frameIntervals,
+				recordType);
 
 		return iteratorProvider.nextIterator()
 				.thenApplyAsync(it -> new CassandraCradleResultSet<>(it, iteratorProvider));

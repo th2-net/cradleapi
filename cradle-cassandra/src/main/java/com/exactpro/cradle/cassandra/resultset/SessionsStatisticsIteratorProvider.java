@@ -3,7 +3,8 @@ package com.exactpro.cradle.cassandra.resultset;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.PageInfo;
-import com.exactpro.cradle.cassandra.counters.SessionRecordFrameInterval;
+import com.exactpro.cradle.SessionRecordType;
+import com.exactpro.cradle.cassandra.counters.FrameInterval;
 import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.dao.SessionStatisticsEntity;
 import com.exactpro.cradle.cassandra.dao.SessionStatisticsEntityConverter;
@@ -34,7 +35,8 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
     private final ExecutorService composingService;
     private final SelectQueryExecutor selectQueryExecutor;
     private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
-    private final List<SessionRecordFrameInterval> sessionRecordFrameIntervals;
+    private final List<FrameInterval> frameIntervals;
+    private final SessionRecordType recordType;
     /*
         This set will be used during creation of all next iterators
         to guarantee that unique elements will be returned
@@ -49,41 +51,43 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
                                                ExecutorService composingService,
                                                SelectQueryExecutor selectQueryExecutor,
                                                Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs,
-                                               List<SessionRecordFrameInterval> sessionRecordFrameIntervals) {
+                                               List<FrameInterval> frameIntervals,
+                                               SessionRecordType recordType) {
         super(requestInfo);
         this.bookOperators = bookOperators;
         this.bookInfo = bookInfo;
         this.composingService = composingService;
         this.selectQueryExecutor = selectQueryExecutor;
         this.readAttrs = readAttrs;
-        this.sessionRecordFrameIntervals = sessionRecordFrameIntervals;
+        this.frameIntervals = frameIntervals;
+        this.recordType = recordType;
 
         this.set = new HashSet<>();
         /*
             Since intervals are created in strictly increasing, non-overlapping order
             the first page is set in regards to first interval
          */
-        this.curPage = FilterUtils.findFirstPage(null, FilterForGreater.forGreater(sessionRecordFrameIntervals.get(0).getInterval().getStart()), bookInfo);
+        this.curPage = FilterUtils.findFirstPage(null, FilterForGreater.forGreater(frameIntervals.get(0).getInterval().getStart()), bookInfo);
     }
 
     @Override
     public CompletableFuture<Iterator<String>> nextIterator() {
         // There are no more intervals, there can't be next iterator
-        if (sessionRecordFrameIntervals.isEmpty()) {
+        if (frameIntervals.isEmpty()) {
             return CompletableFuture.completedFuture(null);
         }
 
-        SessionRecordFrameInterval sessionRecordFrameInterval = sessionRecordFrameIntervals.get(0);
+        FrameInterval frameInterval = frameIntervals.get(0);
 
-        Instant actualStart = sessionRecordFrameInterval.getFrameType().getFrameStart(sessionRecordFrameInterval.getInterval().getStart());
-        Instant actualEnd = sessionRecordFrameInterval.getFrameType().getFrameEnd(sessionRecordFrameInterval.getInterval().getEnd());
+        Instant actualStart = frameInterval.getFrameType().getFrameStart(frameInterval.getInterval().getStart());
+        Instant actualEnd = frameInterval.getFrameType().getFrameEnd(frameInterval.getInterval().getEnd());
 
         SessionStatisticsOperator sessionStatisticsOperator = bookOperators.getSessionStatisticsOperator();
         SessionStatisticsEntityConverter converter = bookOperators.getSessionStatisticsEntityConverter();
 
         return sessionStatisticsOperator.getStatistics(curPage.getId().getName(),
-                        sessionRecordFrameInterval.getSessionRecordType().getValue(),
-                        sessionRecordFrameInterval.getFrameType().getValue(),
+                        recordType.getValue(),
+                        frameInterval.getFrameType().getValue(),
                         actualStart,
                         actualEnd,
                         readAttrs).thenApplyAsync(rs -> {
@@ -91,12 +95,12 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
                                     At this point we need to either update page
                                     or move to new interval
                                  */
-                                if (curPage.getEnded() != null && curPage.getEnded().isBefore(sessionRecordFrameInterval.getInterval().getEnd())) {
+                                if (curPage.getEnded() != null && curPage.getEnded().isBefore(frameInterval.getInterval().getEnd())) {
                                     // Page finishes sooner than this interval
                                     curPage = bookInfo.getNextPage(curPage.getStarted());
                                 } else {
                                     // Interval finishes sooner than page
-                                    sessionRecordFrameIntervals.remove(0);
+                                    frameIntervals.remove(0);
                                 }
 
                                 return new DuplicateSkippingIterator<>(rs,
