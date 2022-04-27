@@ -23,21 +23,25 @@ import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.messages.StoredMessageId;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
+
 
 @Entity
 public class PageSessionEntity
 {
+	public static final String FIELD_PAGE = "page";
+	public static final String FIELD_SESSION_ALIAS = "session_alias";
+	public static final String FIELD_DIRECTION = "direction";
+
 	@PartitionKey(0)
-	@CqlName(PAGE)
+	@CqlName(FIELD_PAGE)
 	private String page;
 
 	@ClusteringColumn(0)
-	@CqlName(SESSION_ALIAS)
+	@CqlName(FIELD_SESSION_ALIAS)
 	private String sessionAlias;
 
 	@ClusteringColumn(1)
-	@CqlName(DIRECTION)
+	@CqlName(FIELD_DIRECTION)
 	private String direction;
 
 	public PageSessionEntity()

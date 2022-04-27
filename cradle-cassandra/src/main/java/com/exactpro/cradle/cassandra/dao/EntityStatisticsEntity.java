@@ -25,11 +25,14 @@ import com.exactpro.cradle.FrameType;
 
 import java.time.Instant;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
-
 @Entity
 public class EntityStatisticsEntity {
 
+    public static final String FIELD_ENTITY_TYPE = "entity_type";
+    public static final String FIELD_FRAME_TYPE = "frame_type";
+    public static final String FIELD_FRAME_START = "frame_start";
+    public static final String FIELD_ENTITY_COUNT = "entity_count";
+    public static final String FIELD_ENTITY_SIZE = "entity_size";
     private Byte entityType;
     private Byte frameType;
     private Instant frameStart;
@@ -45,7 +48,7 @@ public class EntityStatisticsEntity {
     }
 
     @PartitionKey(0)
-    @CqlName(ENTITY_TYPE)
+    @CqlName(FIELD_ENTITY_TYPE)
     public Byte getEntityType() {
         return entityType;
     }
@@ -55,7 +58,7 @@ public class EntityStatisticsEntity {
     }
 
     @PartitionKey(1)
-    @CqlName(FRAME_TYPE)
+    @CqlName(FIELD_FRAME_TYPE)
     public Byte getFrameType() {
         return frameType;
     }
@@ -65,7 +68,7 @@ public class EntityStatisticsEntity {
     }
 
     @ClusteringColumn(2)
-    @CqlName(FRAME_START)
+    @CqlName(FIELD_FRAME_START)
     public Instant getFrameStart() {
         return frameStart;
     }
@@ -75,7 +78,7 @@ public class EntityStatisticsEntity {
         this.frameStart = frameStart;
     }
 
-    @CqlName(ENTITY_COUNT)
+    @CqlName(FIELD_ENTITY_COUNT)
     public Long getEntityCount() {
         return entityCount;
     }
@@ -84,7 +87,7 @@ public class EntityStatisticsEntity {
         this.entityCount = entityCount;
     }
 
-    @CqlName(ENTITY_SIZE)
+    @CqlName(FIELD_ENTITY_SIZE)
     public Long getEntitySize() {
         return entitySize;
     }

@@ -41,7 +41,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.MESSAGE_TIME;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_MESSAGE_TIME;
 
 abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvider<T>
 {
@@ -115,7 +115,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 			{
 				Row row = future.get();
 				if (row != null)
-					return row.getLocalTime(MESSAGE_TIME);
+					return row.getLocalTime(FIELD_MESSAGE_TIME);
 			}
 			catch (Exception e)
 			{

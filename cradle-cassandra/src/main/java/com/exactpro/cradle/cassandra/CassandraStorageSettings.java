@@ -30,6 +30,7 @@ public class CassandraStorageSettings
 			PAGES_TABLE = "pages",
 			PAGES_NAMES_TABLE = "pages_names",
 			MESSAGES_TABLE = "messages",
+			GROUPED_MESSAGES_TABLE = "grouped_messages",
 			SESSIONS_TABLE = "sessions",
 			PAGE_SESSIONS_TABLE = "page_sessions",
 			TEST_EVENTS_TABLE = "test_events",
@@ -64,6 +65,7 @@ public class CassandraStorageSettings
 			pagesTable,
 			pagesNamesTable,
 			messagesTable,
+			groupedMessagesTable,
 			sessionsTable,
 			pageSessionsTable,
 			testEventsTable,
@@ -75,22 +77,22 @@ public class CassandraStorageSettings
 			messageStatisticsTable,
 			entityStatisticsTable;
 	private int keyspaceReplicationFactor;
-	
+
 	private int maxParallelQueries,
 			resultPageSize,
 			maxMessageBatchSize,
 			maxUncompressedMessageBatchSize,
 			maxTestEventBatchSize,
 			maxUncompressedTestEventSize,
-			
 			sessionsCacheSize,
 			scopesCacheSize,
 			pageSessionsCacheSize,
 			pageScopesCacheSize,
 			counterPersistanceInterval;
+	private long maxMessageBatchDurationLimit;
 
 	private SelectExecutionPolicy multiRowResultExecutionPolicy, singleRowResultExecutionPolicy;
-	
+
 	public CassandraStorageSettings()
 	{
 		this(null, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
@@ -117,6 +119,7 @@ public class CassandraStorageSettings
 		this.pagesTable = PAGES_TABLE;
 		this.pagesNamesTable = PAGES_NAMES_TABLE;
 		this.messagesTable = MESSAGES_TABLE;
+		this.groupedMessagesTable = GROUPED_MESSAGES_TABLE;
 		this.sessionsTable = SESSIONS_TABLE;
 		this.pageSessionsTable = PAGE_SESSIONS_TABLE;
 		this.testEventsTable = TEST_EVENTS_TABLE;
@@ -132,6 +135,7 @@ public class CassandraStorageSettings
 		this.maxParallelQueries = DEFAULT_MAX_PARALLEL_QUERIES;
 		this.resultPageSize = DEFAULT_RESULT_PAGE_SIZE;
 		this.maxMessageBatchSize = CradleStorage.DEFAULT_MAX_MESSAGE_BATCH_SIZE;
+		this.maxMessageBatchDurationLimit = CradleStorage.DEFAULT_MAX_MESSAGE_BATCH_DURATION_LIMIT_SECONDS;
 		this.maxUncompressedMessageBatchSize = DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_SIZE;
 		this.maxTestEventBatchSize = CradleStorage.DEFAULT_MAX_TEST_EVENT_BATCH_SIZE;
 		this.maxUncompressedTestEventSize = DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE;
@@ -148,7 +152,7 @@ public class CassandraStorageSettings
 		this.timeout = settings.getTimeout();
 		this.writeConsistencyLevel = settings.getWriteConsistencyLevel();
 		this.readConsistencyLevel = settings.getReadConsistencyLevel();
-		
+
 		this.cradleInfoKeyspace = settings.getCradleInfoKeyspace();
 		this.schemaVersion = settings.getSchemaVersion();
 		this.booksTable = settings.getBooksTable();
@@ -156,6 +160,7 @@ public class CassandraStorageSettings
 		this.pagesTable = settings.getPagesTable();
 		this.pagesNamesTable = settings.getPagesNamesTable();
 		this.messagesTable = settings.getMessagesTable();
+		this.groupedMessagesTable = settings.getGroupedMessagesTable();
 		this.sessionsTable = settings.getSessionsTable();
 		this.pageSessionsTable = settings.getPageSessionsTable();
 		this.testEventsTable = settings.getTestEventsTable();
@@ -171,20 +176,21 @@ public class CassandraStorageSettings
 		this.maxParallelQueries = settings.getMaxParallelQueries();
 		this.resultPageSize = settings.getResultPageSize();
 		this.maxMessageBatchSize = settings.getMaxMessageBatchSize();
+		this.maxMessageBatchDurationLimit = settings.getMaxMessageBatchDurationLimit();
 		this.maxUncompressedMessageBatchSize = settings.getMaxUncompressedMessageBatchSize();
 		this.maxTestEventBatchSize = settings.getMaxTestEventBatchSize();
 		this.maxUncompressedTestEventSize = settings.getMaxUncompressedTestEventSize();
 		this.singleRowResultExecutionPolicy = settings.getSingleRowResultExecutionPolicy();
 		this.multiRowResultExecutionPolicy = settings.getMultiRowResultExecutionPolicy();
-		
+
 		this.sessionsCacheSize = settings.getSessionsCacheSize();
 		this.pageSessionsCacheSize = settings.getPageSessionsCacheSize();
 		this.scopesCacheSize = settings.getScopesCacheSize();
 		this.pageScopesCacheSize = settings.getPageScopesCacheSize();
 		this.counterPersistanceInterval = settings.getCounterPersistanceInterval();
 	}
-	
-	
+
+
 	public NetworkTopologyStrategy getNetworkTopologyStrategy()
 	{
 		return networkTopologyStrategy;
@@ -217,7 +223,8 @@ public class CassandraStorageSettings
 	}
 
 
-	public String getSchemaVersion() {
+	public String getSchemaVersion()
+	{
 		return schemaVersion;
 	}
 
@@ -232,11 +239,13 @@ public class CassandraStorageSettings
 		this.booksTable = booksTable;
 	}
 
-	public String getBooksStatusTable () {
+	public String getBooksStatusTable()
+	{
 		return booksStatusTable;
 	}
 
-	public void setBooksStatusTable (String booksStatusTable) {
+	public void setBooksStatusTable(String booksStatusTable)
+	{
 		this.booksStatusTable = booksStatusTable;
 	}
 
@@ -255,13 +264,13 @@ public class CassandraStorageSettings
 	{
 		return pagesNamesTable;
 	}
-	
+
 	public void setPagesNamesTable(String pagesNamesTable)
 	{
 		this.pagesNamesTable = pagesNamesTable;
 	}
-	
-	
+
+
 	public String getMessagesTable()
 	{
 		return messagesTable;
@@ -361,19 +370,23 @@ public class CassandraStorageSettings
 	}
 
 
-	public String getMessageStatisticsTable() {
+	public String getMessageStatisticsTable()
+	{
 		return messageStatisticsTable;
 	}
 
-	public void setMessageStatisticsTable(String messageStatisticsTable) {
+	public void setMessageStatisticsTable(String messageStatisticsTable)
+	{
 		this.messageStatisticsTable = messageStatisticsTable;
 	}
 
-	public String getEntityStatisticsTable() {
+	public String getEntityStatisticsTable()
+	{
 		return entityStatisticsTable;
 	}
 
-	public void setEntityStatisticsTable(String entityStatisticsTable) {
+	public void setEntityStatisticsTable(String entityStatisticsTable)
+	{
 		this.entityStatisticsTable = entityStatisticsTable;
 	}
 
@@ -408,63 +421,63 @@ public class CassandraStorageSettings
 	{
 		this.resultPageSize = resultPageSize;
 	}
-	
-	
+
+
 	public int getMaxMessageBatchSize()
 	{
 		return maxMessageBatchSize;
 	}
-	
+
 	public void setMaxMessageBatchSize(int maxMessageBatchSize)
 	{
 		this.maxMessageBatchSize = maxMessageBatchSize;
 	}
-	
-	
+
+
 	public int getMaxUncompressedMessageBatchSize()
 	{
 		return maxUncompressedMessageBatchSize;
 	}
-	
+
 	public void setMaxUncompressedMessageBatchSize(int maxUncompressedMessageBatchSize)
 	{
 		this.maxUncompressedMessageBatchSize = maxUncompressedMessageBatchSize;
 	}
-	
-	
+
+
 	public int getMaxTestEventBatchSize()
 	{
 		return maxTestEventBatchSize;
 	}
-	
+
 	public void setMaxTestEventBatchSize(int maxTestEventBatchSize)
 	{
 		this.maxTestEventBatchSize = maxTestEventBatchSize;
 	}
-	
-	
+
+
 	public int getMaxUncompressedTestEventSize()
 	{
 		return maxUncompressedTestEventSize;
 	}
-	
+
 	public void setMaxUncompressedTestEventSize(int maxUncompressedTestEventSize)
 	{
 		this.maxUncompressedTestEventSize = maxUncompressedTestEventSize;
 	}
-	
-	
+
+
 	public int getSessionsCacheSize()
 	{
 		return sessionsCacheSize;
 	}
-	
+
 	public void setSessionsCacheSize(int sessionsCacheSize)
 	{
 		this.sessionsCacheSize = sessionsCacheSize;
 	}
-	
-	
+
+
 	public int getPageSessionsCacheSize()
 	{
 		return pageSessionsCacheSize;
@@ -474,8 +487,8 @@ public class CassandraStorageSettings
 	{
 		this.pageSessionsCacheSize = pageSessionsCacheSize;
 	}
-	
-	
+
+
 	public int getScopesCacheSize()
 	{
 		return scopesCacheSize;
@@ -497,11 +510,13 @@ public class CassandraStorageSettings
 		this.pageScopesCacheSize = pageScopesCacheSize;
 	}
 
-	public int getCounterPersistanceInterval() {
+	public int getCounterPersistanceInterval()
+	{
 		return counterPersistanceInterval;
 	}
 
-	public void setCounterPersistanceInterval(int counterPersistanceInterval) {
+	public void setCounterPersistanceInterval(int counterPersistanceInterval)
+	{
 		this.counterPersistanceInterval = counterPersistanceInterval;
 	}
 
@@ -525,5 +540,25 @@ public class CassandraStorageSettings
 			SelectExecutionPolicy singleRowResultExecutionPolicy)
 	{
 		this.singleRowResultExecutionPolicy = singleRowResultExecutionPolicy;
+	}
+
+	public String getGroupedMessagesTable()
+	{
+		return groupedMessagesTable;
+	}
+
+	public void setGroupedMessagesTable(String groupedMessagesTable)
+	{
+		this.groupedMessagesTable = groupedMessagesTable;
+	}
+
+	public long getMaxMessageBatchDurationLimit()
+	{
+		return maxMessageBatchDurationLimit;
+	}
+
+	public void setMaxMessageBatchDurationLimit(long maxMessageBatchDurationLimit)
+	{
+		this.maxMessageBatchDurationLimit = maxMessageBatchDurationLimit;
 	}
 }

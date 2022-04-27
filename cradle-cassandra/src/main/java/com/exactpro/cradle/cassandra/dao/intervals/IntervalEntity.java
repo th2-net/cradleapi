@@ -29,53 +29,65 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.time.*;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 @Entity
 public class IntervalEntity {
     private static final Logger logger = LoggerFactory.getLogger(IntervalEntity.class);
     public static final ZoneOffset TIMEZONE_OFFSET = ZoneOffset.UTC;
 
+    public static final String FIELD_PAGE = "page";
+    public static final String FIELD_INTERVAL_START_DATE = "interval_start_date";
+    public static final String FIELD_CRAWLER_NAME = "crawler_name";
+    public static final String FIELD_CRAWLER_VERSION = "crawler_version";
+    public static final String FIELD_CRAWLER_TYPE = "crawler_type";
+    public static final String FIELD_INTERVAL_START_TIME = "interval_start_time";
+    public static final String FIELD_INTERVAL_END_DATE = "interval_end_date";
+    public static final String FIELD_INTERVAL_END_TIME = "interval_end_time";
+    public static final String FIELD_INTERVAL_LAST_UPDATE_DATE = "interval_last_update_date";
+    public static final String FIELD_INTERVAL_LAST_UPDATE_TIME = "interval_last_update_time";
+    public static final String FIELD_RECOVERY_STATE_JSON = "recovery_state_json";
+    public static final String FIELD_INTERVAL_PROCESSED = "interval_processed";
+
     @PartitionKey(0)
-    @CqlName(PAGE)
+    @CqlName(FIELD_PAGE)
     private String page;
 
     @PartitionKey(1)
-    @CqlName(INTERVAL_START_DATE)
+    @CqlName(FIELD_INTERVAL_START_DATE)
     private LocalDate startDate;
 
     @ClusteringColumn(0)
-    @CqlName(CRAWLER_NAME)
+    @CqlName(FIELD_CRAWLER_NAME)
     private String crawlerName;
 
     @ClusteringColumn(1)
-    @CqlName(CRAWLER_VERSION)
+    @CqlName(FIELD_CRAWLER_VERSION)
     private String crawlerVersion;
 
     @ClusteringColumn(2)
-    @CqlName(CRAWLER_TYPE)
+    @CqlName(FIELD_CRAWLER_TYPE)
     private String crawlerType;
 
     @ClusteringColumn(3)
-    @CqlName(INTERVAL_START_TIME)
+    @CqlName(FIELD_INTERVAL_START_TIME)
     private LocalTime startTime;
 
-    @CqlName(INTERVAL_END_DATE)
+    @CqlName(FIELD_INTERVAL_END_DATE)
     private LocalDate endDate;
 
-    @CqlName(INTERVAL_END_TIME)
+    @CqlName(FIELD_INTERVAL_END_TIME)
     private LocalTime endTime;
 
-    @CqlName(INTERVAL_LAST_UPDATE_DATE)
+    @CqlName(FIELD_INTERVAL_LAST_UPDATE_DATE)
     private LocalDate lastUpdateDate;
 
-    @CqlName(INTERVAL_LAST_UPDATE_TIME)
+    @CqlName(FIELD_INTERVAL_LAST_UPDATE_TIME)
     private LocalTime lastUpdateTime;
 
-    @CqlName(RECOVERY_STATE_JSON)
+    @CqlName(FIELD_RECOVERY_STATE_JSON)
     private String recoveryStateJson;
 
-    @CqlName(INTERVAL_PROCESSED)
+    @CqlName(FIELD_INTERVAL_PROCESSED)
     private boolean processed;
 
     public IntervalEntity()

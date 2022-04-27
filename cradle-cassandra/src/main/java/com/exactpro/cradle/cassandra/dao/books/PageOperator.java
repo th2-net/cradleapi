@@ -16,10 +16,7 @@
 
 package com.exactpro.cradle.cassandra.dao.books;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.PART;
-import static com.exactpro.cradle.cassandra.StorageConstants.START_DATE;
-import static com.exactpro.cradle.cassandra.StorageConstants.START_TIME;
-import static com.exactpro.cradle.cassandra.StorageConstants.REMOVED;
+import static com.exactpro.cradle.cassandra.dao.books.PageEntity.*;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -41,7 +38,7 @@ public interface PageOperator
 	@Select
 	PagingIterable<PageEntity> getAll(String book, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+PART+"=:part AND ("+START_DATE+", "+START_TIME+")>(:startDate, :startTime)")
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+FIELD_PART+"=:part AND ("+FIELD_START_DATE+", "+FIELD_START_TIME+")>(:startDate, :startTime)")
 	PagingIterable<PageEntity> get(String part, LocalDate startDate, LocalTime startTime, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Update
@@ -50,7 +47,7 @@ public interface PageOperator
 	@Insert
 	ResultSet write(PageEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Query("UPDATE ${qualifiedTableId} SET "+REMOVED+"=:removed WHERE "+PART+"=:part AND "+START_DATE+"=:startDate AND "+START_TIME+"=:startTime")
+	@Query("UPDATE ${qualifiedTableId} SET "+FIELD_REMOVED+"=:removed WHERE "+FIELD_PART+"=:part AND "+FIELD_START_DATE+"=:startDate AND "+FIELD_START_TIME+"=:startTime")
 	ResultSet remove(String part, LocalDate startDate, LocalTime startTime, Instant removed, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }
