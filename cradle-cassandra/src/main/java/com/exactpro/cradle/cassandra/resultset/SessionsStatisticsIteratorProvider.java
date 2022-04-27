@@ -56,12 +56,13 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
 
     @Override
     public CompletableFuture<Iterator<String>> nextIterator() {
+        if (sessionRecordFrameIntervals.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
+
         SessionRecordFrameInterval sessionRecordFrameInterval = sessionRecordFrameIntervals.get(0);
 
         if (curPage == null || curPage.getStarted().isAfter(sessionRecordFrameInterval.getInterval().getEnd())) {
-            if (sessionRecordFrameIntervals.isEmpty()) {
-                return CompletableFuture.completedFuture(null);
-            }
 
             sessionRecordFrameIntervals.remove(0);
             return nextIterator();
