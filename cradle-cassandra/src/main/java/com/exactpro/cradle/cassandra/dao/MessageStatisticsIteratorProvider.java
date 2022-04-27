@@ -3,18 +3,14 @@ package com.exactpro.cradle.cassandra.dao;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.Direction;
-import com.exactpro.cradle.FrameType;
 import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.counters.FrameInterval;
 import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
-import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
-import com.exactpro.cradle.counters.Counter;
 import com.exactpro.cradle.counters.CounterSample;
 import com.exactpro.cradle.filters.FilterForGreater;
-import com.exactpro.cradle.messages.MessageFilter;
 
 import java.time.Instant;
 import java.util.Iterator;
@@ -42,7 +38,6 @@ public class MessageStatisticsIteratorProvider extends IteratorProvider<CounterS
                                              Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) {
         super(requestInfo);
 
-        this.requestInfo = requestInfo;
         this.ops = ops;
         this.book = book;
         this.composingService = composingService;
