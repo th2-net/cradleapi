@@ -381,7 +381,7 @@ public abstract class CradleStorage
 	/**
 	 * @param bookId book of removed pages
 	 * @return collection of removed pages for given book
-	 * @throws CradleStorageException Could not get removed pages for book
+	 * @throws CradleStorageException  If there was problem loading pages
 	 */
 	public Collection<PageInfo> getAllPages(BookId bookId) throws CradleStorageException {
 		logger.info("Getting Removed pages for book {}", bookId.getName());
