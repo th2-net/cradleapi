@@ -23,6 +23,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
+/**
+ * Iterator provider for sessions which uses DuplicateSkippingIterator
+ */
 public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>{
 
 
@@ -32,6 +35,11 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
     private final SelectQueryExecutor selectQueryExecutor;
     private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
     private final List<SessionRecordFrameInterval> sessionRecordFrameIntervals;
+    /*
+        This set will be used during creation of all next iterators
+        to guarantee that unique elements will be returned
+        across all iterators
+     */
     private final Set<Long> set;
     private PageInfo curPage;
 
@@ -49,13 +57,18 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
         this.selectQueryExecutor = selectQueryExecutor;
         this.readAttrs = readAttrs;
         this.sessionRecordFrameIntervals = sessionRecordFrameIntervals;
-        this.set = new HashSet<>();
 
+        this.set = new HashSet<>();
+        /*
+            Since intervals are created in strictly increasing, non-overlapping order
+            the first page is set in regards to first interval
+         */
         this.curPage = FilterUtils.findFirstPage(null, FilterForGreater.forGreater(sessionRecordFrameIntervals.get(0).getInterval().getStart()), bookInfo);
     }
 
     @Override
     public CompletableFuture<Iterator<String>> nextIterator() {
+        // There are no more intervals, there can't be next iterator
         if (sessionRecordFrameIntervals.isEmpty()) {
             return CompletableFuture.completedFuture(null);
         }
