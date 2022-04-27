@@ -28,11 +28,14 @@ import java.time.Instant;
 @Entity
 public class EntityStatisticsEntity {
 
+    public static final String FIELD_PAGE = "page";
     public static final String FIELD_ENTITY_TYPE = "entity_type";
     public static final String FIELD_FRAME_TYPE = "frame_type";
     public static final String FIELD_FRAME_START = "frame_start";
     public static final String FIELD_ENTITY_COUNT = "entity_count";
     public static final String FIELD_ENTITY_SIZE = "entity_size";
+
+    private String page;
     private Byte entityType;
     private Byte frameType;
     private Instant frameStart;
@@ -48,6 +51,12 @@ public class EntityStatisticsEntity {
     }
 
     @PartitionKey(0)
+    @CqlName(FIELD_PAGE)
+    public String getPage() { return page; }
+
+    public void setPage(String page) { this.page = page; }
+
+    @PartitionKey(1)
     @CqlName(FIELD_ENTITY_TYPE)
     public Byte getEntityType() {
         return entityType;
@@ -57,7 +66,7 @@ public class EntityStatisticsEntity {
         this.entityType = entityType;
     }
 
-    @PartitionKey(1)
+    @PartitionKey(2)
     @CqlName(FIELD_FRAME_TYPE)
     public Byte getFrameType() {
         return frameType;
@@ -67,7 +76,7 @@ public class EntityStatisticsEntity {
         this.frameType = frameType;
     }
 
-    @ClusteringColumn(2)
+    @ClusteringColumn(3)
     @CqlName(FIELD_FRAME_START)
     public Instant getFrameStart() {
         return frameStart;
