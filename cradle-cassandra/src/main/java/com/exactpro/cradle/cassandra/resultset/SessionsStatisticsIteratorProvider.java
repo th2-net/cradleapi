@@ -12,6 +12,7 @@ import com.exactpro.cradle.cassandra.dao.SessionStatisticsOperator;
 import com.exactpro.cradle.cassandra.iterators.DuplicateSkippingIterator;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
+import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.filters.FilterForGreater;
 
 import java.time.Instant;
@@ -25,7 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 /**
- * Iterator provider for sessions which uses DuplicateSkippingIterator
+ * Iterator provider for sessions which provides different iterators for
+ * frameIntervals and pages
  */
 public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>{
 
@@ -37,6 +39,7 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
     private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
     private final List<FrameInterval> frameIntervals;
     private final SessionRecordType recordType;
+    private Integer frameIndex;
     /*
         This set will be used during creation of all next iterators
         to guarantee that unique elements will be returned
@@ -67,17 +70,18 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
             Since intervals are created in strictly increasing, non-overlapping order
             the first page is set in regards to first interval
          */
-        this.curPage = FilterUtils.findFirstPage(null, FilterForGreater.forGreater(frameIntervals.get(0).getInterval().getStart()), bookInfo);
+        this.frameIndex = 0;
+        this.curPage = FilterUtils.findFirstPage(null, FilterForGreater.forGreater(frameIntervals.get(frameIndex).getInterval().getStart()), bookInfo);
     }
 
     @Override
     public CompletableFuture<Iterator<String>> nextIterator() {
-        // There are no more intervals, there can't be next iterator
-        if (frameIntervals.isEmpty()) {
+        // All intervals have been processed, there can't be next iterator
+        if (frameIndex == frameIntervals.size()) {
             return CompletableFuture.completedFuture(null);
         }
 
-        FrameInterval frameInterval = frameIntervals.get(0);
+        FrameInterval frameInterval = frameIntervals.get(frameIndex);
 
         Instant actualStart = frameInterval.getFrameType().getFrameStart(frameInterval.getInterval().getStart());
         Instant actualEnd = frameInterval.getFrameType().getFrameEnd(frameInterval.getInterval().getEnd());
@@ -100,7 +104,7 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
                                     curPage = bookInfo.getNextPage(curPage.getStarted());
                                 } else {
                                     // Interval finishes sooner than page
-                                    frameIntervals.remove(0);
+                                    frameIndex ++;
                                 }
 
                                 return new DuplicateSkippingIterator<>(rs,
