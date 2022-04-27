@@ -101,6 +101,9 @@ public class TestEventUtils
 
 	/**
 	 * Serializes a single test event.
+	 * @param testEvent to serialize
+	 * @throws IOException if serialization failed
+	 * @return array of bytes, containing serialized event
 	 */
 	public static SerializedEntityData serializeTestEvent(TestEventSingleToStore testEvent) throws IOException {
 		return serializer.serializeEvent(testEvent);
