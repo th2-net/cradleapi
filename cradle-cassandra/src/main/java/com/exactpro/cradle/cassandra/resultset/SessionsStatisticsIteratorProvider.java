@@ -62,12 +62,6 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
 
         SessionRecordFrameInterval sessionRecordFrameInterval = sessionRecordFrameIntervals.get(0);
 
-        if (curPage == null || curPage.getStarted().isAfter(sessionRecordFrameInterval.getInterval().getEnd())) {
-
-            sessionRecordFrameIntervals.remove(0);
-            return nextIterator();
-        }
-
         Instant actualStart = sessionRecordFrameInterval.getFrameType().getFrameStart(sessionRecordFrameInterval.getInterval().getStart());
         Instant actualEnd = sessionRecordFrameInterval.getFrameType().getFrameEnd(sessionRecordFrameInterval.getInterval().getEnd());
 
@@ -80,7 +74,17 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
                         actualStart,
                         actualEnd,
                         readAttrs).thenApplyAsync(rs -> {
-                                curPage = bookInfo.getNextPage(curPage.getStarted());
+                                /*
+                                    At this point we need to either update page
+                                    or move to new interval
+                                 */
+                                if (curPage.getEnded() != null && curPage.getEnded().isBefore(sessionRecordFrameInterval.getInterval().getEnd())) {
+                                    // Page finishes sooner than this interval
+                                    curPage = bookInfo.getNextPage(curPage.getStarted());
+                                } else {
+                                    // Interval finishes sooner than page
+                                    sessionRecordFrameIntervals.remove(0);
+                                }
 
                                 return new DuplicateSkippingIterator<>(rs,
                                         selectQueryExecutor,
