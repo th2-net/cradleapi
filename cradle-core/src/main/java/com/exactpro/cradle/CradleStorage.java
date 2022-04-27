@@ -1080,10 +1080,10 @@ public abstract class CradleStorage
 
 	/**
 	 * Gets session aliases in a book for a time interval asynchronously
-	 * @param bookId
-	 * @param interval
-	 * @return
-	 * @throws CradleStorageException
+	 * @param bookId of a book we need to search in
+	 * @param interval of time
+	 * @return async result set of unique session aliases
+	 * @throws CradleStorageException in case could not get data
 	 */
 	public CompletableFuture <CradleResultSet<String>> getSessionAliasesAsync (BookId bookId, Interval interval) throws CradleStorageException {
 		return doGetSessionAliasesAsync(bookId, interval);
@@ -1091,10 +1091,10 @@ public abstract class CradleStorage
 
 	/**
 	 * Gets session aliases in a book for a time interval
-	 * @param bookId
-	 * @param interval
-	 * @return
-	 * @throws CradleStorageException
+	 * @param bookId of a book we need to search in
+	 * @param interval of time
+	 * @return result set of unique session aliases
+	 * @throws CradleStorageException in case could not get data
 	 */
 	public CradleResultSet<String> getSessionAliases (BookId bookId, Interval interval) throws CradleStorageException {
 		return doGetSessionAliases(bookId, interval);
@@ -1102,10 +1102,10 @@ public abstract class CradleStorage
 
 	/**
 	 * Gets group aliases in a book for a time interval asynchronously
-	 * @param bookId
-	 * @param interval
-	 * @return
-	 * @throws CradleStorageException
+	 * @param bookId of a book we need to search in
+	 * @param interval of time
+	 * @return async result set of unique session groups
+	 * @throws CradleStorageException in case could not get data
 	 */
 	public CompletableFuture <CradleResultSet<String>> getSessionGroupsAsync (BookId bookId, Interval interval) throws CradleStorageException {
 		return doGetSessionGroupsAsync(bookId, interval);
@@ -1113,10 +1113,10 @@ public abstract class CradleStorage
 
 	/**
 	 * Gets group aliases in a book for a time interval
-	 * @param bookId
-	 * @param interval
-	 * @return
-	 * @throws CradleStorageException
+	 * @param bookId of a book we need to search in
+	 * @param interval of time
+	 * @return result set of unique session groups
+	 * @throws CradleStorageException in case could not get data
 	 */
 	public CradleResultSet<String> getSessionGroups (BookId bookId, Interval interval) throws CradleStorageException {
 		return doGetSessionGroups(bookId, interval);
