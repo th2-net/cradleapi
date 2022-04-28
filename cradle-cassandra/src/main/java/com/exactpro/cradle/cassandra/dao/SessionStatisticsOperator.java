@@ -39,6 +39,6 @@ public interface SessionStatisticsOperator {
             FIELD_FRAME_TYPE + "=:frameType AND " +
             FIELD_FRAME_START + ">=:frameStart AND " +
             FIELD_FRAME_START + "<:frameEnd")
-    CompletableFuture<MappedAsyncPagingIterable<SessionStatisticsEntity>> getStatistics (String page, Byte recordType, Byte frameType, Instant frameStart, Instant frameEnd);
+    CompletableFuture<MappedAsyncPagingIterable<SessionStatisticsEntity>> getStatistics (String page, Byte recordType, Byte frameType, Instant frameStart, Instant frameEnd, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 }
