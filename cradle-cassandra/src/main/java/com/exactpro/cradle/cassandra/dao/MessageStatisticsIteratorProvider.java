@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 public class MessageStatisticsIteratorProvider extends IteratorProvider<CounterSample> {
-    private String requestInfo;
     private BookOperators ops;
     private BookInfo book;
     private ExecutorService composingService;
@@ -78,7 +77,7 @@ public class MessageStatisticsIteratorProvider extends IteratorProvider<CounterS
                                     new AtomicInteger(0),
                                     MessageStatisticsEntity::toCounterSample,
                                     messageStatsConverter::getEntity,
-                                    requestInfo);
+                                    this.getRequestInfo());
                         }, composingService);
     }
 }
