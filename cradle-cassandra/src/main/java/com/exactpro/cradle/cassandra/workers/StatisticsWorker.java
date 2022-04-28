@@ -107,14 +107,14 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
 
     @Override
-    public void updateMessageBatchStatistics(BookId bookId, String sessionAlias, String direction, Collection<SerializedEntityMetadata> batchMetadata) {
+    public void updateMessageBatchStatistics(BookId bookId, String page, String sessionAlias, String direction, Collection<SerializedEntityMetadata> batchMetadata) {
         CounterCache counters = getBookCounterCaches(bookId)
                 .getMessageCounterCache()
                 .get(new BookCounterCaches.MessageKey(sessionAlias, direction));
         updateCounters(counters, batchMetadata);
-
+        BookCounterCaches.EntityKey key = new BookCounterCaches.EntityKey(page,EntityType.MESSAGE);
         // update entity statistics separately
-        updateEntityBatchStatistics(bookId, EntityType.MESSAGE, batchMetadata);
+        updateEntityBatchStatistics(bookId, key, batchMetadata);
     }
 
 

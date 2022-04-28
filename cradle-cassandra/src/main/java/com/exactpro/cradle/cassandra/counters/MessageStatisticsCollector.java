@@ -21,5 +21,5 @@ import com.exactpro.cradle.serialization.SerializedEntityMetadata;
 import java.util.Collection;
 
 public interface MessageStatisticsCollector {
-    void updateMessageBatchStatistics(BookId bookId, String sessionAlias, String direction, Collection<SerializedEntityMetadata> batchMetadata);
+    void updateMessageBatchStatistics(BookId bookId,String Page, String sessionAlias, String direction, Collection<SerializedEntityMetadata> batchMetadata);
 }
