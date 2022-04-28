@@ -17,6 +17,7 @@ package com.exactpro.cradle.cassandra.counters;
 
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.EntityType;
+import com.exactpro.cradle.FrameType;
 
 import java.util.*;
 
@@ -80,6 +81,32 @@ public class BookCounterCaches {
         }
     }
 
+    public static class EntityKey {
+        private final String page;
+        private final EntityType entityType;
+
+
+        public EntityKey(String page, EntityType entityType){
+            this.page = page;
+            this.entityType = entityType;
+        }
+        public String getPage() { return page; }
+        public EntityType getEntityType() { return entityType; }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            EntityKey entityKey = (EntityKey) o;
+            return Objects.equals(page, entityKey.page) && entityType == entityKey.entityType;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(page, entityType);
+        }
+    }
+
     public static class MessageCounterCache {
         private final Map<MessageKey, CounterCache> cache = new HashMap<>();
         public synchronized void put(MessageKey key, CounterCache counters) {
@@ -99,14 +126,30 @@ public class BookCounterCaches {
     }
 
     public static class EntityCounterCache {
-        private final Map<EntityType, CounterCache> cache;
-        public EntityCounterCache() {
-            cache = new HashMap<>();
-            for (EntityType t : EntityType.values())
-                cache.put(t, new CounterCache());
+        //private final Map<EntityType, CounterCache> cache;
+        private final Map<EntityKey, CounterCache> cache = new HashMap<>();
+//        public EntityCounterCache() {
+//            cache = new HashMap<>();
+//            for (EntityType t : EntityType.values())
+//                cache.put(t, new CounterCache());
+//        }
+
+        public synchronized void put(EntityKey key, CounterCache counters) {
+            cache.put(key, counters);
         }
-        public CounterCache forEntityType(EntityType entityType) {
-            return cache.get(entityType);
+        
+        public CounterCache get(EntityKey entityKey) {
+            return cache.get(entityKey);
+        }
+
+        public synchronized CounterCache extract(EntityKey key) {
+            CounterCache result = cache.get(key);
+            cache.remove(key);
+            return result;
+        }
+        
+        public synchronized Collection<EntityKey> entityKeys() {
+            return new HashSet<>(cache.keySet());
         }
     }
 }

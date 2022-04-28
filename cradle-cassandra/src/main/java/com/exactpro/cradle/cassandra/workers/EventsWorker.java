@@ -23,7 +23,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.zip.DataFormatException;
 
-import com.exactpro.cradle.EntityType;
+import com.exactpro.cradle.*;
+import com.exactpro.cradle.cassandra.counters.BookCounterCaches;
 import com.exactpro.cradle.cassandra.counters.EntityStatisticsCollector;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
@@ -33,9 +34,6 @@ import io.prometheus.client.Counter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.BookInfo;
-import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
@@ -103,9 +101,9 @@ public class EventsWorker extends Worker
 	{
 		TestEventOperator op = getBookOps(bookId).getTestEventOperator();
 		List<SerializedEntityMetadata> meta = entity.getSerializedEventMetadata();
-
+		BookCounterCaches.EntityKey key = new BookCounterCaches.EntityKey(entity.getPage(), EntityType.EVENT);
 		return op.write(entity, writeAttrs)
-				.thenAccept(result -> entityStatisticsCollector.updateEntityBatchStatistics(bookId, EntityType.EVENT, meta))
+				.thenAccept(result -> entityStatisticsCollector.updateEntityBatchStatistics(bookId, key, meta))
 				.thenAcceptAsync(result -> updateEventWriteMetrics(entity, bookId));
 	}
 	

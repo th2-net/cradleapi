@@ -22,5 +22,5 @@ import com.exactpro.cradle.serialization.SerializedEntityMetadata;
 import java.util.Collection;
 
 public interface EntityStatisticsCollector {
-    void updateEntityBatchStatistics(BookId bookId, EntityType entityType, Collection<SerializedEntityMetadata> batchMetadata);
+    void updateEntityBatchStatistics(BookId bookId, BookCounterCaches.EntityKey entityKey, Collection<SerializedEntityMetadata> batchMetadata);
 }

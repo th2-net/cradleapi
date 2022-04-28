@@ -31,11 +31,13 @@ import static com.exactpro.cradle.cassandra.dao.EntityStatisticsEntity.*;
 public interface EntityStatisticsOperator {
 
     @Query("SELECT * FROM ${qualifiedTableId}  WHERE " +
+            FIELD_PAGE + "=:page AND " +
             FIELD_ENTITY_TYPE + "=:entityType AND " +
             FIELD_FRAME_TYPE + "=:frameType AND " +
             FIELD_FRAME_START + ">=:frameStart AND " +
             FIELD_FRAME_START + "<:frameEnd")
     CompletableFuture<MappedAsyncPagingIterable<EntityStatisticsEntity>> getStatistics (
+            String page,
             Byte entityType,
             Byte frameType,
             Instant frameStart,
@@ -45,10 +47,12 @@ public interface EntityStatisticsOperator {
 
     @Update
     @Query("UPDATE ${qualifiedTableId}  SET entity_count = entity_count + :count, entity_size = entity_size + :size WHERE " +
+            FIELD_PAGE + "=:page AND " +
             FIELD_ENTITY_TYPE + "=:entityType AND " +
             FIELD_FRAME_TYPE + "=:frameType AND " +
             FIELD_FRAME_START + "=:frameStart")
     CompletableFuture<Void> update(
+            String page,
             Byte entityType,
             Byte frameType,
             Instant frameStart,

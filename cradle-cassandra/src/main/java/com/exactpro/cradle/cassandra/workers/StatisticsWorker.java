@@ -98,10 +98,10 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
 
     @Override
-    public void updateEntityBatchStatistics(BookId bookId, EntityType entityType, Collection<SerializedEntityMetadata> batchMetadata) {
+    public void updateEntityBatchStatistics(BookId bookId, BookCounterCaches.EntityKey entityKey, Collection<SerializedEntityMetadata> batchMetadata) {
         CounterCache counters = getBookCounterCaches(bookId)
                 .getEntityCounterCache()
-                .forEntityType(entityType);
+                .get(entityKey);
         updateCounters(counters, batchMetadata);
     }
 
@@ -118,21 +118,22 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
     }
 
 
-    private void persistEntityCounters(BookId bookId, EntityType entityType, FrameType frameType, TimeFrameCounter counter) {
+    private void persistEntityCounters(BookId bookId, BookCounterCaches.EntityKey entityKey, FrameType frameType, TimeFrameCounter counter) {
 
         final Consumer<Throwable> exceptionHandler = (Throwable e) -> {
             logger.error("Exception persisting entity counter, rescheduling", e);
             getBookCounterCaches(bookId)
                 .getEntityCounterCache()
-                .forEntityType(entityType)
+                .get(entityKey)
                 .getCounterSamples(frameType)
                 .update(counter.getFrameStart(), counter.getCounter());
         };
 
         try {
-            logger.trace("Persisting entity counter for {}:{}:{}:{}", bookId, entityType, frameType, counter.getFrameStart());
+            logger.trace("Persisting entity counter for {}:{}:{}:{}", bookId, entityKey, frameType, counter.getFrameStart());
             ops.getOperators(bookId).getEntityStatisticsOperator().update(
-                    entityType.getValue(),
+                    entityKey.getPage(),
+                    entityKey.getEntityType().getValue(),
                     frameType.getValue(),
                     counter.getFrameStart(),
                     counter.getCounter().getEntityCount(),
@@ -189,12 +190,23 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
                 // persist all cached entity counters
                 BookCounterCaches.EntityCounterCache entityCounters = bookCounterCaches.getEntityCounterCache();
-                for (FrameType frameType : FrameType.values()) {
-                    for (EntityType entityType : EntityType.values()) {
-                        Collection<TimeFrameCounter> counters = entityCounters.forEntityType(entityType).getCounterSamples(frameType).extractAll();
-                        counters.forEach(counter -> persistEntityCounters(bookId, entityType, frameType, counter));
+                Collection<BookCounterCaches.EntityKey> entityKeys = entityCounters.entityKeys();
+                for (BookCounterCaches.EntityKey key : entityKeys) {
+                    CounterCache counterCache = entityCounters.extract(key);
+                    if(counterCache == null)
+                        continue;
+                    for (FrameType frameType : FrameType.values()) {
+                        Collection<TimeFrameCounter> counters = counterCache.getCounterSamples(frameType).extractAll();
+                        counters.forEach(counter -> persistEntityCounters(bookId, key, frameType, counter));
                     }
+
                 }
+//                for (FrameType frameType : FrameType.values()) {
+//                    for (EntityType entityType : EntityType.values()) {
+//                        Collection<TimeFrameCounter> counters = entityCounters.get(entityType).getCounterSamples(frameType).extractAll();
+//                        counters.forEach(counter -> persistEntityCounters(bookId, entityType, frameType, counter));
+//                    }
+//                }
 
                 // persist all cached message counters
                 BookCounterCaches.MessageCounterCache messageCounters = bookCounterCaches.getMessageCounterCache();
