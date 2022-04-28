@@ -12,7 +12,6 @@ import com.exactpro.cradle.cassandra.dao.SessionStatisticsOperator;
 import com.exactpro.cradle.cassandra.iterators.DuplicateSkippingIterator;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
-import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.filters.FilterForGreater;
 
 import java.time.Instant;
@@ -45,7 +44,7 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
         to guarantee that unique elements will be returned
         across all iterators
      */
-    private final Set<Long> set;
+    private final Set<Long> registry;
     private PageInfo curPage;
 
     public SessionsStatisticsIteratorProvider (String requestInfo,
@@ -65,7 +64,7 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
         this.frameIntervals = frameIntervals;
         this.recordType = recordType;
 
-        this.set = new HashSet<>();
+        this.registry = new HashSet<>();
         /*
             Since intervals are created in strictly increasing, non-overlapping order
             the first page is set in regards to first interval
@@ -114,7 +113,7 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
                                         SessionStatisticsEntity::getSession,
                                         converter::getEntity,
                                         (str) -> Long.valueOf(str.hashCode()),
-                                        set,
+                                        registry,
                                         getRequestInfo());
                                 }, composingService);
         }

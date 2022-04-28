@@ -11,7 +11,7 @@ import java.util.function.Function;
 
 public class DuplicateSkippingIterator<R, E> extends ConvertingPagedIterator<R, E>{
 
-    private Set<Long> set;
+    private Set<Long> registry;
     private R preFetchedElement;
     private Function<R, Long> hashFunction;
 
@@ -22,11 +22,11 @@ public class DuplicateSkippingIterator<R, E> extends ConvertingPagedIterator<R, 
                                      Function<E, R> converter,
                                      Function<Row, E> mapper,
                                      Function<R, Long> hashFunction,
-                                     Set<Long> set,
+                                     Set<Long> registry,
                                      String queryInfo) {
         super(rows, selectExecutor, limit, returned, converter, mapper, queryInfo);
         this.hashFunction = hashFunction;
-        this.set = set == null ? new HashSet<>() : set;
+        this.registry = registry == null ? new HashSet<>() : registry;
         this.preFetchedElement = null;
     }
 
@@ -39,8 +39,8 @@ public class DuplicateSkippingIterator<R, E> extends ConvertingPagedIterator<R, 
         while (super.hasNext()) {
             R el = super.next();
 
-            if (!set.contains(hashFunction.apply(el))) {
-                set.add(hashFunction.apply(el));
+            if (!registry.contains(hashFunction.apply(el))) {
+                registry.add(hashFunction.apply(el));
                 preFetchedElement = el;
                 return true;
             }
@@ -59,9 +59,5 @@ public class DuplicateSkippingIterator<R, E> extends ConvertingPagedIterator<R, 
         preFetchedElement = null;
 
         return rtn;
-    }
-
-    public Set<Long> getSet() {
-        return set;
     }
 }
