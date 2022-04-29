@@ -269,16 +269,6 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
                 BookStatisticsRecordsCaches bookStatisticsRecordsCaches = getBookStatisticsRecordsCaches(bookId);
 
                 // persist all cached entity counters
-//                BookStatisticsRecordsCaches.EntityCounterCache entityCounters = bookStatisticsRecordsCaches.getEntityCounterCache();
-//                for (FrameType frameType : FrameType.values()) {
-//                    for (EntityType entityType : EntityType.values()) {
-//                        Collection<TimeFrameRecord<Counter>> counters = entityCounters.get(entityKey).getRecordSamples(frameType).extractAll();
-//                        counters.forEach(counter -> persistEntityCounters(bookId, entityType, frameType, counter));
-//                    }
-//                }
-
-                // persist all cached entity counters
-
                 processRecords(bookId, bookStatisticsRecordsCaches.getEntityCounterCache(), this::persistEntityCounters);
 
                 // persist all cached message counters
