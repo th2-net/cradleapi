@@ -59,6 +59,7 @@ public class BookOperators
 	private final IntervalOperator intervalOperator;
 	private final MessageStatisticsOperator messageStatisticsOperator;
 	private final EntityStatisticsOperator entityStatisticsOperator;
+	private final SessionStatisticsOperator sessionStatisticsOperator;
 
 	private final SessionEntityConverter sessionEntityConverter;
 	private final ScopeEntityConverter scopeEntityConverter;
@@ -69,6 +70,7 @@ public class BookOperators
 	private final PageScopeEntityConverter pageScopeEntityConverter;
 	private final MessageStatisticsEntityConverter messageStatisticsEntityConverter;
 	private final EntityStatisticsEntityConverter entityStatisticsEntityConverter;
+	private final SessionStatisticsEntityConverter sessionStatisticsEntityConverter;
 
 	private final LimitedCache<CachedSession> sessionsCache;
 	private final LimitedCache<CachedPageSession> pageSessionsCache;
@@ -92,6 +94,7 @@ public class BookOperators
 		pageScopesOperator = dataMapper.pageScopesOperator(keyspace, settings.getPageScopesTable());
 		messageStatisticsOperator = dataMapper.messageStatisticsOperator(keyspace, settings.getMessageStatisticsTable());
 		entityStatisticsOperator = dataMapper.entityStatisticsOperator(keyspace, settings.getEntityStatisticsTable());
+		sessionStatisticsOperator = dataMapper.sessionStatisticsOperator(keyspace, settings.getSessionStatisticsTable());
 
 		intervalOperator = dataMapper.intervalOperator(keyspace, settings.getIntervalsTable());
 
@@ -104,6 +107,7 @@ public class BookOperators
 		pageScopeEntityConverter = dataMapper.pageScopeEntityConverter();
 		messageStatisticsEntityConverter = dataMapper.messageStatisticsEntityConverter();
 		entityStatisticsEntityConverter = dataMapper.entityStatisticsEntityConverter();
+		sessionStatisticsEntityConverter = dataMapper.sessionStatisticsEntityConverter();
 
 		sessionsCache = new LimitedCache<>(settings.getSessionsCacheSize());
 		pageSessionsCache = new LimitedCache<>(settings.getPageSessionsCacheSize());
@@ -175,6 +179,10 @@ public class BookOperators
 		return entityStatisticsOperator;
 	}
 
+	public SessionStatisticsOperator getSessionStatisticsOperator() {
+		return sessionStatisticsOperator;
+	}
+
 	public SessionEntityConverter getSessionEntityConverter()
 	{
 		return sessionEntityConverter;
@@ -216,6 +224,10 @@ public class BookOperators
 
 	public EntityStatisticsEntityConverter getEntityStatisticsEntityConverter() {
 		return entityStatisticsEntityConverter;
+	}
+
+	public SessionStatisticsEntityConverter getSessionStatisticsEntityConverter() {
+		return sessionStatisticsEntityConverter;
 	}
 
 	public LimitedCache<CachedSession> getSessionsCache()

@@ -26,15 +26,19 @@ import java.util.Comparator;
 import static org.testng.Assert.assertEquals;
 
 public class CounterSamplesTest {
+    private final CounterTimeFrameRecordFactory recordFactory;
+    public CounterSamplesTest() {
+        recordFactory = new CounterTimeFrameRecordFactory();
+    }
     @Test
     void testEmptyExtractAll() {
-        CounterSamples samples = new CounterSamples(FrameType.TYPE_HOUR);
+        TimeFrameRecordSamples<Counter> samples = new TimeFrameRecordSamples<>(FrameType.TYPE_HOUR, recordFactory);
         assertEquals(samples.extractAll().size(), 0);
     }
 
     @Test
     void testDoubleExtractAll() {
-        CounterSamples samples = new CounterSamples(FrameType.TYPE_MINUTE);
+        TimeFrameRecordSamples<Counter> samples = new TimeFrameRecordSamples<>(FrameType.TYPE_MINUTE, recordFactory);
         Instant t1 = Instant.parse("2022-03-15T23:59:58.987Z");
         Instant t2 = Instant.parse("2022-03-15T23:59:12.000Z");
         Instant t3 = Instant.parse("2022-03-15T23:55:12.000Z");
@@ -48,16 +52,16 @@ public class CounterSamplesTest {
     }
 
 
-    private TimeFrameCounter[] extractAllAsSortedArray(CounterSamples samples) {
-        TimeFrameCounter[] data = samples.extractAll().toArray(new TimeFrameCounter[0]);
-        Arrays.sort(data, Comparator.comparing(TimeFrameCounter::getFrameStart));
+    private CounterTimeFrameRecord[] extractAllAsSortedArray(TimeFrameRecordSamples<Counter> samples) {
+        CounterTimeFrameRecord[] data = (CounterTimeFrameRecord[]) samples.extractAll().toArray(new CounterTimeFrameRecord[0]);
+        Arrays.sort(data, Comparator.comparing(CounterTimeFrameRecord::getFrameStart));
         return data;
     }
 
 
     @Test
     void testFrameType_100MS() {
-        CounterSamples samples = new CounterSamples(FrameType.TYPE_100MS);
+        TimeFrameRecordSamples<Counter> samples = new TimeFrameRecordSamples<>(FrameType.TYPE_100MS, recordFactory);
         Instant t1 = Instant.parse("2022-03-15T23:59:12.987Z");
         Instant t2 = Instant.parse("2022-03-15T23:59:12.900Z");
         Instant t3 = Instant.parse("2022-03-15T23:59:12.873Z");
@@ -69,20 +73,20 @@ public class CounterSamplesTest {
         samples.update(t2, c2);
         samples.update(t3, c3);
 
-        TimeFrameCounter[] data = extractAllAsSortedArray(samples);
+        CounterTimeFrameRecord[] data = extractAllAsSortedArray(samples);
         assertEquals(data.length, 2);
 
         assertEquals(data[0].getFrameStart(), Instant.parse("2022-03-15T23:59:12.800Z"));
-        assertEquals(data[0].getCounter(), c3);
+        assertEquals(data[0].getRecord(), c3);
 
         assertEquals(data[1].getFrameStart(), Instant.parse("2022-03-15T23:59:12.900Z"));
-        assertEquals(data[1].getCounter(), new Counter(c1.getEntityCount() + c2.getEntityCount(), c1.getEntitySize() + c2.getEntitySize()));
+        assertEquals(data[1].getRecord(), new Counter(c1.getEntityCount() + c2.getEntityCount(), c1.getEntitySize() + c2.getEntitySize()));
     }
 
 
     @Test
     void testFrameType_SECOND() {
-        CounterSamples samples = new CounterSamples(FrameType.TYPE_SECOND);
+        TimeFrameRecordSamples<Counter> samples = new TimeFrameRecordSamples<>(FrameType.TYPE_SECOND, recordFactory);
         Instant t1 = Instant.parse("2022-03-15T23:59:58.987Z");
         Instant t2 = Instant.parse("2022-03-15T23:59:12.230Z");
         Instant t3 = Instant.parse("2022-03-15T23:59:12.200Z");
@@ -97,22 +101,22 @@ public class CounterSamplesTest {
         samples.update(t3, c3);
         samples.update(t4, c4);
 
-        TimeFrameCounter[] data = extractAllAsSortedArray(samples);
+        CounterTimeFrameRecord[] data = extractAllAsSortedArray(samples);
         assertEquals(data.length, 3);
 
         assertEquals(data[0].getFrameStart(), Instant.parse("2022-03-15T13:59:12.000Z"));
-        assertEquals(data[0].getCounter(), c4);
+        assertEquals(data[0].getRecord(), c4);
 
         assertEquals(data[1].getFrameStart(), Instant.parse("2022-03-15T23:59:12.000Z"));
-        assertEquals(data[1].getCounter(), new Counter(c3.getEntityCount() + c2.getEntityCount(), c3.getEntitySize() + c2.getEntitySize()));
+        assertEquals(data[1].getRecord(), new Counter(c3.getEntityCount() + c2.getEntityCount(), c3.getEntitySize() + c2.getEntitySize()));
 
         assertEquals(data[2].getFrameStart(), Instant.parse("2022-03-15T23:59:58.000Z"));
-        assertEquals(data[2].getCounter(), c1);
+        assertEquals(data[2].getRecord(), c1);
     }
 
     @Test
     void testFrameType_MINUTE() {
-        CounterSamples samples = new CounterSamples(FrameType.TYPE_MINUTE);
+        TimeFrameRecordSamples<Counter> samples = new TimeFrameRecordSamples<>(FrameType.TYPE_MINUTE, recordFactory);
         Instant t1 = Instant.parse("2022-03-15T23:59:58.987Z");
         Instant t2 = Instant.parse("2022-03-15T23:59:12.000Z");
         Instant t3 = Instant.parse("2022-03-15T23:55:12.002Z");
@@ -124,19 +128,19 @@ public class CounterSamplesTest {
         samples.update(t2, c2);
         samples.update(t3, c3);
 
-        TimeFrameCounter[] data = extractAllAsSortedArray(samples);
+        CounterTimeFrameRecord[] data = extractAllAsSortedArray(samples);
         assertEquals(data.length, 2);
 
         assertEquals(data[0].getFrameStart(), Instant.parse("2022-03-15T23:55:00.000Z"));
-        assertEquals(data[0].getCounter(), c3);
+        assertEquals(data[0].getRecord(), c3);
 
         assertEquals(data[1].getFrameStart(), Instant.parse("2022-03-15T23:59:00.000Z"));
-        assertEquals(data[1].getCounter(), new Counter(c1.getEntityCount() + c2.getEntityCount(), c1.getEntitySize() + c2.getEntitySize()));
+        assertEquals(data[1].getRecord(), new Counter(c1.getEntityCount() + c2.getEntityCount(), c1.getEntitySize() + c2.getEntitySize()));
     }
 
     @Test
     void testFrameType_HOUR() {
-        CounterSamples samples = new CounterSamples(FrameType.TYPE_HOUR);
+        TimeFrameRecordSamples<Counter> samples = new TimeFrameRecordSamples<>(FrameType.TYPE_HOUR, recordFactory);
         Instant t1 = Instant.parse("2022-03-17T23:29:58.987Z");
         Instant t2 = Instant.parse("2022-03-15T23:29:12.000Z");
         Instant t3 = Instant.parse("2022-03-15T23:55:12.120Z");
@@ -148,13 +152,13 @@ public class CounterSamplesTest {
         samples.update(t2, c2);
         samples.update(t3, c3);
 
-        TimeFrameCounter[] data = extractAllAsSortedArray(samples);
+        CounterTimeFrameRecord[] data = extractAllAsSortedArray(samples);
         assertEquals(data.length, 2);
 
         assertEquals(data[0].getFrameStart(), Instant.parse("2022-03-15T23:00:00.000Z"));
-        assertEquals(data[0].getCounter(), new Counter(c3.getEntityCount() + c2.getEntityCount(), c3.getEntitySize() + c2.getEntitySize()));
+        assertEquals(data[0].getRecord(), new Counter(c3.getEntityCount() + c2.getEntityCount(), c3.getEntitySize() + c2.getEntitySize()));
 
         assertEquals(data[1].getFrameStart(), Instant.parse("2022-03-17T23:00:00.000Z"));
-        assertEquals(data[1].getCounter(), c1);
+        assertEquals(data[1].getRecord(), c1);
     }
 }

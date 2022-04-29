@@ -16,8 +16,6 @@
 
 package com.exactpro.cradle.cassandra.keyspaces;
 
-import java.io.IOException;
-
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
@@ -39,6 +37,7 @@ import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Supplier;
@@ -105,6 +104,8 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 
 		createMessageStatistics();
 		createEntityStatistics();
+
+		createSessionStatistics();
 	}
 
 
@@ -293,6 +294,17 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withClusteringColumn(EntityStatisticsEntity.FIELD_FRAME_START, DataTypes.TIMESTAMP)
 				.withColumn(EntityStatisticsEntity.FIELD_ENTITY_COUNT, DataTypes.COUNTER)
 				.withColumn(EntityStatisticsEntity.FIELD_ENTITY_SIZE, DataTypes.COUNTER));
+	}
+
+	private void createSessionStatistics () throws IOException
+	{
+		String tableName = getSettings().getSessionStatisticsTable();
+		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(SessionStatisticsEntity.FIELD_PAGE, DataTypes.TEXT)
+				.withPartitionKey(SessionStatisticsEntity.FIELD_RECORD_TYPE, DataTypes.TINYINT)
+				.withPartitionKey(SessionStatisticsEntity.FIELD_FRAME_TYPE, DataTypes.TINYINT)
+				.withClusteringColumn(SessionStatisticsEntity.FIELD_FRAME_START, DataTypes.TIMESTAMP)
+				.withClusteringColumn(SessionStatisticsEntity.FIELD_SESSION, DataTypes.TEXT));
 	}
 
 	@Override

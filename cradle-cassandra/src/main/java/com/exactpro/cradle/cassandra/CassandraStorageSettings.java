@@ -24,7 +24,7 @@ import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
 public class CassandraStorageSettings
 {
 	public static final String CRADLE_INFO_KEYSPACE = "cradle_info",
-			SCHEMA_VERSION = "4.2.0",
+			SCHEMA_VERSION = "4.3.0",
 			BOOKS_TABLE = "books",
 			BOOKS_STATUS_TABLE = "books_status",
 			PAGES_TABLE = "pages",
@@ -40,7 +40,8 @@ public class CassandraStorageSettings
 			LABELS_TABLE = "labels",
 			INTERVALS_TABLE = "intervals",
 			MESSAGE_STATISTICS_TABLE = "message_statistics",
-			ENTITY_STATISTICS_TABLE = "entity_statistics";
+			ENTITY_STATISTICS_TABLE = "entity_statistics",
+			SESSION_STATISTICS_TABLE = "session_statistics";
 	public static final long DEFAULT_TIMEOUT = 5000;
 	public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
 	public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1,
@@ -75,7 +76,8 @@ public class CassandraStorageSettings
 			labelsTable,
 			intervalsTable,
 			messageStatisticsTable,
-			entityStatisticsTable;
+			entityStatisticsTable,
+			sessionStatisticsTable;
 	private int keyspaceReplicationFactor;
 
 	private int maxParallelQueries,
@@ -130,6 +132,7 @@ public class CassandraStorageSettings
 		this.intervalsTable = INTERVALS_TABLE;
 		this.messageStatisticsTable = MESSAGE_STATISTICS_TABLE;
 		this.entityStatisticsTable = ENTITY_STATISTICS_TABLE;
+		this.sessionStatisticsTable = SESSION_STATISTICS_TABLE;
 
 		this.keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
 		this.maxParallelQueries = DEFAULT_MAX_PARALLEL_QUERIES;
@@ -171,6 +174,7 @@ public class CassandraStorageSettings
 		this.intervalsTable = settings.getIntervalsTable();
 		this.messageStatisticsTable = settings.getMessageStatisticsTable();
 		this.entityStatisticsTable = settings.getEntityStatisticsTable();
+		this.sessionStatisticsTable = settings.getSessionStatisticsTable();
 
 		this.keyspaceReplicationFactor = settings.getKeyspaceReplicationFactor();
 		this.maxParallelQueries = settings.getMaxParallelQueries();
@@ -388,6 +392,14 @@ public class CassandraStorageSettings
 	public void setEntityStatisticsTable(String entityStatisticsTable)
 	{
 		this.entityStatisticsTable = entityStatisticsTable;
+	}
+
+	public String getSessionStatisticsTable () {
+		return sessionStatisticsTable;
+	}
+
+	public void setSessionStatisticsTable (String sessionStatisticsTable) {
+		this.sessionStatisticsTable  = sessionStatisticsTable;
 	}
 
 	public int getKeyspaceReplicationFactor()
