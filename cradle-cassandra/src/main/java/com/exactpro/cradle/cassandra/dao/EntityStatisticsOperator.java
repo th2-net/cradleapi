@@ -17,15 +17,15 @@ package com.exactpro.cradle.cassandra.dao;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.datastax.oss.driver.api.mapper.annotations.Dao;
-import com.datastax.oss.driver.api.mapper.annotations.Query;
-import com.datastax.oss.driver.api.mapper.annotations.Update;
+import com.datastax.oss.driver.api.mapper.annotations.*;
 
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.dao.EntityStatisticsEntity.*;
+import static com.exactpro.cradle.cassandra.dao.MessageStatisticsEntity.FIELD_ENTITY_COUNT;
+import static com.exactpro.cradle.cassandra.dao.MessageStatisticsEntity.FIELD_ENTITY_SIZE;
 
 @Dao
 public interface EntityStatisticsOperator {
@@ -45,19 +45,14 @@ public interface EntityStatisticsOperator {
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes
     );
 
-    @Update
-    @Query("UPDATE ${qualifiedTableId}  SET entity_count = entity_count + :count, entity_size = entity_size + :size WHERE " +
-            FIELD_PAGE + "=:page AND " +
-            FIELD_ENTITY_TYPE + "=:entityType AND " +
-            FIELD_FRAME_TYPE + "=:frameType AND " +
-            FIELD_FRAME_START + "=:frameStart")
+    @Increment(entityClass = EntityStatisticsEntity.class)
     CompletableFuture<Void> update(
             String page,
             Byte entityType,
             Byte frameType,
             Instant frameStart,
-            long count,
-            long size,
+            @CqlName(FIELD_ENTITY_COUNT) long count,
+            @CqlName(FIELD_ENTITY_SIZE) long size,
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes
     );
 
