@@ -24,7 +24,7 @@ import java.util.concurrent.CompletionException;
 import java.util.zip.DataFormatException;
 
 import com.exactpro.cradle.*;
-import com.exactpro.cradle.cassandra.counters.BookCounterCaches;
+import com.exactpro.cradle.cassandra.counters.BookStatisticsRecordsCaches;
 import com.exactpro.cradle.cassandra.counters.EntityStatisticsCollector;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
@@ -101,7 +101,7 @@ public class EventsWorker extends Worker
 	{
 		TestEventOperator op = getBookOps(bookId).getTestEventOperator();
 		List<SerializedEntityMetadata> meta = entity.getSerializedEventMetadata();
-		BookCounterCaches.EntityKey key = new BookCounterCaches.EntityKey(entity.getPage(), EntityType.EVENT);
+		BookStatisticsRecordsCaches.EntityKey key = new BookStatisticsRecordsCaches.EntityKey(entity.getPage(), EntityType.EVENT);
 		return op.write(entity, writeAttrs)
 				.thenAccept(result -> entityStatisticsCollector.updateEntityBatchStatistics(bookId, key, meta))
 				.thenAcceptAsync(result -> updateEventWriteMetrics(entity, bookId));

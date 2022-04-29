@@ -125,6 +125,32 @@ public class BookStatisticsRecordsCaches {
         }
     }
 
+    public static class EntityKey implements RecordKey {
+        private final String page;
+        private final EntityType entityType;
+
+        public EntityKey(String page, EntityType entityType){
+            this.page = page;
+            this.entityType = entityType;
+        }
+        public String getPage() { return page; }
+        public EntityType getEntityType() { return entityType; }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            EntityKey entityKey = (EntityKey) o;
+            return Objects.equals(page, entityKey.page) && entityType == entityKey.entityType;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(page, entityType);
+        }
+    }
+
+
     public static class MessageCounterCache extends RecordCache<MessageKey, Counter> {
         public MessageCounterCache() {
             super(new CounterTimeFrameRecordFactory());
@@ -137,18 +163,8 @@ public class BookStatisticsRecordsCaches {
         }
     }
 
-    public static class EntityCounterCache {
-        private final Map<EntityType, TimeFrameRecordCache<Counter>> cache;
-
-        public EntityCounterCache() {
-            cache = new HashMap<>();
-            CounterTimeFrameRecordFactory recordFactory = new CounterTimeFrameRecordFactory();
-            for (EntityType t : EntityType.values())
-                cache.put(t, new TimeFrameRecordCache<>(recordFactory));
-        }
-        public TimeFrameRecordCache<Counter> forEntityType(EntityType entityType) {
-            return cache.get(entityType);
-        }
+    public static class EntityCounterCache extends RecordCache<EntityKey, Counter> {
+        public EntityCounterCache() { super(new CounterTimeFrameRecordFactory()); }
     }
 
     public static class RecordCache<K, V> {

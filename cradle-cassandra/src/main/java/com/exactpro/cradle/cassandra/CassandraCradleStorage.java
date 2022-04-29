@@ -685,7 +685,7 @@ public class CassandraCradleStorage extends CradleStorage
 		BookOperators operators = ops.getOperators(bookId);
 		MessageStatisticsIteratorProvider iteratorProvider = new MessageStatisticsIteratorProvider(queryInfo,
 				operators,
-				refreshBook(bookId.getName()),
+				bpc.getBook(bookId),
 				composingService,
 				selectExecutor,
 				sessionAlias,
