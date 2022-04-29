@@ -842,7 +842,7 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 
 		// Create requests for smaller frame types at the end
-		while (frameIndex > -1 && !frameType.getFrameStart(start).equals(start)) {
+		while (frameIndex > 0) {
 			/*
 				each step we should decrease granularity and fill
 				interval with smaller frames
@@ -987,7 +987,7 @@ public class CassandraCradleStorage extends CradleStorage
 		SessionsStatisticsIteratorProvider iteratorProvider = new SessionsStatisticsIteratorProvider(
 				queryInfo,
 				ops.getOperators(bookId),
-				refreshBook(bookId.getName()),
+				bpc.getBook(bookId),
 				composingService,
 				selectExecutor,
 				readAttrs,

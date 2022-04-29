@@ -102,7 +102,7 @@ public class CassandraCradleStorageTest {
     public void testOnlyHoursFramesInterval () {
         Instant start, end;
         start = Instant.parse("2022-03-22T17:00:00.025Z");
-        end  = Instant.parse("2022-03-24T20:00:00.420Z");
+        end  = Instant.parse("2022-03-24T20:00:00.000Z");
 
         List<FrameInterval> actual, expected;
         actual = CassandraCradleStorage.sliceInterval(new Interval(start, end));
@@ -199,6 +199,24 @@ public class CassandraCradleStorageTest {
         assertEquals(actual, expected);
     }
 
+    @Test
+    public void testMinuteSeconds () {
+
+        final Instant start = Instant.parse("2022-04-27T09:50:00.000Z");
+        final Instant end = Instant.parse("2022-04-27T09:59:58.000Z");
+
+        final List<FrameInterval> actual = CassandraCradleStorage.sliceInterval(new Interval(start, end));
+        List<FrameInterval> expected;
+        expected = new ArrayList<>();
+        expected.add(new FrameInterval(FrameType.TYPE_MINUTE,
+                new Interval(Instant.parse("2022-04-27T09:50:00.000Z"),
+                        Instant.parse("2022-04-27T09:59:00.000Z"))));
+        expected.add(new FrameInterval(FrameType.TYPE_SECOND,
+                new Interval(Instant.parse("2022-04-27T09:59:00.000Z"),
+                        Instant.parse("2022-04-27T09:59:58.000Z"))));
+
+        assertEquals(actual, expected);
+    }
 
     private void validateSlices(List<FrameInterval> actual,
                                 Instant start,

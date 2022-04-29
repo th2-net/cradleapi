@@ -82,8 +82,8 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
 
         FrameInterval frameInterval = frameIntervals.get(frameIndex);
 
-        Instant actualStart = frameInterval.getFrameType().getFrameStart(frameInterval.getInterval().getStart());
-        Instant actualEnd = frameInterval.getFrameType().getFrameEnd(frameInterval.getInterval().getEnd());
+        Instant actualStart = frameInterval.getInterval().getStart();
+        Instant actualEnd = frameInterval.getInterval().getEnd();
 
         SessionStatisticsOperator sessionStatisticsOperator = bookOperators.getSessionStatisticsOperator();
         SessionStatisticsEntityConverter converter = bookOperators.getSessionStatisticsEntityConverter();
