@@ -359,6 +359,26 @@ public class DummyCradleStorage extends CradleStorage
 	}
 
 	@Override
+	protected CompletableFuture<CradleResultSet<String>> doGetSessionAliasesAsync(BookId bookId, Interval interval) throws CradleStorageException {
+		return null;
+	}
+
+	@Override
+	protected CradleResultSet<String> doGetSessionAliases(BookId bookId, Interval interval) throws CradleStorageException {
+		return null;
+	}
+
+	@Override
+	protected CompletableFuture<CradleResultSet<String>> doGetSessionGroupsAsync(BookId bookId, Interval interval) throws CradleStorageException {
+		return null;
+	}
+
+	@Override
+	protected CradleResultSet<String> doGetSessionGroups(BookId bookId, Interval interval) throws CradleStorageException {
+		return null;
+	}
+
+	@Override
 	protected PageInfo doUpdatePageComment(BookId bookId, String pageName, String comment) throws CradleStorageException {
 		return null;
 	}

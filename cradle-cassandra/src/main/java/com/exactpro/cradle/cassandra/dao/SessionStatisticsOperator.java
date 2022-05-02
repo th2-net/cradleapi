@@ -15,12 +15,17 @@
  */
 package com.exactpro.cradle.cassandra.dao;
 
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
+import com.datastax.oss.driver.api.mapper.annotations.Query;
 
+import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+
+import static com.exactpro.cradle.cassandra.dao.SessionStatisticsEntity.*;
 
 @Dao
 public interface SessionStatisticsOperator {
@@ -28,5 +33,12 @@ public interface SessionStatisticsOperator {
     @Insert
     CompletableFuture<Void> write(SessionStatisticsEntity sessionStatisticsEntity,
                                   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+    @Query("SELECT * FROM ${qualifiedTableId}  WHERE " + FIELD_PAGE + "=:page AND " +
+            FIELD_RECORD_TYPE + "=:recordType AND " +
+            FIELD_FRAME_TYPE + "=:frameType AND " +
+            FIELD_FRAME_START + ">=:frameStart AND " +
+            FIELD_FRAME_START + "<:frameEnd")
+    CompletableFuture<MappedAsyncPagingIterable<SessionStatisticsEntity>> getStatistics (String page, Byte recordType, Byte frameType, Instant frameStart, Instant frameEnd, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 }
