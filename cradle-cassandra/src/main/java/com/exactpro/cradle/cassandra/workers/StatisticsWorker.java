@@ -104,9 +104,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
 
     private boolean bookCounterCachesNotEmpty() {
-        if (bookCounterCaches.isEmpty())
-            return false;
-        return bookCounterCaches.values().stream().filter(BookStatisticsRecordsCaches::notEmpty).findAny().isPresent();
+        return bookCounterCaches.values().stream().anyMatch(BookStatisticsRecordsCaches::notEmpty);
     }
 
 
