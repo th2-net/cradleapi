@@ -19,5 +19,5 @@ import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.exactpro.cradle.cassandra.EntityConverter;
 
 @Dao
-public interface SessionStatisticsEntityConverter extends EntityConverter<MessageStatisticsEntity> {
+public interface SessionStatisticsEntityConverter extends EntityConverter<SessionStatisticsEntity> {
 }
