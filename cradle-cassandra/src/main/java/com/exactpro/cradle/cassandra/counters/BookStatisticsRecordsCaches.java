@@ -52,6 +52,10 @@ public class BookStatisticsRecordsCaches {
         return sessionRecordCache;
     }
 
+    public boolean isEmpty() {
+        return !(messageCounterCache.isEmpty() && sessionRecordCache.isEmpty());
+    }
+
     public interface RecordKey {}
 
     public static class SessionRecordKey implements RecordKey {
@@ -175,6 +179,9 @@ public class BookStatisticsRecordsCaches {
             TimeFrameRecordCache<V> result = cache.get(key);
             cache.remove(key);
             return result;
+        }
+        public synchronized boolean isEmpty() {
+            return  cache.isEmpty();
         }
     }
 }
