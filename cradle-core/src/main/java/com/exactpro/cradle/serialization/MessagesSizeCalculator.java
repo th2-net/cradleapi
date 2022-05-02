@@ -109,8 +109,6 @@ public class MessagesSizeCalculator {
 			i++;
 		}
 
-//		sizes.total += 50;
-
 		return sizes;
 	}
 	
