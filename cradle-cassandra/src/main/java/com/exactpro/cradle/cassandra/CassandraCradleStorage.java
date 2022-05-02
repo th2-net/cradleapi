@@ -687,7 +687,7 @@ public class CassandraCradleStorage extends CradleStorage
 		BookOperators operators = ops.getOperators(bookId);
 		MessageStatisticsIteratorProvider iteratorProvider = new MessageStatisticsIteratorProvider(queryInfo,
 				operators,
-				refreshBook(bookId.getName()),
+				bpc.getBook(bookId),
 				composingService,
 				selectExecutor,
 				sessionAlias,
@@ -736,28 +736,20 @@ public class CassandraCradleStorage extends CradleStorage
 
 		logger.info("Getting {}", queryInfo);
 
-		Instant actualStart = frameType.getFrameStart(interval.getStart());
-		Instant actualEnd = frameType.getFrameEnd(interval.getEnd());
-
 		BookOperators operators = ops.getOperators(bookId);
-		EntityStatisticsOperator entityStatsOperator = operators.getEntityStatisticsOperator();
-		EntityStatisticsEntityConverter entityStatsConverter = operators.getEntityStatisticsEntityConverter();
 
-		return entityStatsOperator.getStatistics(
-						entityType.getValue(),
-						frameType.getValue(),
-						actualStart,
-						actualEnd,
-						readAttrs)
-				.thenApplyAsync(rs ->
-						new ConvertingPagedIterator<>(rs,
-								selectExecutor,
-								-1,
-								new AtomicInteger(0),
-								EntityStatisticsEntity::toCounterSample,
-								entityStatsConverter::getEntity, queryInfo))
-				// Iterator provider should be null, since no several queries are needed
-				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, null));
+		EntityStatisticsIteratorProvider iteratorProvider = new EntityStatisticsIteratorProvider(queryInfo,
+						operators,
+						refreshBook(bookId.getName()),
+						composingService,
+						selectExecutor,
+						entityType,
+						frameType,
+						new FrameInterval(frameType, interval),
+						readAttrs);
+
+		return iteratorProvider.nextIterator()
+				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, iteratorProvider), composingService);
 	}
 
 	@Override
