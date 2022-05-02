@@ -52,7 +52,7 @@ public class BookStatisticsRecordsCaches {
         return sessionRecordCache;
     }
 
-    public boolean isEmpty() {
+    public boolean notEmpty() {
         return !(messageCounterCache.isEmpty() && entityCounterCache.isEmpty() && sessionRecordCache.isEmpty());
     }
 
@@ -201,7 +201,7 @@ public class BookStatisticsRecordsCaches {
         }
 
         public synchronized boolean isEmpty() {
-            return  cache.isEmpty();
+            return cache.isEmpty();
         }
     }
 }
