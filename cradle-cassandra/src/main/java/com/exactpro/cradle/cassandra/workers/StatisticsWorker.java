@@ -73,6 +73,19 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
         if (executorService == null)
             throw new IllegalStateException("Can not stop statistics worker as it is not started");
+
+        // ensure that cache is empty before executor service initiating shutdown
+        if (bookCounterCachesNotEmpty()) {
+            logger.info("Waiting statistics cache depletion");
+            while (bookCounterCachesNotEmpty())
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    logger.error("Interrupted while waiting statistics cache depletion");
+                }
+        }
+
+        // shut down executor service and wait for current job to complete
         logger.info("Shutting down StatisticsWorker executor");
         executorService.shutdown();
         try {
@@ -87,6 +100,11 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
     private BookStatisticsRecordsCaches getBookStatisticsRecordsCaches(BookId bookId) {
         return bookCounterCaches.computeIfAbsent(bookId, k -> new BookStatisticsRecordsCaches(bookId));
+    }
+
+
+    private boolean bookCounterCachesNotEmpty() {
+        return bookCounterCaches.values().stream().anyMatch(BookStatisticsRecordsCaches::notEmpty);
     }
 
 

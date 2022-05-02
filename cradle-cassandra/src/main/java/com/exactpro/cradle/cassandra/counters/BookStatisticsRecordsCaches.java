@@ -52,6 +52,10 @@ public class BookStatisticsRecordsCaches {
         return sessionRecordCache;
     }
 
+    public boolean notEmpty() {
+        return !(messageCounterCache.isEmpty() && entityCounterCache.isEmpty() && sessionRecordCache.isEmpty());
+    }
+
     public interface RecordKey {}
 
     public static class SessionRecordKey implements RecordKey {
@@ -90,7 +94,7 @@ public class BookStatisticsRecordsCaches {
     }
 
 
-    public static class MessageKey implements RecordKey{
+    public static class MessageKey implements RecordKey {
         private final String page;
         private final String sessionAlias;
         private final String direction;
@@ -100,7 +104,9 @@ public class BookStatisticsRecordsCaches {
             this.direction = direction;
         }
 
-        public String getPage() { return page; }
+        public String getPage() {
+            return page;
+        }
 
         public String getSessionAlias() {
             return sessionAlias;
@@ -183,13 +189,19 @@ public class BookStatisticsRecordsCaches {
         public synchronized void put(K key, TimeFrameRecordCache<V> recordCache) {
             cache.put(key, recordCache);
         }
+
         public synchronized TimeFrameRecordCache<V> get(K key) {
             return cache.computeIfAbsent(key, k -> new TimeFrameRecordCache<>(recordFactory));
         }
+
         public synchronized TimeFrameRecordCache<V> extract(K key) {
             TimeFrameRecordCache<V> result = cache.get(key);
             cache.remove(key);
             return result;
+        }
+
+        public synchronized boolean isEmpty() {
+            return cache.isEmpty();
         }
     }
 }
