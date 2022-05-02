@@ -91,12 +91,16 @@ public class BookStatisticsRecordsCaches {
 
 
     public static class MessageKey implements RecordKey{
+        private final String page;
         private final String sessionAlias;
         private final String direction;
-        public MessageKey(String sessionAlias, String direction) {
+        public MessageKey(String page, String sessionAlias, String direction) {
+            this.page = page;
             this.sessionAlias = sessionAlias;
             this.direction = direction;
         }
+
+        public String getPage() { return page; }
 
         public String getSessionAlias() {
             return sessionAlias;
@@ -106,23 +110,18 @@ public class BookStatisticsRecordsCaches {
             return direction;
         }
 
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
-            if (!(o instanceof MessageKey)) return false;
-
+            if (o == null || getClass() != o.getClass()) return false;
             MessageKey that = (MessageKey) o;
-
-            if (!Objects.equals(sessionAlias, that.sessionAlias))
-                return false;
-            return Objects.equals(direction, that.direction);
+            return Objects.equals(page, that.page) && Objects.equals(sessionAlias, that.sessionAlias) && Objects.equals(direction, that.direction);
         }
 
         @Override
         public int hashCode() {
-            int result = sessionAlias != null ? sessionAlias.hashCode() : 0;
-            result = 31 * result + (direction != null ? direction.hashCode() : 0);
-            return result;
+            return Objects.hash(page, sessionAlias, direction);
         }
     }
 

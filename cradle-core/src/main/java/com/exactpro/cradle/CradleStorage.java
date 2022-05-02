@@ -971,7 +971,7 @@ public abstract class CradleStorage
 																			   Direction direction,
 																			   FrameType frameType,
 																			   Interval interval) throws CradleStorageException {
-		return doGetMessageCountersAsync(bookId, sessionAlias, direction, frameType, interval);
+		return doGetMessageCountersAsync(bookId,  sessionAlias, direction, frameType, interval);
 	}
 
 	/**
@@ -1085,9 +1085,11 @@ public abstract class CradleStorage
 	 * @throws IOException if there is a problem with input/output
 	 */
 	public Counter getMessageCount (BookId bookId,
+									String page,
 									String sessionAlias,
 									Direction direction,
 									Interval interval) throws CradleStorageException, IOException {
+
 		return doGetMessageCount(bookId, sessionAlias, direction, interval);
 	}
 
