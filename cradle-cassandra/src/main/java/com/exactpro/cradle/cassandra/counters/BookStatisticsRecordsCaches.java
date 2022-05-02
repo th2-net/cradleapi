@@ -95,12 +95,16 @@ public class BookStatisticsRecordsCaches {
 
 
     public static class MessageKey implements RecordKey{
+        private final String page;
         private final String sessionAlias;
         private final String direction;
-        public MessageKey(String sessionAlias, String direction) {
+        public MessageKey(String page, String sessionAlias, String direction) {
+            this.page = page;
             this.sessionAlias = sessionAlias;
             this.direction = direction;
         }
+
+        public String getPage() { return page; }
 
         public String getSessionAlias() {
             return sessionAlias;
@@ -110,25 +114,46 @@ public class BookStatisticsRecordsCaches {
             return direction;
         }
 
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
-            if (!(o instanceof MessageKey)) return false;
-
+            if (o == null || getClass() != o.getClass()) return false;
             MessageKey that = (MessageKey) o;
-
-            if (!Objects.equals(sessionAlias, that.sessionAlias))
-                return false;
-            return Objects.equals(direction, that.direction);
+            return Objects.equals(page, that.page) && Objects.equals(sessionAlias, that.sessionAlias) && Objects.equals(direction, that.direction);
         }
 
         @Override
         public int hashCode() {
-            int result = sessionAlias != null ? sessionAlias.hashCode() : 0;
-            result = 31 * result + (direction != null ? direction.hashCode() : 0);
-            return result;
+            return Objects.hash(page, sessionAlias, direction);
         }
     }
+
+    public static class EntityKey implements RecordKey {
+        private final String page;
+        private final EntityType entityType;
+
+        public EntityKey(String page, EntityType entityType){
+            this.page = page;
+            this.entityType = entityType;
+        }
+        public String getPage() { return page; }
+        public EntityType getEntityType() { return entityType; }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            EntityKey entityKey = (EntityKey) o;
+            return Objects.equals(page, entityKey.page) && entityType == entityKey.entityType;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(page, entityType);
+        }
+    }
+
 
     public static class MessageCounterCache extends RecordCache<MessageKey, Counter> {
         public MessageCounterCache() {
@@ -142,18 +167,8 @@ public class BookStatisticsRecordsCaches {
         }
     }
 
-    public static class EntityCounterCache {
-        private final Map<EntityType, TimeFrameRecordCache<Counter>> cache;
-
-        public EntityCounterCache() {
-            cache = new HashMap<>();
-            CounterTimeFrameRecordFactory recordFactory = new CounterTimeFrameRecordFactory();
-            for (EntityType t : EntityType.values())
-                cache.put(t, new TimeFrameRecordCache<>(recordFactory));
-        }
-        public TimeFrameRecordCache<Counter> forEntityType(EntityType entityType) {
-            return cache.get(entityType);
-        }
+    public static class EntityCounterCache extends RecordCache<EntityKey, Counter> {
+        public EntityCounterCache() { super(new CounterTimeFrameRecordFactory()); }
     }
 
     public static class RecordCache<K, V> {

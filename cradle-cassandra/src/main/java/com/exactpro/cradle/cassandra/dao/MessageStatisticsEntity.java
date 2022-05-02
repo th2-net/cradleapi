@@ -27,12 +27,14 @@ import java.time.Instant;
 
 @Entity
 public class MessageStatisticsEntity {
+    public static final String FIELD_PAGE = "page";
     public static final String FIELD_SESSION_ALIAS = "session_alias";
     public static final String FIELD_DIRECTION = "direction";
     public static final String FIELD_FRAME_TYPE = "frame_type";
     public static final String FIELD_FRAME_START = "frame_start";
     public static final String FIELD_ENTITY_COUNT = "entity_count";
     public static final String FIELD_ENTITY_SIZE = "entity_size";
+    private String page;
     private String sessionAlias;
     private String direction;
     private Byte frameType;
@@ -48,6 +50,14 @@ public class MessageStatisticsEntity {
     }
 
     @PartitionKey(0)
+    @CqlName(FIELD_PAGE)
+    public String getPage() {
+        return page;
+    }
+
+    public void setPage(String page) { this.page = page; }
+
+    @PartitionKey(1)
     @CqlName(FIELD_SESSION_ALIAS)
     public String getSessionAlias() {
         return sessionAlias;
@@ -57,7 +67,7 @@ public class MessageStatisticsEntity {
         this.sessionAlias = sessionAlias;
     }
 
-    @PartitionKey(1)
+    @PartitionKey(2)
     @CqlName(FIELD_DIRECTION)
     public String getDirection() {
         return direction;
@@ -67,7 +77,7 @@ public class MessageStatisticsEntity {
         this.direction = direction;
     }
 
-    @PartitionKey(2)
+    @PartitionKey(3)
     @CqlName(FIELD_FRAME_TYPE)
     public Byte getFrameType() {
         return frameType;
@@ -77,7 +87,7 @@ public class MessageStatisticsEntity {
         this.frameType = frameType;
     }
 
-    @ClusteringColumn(3)
+    @ClusteringColumn(4)
     @CqlName(FIELD_FRAME_START)
     public Instant getFrameStart() {
         return frameStart;

@@ -122,23 +122,23 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
 
     @Override
-    public void updateEntityBatchStatistics(BookId bookId, EntityType entityType, Collection<SerializedEntityMetadata> batchMetadata) {
+    public void updateEntityBatchStatistics(BookId bookId, BookStatisticsRecordsCaches.EntityKey entityKey, Collection<SerializedEntityMetadata> batchMetadata) {
         TimeFrameRecordCache<Counter> counters = getBookStatisticsRecordsCaches(bookId)
                 .getEntityCounterCache()
-                .forEntityType(entityType);
+                .get(entityKey);
         updateCounters(counters, batchMetadata);
     }
 
 
     @Override
-    public void updateMessageBatchStatistics(BookId bookId, String sessionAlias, String direction, Collection<SerializedEntityMetadata> batchMetadata) {
+    public void updateMessageBatchStatistics(BookId bookId, String page, String sessionAlias, String direction, Collection<SerializedEntityMetadata> batchMetadata) {
         TimeFrameRecordCache<Counter> counters = getBookStatisticsRecordsCaches(bookId)
                 .getMessageCounterCache()
-                .get(new BookStatisticsRecordsCaches.MessageKey(sessionAlias, direction));
+                .get(new BookStatisticsRecordsCaches.MessageKey(page, sessionAlias, direction));
         updateCounters(counters, batchMetadata);
-
+        BookStatisticsRecordsCaches.EntityKey key = new BookStatisticsRecordsCaches.EntityKey(page, EntityType.MESSAGE);
         // update entity statistics separately
-        updateEntityBatchStatistics(bookId, EntityType.MESSAGE, batchMetadata);
+        updateEntityBatchStatistics(bookId, key, batchMetadata);
     }
 
     @Override
@@ -155,21 +155,22 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
     }
 
 
-    private void persistEntityCounters(BookId bookId, EntityType entityType, FrameType frameType, TimeFrameRecord<Counter> counter) {
+    private void persistEntityCounters(BookId bookId, BookStatisticsRecordsCaches.EntityKey entityKey, FrameType frameType, TimeFrameRecord<Counter> counter) {
 
         final Consumer<Throwable> exceptionHandler = (Throwable e) -> {
             logger.error("Exception persisting entity counter, rescheduling", e);
             getBookStatisticsRecordsCaches(bookId)
                 .getEntityCounterCache()
-                .forEntityType(entityType)
+                .get(entityKey)
                 .getRecordSamples(frameType)
                 .update(counter.getFrameStart(), counter.getRecord());
         };
 
         try {
-            logger.trace("Persisting entity counter for {}:{}:{}:{}", bookId, entityType, frameType, counter.getFrameStart());
+            logger.trace("Persisting entity counter for {}:{}:{}:{}", bookId, entityKey, frameType, counter.getFrameStart());
             ops.getOperators(bookId).getEntityStatisticsOperator().update(
-                    entityType.getValue(),
+                    entityKey.getPage(),
+                    entityKey.getEntityType().getValue(),
                     frameType.getValue(),
                     counter.getFrameStart(),
                     counter.getRecord().getEntityCount(),
@@ -183,6 +184,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
             exceptionHandler.accept(e);
         }
     }
+
 
 
     private void persistMessageCounters(BookId bookId, BookStatisticsRecordsCaches.MessageKey key, FrameType frameType, TimeFrameRecord<Counter> counter) {
@@ -199,6 +201,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
         try {
             logger.trace("Persisting message counter for {}:{}:{}:{}:{}", bookId, key.getSessionAlias(), key.getDirection(), frameType, counter.getFrameStart());
             ops.getOperators(bookId).getMessageStatisticsOperator().update(
+                    key.getPage(),
                     key.getSessionAlias(),
                     key.getDirection(),
                     frameType.getValue(),
@@ -287,13 +290,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
                 BookStatisticsRecordsCaches bookStatisticsRecordsCaches = getBookStatisticsRecordsCaches(bookId);
 
                 // persist all cached entity counters
-                BookStatisticsRecordsCaches.EntityCounterCache entityCounters = bookStatisticsRecordsCaches.getEntityCounterCache();
-                for (FrameType frameType : FrameType.values()) {
-                    for (EntityType entityType : EntityType.values()) {
-                        Collection<TimeFrameRecord<Counter>> counters = entityCounters.forEntityType(entityType).getRecordSamples(frameType).extractAll();
-                        counters.forEach(counter -> persistEntityCounters(bookId, entityType, frameType, counter));
-                    }
-                }
+                processRecords(bookId, bookStatisticsRecordsCaches.getEntityCounterCache(), this::persistEntityCounters);
 
                 // persist all cached message counters
                 processRecords(bookId, bookStatisticsRecordsCaches.getMessageCounterCache(), this::persistMessageCounters);
