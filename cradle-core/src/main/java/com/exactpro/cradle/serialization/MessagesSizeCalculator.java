@@ -18,6 +18,7 @@ package com.exactpro.cradle.serialization;
 
 import com.exactpro.cradle.messages.CradleMessage;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Map;
 
@@ -67,7 +68,7 @@ public class MessagesSizeCalculator {
 	}
 
 	private static int lenStr(String str) {
-		return str != null ? str.length() : 0;
+		return str != null ? str.getBytes(StandardCharsets.UTF_8).length : 0;
 	}
 
 	public static SerializationBatchSizes calculateMessageBatchSize(Collection<? extends CradleMessage> message) {
