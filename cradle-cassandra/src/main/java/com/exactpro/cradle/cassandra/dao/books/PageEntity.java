@@ -41,6 +41,7 @@ public class PageEntity
 	public static final String FIELD_COMMENT = "comment";
 	public static final String FIELD_END_DATE = "end_date";
 	public static final String FIELD_END_TIME = "end_time";
+	public static final String FIELD_UPDATED = "updated";
 	public static final String FIELD_REMOVED = "removed";
 	@PartitionKey(0)
 	@CqlName(FIELD_PART)
@@ -65,7 +66,10 @@ public class PageEntity
 	
 	@CqlName(FIELD_END_TIME)
 	private LocalTime endTime;
-	
+
+	@CqlName(FIELD_UPDATED)
+	private Instant updated;
+
 	@CqlName(FIELD_REMOVED)
 	private Instant removed;
 	
@@ -210,8 +214,15 @@ public class PageEntity
   		setEndTime(ldt.toLocalTime());
 		}
 	}
-	
-	
+
+	public Instant getUpdated() {
+		return updated;
+	}
+
+	public void setUpdated(Instant updated) {
+		this.updated = updated;
+	}
+
 	public Instant getRemoved()
 	{
 		return removed;
@@ -225,6 +236,6 @@ public class PageEntity
 	
 	public PageInfo toPageInfo()
 	{
-		return new PageInfo(new PageId(new BookId(part), name), getStartTimestamp(), getEndTimestamp(), getComment(), getRemoved());
+		return new PageInfo(new PageId(new BookId(part), name), getStartTimestamp(), getEndTimestamp(), getComment(), getUpdated(), getRemoved());
 	}
 }

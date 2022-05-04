@@ -120,6 +120,7 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withColumn(PageEntity.FIELD_COMMENT, DataTypes.TEXT)
 				.withColumn(PageEntity.FIELD_END_DATE, DataTypes.DATE)
 				.withColumn(PageEntity.FIELD_END_TIME, DataTypes.TIME)
+				.withColumn(PageEntity.FIELD_UPDATED, DataTypes.TIMESTAMP)
 				.withColumn(PageEntity.FIELD_REMOVED, DataTypes.TIMESTAMP));
 	}
 	
