@@ -951,6 +951,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 		pageNameEntity.setComment(comment);
 		pageEntity.setComment(comment);
+		pageEntity.setUpdated(Instant.now());
 		try {
 			pageNameOperator.update(pageNameEntity, readAttrs);
 			pageOperator.update(pageEntity, readAttrs);
@@ -979,6 +980,7 @@ public class CassandraCradleStorage extends CradleStorage
 			throw new CradleStorageException(String.format("Inconsistent data for page \"%s\" in book %s", oldPageName, bookId.getName()));
 
 		pageEntity.setName(newPageName);
+		pageEntity.setUpdated(Instant.now());
 		pageNameEntity.setName(newPageName);
 		pageNameOperator.remove(bookId.getName(), oldPageName, readAttrs);
 
