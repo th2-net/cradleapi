@@ -24,16 +24,18 @@ public class BookToAdd
 {
 	private final String name;
 	private final Instant created;
-	private final String firstPageName;
 	private String fullName, 
 			desc, 
 			firstPageComment;
-	
-	public BookToAdd(String name, Instant created, String firstPageName)
+
+	public BookToAdd(String name){
+		this(name, Instant.now());
+	}
+
+	public BookToAdd(String name, Instant created)
 	{
 		this.name = StringUtils.lowerCase(name);
 		this.created = created;
-		this.firstPageName = firstPageName;
 	}
 	
 	
@@ -46,12 +48,7 @@ public class BookToAdd
 	{
 		return created;
 	}
-	
-	public String getFirstPageName()
-	{
-		return firstPageName;
-	}
-	
+
 	
 	public String getFullName()
 	{

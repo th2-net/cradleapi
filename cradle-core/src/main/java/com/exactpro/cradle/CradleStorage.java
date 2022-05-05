@@ -276,7 +276,6 @@ public abstract class CradleStorage
 	public BookInfo addBook(BookToAdd book) throws CradleStorageException, IOException
 	{
 		BookPagesNamesChecker.validateBookName(book.getName());
-		BookPagesNamesChecker.validatePageName(book.getFirstPageName());
 
 		BookId id = new BookId(book.getName());
 		logger.info("Adding book '{}' to storage", id);
@@ -287,9 +286,7 @@ public abstract class CradleStorage
 		BookInfo newBook = new BookInfo(id, book.getFullName(), book.getDesc(), book.getCreated(), null);
 		getBookCache().updateCachedBook(newBook);
 		logger.info("Book '{}' has been added to storage", id);
-		
-		newBook = addPage(id, book.getFirstPageName(), book.getCreated(), book.getFirstPageComment());
-		getBookCache().updateCachedBook(newBook);
+
 
 		return newBook;
 	}

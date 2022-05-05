@@ -30,7 +30,6 @@ import com.exactpro.cradle.utils.CradleStorageException;
 public class CradleStorageTest
 {
 	private final String BOOK = "Book1",
-			PAGE = "Page1",
 			SCOPE = "Scope1",
 			EVENT_ID = "Event1";
 	private final BookId BOOK_ID = new BookId(BOOK);
@@ -44,7 +43,7 @@ public class CradleStorageTest
 	{
 		storage = new DummyCradleStorage();
 		storage.init(false);
-		storage.addBook(new BookToAdd(BOOK, START_TIMESTAMP, PAGE));
+		storage.addBook(new BookToAdd(BOOK, START_TIMESTAMP));
 	}
 	
 	@DataProvider(name = "invalid events")
