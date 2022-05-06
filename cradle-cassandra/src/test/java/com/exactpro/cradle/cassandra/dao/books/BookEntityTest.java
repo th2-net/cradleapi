@@ -42,7 +42,7 @@ public class BookEntityTest
 	@Test(dataProvider = "nameProvider")
 	public void keyspaceNameTest(String name, String keyspaceName)
 	{
-		BookEntity entity = new BookEntity(new BookToAdd(name, Instant.now(), "firstPage"), "Test Version");
+		BookEntity entity = new BookEntity(new BookToAdd(name), "Test Version");
 		assertEquals(entity.getKeyspaceName(), keyspaceName);
 	}
 
