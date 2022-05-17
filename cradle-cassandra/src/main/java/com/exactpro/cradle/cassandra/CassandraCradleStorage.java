@@ -148,6 +148,8 @@ public class CassandraCradleStorage extends CradleStorage
 					.setTimeout(timeout)
 					.setPageSize(resultPageSize);
 			ops = createOperators(connection.getSession(), settings);
+			bookCache = new ReadThroughBookCache(ops, readAttrs, settings.getSchemaVersion());
+			bpc = new BookAndPageChecker(getBookCache());
 
 
 			statisticsWorker = new StatisticsWorker(ops, writeAttrs, settings.getCounterPersistanceInterval());
@@ -155,8 +157,6 @@ public class CassandraCradleStorage extends CradleStorage
 			eventsWorker = new EventsWorker(ws, statisticsWorker);
 			messagesWorker = new MessagesWorker(ws, statisticsWorker, statisticsWorker);
 			statisticsWorker.start();
-
-			bookCache = new ReadThroughBookCache(ops, readAttrs, settings.getSchemaVersion());
 		}
 		catch (Exception e)
 		{

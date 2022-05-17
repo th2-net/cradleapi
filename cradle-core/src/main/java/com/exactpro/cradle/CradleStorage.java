@@ -222,7 +222,10 @@ public abstract class CradleStorage
 		logger.info("Initializing storage");
 		
 		doInit(prepareStorage);
-		bpc = new BookAndPageChecker(getBookCache());
+		// In case it did not get initialized in doInit
+		if (bpc == null) {
+			bpc = new BookAndPageChecker(getBookCache());
+		}
 		initialized = true;
 		logger.info("Storage initialized");
 	}

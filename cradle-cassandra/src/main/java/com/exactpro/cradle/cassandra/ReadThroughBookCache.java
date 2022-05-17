@@ -51,14 +51,11 @@ public class ReadThroughBookCache implements BookCache {
     }
 
     public BookInfo getBook (BookId bookId) throws CradleStorageException {
-        if (!books.containsKey(bookId)) {
-            logger.info("Book '{}' is absent in cache, trying to get it from DB", bookId.getName());
-            try {
-                books.put(bookId, loadBook(bookId));
-            } catch (CradleStorageException e) {
-                logger.error("Could not load book named {}: {}", bookId.getName(), e);
-                throw e;
-            }
+        try {
+            books.putIfAbsent(bookId, loadBook(bookId));
+        } catch (CradleStorageException e) {
+            logger.error("Could not load book named {}: {}", bookId.getName(), e);
+            throw e;
         }
 
         return books.get(bookId);
