@@ -51,14 +51,20 @@ public class ReadThroughBookCache implements BookCache {
     }
 
     public BookInfo getBook (BookId bookId) throws CradleStorageException {
-        try {
-            books.putIfAbsent(bookId, loadBook(bookId));
-        } catch (CradleStorageException e) {
-            logger.error("Could not load book named {}: {}", bookId.getName(), e);
-            throw e;
+        BookInfo bookInfo = books.computeIfAbsent(bookId, bookId1 -> {
+                try {
+                    return loadBook(bookId1);
+                } catch (CradleStorageException e) {
+                    logger.error("Could not load book named {}: {}", bookId1.getName(), e);
+                    return null;
+                }
+            });
+
+        if (bookInfo == null) {
+            throw new CradleStorageException(String.format("Could not load book named %s", bookId.getName()));
         }
 
-        return books.get(bookId);
+        return bookInfo;
     }
 
     @Override
