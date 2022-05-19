@@ -32,15 +32,9 @@ public class BookAndPageChecker
 		this.bookCache = bookCache;
 	}
 	
-	
 	public BookInfo getBook(BookId bookId) throws CradleStorageException
 	{
-		try {
-			return bookCache.getBook(bookId);
-		} catch (CradleStorageException e) {
-			// Book was not found
-			throw e;
-		}
+		return bookCache.getBook(bookId);
 	}
 
 	public boolean checkBook (BookId bookId) {
