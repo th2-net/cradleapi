@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -273,7 +274,7 @@ public class MessagesWorker extends Worker
 		BookOperators bookOps = getBookOps(bookId);
 		MessageBatchOperator mbOperator = bookOps.getMessageBatchOperator();
 		List<SerializedEntityMetadata> meta = entity.getSerializedMessageMetadata();
-
+		entity.setRecDate(Instant.now());
 		return mbOperator.write(entity, writeAttrs)
 				.thenAccept(result -> messageStatisticsCollector.updateMessageBatchStatistics(bookId, entity.getPage(), entity.getSessionAlias(), entity.getDirection(), meta))
 				.thenAcceptAsync(result -> sessionStatisticsCollector.updateSessionStatistics(bookId, entity.getPage(), SessionRecordType.SESSION, entity.getSessionAlias(), meta))

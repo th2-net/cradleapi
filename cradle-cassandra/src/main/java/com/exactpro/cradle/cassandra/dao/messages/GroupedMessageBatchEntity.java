@@ -46,8 +46,12 @@ public class GroupedMessageBatchEntity
 	public static final String FIELD_LAST_MESSAGE_TIME = "last_message_time";
 	public static final String FIELD_MESSAGE_COUNT = "message_count";
 	public static final String FIELD_LAST_SEQUENCE = "last_sequence";
+	public static final String  FIELD_REC_DATE = "rec_date";
 	private String group;
-	
+
+	@CqlName(FIELD_REC_DATE)
+	private Instant recDate;
+
 	@Transient
 	private final MessageBatchEntity batchEntity;
 
@@ -66,6 +70,7 @@ public class GroupedMessageBatchEntity
 	{
 		this.batchEntity = batchEntity;
 		this.group = group;
+		this.recDate = Instant.now();
 	}
 
 	@PartitionKey(0)
@@ -227,6 +232,14 @@ public class GroupedMessageBatchEntity
 	public void setLastSequence(long lastSequence)
 	{
 		batchEntity.setLastSequence(lastSequence);
+	}
+
+	public Instant getRecDate() {
+		return recDate;
+	}
+
+	public void setRecDate(Instant recDate) {
+		this.recDate = recDate;
 	}
 
 	@Transient
