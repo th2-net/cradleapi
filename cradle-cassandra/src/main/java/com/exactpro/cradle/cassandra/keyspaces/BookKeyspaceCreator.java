@@ -192,6 +192,7 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 				.withColumn(GroupedMessageBatchEntity.FIELD_LAST_MESSAGE_TIME, DataTypes.TIME)
 				.withColumn(GroupedMessageBatchEntity.FIELD_LAST_SEQUENCE, DataTypes.BIGINT)
 				.withColumn(GroupedMessageBatchEntity.FIELD_MESSAGE_COUNT, DataTypes.INT)
+				.withColumn(GroupedMessageBatchEntity.FIELD_REC_DATE, DataTypes.TIMESTAMP)
 				.withColumn(GroupedMessageBatchEntity.FIELD_COMPRESSED, DataTypes.BOOLEAN)
 				.withColumn(GroupedMessageBatchEntity.FIELD_LABELS, DataTypes.setOf(DataTypes.TEXT))
 				.withColumn(GroupedMessageBatchEntity.FIELD_CONTENT, DataTypes.BLOB));
