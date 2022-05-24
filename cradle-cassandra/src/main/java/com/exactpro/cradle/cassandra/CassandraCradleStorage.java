@@ -29,7 +29,6 @@ import com.exactpro.cradle.cassandra.dao.*;
 import com.exactpro.cradle.cassandra.dao.books.*;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
-import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.BookKeyspaceCreator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
@@ -148,7 +147,8 @@ public class CassandraCradleStorage extends CradleStorage
 					.setPageSize(resultPageSize);
 			ops = createOperators(connection.getSession(), settings);
 			bookCache = new ReadThroughBookCache(ops, readAttrs, settings.getSchemaVersion());
-			bpc = new BookAndPageChecker(getBookCache());
+			bpc = new BookAndPageChecker(getBookCache(), settings.getBookRefreshIntervalMillis());
+			bpc.start();
 
 
 			statisticsWorker = new StatisticsWorker(ops, writeAttrs, settings.getCounterPersistanceInterval());
@@ -166,6 +166,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected void doDispose() throws CradleStorageException
 	{
+		bpc.stop();
 		statisticsWorker.stop();
 		if (connection.isRunning())
 		{

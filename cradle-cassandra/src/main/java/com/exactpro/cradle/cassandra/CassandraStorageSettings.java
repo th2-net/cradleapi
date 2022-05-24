@@ -54,6 +54,7 @@ public class CassandraStorageSettings
 			DEFAULT_PAGE_SESSION_CACHE_SIZE = 100,
 			DEFAULT_PAGE_SCOPES_CACHE_SIZE = 100,
 			DEFAULT_COUNTER_PERSISTANE_INTERVAL_MS = 1000;
+	public static final long DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS = 60000;
 
 	private final NetworkTopologyStrategy networkTopologyStrategy;
 	private final long timeout;
@@ -94,6 +95,8 @@ public class CassandraStorageSettings
 	private long maxMessageBatchDurationLimit;
 
 	private SelectExecutionPolicy multiRowResultExecutionPolicy, singleRowResultExecutionPolicy;
+
+	private long bookRefreshIntervalMillis;
 
 	public CassandraStorageSettings()
 	{
@@ -147,6 +150,7 @@ public class CassandraStorageSettings
 		this.scopesCacheSize = DEFAULT_SCOPES_CACHE_SIZE;
 		this.pageScopesCacheSize = DEFAULT_PAGE_SCOPES_CACHE_SIZE;
 		this.counterPersistanceInterval = DEFAULT_COUNTER_PERSISTANE_INTERVAL_MS;
+		this.bookRefreshIntervalMillis = DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS;
 	}
 
 	public CassandraStorageSettings(CassandraStorageSettings settings)
@@ -192,6 +196,7 @@ public class CassandraStorageSettings
 		this.scopesCacheSize = settings.getScopesCacheSize();
 		this.pageScopesCacheSize = settings.getPageScopesCacheSize();
 		this.counterPersistanceInterval = settings.getCounterPersistanceInterval();
+		this.bookRefreshIntervalMillis = settings.getBookRefreshIntervalMillis();
 	}
 
 
@@ -572,5 +577,13 @@ public class CassandraStorageSettings
 	public void setMaxMessageBatchDurationLimit(long maxMessageBatchDurationLimit)
 	{
 		this.maxMessageBatchDurationLimit = maxMessageBatchDurationLimit;
+	}
+
+	public long getBookRefreshIntervalMillis() {
+		return bookRefreshIntervalMillis;
+	}
+
+	public void setBookRefreshIntervalMillis(long bookRefreshIntervalMillis) {
+		this.bookRefreshIntervalMillis = bookRefreshIntervalMillis;
 	}
 }
