@@ -110,41 +110,4 @@ public class BookManager
 		logger.debug("Refresher executor shutting down");
 		executorService.shutdown();
 	}
-
-	public BookInfo getBook(BookId bookId) throws CradleStorageException
-	{
-		return bookCache.getBook(bookId);
-	}
-
-	public boolean checkBook (BookId bookId) {
-		return bookCache.checkBook(bookId);
-	}
-	
-	public PageInfo findPage(BookId bookId, Instant timestamp) throws CradleStorageException
-	{
-		BookInfo book = getBook(bookId);
-		Instant now = Instant.now();
-		if (timestamp.isAfter(now))
-			throw new CradleStorageException("Timestamp "+timestamp+" is from future, now is "+now);
-		PageInfo page = book.findPage(timestamp);
-		if (page == null || (page.getEnded() != null && !timestamp.isBefore(page.getEnded())))  //If page.getEnded().equals(timestamp), timestamp is outside of page
-			throw new CradleStorageException("Book '"+bookId+"' has no page for timestamp "+timestamp);
-		return page;
-	}
-	
-	
-	public void checkPage(PageId pageId, BookId bookFromId) throws CradleStorageException
-	{
-		BookInfo book = getBook(bookFromId);
-		if (!bookFromId.equals(pageId.getBookId()))
-			throw new CradleStorageException("Requested book ("+bookFromId+") doesn't match book of requested page ("+pageId.getBookId()+")");
-		if (book.getPage(pageId) == null)
-			throw new CradleStorageException("Page '"+pageId+"' is unknown");
-	}
-	
-	public void checkPage(PageId pageId) throws CradleStorageException
-	{
-		if (getBook(pageId.getBookId()).getPage(pageId) == null)
-			throw new CradleStorageException("Page '"+pageId+"' is unknown");
-	}
 }

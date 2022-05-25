@@ -558,14 +558,14 @@ public class CassandraCradleStorage extends CradleStorage
 	protected long doGetLastSequence(String sessionAlias, Direction direction, BookId bookId)
 			throws CradleStorageException
 	{
-		return messagesWorker.getBoundarySequence(sessionAlias, direction, bookManager.getBook(bookId), false);
+		return messagesWorker.getBoundarySequence(sessionAlias, direction, getBookCache().getBook(bookId), false);
 	}
 
 	@Override
 	protected long doGetFirstSequence(String sessionAlias, Direction direction, BookId bookId)
 			throws CradleStorageException
 	{
-		return messagesWorker.getBoundarySequence(sessionAlias, direction, bookManager.getBook(bookId), true);
+		return messagesWorker.getBoundarySequence(sessionAlias, direction, getBookCache().getBook(bookId), true);
 	}
 
 	@Override
@@ -687,7 +687,7 @@ public class CassandraCradleStorage extends CradleStorage
 		BookOperators operators = ops.getOperators(bookId);
 		MessageStatisticsIteratorProvider iteratorProvider = new MessageStatisticsIteratorProvider(queryInfo,
 				operators,
-				bookManager.getBook(bookId),
+				getBookCache().getBook(bookId),
 				composingService,
 				selectExecutor,
 				sessionAlias,
@@ -887,7 +887,7 @@ public class CassandraCradleStorage extends CradleStorage
 		SessionsStatisticsIteratorProvider iteratorProvider = new SessionsStatisticsIteratorProvider(
 				queryInfo,
 				ops.getOperators(bookId),
-				bookManager.getBook(bookId),
+				getBookCache().getBook(bookId),
 				composingService,
 				selectExecutor,
 				readAttrs,
