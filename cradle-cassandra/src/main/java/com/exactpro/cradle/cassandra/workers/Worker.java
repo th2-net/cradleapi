@@ -17,7 +17,7 @@
 package com.exactpro.cradle.cassandra.workers;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.exactpro.cradle.BookAndPageChecker;
+import com.exactpro.cradle.BookCache;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.FetchParameters;
@@ -43,7 +43,7 @@ public abstract class Worker
 	protected final CassandraStorageSettings settings;
 	protected final CradleOperators ops;
 	protected final ExecutorService composingService;
-	protected final BookAndPageChecker bpc;
+	protected final BookCache bookCache;
 	protected final SelectQueryExecutor selectQueryExecutor;
 	protected final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
 			readAttrs;
@@ -53,7 +53,7 @@ public abstract class Worker
 		this.settings = workerSupplies.getSettings();
 		this.ops = workerSupplies.getOps();
 		this.composingService = workerSupplies.getComposingService();
-		this.bpc = workerSupplies.getBpc();
+		this.bookCache = workerSupplies.getBookCache();
 		this.selectQueryExecutor = workerSupplies.getSelectExecutor();
 		this.writeAttrs = workerSupplies.getWriteAttrs();
 		this.readAttrs = workerSupplies.getReadAttrs();
@@ -73,7 +73,7 @@ public abstract class Worker
 
 	protected BookInfo getBook(BookId bookId) throws CradleStorageException
 	{
-		return bpc.getBook(bookId);
+		return bookCache.getBook(bookId);
 	}
 
 	protected Function<BoundStatementBuilder, BoundStatementBuilder> composeReadAttrs(FetchParameters fetchParams)

@@ -152,7 +152,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 
 			statisticsWorker = new StatisticsWorker(ops, writeAttrs, settings.getCounterPersistanceInterval());
-			WorkerSupplies ws = new WorkerSupplies(settings, ops, composingService, bpc, selectExecutor, writeAttrs, readAttrs);
+			WorkerSupplies ws = new WorkerSupplies(settings, ops, composingService, bookCache, selectExecutor, writeAttrs, readAttrs);
 			eventsWorker = new EventsWorker(ws, statisticsWorker);
 			messagesWorker = new MessagesWorker(ws, statisticsWorker, statisticsWorker);
 			statisticsWorker.start();
