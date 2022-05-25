@@ -49,7 +49,7 @@ public class BookAndPageChecker
 			return;
 		}
 
-		executorService = Executors.newScheduledThreadPool(3);
+		executorService = Executors.newScheduledThreadPool(1);
 		logger.debug("Registered refresher task for cached books");
 		executorService.scheduleWithFixedDelay(new Refresher(bookCache), refreshIntervalMillis, refreshIntervalMillis, TimeUnit.MILLISECONDS);
 	}
