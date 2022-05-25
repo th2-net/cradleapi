@@ -55,7 +55,7 @@ public abstract class CradleStorage
 	public static final int DEFAULT_MAX_MESSAGE_BATCH_SIZE = 1024*1024,
 			DEFAULT_MAX_TEST_EVENT_BATCH_SIZE = DEFAULT_MAX_MESSAGE_BATCH_SIZE;
 
-	protected BookAndPageChecker bpc;
+	protected BookManager bookManager;
 	private volatile boolean initialized = false,
 			disposed = false;
 	protected final ExecutorService composingService;
@@ -223,8 +223,8 @@ public abstract class CradleStorage
 		
 		doInit(prepareStorage);
 		// In case it did not get initialized in doInit
-		if (bpc == null) {
-			bpc = new BookAndPageChecker(getBookCache());
+		if (bookManager == null) {
+			bookManager = new BookManager(getBookCache());
 		}
 		initialized = true;
 		logger.info("Storage initialized");
@@ -282,7 +282,7 @@ public abstract class CradleStorage
 
 		BookId id = new BookId(book.getName());
 		logger.info("Adding book '{}' to storage", id);
-		if (bpc.checkBook(id))
+		if (bookManager.checkBook(id))
 			throw new CradleStorageException("Book '"+id+"' is already present in storage");
 		
 		doAddBook(book, id);
@@ -383,7 +383,7 @@ public abstract class CradleStorage
 	public BookInfo refreshPages(BookId bookId) throws CradleStorageException, IOException
 	{
 		logger.info("Refreshing pages of book '{}'", bookId);
-		BookInfo book = bpc.getBook(bookId);
+		BookInfo book = bookManager.getBook(bookId);
 		Collection<PageInfo> pages = doLoadPages(bookId);
 		book = new BookInfo(book.getId(), book.getFullName(), book.getDesc(), book.getCreated(), pages);
 		getBookCache().updateCachedBook(book);
@@ -468,7 +468,7 @@ public abstract class CradleStorage
 	{
 		StoredMessageId id = batch.getId();
 		logger.debug("Storing message batch {}", id);
-		PageInfo page = bpc.findPage(id.getBookId(), id.getTimestamp());
+		PageInfo page = bookManager.findPage(id.getBookId(), id.getTimestamp());
 		doStoreMessageBatch(batch, page);
 		logger.debug("Message batch {} has been stored", id);
 	}
@@ -479,7 +479,7 @@ public abstract class CradleStorage
 	{
 		StoredMessageId id = batch.getId();
 		logger.debug("Storing message batch {} grouped by {}", id, groupName);
-		PageInfo page = bpc.findPage(id.getBookId(), id.getTimestamp());
+		PageInfo page = bookManager.findPage(id.getBookId(), id.getTimestamp());
 		doStoreGroupedMessageBatch(batch, page, groupName);
 		logger.debug("Message batch {} grouped by {} has been stored", id, groupName);
 	}
@@ -497,7 +497,7 @@ public abstract class CradleStorage
 	{
 		StoredMessageId id = batch.getId();
 		logger.debug("Storing message batch {} asynchronously", id);
-		PageInfo page = bpc.findPage(id.getBookId(), id.getTimestamp());
+		PageInfo page = bookManager.findPage(id.getBookId(), id.getTimestamp());
 		CompletableFuture<Void> result = doStoreMessageBatchAsync(batch, page);
 		result.whenCompleteAsync((r, error) -> {
 				if (error != null)
@@ -524,7 +524,7 @@ public abstract class CradleStorage
 		
 		StoredMessageId id = batch.getId();
 		logger.debug("Storing message batch {} grouped by {} asynchronously", id, groupName);
-		PageInfo page = bpc.findPage(id.getBookId(), id.getTimestamp());
+		PageInfo page = bookManager.findPage(id.getBookId(), id.getTimestamp());
 		CompletableFuture<Void> result = doStoreGroupedMessageBatchAsync(batch, page, groupName);
 		result.whenCompleteAsync((r, error) -> {
 			if (error != null)
@@ -546,7 +546,7 @@ public abstract class CradleStorage
 	{
 		StoredTestEventId id = event.getId();
 		logger.debug("Storing test event {}", id);
-		PageInfo page = bpc.findPage(id.getBookId(), id.getStartTimestamp());
+		PageInfo page = bookManager.findPage(id.getBookId(), id.getStartTimestamp());
 		
 		TestEventUtils.validateTestEvent(event);
 		
@@ -571,7 +571,7 @@ public abstract class CradleStorage
 	{
 		StoredTestEventId id = event.getId();
 		logger.debug("Storing test event {} asynchronously", id);
-		PageInfo page = bpc.findPage(id.getBookId(), id.getStartTimestamp());
+		PageInfo page = bookManager.findPage(id.getBookId(), id.getStartTimestamp());
 		
 		TestEventUtils.validateTestEvent(event);
 		
@@ -610,7 +610,7 @@ public abstract class CradleStorage
 	public final StoredMessage getMessage(StoredMessageId id) throws IOException, CradleStorageException
 	{
 		logger.debug("Getting message {}", id);
-		PageId pageId = bpc.findPage(id.getBookId(), id.getTimestamp()).getId();
+		PageId pageId = bookManager.findPage(id.getBookId(), id.getTimestamp()).getId();
 		StoredMessage result = doGetMessage(id, pageId);
 		logger.debug("Message {} got from page {}", id, pageId);
 		return result;
@@ -625,7 +625,7 @@ public abstract class CradleStorage
 	public final CompletableFuture<StoredMessage> getMessageAsync(StoredMessageId id) throws CradleStorageException
 	{
 		logger.debug("Getting message {} asynchronously", id);
-		PageId pageId = bpc.findPage(id.getBookId(), id.getTimestamp()).getId();
+		PageId pageId = bookManager.findPage(id.getBookId(), id.getTimestamp()).getId();
 		CompletableFuture<StoredMessage> result = doGetMessageAsync(id, pageId);
 		result.whenCompleteAsync((r, error) -> {
 				if (error != null)
@@ -647,7 +647,7 @@ public abstract class CradleStorage
 	public final StoredMessageBatch getMessageBatch(StoredMessageId id) throws IOException, CradleStorageException
 	{
 		logger.debug("Getting message batch by message ID {}", id);
-		PageId pageId = bpc.findPage(id.getBookId(), id.getTimestamp()).getId();
+		PageId pageId = bookManager.findPage(id.getBookId(), id.getTimestamp()).getId();
 		StoredMessageBatch result = doGetMessageBatch(id, pageId);
 		logger.debug("Message batch by message ID {} got from page {}", id, pageId);
 		return result;
@@ -662,7 +662,7 @@ public abstract class CradleStorage
 	protected final CompletableFuture<StoredMessageBatch> getMessageBatchAsync(StoredMessageId id) throws CradleStorageException
 	{
 		logger.debug("Getting message batch by message ID {} asynchronously", id);
-		PageId pageId = bpc.findPage(id.getBookId(), id.getTimestamp()).getId();
+		PageId pageId = bookManager.findPage(id.getBookId(), id.getTimestamp()).getId();
 		CompletableFuture<StoredMessageBatch> result = doGetMessageBatchAsync(id, pageId);
 		result.whenCompleteAsync((r, error) -> {
 				if (error != null)
@@ -686,7 +686,7 @@ public abstract class CradleStorage
 		if (!checkFilter(filter))
 			return new EmptyResultSet<>();
 		
-		BookInfo book = bpc.getBook(filter.getBookId());
+		BookInfo book = bookManager.getBook(filter.getBookId());
 		CradleResultSet<StoredMessage> result = doGetMessages(filter, book);
 		logger.debug("Got result set with messages filtered by {}", filter);
 		return result;
@@ -704,7 +704,7 @@ public abstract class CradleStorage
 		if (!checkFilter(filter))
 			return CompletableFuture.completedFuture(new EmptyResultSet<>());
 		
-		BookInfo book = bpc.getBook(filter.getBookId());
+		BookInfo book = bookManager.getBook(filter.getBookId());
 		CompletableFuture<CradleResultSet<StoredMessage>> result = doGetMessagesAsync(filter, book);
 		result.whenCompleteAsync((r, error) -> {
 				if (error != null)
@@ -729,7 +729,7 @@ public abstract class CradleStorage
 		if (!checkFilter(filter))
 			return new EmptyResultSet<>();
 		
-		BookInfo book = bpc.getBook(filter.getBookId());
+		BookInfo book = bookManager.getBook(filter.getBookId());
 		CradleResultSet<StoredMessageBatch> result = doGetMessageBatches(filter, book);
 		logger.debug("Got result set with message batches filtered by {}", filter);
 		return result;
@@ -749,7 +749,7 @@ public abstract class CradleStorage
 		logger.debug("Filtering grouped message batches by {}", filter);
 		checkAbstractFilter(filter);
 
-		BookInfo book = bpc.getBook(filter.getBookId());
+		BookInfo book = bookManager.getBook(filter.getBookId());
 		CradleResultSet<StoredMessageBatch> result = doGetGroupedMessageBatches(filter, book);
 		logger.debug("Got result set with grouped message batches filtered by {}", filter);
 		return result;
@@ -768,7 +768,7 @@ public abstract class CradleStorage
 		if (!checkFilter(filter))
 			return CompletableFuture.completedFuture(new EmptyResultSet<>());
 		
-		BookInfo book = bpc.getBook(filter.getBookId());
+		BookInfo book = bookManager.getBook(filter.getBookId());
 		CompletableFuture<CradleResultSet<StoredMessageBatch>> result = doGetMessageBatchesAsync(filter, book);
 		result.whenCompleteAsync((r, error) -> {
 				if (error != null)
@@ -791,7 +791,7 @@ public abstract class CradleStorage
 		logger.debug("Asynchronously getting grouped message batches filtered by {}", filter);
 		checkAbstractFilter(filter);
 		
-		BookInfo book = bpc.getBook(filter.getBookId());
+		BookInfo book = bookManager.getBook(filter.getBookId());
 		CompletableFuture<CradleResultSet<StoredMessageBatch>> result = doGetGroupedMessageBatchesAsync(filter, book);
 		result.whenCompleteAsync((r, error) -> {
 				if (error != null)
@@ -853,7 +853,7 @@ public abstract class CradleStorage
 	public final Collection<String> getSessionAliases(BookId bookId) throws IOException, CradleStorageException
 	{
 		logger.debug("Getting session aliases for book '{}'", bookId);
-		bpc.getBook(bookId);
+		bookManager.getBook(bookId);
 		Collection<String> result = doGetSessionAliases(bookId);
 		logger.debug("Session aliases for book '{}' got", bookId);
 		return result;
@@ -870,7 +870,7 @@ public abstract class CradleStorage
 	public final StoredTestEvent getTestEvent(StoredTestEventId id) throws IOException, CradleStorageException
 	{
 		logger.debug("Getting test event {}", id);
-		PageId pageId = bpc.findPage(id.getBookId(), id.getStartTimestamp()).getId();
+		PageId pageId = bookManager.findPage(id.getBookId(), id.getStartTimestamp()).getId();
 		StoredTestEvent result = doGetTestEvent(id, pageId);
 		logger.debug("Test event {} got from page {}", id, pageId);
 		return result;
@@ -885,7 +885,7 @@ public abstract class CradleStorage
 	public final CompletableFuture<StoredTestEvent> getTestEventAsync(StoredTestEventId id) throws CradleStorageException
 	{
 		logger.debug("Getting test event {} asynchronously", id);
-		PageId pageId = bpc.findPage(id.getBookId(), id.getStartTimestamp()).getId();
+		PageId pageId = bookManager.findPage(id.getBookId(), id.getStartTimestamp()).getId();
 		CompletableFuture<StoredTestEvent> result = doGetTestEventAsync(id, pageId);
 		result.whenCompleteAsync((r, error) -> {
 				if (error != null)
@@ -910,7 +910,7 @@ public abstract class CradleStorage
 		if (!checkFilter(filter))
 			return new EmptyResultSet<>();
 		
-		BookInfo book = bpc.getBook(filter.getBookId());
+		BookInfo book = bookManager.getBook(filter.getBookId());
 		CradleResultSet<StoredTestEvent> result = doGetTestEvents(filter, book);
 		logger.debug("Got result set with test events filtered by {}", filter);
 		return result;
@@ -929,7 +929,7 @@ public abstract class CradleStorage
 		if (!checkFilter(filter))
 			return CompletableFuture.completedFuture(new EmptyResultSet<>());
 		
-		BookInfo book = bpc.getBook(filter.getBookId());
+		BookInfo book = bookManager.getBook(filter.getBookId());
 		CompletableFuture<CradleResultSet<StoredTestEvent>> result = doGetTestEventsAsync(filter, book);
 		result.whenCompleteAsync((r, error) -> {
 				if (error != null)
@@ -950,7 +950,7 @@ public abstract class CradleStorage
 	public final Collection<String> getScopes(BookId bookId) throws IOException, CradleStorageException
 	{
 		logger.debug("Getting scopes for book '{}'", bookId);
-		bpc.getBook(bookId);
+		bookManager.getBook(bookId);
 		Collection<String> result = doGetScopes(bookId);
 		logger.debug("Scopes for book '{}' got", bookId);
 		return result;
@@ -1147,7 +1147,7 @@ public abstract class CradleStorage
 	 * @throws IOException if there is a problem with input/output
 	 */
 	public PageInfo updatePageComment (BookId bookId, String pageName, String comment) throws CradleStorageException, IOException {
-		bpc.getBook(bookId);
+		bookManager.getBook(bookId);
 		PageInfo updatedPageInfo = doUpdatePageComment(bookId, pageName, comment);
 
 		try {
@@ -1170,7 +1170,7 @@ public abstract class CradleStorage
 	 * @throws IOException if there is a problem with input/output
 	 */
 	public PageInfo updatePageName (BookId bookId, String pageName, String newPageName) throws CradleStorageException, IOException {
-		bpc.getBook(bookId);
+		bookManager.getBook(bookId);
 		PageInfo updatedPageInfo = doUpdatePageName(bookId, pageName, newPageName);
 
 		try {
@@ -1184,7 +1184,7 @@ public abstract class CradleStorage
 	}
 
 	private void updatePage(PageId pageId, PageInfo updatedPageInfo) throws CradleStorageException {
-		BookInfo bookInfo = bpc.getBook(pageId.getBookId());
+		BookInfo bookInfo = bookManager.getBook(pageId.getBookId());
 
 		bookInfo.removePage(pageId);
 		bookInfo.addPage(updatedPageInfo);
@@ -1270,14 +1270,14 @@ public abstract class CradleStorage
 
 	private void checkAbstractFilter(AbstractFilter filter) throws CradleStorageException
 	{
-		BookInfo book = bpc.getBook(filter.getBookId());
+		BookInfo book = bookManager.getBook(filter.getBookId());
 		if (filter.getPageId() != null)
-			bpc.checkPage(filter.getPageId(), book.getId());
+			bookManager.checkPage(filter.getPageId(), book.getId());
 	}
 	
 	private boolean checkFilter(TestEventFilter filter) throws CradleStorageException
 	{
-		BookInfo book = bpc.getBook(filter.getBookId());
+		BookInfo book = bookManager.getBook(filter.getBookId());
 		checkAbstractFilter(filter);
 		
 		if (filter.getParentId() != null && !book.getId().equals(filter.getParentId().getBookId()))

@@ -26,19 +26,19 @@ import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BookAndPageChecker
+public class BookManager
 {
-	private final static Logger logger = LoggerFactory.getLogger(BookAndPageChecker.class);
+	private final static Logger logger = LoggerFactory.getLogger(BookManager.class);
 	private final BookCache bookCache;
 	private ScheduledExecutorService executorService;
 	private Long refreshIntervalMillis;
 
-	public BookAndPageChecker(BookCache bookCache)
+	public BookManager(BookCache bookCache)
 	{
 		this.bookCache = bookCache;
 	}
 
-	public BookAndPageChecker (BookCache bookCache, long refreshIntervalMillis) {
+	public BookManager(BookCache bookCache, long refreshIntervalMillis) {
 		this.bookCache = bookCache;
 		this.refreshIntervalMillis = refreshIntervalMillis;
 	}
