@@ -70,7 +70,6 @@ public class GroupedMessageBatchEntity
 	{
 		this.batchEntity = batchEntity;
 		this.group = group;
-		this.recDate = Instant.now();
 	}
 
 	@PartitionKey(0)
