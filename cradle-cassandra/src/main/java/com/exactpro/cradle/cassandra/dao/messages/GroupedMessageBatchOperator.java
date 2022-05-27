@@ -22,6 +22,8 @@ import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.QueryProvider;
 import com.exactpro.cradle.cassandra.dao.CommonQueryProvider;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEvenInserter;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 
 import java.util.concurrent.CompletableFuture;
@@ -34,8 +36,8 @@ public interface GroupedMessageBatchOperator
 	CompletableFuture<MappedAsyncPagingIterable<GroupedMessageBatchEntity>> getByFilter(CassandraGroupedMessageFilter filter,
 			SelectQueryExecutor selectExecutor, String queryInfo,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
-	@Insert
+
+	@QueryProvider(providerClass = GroupedMessageBatchInserter.class, entityHelpers = GroupedMessageBatchEntity.class, providerMethod = "insert")
 	CompletableFuture<Void> write(GroupedMessageBatchEntity message,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 

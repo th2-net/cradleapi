@@ -61,7 +61,7 @@ public class MessageBatchEntity extends CradleEntity
 	public static final String FIELD_LAST_MESSAGE_TIME = "last_message_time";
 	public static final String FIELD_MESSAGE_COUNT = "message_count";
 	public static final String FIELD_LAST_SEQUENCE = "last_sequence";
-	public static final String  FIELD_REC_DATE = "rec_date";
+	public static final String FIELD_REC_DATE = "rec_date";
 
 
 	@PartitionKey(0)
