@@ -37,7 +37,6 @@ public class GroupedMessageBatchEntity
 	public static final String FIELD_MESSAGE_DATE = "message_date";
 	public static final String FIELD_MESSAGE_TIME = "message_time";
 	public static final String FIELD_SESSION_ALIAS = "session_alias";
-	public static final String FIELD_DIRECTION = "direction";
 	public static final String FIELD_SEQUENCE = "sequence";
 	public static final String FIELD_COMPRESSED = "compressed";
 	public static final String FIELD_LABELS = "labels";
@@ -129,18 +128,6 @@ public class GroupedMessageBatchEntity
 	}
 	
 	@ClusteringColumn(3)
-	@CqlName(FIELD_DIRECTION)
-	public String getDirection()
-	{
-		return batchEntity.getDirection();
-	}
-
-	public void setDirection(String direction)
-	{
-		batchEntity.setDirection(direction);
-	}
-
-	@ClusteringColumn(4)
 	@CqlName(FIELD_SEQUENCE)
 	public long getSequence()
 	{

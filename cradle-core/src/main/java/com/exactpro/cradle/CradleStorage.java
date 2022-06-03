@@ -51,7 +51,6 @@ public abstract class CradleStorage
 	private static final Logger logger = LoggerFactory.getLogger(CradleStorage.class);
 	public static final ZoneOffset TIMEZONE_OFFSET = ZoneOffset.UTC;
 	public static final long EMPTY_MESSAGE_INDEX = -1L;
-	public static final long DEFAULT_MAX_MESSAGE_BATCH_DURATION_LIMIT_SECONDS = 600L;
 	public static final int DEFAULT_MAX_MESSAGE_BATCH_SIZE = 1024*1024,
 			DEFAULT_MAX_TEST_EVENT_BATCH_SIZE = DEFAULT_MAX_MESSAGE_BATCH_SIZE;
 
@@ -62,7 +61,7 @@ public abstract class CradleStorage
 	protected final boolean ownedComposingService;
 	protected final CradleEntitiesFactory entitiesFactory;
 
-	public CradleStorage(ExecutorService composingService, int maxMessageBatchSize, long maxMessageBatchDuration,
+	public CradleStorage(ExecutorService composingService, int maxMessageBatchSize,
 			int maxTestEventBatchSize) throws CradleStorageException
 	{
 		if (composingService == null)
@@ -76,12 +75,12 @@ public abstract class CradleStorage
 			this.composingService = composingService;
 		}
 		
-		entitiesFactory = new CradleEntitiesFactory(maxMessageBatchSize, maxMessageBatchDuration, maxTestEventBatchSize);
+		entitiesFactory = new CradleEntitiesFactory(maxMessageBatchSize, maxTestEventBatchSize);
 	}
 	
 	public CradleStorage() throws CradleStorageException
 	{
-		this(null, DEFAULT_MAX_MESSAGE_BATCH_SIZE, DEFAULT_MAX_MESSAGE_BATCH_DURATION_LIMIT_SECONDS,
+		this(null, DEFAULT_MAX_MESSAGE_BATCH_SIZE,
 				DEFAULT_MAX_TEST_EVENT_BATCH_SIZE);
 	}
 	

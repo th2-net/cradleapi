@@ -30,30 +30,27 @@ public class CradleEntitiesFactory
 {
 	private final int maxMessageBatchSize,
 			maxTestEventBatchSize;
-	private final long maxMessageBatchDuration;
 	
 	/**
 	 * Creates new factory for entities to be used with {@link CradleStorage}
 	 * @param maxMessageBatchSize maximum size of messages (in bytes) that {@link MessageBatchToStore} can hold
-	 * @param maxMessageBatchDuration maximum difference between first and last message timestamps in seconds
 	 * @param maxTestEventBatchSize maximum size of test events (in bytes) that {@link TestEventBatchToStore} can hold
 	 */
-	public CradleEntitiesFactory(int maxMessageBatchSize, long maxMessageBatchDuration, int maxTestEventBatchSize)
+	public CradleEntitiesFactory(int maxMessageBatchSize, int maxTestEventBatchSize)
 	{
 		this.maxMessageBatchSize = maxMessageBatchSize;
 		this.maxTestEventBatchSize = maxTestEventBatchSize;
-		this.maxMessageBatchDuration = maxMessageBatchDuration;
 	}
 	
 	
 	public MessageBatchToStore messageBatch()
 	{
-		return new MessageBatchToStore(maxMessageBatchSize, maxMessageBatchDuration);
+		return new MessageBatchToStore(maxMessageBatchSize);
 	}
 	
 	public MessageBatchToStore singletonMessageBatch(MessageToStore message) throws CradleStorageException
 	{
-		return MessageBatchToStore.singleton(message, maxMessageBatchSize, maxMessageBatchDuration);
+		return MessageBatchToStore.singleton(message, maxMessageBatchSize);
 	}
 	
 	public TestEventBatchToStore testEventBatch(StoredTestEventId id, String name, StoredTestEventId parentId) throws CradleStorageException

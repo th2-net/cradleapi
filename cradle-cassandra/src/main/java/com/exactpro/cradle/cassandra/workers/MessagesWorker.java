@@ -113,12 +113,11 @@ public class MessagesWorker extends Worker
 	}
 
 	public CompletableFuture<CradleResultSet<StoredMessageBatch>> getGroupedMessageBatches(GroupedMessageFilter filter,
-			BookInfo book, long maxMessageBatchDurationLimit)
+			BookInfo book)
 			throws CradleStorageException
 	{
 		GroupedMessageIteratorProvider provider =
-				new GroupedMessageIteratorProvider("get messages batches filtered by " + filter,
-						maxMessageBatchDurationLimit, filter,
+				new GroupedMessageIteratorProvider("get messages batches filtered by " + filter, filter,
 						getBookOps(book.getId()), book, composingService, selectQueryExecutor,
 						composeReadAttrs(filter.getFetchParameters()));
 		return provider.nextIterator()
@@ -287,7 +286,7 @@ public class MessagesWorker extends Worker
 		List<SerializedEntityMetadata> meta = entity.getSerializedMessageMetadata();
 
 		return gmbOperator.write(entity, writeAttrs)
-				.thenAccept(result -> messageStatisticsCollector.updateMessageBatchStatistics(bookId, entity.getPage(), entity.getGroup(), entity.getDirection(), meta))
+				.thenAccept(result -> messageStatisticsCollector.updateMessageBatchStatistics(bookId, entity.getPage(), entity.getGroup(), Direction.FIRST.getLabel(), meta))
 				.thenAcceptAsync(result -> sessionStatisticsCollector.updateSessionStatistics(bookId, entity.getPage(), SessionRecordType.SESSION_GROUP, entity.getGroup(), meta))
 				.thenAcceptAsync(result -> updateMessageWriteMetrics(entity.getMessageBatchEntity(), bookId), composingService)
 				.thenApplyAsync(result -> entity, composingService);

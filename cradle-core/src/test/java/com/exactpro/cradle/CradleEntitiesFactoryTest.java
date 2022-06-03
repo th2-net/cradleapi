@@ -35,13 +35,12 @@ public class CradleEntitiesFactoryTest
 {
 	private final int maxMessageBatchSize = 123,
 			maxEventBatchSize = 234;
-	private final long maxMessageBatchDuration = DEFAULT_MAX_MESSAGE_BATCH_DURATION_LIMIT_SECONDS;
 	private CradleEntitiesFactory factory;
 	
 	@BeforeClass
 	public void prepare()
 	{
-		factory = new CradleEntitiesFactory(maxMessageBatchSize, maxMessageBatchDuration, maxEventBatchSize);
+		factory = new CradleEntitiesFactory(maxMessageBatchSize, maxEventBatchSize);
 	}
 	
 	@Test

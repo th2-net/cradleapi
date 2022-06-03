@@ -29,7 +29,6 @@ import com.exactpro.cradle.cassandra.dao.*;
 import com.exactpro.cradle.cassandra.dao.books.*;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
-import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.BookKeyspaceCreator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
@@ -97,8 +96,7 @@ public class CassandraCradleStorage extends CradleStorage
 	public CassandraCradleStorage(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings, 
 			ExecutorService composingService) throws CradleStorageException
 	{
-		super(composingService, storageSettings.getMaxMessageBatchSize(),
-				storageSettings.getMaxMessageBatchDurationLimit(), storageSettings.getMaxTestEventBatchSize());
+		super(composingService, storageSettings.getMaxMessageBatchSize(), storageSettings.getMaxTestEventBatchSize());
 		this.connection = new CassandraConnection(connectionSettings, storageSettings.getTimeout());
 		this.settings = storageSettings;
 
@@ -151,7 +149,7 @@ public class CassandraCradleStorage extends CradleStorage
 			bpc = new BookAndPageChecker(getBookCache());
 
 
-			statisticsWorker = new StatisticsWorker(ops, writeAttrs, settings.getCounterPersistanceInterval());
+			statisticsWorker = new StatisticsWorker(ops, writeAttrs, settings.getCounterPersistenceInterval());
 			WorkerSupplies ws = new WorkerSupplies(settings, ops, composingService, bpc, selectExecutor, writeAttrs, readAttrs);
 			eventsWorker = new EventsWorker(ws, statisticsWorker);
 			messagesWorker = new MessagesWorker(ws, statisticsWorker, statisticsWorker);
@@ -550,7 +548,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetGroupedMessageBatchesAsync(
 			GroupedMessageFilter filter, BookInfo book) throws CradleStorageException
 	{
-		return messagesWorker.getGroupedMessageBatches(filter, book, getSettings().getMaxMessageBatchDurationLimit());
+		return messagesWorker.getGroupedMessageBatches(filter, book);
 	}
 
 	@Override
