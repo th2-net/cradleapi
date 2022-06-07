@@ -20,6 +20,7 @@ import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBuilder;
+import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.serialization.*;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -81,6 +82,30 @@ public class SerializationMessageTest {
 		Assert.assertEquals(deserialize, build);
 	}
 
+
+	@Test
+	public void serializeDeserialize5UnicodeCharacters() throws SerializationException {
+		StoredMessageBuilder builder = new StoredMessageBuilder();
+		String sessionAlias = generateUnicodeString((1 << 17), 100);
+		builder.setSessionAlias(sessionAlias);
+		builder.setIndex(123456789010111213L);
+		builder.setDirection(Direction.SECOND);
+		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.00Z"));
+		String metaDataKey = generateUnicodeString((1 << 19), 50);
+		String metaDataValue = generateUnicodeString((1 << 15), 25);
+		builder.putMetadata(metaDataKey, metaDataValue);
+		builder.putMetadata(metaDataKey, metaDataValue);
+		builder.putMetadata(metaDataKey, metaDataValue);
+		String messageContent = generateUnicodeString((1 << 17), 150);
+		builder.setContent(messageContent.repeat(10).getBytes(StandardCharsets.UTF_8));
+		StoredMessage build = builder.build();
+		MessageSerializer serializer = new MessageSerializer();
+		byte[] serialize = serializer.serialize(build);
+		MessageDeserializer deserializer = new MessageDeserializer();
+		var msgParams = new MessageCommonParams(build.getId());
+		StoredMessage deserialize = deserializer.deserialize(serialize, msgParams);
+		Assert.assertEquals(deserialize, build);
+	}
 	@Test
 	public void serializeDeserializeEmptyBody() throws SerializationException {
 		MessageCommonParams commonParams = new MessageCommonParams();
@@ -202,6 +227,13 @@ public class SerializationMessageTest {
 		List<StoredMessage> batch = getBatch();
 		serializer.serializeBatch(batch, buffer, null);
 		Assert.assertEquals(buffer.position(), MessagesSizeCalculator.calculateMessageBatchSize(batch).total);
+	}
+	private String generateUnicodeString(int start, int size) {
+		StringBuilder generated = new StringBuilder();
+		for(int i = 0;i < size;i++){
+			generated.append(Character.toString(start++));
+		}
+		return generated.toString();
 	}
 
 }

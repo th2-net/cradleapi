@@ -82,7 +82,24 @@ public class SerializationEventBatchTest {
 		Assertions.assertThat(build).usingRecursiveFieldByFieldElementComparator().isEqualTo(deserialize);
 	}
 
+	@Test
+	public void serializeDeserialize3UnicodeCharacters() throws Exception {
+		EventBatchCommonParams commonParams = createCommonParams();
+		String name = generateUnicodeString((1 << 18), 50);
+		String content = generateUnicodeString((1 << 19), 10);
+		BatchedStoredTestEvent build = createBatchedStoredTestEventWithContent(name, commonParams, content);
+		EventBatchSerializer serializer = new EventBatchSerializer();
+		byte[] serialize = serializer.serializeEventRecord(build);
+		EventBatchDeserializer deserializer = new EventBatchDeserializer();
+		BatchedStoredTestEvent deserialize = deserializer.deserializeBatchEntry(serialize, commonParams);
+		Assertions.assertThat(deserialize).usingRecursiveComparison().isEqualTo(build);
+	}
+
 	static BatchedStoredTestEvent createBatchedStoredTestEvent(String name, EventBatchCommonParams commonParams) {
+		return createBatchedStoredTestEventWithContent(name, commonParams, "Message");
+	}
+
+	static BatchedStoredTestEvent createBatchedStoredTestEventWithContent(String name, EventBatchCommonParams commonParams, String content) {
 		BatchedStoredTestEventBuilder builder = new BatchedStoredTestEventBuilder();
 		builder.setSuccess(true);
 		Instant startTime = Instant.parse("2007-12-03T10:15:30.00Z");
@@ -92,7 +109,7 @@ public class SerializationEventBatchTest {
 		builder.setParentId(new StoredTestEventId(commonParams.getBookId(), scope, startTime, UUID.randomUUID().toString()));
 		builder.setName(name);
 		builder.setType(name + " ----");
-		builder.setContent("Message".repeat(10).getBytes(StandardCharsets.UTF_8));
+		builder.setContent(content.repeat(10).getBytes(StandardCharsets.UTF_8));
 		return builder.build();
 	}
 
@@ -113,6 +130,15 @@ public class SerializationEventBatchTest {
 		params.setBookName("book1234");
 		params.setScope("scope123456");
 		return params;
+	}
+
+
+	private String generateUnicodeString(int start, int size) {
+		StringBuilder generated = new StringBuilder();
+		for(int i = 0;i < size;i++){
+			generated.append(Character.toString(start++));
+		}
+		return generated.toString();
 	}
 
 }

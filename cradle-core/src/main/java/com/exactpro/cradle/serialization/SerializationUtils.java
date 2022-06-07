@@ -50,7 +50,7 @@ public class SerializationUtils {
 		if (value == null) {
 			buffer.putInt(-1);
 		} else {
-			buffer.putInt(value.length());
+			buffer.putInt(MessagesSizeCalculator.lenStr(value));
 			buffer.put(value.getBytes(StandardCharsets.UTF_8));
 		}
 	}
