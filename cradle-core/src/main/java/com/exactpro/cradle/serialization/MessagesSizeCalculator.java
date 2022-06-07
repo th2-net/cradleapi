@@ -67,7 +67,7 @@ public class MessagesSizeCalculator {
 		return calculateMessageSize(message) + MESSAGE_LENGTH_IN_BATCH;
 	}
 
-	public static int lenStr(String str) {
+	private static int lenStr(String str) {
 		return str != null ? str.getBytes(StandardCharsets.UTF_8).length : 0;
 	}
 
