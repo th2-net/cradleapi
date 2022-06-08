@@ -201,7 +201,7 @@ public class MessageBatchToStoreJoinTest
     }
 
     private static MessageBatchToStore createEmptyBatch() {
-        return new MessageBatchToStore(MAX_SIZE, MAX_MESSAGE_BATCH_DURATION_IN_SECONDS);
+        return new MessageBatchToStore(MAX_SIZE);
     }
 
     static MessageBatchToStore createFullBySizeBatch(BookId bookId,

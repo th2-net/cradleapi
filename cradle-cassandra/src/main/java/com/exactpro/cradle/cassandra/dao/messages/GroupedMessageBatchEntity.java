@@ -36,7 +36,6 @@ public class GroupedMessageBatchEntity
 	public static final String FIELD_ALIAS_GROUP = "alias_group";
 	public static final String FIELD_MESSAGE_DATE = "message_date";
 	public static final String FIELD_MESSAGE_TIME = "message_time";
-	public static final String FIELD_SESSION_ALIAS = "session_alias";
 	public static final String FIELD_SEQUENCE = "sequence";
 	public static final String FIELD_COMPRESSED = "compressed";
 	public static final String FIELD_LABELS = "labels";
@@ -116,18 +115,6 @@ public class GroupedMessageBatchEntity
 	}
 	
 	@ClusteringColumn(2)
-	@CqlName(FIELD_SESSION_ALIAS)
-	public String getSessionAlias()
-	{
-		return batchEntity.getSessionAlias();
-	}
-
-	public void setSessionAlias(String sessionAlias)
-	{
-		batchEntity.setSessionAlias(sessionAlias);
-	}
-	
-	@ClusteringColumn(3)
 	@CqlName(FIELD_SEQUENCE)
 	public long getSequence()
 	{

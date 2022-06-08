@@ -184,7 +184,6 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 
 				.withClusteringColumn(GroupedMessageBatchEntity.FIELD_MESSAGE_DATE, DataTypes.DATE)
 				.withClusteringColumn(GroupedMessageBatchEntity.FIELD_MESSAGE_TIME, DataTypes.TIME)
-				.withClusteringColumn(GroupedMessageBatchEntity.FIELD_SESSION_ALIAS, DataTypes.TEXT)
 				.withClusteringColumn(GroupedMessageBatchEntity.FIELD_SEQUENCE, DataTypes.BIGINT)
 
 				.withColumn(GroupedMessageBatchEntity.FIELD_LAST_MESSAGE_DATE, DataTypes.DATE)
