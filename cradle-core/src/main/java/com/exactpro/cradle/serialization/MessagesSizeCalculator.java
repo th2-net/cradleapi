@@ -20,6 +20,7 @@ import com.exactpro.cradle.messages.MessageToStore;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageId;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Map;
 
@@ -86,8 +87,8 @@ public class MessagesSizeCalculator {
 		return calculateMessageSize(message) + MESSAGE_LENGTH_IN_BATCH;
 	}
 
-	private static int lenStr(String str) {
-		return str != null ? str.length() : 0;
+	public static int lenStr(String str) {
+		return str != null ? str.getBytes(StandardCharsets.UTF_8).length : 0;
 	}
 
 	public static int calculateServiceMessageBatchSize(String streamName) {

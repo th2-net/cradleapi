@@ -39,6 +39,7 @@ import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateBa
 import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateBatchEventSize;
 import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateEventMetadataSize;
 import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateEventRecordSize;
+import static com.exactpro.cradle.utils.TestUtils.generateUnicodeString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class SerializationEventBatchTest {
@@ -120,6 +121,17 @@ public class SerializationEventBatchTest {
 		List<BatchedStoredTestEventMetadata> deserialize = deserializer.deserializeBatchEntriesMetadata(serialize);
 		assertThat(build).usingRecursiveComparison().isEqualTo(deserialize);
 	}
+	@Test
+	public void serializeDeserialize5UnicodeCharacters() throws Exception {
+		String name = generateUnicodeString((1 << 12), 10);
+		String content = generateUnicodeString((1 << 9), 1);
+		BatchedStoredTestEvent build = createBatchedStoredTestEventWithContent(name, "Message");
+		EventBatchSerializer serializer = new EventBatchSerializer();
+		byte[] serialized = serializer.serializeEventRecord(build);
+		EventBatchDeserializer deserializer = new EventBatchDeserializer();
+		BatchedStoredTestEvent deserialized = deserializer.deserializeBatchEntry(serialized);
+		assertThat(build).usingRecursiveComparison().isEqualTo(deserialized);
+	}
 
 	static BatchedStoredTestEventMetadata createBatchedStoredTestEventMetadata(String name) {
 		BatchedStoredTestEventMetadataBuilder builder = new BatchedStoredTestEventMetadataBuilder();
@@ -134,6 +146,10 @@ public class SerializationEventBatchTest {
 	}
 
 	static BatchedStoredTestEvent createBatchedStoredTestEvent(String name) {
+		return createBatchedStoredTestEventWithContent(name, "Message");
+	}
+
+	static BatchedStoredTestEvent createBatchedStoredTestEventWithContent(String name, String content) {
 		BatchedStoredTestEventBuilder builder = new BatchedStoredTestEventBuilder();
 		builder.setSuccess(true);
 		builder.setStartTimestamp(Instant.parse("2007-12-03T10:15:30.00Z"));
@@ -142,7 +158,7 @@ public class SerializationEventBatchTest {
 		builder.setParentId(new StoredTestEventId(UUID.randomUUID().toString()));
 		builder.setName(name);
 		builder.setType(name + " ----");
-		builder.setContent("Message".repeat(10).getBytes(StandardCharsets.UTF_8));
+		builder.setContent(content.repeat(10).getBytes(StandardCharsets.UTF_8));
 		return builder.build();
 	}
 

@@ -21,6 +21,7 @@ import com.exactpro.cradle.testevents.BatchedStoredTestEventMetadata;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.StoredTestEventWithContent;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.function.Function;
 
@@ -80,11 +81,11 @@ public class EventsSizeCalculator {
 	}
 
 	private static int lenId(StoredTestEventId id) {
-		return id != null && id.getId() != null ? id.getId().length() : 0;
+		return id != null && id.getId() != null ? lenStr(id.getId()) : 0;
 	}
 
 	private static int lenStr(String str) {
-		return str != null ? str.length() : 0;
+		return str != null ? str.getBytes(StandardCharsets.UTF_8).length : 0;
 	}
 
 	public static <T> SerializationBatchSizes  calculateBatchEventMetadataSize(Collection<BatchedStoredTestEventMetadata> message) {

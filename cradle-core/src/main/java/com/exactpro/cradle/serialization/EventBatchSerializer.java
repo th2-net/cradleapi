@@ -47,9 +47,11 @@ public class EventBatchSerializer {
 		this.serializeEventMetadataRecord(message, allocate);
 		return allocate.array();
 	}
-	
+
+
 	public void serializeEventRecord (BatchedStoredTestEvent message, ByteBuffer buffer) throws SerializationException {
 		buffer.putShort(EVENT_BATCH_ENT_MAGIC);
+
 		printString(message.getId().getId(), buffer);
 		printString(message.getName(), buffer);
 		printString(message.getType(), buffer);
