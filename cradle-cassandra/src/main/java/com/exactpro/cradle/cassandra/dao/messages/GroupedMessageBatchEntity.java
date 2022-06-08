@@ -36,14 +36,12 @@ public class GroupedMessageBatchEntity
 	public static final String FIELD_ALIAS_GROUP = "alias_group";
 	public static final String FIELD_MESSAGE_DATE = "message_date";
 	public static final String FIELD_MESSAGE_TIME = "message_time";
-	public static final String FIELD_SEQUENCE = "sequence";
 	public static final String FIELD_COMPRESSED = "compressed";
 	public static final String FIELD_LABELS = "labels";
 	public static final String FIELD_CONTENT = "z_content";
 	public static final String FIELD_LAST_MESSAGE_DATE = "last_message_date";
 	public static final String FIELD_LAST_MESSAGE_TIME = "last_message_time";
 	public static final String FIELD_MESSAGE_COUNT = "message_count";
-	public static final String FIELD_LAST_SEQUENCE = "last_sequence";
 	private String group;
 	
 	@Transient
@@ -114,18 +112,7 @@ public class GroupedMessageBatchEntity
 		batchEntity.setMessageTime(messageTime);
 	}
 	
-	@ClusteringColumn(2)
-	@CqlName(FIELD_SEQUENCE)
-	public long getSequence()
-	{
-		return batchEntity.getSequence();
-	}
 
-	public void setSequence(long sequence)
-	{
-		batchEntity.setSequence(sequence);
-	}
-	
 	@CqlName(FIELD_COMPRESSED)
 	public boolean isCompressed()
 	{
@@ -190,17 +177,6 @@ public class GroupedMessageBatchEntity
 	public void setMessageCount(int messageCount)
 	{
 		batchEntity.setMessageCount(messageCount);
-	}
-
-	@CqlName(FIELD_LAST_SEQUENCE)
-	public long getLastSequence()
-	{
-		return batchEntity.getLastSequence();
-	}
-
-	public void setLastSequence(long lastSequence)
-	{
-		batchEntity.setLastSequence(lastSequence);
 	}
 
 	@Transient
