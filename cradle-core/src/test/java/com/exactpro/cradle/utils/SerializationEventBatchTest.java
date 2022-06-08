@@ -123,9 +123,9 @@ public class SerializationEventBatchTest {
 	}
 	@Test
 	public void serializeDeserialize5UnicodeCharacters() throws Exception {
-		String name = generateUnicodeString((1 << 12), 10);
-		String content = generateUnicodeString((1 << 9), 1);
-		BatchedStoredTestEvent build = createBatchedStoredTestEventWithContent(name, "Message");
+		String name = generateUnicodeString((1 << 17), 10);
+		String content = generateUnicodeString((1 << 19), 1);
+		BatchedStoredTestEvent build = createBatchedStoredTestEventWithContent(name, content);
 		EventBatchSerializer serializer = new EventBatchSerializer();
 		byte[] serialized = serializer.serializeEventRecord(build);
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
