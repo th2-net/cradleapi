@@ -244,8 +244,6 @@ public class TablesCreator
 
 				.withClusteringColumn(MESSAGE_DATE, DataTypes.DATE)
 				.withClusteringColumn(MESSAGE_TIME, DataTypes.TIME)
-				.withClusteringColumn(STREAM_NAME, DataTypes.TEXT)
-				.withClusteringColumn(DIRECTION, DataTypes.TEXT)
 				.withClusteringColumn(MESSAGE_INDEX, DataTypes.BIGINT)
 
 				.withColumn(LAST_MESSAGE_DATE, DataTypes.DATE)

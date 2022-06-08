@@ -41,30 +41,22 @@ public class StoredMessageBatch
 	private static final Logger logger = LoggerFactory.getLogger(StoredMessageBatch.class);
 	
 	public static final int DEFAULT_MAX_BATCH_SIZE = 1024*1024;  //1 Mb
-	public static final long DEFAULT_MAX_MESSAGE_BATCH_DURATION_SEC = 600;
 	private static final long EMPTY_BATCH_SIZE = MessagesSizeCalculator.calculateServiceMessageBatchSize(null);
 	
 	private StoredMessageBatchId id;
-	private final long maxBatchSize, maxDuration;
+	private final long maxBatchSize;
 	private long batchSize;
-	private Instant maxMessageTimestamp;
 	private final List<StoredMessage> messages;
 	
 	public StoredMessageBatch()
 	{
-		this(DEFAULT_MAX_BATCH_SIZE, DEFAULT_MAX_MESSAGE_BATCH_DURATION_SEC);
-	}
-
-	public StoredMessageBatch(long maxBatchSize)
-	{
-		this(maxBatchSize, DEFAULT_MAX_MESSAGE_BATCH_DURATION_SEC);
+		this(DEFAULT_MAX_BATCH_SIZE);
 	}
 	
-	public StoredMessageBatch(long maxBatchSize, long maxDuration)
+	public StoredMessageBatch(long maxBatchSize)
 	{
 		this.messages = createMessagesList();
 		this.maxBatchSize = maxBatchSize;
-		this.maxDuration = maxDuration;
 	}
 	
 	public static StoredMessageBatch singleton(MessageToStore message) throws CradleStorageException
@@ -204,11 +196,6 @@ public class StoredMessageBatch
 				throw new CradleStorageException(
 						"Message timestamp should be not less than last message timestamp in batch '"
 								+ lastMsg.getTimestamp() + "' but in your message it is '" + message.getTimestamp() + "'");
-			
-			if (message.getTimestamp().isAfter(maxMessageTimestamp))
-				throw new CradleStorageException("Max timestamp shold be not greater than '" + maxMessageTimestamp +
-						"' because max duration of batch is " + maxDuration + " seconds, but in your message it is '" +
-						message.getTimestamp() + "'");
 		}
 		
 		return expectedMessageSize;
@@ -221,7 +208,6 @@ public class StoredMessageBatch
 		if (id == null)
 		{
 			id = new StoredMessageBatchId(message.getStreamName(), message.getDirection(), messageIndex);
-			maxMessageTimestamp = message.getTimestamp().plus(maxDuration, ChronoUnit.SECONDS);
 		}
 		StoredMessage msg = new StoredMessage(message, new StoredMessageId(message.getStreamName(), message.getDirection(), messageIndex));
 		// If there are no messages in batch, need to calculate the batch size taking into account the name of the stream of the added message

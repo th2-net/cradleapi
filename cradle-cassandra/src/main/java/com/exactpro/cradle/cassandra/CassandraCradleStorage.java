@@ -626,10 +626,9 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetGroupedMessageBatchesAsync(String groupName,
 			Instant from, Instant to)
 	{
-		Instant shiftedFrom = from.minus(settings.getMaxMessageBatchDurationLimit(), ChronoUnit.SECONDS);
 		String queryInfo = format("fetching grouped message batches by group '%s' between %s and %s", groupName,
-				shiftedFrom, to);
-		return doGetGroupedMessageBatchEntities(groupName, shiftedFrom, to, queryInfo)
+				from, to);
+		return doGetGroupedMessageBatchEntities(groupName, from, to, queryInfo)
 				.thenApplyAsync(it -> new GroupedMessageBatchAdapter(it, pagingSupplies,
 						ops.getGroupedMessageBatchConverter(), queryInfo, from, to));
 	}

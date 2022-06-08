@@ -72,8 +72,8 @@ public class GroupedMessageBatchIterator implements Iterator<StoredMessageBatch>
 
 			if (logger.isTraceEnabled())
 				logger.trace(
-						"Batch with id '{}:{}:{}' has been skipped because him first timestamp {} > {} OR last timestamp {} < {}",
-						entity.getStreamName(), entity.getDirection(), entity.getMessageIndex(),
+						"Batch with id '{}:{}' has been skipped because him first timestamp {} > {} OR last timestamp {} < {}",
+						entity.getGroup(), entity.getMessageIndex(),
 						entity.getFirstMessageTimestamp(), filterTo, entity.getLastMessageTimestamp(), filterFrom);
 		}
 		

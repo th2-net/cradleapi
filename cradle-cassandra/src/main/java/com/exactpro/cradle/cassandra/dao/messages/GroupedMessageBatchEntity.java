@@ -44,7 +44,6 @@ public class GroupedMessageBatchEntity
 	public GroupedMessageBatchEntity(DetailedMessageBatchEntity batchEntity, String group)
 	{
 		this.batchEntity = batchEntity;
-		this.group = group;
 	}
 	
 	public GroupedMessageBatchEntity()
@@ -101,30 +100,6 @@ public class GroupedMessageBatchEntity
 	}
 
 	@ClusteringColumn(2)
-	@CqlName(STREAM_NAME)
-	public String getStreamName()
-	{
-		return batchEntity.getStreamName();
-	}
-	
-	public void setStreamName(String streamName)
-	{
-		batchEntity.setStreamName(streamName);
-	}
-	
-	@ClusteringColumn(3)
-	@CqlName(DIRECTION)
-	public String getDirection()
-	{
-		return batchEntity.getDirection();
-	}
-	
-	public void setDirection(String direction)
-	{
-		batchEntity.setDirection(direction);
-	}
-	
-	@ClusteringColumn(4)
 	@CqlName(MESSAGE_INDEX)
 	public long getMessageIndex()
 	{
