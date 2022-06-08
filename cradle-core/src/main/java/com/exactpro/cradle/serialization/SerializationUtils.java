@@ -42,7 +42,7 @@ public class SerializationUtils {
 		if (value.length() > USHORT_MAX_VALUE) {
 			throw new SerializationException(String.format("%s is too big. Expected length [0-%s]", paramName, USHORT_MAX_VALUE));
 		}
-		buffer.putShort((short) value.length());
+		buffer.putShort((short) MessagesSizeCalculator.lenStr(value));
 		buffer.put(value.getBytes(StandardCharsets.UTF_8));
 	}
 
@@ -50,7 +50,7 @@ public class SerializationUtils {
 		if (value == null) {
 			buffer.putInt(-1);
 		} else {
-			buffer.putInt(value.length());
+			buffer.putInt(MessagesSizeCalculator.lenStr(value));
 			buffer.put(value.getBytes(StandardCharsets.UTF_8));
 		}
 	}
