@@ -1084,7 +1084,6 @@ public abstract class CradleStorage
 	 * @throws IOException if there is a problem with input/output
 	 */
 	public Counter getMessageCount (BookId bookId,
-									String page,
 									String sessionAlias,
 									Direction direction,
 									Interval interval) throws CradleStorageException, IOException {
