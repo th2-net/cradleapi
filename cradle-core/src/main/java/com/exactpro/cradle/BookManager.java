@@ -68,29 +68,19 @@ public class BookManager
 			try {
 				List<BookInfo> cachedBookInfos = new ArrayList<>(bookCache.getCachedBooks());
 				List<BookInfo> oldBookInfos = new ArrayList<>(cachedBookInfos);
-				List<BookInfo> updatedBookInfos = new ArrayList<>();
-				// Cache should be copied for thread safety
-				Collections.copy(oldBookInfos, cachedBookInfos);
 
 				for (BookInfo oldBookInfo : oldBookInfos) {
 					try {
 						BookInfo newBookInfo = bookCache.loadBook(oldBookInfo.getId());
 						if (!oldBookInfo.equals(newBookInfo)) {
-							updatedBookInfos.add(newBookInfo);
+							logger.info("Refreshing book {}", oldBookInfo.getId().getName());
+							bookCache.updateCachedBook(oldBookInfo);
 						}
 
 					} catch (CradleStorageException e) {
 						logger.error("Refresher could not get new book info for {}: {}", oldBookInfo.getId().getName(), e.getMessage());
 					}
 				}
-
-				for (BookInfo updatedBookInfo : updatedBookInfos) {
-					logger.debug("Refreshing book {}", updatedBookInfo.getId().getName());
-					bookCache.updateCachedBook(updatedBookInfo);
-				}
-
-
-				logger.debug("Refreshed {} books", updatedBookInfos.size());
 			} catch (Exception e) {
 				/*
 				 	Any exceptions should be cached and logged,
