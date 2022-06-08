@@ -34,8 +34,8 @@ public class GroupedMessageBatchEntity
 {
 	public static final String FIELD_PAGE = "page";
 	public static final String FIELD_ALIAS_GROUP = "alias_group";
-	public static final String FIELD_MESSAGE_DATE = "message_date";
-	public static final String FIELD_MESSAGE_TIME = "message_time";
+	public static final String FIELD_FIRST_MESSAGE_DATE = "first_message_date";
+	public static final String FIELD_FIRST_MESSAGE_TIME = "first_message_time";
 	public static final String FIELD_COMPRESSED = "compressed";
 	public static final String FIELD_LABELS = "labels";
 	public static final String FIELD_CONTENT = "z_content";
@@ -89,25 +89,25 @@ public class GroupedMessageBatchEntity
 	}
 
 	@ClusteringColumn(0)
-	@CqlName(FIELD_MESSAGE_DATE)
-	public LocalDate getMessageDate()
+	@CqlName(FIELD_FIRST_MESSAGE_DATE)
+	public LocalDate getFirstMessageDate()
 	{
 		return batchEntity.getMessageDate();
 	}
 
-	public void setMessageDate(LocalDate messageDate)
+	public void setFirstMessageDate(LocalDate messageDate)
 	{
 		batchEntity.setMessageDate(messageDate);
 	}
 
 	@ClusteringColumn(1)
-	@CqlName(FIELD_MESSAGE_TIME)
-	public LocalTime getMessageTime()
+	@CqlName(FIELD_FIRST_MESSAGE_TIME)
+	public LocalTime getFirstMessageTime()
 	{
 		return batchEntity.getMessageTime();
 	}
 
-	public void setMessageTime(LocalTime messageTime)
+	public void setFirstMessageTime(LocalTime messageTime)
 	{
 		batchEntity.setMessageTime(messageTime);
 	}
