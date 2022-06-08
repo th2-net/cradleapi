@@ -32,6 +32,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static com.exactpro.cradle.TestUtils.generateUnicodeString;
+
 public class SerializationMessageTest {
 
 	@Test
@@ -100,11 +102,11 @@ public class SerializationMessageTest {
 		builder.setContent(messageContent.repeat(10).getBytes(StandardCharsets.UTF_8));
 		StoredMessage build = builder.build();
 		MessageSerializer serializer = new MessageSerializer();
-		byte[] serialize = serializer.serialize(build);
+		byte[] serialized = serializer.serialize(build);
 		MessageDeserializer deserializer = new MessageDeserializer();
 		var msgParams = new MessageCommonParams(build.getId());
-		StoredMessage deserialize = deserializer.deserialize(serialize, msgParams);
-		Assert.assertEquals(deserialize, build);
+		StoredMessage deserialized = deserializer.deserialize(serialized, msgParams);
+		Assert.assertEquals(deserialized, build);
 	}
 	@Test
 	public void serializeDeserializeEmptyBody() throws SerializationException {
@@ -228,12 +230,6 @@ public class SerializationMessageTest {
 		serializer.serializeBatch(batch, buffer, null);
 		Assert.assertEquals(buffer.position(), MessagesSizeCalculator.calculateMessageBatchSize(batch).total);
 	}
-	private String generateUnicodeString(int start, int size) {
-		StringBuilder generated = new StringBuilder();
-		for(int i = 0;i < size;i++){
-			generated.append(Character.toString(start++));
-		}
-		return generated.toString();
-	}
+
 
 }

@@ -35,6 +35,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import static com.exactpro.cradle.TestUtils.generateUnicodeString;
 import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateBatchEventSize;
 import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateEventRecordSize;
 
@@ -89,10 +90,10 @@ public class SerializationEventBatchTest {
 		String content = generateUnicodeString((1 << 19), 10);
 		BatchedStoredTestEvent build = createBatchedStoredTestEventWithContent(name, commonParams, content);
 		EventBatchSerializer serializer = new EventBatchSerializer();
-		byte[] serialize = serializer.serializeEventRecord(build);
+		byte[] serialized = serializer.serializeEventRecord(build);
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
-		BatchedStoredTestEvent deserialize = deserializer.deserializeBatchEntry(serialize, commonParams);
-		Assertions.assertThat(deserialize).usingRecursiveComparison().isEqualTo(build);
+		BatchedStoredTestEvent deserialized = deserializer.deserializeBatchEntry(serialized, commonParams);
+		Assertions.assertThat(deserialized).usingRecursiveComparison().isEqualTo(build);
 	}
 
 	static BatchedStoredTestEvent createBatchedStoredTestEvent(String name, EventBatchCommonParams commonParams) {
@@ -133,12 +134,6 @@ public class SerializationEventBatchTest {
 	}
 
 
-	private String generateUnicodeString(int start, int size) {
-		StringBuilder generated = new StringBuilder();
-		for(int i = 0;i < size;i++){
-			generated.append(Character.toString(start++));
-		}
-		return generated.toString();
-	}
+
 
 }
