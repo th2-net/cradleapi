@@ -20,6 +20,7 @@ import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.cassandra.dao.EntityConverter;
 import com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.retries.PagingSupplies;
+import com.exactpro.cradle.messages.StoredGroupMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
@@ -29,13 +30,13 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Iterator;
 
-public class GroupedMessageBatchIterator implements Iterator<StoredMessageBatch>
+public class GroupedMessageBatchIterator implements Iterator<StoredGroupMessageBatch>
 {
 	private static final Logger logger = LoggerFactory.getLogger(GroupedMessageBatchIterator.class);
 	
 	private final Instant filterFrom, filterTo;
 	private final PagedIterator<GroupedMessageBatchEntity> it;
-	private StoredMessageBatch nextCandidate;
+	private StoredGroupMessageBatch nextCandidate;
 	
 	public GroupedMessageBatchIterator(
 			MappedAsyncPagingIterable<GroupedMessageBatchEntity> rows,
@@ -89,18 +90,18 @@ public class GroupedMessageBatchIterator implements Iterator<StoredMessageBatch>
 	}
 
 	@Override
-	public StoredMessageBatch next()
+	public StoredGroupMessageBatch next()
 	{
-		StoredMessageBatch result = nextCandidate;
+		StoredGroupMessageBatch result = nextCandidate;
 		nextCandidate = null;
 		return result;
 	}
 
-	protected StoredMessageBatch convertEntity(GroupedMessageBatchEntity entity) throws IOException
+	protected StoredGroupMessageBatch convertEntity(GroupedMessageBatchEntity entity) throws IOException
 	{
 		try
 		{
-			return entity.getBatchEntity().toStoredMessageBatch();
+			return entity.toStoredGroupMessageBatch();
 		}
 		catch (CradleStorageException e)
 		{

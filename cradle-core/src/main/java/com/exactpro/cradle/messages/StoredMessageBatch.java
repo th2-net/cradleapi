@@ -36,45 +36,26 @@ import com.exactpro.cradle.utils.MessageUtils;
  * ID of first message is treated as batch ID.
  * Batch has limited capacity. If batch is full, messages can't be added to it and the batch must be flushed to Cradle
  */
-public class StoredMessageBatch
+public class StoredMessageBatch extends AbstractStoredMessageBatch
 {
 	private static final Logger logger = LoggerFactory.getLogger(StoredMessageBatch.class);
-	
-	public static final int DEFAULT_MAX_BATCH_SIZE = 1024*1024;  //1 Mb
-	private static final long EMPTY_BATCH_SIZE = MessagesSizeCalculator.calculateServiceMessageBatchSize(null);
-	
-	private StoredMessageBatchId id;
-	private final long maxBatchSize;
-	private long batchSize;
-	private final List<StoredMessage> messages;
-	
+
+	protected StoredMessageBatchId id;
+
 	public StoredMessageBatch()
 	{
-		this(DEFAULT_MAX_BATCH_SIZE);
+		super ();
 	}
 	
 	public StoredMessageBatch(long maxBatchSize)
 	{
-		this.messages = createMessagesList();
-		this.maxBatchSize = maxBatchSize;
+		super(maxBatchSize);
 	}
-	
-	public static StoredMessageBatch singleton(MessageToStore message) throws CradleStorageException
-	{
-		StoredMessageBatch result = new StoredMessageBatch();
-		result.addMessage(message);
-		return result;
-	}
-	
-	
-	/**
-	 * @return batch ID. It is based on first message in the batch
-	 */
-	public StoredMessageBatchId getId()
-	{
+
+	public StoredMessageBatchId getId() {
 		return id;
 	}
-	
+
 	/**
 	 * @return directions of messages in the batch
 	 */
@@ -82,7 +63,7 @@ public class StoredMessageBatch
 	{
 		return id != null ? id.getDirection() : null;
 	}
-	
+
 	/**
 	 * @return name of stream all messages in the batch are related to
 	 */
@@ -91,65 +72,11 @@ public class StoredMessageBatch
 		return id != null ? id.getStreamName() : null;
 	}
 	
-	/**
-	 * @return number of messages currently stored in the batch
-	 */
-	public int getMessageCount()
+	public static StoredMessageBatch singleton(MessageToStore message) throws CradleStorageException
 	{
-		return messages.size();
-	}
-	
-	/**
-	 * @return size of messages currently stored in the batch
-	 */
-	public long getBatchSize()
-	{
-		return batchSize == 0 ? EMPTY_BATCH_SIZE : batchSize;
-	}
-	
-	/**
-	 * @return collection of messages stored in the batch
-	 */
-	public Collection<StoredMessage> getMessages()
-	{
-		return new ArrayList<>(messages);
-	}
-
-	/**
-	 * @return collection of messages stored in the batch in reverse order
-	 */
-	public Collection<StoredMessage> getMessagesReverse()
-	{
-		List<StoredMessage> list = new ArrayList<>(messages);
-		Collections.reverse(list);
-		
-		return list;
-	}
-
-	/**
-	 * @return Duration between first and last message timestamps stored in the batch
-	 */
-	public Duration getBatchDuration()
-	{
-		if (messages.size()<2)
-			return Duration.ZERO;
-
-		return Duration.between(messages.get(0).getTimestamp(), messages.get(getMessageCount() - 1).getTimestamp());
-	}
-
-	/**
-	 * Adds message to the batch. Batch will add correct message ID by itself, verifying message to match batch conditions.
-	 * Messages can be added to batch until {@link #isFull()} returns true.
-	 * Result of this method should be used for all further operations on the message
-	 * @param message to add to the batch
-	 * @return immutable message object with assigned ID
-	 * @throws CradleStorageException if message cannot be added to the batch due to verification failure or if batch limit is reached
-	 */
-	public StoredMessage addMessage(MessageToStore message) throws CradleStorageException
-	{
-		int messageSize = calculateSizeAndCheckConstraints(message);
-		
-		return addMessageInternal(message, messageSize);
+		StoredMessageBatch result = new StoredMessageBatch();
+		result.addMessage(message);
+		return result;
 	}
 
 	protected int calculateSizeAndCheckConstraints(MessageToStore message) throws CradleStorageException
@@ -200,9 +127,9 @@ public class StoredMessageBatch
 		
 		return expectedMessageSize;
 	}
-	
-	protected StoredMessage addMessageInternal(MessageToStore message, int expectedMessageSize)
-	{
+
+	@Override
+	protected StoredMessage addMessageInternal(MessageToStore message, int expectedMessageSize) {
 		long messageIndex = message.getIndex() >= 0 ? message.getIndex() : getLastMessage().getIndex()+1;
 		// Add first message
 		if (id == null)
@@ -217,95 +144,16 @@ public class StoredMessageBatch
 		batchSize += expectedMessageSize;
 		return msg;
 	}
-	
-	public StoredMessage getFirstMessage()
-	{
-		return !messages.isEmpty() ? messages.get(0) : null;
-	}
-	
-	public StoredMessage getLastMessage()
-	{
-		return !messages.isEmpty() ? messages.get(messages.size()-1) : null;
-	}
-	
-	/**
-	 * @return timestamp of first message within the batch
-	 */
-	public Instant getFirstTimestamp()
-	{
-		StoredMessage m = getFirstMessage();
-		return m != null ? m.getTimestamp() : null;
-	}
-	
-	/**
-	 * @return timestamp of last message within the batch
-	 */
-	public Instant getLastTimestamp()
-	{
-		StoredMessage m = getLastMessage();
-		return m != null ? m.getTimestamp() : null;
-	}
-	
-	/**
-	 * @return true if no messages were added to batch yet
-	 */
-	public boolean isEmpty()
-	{
-		return messages.size() == 0;
-	}
-	
-	/**
-	 * Indicates if the batch cannot hold more messages
-	 * @return true if batch capacity is reached and the batch must be flushed to Cradle
-	 */
-	public boolean isFull()
-	{
-		return getBatchSize() >= maxBatchSize;
-	}
-	
-	/**
-	 * Shows how many bytes the batch can hold till its capacity is reached
-	 * @return number of bytes the batch can hold
-	 */
-	public long getSpaceLeft()
-	{
-		long result = maxBatchSize-getBatchSize();
-		return result > 0 ? result : 0;
-	}
-	
-	/**
-	 * Shows if batch has enough space to hold given message
-	 * @param message to check against batch capacity
-	 * @return true if batch has enough space to hold given message
-	 */
-	public boolean hasSpace(MessageToStore message)
-	{
-		return hasSpace(MessagesSizeCalculator.calculateMessageSizeInBatch(message), message.getStreamName());
-	}
 
 	/**
-	 * Shows if batch has enough space to hold given message
-	 * @param expected expected size of given message
-	 * @param streamName stream name of expected message
-	 * @return true if batch has enough space to hold given message
+	 *
+	 * @param batch the batch to add to the current one.
+	 *              The batch to add must contain message with same stream name and direction as the current one.
+	 *              The index of the first message in the [batch] should be greater
+	 *              than the last message index in the current batch.
+	 * @return true if the result batch meets the restriction for message count and batch size
+	 * @throws CradleStorageException if the batch doesn't meet the requirements regarding inner content
 	 */
-	private boolean hasSpace(int expected, String streamName)
-	{
-		long currentSize = messages.isEmpty()
-				? MessagesSizeCalculator.calculateServiceMessageBatchSize(streamName) : getBatchSize();
-		return currentSize + expected <= maxBatchSize;
-	}
-	
-
-  /**
-   *
-   * @param batch the batch to add to the current one.
-   *              The batch to add must contain message with same stream name and direction as the current one.
-   *              The index of the first message in the [batch] should be greater
-   *              than the last message index in the current batch.
-   * @return true if the result batch meets the restriction for message count and batch size
-   * @throws CradleStorageException if the batch doesn't meet the requirements regarding inner content
-   */
 	public boolean addBatch(StoredMessageBatch batch) throws CradleStorageException {
 		if (batch.isEmpty()) {
 			// we don't need to actually add empty batch
@@ -321,7 +169,7 @@ public class StoredMessageBatch
 			return false;
 		}
 		long resultSize = batchSize + batch.messages.stream().mapToInt(MessagesSizeCalculator::calculateMessageSizeInBatch).sum();
-		
+
 		if (resultSize > maxBatchSize) {
 			// cannot add because of size limit
 			return false;
@@ -331,8 +179,8 @@ public class StoredMessageBatch
 		this.batchSize = resultSize;
 		return true;
 	}
-	
-	private void verifyBatch(StoredMessageBatch otherBatch) throws CradleStorageException {
+
+	protected void verifyBatch(StoredMessageBatch otherBatch) throws CradleStorageException {
 		StoredMessageBatchId otherId = otherBatch.id;
 		if (!Objects.equals(id.getStreamName(), otherId.getStreamName())
 				|| id.getDirection() != otherId.getDirection()) {

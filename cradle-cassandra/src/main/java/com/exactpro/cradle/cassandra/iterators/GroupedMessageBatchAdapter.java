@@ -21,12 +21,13 @@ import com.exactpro.cradle.cassandra.dao.EntityConverter;
 import com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity;
 import com.exactpro.cradle.cassandra.dao.messages.converters.GroupedMessageBatchConverter;
 import com.exactpro.cradle.cassandra.retries.PagingSupplies;
+import com.exactpro.cradle.messages.StoredGroupMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 
 import java.time.Instant;
 import java.util.Iterator;
 
-public class GroupedMessageBatchAdapter implements Iterable<StoredMessageBatch>
+public class GroupedMessageBatchAdapter implements Iterable<StoredGroupMessageBatch>
 {
 	private final MappedAsyncPagingIterable<GroupedMessageBatchEntity> entities;
 	private final PagingSupplies pagingSupplies;
@@ -47,7 +48,7 @@ public class GroupedMessageBatchAdapter implements Iterable<StoredMessageBatch>
 	}
 
 	@Override
-	public Iterator<StoredMessageBatch> iterator()
+	public Iterator<StoredGroupMessageBatch> iterator()
 	{
 		return new GroupedMessageBatchIterator(entities, pagingSupplies, converter, queryInfo, filterFrom, filterTo);
 	}

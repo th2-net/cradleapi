@@ -40,7 +40,7 @@ import com.exactpro.cradle.cassandra.CassandraCradleStorage;
  * Contains all data about {@link StoredMessageBatch} to store in Cassandra
  */
 @Entity
-public class DetailedMessageBatchEntity extends MessageBatchEntity
+public class  DetailedMessageBatchEntity extends MessageBatchEntity
 {
 	private static final Logger logger = LoggerFactory.getLogger(DetailedMessageBatchEntity.class);
 	

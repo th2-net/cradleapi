@@ -42,10 +42,7 @@ import com.exactpro.cradle.cassandra.retries.*;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.intervals.IntervalsWorker;
-import com.exactpro.cradle.messages.StoredMessage;
-import com.exactpro.cradle.messages.StoredMessageBatch;
-import com.exactpro.cradle.messages.StoredMessageFilter;
-import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.testevents.*;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.MessageUtils;
@@ -240,8 +237,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected CompletableFuture<Void> doStoreGroupedMessageBatchAsync(StoredMessageBatch batch, String groupName)
 	{
-		logger.debug("Creating grouped message batch entity from message batch with id {} and group {}",
-				batch.getId(), groupName);
+		logger.debug("Creating grouped message batch entity from message batch with group {}", groupName);
 		GroupedMessageBatchEntity entity;
 		try
 		{
@@ -599,7 +595,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Iterable<StoredMessageBatch> doGetGroupedMessageBatches(String groupName, Instant from, Instant to)
+	protected Iterable<StoredGroupMessageBatch> doGetGroupedMessageBatches(String groupName, Instant from, Instant to)
 			throws IOException
 	{
 		try
@@ -623,8 +619,8 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetGroupedMessageBatchesAsync(String groupName,
-			Instant from, Instant to)
+	protected CompletableFuture<Iterable<StoredGroupMessageBatch>> doGetGroupedMessageBatchesAsync(String groupName,
+																								   Instant from, Instant to)
 	{
 		String queryInfo = format("fetching grouped message batches by group '%s' between %s and %s", groupName,
 				from, to);

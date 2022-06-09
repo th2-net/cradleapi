@@ -17,7 +17,8 @@
 package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.mapper.annotations.*;
-import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.messages.*;
+import com.exactpro.cradle.utils.CradleStorageException;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -204,6 +205,27 @@ public class GroupedMessageBatchEntity
 	public DetailedMessageBatchEntity getBatchEntity()
 	{
 		return batchEntity;
+	}
+
+	public StoredGroupMessageBatch toStoredGroupMessageBatch() throws IOException, CradleStorageException
+	{
+		StoredGroupMessageBatch messageBatch = new StoredGroupMessageBatch();
+		for (StoredMessage storedMessage : messageBatch.getMessages())
+		{
+			MessageToStoreBuilder builder = new MessageToStoreBuilder()
+					.content(storedMessage.getContent())
+					.direction(storedMessage.getDirection())
+					.streamName(storedMessage.getStreamName())
+					.timestamp(storedMessage.getTimestamp())
+					.index(storedMessage.getIndex());
+			StoredMessageMetadata metadata = storedMessage.getMetadata();
+			if (metadata != null)
+				metadata.toMap().forEach(builder::metadata);
+
+			messageBatch.addMessage(builder.build());
+		}
+
+		return messageBatch;
 	}
 	
 	@Transient
