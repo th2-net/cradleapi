@@ -20,6 +20,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 
+import static com.exactpro.cradle.serialization.MessagesSizeCalculator.lenStr;
 import static com.exactpro.cradle.serialization.Serialization.INVALID_MAGIC_NUMBER_FORMAT;
 
 public class SerializationUtils {
@@ -42,7 +43,7 @@ public class SerializationUtils {
 		if (value.length() > USHORT_MAX_VALUE) {
 			throw new SerializationException(String.format("%s is too big. Expected length [0-%s]", paramName, USHORT_MAX_VALUE));
 		}
-		buffer.putShort((short) value.length());
+		buffer.putShort((short) lenStr(value));
 		buffer.put(value.getBytes(StandardCharsets.UTF_8));
 	}
 
@@ -50,7 +51,7 @@ public class SerializationUtils {
 		if (value == null) {
 			buffer.putInt(-1);
 		} else {
-			buffer.putInt(value.length());
+			buffer.putInt(lenStr(value));
 			buffer.put(value.getBytes(StandardCharsets.UTF_8));
 		}
 	}
