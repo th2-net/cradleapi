@@ -218,7 +218,7 @@ public class MessagesWorker extends Worker
 					return selectQueryExecutor.executeSingleRowResultQuery(
 									() -> mbOperator.get(pageId.getName(), id.getSessionAlias(),
 											id.getDirection().getLabel(), ldt.toLocalDate(),
-											row.getLocalTime(FIELD_MESSAGE_TIME), row.getLong(FIELD_SEQUENCE), readAttrs),
+											row.getLocalTime(FIELD_FIRST_MESSAGE_TIME), row.getLong(FIELD_SEQUENCE), readAttrs),
 									mbEntityConverter::getEntity,
 									format("get message batch for message with id '%s'", id))
 							.thenApplyAsync(entity ->
