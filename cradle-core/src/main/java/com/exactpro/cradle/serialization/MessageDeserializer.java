@@ -115,10 +115,11 @@ public class MessageDeserializer {
 	}
 
 	private StoredMessageId readMessageId(ByteBuffer buffer, MessageCommonParams commonParams) throws SerializationException {
+		String sessionAlias = readString(buffer);
+		Direction direction = Direction.byLabel(readString(buffer));
 		Instant time = readInstant(buffer);
 		long index = buffer.getLong();
-		return new StoredMessageId(commonParams.getBookId(), commonParams.getSessionAlias(),
-				commonParams.getDirection(), time, index);
+		return new StoredMessageId(commonParams.getBookId(), sessionAlias, direction, time, index);
 	}
 
 	private void readMessageMetaData(ByteBuffer buffer, StoredMessageBuilder builder) throws SerializationException {
@@ -129,5 +130,4 @@ public class MessageDeserializer {
 			builder.putMetadata(key, value);
 		}
 	}
-	
 }

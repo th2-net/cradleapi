@@ -208,7 +208,8 @@ public class MessageBatchToStoreJoinTest
             String sessionAlias, long startSequence, Direction direction, Instant startTimestamp) throws CradleStorageException {
         return createBatch(bookId, sessionAlias, startSequence, direction, startTimestamp, 1,
                 MAX_SIZE - (MessagesSizeCalculator.MESSAGE_BATCH_CONST_VALUE
-                        + MessagesSizeCalculator.MESSAGE_SIZE_CONST_VALUE + MessagesSizeCalculator.MESSAGE_LENGTH_IN_BATCH));
+                        + MessagesSizeCalculator.MESSAGE_SIZE_CONST_VALUE + MessagesSizeCalculator.MESSAGE_LENGTH_IN_BATCH
+                + MessagesSizeCalculator.calculateStringSize(sessionAlias) + MessagesSizeCalculator.calculateStringSize(direction.getLabel())));
     }
 
     private int getBatchSize(StoredMessageBatch batch) throws SerializationException {

@@ -17,7 +17,6 @@
 package com.exactpro.cradle;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -145,7 +144,7 @@ public class DummyCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected void doStoreGroupedMessageBatch(MessageBatchToStore batch, PageInfo page, String groupName)
+	protected void doStoreGroupedMessageBatch(GroupedMessageBatchToStore batch, PageInfo page, String groupName)
 			throws IOException
 	{
 		
@@ -159,7 +158,7 @@ public class DummyCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Void> doStoreGroupedMessageBatchAsync(MessageBatchToStore batch, PageInfo page,
+	protected CompletableFuture<Void> doStoreGroupedMessageBatchAsync(GroupedMessageBatchToStore batch, PageInfo page,
 			String groupName) throws IOException, CradleStorageException
 	{
 		return null;
@@ -243,8 +242,8 @@ public class DummyCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CradleResultSet<StoredMessageBatch> doGetGroupedMessageBatches(GroupedMessageFilter filter,
-			BookInfo book)
+	protected CradleResultSet<StoredGroupedMessageBatch> doGetGroupedMessageBatches(GroupedMessageFilter filter,
+																					BookInfo book)
 			throws IOException, CradleStorageException
 	{
 		return null;
@@ -258,7 +257,7 @@ public class DummyCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetGroupedMessageBatchesAsync(
+	protected CompletableFuture<CradleResultSet<StoredGroupedMessageBatch>> doGetGroupedMessageBatchesAsync(
 			GroupedMessageFilter filter, BookInfo book) throws CradleStorageException
 	{
 		return null;

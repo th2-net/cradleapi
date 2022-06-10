@@ -87,6 +87,20 @@ public class MessagesWorker extends Worker
 		}
 	}
 
+	public static StoredGroupedMessageBatch mapGroupedMessageBatchEntity(PageId pageId, GroupedMessageBatchEntity entity)
+	{
+		try
+		{
+			StoredGroupedMessageBatch batch = entity.toStoredGroupedMessageBatch(pageId);
+			updateMessageReadMetrics(pageId.getBookId(), batch);
+			return batch;
+		}
+		catch (DataFormatException | IOException e)
+		{
+			throw new CompletionException("Error while converting message batch entity into stored message batch", e);
+		}
+	}
+
 	private static void updateMessageReadMetrics(StoredMessageBatch batch)
 	{
 		MESSAGE_READ_METRIC
@@ -94,10 +108,24 @@ public class MessagesWorker extends Worker
 				.inc(batch.getMessageCount());
 	}
 
+	private static void updateMessageReadMetrics(BookId bookId, StoredGroupedMessageBatch batch)
+	{
+		MESSAGE_READ_METRIC
+				.labels(bookId.getName(), batch.getGroup(), "")
+				.inc(batch.getMessageCount());
+	}
+
 	private static void updateMessageWriteMetrics(MessageBatchEntity entity, BookId bookId)
 	{
 		MESSAGE_WRITE_METRIC
 				.labels(bookId.getName(), entity.getSessionAlias(), entity.getDirection())
+				.inc(entity.getMessageCount());
+	}
+
+	private static void updateMessageWriteMetrics(GroupedMessageBatchEntity entity, BookId bookId)
+	{
+		MESSAGE_WRITE_METRIC
+				.labels(bookId.getName(), entity.getGroup(), "")
 				.inc(entity.getMessageCount());
 	}
 
@@ -112,7 +140,7 @@ public class MessagesWorker extends Worker
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, provider), composingService);
 	}
 
-	public CompletableFuture<CradleResultSet<StoredMessageBatch>> getGroupedMessageBatches(GroupedMessageFilter filter,
+	public CompletableFuture<CradleResultSet<StoredGroupedMessageBatch>> getGroupedMessageBatches(GroupedMessageFilter filter,
 			BookInfo book)
 			throws CradleStorageException
 	{
@@ -228,10 +256,10 @@ public class MessagesWorker extends Worker
 		return new MessageBatchEntity(batch, pageId, settings.getMaxUncompressedMessageBatchSize());
 	}
 	
-	public GroupedMessageBatchEntity createGroupedMessageBatchEntity(MessageBatchToStore batch, PageId pageId, String groupName)
+	public GroupedMessageBatchEntity createGroupedMessageBatchEntity(GroupedMessageBatchToStore batch, PageId pageId, String groupName)
 			throws IOException
 	{
-		return new GroupedMessageBatchEntity(createMessageBatchEntity(batch, pageId), groupName);
+		return new GroupedMessageBatchEntity(batch, groupName, pageId, settings.getMaxUncompressedMessageBatchSize());
 	}
 
 	public CompletableFuture<PageSessionEntity> storePageSession(MessageBatchToStore batch, PageId pageId)
@@ -286,9 +314,9 @@ public class MessagesWorker extends Worker
 		List<SerializedEntityMetadata> meta = entity.getSerializedMessageMetadata();
 
 		return gmbOperator.write(entity, writeAttrs)
-				.thenAccept(result -> messageStatisticsCollector.updateMessageBatchStatistics(bookId, entity.getPage(), entity.getGroup(), Direction.FIRST.getLabel(), meta))
+				.thenAccept(result -> messageStatisticsCollector.updateMessageBatchStatistics(bookId, entity.getPage(), entity.getGroup(), "", meta))
 				.thenAcceptAsync(result -> sessionStatisticsCollector.updateSessionStatistics(bookId, entity.getPage(), SessionRecordType.SESSION_GROUP, entity.getGroup(), meta))
-				.thenAcceptAsync(result -> updateMessageWriteMetrics(entity.getMessageBatchEntity(), bookId), composingService)
+				.thenAcceptAsync(result -> updateMessageWriteMetrics(entity, bookId), composingService)
 				.thenApplyAsync(result -> entity, composingService);
 	}
 

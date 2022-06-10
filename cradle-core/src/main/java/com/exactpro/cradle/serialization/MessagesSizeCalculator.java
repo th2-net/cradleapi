@@ -52,23 +52,25 @@ public class MessagesSizeCalculator {
 	public final static int MESSAGE_LENGTH_IN_BATCH = 4;
 
 	public static int calculateMessageSize(CradleMessage message) {
-		int i = (message.getContent() != null ? message.getContent().length : 0) + MESSAGE_SIZE_CONST_VALUE;
+		int len = (message.getContent() != null ? message.getContent().length : 0) + MESSAGE_SIZE_CONST_VALUE;
+		len += calculateStringSize(message.getSessionAlias()) +
+				calculateStringSize(message.getDirection().getLabel());
 		Map<String, String> md ;
 		if (message.getMetadata() != null && (md = message.getMetadata().toMap()) != null) {
 			for (Map.Entry<String, String> entry : md.entrySet()) {
-				i += lenStr(entry.getKey())  // key
-						+ lenStr(entry.getValue()) + 8; // value + 2 length
+				len += calculateStringSize(entry.getKey())  // key
+						+ calculateStringSize(entry.getValue()); // value
 			}
 		}
-		return i;
+		return len;
 	}
 
 	public static int calculateMessageSizeInBatch(CradleMessage message) {
 		return calculateMessageSize(message) + MESSAGE_LENGTH_IN_BATCH;
 	}
 
-	private static int lenStr(String str) {
-		return str != null ? str.getBytes(StandardCharsets.UTF_8).length : 0;
+	public static int calculateStringSize(String str) {
+		return (str != null ? str.getBytes(StandardCharsets.UTF_8).length : 0) + 4;
 	}
 
 	public static SerializationBatchSizes calculateMessageBatchSize(Collection<? extends CradleMessage> message) {

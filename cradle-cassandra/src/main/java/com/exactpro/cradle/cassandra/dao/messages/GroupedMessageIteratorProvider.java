@@ -26,25 +26,20 @@ import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
-import com.exactpro.cradle.filters.ComparisonOperation;
-import com.exactpro.cradle.filters.FilterForGreater;
+import com.exactpro.cradle.cassandra.workers.MessagesWorker;
 import com.exactpro.cradle.messages.GroupedMessageFilter;
-import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.messages.StoredGroupedMessageBatch;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.cassandra.workers.MessagesWorker.mapMessageBatchEntity;
-
-public class GroupedMessageIteratorProvider extends IteratorProvider<StoredMessageBatch>
+public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroupedMessageBatch>
 {
 	public static final Logger logger = LoggerFactory.getLogger(GroupedMessageIteratorProvider.class);
 	
@@ -101,7 +96,7 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredMessa
 	}
 
 	@Override
-	public CompletableFuture<Iterator<StoredMessageBatch>> nextIterator()
+	public CompletableFuture<Iterator<StoredGroupedMessageBatch>> nextIterator()
 	{
 		if (cassandraFilter == null)
 			return CompletableFuture.completedFuture(null);
@@ -119,7 +114,7 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredMessa
 					// Updated limit should be smaller, since we already got entities from previous batch
 					cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(),0));
 					return new ConvertingPagedIterator<>(resultSet, selectQueryExecutor, limit, returned,
-							entity -> mapMessageBatchEntity(pageId, entity.getMessageBatchEntity()), converter::getEntity,
+							entity -> MessagesWorker.mapGroupedMessageBatchEntity(pageId, entity), converter::getEntity,
 							"fetch next page of message batches");
 				}, composingService)
 				.thenApplyAsync(it -> new FilteredGroupedMessageBatchIterator(it, filter, limit, returned), composingService);

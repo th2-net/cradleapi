@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle;
 
+import com.exactpro.cradle.messages.GroupedMessageBatchToStore;
 import com.exactpro.cradle.messages.MessageBatchToStore;
 import com.exactpro.cradle.messages.MessageToStore;
 import com.exactpro.cradle.testevents.StoredTestEventId;
@@ -42,10 +43,15 @@ public class CradleEntitiesFactory
 		this.maxTestEventBatchSize = maxTestEventBatchSize;
 	}
 	
-	
+
+	@Deprecated
 	public MessageBatchToStore messageBatch()
 	{
 		return new MessageBatchToStore(maxMessageBatchSize);
+	}
+
+	public GroupedMessageBatchToStore groupedMessageBatch(String group) {
+		return new GroupedMessageBatchToStore(group, maxMessageBatchSize);
 	}
 	
 	public MessageBatchToStore singletonMessageBatch(MessageToStore message) throws CradleStorageException

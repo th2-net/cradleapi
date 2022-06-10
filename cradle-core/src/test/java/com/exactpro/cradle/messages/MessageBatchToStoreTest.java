@@ -148,6 +148,8 @@ public class MessageBatchToStoreTest
 				.content(new byte[MAX_SIZE - MessagesSizeCalculator.MESSAGE_BATCH_CONST_VALUE
 						- MessagesSizeCalculator.MESSAGE_LENGTH_IN_BATCH * 2
 						- MessagesSizeCalculator.MESSAGE_SIZE_CONST_VALUE * 2
+						- MessagesSizeCalculator.calculateStringSize(sessionAlias) * 2
+						- MessagesSizeCalculator.calculateStringSize(direction.getLabel()) * 2
 						- content.length])
 				.build());
 
