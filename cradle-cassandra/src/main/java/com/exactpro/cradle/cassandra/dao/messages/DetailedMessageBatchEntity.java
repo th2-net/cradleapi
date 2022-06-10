@@ -69,7 +69,7 @@ public class  DetailedMessageBatchEntity extends MessageBatchEntity
 	public DetailedMessageBatchEntity()
 	{
 	}
-	
+
 	public DetailedMessageBatchEntity(StoredMessageBatch batch, UUID instanceId) throws IOException
 	{
 		super(batch, instanceId);
@@ -81,6 +81,10 @@ public class  DetailedMessageBatchEntity extends MessageBatchEntity
 		this.setLastMessageTimestamp(batch.getLastTimestamp());
 		this.setMessageCount(batch.getMessageCount());
 		this.setLastMessageIndex(batch.getLastMessage().getIndex());
+	}
+
+	public DetailedMessageBatchEntity(StoredGroupMessageBatch batch, UUID instanceId) throws IOException {
+		super(batch, instanceId);
 	}
 
 	public StoredMessageBatch toStoredMessageBatch() throws IOException, CradleStorageException

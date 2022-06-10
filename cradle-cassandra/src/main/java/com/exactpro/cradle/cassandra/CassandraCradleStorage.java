@@ -204,7 +204,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected void doStoreGroupedMessageBatch(StoredMessageBatch batch, String groupName) throws IOException
+	protected void doStoreGroupedMessageBatch(StoredGroupMessageBatch batch, String groupName) throws IOException
 	{
 		try
 		{
@@ -212,7 +212,7 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		catch (Exception e)
 		{
-			throw new IOException("Error while storing message batch "+batch.getId(), e);
+			throw new IOException("Error while storing message batch with group name"+groupName, e);
 		}
 	}
 	
@@ -235,7 +235,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected CompletableFuture<Void> doStoreGroupedMessageBatchAsync(StoredMessageBatch batch, String groupName)
+	protected CompletableFuture<Void> doStoreGroupedMessageBatchAsync(StoredGroupMessageBatch batch, String groupName)
 	{
 		logger.debug("Creating grouped message batch entity from message batch with group {}", groupName);
 		GroupedMessageBatchEntity entity;
@@ -249,8 +249,25 @@ public class CassandraCradleStorage extends CradleStorage
 			error.completeExceptionally(e);
 			return error;
 		}
-		return new AsyncOperator<Void>(semaphore).getFuture(() -> doWriteMessage(entity.getBatchEntity(), true))
-				.thenComposeAsync(r -> doWriteGroupedMessage(entity));
+
+		CompletableFuture<Void> future = new AsyncOperator<Void>(semaphore).getFuture(() -> doWriteMessage(entity.getBatchEntity(), true));
+		try {
+			Collection<StoredMessageBatch> batches = entity.toStoredGroupMessageBatch().toStoredMessageBatches();
+
+			for (StoredMessageBatch el : batches) {
+				future = future.thenComposeAsync(r ->  {
+					try {
+						return doWriteMessage(new DetailedMessageBatchEntity(batch, instanceUuid), true);
+					} catch (IOException e) {
+						return new CompletableFuture<>();
+					}
+				});
+			}
+		} catch (IOException | CradleStorageException e) {
+			logger.error("Could not get message batches from group message batch: {}", e.getMessage());
+		}
+
+		return future;
 	}
 	
 	@Override

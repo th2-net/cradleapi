@@ -121,4 +121,38 @@ public class StoredGroupMessageBatch extends AbstractStoredMessageBatch
 
 		return expectedMessageSize;
 	}
+
+	public Collection<StoredMessageBatch> toStoredMessageBatches () {
+		Map<StoredMessageKey, StoredMessageBatch> messageBatches = new HashMap<>();
+
+		for (StoredMessage message : getMessages()) {
+			StoredMessageKey messageKey = new StoredMessageKey(message.getStreamName(), message.getDirection());
+
+			if (!messageBatches.containsKey(messageKey)) {
+				messageBatches.put(messageKey, new StoredMessageBatch());
+			}
+
+			MessageToStoreBuilder builder = new MessageToStoreBuilder()
+					.content(message.getContent())
+					.direction(message.getDirection())
+					.streamName(message.getStreamName())
+					.timestamp(message.getTimestamp())
+					.index(message.getIndex());
+			StoredMessageMetadata metadata = message.getMetadata();
+			if (metadata != null)
+				metadata.toMap().forEach(builder::metadata);
+
+			try {
+				messageBatches.get(messageKey).addMessage(builder.build());
+			} catch (CradleStorageException e) {
+				//TODO check if needs re-throw
+				logger.error("Could not add message {}:{}:{} to batch",
+						message.getStreamName(),
+						message.getDirection().getLabel(),
+						message.getIndex());
+			}
+		}
+
+		return messageBatches.values();
+	}
 }

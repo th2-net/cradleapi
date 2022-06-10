@@ -37,7 +37,7 @@ public class GroupedMessageBatchEntity
 	@Transient
 	private final DetailedMessageBatchEntity batchEntity;
 	
-	public GroupedMessageBatchEntity(StoredMessageBatch batch, UUID instanceId, String group) throws IOException
+	public GroupedMessageBatchEntity(StoredGroupMessageBatch batch, UUID instanceId, String group) throws IOException
 	{
 		this(new DetailedMessageBatchEntity(batch, instanceId), group);
 	}

@@ -27,15 +27,12 @@ import java.util.List;
 import java.util.UUID;
 
 import com.exactpro.cradle.Order;
+import com.exactpro.cradle.messages.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
-import com.exactpro.cradle.messages.StoredMessage;
-import com.exactpro.cradle.messages.StoredMessageBatch;
-import com.exactpro.cradle.messages.StoredMessageBatchId;
-import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CompressionUtils;
 import com.exactpro.cradle.utils.MessageUtils;
 
@@ -78,6 +75,28 @@ public class MessageBatchEntity extends MessageBatchMetadataEntity
 			}
 		}
 		
+		this.setCompressed(toCompress);
+		this.setContent(ByteBuffer.wrap(batchContent));
+	}
+
+	public MessageBatchEntity (StoredGroupMessageBatch batch, UUID instanceId) throws IOException {
+		this.setInstanceId(instanceId);
+		logger.debug("Creating Entity with meta-data");
+
+		byte[] batchContent = MessageUtils.serializeGroupMessages(batch.getMessages());
+		boolean toCompress = this.isNeedToCompress(batchContent);
+		if (toCompress)
+		{
+			try
+			{
+				batchContent = CompressionUtils.compressData(batchContent);
+			}
+			catch (IOException e)
+			{
+				throw new IOException("Could not compress message batch contents for group batch to save in Cradle", e);
+			}
+		}
+
 		this.setCompressed(toCompress);
 		this.setContent(ByteBuffer.wrap(batchContent));
 	}

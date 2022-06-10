@@ -37,6 +37,12 @@ public class MessagesSizeCalculator {
 	 *  
 	 */
 	public final static int MESSAGE_SIZE_CONST_VALUE = 30;
+	/*
+	 * Everything written above with
+	 * 2 - Stream name length
+	 * 1 - Direction length
+	 */
+	public final static int GROUP_MESSAGE_SIZE_CONST_VALUE = MESSAGE_SIZE_CONST_VALUE + 3;
 
 	/*
 	 * 	     4 - magic number
@@ -57,6 +63,19 @@ public class MessagesSizeCalculator {
 	public static int calculateMessageSize(StoredMessage message) {
 		int i = (message.getContent() != null ? message.getContent().length : 0) + MESSAGE_SIZE_CONST_VALUE;
 		Map<String, String> md ;
+		if (message.getMetadata() != null && (md = message.getMetadata().toMap()) != null) {
+			for (Map.Entry<String, String> entry : md.entrySet()) {
+				i += lenStr(entry.getKey())  // key
+						+ lenStr(entry.getValue()) + 8; // value + 2 length
+			}
+		}
+		return i;
+	}
+
+	public static int calculateGroupMessageSize(StoredMessage message) {
+		int i = (message.getContent() != null ? message.getContent().length : 0) + MESSAGE_SIZE_CONST_VALUE;
+		Map<String, String> md ;
+		i += calculateServiceMessageBatchSize(message.getStreamName());
 		if (message.getMetadata() != null && (md = message.getMetadata().toMap()) != null) {
 			for (Map.Entry<String, String> entry : md.entrySet()) {
 				i += lenStr(entry.getKey())  // key
@@ -104,6 +123,20 @@ public class MessagesSizeCalculator {
 		int i  = 0;
 		for (StoredMessage storedMessage : message) {
 			sizes.mess[i] = calculateMessageSize(storedMessage);
+			sizes.total += 4 + sizes.mess[i];
+			i++;
+		}
+
+		return sizes;
+	}
+
+	public static SerializationBatchSizes calculateGroupMessageBatchSize(Collection<StoredMessage> message) {
+
+		SerializationBatchSizes sizes = new SerializationBatchSizes(message.size());
+
+		int i  = 0;
+		for (StoredMessage storedMessage : message) {
+			sizes.mess[i] = calculateGroupMessageSize(storedMessage);
 			sizes.total += 4 + sizes.mess[i];
 			i++;
 		}
