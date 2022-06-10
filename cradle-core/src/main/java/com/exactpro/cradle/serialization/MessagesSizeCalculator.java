@@ -35,6 +35,7 @@ public class MessagesSizeCalculator {
 	 * 	Collapsed constant = 30 
 	 *  
 	 */
+
 	public final static int MESSAGE_SIZE_CONST_VALUE = 30;
 
 	/*
