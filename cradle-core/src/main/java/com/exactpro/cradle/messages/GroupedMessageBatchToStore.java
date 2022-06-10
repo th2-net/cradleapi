@@ -108,7 +108,7 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 			batchDate = TimeUtils.toLocalTimestamp(message.getTimestamp()).toLocalDate();
 			messageSeq = i;
 		} else {
-			if (bookId.equals(message.getBookId()))
+			if (!bookId.equals(message.getBookId()))
 				throw new CradleStorageException("Batch contains messages of book '" + bookId + "', "
 						+ "but in your message it is '"+message.getBookId()+"'");
 			LocalDate messageDate = TimeUtils.toLocalTimestamp(message.getTimestamp()).toLocalDate();
