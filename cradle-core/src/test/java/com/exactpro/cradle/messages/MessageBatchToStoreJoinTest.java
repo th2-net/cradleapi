@@ -35,8 +35,7 @@ public class MessageBatchToStoreJoinTest
 {
     private static final BookId bookId = new BookId("testbook");
     static final int MAX_SIZE = 1024;
-    static final long MAX_MESSAGE_BATCH_DURATION_IN_SECONDS = 600;
-    
+
     @Test
     public void testJoinEmptyBatchWithOther() throws CradleStorageException, SerializationException {
         MessageBatchToStore emptyBatch = createEmptyBatch();

@@ -164,6 +164,9 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
    * @throws CradleStorageException if the batch doesn't meet the requirements regarding inner content
    */
 	public boolean addBatch(GroupedMessageBatchToStore batch) throws CradleStorageException {
+
+		if (!this.getGroup().equals(batch.getGroup()))
+			throw new CradleStorageException(String.format("Batch groups differ. Current Group is %s, other Group is %s", getGroup(), batch.getGroup()));
 		if (batch.isEmpty())
 			return true;
 
