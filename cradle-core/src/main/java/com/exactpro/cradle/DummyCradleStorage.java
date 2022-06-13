@@ -144,7 +144,7 @@ public class DummyCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected void doStoreGroupedMessageBatch(GroupedMessageBatchToStore batch, PageInfo page, String groupName)
+	protected void doStoreGroupedMessageBatch(GroupedMessageBatchToStore batch, PageInfo page)
 			throws IOException
 	{
 		
@@ -158,8 +158,8 @@ public class DummyCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Void> doStoreGroupedMessageBatchAsync(GroupedMessageBatchToStore batch, PageInfo page,
-			String groupName) throws IOException, CradleStorageException
+	protected CompletableFuture<Void> doStoreGroupedMessageBatchAsync(GroupedMessageBatchToStore batch, PageInfo page)
+			throws IOException, CradleStorageException
 	{
 		return null;
 	}

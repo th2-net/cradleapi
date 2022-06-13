@@ -55,10 +55,10 @@ public class GroupedMessageBatchEntity extends CradleEntity {
 	public GroupedMessageBatchEntity() {
 	}
 
-	public GroupedMessageBatchEntity(GroupedMessageBatchToStore batch, String group, PageId pageId, int maxUncompressedSize)
+	public GroupedMessageBatchEntity(GroupedMessageBatchToStore batch, PageId pageId, int maxUncompressedSize)
 			throws IOException	{
 
-		this.group = group;
+		this.group = batch.getGroup();
 
 		logger.debug("Creating entity from grouped message batch '{}'", group);
 

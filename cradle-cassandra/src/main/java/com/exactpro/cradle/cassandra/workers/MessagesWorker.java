@@ -256,10 +256,10 @@ public class MessagesWorker extends Worker
 		return new MessageBatchEntity(batch, pageId, settings.getMaxUncompressedMessageBatchSize());
 	}
 	
-	public GroupedMessageBatchEntity createGroupedMessageBatchEntity(GroupedMessageBatchToStore batch, PageId pageId, String groupName)
+	public GroupedMessageBatchEntity createGroupedMessageBatchEntity(GroupedMessageBatchToStore batch, PageId pageId)
 			throws IOException
 	{
-		return new GroupedMessageBatchEntity(batch, groupName, pageId, settings.getMaxUncompressedMessageBatchSize());
+		return new GroupedMessageBatchEntity(batch, pageId, settings.getMaxUncompressedMessageBatchSize());
 	}
 
 	public CompletableFuture<PageSessionEntity> storePageSession(MessageBatchToStore batch, PageId pageId)

@@ -98,12 +98,11 @@ public abstract class CradleStorage
 	
 	
 	protected abstract void doStoreMessageBatch(MessageBatchToStore batch, PageInfo page) throws IOException, CradleStorageException;
-	protected abstract void doStoreGroupedMessageBatch(GroupedMessageBatchToStore batch, PageInfo page, String groupName)
+	protected abstract void doStoreGroupedMessageBatch(GroupedMessageBatchToStore batch, PageInfo page)
 			throws IOException;
 	protected abstract CompletableFuture<Void> doStoreMessageBatchAsync(MessageBatchToStore batch, PageInfo page)
 			throws IOException, CradleStorageException;
-	protected abstract CompletableFuture<Void> doStoreGroupedMessageBatchAsync(GroupedMessageBatchToStore batch, PageInfo page,
-			String groupName) throws IOException, CradleStorageException;
+	protected abstract CompletableFuture<Void> doStoreGroupedMessageBatchAsync(GroupedMessageBatchToStore batch, PageInfo page) throws IOException, CradleStorageException;
 	
 	
 	protected abstract void doStoreTestEvent(TestEventToStore event, PageInfo page) throws IOException, CradleStorageException;
@@ -463,6 +462,7 @@ public abstract class CradleStorage
 	 * @throws IOException if data writing failed
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
+	@Deprecated
 	public final void storeMessageBatch(MessageBatchToStore batch) throws IOException, CradleStorageException
 	{
 		StoredMessageId id = batch.getId();
@@ -473,16 +473,16 @@ public abstract class CradleStorage
 	}
 
 	
-	public final void storeGroupedMessageBatch(GroupedMessageBatchToStore batch, String groupName)
+	public final void storeGroupedMessageBatch(GroupedMessageBatchToStore batch)
 			throws CradleStorageException, IOException
 	{
 		BookId bookId = batch.getBookId();
 		Instant ts = batch.getFirstTimestamp();
 		String id = String.format("{}:{}", bookId, ts);
-		logger.debug("Storing message batch {} grouped by {}", id, groupName);
+		logger.debug("Storing message batch {} grouped by {}", id, batch.getGroup());
 		PageInfo page = bpc.findPage(bookId, ts);
-		doStoreGroupedMessageBatch(batch, page, groupName);
-		logger.debug("Message batch {} grouped by {} has been stored", id, groupName);
+		doStoreGroupedMessageBatch(batch, page);
+		logger.debug("Message batch {} grouped by {} has been stored", id, batch.getGroup());
 	}
 	
 	
@@ -493,6 +493,7 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if given parameters are invalid
 	 * @throws IOException if data writing failed
 	 */
+	@Deprecated
 	public final CompletableFuture<Void> storeMessageBatchAsync(MessageBatchToStore batch)
 			throws CradleStorageException, IOException
 	{
@@ -512,14 +513,14 @@ public abstract class CradleStorage
 	/**
 	 * Asynchronously writes data about given message batch to current page grouped by provided group name
 	 * @param batch data to write
-	 * @param groupName group name
 	 * @return future to get know if storing was successful
 	 * @throws CradleStorageException if given parameters are invalid
 	 * @throws IOException if data writing failed
 	 */
-	public final CompletableFuture<Void> storeGroupedMessageBatchAsync(GroupedMessageBatchToStore batch, String groupName)
+	public final CompletableFuture<Void> storeGroupedMessageBatchAsync(GroupedMessageBatchToStore batch)
 			throws CradleStorageException, IOException
 	{
+		String groupName = batch.getGroup();
 		if (groupName == null)
 			throw new CradleStorageException("'groupName' is required parameter and can not be null");
 		
@@ -528,7 +529,7 @@ public abstract class CradleStorage
 		String id = String.format("{}:{}", bookId, ts);
 		logger.debug("Storing message batch {} grouped by {} asynchronously", id, ts, groupName);
 		PageInfo page = bpc.findPage(bookId, ts);
-		CompletableFuture<Void> result = doStoreGroupedMessageBatchAsync(batch, page, groupName);
+		CompletableFuture<Void> result = doStoreGroupedMessageBatchAsync(batch, page);
 		result.whenCompleteAsync((r, error) -> {
 			if (error != null)
 				logger.error("Error while storing message batch "+id+" grouped by "+groupName+" asynchronously", error);

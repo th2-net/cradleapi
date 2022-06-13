@@ -296,7 +296,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected void doStoreGroupedMessageBatch(GroupedMessageBatchToStore batch, PageInfo page, String groupName)
+	protected void doStoreGroupedMessageBatch(GroupedMessageBatchToStore batch, PageInfo page)
 			throws IOException
 	{
 		PageId pageId = page.getId();
@@ -304,7 +304,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 		try
 		{
-			GroupedMessageBatchEntity entity = messagesWorker.createGroupedMessageBatchEntity(batch, pageId, groupName);
+			GroupedMessageBatchEntity entity = messagesWorker.createGroupedMessageBatchEntity(batch, pageId);
 			messagesWorker.storeGroupedMessageBatch(entity, bookId).get();
 
 			for (MessageBatchToStore b: batch.getSessionMessageBatches()) {
@@ -344,8 +344,8 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Void> doStoreGroupedMessageBatchAsync(GroupedMessageBatchToStore batch, PageInfo page,
-			String groupName) throws CradleStorageException
+	protected CompletableFuture<Void> doStoreGroupedMessageBatchAsync(GroupedMessageBatchToStore batch, PageInfo page)
+			throws CradleStorageException
 	{
 		PageId pageId = page.getId();
 		BookId bookId = pageId.getBookId();
@@ -353,7 +353,7 @@ public class CassandraCradleStorage extends CradleStorage
 		CompletableFuture<Void> future = CompletableFuture.supplyAsync(() ->
 		{
 			try	{
-				return messagesWorker.createGroupedMessageBatchEntity(batch, pageId, groupName);
+				return messagesWorker.createGroupedMessageBatchEntity(batch, pageId);
 			}
 			catch (IOException e) {
 				throw new CompletionException(e);
