@@ -140,14 +140,14 @@ public class GroupedMessageBatchToStoreJoinTest
     @Test
     public void testJoinDifferentSessions() throws CradleStorageException {
         GroupedMessageBatchToStore first = createBatch(bookId, "testA", 0, Direction.FIRST, Instant.EPOCH, 5, 5, groupName);
-        GroupedMessageBatchToStore second = createBatch(bookId, "testB", 5, Direction.SECOND, Instant.EPOCH, 5, 5, groupName);
+        GroupedMessageBatchToStore second = createBatch(bookId, "testB", 5, Direction.SECOND, Instant.EPOCH.plusSeconds(100), 5, 5, groupName);
 
         first.addBatch(second);
     }
     
     @Test(
             expectedExceptions = CradleStorageException.class,
-            expectedExceptionsMessageRegExp = "Batches are not ordered.*"
+            expectedExceptionsMessageRegExp = "Batches intersect by time.*"
     )
     public void testThrowExceptionOnUnorderedTimestamps() throws CradleStorageException {
         GroupedMessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH.plusMillis(5), 5, 5, groupName);
@@ -162,7 +162,7 @@ public class GroupedMessageBatchToStoreJoinTest
     )
     public void testThrowExceptionOnUnorderedSequences() throws CradleStorageException {
         GroupedMessageBatchToStore first = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH, 5, 5, groupName);
-        GroupedMessageBatchToStore second = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, 5, 5, groupName);
+        GroupedMessageBatchToStore second = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH.plusSeconds(10), 5, 5, groupName);
 
         first.addBatch(second);
     }

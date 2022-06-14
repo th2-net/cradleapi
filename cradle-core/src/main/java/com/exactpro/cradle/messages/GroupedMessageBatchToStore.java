@@ -157,7 +157,7 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
   /**
    *
    * @param batch the batch to add to the current one.
-   *              The batch to add must contain message with same stream name and direction as the current one.
+   *              The batch to add must contain message with same group name as the current one.
    *              The index of the first message in the [batch] should be greater
    *              than the last message index in the current batch.
    * @return true if the result batch meets the restriction for message count and batch size
@@ -221,6 +221,15 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 	private void verifyBatch(GroupedMessageBatchToStore otherBatch) throws CradleStorageException {
 		if (!Objects.equals(bookId, otherBatch.getBookId()))
 			throw new CradleStorageException(String.format("Batch BookId-s differ. Current BookId is %s, other BookId is %s", bookId, otherBatch.getBookId()));
+
+		if (this.getFirstTimestamp().isAfter(otherBatch.getFirstTimestamp()) ||
+			this.getLastTimestamp().isAfter(otherBatch.getFirstTimestamp()))
+			throw new CradleStorageException(
+					String.format("Batches intersect by time. Current batch %s - %s, other batch %s - %s",
+							this.getFirstTimestamp(),
+							this.getLastTimestamp(),
+							otherBatch.getFirstTimestamp(),
+							otherBatch.getLastTimestamp()));
 
 		for (SessionKey sessionKey : lastMessages.keySet()) {
 			StoredMessage otherFirstMessage = otherBatch.firstMessages.get(sessionKey);
