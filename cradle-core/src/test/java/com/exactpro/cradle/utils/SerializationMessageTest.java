@@ -17,8 +17,7 @@
 package com.exactpro.cradle.utils;
 
 import com.exactpro.cradle.Direction;
-import com.exactpro.cradle.messages.StoredMessage;
-import com.exactpro.cradle.messages.StoredMessageBuilder;
+import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.serialization.MessageDeserializer;
 import com.exactpro.cradle.serialization.MessageSerializer;
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
@@ -190,5 +189,46 @@ public class SerializationMessageTest {
 		serializer.serializeBatch(batch, buffer, null);
 		Assert.assertEquals(buffer.position(), MessagesSizeCalculator.calculateMessageBatchSize(batch).total);
 	}
-	
+
+	private StoredGroupMessageBatch getGroupBatch () throws CradleStorageException {
+		List<StoredMessage> messages = getBatch();
+
+		StoredGroupMessageBatch groupMessageBatch = new StoredGroupMessageBatch();
+		for (StoredMessage message : messages) {
+			MessageToStoreBuilder builder = new MessageToStoreBuilder()
+					.content(message.getContent())
+					.direction(message.getDirection())
+					.streamName(message.getStreamName())
+					.timestamp(message.getTimestamp())
+					.index(message.getIndex());
+			StoredMessageMetadata metadata = message.getMetadata();
+			if (metadata != null) {
+				metadata.toMap().forEach(builder::metadata);
+			}
+
+			groupMessageBatch.addMessage(builder.build());
+		}
+
+		return groupMessageBatch;
+	}
+
+	@Test
+	public void checkGroupMessageBatchLength() throws SerializationException, CradleStorageException {
+		MessageSerializer serializer = new MessageSerializer();
+
+		ByteBuffer buffer = ByteBuffer.allocate(10_000);
+		List<StoredMessage> batch = getBatch();
+		serializer.serializeGroupBatch(batch, buffer, null);
+		Assert.assertEquals(buffer.position(), MessagesSizeCalculator.calculateGroupMessageBatchSize(batch).total);
+	}
+
+	@Test
+	public void serializeDeserialize5BATCHGroup() throws SerializationException {
+		MessageSerializer serializer = new MessageSerializer();
+		List<StoredMessage> initBatch = getBatch();
+		byte[] serialize = serializer.serializeGroupBatch(initBatch);
+		MessageDeserializer deserializer = new MessageDeserializer();
+		List<StoredMessage> deserialize = deserializer.deserializeGroupBatch(serialize);
+		Assert.assertEquals(deserialize, initBatch);
+	}
 }

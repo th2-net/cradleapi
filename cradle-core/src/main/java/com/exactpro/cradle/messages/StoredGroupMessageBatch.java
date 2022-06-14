@@ -65,6 +65,33 @@ public class StoredGroupMessageBatch extends AbstractStoredMessageBatch
 
 	private final Map<StoredMessageKey, MessageToStore> storedMessageSequences;
 
+	public StoredGroupMessageBatch(StoredMessageBatch storedMessageBatch) {
+		this();
+
+		try {
+			for (StoredMessage message : storedMessageBatch.getMessages()) {
+				MessageToStoreBuilder builder = new MessageToStoreBuilder()
+						.content(message.getContent())
+						.direction(message.getDirection())
+						.streamName(message.getStreamName())
+						.timestamp(message.getTimestamp())
+						.index(message.getIndex());
+				StoredMessageMetadata metadata = message.getMetadata();
+				if (metadata != null) {
+					metadata.toMap().forEach(builder::metadata);
+				}
+
+				this.addMessage(builder.build());
+
+			}
+		} catch (CradleStorageException e) {
+			logger.error("Could not create group batch from batch {}: {}",
+					storedMessageBatch.getId(), e.getMessage());
+		} catch (Exception e) {
+			logger.error("Could not create group batch from batch");
+		}
+	}
+
 	public StoredGroupMessageBatch()
 	{
 		super();
@@ -84,7 +111,7 @@ public class StoredGroupMessageBatch extends AbstractStoredMessageBatch
 
 	@Override
 	protected int calculateSizeAndCheckConstraints(MessageToStore message) throws CradleStorageException {
-		int expectedMessageSize = MessagesSizeCalculator.calculateMessageSizeInBatch(message);
+		int expectedMessageSize = MessagesSizeCalculator.calculateMessageSizeInGroupBatch(message);
 		if (!hasSpace(expectedMessageSize, message.getStreamName()))
 			throw new CradleStorageException("Batch has not enough space to hold given message");
 
