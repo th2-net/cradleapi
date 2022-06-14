@@ -42,16 +42,18 @@ public class SerializationUtils {
 		if (value.length() > USHORT_MAX_VALUE) {
 			throw new SerializationException(String.format("%s is too big. Expected length [0-%s]", paramName, USHORT_MAX_VALUE));
 		}
-		buffer.putShort((short) value.length());
-		buffer.put(value.getBytes(StandardCharsets.UTF_8));
+		byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+		buffer.putShort((short) bytes.length);
+		buffer.put(bytes);
 	}
 
 	static void printString(String value, ByteBuffer buffer) {
 		if (value == null) {
 			buffer.putInt(-1);
 		} else {
-			buffer.putInt(value.length());
-			buffer.put(value.getBytes(StandardCharsets.UTF_8));
+			byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+			buffer.putInt(bytes.length);
+			buffer.put(bytes);
 		}
 	}
 
