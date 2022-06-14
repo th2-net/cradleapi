@@ -20,20 +20,20 @@ import com.datastax.oss.driver.shaded.guava.common.collect.Streams;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
 import com.exactpro.cradle.messages.GroupedMessageFilter;
-import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.messages.StoredGroupedMessageBatch;
 
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
-public class FilteredGroupedMessageBatchIterator extends MappedIterator<StoredMessageBatch, StoredMessageBatch>
+public class FilteredGroupedMessageBatchIterator extends MappedIterator<StoredGroupedMessageBatch, StoredGroupedMessageBatch>
 {
 	private FilterForGreater<Instant> filterFrom;
 	private FilterForLess<Instant> filterTo;
 
 
-	public FilteredGroupedMessageBatchIterator(Iterator<StoredMessageBatch> sourceIterator, GroupedMessageFilter filter,
+	public FilteredGroupedMessageBatchIterator(Iterator<StoredGroupedMessageBatch> sourceIterator, GroupedMessageFilter filter,
 			int limit, AtomicInteger returned)
 	{
 		super(sourceIterator, limit, returned);
@@ -42,15 +42,15 @@ public class FilteredGroupedMessageBatchIterator extends MappedIterator<StoredMe
 	}
 
 	@Override
-	Iterator<StoredMessageBatch> createTargetIterator(Iterator<StoredMessageBatch> sourceIterator)
+	Iterator<StoredGroupedMessageBatch> createTargetIterator(Iterator<StoredGroupedMessageBatch> sourceIterator)
 	{
-		Predicate<StoredMessageBatch> filterPredicate = createFilterPredicate();
+		Predicate<StoredGroupedMessageBatch> filterPredicate = createFilterPredicate();
 		return Streams.stream(sourceIterator)
 				.filter(filterPredicate)
 				.iterator();
 	}
 
-	private Predicate<StoredMessageBatch> createFilterPredicate()
+	private Predicate<StoredGroupedMessageBatch> createFilterPredicate()
 	{
 		return storedMessageBatch ->
 				(filterFrom == null || filterFrom.check(storedMessageBatch.getLastTimestamp()))

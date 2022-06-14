@@ -29,19 +29,16 @@ import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
 
-import static com.exactpro.cradle.CradleStorage.DEFAULT_MAX_MESSAGE_BATCH_DURATION_LIMIT_SECONDS;
-
 public class CradleEntitiesFactoryTest
 {
 	private final int maxMessageBatchSize = 123,
 			maxEventBatchSize = 234;
-	private final long maxMessageBatchDuration = DEFAULT_MAX_MESSAGE_BATCH_DURATION_LIMIT_SECONDS;
 	private CradleEntitiesFactory factory;
 	
 	@BeforeClass
 	public void prepare()
 	{
-		factory = new CradleEntitiesFactory(maxMessageBatchSize, maxMessageBatchDuration, maxEventBatchSize);
+		factory = new CradleEntitiesFactory(maxMessageBatchSize, maxEventBatchSize);
 	}
 	
 	@Test

@@ -28,6 +28,10 @@ public class MessageCommonParams {
 
     public MessageCommonParams() {}
 
+    public MessageCommonParams(BookId bookId) {
+        this.bookId = bookId;
+    }
+
     public MessageCommonParams(StoredMessageId id) {
         this.sessionAlias = id.getSessionAlias();
         this.bookId = id.getBookId();

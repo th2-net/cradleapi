@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle.utils;
 
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.messages.CradleMessage;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageId;
@@ -69,7 +70,7 @@ public class MessageUtils
 	{
 		return serializer.serializeBatch(messages);
 	}
-	
+
 	/**
 	 * Deserializes messages from given array of bytes till message with needed ID is found
 	 * @param contentBytes to deserialize needed message from
@@ -85,6 +86,18 @@ public class MessageUtils
 	/**
 	 * Deserializes all messages
 	 * @param contentBytes to deserialize messages from
+	 * @param bookId to deserialize messages from
+	 * @return collection of deserialized messages
+	 * @throws IOException if deserialization failed
+	 */
+	public static List<StoredMessage> deserializeMessages(byte[] contentBytes, BookId bookId) throws IOException
+	{
+		return deserializer.deserializeBatch(contentBytes, new MessageCommonParams(bookId));
+	}
+
+	/**
+	 * Deserializes all messages
+	 * @param contentBytes to deserialize messages from
 	 * @param batchId to deserialize messages from
 	 * @return collection of deserialized messages
 	 * @throws IOException if deserialization failed
@@ -93,7 +106,7 @@ public class MessageUtils
 	{
 		return deserializer.deserializeBatch(contentBytes, new MessageCommonParams(batchId));
 	}
-	
+
 	/**
 	 * Decompresses given ByteBuffer and deserializes messages till message with needed ID is found
 	 * @param content to deserialize needed message from

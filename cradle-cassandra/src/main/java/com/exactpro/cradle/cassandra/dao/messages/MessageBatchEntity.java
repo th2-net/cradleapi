@@ -54,8 +54,8 @@ public class MessageBatchEntity extends CradleEntity
 	public static final String FIELD_PAGE = "page";
 	public static final String FIELD_SESSION_ALIAS = "session_alias";
 	public static final String FIELD_DIRECTION = "direction";
-	public static final String FIELD_MESSAGE_DATE = "message_date";
-	public static final String FIELD_MESSAGE_TIME = "message_time";
+	public static final String FIELD_FIRST_MESSAGE_DATE = "first_message_date";
+	public static final String FIELD_FIRST_MESSAGE_TIME = "first_message_time";
 	public static final String FIELD_SEQUENCE = "sequence";
 	public static final String FIELD_LAST_MESSAGE_DATE = "last_message_date";
 	public static final String FIELD_LAST_MESSAGE_TIME = "last_message_time";
@@ -77,12 +77,12 @@ public class MessageBatchEntity extends CradleEntity
 	private String direction;
 
 	@ClusteringColumn(0)
-	@CqlName(FIELD_MESSAGE_DATE)
-	private LocalDate messageDate;
+	@CqlName(FIELD_FIRST_MESSAGE_DATE)
+	private LocalDate firstMessageDate;
 
 	@ClusteringColumn(1)
-	@CqlName(FIELD_MESSAGE_TIME)
-	private LocalTime messageTime;
+	@CqlName(FIELD_FIRST_MESSAGE_TIME)
+	private LocalTime firstMessageTime;
 
 	@ClusteringColumn(2)
 	@CqlName(FIELD_SEQUENCE)
@@ -126,8 +126,8 @@ public class MessageBatchEntity extends CradleEntity
 		setPage(pageId.getName());
 		StoredMessageId id = batch.getId();
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(id.getTimestamp());
-		setMessageDate(ldt.toLocalDate());
-		setMessageTime(ldt.toLocalTime());
+		setFirstMessageDate(ldt.toLocalDate());
+		setFirstMessageTime(ldt.toLocalTime());
 		setSessionAlias(id.getSessionAlias());
 		setDirection(id.getDirection().getLabel());
 		setSequence(id.getSequence());
@@ -154,14 +154,14 @@ public class MessageBatchEntity extends CradleEntity
 		this.page = page;
 	}
 
-	public LocalDate getMessageDate()
+	public LocalDate getFirstMessageDate()
 	{
-		return messageDate;
+		return firstMessageDate;
 	}
 
-	public void setMessageDate(LocalDate messageDate)
+	public void setFirstMessageDate(LocalDate messageDate)
 	{
-		this.messageDate = messageDate;
+		this.firstMessageDate = messageDate;
 	}
 
 	public String getSessionAlias()
@@ -174,14 +174,14 @@ public class MessageBatchEntity extends CradleEntity
 		this.sessionAlias = sessionAlias;
 	}
 
-	public LocalTime getMessageTime()
+	public LocalTime getFirstMessageTime()
 	{
-		return messageTime;
+		return firstMessageTime;
 	}
 
-	public void setMessageTime(LocalTime messageTime)
+	public void setFirstMessageTime(LocalTime messageTime)
 	{
-		this.messageTime = messageTime;
+		this.firstMessageTime = messageTime;
 	}
 
 	public long getSequence()
@@ -256,15 +256,15 @@ public class MessageBatchEntity extends CradleEntity
 	@Transient
 	public Instant getFirstMessageTimestamp()
 	{
-		return TimeUtils.toInstant(getMessageDate(), getMessageTime());
+		return TimeUtils.toInstant(getFirstMessageDate(), getFirstMessageTime());
 	}
 
 	@Transient
 	public void setFirstMessageTimestamp(Instant timestamp)
 	{
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
-		setMessageDate(ldt.toLocalDate());
-		setMessageTime(ldt.toLocalTime());
+		setFirstMessageDate(ldt.toLocalDate());
+		setFirstMessageTime(ldt.toLocalTime());
 	}
 
 	@Transient
@@ -306,7 +306,7 @@ public class MessageBatchEntity extends CradleEntity
 	public StoredMessageId createId(BookId bookId)
 	{
 		return new StoredMessageId(bookId, getSessionAlias(), Direction.byLabel(getDirection()),
-				TimeUtils.toInstant(messageDate, messageTime), getSequence());
+				TimeUtils.toInstant(firstMessageDate, firstMessageTime), getSequence());
 	}
 	
 	private byte[] restoreContent(StoredMessageId messageBatchId)

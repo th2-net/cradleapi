@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle;
 
+import com.exactpro.cradle.messages.GroupedMessageBatchToStore;
 import com.exactpro.cradle.messages.MessageBatchToStore;
 import com.exactpro.cradle.messages.MessageToStore;
 import com.exactpro.cradle.testevents.StoredTestEventId;
@@ -30,30 +31,32 @@ public class CradleEntitiesFactory
 {
 	private final int maxMessageBatchSize,
 			maxTestEventBatchSize;
-	private final long maxMessageBatchDuration;
 	
 	/**
 	 * Creates new factory for entities to be used with {@link CradleStorage}
 	 * @param maxMessageBatchSize maximum size of messages (in bytes) that {@link MessageBatchToStore} can hold
-	 * @param maxMessageBatchDuration maximum difference between first and last message timestamps in seconds
 	 * @param maxTestEventBatchSize maximum size of test events (in bytes) that {@link TestEventBatchToStore} can hold
 	 */
-	public CradleEntitiesFactory(int maxMessageBatchSize, long maxMessageBatchDuration, int maxTestEventBatchSize)
+	public CradleEntitiesFactory(int maxMessageBatchSize, int maxTestEventBatchSize)
 	{
 		this.maxMessageBatchSize = maxMessageBatchSize;
 		this.maxTestEventBatchSize = maxTestEventBatchSize;
-		this.maxMessageBatchDuration = maxMessageBatchDuration;
 	}
 	
-	
+
+	@Deprecated
 	public MessageBatchToStore messageBatch()
 	{
-		return new MessageBatchToStore(maxMessageBatchSize, maxMessageBatchDuration);
+		return new MessageBatchToStore(maxMessageBatchSize);
+	}
+
+	public GroupedMessageBatchToStore groupedMessageBatch(String group) {
+		return new GroupedMessageBatchToStore(group, maxMessageBatchSize);
 	}
 	
 	public MessageBatchToStore singletonMessageBatch(MessageToStore message) throws CradleStorageException
 	{
-		return MessageBatchToStore.singleton(message, maxMessageBatchSize, maxMessageBatchDuration);
+		return MessageBatchToStore.singleton(message, maxMessageBatchSize);
 	}
 	
 	public TestEventBatchToStore testEventBatch(StoredTestEventId id, String name, StoredTestEventId parentId) throws CradleStorageException

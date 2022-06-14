@@ -76,6 +76,8 @@ public class MessageSerializer {
 	public void serialize(StoredMessage message, ByteBuffer buffer) throws SerializationException {
 		buffer.putShort(MESSAGE_MAGIC);
 		StoredMessageId id = message.getId();
+		printString(id.getSessionAlias(), buffer);
+		printString(id.getDirection().getLabel(), buffer);
 		printInstant(id.getTimestamp(), buffer);
 		buffer.putLong(id.getSequence());
 		this.printMessageMetaData(message.getMetadata(), buffer);

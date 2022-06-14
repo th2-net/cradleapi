@@ -31,8 +31,8 @@ public class MessageBatchInserter {
                 .setString(FIELD_SESSION_ALIAS, messageBatch.getSessionAlias())
                 .setString(FIELD_DIRECTION, messageBatch.getDirection())
 
-                .setLocalDate(FIELD_MESSAGE_DATE, messageBatch.getMessageDate())
-                .setLocalTime(FIELD_MESSAGE_TIME, messageBatch.getMessageTime())
+                .setLocalDate(FIELD_FIRST_MESSAGE_DATE, messageBatch.getFirstMessageDate())
+                .setLocalTime(FIELD_FIRST_MESSAGE_TIME, messageBatch.getFirstMessageTime())
                 .setLong(FIELD_SEQUENCE, messageBatch.getSequence())
 
                 .setLocalDate(FIELD_LAST_MESSAGE_DATE, messageBatch.getLastMessageDate())

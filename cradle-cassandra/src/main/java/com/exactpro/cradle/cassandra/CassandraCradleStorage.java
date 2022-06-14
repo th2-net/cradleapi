@@ -29,7 +29,6 @@ import com.exactpro.cradle.cassandra.dao.*;
 import com.exactpro.cradle.cassandra.dao.books.*;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
-import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.BookKeyspaceCreator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
@@ -97,8 +96,7 @@ public class CassandraCradleStorage extends CradleStorage
 	public CassandraCradleStorage(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings, 
 			ExecutorService composingService) throws CradleStorageException
 	{
-		super(composingService, storageSettings.getMaxMessageBatchSize(),
-				storageSettings.getMaxMessageBatchDurationLimit(), storageSettings.getMaxTestEventBatchSize());
+		super(composingService, storageSettings.getMaxMessageBatchSize(), storageSettings.getMaxTestEventBatchSize());
 		this.connection = new CassandraConnection(connectionSettings, storageSettings.getTimeout());
 		this.settings = storageSettings;
 
@@ -151,7 +149,7 @@ public class CassandraCradleStorage extends CradleStorage
 			bpc = new BookAndPageChecker(getBookCache());
 
 
-			statisticsWorker = new StatisticsWorker(ops, writeAttrs, settings.getCounterPersistanceInterval());
+			statisticsWorker = new StatisticsWorker(ops, writeAttrs, settings.getCounterPersistenceInterval());
 			WorkerSupplies ws = new WorkerSupplies(settings, ops, composingService, bpc, selectExecutor, writeAttrs, readAttrs);
 			eventsWorker = new EventsWorker(ws, statisticsWorker);
 			messagesWorker = new MessagesWorker(ws, statisticsWorker, statisticsWorker);
@@ -298,7 +296,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected void doStoreGroupedMessageBatch(MessageBatchToStore batch, PageInfo page, String groupName)
+	protected void doStoreGroupedMessageBatch(GroupedMessageBatchToStore batch, PageInfo page)
 			throws IOException
 	{
 		PageId pageId = page.getId();
@@ -306,16 +304,19 @@ public class CassandraCradleStorage extends CradleStorage
 
 		try
 		{
-			GroupedMessageBatchEntity entity = messagesWorker.createGroupedMessageBatchEntity(batch, pageId, groupName);
-			messagesWorker.storeMessageBatch(entity.getMessageBatchEntity(), bookId).get();
-			messagesWorker.storeGroupedMessageBatch(new GroupedMessageBatchEntity(entity.getMessageBatchEntity(),
-					groupName), bookId).get();
-			messagesWorker.storeSession(batch).get();
-			messagesWorker.storePageSession(batch, pageId).get();
+			GroupedMessageBatchEntity entity = messagesWorker.createGroupedMessageBatchEntity(batch, pageId);
+			messagesWorker.storeGroupedMessageBatch(entity, bookId).get();
+
+			for (MessageBatchToStore b: batch.getSessionMessageBatches()) {
+				MessageBatchEntity e = messagesWorker.createMessageBatchEntity(b, pageId);
+				messagesWorker.storeMessageBatch(e, bookId).get();
+				messagesWorker.storeSession(b).get();
+				messagesWorker.storePageSession(b, pageId).get();
+			}
 		}
 		catch (Exception e)
 		{
-			throw new IOException("Error while storing message batch "+batch.getId(), e);
+			throw new IOException("Error while storing message batch "+batch.getBookId(), e);
 		}
 	}
 
@@ -343,28 +344,38 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Void> doStoreGroupedMessageBatchAsync(MessageBatchToStore batch, PageInfo page,
-			String groupName) throws IOException, CradleStorageException
+	protected CompletableFuture<Void> doStoreGroupedMessageBatchAsync(GroupedMessageBatchToStore batch, PageInfo page)
+			throws CradleStorageException
 	{
 		PageId pageId = page.getId();
 		BookId bookId = pageId.getBookId();
 
-		return CompletableFuture.supplyAsync(() ->
+		CompletableFuture<Void> future = CompletableFuture.supplyAsync(() ->
 		{
-			try
-			{
-				return messagesWorker.createGroupedMessageBatchEntity(batch, pageId, groupName);
+			try	{
+				return messagesWorker.createGroupedMessageBatchEntity(batch, pageId);
 			}
-			catch (IOException e)
-			{
+			catch (IOException e) {
 				throw new CompletionException(e);
 			}
 		}, composingService)
 				.thenComposeAsync(entity -> messagesWorker.storeGroupedMessageBatch(entity, bookId))
-				.thenComposeAsync(entity -> messagesWorker.storeMessageBatch(entity.getMessageBatchEntity(), bookId), composingService)
-				.thenComposeAsync(r -> messagesWorker.storeSession(batch), composingService)
-				.thenComposeAsync(r -> messagesWorker.storePageSession(batch, pageId), composingService)
 				.thenAccept(NOOP);
+
+		// store individual session message batches
+		for (MessageBatchToStore b: batch.getSessionMessageBatches()) {
+			future = future.thenComposeAsync(ignored -> {
+				try {
+					return messagesWorker.storeMessageBatch(messagesWorker.createMessageBatchEntity(b, pageId), bookId);
+				} catch (IOException e) {
+					throw new CompletionException(e);
+				}
+			}, composingService)
+				.thenComposeAsync(r -> messagesWorker.storeSession(b), composingService)
+				.thenComposeAsync(r -> messagesWorker.storePageSession(b, pageId), composingService)
+				.thenAccept(NOOP);
+		}
+		return future;
 	}
 
 	@Override
@@ -526,8 +537,8 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CradleResultSet<StoredMessageBatch> doGetGroupedMessageBatches(GroupedMessageFilter filter, BookInfo book)
-			throws IOException, CradleStorageException
+	protected CradleResultSet<StoredGroupedMessageBatch> doGetGroupedMessageBatches(GroupedMessageFilter filter, BookInfo book)
+			throws IOException
 	{
 		try
 		{
@@ -547,10 +558,10 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetGroupedMessageBatchesAsync(
+	protected CompletableFuture<CradleResultSet<StoredGroupedMessageBatch>> doGetGroupedMessageBatchesAsync(
 			GroupedMessageFilter filter, BookInfo book) throws CradleStorageException
 	{
-		return messagesWorker.getGroupedMessageBatches(filter, book, getSettings().getMaxMessageBatchDurationLimit());
+		return messagesWorker.getGroupedMessageBatches(filter, book);
 	}
 
 	@Override

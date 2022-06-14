@@ -35,8 +35,7 @@ public class MessageBatchToStoreJoinTest
 {
     private static final BookId bookId = new BookId("testbook");
     static final int MAX_SIZE = 1024;
-    static final long MAX_MESSAGE_BATCH_DURATION_IN_SECONDS = 600;
-    
+
     @Test
     public void testJoinEmptyBatchWithOther() throws CradleStorageException, SerializationException {
         MessageBatchToStore emptyBatch = createEmptyBatch();
@@ -201,14 +200,15 @@ public class MessageBatchToStoreJoinTest
     }
 
     private static MessageBatchToStore createEmptyBatch() {
-        return new MessageBatchToStore(MAX_SIZE, MAX_MESSAGE_BATCH_DURATION_IN_SECONDS);
+        return new MessageBatchToStore(MAX_SIZE);
     }
 
     static MessageBatchToStore createFullBySizeBatch(BookId bookId,
             String sessionAlias, long startSequence, Direction direction, Instant startTimestamp) throws CradleStorageException {
         return createBatch(bookId, sessionAlias, startSequence, direction, startTimestamp, 1,
                 MAX_SIZE - (MessagesSizeCalculator.MESSAGE_BATCH_CONST_VALUE
-                        + MessagesSizeCalculator.MESSAGE_SIZE_CONST_VALUE + MessagesSizeCalculator.MESSAGE_LENGTH_IN_BATCH));
+                        + MessagesSizeCalculator.MESSAGE_SIZE_CONST_VALUE + MessagesSizeCalculator.MESSAGE_LENGTH_IN_BATCH
+                + MessagesSizeCalculator.calculateStringSize(sessionAlias) + MessagesSizeCalculator.calculateStringSize(direction.getLabel())));
     }
 
     private int getBatchSize(StoredMessageBatch batch) throws SerializationException {

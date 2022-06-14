@@ -132,8 +132,4 @@ public class SerializationEventBatchTest {
 		params.setScope("scope123456");
 		return params;
 	}
-
-
-
-
 }

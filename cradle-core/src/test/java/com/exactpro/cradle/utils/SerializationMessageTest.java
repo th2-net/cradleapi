@@ -20,7 +20,6 @@ import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBuilder;
-import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.serialization.*;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -230,6 +229,4 @@ public class SerializationMessageTest {
 		serializer.serializeBatch(batch, buffer, null);
 		Assert.assertEquals(buffer.position(), MessagesSizeCalculator.calculateMessageBatchSize(batch).total);
 	}
-
-
 }
