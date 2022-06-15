@@ -151,6 +151,10 @@ public class MessagesSizeCalculator {
 		return (streamName != null ? lenStr(streamName) : 0) + MESSAGE_BATCH_CONST_VALUE;
 	}
 
+	public static int calculateServiceMessageGroupBatchSize(String streamName) {
+		return MESSAGE_GROUP_BATCH_CONST_VALUE;
+	}
+
 	public static SerializationBatchSizes calculateMessageBatchSize(Collection<StoredMessage> message) {
 
 		SerializationBatchSizes sizes = new SerializationBatchSizes(message.size());

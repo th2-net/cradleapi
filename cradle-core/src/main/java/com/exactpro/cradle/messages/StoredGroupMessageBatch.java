@@ -24,8 +24,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
 
 public class StoredGroupMessageBatch extends AbstractStoredMessageBatch
@@ -64,9 +62,16 @@ public class StoredGroupMessageBatch extends AbstractStoredMessageBatch
 	}
 
 	private final Map<StoredMessageKey, MessageToStore> storedMessageSequences;
+	private final String sessionGroup;
 
-	public StoredGroupMessageBatch(StoredMessageBatch storedMessageBatch) {
-		this();
+	public StoredGroupMessageBatch(String sessionGroup) {
+		super();
+		this.storedMessageSequences = new HashMap<>();
+		this.sessionGroup = sessionGroup;
+	}
+
+	public StoredGroupMessageBatch(StoredMessageBatch storedMessageBatch, String sessionGroup) {
+		this(sessionGroup);
 
 		try {
 			for (StoredMessage message : storedMessageBatch.getMessages()) {
@@ -94,19 +99,32 @@ public class StoredGroupMessageBatch extends AbstractStoredMessageBatch
 
 	public StoredGroupMessageBatch()
 	{
-		super();
+		this("");
+	}
+
+	public StoredGroupMessageBatch(long maxBatchSize, String sessionGroup)
+	{
+		super (maxBatchSize);
+		this.sessionGroup = sessionGroup;
 		this.storedMessageSequences = new HashMap<>();
 	}
 
 	public StoredGroupMessageBatch(long maxBatchSize)
 	{
 		super (maxBatchSize);
+		this.sessionGroup = "";
 		this.storedMessageSequences = new HashMap<>();
 	}
 
 	@Override
 	protected StoredMessage addMessageInternal(MessageToStore message, int expectedMessageSize) {
-		return null;
+		StoredMessage msg = new StoredMessage(message, new StoredMessageId(message.getStreamName(), message.getDirection(), message.getIndex()));
+
+		if (messages.isEmpty())
+			batchSize = MessagesSizeCalculator.calculateServiceMessageGroupBatchSize(message.getStreamName());
+		messages.add(msg);
+		batchSize += expectedMessageSize;
+		return msg;
 	}
 
 	@Override
@@ -127,7 +145,8 @@ public class StoredGroupMessageBatch extends AbstractStoredMessageBatch
 		if (i < 0)
 			throw new CradleStorageException("Message index cannot be negative");
 
-		MessageToStore lastMessageInCategory = storedMessageSequences.get(new StoredMessageKey(message.getStreamName(), message.getDirection()));
+		StoredMessageKey storedMessageKey = new StoredMessageKey(message.getStreamName(), message.getDirection());
+		MessageToStore lastMessageInCategory = storedMessageSequences.get(storedMessageKey);
 		if (lastMessageInCategory != null) {
 			if (message.getIndex() <= lastMessageInCategory.getIndex()) {
 				throw new CradleStorageException("Message index should be greater than "+lastMessageInCategory.getIndex()+
@@ -146,6 +165,7 @@ public class StoredGroupMessageBatch extends AbstractStoredMessageBatch
 			}
 		}
 
+		storedMessageSequences.put(storedMessageKey, message);
 		return expectedMessageSize;
 	}
 
@@ -181,5 +201,46 @@ public class StoredGroupMessageBatch extends AbstractStoredMessageBatch
 		}
 
 		return messageBatches.values();
+	}
+
+	public String getSessionGroup() {
+		return sessionGroup;
+	}
+
+	public boolean addBatch (StoredGroupMessageBatch batch) throws CradleStorageException {
+		if (batch.isEmpty()) {
+			// we don't need to actually add empty batch
+			return true;
+		}
+
+		if (isEmpty()) {
+			this.batchSize = batch.batchSize;
+			batch.getMessages().forEach(el -> {
+				try {
+					addMessage(new MessageToStore(el));
+				} catch (CradleStorageException e) {
+					logger.error("Could not add message {} for to batch", el.getId());
+				}
+			});
+			return true;
+		}
+
+		long resultSize = batchSize + batch.messages.stream().mapToInt(MessagesSizeCalculator::calculateMessageSizeInGroupBatch).sum();
+
+		if (resultSize > maxBatchSize) {
+			// cannot add because of size limit
+			return false;
+		}
+
+		batch.getMessages().forEach(el -> {
+			try {
+				addMessage(new MessageToStore(el));
+			} catch (CradleStorageException e) {
+				logger.error("Could not add message {} for to batch", el.getId());
+			}
+		});
+		this.batchSize = resultSize;
+
+		return true;
 	}
 }

@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle;
 
+import com.exactpro.cradle.messages.StoredGroupMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventSingle;
@@ -41,8 +42,10 @@ public class CradleObjectsFactory
 		this.maxMessageBatchSize = maxMessageBatchSize;
 		this.maxTestEventBatchSize = maxTestEventBatchSize;
 	}
-	
-	
+
+	public StoredGroupMessageBatch createGroupMessageBatch() {return new StoredGroupMessageBatch(maxMessageBatchSize);}
+	public StoredGroupMessageBatch createGroupMessageBatch(String group) {return new StoredGroupMessageBatch(maxMessageBatchSize, group);}
+
 	public StoredMessageBatch createMessageBatch()
 	{
 		return new StoredMessageBatch(maxMessageBatchSize);
