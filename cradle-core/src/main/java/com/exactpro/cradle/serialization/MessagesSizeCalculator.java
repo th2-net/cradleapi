@@ -21,6 +21,7 @@ import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.messages.StoredMessageMetadata;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Map;
 
@@ -70,7 +71,7 @@ public class MessagesSizeCalculator {
 	 * 		 x - message
 	 */
 	public final static int MESSAGE_GROUP_BATCH_CONST_VALUE = 9;
-	
+
 	public final static int MESSAGE_LENGTH_IN_BATCH = 4;
 
 	private static int calculateMetadataSize (StoredMessageMetadata metadata) {
@@ -143,8 +144,8 @@ public class MessagesSizeCalculator {
 		return calculateGroupMessageSize(message) + MESSAGE_LENGTH_IN_BATCH;
 	}
 
-	private static int lenStr(String str) {
-		return str != null ? str.length() : 0;
+	public static int lenStr(String str) {
+		return str != null ? str.getBytes(StandardCharsets.UTF_8).length : 0;
 	}
 
 	public static int calculateServiceMessageBatchSize(String streamName) {

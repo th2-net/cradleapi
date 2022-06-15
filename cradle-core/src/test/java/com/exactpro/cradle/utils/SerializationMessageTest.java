@@ -34,6 +34,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static com.exactpro.cradle.utils.TestUtils.generateUnicodeString;
+
 public class SerializationMessageTest {
 	
 	@Test
@@ -105,6 +107,28 @@ public class SerializationMessageTest {
 			return;
 		}
 		Assert.fail("Should be an error when stream name is longer than " + SerializationUtils.USHORT_MAX_VALUE);
+	}
+	@Test
+	public void serializeDeserialize5UnicodeCharacters() throws SerializationException {
+		StoredMessageBuilder builder = new StoredMessageBuilder();
+		String sessionAlias = generateUnicodeString((1 << 17), 100);
+		builder.setStreamName(sessionAlias);
+		builder.setIndex(123456789010111213L);
+		builder.setDirection(Direction.SECOND);
+		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.00Z"));
+		String metaDataKey = generateUnicodeString((1 << 19), 50);
+		String metaDataValue = generateUnicodeString((1 << 15), 25);
+		builder.putMetadata(metaDataKey, metaDataValue);
+		builder.putMetadata(metaDataKey, metaDataValue);
+		builder.putMetadata(metaDataKey, metaDataValue);
+		String messageContent = generateUnicodeString((1 << 17), 150);
+		builder.setContent(messageContent.repeat(10).getBytes(StandardCharsets.UTF_8));
+		StoredMessage build = builder.build();
+		MessageSerializer serializer = new MessageSerializer();
+		byte[] serialized = serializer.serialize(build);
+		MessageDeserializer deserializer = new MessageDeserializer();
+		StoredMessage deserialized = deserializer.deserialize(serialized, sessionAlias, Direction.SECOND);
+		Assert.assertEquals(deserialized, build);
 	}
 
 	@Test
