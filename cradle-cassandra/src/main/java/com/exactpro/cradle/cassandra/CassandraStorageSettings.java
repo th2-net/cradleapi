@@ -32,7 +32,6 @@ public class CassandraStorageSettings
 			TEST_EVENTS_TABLE = "test_events",
 			TEST_EVENT_PARENT_INDEX = "test_event_parent_index",
 			INTERVALS_TABLE = "intervals",
-			MESSAGE_STATISTICS_TABLE = "message_statistics",
 			SESSION_STATISTICS_TABLE = "session_statistics";
 	public static final long DEFAULT_TIMEOUT = 5000;
 	public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
@@ -60,7 +59,6 @@ public class CassandraStorageSettings
 			testEventsTable,
 			testEventParentIndex,
 			intervalsTable,
-			messageStatisticsTable,
 			sessionStatisticsTable;
 	private int keyspaceReplicationFactor;
 
@@ -106,7 +104,6 @@ public class CassandraStorageSettings
 		this.testEventsTable = TEST_EVENTS_TABLE;
 		this.testEventParentIndex = TEST_EVENT_PARENT_INDEX;
 		this.intervalsTable = INTERVALS_TABLE;
-		this.messageStatisticsTable = MESSAGE_STATISTICS_TABLE;
 		this.sessionStatisticsTable = SESSION_STATISTICS_TABLE;
 
 		this.keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
@@ -139,7 +136,6 @@ public class CassandraStorageSettings
 		this.testEventsTable = settings.getTestEventsTable();
 		this.testEventParentIndex = settings.getTestEventParentIndex();
 		this.intervalsTable = settings.getIntervalsTable();
-		this.messageStatisticsTable = settings.getMessageStatisticsTable();
 		this.sessionStatisticsTable = settings.getSessionStatisticsTable();
 
 		this.keyspaceReplicationFactor = settings.getKeyspaceReplicationFactor();
@@ -256,17 +252,6 @@ public class CassandraStorageSettings
 	public void setIntervalsTable(String intervalsTable)
 	{
 		this.intervalsTable = intervalsTable;
-	}
-
-
-	public String getMessageStatisticsTable()
-	{
-		return messageStatisticsTable;
-	}
-
-	public void setMessageStatisticsTable(String messageStatisticsTable)
-	{
-		this.messageStatisticsTable = messageStatisticsTable;
 	}
 
 	public String getSessionStatisticsTable () {

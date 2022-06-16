@@ -198,6 +198,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
         try {
             logger.trace("Persisting message counter for {}:{}:{}:{}:{}", bookId, key.getSessionAlias(), key.getDirection(), frameType, counter.getFrameStart());
             ops.getOperators(bookId).getMessageStatisticsOperator().update(
+                    bookId.getName(),
                     key.getPage(),
                     key.getSessionAlias(),
                     key.getDirection(),

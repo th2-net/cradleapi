@@ -61,7 +61,9 @@ public class MessageStatisticsIteratorProvider extends IteratorProvider<CounterS
         MessageStatisticsOperator messageStatsOperator = ops.getMessageStatisticsOperator();
         MessageStatisticsEntityConverter messageStatsConverter = ops.getMessageStatisticsEntityConverter();
 
-        return messageStatsOperator.getStatistics( currentPage.getId().getName(),
+        return messageStatsOperator.getStatistics(
+                        currentPage.getId().getBookId().getName(),
+                        currentPage.getId().getName(),
                         sessionAlias,
                         direction.getLabel(),
                         frameInterval.getFrameType().getValue(),

@@ -275,9 +275,10 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 
 	private void createMessageStatistics() throws IOException
 	{
-		String tableName = getSettings().getMessageStatisticsTable();
+		String tableName = MessageStatisticsEntity.TABLE_NAME;
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(MessageStatisticsEntity.FIELD_PAGE,DataTypes.TEXT)
+				.withPartitionKey(MessageStatisticsEntity.FIELD_BOOK, DataTypes.TEXT)
+				.withPartitionKey(MessageStatisticsEntity.FIELD_PAGE, DataTypes.TEXT)
 				.withPartitionKey(MessageStatisticsEntity.FIELD_SESSION_ALIAS, DataTypes.TEXT)
 				.withPartitionKey(MessageStatisticsEntity.FIELD_DIRECTION, DataTypes.TEXT)
 				.withPartitionKey(MessageStatisticsEntity.FIELD_FRAME_TYPE, DataTypes.TINYINT)
