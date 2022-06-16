@@ -19,6 +19,7 @@ package com.exactpro.cradle.cassandra.dao;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.books.PageEntity;
+import com.exactpro.cradle.cassandra.dao.books.PageNameEntity;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageSession;
 import com.exactpro.cradle.cassandra.dao.books.PageNameOperator;
 import com.exactpro.cradle.cassandra.dao.books.PageOperator;
@@ -83,7 +84,7 @@ public class BookOperators
 		this.bookId = bookId;
 
 		pageOperator = dataMapper.pageOperator(keyspace, PageEntity.TABLE_NAME);
-		pageNameOperator = dataMapper.pageNameOperator(keyspace, settings.getPagesNamesTable());
+		pageNameOperator = dataMapper.pageNameOperator(keyspace, PageNameEntity.TABLE_NAME);
 		
 		sessionsOperator = dataMapper.sessionsOperator(keyspace, settings.getSessionsTable());
 		scopeOperator = dataMapper.scopeOperator(keyspace, settings.getScopesTable());

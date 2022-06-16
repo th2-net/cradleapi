@@ -125,9 +125,9 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 	
 	private void createPagesNames() throws IOException
 	{
-		String tableName = getSettings().getPagesNamesTable();
+		String tableName = PageNameEntity.TABLE_NAME;
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(PageNameEntity.FIELD_PART, DataTypes.TEXT)
+				.withPartitionKey(PageNameEntity.FIELD_BOOK, DataTypes.TEXT)
 				.withPartitionKey(PageNameEntity.FIELD_NAME, DataTypes.TEXT)
 				.withColumn(PageNameEntity.FIELD_START_DATE, DataTypes.DATE)
 				.withColumn(PageNameEntity.FIELD_START_TIME, DataTypes.TIME)

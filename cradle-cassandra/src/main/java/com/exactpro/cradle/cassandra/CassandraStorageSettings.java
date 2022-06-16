@@ -27,7 +27,6 @@ public class CassandraStorageSettings
 			SCHEMA_VERSION = "4.6.0",
 			BOOKS_TABLE = "books",
 			BOOKS_STATUS_TABLE = "books_status",
-			PAGES_NAMES_TABLE = "pages_names",
 			MESSAGES_TABLE = "messages",
 			GROUPED_MESSAGES_TABLE = "grouped_messages",
 			SESSIONS_TABLE = "sessions",
@@ -62,7 +61,6 @@ public class CassandraStorageSettings
 			schemaVersion,
 			booksTable,
 			booksStatusTable,
-			pagesNamesTable,
 			messagesTable,
 			groupedMessagesTable,
 			sessionsTable,
@@ -115,7 +113,6 @@ public class CassandraStorageSettings
 		this.schemaVersion = SCHEMA_VERSION;
 		this.booksTable = BOOKS_TABLE;
 		this.booksStatusTable = BOOKS_STATUS_TABLE;
-		this.pagesNamesTable = PAGES_NAMES_TABLE;
 		this.messagesTable = MESSAGES_TABLE;
 		this.groupedMessagesTable = GROUPED_MESSAGES_TABLE;
 		this.sessionsTable = SESSIONS_TABLE;
@@ -155,7 +152,6 @@ public class CassandraStorageSettings
 		this.schemaVersion = settings.getSchemaVersion();
 		this.booksTable = settings.getBooksTable();
 		this.booksStatusTable = settings.getBooksStatusTable();
-		this.pagesNamesTable = settings.getPagesNamesTable();
 		this.messagesTable = settings.getMessagesTable();
 		this.groupedMessagesTable = settings.getGroupedMessagesTable();
 		this.sessionsTable = settings.getSessionsTable();
@@ -245,18 +241,6 @@ public class CassandraStorageSettings
 	{
 		this.booksStatusTable = booksStatusTable;
 	}
-
-
-	public String getPagesNamesTable()
-	{
-		return pagesNamesTable;
-	}
-
-	public void setPagesNamesTable(String pagesNamesTable)
-	{
-		this.pagesNamesTable = pagesNamesTable;
-	}
-
 
 	public String getMessagesTable()
 	{

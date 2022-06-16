@@ -53,7 +53,7 @@ public interface CassandraDataMapper
 	PageOperator pageOperator(@DaoKeyspace String keyspace, @DaoTable String pagesTableName);
 	
 	@DaoFactory
-	PageNameOperator pageNameOperator(@DaoKeyspace String keyspace, @DaoTable String pagesNamesTable);
+	PageNameOperator pageNameOperator(@DaoKeyspace String keyspace, @DaoTable String pageNamesTable);
 	
 	@DaoFactory
 	SessionsOperator sessionsOperator(@DaoKeyspace String keyspace, @DaoTable String sessionsTable);
