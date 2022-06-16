@@ -31,8 +31,7 @@ public class CassandraStorageSettings
 			GROUPED_MESSAGES_TABLE = "grouped_messages",
 			TEST_EVENTS_TABLE = "test_events",
 			TEST_EVENT_PARENT_INDEX = "test_event_parent_index",
-			INTERVALS_TABLE = "intervals",
-			SESSION_STATISTICS_TABLE = "session_statistics";
+			INTERVALS_TABLE = "intervals";
 	public static final long DEFAULT_TIMEOUT = 5000;
 	public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
 	public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1,
@@ -58,8 +57,7 @@ public class CassandraStorageSettings
 			groupedMessagesTable,
 			testEventsTable,
 			testEventParentIndex,
-			intervalsTable,
-			sessionStatisticsTable;
+			intervalsTable;
 	private int keyspaceReplicationFactor;
 
 	private int maxParallelQueries,
@@ -104,7 +102,6 @@ public class CassandraStorageSettings
 		this.testEventsTable = TEST_EVENTS_TABLE;
 		this.testEventParentIndex = TEST_EVENT_PARENT_INDEX;
 		this.intervalsTable = INTERVALS_TABLE;
-		this.sessionStatisticsTable = SESSION_STATISTICS_TABLE;
 
 		this.keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
 		this.maxParallelQueries = DEFAULT_MAX_PARALLEL_QUERIES;
@@ -136,7 +133,6 @@ public class CassandraStorageSettings
 		this.testEventsTable = settings.getTestEventsTable();
 		this.testEventParentIndex = settings.getTestEventParentIndex();
 		this.intervalsTable = settings.getIntervalsTable();
-		this.sessionStatisticsTable = settings.getSessionStatisticsTable();
 
 		this.keyspaceReplicationFactor = settings.getKeyspaceReplicationFactor();
 		this.maxParallelQueries = settings.getMaxParallelQueries();
@@ -252,14 +248,6 @@ public class CassandraStorageSettings
 	public void setIntervalsTable(String intervalsTable)
 	{
 		this.intervalsTable = intervalsTable;
-	}
-
-	public String getSessionStatisticsTable () {
-		return sessionStatisticsTable;
-	}
-
-	public void setSessionStatisticsTable (String sessionStatisticsTable) {
-		this.sessionStatisticsTable  = sessionStatisticsTable;
 	}
 
 	public int getKeyspaceReplicationFactor()

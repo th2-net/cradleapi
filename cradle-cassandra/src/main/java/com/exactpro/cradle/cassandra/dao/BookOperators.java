@@ -91,7 +91,7 @@ public class BookOperators
 		pageScopesOperator = dataMapper.pageScopesOperator(keyspace, PageScopeEntity.TABLE_NAME);
 		messageStatisticsOperator = dataMapper.messageStatisticsOperator(keyspace, MessageStatisticsEntity.TABLE_NAME);
 		entityStatisticsOperator = dataMapper.entityStatisticsOperator(keyspace, EntityStatisticsEntity.TABLE_NAME);
-		sessionStatisticsOperator = dataMapper.sessionStatisticsOperator(keyspace, settings.getSessionStatisticsTable());
+		sessionStatisticsOperator = dataMapper.sessionStatisticsOperator(keyspace, SessionStatisticsEntity.TABLE_NAME);
 
 		intervalOperator = dataMapper.intervalOperator(keyspace, settings.getIntervalsTable());
 

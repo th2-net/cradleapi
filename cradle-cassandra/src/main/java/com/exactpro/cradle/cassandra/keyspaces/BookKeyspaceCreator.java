@@ -302,8 +302,9 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 
 	private void createSessionStatistics () throws IOException
 	{
-		String tableName = getSettings().getSessionStatisticsTable();
+		String tableName = SessionStatisticsEntity.TABLE_NAME;
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(SessionStatisticsEntity.FIELD_BOOK, DataTypes.TEXT)
 				.withPartitionKey(SessionStatisticsEntity.FIELD_PAGE, DataTypes.TEXT)
 				.withPartitionKey(SessionStatisticsEntity.FIELD_RECORD_TYPE, DataTypes.TINYINT)
 				.withPartitionKey(SessionStatisticsEntity.FIELD_FRAME_TYPE, DataTypes.TINYINT)

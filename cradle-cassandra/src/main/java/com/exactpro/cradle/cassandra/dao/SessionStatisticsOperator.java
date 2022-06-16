@@ -34,11 +34,12 @@ public interface SessionStatisticsOperator {
     CompletableFuture<Void> write(SessionStatisticsEntity sessionStatisticsEntity,
                                   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-    @Query("SELECT * FROM ${qualifiedTableId}  WHERE " + FIELD_PAGE + "=:page AND " +
+    @Query("SELECT * FROM ${qualifiedTableId}  WHERE " +
+            FIELD_BOOK + "=:book AND " +
+            FIELD_PAGE + "=:page AND " +
             FIELD_RECORD_TYPE + "=:recordType AND " +
             FIELD_FRAME_TYPE + "=:frameType AND " +
             FIELD_FRAME_START + ">=:frameStart AND " +
             FIELD_FRAME_START + "<:frameEnd")
-    CompletableFuture<MappedAsyncPagingIterable<SessionStatisticsEntity>> getStatistics (String page, Byte recordType, Byte frameType, Instant frameStart, Instant frameEnd, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-
+    CompletableFuture<MappedAsyncPagingIterable<SessionStatisticsEntity>> getStatistics (String book, String page, Byte recordType, Byte frameType, Instant frameStart, Instant frameEnd, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

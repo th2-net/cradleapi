@@ -241,6 +241,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
             SessionStatisticsOperator op = ops.getOperators(bookId).getSessionStatisticsOperator();
             for (String session : sessions) {
                 op.write(new SessionStatisticsEntity(
+                                bookId.getName(),
                                 key.getPage(),
                                 key.getRecordType().getValue(),
                                 frameType.getValue(),
