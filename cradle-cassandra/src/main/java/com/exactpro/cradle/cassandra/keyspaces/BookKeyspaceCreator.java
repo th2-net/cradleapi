@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,11 +109,10 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 	}
 
 
-	private void createPages() throws IOException
-	{
-		String tableName = getSettings().getPagesTable();
+	private void createPages() throws IOException {
+		String tableName = PageEntity.TABLE_NAME;
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(PageEntity.FIELD_PART, DataTypes.TEXT)
+				.withPartitionKey(PageEntity.FIELD_BOOK, DataTypes.TEXT)
 				.withClusteringColumn(PageEntity.FIELD_START_DATE, DataTypes.DATE)
 				.withClusteringColumn(PageEntity.FIELD_START_TIME, DataTypes.TIME)
 				.withColumn(PageEntity.FIELD_NAME, DataTypes.TEXT)

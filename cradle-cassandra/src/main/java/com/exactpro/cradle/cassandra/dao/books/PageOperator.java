@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,12 +33,11 @@ import com.datastax.oss.driver.api.mapper.annotations.Select;
 import com.datastax.oss.driver.api.mapper.annotations.Update;
 
 @Dao
-public interface PageOperator
-{
+public interface PageOperator {
 	@Select
 	PagingIterable<PageEntity> getAll(String book, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+FIELD_PART+"=:part AND ("+FIELD_START_DATE+", "+FIELD_START_TIME+")>(:startDate, :startTime)")
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+ FIELD_BOOK +"=:part AND ("+FIELD_START_DATE+", "+FIELD_START_TIME+")>(:startDate, :startTime)")
 	PagingIterable<PageEntity> get(String part, LocalDate startDate, LocalTime startTime, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Update
@@ -47,7 +46,7 @@ public interface PageOperator
 	@Insert
 	ResultSet write(PageEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Query("UPDATE ${qualifiedTableId} SET "+FIELD_REMOVED+"=:removed WHERE "+FIELD_PART+"=:part AND "+FIELD_START_DATE+"=:startDate AND "+FIELD_START_TIME+"=:startTime")
+	@Query("UPDATE ${qualifiedTableId} SET "+FIELD_REMOVED+"=:removed WHERE "+ FIELD_BOOK +"=:part AND "+FIELD_START_DATE+"=:startDate AND "+FIELD_START_TIME+"=:startTime")
 	ResultSet remove(String part, LocalDate startDate, LocalTime startTime, Instant removed, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

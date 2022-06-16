@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.exactpro.cradle.cassandra.dao;
 
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
+import com.exactpro.cradle.cassandra.dao.books.PageEntity;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageSession;
 import com.exactpro.cradle.cassandra.dao.books.PageNameOperator;
 import com.exactpro.cradle.cassandra.dao.books.PageOperator;
@@ -81,7 +82,7 @@ public class BookOperators
 	{
 		this.bookId = bookId;
 
-		pageOperator = dataMapper.pageOperator(keyspace, settings.getPagesTable());
+		pageOperator = dataMapper.pageOperator(keyspace, PageEntity.TABLE_NAME);
 		pageNameOperator = dataMapper.pageNameOperator(keyspace, settings.getPagesNamesTable());
 		
 		sessionsOperator = dataMapper.sessionsOperator(keyspace, settings.getSessionsTable());

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ public class CassandraStorageSettings
 			SCHEMA_VERSION = "4.6.0",
 			BOOKS_TABLE = "books",
 			BOOKS_STATUS_TABLE = "books_status",
-			PAGES_TABLE = "pages",
 			PAGES_NAMES_TABLE = "pages_names",
 			MESSAGES_TABLE = "messages",
 			GROUPED_MESSAGES_TABLE = "grouped_messages",
@@ -63,7 +62,6 @@ public class CassandraStorageSettings
 			schemaVersion,
 			booksTable,
 			booksStatusTable,
-			pagesTable,
 			pagesNamesTable,
 			messagesTable,
 			groupedMessagesTable,
@@ -117,7 +115,6 @@ public class CassandraStorageSettings
 		this.schemaVersion = SCHEMA_VERSION;
 		this.booksTable = BOOKS_TABLE;
 		this.booksStatusTable = BOOKS_STATUS_TABLE;
-		this.pagesTable = PAGES_TABLE;
 		this.pagesNamesTable = PAGES_NAMES_TABLE;
 		this.messagesTable = MESSAGES_TABLE;
 		this.groupedMessagesTable = GROUPED_MESSAGES_TABLE;
@@ -158,7 +155,6 @@ public class CassandraStorageSettings
 		this.schemaVersion = settings.getSchemaVersion();
 		this.booksTable = settings.getBooksTable();
 		this.booksStatusTable = settings.getBooksStatusTable();
-		this.pagesTable = settings.getPagesTable();
 		this.pagesNamesTable = settings.getPagesNamesTable();
 		this.messagesTable = settings.getMessagesTable();
 		this.groupedMessagesTable = settings.getGroupedMessagesTable();
@@ -248,16 +244,6 @@ public class CassandraStorageSettings
 	public void setBooksStatusTable(String booksStatusTable)
 	{
 		this.booksStatusTable = booksStatusTable;
-	}
-
-	public String getPagesTable()
-	{
-		return pagesTable;
-	}
-
-	public void setPagesTable(String pagesTable)
-	{
-		this.pagesTable = pagesTable;
 	}
 
 
