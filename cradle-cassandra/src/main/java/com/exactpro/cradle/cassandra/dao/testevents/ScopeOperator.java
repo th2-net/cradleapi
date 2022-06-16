@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,13 +26,12 @@ import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Select;
 
 @Dao
-public interface ScopeOperator
-{
+public interface ScopeOperator {
 	@Select
 	CompletableFuture<MappedAsyncPagingIterable<ScopeEntity>> all(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Select
-	CompletableFuture<MappedAsyncPagingIterable<ScopeEntity>> get(String part, 
+	CompletableFuture<MappedAsyncPagingIterable<ScopeEntity>> get(String book,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert

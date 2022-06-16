@@ -32,10 +32,7 @@ import com.exactpro.cradle.cassandra.dao.messages.converters.GroupedMessageBatch
 import com.exactpro.cradle.cassandra.dao.messages.converters.MessageBatchEntityConverter;
 import com.exactpro.cradle.cassandra.dao.messages.converters.PageSessionEntityConverter;
 import com.exactpro.cradle.cassandra.dao.messages.converters.SessionEntityConverter;
-import com.exactpro.cradle.cassandra.dao.testevents.PageScopeEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.PageScopesOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.ScopeOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
+import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.PageScopeEntityConverter;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.ScopeEntityConverter;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
@@ -85,7 +82,7 @@ public class BookOperators
 		pageNameOperator = dataMapper.pageNameOperator(keyspace, PageNameEntity.TABLE_NAME);
 		
 		sessionsOperator = dataMapper.sessionsOperator(keyspace, settings.getSessionsTable());
-		scopeOperator = dataMapper.scopeOperator(keyspace, settings.getScopesTable());
+		scopeOperator = dataMapper.scopeOperator(keyspace, ScopeEntity.TABLE_NAME);
 		
 		messageBatchOperator = dataMapper.messageBatchOperator(keyspace, settings.getMessagesTable());
 		groupedMessageBatchOperator = dataMapper.groupedMessageBatchOperator(keyspace, settings.getGroupedMessagesTable());

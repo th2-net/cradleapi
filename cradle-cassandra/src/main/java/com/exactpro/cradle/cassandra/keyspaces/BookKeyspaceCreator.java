@@ -146,9 +146,9 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 	
 	private void createScopes() throws IOException
 	{
-		String tableName = getSettings().getScopesTable();
+		String tableName = ScopeEntity.TABLE_NAME;
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(ScopeEntity.FIELD_PART, DataTypes.TEXT)
+				.withPartitionKey(ScopeEntity.FIELD_BOOK, DataTypes.TEXT)
 				.withClusteringColumn(ScopeEntity.FIELD_SCOPE, DataTypes.TEXT));
 	}
 
