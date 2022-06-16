@@ -31,7 +31,6 @@ public class CassandraStorageSettings
 			GROUPED_MESSAGES_TABLE = "grouped_messages",
 			TEST_EVENTS_TABLE = "test_events",
 			TEST_EVENT_PARENT_INDEX = "test_event_parent_index",
-			LABELS_TABLE = "labels",
 			INTERVALS_TABLE = "intervals",
 			MESSAGE_STATISTICS_TABLE = "message_statistics",
 			ENTITY_STATISTICS_TABLE = "entity_statistics",
@@ -61,7 +60,6 @@ public class CassandraStorageSettings
 			groupedMessagesTable,
 			testEventsTable,
 			testEventParentIndex,
-			labelsTable,
 			intervalsTable,
 			messageStatisticsTable,
 			entityStatisticsTable,
@@ -109,7 +107,6 @@ public class CassandraStorageSettings
 		this.groupedMessagesTable = GROUPED_MESSAGES_TABLE;
 		this.testEventsTable = TEST_EVENTS_TABLE;
 		this.testEventParentIndex = TEST_EVENT_PARENT_INDEX;
-		this.labelsTable = LABELS_TABLE;
 		this.intervalsTable = INTERVALS_TABLE;
 		this.messageStatisticsTable = MESSAGE_STATISTICS_TABLE;
 		this.entityStatisticsTable = ENTITY_STATISTICS_TABLE;
@@ -144,7 +141,6 @@ public class CassandraStorageSettings
 		this.groupedMessagesTable = settings.getGroupedMessagesTable();
 		this.testEventsTable = settings.getTestEventsTable();
 		this.testEventParentIndex = settings.getTestEventParentIndex();
-		this.labelsTable = settings.getLabelsTable();
 		this.intervalsTable = settings.getIntervalsTable();
 		this.messageStatisticsTable = settings.getMessageStatisticsTable();
 		this.entityStatisticsTable = settings.getEntityStatisticsTable();
@@ -255,18 +251,6 @@ public class CassandraStorageSettings
 	{
 		this.testEventParentIndex = testEventParentIndex;
 	}
-
-
-	public String getLabelsTable()
-	{
-		return labelsTable;
-	}
-
-	public void setLabelsTable(String labelsTable)
-	{
-		this.labelsTable = labelsTable;
-	}
-
 
 	public String getIntervalsTable()
 	{

@@ -248,8 +248,9 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 	
 	private void createLabelsTable() throws IOException
 	{
-		String tableName = getSettings().getLabelsTable();
+		String tableName = LabelEntity.TABLE_NAME;
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(LabelEntity.FIELD_BOOK, DataTypes.TEXT)
 				.withPartitionKey(LabelEntity.FIELD_PAGE, DataTypes.TEXT)
 				.withClusteringColumn(LabelEntity.FIELD_NAME, DataTypes.TEXT));
 	}
