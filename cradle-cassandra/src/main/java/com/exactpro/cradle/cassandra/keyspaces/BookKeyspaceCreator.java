@@ -233,8 +233,9 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 	
 	private void createPageScopes() throws IOException
 	{
-		String tableName = getSettings().getPageScopesTable();
+		String tableName = PageScopeEntity.TABLE_NAME;
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(PageScopeEntity.FIELD_BOOK, DataTypes.TEXT)
 				.withPartitionKey(PageScopeEntity.FIELD_PAGE, DataTypes.TEXT)
 				.withClusteringColumn(PageScopeEntity.FIELD_SCOPE, DataTypes.TEXT));
 	}

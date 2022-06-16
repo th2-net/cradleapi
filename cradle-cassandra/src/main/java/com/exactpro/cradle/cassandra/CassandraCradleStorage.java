@@ -1130,11 +1130,12 @@ public class CassandraCradleStorage extends CradleStorage
 		PageScopesOperator pageScopesOp = bookOps.getPageScopesOperator();
 		TestEventOperator eventOp = bookOps.getTestEventOperator();
 		String pageName = pageId.getName();
+		String bookName = pageId.getBookId().getName();
 		
-		PagingIterable<PageScopeEntity> rs = pageScopesOp.get(pageName, readAttrs);
+		PagingIterable<PageScopeEntity> rs = pageScopesOp.get(bookName, pageName, readAttrs);
 		for (PageScopeEntity scope : rs)
 			eventOp.remove(scope.getPage(), scope.getScope(), writeAttrs);
-		pageScopesOp.remove(pageName, writeAttrs);
+		pageScopesOp.remove(bookName, pageName, writeAttrs);
 	}
 	
 	protected void removePage(PageInfo pageInfo, BookOperators bookOps)

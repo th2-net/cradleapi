@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,56 +16,62 @@
 
 package com.exactpro.cradle.cassandra.dao.testevents;
 
-
-
 import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 
 @Entity
-public class PageScopeEntity
-{
-	public static final String FIELD_PAGE = "page",
-			FIELD_SCOPE = "scope";
+@CqlName(PageScopeEntity.TABLE_NAME)
+public class PageScopeEntity {
+	public static final String TABLE_NAME = "page_scopes";
+
+	public static final String FIELD_BOOK = "book";
+	public static final String FIELD_PAGE = "page";
+	public static final String FIELD_SCOPE = "scope";
 
 	@PartitionKey(0)
+	@CqlName(FIELD_BOOK)
+	private String book;
+
+	@PartitionKey(1)
 	@CqlName(FIELD_PAGE)
 	private String page;
-	
+
 	@ClusteringColumn(0)
 	@CqlName(FIELD_SCOPE)
 	private String scope;
 	
-	public PageScopeEntity()
-	{
+	public PageScopeEntity() {
 	}
 
-	public PageScopeEntity(String page, String scope)
-	{
+	public PageScopeEntity(String book, String page, String scope) {
+		this.book = book;
 		this.page = page;
 		this.scope = scope;
 	}
-	
-	
-	public String getPage()
-	{
+
+	public String getBook() {
+		return book;
+	}
+
+	public void setBook(String book) {
+		this.book = book;
+	}
+
+	public String getPage() {
 		return page;
 	}
 	
-	public void setPage(String page)
-	{
+	public void setPage(String page) {
 		this.page = page;
 	}
-	
-	
-	public String getScope()
-	{
+
+	public String getScope() {
 		return scope;
 	}
 	
-	public void setScope(String scope)
-	{
+	public void setScope(String scope) {
 		this.scope = scope;
 	}
 }

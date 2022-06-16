@@ -32,7 +32,6 @@ public class CassandraStorageSettings
 			SESSIONS_TABLE = "sessions",
 			TEST_EVENTS_TABLE = "test_events",
 			SCOPES_TABLE = "scopes",
-			PAGE_SCOPES_TABLE = "page_scopes",
 			TEST_EVENT_PARENT_INDEX = "test_event_parent_index",
 			LABELS_TABLE = "labels",
 			INTERVALS_TABLE = "intervals",
@@ -65,7 +64,6 @@ public class CassandraStorageSettings
 			sessionsTable,
 			testEventsTable,
 			scopesTable,
-			pageScopesTable,
 			testEventParentIndex,
 			labelsTable,
 			intervalsTable,
@@ -116,7 +114,6 @@ public class CassandraStorageSettings
 		this.sessionsTable = SESSIONS_TABLE;
 		this.testEventsTable = TEST_EVENTS_TABLE;
 		this.scopesTable = SCOPES_TABLE;
-		this.pageScopesTable = PAGE_SCOPES_TABLE;
 		this.testEventParentIndex = TEST_EVENT_PARENT_INDEX;
 		this.labelsTable = LABELS_TABLE;
 		this.intervalsTable = INTERVALS_TABLE;
@@ -154,7 +151,6 @@ public class CassandraStorageSettings
 		this.sessionsTable = settings.getSessionsTable();
 		this.testEventsTable = settings.getTestEventsTable();
 		this.scopesTable = settings.getScopesTable();
-		this.pageScopesTable = settings.getPageScopesTable();
 		this.testEventParentIndex = settings.getTestEventParentIndex();
 		this.labelsTable = settings.getLabelsTable();
 		this.intervalsTable = settings.getIntervalsTable();
@@ -280,18 +276,6 @@ public class CassandraStorageSettings
 	{
 		this.scopesTable = scopesTable;
 	}
-
-
-	public String getPageScopesTable()
-	{
-		return pageScopesTable;
-	}
-
-	public void setPageScopesTable(String pageScopesTable)
-	{
-		this.pageScopesTable = pageScopesTable;
-	}
-
 
 	public String getTestEventParentIndex()
 	{

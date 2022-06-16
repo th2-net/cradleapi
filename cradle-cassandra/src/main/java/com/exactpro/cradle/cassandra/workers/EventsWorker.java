@@ -130,7 +130,7 @@ public class EventsWorker extends Worker
 		
 		logger.debug("Writing scope partition of event '{}'", event.getId());
 		return bookOps.getPageScopesOperator()
-				.write(new PageScopeEntity(pageId.getName(), event.getScope()), writeAttrs);
+				.write(new PageScopeEntity(pageId.getBookId().getName(), pageId.getName(), event.getScope()), writeAttrs);
 	}
 	
 	public CompletableFuture<StoredTestEvent> getTestEvent(StoredTestEventId id, PageId pageId)

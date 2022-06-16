@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,17 +28,16 @@ import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Select;
 
 @Dao
-public interface PageScopesOperator
-{
+public interface PageScopesOperator {
 	@Select
 	CompletableFuture<MappedAsyncPagingIterable<PageScopeEntity>> all(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Select
-	PagingIterable<PageScopeEntity> get(String page, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	PagingIterable<PageScopeEntity> get(String book, String page, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
 	CompletableFuture<PageScopeEntity> write(PageScopeEntity pageScope, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Delete(entityClass = PageScopeEntity.class)
-	void remove(String page, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	void remove(String book, String page, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }
