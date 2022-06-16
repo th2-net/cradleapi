@@ -58,6 +58,7 @@ public class EntityStatisticsIteratorProvider extends IteratorProvider<CounterSa
         EntityStatisticsEntityConverter entityStatsConverter = ops.getEntityStatisticsEntityConverter();
 
         return entityStatsOperator.getStatistics(
+                        currentPage.getId().getBookId().getName(),
                         currentPage.getId().getName(),
 						entityType.getValue(),
 						frameType.getValue(),

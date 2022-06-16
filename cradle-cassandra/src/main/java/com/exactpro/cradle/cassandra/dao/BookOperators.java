@@ -90,7 +90,7 @@ public class BookOperators
 		testEventOperator = dataMapper.testEventOperator(keyspace, settings.getTestEventsTable());
 		pageScopesOperator = dataMapper.pageScopesOperator(keyspace, PageScopeEntity.TABLE_NAME);
 		messageStatisticsOperator = dataMapper.messageStatisticsOperator(keyspace, settings.getMessageStatisticsTable());
-		entityStatisticsOperator = dataMapper.entityStatisticsOperator(keyspace, settings.getEntityStatisticsTable());
+		entityStatisticsOperator = dataMapper.entityStatisticsOperator(keyspace, EntityStatisticsEntity.TABLE_NAME);
 		sessionStatisticsOperator = dataMapper.sessionStatisticsOperator(keyspace, settings.getSessionStatisticsTable());
 
 		intervalOperator = dataMapper.intervalOperator(keyspace, settings.getIntervalsTable());

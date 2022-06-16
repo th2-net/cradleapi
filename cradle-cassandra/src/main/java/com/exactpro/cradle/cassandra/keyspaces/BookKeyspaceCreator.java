@@ -288,9 +288,10 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 
 	private void createEntityStatistics() throws IOException
 	{
-		String tableName = getSettings().getEntityStatisticsTable();
+		String tableName = EntityStatisticsEntity.TABLE_NAME;
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(EntityStatisticsEntity.FIELD_PAGE,DataTypes.TEXT)
+				.withPartitionKey(EntityStatisticsEntity.FIELD_BOOK, DataTypes.TEXT)
+				.withPartitionKey(EntityStatisticsEntity.FIELD_PAGE, DataTypes.TEXT)
 				.withPartitionKey(EntityStatisticsEntity.FIELD_ENTITY_TYPE, DataTypes.TINYINT)
 				.withPartitionKey(EntityStatisticsEntity.FIELD_FRAME_TYPE, DataTypes.TINYINT)
 				.withClusteringColumn(EntityStatisticsEntity.FIELD_FRAME_START, DataTypes.TIMESTAMP)

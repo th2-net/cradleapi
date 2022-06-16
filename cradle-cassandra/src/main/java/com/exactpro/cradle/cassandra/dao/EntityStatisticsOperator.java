@@ -17,26 +17,29 @@ package com.exactpro.cradle.cassandra.dao;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.datastax.oss.driver.api.mapper.annotations.*;
+import com.datastax.oss.driver.api.mapper.annotations.CqlName;
+import com.datastax.oss.driver.api.mapper.annotations.Dao;
+import com.datastax.oss.driver.api.mapper.annotations.Increment;
+import com.datastax.oss.driver.api.mapper.annotations.Query;
 
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.dao.EntityStatisticsEntity.*;
-import static com.exactpro.cradle.cassandra.dao.MessageStatisticsEntity.FIELD_ENTITY_COUNT;
-import static com.exactpro.cradle.cassandra.dao.MessageStatisticsEntity.FIELD_ENTITY_SIZE;
 
 @Dao
 public interface EntityStatisticsOperator {
 
     @Query("SELECT * FROM ${qualifiedTableId}  WHERE " +
+            FIELD_BOOK + "=:book AND " +
             FIELD_PAGE + "=:page AND " +
             FIELD_ENTITY_TYPE + "=:entityType AND " +
             FIELD_FRAME_TYPE + "=:frameType AND " +
             FIELD_FRAME_START + ">=:frameStart AND " +
             FIELD_FRAME_START + "<:frameEnd")
     CompletableFuture<MappedAsyncPagingIterable<EntityStatisticsEntity>> getStatistics (
+            String book,
             String page,
             Byte entityType,
             Byte frameType,
@@ -47,6 +50,7 @@ public interface EntityStatisticsOperator {
 
     @Increment(entityClass = EntityStatisticsEntity.class)
     CompletableFuture<Void> update(
+            String book,
             String page,
             Byte entityType,
             Byte frameType,
@@ -55,5 +59,4 @@ public interface EntityStatisticsOperator {
             @CqlName(FIELD_ENTITY_SIZE) long size,
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes
     );
-
 }

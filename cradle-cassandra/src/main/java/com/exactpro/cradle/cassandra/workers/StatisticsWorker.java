@@ -165,7 +165,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
         try {
             logger.trace("Persisting entity counter for {}:{}:{}:{}", bookId, entityKey, frameType, counter.getFrameStart());
-            ops.getOperators(bookId).getEntityStatisticsOperator().update(
+            ops.getOperators(bookId).getEntityStatisticsOperator().update(bookId.getName(),
                     entityKey.getPage(),
                     entityKey.getEntityType().getValue(),
                     frameType.getValue(),
