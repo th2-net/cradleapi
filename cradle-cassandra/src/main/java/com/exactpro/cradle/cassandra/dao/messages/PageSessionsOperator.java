@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,15 +25,18 @@ import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.dao.messages.PageSessionEntity.*;
 @Dao
-public interface PageSessionsOperator
-{
+public interface PageSessionsOperator {
 	@Select
-	PagingIterable<PageSessionEntity> get(String page,
+	PagingIterable<PageSessionEntity> get(String book, String page,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + FIELD_PAGE + "=:page AND " + FIELD_SESSION_ALIAS + "=:sessionAlias AND " +
-			FIELD_DIRECTION + "=:direction ORDER BY " + FIELD_SESSION_ALIAS + " DESC LIMIT 1")
-	CompletableFuture<PageSessionEntity> getLast(String page, String sessionAlias, String direction,
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE " +
+			FIELD_BOOK + " =:book AND " +
+			FIELD_PAGE + " =:page AND " +
+			FIELD_SESSION_ALIAS + " =:sessionAlias AND " +
+			FIELD_DIRECTION + " =:direction ORDER BY " +
+			FIELD_SESSION_ALIAS + " DESC LIMIT 1")
+	CompletableFuture<PageSessionEntity> getLast(String book, String page, String sessionAlias, String direction,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
@@ -41,5 +44,5 @@ public interface PageSessionsOperator
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Delete(entityClass = PageSessionEntity.class)
-	void remove(String page, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	void remove(String book, String page, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

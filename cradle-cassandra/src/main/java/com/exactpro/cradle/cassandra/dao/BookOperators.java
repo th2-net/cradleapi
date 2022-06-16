@@ -27,15 +27,12 @@ import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
 import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
 import com.exactpro.cradle.cassandra.dao.cache.CachedSession;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
-import com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchOperator;
-import com.exactpro.cradle.cassandra.dao.messages.PageSessionsOperator;
-import com.exactpro.cradle.cassandra.dao.messages.SessionsOperator;
+import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.messages.converters.GroupedMessageBatchEntityConverter;
 import com.exactpro.cradle.cassandra.dao.messages.converters.MessageBatchEntityConverter;
 import com.exactpro.cradle.cassandra.dao.messages.converters.PageSessionEntityConverter;
 import com.exactpro.cradle.cassandra.dao.messages.converters.SessionEntityConverter;
 import com.exactpro.cradle.cassandra.dao.testevents.PageScopesOperator;
-import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.PageScopeEntityConverter;
@@ -91,7 +88,7 @@ public class BookOperators
 		
 		messageBatchOperator = dataMapper.messageBatchOperator(keyspace, settings.getMessagesTable());
 		groupedMessageBatchOperator = dataMapper.groupedMessageBatchOperator(keyspace, settings.getGroupedMessagesTable());
-		pageSessionsOperator = dataMapper.pageSessionsOperator(keyspace, settings.getPageSessionsTable());
+		pageSessionsOperator = dataMapper.pageSessionsOperator(keyspace, PageSessionEntity.TABLE_NAME);
 		testEventOperator = dataMapper.testEventOperator(keyspace, settings.getTestEventsTable());
 		pageScopesOperator = dataMapper.pageScopesOperator(keyspace, settings.getPageScopesTable());
 		messageStatisticsOperator = dataMapper.messageStatisticsOperator(keyspace, settings.getMessageStatisticsTable());

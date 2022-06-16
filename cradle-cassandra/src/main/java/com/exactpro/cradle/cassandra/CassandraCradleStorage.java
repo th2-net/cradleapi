@@ -1117,11 +1117,12 @@ public class CassandraCradleStorage extends CradleStorage
 		PageSessionsOperator pageSessionsOp = bookOps.getPageSessionsOperator();
 		MessageBatchOperator messageOp = bookOps.getMessageBatchOperator();
 		String pageName = pageId.getName();
+		String bookName = pageId.getBookId().getName();
 		
-		PagingIterable<PageSessionEntity> rs = pageSessionsOp.get(pageName, readAttrs);
+		PagingIterable<PageSessionEntity> rs = pageSessionsOp.get(bookName, pageName, readAttrs);
 		for (PageSessionEntity session : rs)
 			messageOp.remove(session.getPage(), session.getSessionAlias(), session.getDirection(), writeAttrs);
-		pageSessionsOp.remove(pageName, writeAttrs);
+		pageSessionsOp.remove(bookName, pageName, writeAttrs);
 	}
 	
 	protected void removeTestEvents(PageId pageId, BookOperators bookOps)

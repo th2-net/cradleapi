@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,16 +23,21 @@ import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.messages.StoredMessageId;
 
-
-
 @Entity
-public class PageSessionEntity
-{
+@CqlName(PageSessionEntity.TABLE_NAME)
+public class PageSessionEntity {
+	public static final String TABLE_NAME = "page_sessions";
+
+	public static final String FIELD_BOOK = "book";
 	public static final String FIELD_PAGE = "page";
 	public static final String FIELD_SESSION_ALIAS = "session_alias";
 	public static final String FIELD_DIRECTION = "direction";
 
 	@PartitionKey(0)
+	@CqlName(FIELD_BOOK)
+	private String book;
+
+	@PartitionKey(1)
 	@CqlName(FIELD_PAGE)
 	private String page;
 
@@ -44,44 +49,45 @@ public class PageSessionEntity
 	@CqlName(FIELD_DIRECTION)
 	private String direction;
 
-	public PageSessionEntity()
-	{
+	public PageSessionEntity() {
 	}
 	
-	public PageSessionEntity(StoredMessageId messageId, PageId pageId)
-	{
+	public PageSessionEntity(StoredMessageId messageId, PageId pageId) {
+		setBook(messageId.getBookId().getName());
 		setPage(pageId.getName());
 		setSessionAlias(messageId.getSessionAlias());
 		setDirection(messageId.getDirection().getLabel());
 	}
-	
-	public String getPage()
-	{
+
+	public String getBook()	{
+		return book;
+	}
+
+	public void setBook(String book) {
+		this.book = book;
+	}
+
+	public String getPage() {
 		return page;
 	}
 
-	public void setPage(String page)
-	{
+	public void setPage(String page) {
 		this.page = page;
 	}
 
-	public String getSessionAlias()
-	{
+	public String getSessionAlias()	{
 		return sessionAlias;
 	}
 
-	public void setSessionAlias(String sessionAlias)
-	{
+	public void setSessionAlias(String sessionAlias) {
 		this.sessionAlias = sessionAlias;
 	}
 
-	public String getDirection()
-	{
+	public String getDirection() {
 		return direction;
 	}
 
-	public void setDirection(String direction)
-	{
+	public void setDirection(String direction) {
 		this.direction = direction;
 	}
 }
