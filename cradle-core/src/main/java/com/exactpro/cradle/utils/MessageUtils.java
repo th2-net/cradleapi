@@ -100,7 +100,6 @@ public class MessageUtils
 		}
 	}
 
-	//TODO: fill
 	public static List<StoredMessage> deserializeGroupMessages (byte[] contentBytes) throws IOException {
 		if (deserializer.checkMessageBatchHeader(contentBytes)) {
 			return deserializer.deserializeGroupBatch(contentBytes);

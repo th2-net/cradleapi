@@ -250,15 +250,16 @@ public class CassandraCradleStorage extends CradleStorage
 			return error;
 		}
 
-		CompletableFuture<Void> future = new AsyncOperator<Void>(semaphore).getFuture(() -> doWriteMessage(entity.getBatchEntity(), true));
+		CompletableFuture<Void> future = new AsyncOperator<Void>(semaphore).getFuture(() -> doWriteGroupedMessage(entity));
 		try {
 			Collection<StoredMessageBatch> batches = entity.toStoredGroupMessageBatch().toStoredMessageBatches();
 
 			for (StoredMessageBatch el : batches) {
 				future = future.thenComposeAsync(r ->  {
 					try {
-						return doWriteMessage(new DetailedMessageBatchEntity(batch, instanceUuid), true);
+						return doWriteMessage(new DetailedMessageBatchEntity(el, instanceUuid), true);
 					} catch (IOException e) {
+						logger.error("Could not save batch {}", el.getId());
 						return new CompletableFuture<>();
 					}
 				});

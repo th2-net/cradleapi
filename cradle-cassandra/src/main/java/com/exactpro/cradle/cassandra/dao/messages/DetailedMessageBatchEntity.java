@@ -85,6 +85,12 @@ public class  DetailedMessageBatchEntity extends MessageBatchEntity
 
 	public DetailedMessageBatchEntity(StoredGroupMessageBatch batch, UUID instanceId) throws IOException {
 		super(batch, instanceId);
+
+		this.setStoredTimestamp(Instant.now());
+		this.setFirstMessageTimestamp(batch.getFirstTimestamp());
+		this.setLastMessageTimestamp(batch.getLastTimestamp());
+		this.setMessageCount(batch.getMessageCount());
+		this.setLastMessageIndex(batch.getLastMessage().getIndex());
 	}
 
 	public StoredMessageBatch toStoredMessageBatch() throws IOException, CradleStorageException

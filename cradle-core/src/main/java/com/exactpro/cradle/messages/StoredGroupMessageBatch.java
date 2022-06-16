@@ -24,6 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.util.*;
 
 public class StoredGroupMessageBatch extends AbstractStoredMessageBatch
@@ -63,6 +64,8 @@ public class StoredGroupMessageBatch extends AbstractStoredMessageBatch
 
 	private final Map<StoredMessageKey, MessageToStore> storedMessageSequences;
 	private final String sessionGroup;
+	private Instant firstTimestamp;
+	private Instant lastTimestamp;
 
 	public StoredGroupMessageBatch(String sessionGroup) {
 		super();
@@ -123,8 +126,25 @@ public class StoredGroupMessageBatch extends AbstractStoredMessageBatch
 		if (messages.isEmpty())
 			batchSize = MessagesSizeCalculator.calculateServiceMessageGroupBatchSize(message.getStreamName());
 		messages.add(msg);
+		if (firstTimestamp == null || msg.getTimestamp().isBefore(firstTimestamp)) {
+			firstTimestamp = msg.getTimestamp();
+		}
+		if (lastTimestamp == null || msg.getTimestamp().isAfter(lastTimestamp)) {
+			lastTimestamp = msg.getTimestamp();
+		}
+
 		batchSize += expectedMessageSize;
 		return msg;
+	}
+
+	@Override
+	public Instant getFirstTimestamp() {
+		return firstTimestamp;
+	}
+
+	@Override
+	public Instant getLastTimestamp() {
+		return lastTimestamp;
 	}
 
 	@Override
