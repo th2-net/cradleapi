@@ -81,7 +81,7 @@ public class BookOperators
 		pageOperator = dataMapper.pageOperator(keyspace, PageEntity.TABLE_NAME);
 		pageNameOperator = dataMapper.pageNameOperator(keyspace, PageNameEntity.TABLE_NAME);
 		
-		sessionsOperator = dataMapper.sessionsOperator(keyspace, settings.getSessionsTable());
+		sessionsOperator = dataMapper.sessionsOperator(keyspace, SessionEntity.TABLE_NAME);
 		scopeOperator = dataMapper.scopeOperator(keyspace, ScopeEntity.TABLE_NAME);
 		
 		messageBatchOperator = dataMapper.messageBatchOperator(keyspace, settings.getMessagesTable());

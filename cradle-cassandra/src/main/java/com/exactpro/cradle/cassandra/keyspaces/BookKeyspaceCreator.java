@@ -138,9 +138,9 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 	
 	private void createSessions() throws IOException
 	{
-		String tableName = getSettings().getSessionsTable();
+		String tableName = SessionEntity.TABLE_NAME;
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
-				.withPartitionKey(SessionEntity.FIELD_PART, DataTypes.TEXT)
+				.withPartitionKey(SessionEntity.FIELD_BOOK, DataTypes.TEXT)
 				.withClusteringColumn(SessionEntity.FIELD_SESSION_ALIAS, DataTypes.TEXT));
 	}
 	

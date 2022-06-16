@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 @Dao
-public interface SessionsOperator
-{
+public interface SessionsOperator {
 	@Select
-	CompletableFuture<MappedAsyncPagingIterable<SessionEntity>> get(String part,
+	CompletableFuture<MappedAsyncPagingIterable<SessionEntity>> get(String book,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Insert
