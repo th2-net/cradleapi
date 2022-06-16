@@ -37,8 +37,10 @@ public interface PageOperator {
 	@Select
 	PagingIterable<PageEntity> getAll(String book, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+ FIELD_BOOK +"=:part AND ("+FIELD_START_DATE+", "+FIELD_START_TIME+")>(:startDate, :startTime)")
-	PagingIterable<PageEntity> get(String part, LocalDate startDate, LocalTime startTime, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE " +
+			FIELD_BOOK +"=:part AND (" +
+			FIELD_START_DATE + ", " + FIELD_START_TIME + ") > (:startDate, :startTime)")
+	PagingIterable<PageEntity> get(String book, LocalDate startDate, LocalTime startTime, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Update
 	ResultSet update(PageEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
@@ -46,7 +48,10 @@ public interface PageOperator {
 	@Insert
 	ResultSet write(PageEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Query("UPDATE ${qualifiedTableId} SET "+FIELD_REMOVED+"=:removed WHERE "+ FIELD_BOOK +"=:part AND "+FIELD_START_DATE+"=:startDate AND "+FIELD_START_TIME+"=:startTime")
-	ResultSet remove(String part, LocalDate startDate, LocalTime startTime, Instant removed, 
+	@Query("UPDATE ${qualifiedTableId} SET " + FIELD_REMOVED + "=:removed WHERE " +
+			FIELD_BOOK +"=:part AND " +
+			FIELD_START_DATE + "=:startDate AND " +
+			FIELD_START_TIME + "=:startTime")
+	ResultSet remove(String book, LocalDate startDate, LocalTime startTime, Instant removed,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }
