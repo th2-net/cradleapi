@@ -38,19 +38,16 @@ public class MessageBatchToStore extends StoredMessageBatch
 	private static final Logger logger = LoggerFactory.getLogger(MessageBatchToStore.class);
 	
 	private final int maxBatchSize;
-	private final long maxMessageBatchDurationInSeconds;
-	private Instant maxMessageTimestamp;
 	private LocalDate batchDate;
 	
-	public MessageBatchToStore(int maxBatchSize, long maxMessageBatchDurationInSeconds)
+	public MessageBatchToStore(int maxBatchSize)
 	{
 		this.maxBatchSize = maxBatchSize;
-		this.maxMessageBatchDurationInSeconds = maxMessageBatchDurationInSeconds;
 	}
 	
-	public static MessageBatchToStore singleton(MessageToStore message, int maxBatchSize, long maxMessageBatchDurationInSeconds) throws CradleStorageException
+	public static MessageBatchToStore singleton(MessageToStore message, int maxBatchSize) throws CradleStorageException
 	{
-		MessageBatchToStore result = new MessageBatchToStore(maxBatchSize, maxMessageBatchDurationInSeconds);
+		MessageBatchToStore result = new MessageBatchToStore(maxBatchSize);
 		result.addMessage(message);
 		return result;
 	}
@@ -121,7 +118,6 @@ public class MessageBatchToStore extends StoredMessageBatch
 			
 			id = new StoredMessageId(message.getBookId(), message.getSessionAlias(), message.getDirection(), message.getTimestamp(), i);
 			batchDate = TimeUtils.toLocalTimestamp(id.getTimestamp()).toLocalDate();
-			maxMessageTimestamp = id.getTimestamp().plus(maxMessageBatchDurationInSeconds, ChronoUnit.SECONDS);
 			messageSeq = i;
 		}
 		else
@@ -144,12 +140,7 @@ public class MessageBatchToStore extends StoredMessageBatch
 			if (lastMsg.getTimestamp().isAfter(message.getTimestamp()))
 				throw new CradleStorageException("Message timestamp should not be before "+lastMsg.getTimestamp()+", "
 						+ "but in your message it is "+message.getTimestamp());
-			
-			if (message.getTimestamp().isAfter(maxMessageTimestamp))
-				throw new CradleStorageException("Message timestamp should not be after " + maxMessageTimestamp
-						+ " because max batch duration is " + maxMessageBatchDurationInSeconds
-						+ " seconds, but in your message it is " + message.getTimestamp());
-			
+
 			if (message.getSequence() > 0)  //I.e. message sequence is set
 			{
 				messageSeq = message.getSequence();

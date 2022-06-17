@@ -59,9 +59,9 @@ public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMes
 				.whereColumn(FIELD_ALIAS_GROUP).isEqualTo(bindMarker());
 
 		if (messageTimeFrom != null)
-			select = FilterUtils.timestampFilterToWhere(messageTimeFrom.getOperation(), select, FIELD_MESSAGE_DATE, FIELD_MESSAGE_TIME, DATE_FROM, TIME_FROM);
+			select = FilterUtils.timestampFilterToWhere(messageTimeFrom.getOperation(), select, FIELD_FIRST_MESSAGE_DATE, FIELD_FIRST_MESSAGE_TIME, DATE_FROM, TIME_FROM);
 		if (messageTimeTo != null)
-			select = FilterUtils.timestampFilterToWhere(messageTimeTo.getOperation(), select, FIELD_MESSAGE_DATE, FIELD_MESSAGE_TIME, DATE_TO, TIME_TO);
+			select = FilterUtils.timestampFilterToWhere(messageTimeTo.getOperation(), select, FIELD_FIRST_MESSAGE_DATE, FIELD_FIRST_MESSAGE_TIME, DATE_TO, TIME_TO);
 
 		if (limit != 0) {
 			select.limit(limit);

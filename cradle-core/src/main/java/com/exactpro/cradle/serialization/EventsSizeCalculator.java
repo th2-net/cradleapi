@@ -62,7 +62,7 @@ public class EventsSizeCalculator {
 
 
 	private static int lenId(StoredTestEventId id) {
-		return id != null && id.getId() != null ? id.getId().length() : 0;
+		return id != null && id.getId() != null ? lenStr(id.getId()) : 0;
 	}
 
 	private static int lenStr(String str) {

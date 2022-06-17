@@ -32,13 +32,14 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 
-public class MessageBatchToStoreTest
+public class GroupedMessageBatchToStoreTest
 {
 	private final int MAX_SIZE = 1024*1024;
 	
 	private MessageToStoreBuilder builder;
 	private BookId book;
 	private String sessionAlias;
+	private String groupName;
 	private Direction direction;
 	private Instant timestamp;
 	private byte[] messageContent;
@@ -47,8 +48,9 @@ public class MessageBatchToStoreTest
 	public void prepare()
 	{
 		builder = new MessageToStoreBuilder();
-		book = new BookId("book1");
-		sessionAlias = "Session1";
+		book = new BookId("test-book");
+		sessionAlias = "test-session";
+		groupName = "test-group";
 		direction = Direction.FIRST;
 		timestamp = Instant.now().minus(1, ChronoUnit.DAYS);
 		messageContent = "Message text".getBytes();
@@ -63,11 +65,7 @@ public class MessageBatchToStoreTest
 				{
 					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
 							new IdData(new BookId(book.getName()+"X"), sessionAlias, d, timestamp, seq+1))},             //Different books
-					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
-							new IdData(book, sessionAlias+"X", d, timestamp, seq+1))},             //Different sessions
-					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
-							new IdData(book, sessionAlias, Direction.SECOND, timestamp, seq+1))},  //Different directions
-					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
+					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq),
 							new IdData(book, sessionAlias, Direction.FIRST, timestamp.plus(1, ChronoUnit.DAYS), seq+1))},  //Different date
 					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
 							new IdData(book, sessionAlias, d, timestamp.minusMillis(1), seq))},    //Timestamp is less than previous
@@ -99,14 +97,15 @@ public class MessageBatchToStoreTest
 	public void batchContentIsLimited() throws CradleStorageException
 	{
 		byte[] content = new byte[5000];
-		MessageBatchToStore batch = MessageBatchToStore.singleton(builder
+		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE);
+		batch.addMessage(builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.sequence(1)
 				.timestamp(timestamp)
 				.content(content)
-				.build(), MAX_SIZE);
+				.build());
 		for (int i = 0; i <= (MAX_SIZE/content.length)+1; i++)
 			batch.addMessage(builder
 					.bookId(book)
@@ -120,11 +119,11 @@ public class MessageBatchToStoreTest
 	@Test
 	public void batchIsFull1() throws CradleStorageException
 	{
-		MessageBatchToStore fullBySizeBatch = MessageBatchToStoreJoinTest.createFullBySizeBatch(book, sessionAlias,
-				1, direction, timestamp);
+		GroupedMessageBatchToStore fullBySizeBatch = GroupedMessageBatchToStoreJoinTest.createFullBySizeBatch(book, sessionAlias,
+				1, direction, timestamp, groupName);
 
 		Assert.assertTrue(fullBySizeBatch.isFull(), "Batch indicates it is full");
-		Assert.assertEquals(fullBySizeBatch.getBatchSize(), MessageBatchToStoreJoinTest.MAX_SIZE);
+		Assert.assertEquals(fullBySizeBatch.getBatchSize(), GroupedMessageBatchToStoreJoinTest.MAX_SIZE);
 		Assert.assertEquals(fullBySizeBatch.getSpaceLeft(), 0);
 	}
 
@@ -132,14 +131,15 @@ public class MessageBatchToStoreTest
 	public void batchIsFull() throws CradleStorageException
 	{
 		byte[] content = new byte[MAX_SIZE/2];
-		MessageBatchToStore batch = MessageBatchToStore.singleton(builder
+		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE);
+		batch.addMessage(builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.sequence(1)
 				.timestamp(timestamp)
 				.content(content)
-				.build(), MAX_SIZE);
+				.build());
 		batch.addMessage(builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)
@@ -160,7 +160,7 @@ public class MessageBatchToStoreTest
 	public void batchCountsSpaceLeft() throws CradleStorageException
 	{
 		byte[] content = new byte[MAX_SIZE / 2];
-		MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE);
+		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE);
 		long left = batch.getSpaceLeft();
 
 		MessageToStore msg = builder
@@ -181,7 +181,7 @@ public class MessageBatchToStoreTest
 	public void batchChecksSpaceLeft() throws CradleStorageException
 	{
 		byte[] content = new byte[MAX_SIZE/2];
-		MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE);
+		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE);
 		
 		MessageToStore msg = builder
 				.bookId(book)
@@ -201,14 +201,15 @@ public class MessageBatchToStoreTest
 			expectedExceptionsMessageRegExp = ".* for first message in batch .*")
 	public void batchChecksFirstMessage() throws CradleStorageException
 	{
-		MessageBatchToStore.singleton(builder
+		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE);
+		batch.addMessage(builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.sequence(-1)
 				.timestamp(timestamp)
 				.content(messageContent)
-				.build(), MAX_SIZE);
+				.build());
 	}
 	
 	@Test(dataProvider = "multiple messages",
@@ -216,7 +217,7 @@ public class MessageBatchToStoreTest
 			expectedExceptionsMessageRegExp = ".*, but in your message it is .*")
 	public void batchConsistency(List<IdData> ids) throws CradleStorageException
 	{
-		MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE);
+		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE);
 		for (IdData id : ids)
 		{
 			batch.addMessage(builder
@@ -321,40 +322,40 @@ public class MessageBatchToStoreTest
 	public void batchShowsLastTimestamp() throws CradleStorageException
 	{
 		Instant timestamp = Instant.ofEpochSecond(1000);
-		MessageBatchToStore batch = MessageBatchToStore.singleton(builder
+		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE);
+		batch.addMessage(builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)
-				.direction(direction)
+				.direction(Direction.FIRST)
 				.sequence(1)
-				.timestamp(timestamp)
-				.content(messageContent)
-				.build(), MAX_SIZE);
-		
-		batch.addMessage(builder
-				.bookId(book)
-				.sessionAlias(sessionAlias)
-				.direction(direction)
-				.timestamp(timestamp.plusSeconds(10))
-				.content(messageContent)
-				.build());
-		
-		Instant lastTimestamp = batch.getLastTimestamp();
-		
-		batch.addMessage(builder
-				.bookId(book)
-				.sessionAlias(sessionAlias)
-				.direction(direction)
 				.timestamp(timestamp.plusSeconds(20))
 				.content(messageContent)
 				.build());
 		
-		Assert.assertNotEquals(batch.getLastTimestamp(), lastTimestamp, "Last timestamp is from last added message");
+		batch.addMessage(builder
+				.bookId(book)
+				.sessionAlias(sessionAlias)
+				.direction(Direction.SECOND)
+				.timestamp(timestamp.plusSeconds(10))
+				.content(messageContent)
+				.build());
+		
+		batch.addMessage(builder
+				.bookId(book)
+				.sessionAlias(sessionAlias)
+				.direction(Direction.SECOND)
+				.timestamp(timestamp.plusSeconds(15))
+				.content(messageContent)
+				.build());
+
+		Assert.assertEquals(batch.getLastTimestamp(), timestamp.plusSeconds(20), "Last timestamp is incorrect");
 	}
 	
 	@Test
 	public void batchSerialization() throws CradleStorageException, IOException
 	{
-		MessageBatchToStore batch = MessageBatchToStore.singleton(builder
+		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE);
+		batch.addMessage(builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
@@ -362,10 +363,11 @@ public class MessageBatchToStoreTest
 				.timestamp(timestamp)
 				.metadata("md", "some value")
 				.content(messageContent)
-				.build(), MAX_SIZE);
+				.build());
+
 		StoredMessage storedMsg = batch.getFirstMessage();
 		byte[] bytes = MessageUtils.serializeMessages(batch.getMessages()).getSerializedData();
-		StoredMessage msg = MessageUtils.deserializeMessages(bytes, batch.id).iterator().next();
+		StoredMessage msg = MessageUtils.deserializeMessages(bytes, book).iterator().next();
 		Assert.assertEquals(msg, storedMsg, "Message should be completely serialized/deserialized");
 	}
 	

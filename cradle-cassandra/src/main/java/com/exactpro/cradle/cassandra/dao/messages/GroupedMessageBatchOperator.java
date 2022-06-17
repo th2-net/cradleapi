@@ -17,9 +17,9 @@
 package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
-import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.QueryProvider;
 import com.exactpro.cradle.cassandra.dao.CommonQueryProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
@@ -35,8 +35,7 @@ public interface GroupedMessageBatchOperator
 			SelectQueryExecutor selectExecutor, String queryInfo,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Insert
-	CompletableFuture<Void> write(GroupedMessageBatchEntity message,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-
+	@QueryProvider(providerClass = GroupedMessageBatchInserter.class, entityHelpers = GroupedMessageBatchEntity.class, providerMethod = "insert")
+	CompletableFuture<AsyncResultSet> write(GroupedMessageBatchEntity message,
+											Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

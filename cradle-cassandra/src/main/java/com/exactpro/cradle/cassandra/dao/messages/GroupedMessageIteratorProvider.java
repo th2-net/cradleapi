@@ -26,25 +26,20 @@ import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
-import com.exactpro.cradle.filters.ComparisonOperation;
-import com.exactpro.cradle.filters.FilterForGreater;
+import com.exactpro.cradle.cassandra.workers.MessagesWorker;
 import com.exactpro.cradle.messages.GroupedMessageFilter;
-import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.messages.StoredGroupedMessageBatch;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.cassandra.workers.MessagesWorker.mapMessageBatchEntity;
-
-public class GroupedMessageIteratorProvider extends IteratorProvider<StoredMessageBatch>
+public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroupedMessageBatch>
 {
 	public static final Logger logger = LoggerFactory.getLogger(GroupedMessageIteratorProvider.class);
 	
@@ -54,21 +49,19 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredMessa
 	private final ExecutorService composingService;
 	private final SelectQueryExecutor selectQueryExecutor;
 	private final GroupedMessageFilter filter;
-	private FilterForGreater<Instant> shiftedLeftBound;
 	private PageInfo firstPage, lastPage;
 	private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
 	private final int limit;
 	private final AtomicInteger returned;
-	private final long maxMessageBatchDurationLimit;
 	protected CassandraGroupedMessageFilter cassandraFilter;
 	
-	public GroupedMessageIteratorProvider(String requestInfo, long maxMessageBatchDurationLimit,
+	public GroupedMessageIteratorProvider(String requestInfo,
 			GroupedMessageFilter filter, BookOperators ops, BookInfo book,
 			ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
 			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException
 	{
+
 		super(requestInfo);
-		this.maxMessageBatchDurationLimit = maxMessageBatchDurationLimit;
 		this.op = ops.getGroupedMessageBatchOperator();
 		this.converter = ops.getGroupedMessageBatchEntityConverter();
 		this.book = book;
@@ -78,8 +71,8 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredMessa
 		this.filter = filter;
 		this.limit = filter.getLimit();
 		this.returned = new AtomicInteger();
-		this.shiftedLeftBound = calculateShifted(filter.getFrom());
-		this.firstPage = FilterUtils.findFirstPage(filter.getPageId(), shiftedLeftBound, book);
+		// TODO: Get message batch before *from* timestamp
+		this.firstPage = FilterUtils.findFirstPage(filter.getPageId(), filter.getFrom(), book);
 		this.lastPage = FilterUtils.findLastPage(filter.getPageId(), filter.getTo(), book);
 		this.cassandraFilter = createInitialFilter(filter);
 	}
@@ -87,23 +80,7 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredMessa
 	private CassandraGroupedMessageFilter createInitialFilter(GroupedMessageFilter filter)
 	{
 		return new CassandraGroupedMessageFilter(firstPage.getId().getName(), filter.getGroupName(),
-				shiftedLeftBound, filter.getTo(), filter.getLimit());
-	}
-
-	// Need a left shift to get batches that may have started earlier
-	private FilterForGreater<Instant> calculateShifted(FilterForGreater<Instant> from)
-	{
-		if (from == null)
-			return null;
-		
-		Instant shiftedValue = from.getValue().minus(maxMessageBatchDurationLimit, ChronoUnit.SECONDS);
-		FilterForGreater<Instant> result = new FilterForGreater<>(shiftedValue);
-		if (from.getOperation() == ComparisonOperation.GREATER)
-			result.setGreater();
-		else 
-			result.setGreaterOrEquals();
-		
-		return result;
+				filter.getFrom(), filter.getTo(), filter.getLimit());
 	}
 
 	protected CassandraGroupedMessageFilter createNextFilter(CassandraGroupedMessageFilter prevFilter, int updatedLimit)
@@ -119,7 +96,7 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredMessa
 	}
 
 	@Override
-	public CompletableFuture<Iterator<StoredMessageBatch>> nextIterator()
+	public CompletableFuture<Iterator<StoredGroupedMessageBatch>> nextIterator()
 	{
 		if (cassandraFilter == null)
 			return CompletableFuture.completedFuture(null);
@@ -137,7 +114,7 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredMessa
 					// Updated limit should be smaller, since we already got entities from previous batch
 					cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(),0));
 					return new ConvertingPagedIterator<>(resultSet, selectQueryExecutor, limit, returned,
-							entity -> mapMessageBatchEntity(pageId, entity.getMessageBatchEntity()), converter::getEntity,
+							entity -> MessagesWorker.mapGroupedMessageBatchEntity(pageId, entity), converter::getEntity,
 							"fetch next page of message batches");
 				}, composingService)
 				.thenApplyAsync(it -> new FilteredGroupedMessageBatchIterator(it, filter, limit, returned), composingService);
