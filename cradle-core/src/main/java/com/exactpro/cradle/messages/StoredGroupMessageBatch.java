@@ -245,6 +245,17 @@ public class StoredGroupMessageBatch extends AbstractStoredMessageBatch
 			return true;
 		}
 
+		if (this.getFirstTimestamp().isAfter(batch.getFirstTimestamp()) ||
+			this.getLastTimestamp().isAfter(batch.getFirstTimestamp())) {
+			logger.error("Batch {}-{} could not be added to {}-{} it intersects or is before target batch",
+					batch.getLastTimestamp(),
+					batch.getFirstTimestamp(),
+					getLastTimestamp(),
+					getFirstTimestamp());
+
+			throw new CradleStorageException("Batches could not be added");
+		}
+
 		long resultSize = batchSize + batch.messages.stream().mapToInt(MessagesSizeCalculator::calculateMessageSizeInGroupBatch).sum();
 
 		if (resultSize > maxBatchSize) {
