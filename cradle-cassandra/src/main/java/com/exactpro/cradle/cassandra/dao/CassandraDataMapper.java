@@ -37,86 +37,78 @@ import com.exactpro.cradle.cassandra.dao.testevents.converters.ScopeEntityConver
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
 
 @Mapper
-public interface CassandraDataMapper
-{
-	//*** Operators for cradle_info keyspace ***
-	
-	@DaoFactory
-	CradleBookOperator cradleBookOperator(@DaoKeyspace String keyspace, @DaoTable String booksTable);
+public interface CassandraDataMapper {
+    @DaoFactory
+    CradleBookOperator cradleBookOperator(@DaoKeyspace String keyspace, @DaoTable String booksTable);
 
-	@DaoFactory
-	CradleBooksStatusOperator cradleBooksStatusOperator(@DaoKeyspace String keyspace, @DaoTable String bookStatusOperator);
-	
-	//*** Operators for book's keyspace ***
-	
-	@DaoFactory
-	PageOperator pageOperator(@DaoKeyspace String keyspace, @DaoTable String pagesTableName);
-	
-	@DaoFactory
-	PageNameOperator pageNameOperator(@DaoKeyspace String keyspace, @DaoTable String pageNamesTable);
-	
-	@DaoFactory
-	SessionsOperator sessionsOperator(@DaoKeyspace String keyspace, @DaoTable String sessionsTable);
-	
-	@DaoFactory
-	ScopeOperator scopeOperator(@DaoKeyspace String keyspace, @DaoTable String scopesTable);
-	
-	
-	@DaoFactory
-	MessageBatchOperator messageBatchOperator(@DaoKeyspace String keyspace, @DaoTable String messagesTable);
-	
-	@DaoFactory
-	GroupedMessageBatchOperator groupedMessageBatchOperator(@DaoKeyspace String keyspace, @DaoTable String groupedMessagesTable);
+    @DaoFactory
+    PageOperator pageOperator(@DaoKeyspace String keyspace, @DaoTable String pagesTableName);
 
-	@DaoFactory
-	PageSessionsOperator pageSessionsOperator(@DaoKeyspace String keyspace, @DaoTable String pageSessionsTable);
-	
-	
-	@DaoFactory
-	TestEventOperator testEventOperator(@DaoKeyspace String keyspace, @DaoTable String testEventsTable);
-	
-	@DaoFactory
-	PageScopesOperator pageScopesOperator(@DaoKeyspace String keyspace, @DaoTable String pageScopesTable);
-	
-	@DaoFactory
-	IntervalOperator intervalOperator(@DaoKeyspace String keyspace, @DaoTable String intervalsTable);
+    @DaoFactory
+    PageNameOperator pageNameOperator(@DaoKeyspace String keyspace, @DaoTable String pageNamesTable);
 
-	@DaoFactory
+    @DaoFactory
+    SessionsOperator sessionsOperator(@DaoKeyspace String keyspace, @DaoTable String sessionsTable);
+
+    @DaoFactory
+    ScopeOperator scopeOperator(@DaoKeyspace String keyspace, @DaoTable String scopesTable);
+
+
+    @DaoFactory
+    MessageBatchOperator messageBatchOperator(@DaoKeyspace String keyspace, @DaoTable String messagesTable);
+
+    @DaoFactory
+    GroupedMessageBatchOperator groupedMessageBatchOperator(@DaoKeyspace String keyspace, @DaoTable String groupedMessagesTable);
+
+    @DaoFactory
+    PageSessionsOperator pageSessionsOperator(@DaoKeyspace String keyspace, @DaoTable String pageSessionsTable);
+
+
+    @DaoFactory
+    TestEventOperator testEventOperator(@DaoKeyspace String keyspace, @DaoTable String testEventsTable);
+
+    @DaoFactory
+    PageScopesOperator pageScopesOperator(@DaoKeyspace String keyspace, @DaoTable String pageScopesTable);
+
+    @DaoFactory
+    IntervalOperator intervalOperator(@DaoKeyspace String keyspace, @DaoTable String intervalsTable);
+
+    @DaoFactory
     MessageStatisticsOperator messageStatisticsOperator(@DaoKeyspace String keyspace, @DaoTable String statisticsTable);
 
-	@DaoFactory
-	EntityStatisticsOperator entityStatisticsOperator(@DaoKeyspace String keyspace, @DaoTable String statisticsTable);
+    @DaoFactory
+    EntityStatisticsOperator entityStatisticsOperator(@DaoKeyspace String keyspace, @DaoTable String statisticsTable);
 
-	@DaoFactory
-	SessionStatisticsOperator sessionStatisticsOperator(@DaoKeyspace String keyspace, @DaoTable String statisticsTable);
+    @DaoFactory
+    SessionStatisticsOperator sessionStatisticsOperator(@DaoKeyspace String keyspace, @DaoTable String statisticsTable);
 
-	@DaoFactory
-	SessionEntityConverter sessionEntityConverter();
+    @DaoFactory
+    SessionEntityConverter sessionEntityConverter();
 
-	@DaoFactory
-	ScopeEntityConverter scopeEntityConverter();
+    @DaoFactory
+    ScopeEntityConverter scopeEntityConverter();
 
-	@DaoFactory
-	MessageBatchEntityConverter messageBatchEntityConverter();
+    @DaoFactory
+    MessageBatchEntityConverter messageBatchEntityConverter();
 
-	@DaoFactory
-	GroupedMessageBatchEntityConverter groupedMessageBatchEntityConverter();
-	
-	@DaoFactory
-	TestEventEntityConverter testEventEntityConverter();
+    @DaoFactory
+    GroupedMessageBatchEntityConverter groupedMessageBatchEntityConverter();
 
-	@DaoFactory
-	PageScopeEntityConverter pageScopeEntityConverter();
+    @DaoFactory
+    TestEventEntityConverter testEventEntityConverter();
 
-	@DaoFactory
-	PageSessionEntityConverter pageSessionEntityConverter();
+    @DaoFactory
+    PageScopeEntityConverter pageScopeEntityConverter();
 
-	@DaoFactory
-	MessageStatisticsEntityConverter messageStatisticsEntityConverter();
+    @DaoFactory
+    PageSessionEntityConverter pageSessionEntityConverter();
 
-	@DaoFactory
-	EntityStatisticsEntityConverter entityStatisticsEntityConverter();
+    @DaoFactory
+    MessageStatisticsEntityConverter messageStatisticsEntityConverter();
 
-	@DaoFactory
-	SessionStatisticsEntityConverter sessionStatisticsEntityConverter();
+    @DaoFactory
+    EntityStatisticsEntityConverter entityStatisticsEntityConverter();
+
+    @DaoFactory
+    SessionStatisticsEntityConverter sessionStatisticsEntityConverter();
 }

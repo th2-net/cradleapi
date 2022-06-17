@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,18 +19,15 @@ package com.exactpro.cradle.cassandra;
 import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
-public class CassandraStorageSettingsTest
-{
-	@Test
-	public void copy()
-	{
-		CassandraStorageSettings settings = new CassandraStorageSettings();
-		settings.setBooksTable(settings.getBooksTable()+"_1");
-		settings.setMaxUncompressedTestEventSize(settings.getMaxUncompressedTestEventSize()+10);
-		
-		CassandraStorageSettings copy = new CassandraStorageSettings(settings);
-		Assertions.assertThat(copy)
-				.usingRecursiveComparison()
-				.isEqualTo(settings);
-	}
+public class CassandraStorageSettingsTest {
+    @Test
+    public void copy() {
+        CassandraStorageSettings settings = new CassandraStorageSettings();
+        settings.setMaxUncompressedTestEventSize(settings.getMaxUncompressedTestEventSize() + 10);
+
+        CassandraStorageSettings copy = new CassandraStorageSettings(settings);
+        Assertions.assertThat(copy)
+                .usingRecursiveComparison()
+                .isEqualTo(settings);
+    }
 }

@@ -23,10 +23,7 @@ import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
 
 public class CassandraStorageSettings
 {
-	public static final String CRADLE_INFO_KEYSPACE = "cradle_info",
-			SCHEMA_VERSION = "5.0.0",
-			BOOKS_TABLE = "books",
-			BOOKS_STATUS_TABLE = "books_status",
+	public static final String SCHEMA_VERSION = "5.0.0",
 			TEST_EVENT_PARENT_INDEX = "test_event_parent_index";
 	public static final long DEFAULT_TIMEOUT = 5000;
 	public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
@@ -45,10 +42,8 @@ public class CassandraStorageSettings
 	private final long timeout;
 	private final ConsistencyLevel writeConsistencyLevel,
 			readConsistencyLevel;
-	private String cradleInfoKeyspace,
+	private String keyspace,
 			schemaVersion,
-			booksTable,
-			booksStatusTable,
 			testEventParentIndex;
 	private int keyspaceReplicationFactor;
 
@@ -85,10 +80,7 @@ public class CassandraStorageSettings
 		this.writeConsistencyLevel = writeConsistencyLevel;
 		this.readConsistencyLevel = readConsistencyLevel;
 
-		this.cradleInfoKeyspace = CRADLE_INFO_KEYSPACE;
 		this.schemaVersion = SCHEMA_VERSION;
-		this.booksTable = BOOKS_TABLE;
-		this.booksStatusTable = BOOKS_STATUS_TABLE;
 		this.testEventParentIndex = TEST_EVENT_PARENT_INDEX;
 
 		this.keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
@@ -112,10 +104,8 @@ public class CassandraStorageSettings
 		this.writeConsistencyLevel = settings.getWriteConsistencyLevel();
 		this.readConsistencyLevel = settings.getReadConsistencyLevel();
 
-		this.cradleInfoKeyspace = settings.getCradleInfoKeyspace();
+		this.keyspace = settings.getKeyspace();
 		this.schemaVersion = settings.getSchemaVersion();
-		this.booksTable = settings.getBooksTable();
-		this.booksStatusTable = settings.getBooksStatusTable();
 		this.testEventParentIndex = settings.getTestEventParentIndex();
 
 		this.keyspaceReplicationFactor = settings.getKeyspaceReplicationFactor();
@@ -157,41 +147,20 @@ public class CassandraStorageSettings
 	}
 
 
-	public String getCradleInfoKeyspace()
+	public String getKeyspace()
 	{
-		return cradleInfoKeyspace;
+		return keyspace;
 	}
 
-	public void setCradleInfoKeyspace(String cradleInfoKeyspace)
+	public void setKeyspace(String keyspace)
 	{
-		this.cradleInfoKeyspace = cradleInfoKeyspace;
+		this.keyspace = keyspace;
 	}
 
 
 	public String getSchemaVersion()
 	{
 		return schemaVersion;
-	}
-
-
-	public String getBooksTable()
-	{
-		return booksTable;
-	}
-
-	public void setBooksTable(String booksTable)
-	{
-		this.booksTable = booksTable;
-	}
-
-	public String getBooksStatusTable()
-	{
-		return booksStatusTable;
-	}
-
-	public void setBooksStatusTable(String booksStatusTable)
-	{
-		this.booksStatusTable = booksStatusTable;
 	}
 
 	public String getTestEventParentIndex()

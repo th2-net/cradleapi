@@ -134,7 +134,7 @@ public class MessagesWorker extends Worker
 	{
 		MessageBatchesIteratorProvider provider =
 				new MessageBatchesIteratorProvider("get messages batches filtered by " + filter, filter,
-						getBookOps(book.getId()), book, composingService, selectQueryExecutor,
+						getOperators(), book, composingService, selectQueryExecutor,
 						composeReadAttrs(filter.getFetchParameters()));
 		return provider.nextIterator()
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, provider), composingService);
@@ -146,7 +146,7 @@ public class MessagesWorker extends Worker
 	{
 		GroupedMessageIteratorProvider provider =
 				new GroupedMessageIteratorProvider("get messages batches filtered by " + filter, filter,
-						getBookOps(book.getId()), book, composingService, selectQueryExecutor,
+						getOperators(), book, composingService, selectQueryExecutor,
 						composeReadAttrs(filter.getFetchParameters()));
 		return provider.nextIterator()
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, provider), composingService);
@@ -157,7 +157,7 @@ public class MessagesWorker extends Worker
 	{
 		MessagesIteratorProvider provider =
 				new MessagesIteratorProvider("get messages filtered by " + filter, filter,
-						ops.getOperators(book.getId()), book, composingService, selectQueryExecutor,
+						getOperators(), book, composingService, selectQueryExecutor,
 						composeReadAttrs(filter.getFetchParameters()));
 		return provider.nextIterator()
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, provider), composingService);
@@ -202,7 +202,7 @@ public class MessagesWorker extends Worker
 		}
 
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(id.getTimestamp());
-		BookOperators bookOps = getBookOps(bookId);
+		BookOperators bookOps = getOperators();
 		MessageBatchEntityConverter mbEntityConverter = bookOps.getMessageBatchEntityConverter();
 		MessageBatchOperator mbOperator = bookOps.getMessageBatchOperator();
 
@@ -265,7 +265,7 @@ public class MessagesWorker extends Worker
 	public CompletableFuture<PageSessionEntity> storePageSession(MessageBatchToStore batch, PageId pageId)
 	{
 		StoredMessageId batchId = batch.getId();
-		BookOperators bookOps = getBookOps(pageId.getBookId());
+		BookOperators bookOps = getOperators();
 		CachedPageSession cachedPageSession = new CachedPageSession(pageId.toString(),
 				batchId.getSessionAlias(), batchId.getDirection().getLabel());
 		if (!bookOps.getPageSessionsCache().store(cachedPageSession))
@@ -283,7 +283,7 @@ public class MessagesWorker extends Worker
 	{
 		StoredMessageId batchId = batch.getId();
 		BookId bookId = batchId.getBookId();
-		BookOperators bookOps = getBookOps(bookId);
+		BookOperators bookOps = getOperators();
 		CachedSession cachedSession = new CachedSession(bookId.toString(), batch.getSessionAlias());
 		if (!bookOps.getSessionsCache().store(cachedSession))
 		{
@@ -297,7 +297,7 @@ public class MessagesWorker extends Worker
 
 	public CompletableFuture<Void> storeMessageBatch(MessageBatchEntity entity, BookId bookId)
 	{
-		BookOperators bookOps = getBookOps(bookId);
+		BookOperators bookOps = getOperators();
 		MessageBatchOperator mbOperator = bookOps.getMessageBatchOperator();
 		List<SerializedEntityMetadata> meta = entity.getSerializedMessageMetadata();
 
@@ -309,7 +309,7 @@ public class MessagesWorker extends Worker
 
 	public CompletableFuture<GroupedMessageBatchEntity> storeGroupedMessageBatch(GroupedMessageBatchEntity entity, BookId bookId)
 	{
-		BookOperators bookOps = getBookOps(bookId);
+		BookOperators bookOps = getOperators();
 		GroupedMessageBatchOperator gmbOperator = bookOps.getGroupedMessageBatchOperator();
 		List<SerializedEntityMetadata> meta = entity.getSerializedMessageMetadata();
 
@@ -323,7 +323,7 @@ public class MessagesWorker extends Worker
 	public long getBoundarySequence(String sessionAlias, Direction direction, BookInfo book, boolean first)
 			throws CradleStorageException
 	{
-		MessageBatchOperator mbOp = getBookOps(book.getId()).getMessageBatchOperator();
+		MessageBatchOperator mbOp = getOperators().getMessageBatchOperator();
 		PageInfo currentPage = first ? book.getFirstPage() : book.getLastPage();
 		Row row = null;
 

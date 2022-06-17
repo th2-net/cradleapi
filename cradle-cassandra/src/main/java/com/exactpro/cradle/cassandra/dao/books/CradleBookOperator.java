@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,7 @@ import com.datastax.oss.driver.api.mapper.annotations.Select;
 import java.util.function.Function;
 
 @Dao
-public interface CradleBookOperator
-{
+public interface CradleBookOperator {
 	@Select
 	PagingIterable<BookEntity> getAll(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
