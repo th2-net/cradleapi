@@ -24,14 +24,13 @@ import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
 public class CassandraStorageSettings
 {
 	public static final String CRADLE_INFO_KEYSPACE = "cradle_info",
-			SCHEMA_VERSION = "4.6.0",
+			SCHEMA_VERSION = "5.0.0",
 			BOOKS_TABLE = "books",
 			BOOKS_STATUS_TABLE = "books_status",
 			MESSAGES_TABLE = "messages",
 			GROUPED_MESSAGES_TABLE = "grouped_messages",
 			TEST_EVENTS_TABLE = "test_events",
-			TEST_EVENT_PARENT_INDEX = "test_event_parent_index",
-			INTERVALS_TABLE = "intervals";
+			TEST_EVENT_PARENT_INDEX = "test_event_parent_index";
 	public static final long DEFAULT_TIMEOUT = 5000;
 	public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
 	public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1,
@@ -56,8 +55,7 @@ public class CassandraStorageSettings
 			messagesTable,
 			groupedMessagesTable,
 			testEventsTable,
-			testEventParentIndex,
-			intervalsTable;
+			testEventParentIndex;
 	private int keyspaceReplicationFactor;
 
 	private int maxParallelQueries,
@@ -101,7 +99,6 @@ public class CassandraStorageSettings
 		this.groupedMessagesTable = GROUPED_MESSAGES_TABLE;
 		this.testEventsTable = TEST_EVENTS_TABLE;
 		this.testEventParentIndex = TEST_EVENT_PARENT_INDEX;
-		this.intervalsTable = INTERVALS_TABLE;
 
 		this.keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
 		this.maxParallelQueries = DEFAULT_MAX_PARALLEL_QUERIES;
@@ -132,7 +129,6 @@ public class CassandraStorageSettings
 		this.groupedMessagesTable = settings.getGroupedMessagesTable();
 		this.testEventsTable = settings.getTestEventsTable();
 		this.testEventParentIndex = settings.getTestEventParentIndex();
-		this.intervalsTable = settings.getIntervalsTable();
 
 		this.keyspaceReplicationFactor = settings.getKeyspaceReplicationFactor();
 		this.maxParallelQueries = settings.getMaxParallelQueries();
@@ -238,16 +234,6 @@ public class CassandraStorageSettings
 	public void setTestEventParentIndex(String testEventParentIndex)
 	{
 		this.testEventParentIndex = testEventParentIndex;
-	}
-
-	public String getIntervalsTable()
-	{
-		return intervalsTable;
-	}
-
-	public void setIntervalsTable(String intervalsTable)
-	{
-		this.intervalsTable = intervalsTable;
 	}
 
 	public int getKeyspaceReplicationFactor()

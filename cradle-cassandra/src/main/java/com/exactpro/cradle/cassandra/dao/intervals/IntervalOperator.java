@@ -34,15 +34,66 @@ public interface IntervalOperator {
     @Insert(ifNotExists = true)
     CompletableFuture<AsyncResultSet> writeInterval(IntervalEntity IntervalEntity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-    @Query("SELECT * FROM ${qualifiedTableId} WHERE "+ FIELD_PAGE +"=:page AND "+ FIELD_INTERVAL_START_DATE +"=:intervalStartDate AND "+ FIELD_CRAWLER_NAME +"=:crawlerName AND "+ FIELD_CRAWLER_VERSION +"=:crawlerVersion AND "+ FIELD_CRAWLER_TYPE +"=:crawlerType AND "+ FIELD_INTERVAL_START_TIME +">=:intervalStartTime AND "+ FIELD_INTERVAL_START_TIME +"<=:intervalEndTime")
-    CompletableFuture<MappedAsyncPagingIterable<IntervalEntity>> getIntervals(String page, LocalDate intervalStartDate, LocalTime intervalStartTime, LocalTime intervalEndTime, String crawlerName, String crawlerVersion, String crawlerType, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+    @Query("SELECT * FROM ${qualifiedTableId} WHERE " +
+                FIELD_BOOK + " =:book AND " +
+                FIELD_PAGE + " =:page AND " +
+                FIELD_INTERVAL_START_DATE +" =:intervalStartDate AND " +
+                FIELD_CRAWLER_NAME + " =:crawlerName AND " +
+                FIELD_CRAWLER_VERSION + " =:crawlerVersion AND " +
+                FIELD_CRAWLER_TYPE + " =:crawlerType AND " +
+                FIELD_INTERVAL_START_TIME + " >=:intervalStartTime AND " +
+                FIELD_INTERVAL_START_TIME +"<=:intervalEndTime")
+    CompletableFuture<MappedAsyncPagingIterable<IntervalEntity>> getIntervals(String book, String page, LocalDate intervalStartDate, LocalTime intervalStartTime, LocalTime intervalEndTime, String crawlerName, String crawlerVersion, String crawlerType, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-    @Query("UPDATE ${qualifiedTableId} SET "+ FIELD_INTERVAL_LAST_UPDATE_TIME +"=:lastUpdateTime, "+ FIELD_INTERVAL_LAST_UPDATE_DATE +"=:lastUpdateDate WHERE "+ FIELD_PAGE +"=:page AND "+ FIELD_INTERVAL_START_DATE +"=:intervalStartDate AND "+ FIELD_CRAWLER_NAME +"=:crawlerName AND "+ FIELD_CRAWLER_VERSION +"=:crawlerVersion AND "+ FIELD_CRAWLER_TYPE +"=:crawlerType AND "+ FIELD_INTERVAL_START_TIME +"=:intervalStartTime IF "+ FIELD_INTERVAL_LAST_UPDATE_TIME +"=:previousLastUpdateTime AND "+ FIELD_INTERVAL_LAST_UPDATE_DATE +"=:previousLastUpdateDate")
-    CompletableFuture<AsyncResultSet> setIntervalLastUpdateTimeAndDate(String page, LocalDate intervalStartDate, LocalTime intervalStartTime, LocalTime lastUpdateTime, LocalDate lastUpdateDate, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerName, String crawlerVersion, String crawlerType, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+    @Query("UPDATE ${qualifiedTableId} SET " +
+                FIELD_INTERVAL_LAST_UPDATE_TIME + " =:lastUpdateTime, " +
+                FIELD_INTERVAL_LAST_UPDATE_DATE + " =:lastUpdateDate " +
 
-    @Query("UPDATE ${qualifiedTableId} SET "+ FIELD_RECOVERY_STATE_JSON +"=:recoveryStateJson, "+ FIELD_INTERVAL_LAST_UPDATE_TIME +"=:lastUpdateTime, "+ FIELD_INTERVAL_LAST_UPDATE_DATE +"=:lastUpdateDate WHERE "+ FIELD_PAGE +"=:page AND "+ FIELD_INTERVAL_START_DATE +"=:intervalDate AND "+ FIELD_CRAWLER_NAME +"=:crawlerName AND "+ FIELD_CRAWLER_VERSION +"=:crawlerVersion AND "+ FIELD_CRAWLER_TYPE +"=:crawlerType AND "+ FIELD_INTERVAL_START_TIME +"=:intervalStartTime IF "+ FIELD_RECOVERY_STATE_JSON +"=:previousRecoveryStateJson AND "+ FIELD_INTERVAL_LAST_UPDATE_TIME +"=:previousLastUpdateTime AND "+ FIELD_INTERVAL_LAST_UPDATE_DATE +"=:previousLastUpdateDate")
-    CompletableFuture<AsyncResultSet> updateRecoveryState(String page, LocalDate intervalDate, LocalTime intervalStartTime, LocalTime lastUpdateTime, LocalDate lastUpdateDate, String recoveryStateJson, String previousRecoveryStateJson, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerName, String crawlerVersion, String crawlerType, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+            "WHERE " +
+                FIELD_BOOK + " =:book AND " +
+                FIELD_PAGE + " =:page AND " +
+                FIELD_INTERVAL_START_DATE +" =:intervalStartDate AND " +
+                FIELD_CRAWLER_NAME + " =:crawlerName AND " +
+                FIELD_CRAWLER_VERSION +" =:crawlerVersion AND " +
+                FIELD_CRAWLER_TYPE + " =:crawlerType AND " +
+                FIELD_INTERVAL_START_TIME + " =:intervalStartTime IF " +
+                FIELD_INTERVAL_LAST_UPDATE_TIME + " =:previousLastUpdateTime AND " +
+                FIELD_INTERVAL_LAST_UPDATE_DATE + " =:previousLastUpdateDate")
+    CompletableFuture<AsyncResultSet> setIntervalLastUpdateTimeAndDate(String book, String page, LocalDate intervalStartDate, LocalTime intervalStartTime, LocalTime lastUpdateTime, LocalDate lastUpdateDate, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerName, String crawlerVersion, String crawlerType, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-    @Query("UPDATE ${qualifiedTableId} SET "+ FIELD_INTERVAL_PROCESSED +"=:processed, "+ FIELD_INTERVAL_LAST_UPDATE_TIME +"=:lastUpdateTime, "+ FIELD_INTERVAL_LAST_UPDATE_DATE +"=:lastUpdateDate WHERE "+ FIELD_PAGE +"=:page AND "+ FIELD_INTERVAL_START_DATE +"=:intervalDate AND "+ FIELD_CRAWLER_NAME +"=:crawlerName AND "+ FIELD_CRAWLER_VERSION +"=:crawlerVersion AND "+ FIELD_CRAWLER_TYPE +"=:crawlerType AND "+ FIELD_INTERVAL_START_TIME +"=:intervalStartTime IF "+ FIELD_INTERVAL_PROCESSED +"=:previousProcessed AND "+ FIELD_INTERVAL_LAST_UPDATE_TIME +"=:previousLastUpdateTime AND "+ FIELD_INTERVAL_LAST_UPDATE_DATE +"=:previousLastUpdateDate")
-    CompletableFuture<AsyncResultSet> setIntervalProcessed(String page, LocalDate intervalDate, LocalTime intervalStartTime, LocalTime lastUpdateTime, LocalDate lastUpdateDate, boolean processed, boolean previousProcessed, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerName, String crawlerVersion, String crawlerType, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+    @Query("UPDATE ${qualifiedTableId} SET " +
+                FIELD_RECOVERY_STATE_JSON + " =:recoveryStateJson, " +
+                FIELD_INTERVAL_LAST_UPDATE_TIME + " =:lastUpdateTime, " +
+                FIELD_INTERVAL_LAST_UPDATE_DATE + " =:lastUpdateDate " +
+
+            "WHERE " +
+                FIELD_BOOK + " =:book AND " +
+                FIELD_PAGE + " =:page AND " +
+                FIELD_INTERVAL_START_DATE + " =:intervalDate AND " +
+                FIELD_CRAWLER_NAME + " =:crawlerName AND " +
+                FIELD_CRAWLER_VERSION + " =:crawlerVersion AND " +
+                FIELD_CRAWLER_TYPE + " =:crawlerType AND " +
+                FIELD_INTERVAL_START_TIME + " =:intervalStartTime IF " +
+                FIELD_RECOVERY_STATE_JSON + " =:previousRecoveryStateJson AND " +
+                FIELD_INTERVAL_LAST_UPDATE_TIME + " =:previousLastUpdateTime AND " +
+                FIELD_INTERVAL_LAST_UPDATE_DATE + " =:previousLastUpdateDate")
+    CompletableFuture<AsyncResultSet> updateRecoveryState(String book, String page, LocalDate intervalDate, LocalTime intervalStartTime, LocalTime lastUpdateTime, LocalDate lastUpdateDate, String recoveryStateJson, String previousRecoveryStateJson, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerName, String crawlerVersion, String crawlerType, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+    @Query("UPDATE ${qualifiedTableId} SET " +
+                FIELD_INTERVAL_PROCESSED + " =:processed, " +
+                FIELD_INTERVAL_LAST_UPDATE_TIME + " =:lastUpdateTime, " +
+                FIELD_INTERVAL_LAST_UPDATE_DATE + " =:lastUpdateDate " +
+
+            "WHERE " +
+                FIELD_BOOK + " =:book AND " +
+                FIELD_PAGE + " =:page AND " +
+                FIELD_INTERVAL_START_DATE + " =:intervalDate AND " +
+                FIELD_CRAWLER_NAME + " =:crawlerName AND " +
+                FIELD_CRAWLER_VERSION + " =:crawlerVersion AND " +
+                FIELD_CRAWLER_TYPE + " =:crawlerType AND " +
+                FIELD_INTERVAL_START_TIME + " =:intervalStartTime IF " +
+                FIELD_INTERVAL_PROCESSED + " =:previousProcessed AND " +
+                FIELD_INTERVAL_LAST_UPDATE_TIME + " =:previousLastUpdateTime AND " +
+                FIELD_INTERVAL_LAST_UPDATE_DATE + " =:previousLastUpdateDate")
+    CompletableFuture<AsyncResultSet> setIntervalProcessed(String book, String page, LocalDate intervalDate, LocalTime intervalStartTime, LocalTime lastUpdateTime, LocalDate lastUpdateDate, boolean processed, boolean previousProcessed, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerName, String crawlerVersion, String crawlerType, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

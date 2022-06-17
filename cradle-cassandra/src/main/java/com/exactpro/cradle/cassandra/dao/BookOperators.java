@@ -26,6 +26,7 @@ import com.exactpro.cradle.cassandra.dao.books.PageOperator;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
 import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
 import com.exactpro.cradle.cassandra.dao.cache.CachedSession;
+import com.exactpro.cradle.cassandra.dao.intervals.IntervalEntity;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.messages.converters.GroupedMessageBatchEntityConverter;
@@ -93,7 +94,7 @@ public class BookOperators
 		entityStatisticsOperator = dataMapper.entityStatisticsOperator(keyspace, EntityStatisticsEntity.TABLE_NAME);
 		sessionStatisticsOperator = dataMapper.sessionStatisticsOperator(keyspace, SessionStatisticsEntity.TABLE_NAME);
 
-		intervalOperator = dataMapper.intervalOperator(keyspace, settings.getIntervalsTable());
+		intervalOperator = dataMapper.intervalOperator(keyspace, IntervalEntity.TABLE_NAME);
 
 		sessionEntityConverter = dataMapper.sessionEntityConverter();
 		scopeEntityConverter = dataMapper.scopeEntityConverter();

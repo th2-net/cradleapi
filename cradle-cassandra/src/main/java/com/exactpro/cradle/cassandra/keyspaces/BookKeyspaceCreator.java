@@ -257,8 +257,9 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 	
 	private void createIntervals() throws IOException
 	{
-		String tableName = getSettings().getIntervalsTable();
+		String tableName = IntervalEntity.TABLE_NAME;
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(IntervalEntity.FIELD_BOOK, DataTypes.TEXT)
 				.withPartitionKey(IntervalEntity.FIELD_PAGE, DataTypes.TEXT)
 				.withPartitionKey(IntervalEntity.FIELD_INTERVAL_START_DATE, DataTypes.DATE)
 				.withClusteringColumn(IntervalEntity.FIELD_CRAWLER_NAME, DataTypes.TEXT)
