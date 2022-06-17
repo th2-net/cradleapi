@@ -207,8 +207,9 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 	
 	private void createTestEvents() throws IOException
 	{
-		String tableName = getSettings().getTestEventsTable();
+		String tableName = TestEventEntity.TABLE_NAME;
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(TestEventEntity.FIELD_BOOK, DataTypes.TEXT)
 				.withPartitionKey(TestEventEntity.FIELD_PAGE, DataTypes.TEXT)
 				.withPartitionKey(TestEventEntity.FIELD_SCOPE, DataTypes.TEXT)
 				
@@ -244,7 +245,7 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 	private void createTestEventParentIndex() throws IOException
 	{
 		CassandraStorageSettings settings = getSettings();
-		createIndex(settings.getTestEventParentIndex(), settings.getTestEventsTable(), TestEventEntity.FIELD_PARENT_ID);
+		createIndex(settings.getTestEventParentIndex(), TestEventEntity.TABLE_NAME, TestEventEntity.FIELD_PARENT_ID);
 	}
 	
 	private void createLabelsTable() throws IOException

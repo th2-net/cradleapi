@@ -88,7 +88,7 @@ public class BookOperators
 		messageBatchOperator = dataMapper.messageBatchOperator(keyspace, MessageBatchEntity.TABLE_NAME);
 		groupedMessageBatchOperator = dataMapper.groupedMessageBatchOperator(keyspace, settings.getGroupedMessagesTable());
 		pageSessionsOperator = dataMapper.pageSessionsOperator(keyspace, PageSessionEntity.TABLE_NAME);
-		testEventOperator = dataMapper.testEventOperator(keyspace, settings.getTestEventsTable());
+		testEventOperator = dataMapper.testEventOperator(keyspace, TestEventEntity.TABLE_NAME);
 		pageScopesOperator = dataMapper.pageScopesOperator(keyspace, PageScopeEntity.TABLE_NAME);
 		messageStatisticsOperator = dataMapper.messageStatisticsOperator(keyspace, MessageStatisticsEntity.TABLE_NAME);
 		entityStatisticsOperator = dataMapper.entityStatisticsOperator(keyspace, EntityStatisticsEntity.TABLE_NAME);

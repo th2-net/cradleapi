@@ -45,42 +45,50 @@ import java.util.zip.DataFormatException;
  * Contains data of {@link StoredTestEvent} to write to or to obtain from Cassandra
  */
 @Entity
-public class TestEventEntity extends CradleEntity
-{
+@CqlName(TestEventEntity.TABLE_NAME)
+public class TestEventEntity extends CradleEntity {
+	public static final String TABLE_NAME = "test_events";
 	private static final Logger logger = LoggerFactory.getLogger(TestEventEntity.class);
-	public static final String FIELD_PAGE = "page",
-			FIELD_SCOPE = "scope",
-			FIELD_START_DATE = "start_date",
-			FIELD_START_TIME = "start_time",
-			FIELD_ID = "id",
-			FIELD_NAME = "name",
-			FIELD_TYPE = "type",
-			FIELD_SUCCESS = "success",
-			FIELD_ROOT = "root",
-			FIELD_PARENT_ID = "parent_id",
-			FIELD_EVENT_BATCH = "event_batch",
-			FIELD_EVENT_COUNT = "event_count",
-			FIELD_END_DATE = "end_date",
-			FIELD_END_TIME = "end_time",
-			FIELD_MESSAGES = "messages",
-			FIELD_REC_DATE = "rec_date";
-	@PartitionKey(0)
+
+	public static final String FIELD_BOOK = "book";
+	public static final String FIELD_PAGE = "page";
+	public static final String FIELD_SCOPE = "scope";
+	public static final String FIELD_START_DATE = "start_date";
+	public static final String FIELD_START_TIME = "start_time";
+	public static final String FIELD_ID = "id";
+	public static final String FIELD_NAME = "name";
+	public static final String FIELD_TYPE = "type";
+	public static final String FIELD_SUCCESS = "success";
+	public static final String FIELD_ROOT = "root";
+	public static final String FIELD_PARENT_ID = "parent_id";
+	public static final String FIELD_EVENT_BATCH = "event_batch";
+	public static final String FIELD_EVENT_COUNT = "event_count";
+	public static final String FIELD_END_DATE = "end_date";
+	public static final String FIELD_END_TIME = "end_time";
+	public static final String FIELD_MESSAGES = "messages";
+	public static final String FIELD_REC_DATE = "rec_date";
+
+	@PartitionKey(1)
+	@CqlName(FIELD_BOOK)
+	private String book;
+
+	@PartitionKey(2)
 	@CqlName(FIELD_PAGE)
 	private String page;
-	
-	@PartitionKey(1)
+
+	@PartitionKey(3)
 	@CqlName(FIELD_SCOPE)
 	private String scope;
 	
-	@ClusteringColumn(0)
+	@ClusteringColumn(1)
 	@CqlName(FIELD_START_DATE)
 	private LocalDate startDate;
 	
-	@ClusteringColumn(1)
+	@ClusteringColumn(2)
 	@CqlName(FIELD_START_TIME)
 	private LocalTime startTime;
 	
-	@ClusteringColumn(2)
+	@ClusteringColumn(3)
 	@CqlName(FIELD_ID)
 	private String id;
 	
@@ -118,8 +126,7 @@ public class TestEventEntity extends CradleEntity
 
 	private List<SerializedEntityMetadata> serializedEventMetadata;
 
-	public TestEventEntity()
-	{
+	public TestEventEntity() {
 	}
 
 	public TestEventEntity(TestEventToStore event, PageId pageId, int maxUncompressedSize) throws IOException
@@ -143,7 +150,8 @@ public class TestEventEntity extends CradleEntity
 		
 		StoredTestEventId parentId = event.getParentId();
 		LocalDateTime start = TimeUtils.toLocalTimestamp(event.getStartTimestamp());
-		
+
+		setBook(pageId.getBookId().getName());
 		setPage(pageId.getName());
 		setScope(event.getScope());
 		setStartTimestamp(start);
@@ -169,8 +177,18 @@ public class TestEventEntity extends CradleEntity
 
 		setSerializedEventMetadata(serializedEventData.getSerializedEntityMetadata());
 	}
-	
-	
+
+
+	public String getBook()
+	{
+		return book;
+	}
+
+	public void setBook(String book)
+	{
+		this.book = book;
+	}
+
 	public String getPage()
 	{
 		return page;

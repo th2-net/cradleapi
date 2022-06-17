@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,29 +34,44 @@ import java.util.function.Function;
 import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.*;
 
 @Dao
-public interface TestEventOperator
-{
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE "+ FIELD_PAGE +"=:page AND "+ FIELD_SCOPE +"=:scope "
-			+ "AND "+ FIELD_START_DATE +"=:startDate AND "+ FIELD_START_TIME +"=:startTime AND "+ FIELD_ID +"=:id")
-	CompletableFuture<TestEventEntity> get(String page, String scope, 
+public interface TestEventOperator {
+	@Query("SELECT * FROM ${qualifiedTableId} " +
+			"WHERE " +
+				FIELD_BOOK + " =:book AND " +
+				FIELD_PAGE + " =:page AND " +
+				FIELD_SCOPE +  "=:scope AND " +
+				FIELD_START_DATE + " =:startDate AND " +
+				FIELD_START_TIME + " =:startTime AND "+
+				FIELD_ID + " =:id")
+	CompletableFuture<TestEventEntity> get(String book, String page, String scope,
 			LocalDate startDate, LocalTime startTime, String id, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
+
+
 	@QueryProvider(providerClass = CommonQueryProvider.class, entityHelpers = TestEventEntity.class)
 	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getByFilter(CassandraTestEventFilter filter,
 			SelectQueryExecutor selectQueryExecutor, String queryInfo,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
+
+
 	@QueryProvider(providerClass = TestEvenInserter.class, entityHelpers = TestEventEntity.class, providerMethod = "insert")
 	CompletableFuture<AsyncResultSet> write(TestEventEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
-	@Query("UPDATE ${qualifiedTableId} SET "+ FIELD_SUCCESS +"=:success WHERE "+ FIELD_PAGE +"=:page AND "+ FIELD_SCOPE +"=:scope "
-			+ "AND "+ FIELD_START_DATE +"=:startDate AND "+ FIELD_START_TIME +"=:startTime AND "+ FIELD_ID +"=:id")
-	CompletableFuture<Void> updateStatus(String page, String scope, 
+
+
+	@Query("UPDATE ${qualifiedTableId} SET " +
+				FIELD_SUCCESS + " =:success " +
+			"WHERE " +
+				FIELD_BOOK + " =:book AND " +
+				FIELD_PAGE + " =:page AND " +
+				FIELD_SCOPE + " =:scope AND " +
+				FIELD_START_DATE + " =:startDate AND " +
+				FIELD_START_TIME + " =:startTime AND " +
+				FIELD_ID + " =:id")
+	CompletableFuture<Void> updateStatus(String book, String page, String scope,
 			LocalDate startDate, LocalTime startTime, String id, 
 			boolean success,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Delete(entityClass = TestEventEntity.class)
-	void remove(String page, String scope, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	void remove(String book, String page, String scope, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

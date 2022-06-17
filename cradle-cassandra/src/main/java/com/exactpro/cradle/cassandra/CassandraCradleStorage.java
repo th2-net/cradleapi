@@ -1134,7 +1134,7 @@ public class CassandraCradleStorage extends CradleStorage
 		
 		PagingIterable<PageScopeEntity> rs = pageScopesOp.get(bookName, pageName, readAttrs);
 		for (PageScopeEntity scope : rs)
-			eventOp.remove(scope.getPage(), scope.getScope(), writeAttrs);
+			eventOp.remove(bookName, pageName, scope.getScope(), writeAttrs);
 		pageScopesOp.remove(bookName, pageName, writeAttrs);
 	}
 	

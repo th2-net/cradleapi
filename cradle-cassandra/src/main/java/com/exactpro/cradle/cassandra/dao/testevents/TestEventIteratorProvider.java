@@ -106,7 +106,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 	private CassandraTestEventFilter createInitialFilter(TestEventFilter filter)
 	{
 		String parentId = getParentIdString(filter);
-		return new CassandraTestEventFilter(firstPage.getId().getName(), filter.getScope(), 
+		return new CassandraTestEventFilter(book.getId().getName(), firstPage.getId().getName(), filter.getScope(),
 				filter.getStartTimestampFrom(), filter.getStartTimestampTo(), parentId);
 	}
 	
@@ -117,7 +117,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 			return null;
 		
 		PageInfo nextPage = book.getNextPage(prevPage.getStarted());
-		return new CassandraTestEventFilter(nextPage.getId().getName(), prevFilter.getScope(), 
+		return new CassandraTestEventFilter(book.getId().getName(), nextPage.getId().getName(), prevFilter.getScope(),
 				prevFilter.getStartTimestampFrom(), prevFilter.getStartTimestampTo(), prevFilter.getParentId());
 	}
 	

@@ -139,7 +139,7 @@ public class EventsWorker extends Worker
 		BookOperators bookOps = getBookOps(pageId.getBookId());
 		TestEventEntityConverter converter = bookOps.getTestEventEntityConverter();
 		return selectQueryExecutor.executeSingleRowResultQuery(
-				() -> bookOps.getTestEventOperator().get(pageId.getName(), id.getScope(),
+				() -> bookOps.getTestEventOperator().get(pageId.getBookId().getName(), pageId.getName(), id.getScope(),
 						ldt.toLocalDate(), ldt.toLocalTime(), id.getId(), readAttrs), converter::getEntity,
 				String.format("get test event by id '%s'", id))
 				.thenApplyAsync(entity -> {
@@ -171,8 +171,8 @@ public class EventsWorker extends Worker
 		BookOperators bookOps = getBookOps(event.getBookId());
 		StoredTestEventId id = event.getId();
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(event.getStartTimestamp());
-		
-		return bookOps.getTestEventOperator().updateStatus(event.getPageId().getName(), id.getScope(), 
+		PageId pageId = event.getPageId();
+		return bookOps.getTestEventOperator().updateStatus(pageId.getBookId().getName(), pageId.getName(), id.getScope(),
 				ldt.toLocalDate(), ldt.toLocalTime(), id.getId(), success, writeAttrs);
 	}
 }
