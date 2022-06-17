@@ -46,7 +46,8 @@ import java.util.function.Supplier;
 public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 {
 	private static final Logger logger = LoggerFactory.getLogger(CradleInfoKeyspaceCreator.class);
-	
+	private static final String TEST_EVENT_PARENT_INDEX = "test_event_parent_index";
+
 	public CradleInfoKeyspaceCreator(QueryExecutor exec, CassandraStorageSettings settings)
 	{
 		super(settings.getKeyspace(), exec, settings);
@@ -237,8 +238,7 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 
 	private void createTestEventParentIndex() throws IOException
 	{
-		CassandraStorageSettings settings = getSettings();
-		createIndex(settings.getTestEventParentIndex(), TestEventEntity.TABLE_NAME, TestEventEntity.FIELD_PARENT_ID);
+		createIndex(TEST_EVENT_PARENT_INDEX, TestEventEntity.TABLE_NAME, TestEventEntity.FIELD_PARENT_ID);
 	}
 
 	private void createLabelsTable() throws IOException

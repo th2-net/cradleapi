@@ -21,307 +21,253 @@ import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.cassandra.connection.NetworkTopologyStrategy;
 import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
 
-public class CassandraStorageSettings
-{
-	public static final String SCHEMA_VERSION = "5.0.0",
-			TEST_EVENT_PARENT_INDEX = "test_event_parent_index";
-	public static final long DEFAULT_TIMEOUT = 5000;
-	public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
-	public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1,
-			DEFAULT_MAX_PARALLEL_QUERIES = 500,
-			DEFAULT_RESULT_PAGE_SIZE = 0,  //Driver default will be used in this case.
-			DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_SIZE = 5 * 1024,
-			DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE = 5 * 1024,
-			DEFAULT_SESSIONS_CACHE_SIZE = 100,
-			DEFAULT_SCOPES_CACHE_SIZE = 10,
-			DEFAULT_PAGE_SESSION_CACHE_SIZE = 100,
-			DEFAULT_PAGE_SCOPES_CACHE_SIZE = 100,
-			DEFAULT_COUNTER_PERSISTANE_INTERVAL_MS = 1000;
+public class CassandraStorageSettings {
+    public static final String SCHEMA_VERSION = "5.0.0";
+    public static final long DEFAULT_TIMEOUT = 5000;
+    public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
+    public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1,
+            DEFAULT_MAX_PARALLEL_QUERIES = 500,
+            DEFAULT_RESULT_PAGE_SIZE = 0,
+            DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_SIZE = 5 * 1024,
+            DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE = 5 * 1024,
+            DEFAULT_SESSIONS_CACHE_SIZE = 100,
+            DEFAULT_SCOPES_CACHE_SIZE = 10,
+            DEFAULT_PAGE_SESSION_CACHE_SIZE = 100,
+            DEFAULT_PAGE_SCOPES_CACHE_SIZE = 100,
+            DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS = 1000;
 
-	private final NetworkTopologyStrategy networkTopologyStrategy;
-	private final long timeout;
-	private final ConsistencyLevel writeConsistencyLevel,
-			readConsistencyLevel;
-	private String keyspace,
-			schemaVersion,
-			testEventParentIndex;
-	private int keyspaceReplicationFactor;
+    private final NetworkTopologyStrategy networkTopologyStrategy;
+    private final long timeout;
+    private final ConsistencyLevel writeConsistencyLevel,
+            readConsistencyLevel;
+    private String keyspace,
+            schemaVersion;
+    private int keyspaceReplicationFactor;
 
-	private int maxParallelQueries,
-			resultPageSize,
-			maxMessageBatchSize,
-			maxUncompressedMessageBatchSize,
-			maxTestEventBatchSize,
-			maxUncompressedTestEventSize,
-			sessionsCacheSize,
-			scopesCacheSize,
-			pageSessionsCacheSize,
-			pageScopesCacheSize,
-			counterPersistenceInterval;
+    private int maxParallelQueries,
+            resultPageSize,
+            maxMessageBatchSize,
+            maxUncompressedMessageBatchSize,
+            maxTestEventBatchSize,
+            maxUncompressedTestEventSize,
+            sessionsCacheSize,
+            scopesCacheSize,
+            pageSessionsCacheSize,
+            pageScopesCacheSize,
+            counterPersistenceInterval;
 
-	private SelectExecutionPolicy multiRowResultExecutionPolicy, singleRowResultExecutionPolicy;
+    private SelectExecutionPolicy multiRowResultExecutionPolicy, singleRowResultExecutionPolicy;
 
-	public CassandraStorageSettings()
-	{
-		this(null, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
-	}
+    public CassandraStorageSettings() {
+        this(null, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
+    }
 
-	public CassandraStorageSettings(long timeout,
-			ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel)
-	{
-		this(null, timeout, writeConsistencyLevel, readConsistencyLevel);
-	}
+    public CassandraStorageSettings(long timeout,
+                                    ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel) {
+        this(null, timeout, writeConsistencyLevel, readConsistencyLevel);
+    }
 
-	public CassandraStorageSettings(NetworkTopologyStrategy networkTopologyStrategy, long timeout,
-			ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel)
-	{
-		this.networkTopologyStrategy = networkTopologyStrategy;
-		this.timeout = timeout;
-		this.writeConsistencyLevel = writeConsistencyLevel;
-		this.readConsistencyLevel = readConsistencyLevel;
+    public CassandraStorageSettings(NetworkTopologyStrategy networkTopologyStrategy, long timeout,
+                                    ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel) {
+        this.networkTopologyStrategy = networkTopologyStrategy;
+        this.timeout = timeout;
+        this.writeConsistencyLevel = writeConsistencyLevel;
+        this.readConsistencyLevel = readConsistencyLevel;
 
-		this.schemaVersion = SCHEMA_VERSION;
-		this.testEventParentIndex = TEST_EVENT_PARENT_INDEX;
+        this.schemaVersion = SCHEMA_VERSION;
 
-		this.keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
-		this.maxParallelQueries = DEFAULT_MAX_PARALLEL_QUERIES;
-		this.resultPageSize = DEFAULT_RESULT_PAGE_SIZE;
-		this.maxMessageBatchSize = CradleStorage.DEFAULT_MAX_MESSAGE_BATCH_SIZE;
-		this.maxUncompressedMessageBatchSize = DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_SIZE;
-		this.maxTestEventBatchSize = CradleStorage.DEFAULT_MAX_TEST_EVENT_BATCH_SIZE;
-		this.maxUncompressedTestEventSize = DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE;
-		this.sessionsCacheSize = DEFAULT_SESSIONS_CACHE_SIZE;
-		this.pageSessionsCacheSize = DEFAULT_PAGE_SESSION_CACHE_SIZE;
-		this.scopesCacheSize = DEFAULT_SCOPES_CACHE_SIZE;
-		this.pageScopesCacheSize = DEFAULT_PAGE_SCOPES_CACHE_SIZE;
-		this.counterPersistenceInterval = DEFAULT_COUNTER_PERSISTANE_INTERVAL_MS;
-	}
+        this.keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
+        this.maxParallelQueries = DEFAULT_MAX_PARALLEL_QUERIES;
+        this.resultPageSize = DEFAULT_RESULT_PAGE_SIZE;
+        this.maxMessageBatchSize = CradleStorage.DEFAULT_MAX_MESSAGE_BATCH_SIZE;
+        this.maxUncompressedMessageBatchSize = DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_SIZE;
+        this.maxTestEventBatchSize = CradleStorage.DEFAULT_MAX_TEST_EVENT_BATCH_SIZE;
+        this.maxUncompressedTestEventSize = DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE;
+        this.sessionsCacheSize = DEFAULT_SESSIONS_CACHE_SIZE;
+        this.pageSessionsCacheSize = DEFAULT_PAGE_SESSION_CACHE_SIZE;
+        this.scopesCacheSize = DEFAULT_SCOPES_CACHE_SIZE;
+        this.pageScopesCacheSize = DEFAULT_PAGE_SCOPES_CACHE_SIZE;
+        this.counterPersistenceInterval = DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS;
+    }
 
-	public CassandraStorageSettings(CassandraStorageSettings settings)
-	{
-		this.networkTopologyStrategy = settings.getNetworkTopologyStrategy();
-		this.timeout = settings.getTimeout();
-		this.writeConsistencyLevel = settings.getWriteConsistencyLevel();
-		this.readConsistencyLevel = settings.getReadConsistencyLevel();
+    public CassandraStorageSettings(CassandraStorageSettings settings) {
+        this.networkTopologyStrategy = settings.getNetworkTopologyStrategy();
+        this.timeout = settings.getTimeout();
+        this.writeConsistencyLevel = settings.getWriteConsistencyLevel();
+        this.readConsistencyLevel = settings.getReadConsistencyLevel();
 
-		this.keyspace = settings.getKeyspace();
-		this.schemaVersion = settings.getSchemaVersion();
-		this.testEventParentIndex = settings.getTestEventParentIndex();
+        this.keyspace = settings.getKeyspace();
+        this.schemaVersion = settings.getSchemaVersion();
 
-		this.keyspaceReplicationFactor = settings.getKeyspaceReplicationFactor();
-		this.maxParallelQueries = settings.getMaxParallelQueries();
-		this.resultPageSize = settings.getResultPageSize();
-		this.maxMessageBatchSize = settings.getMaxMessageBatchSize();
-		this.maxUncompressedMessageBatchSize = settings.getMaxUncompressedMessageBatchSize();
-		this.maxTestEventBatchSize = settings.getMaxTestEventBatchSize();
-		this.maxUncompressedTestEventSize = settings.getMaxUncompressedTestEventSize();
-		this.singleRowResultExecutionPolicy = settings.getSingleRowResultExecutionPolicy();
-		this.multiRowResultExecutionPolicy = settings.getMultiRowResultExecutionPolicy();
+        this.keyspaceReplicationFactor = settings.getKeyspaceReplicationFactor();
+        this.maxParallelQueries = settings.getMaxParallelQueries();
+        this.resultPageSize = settings.getResultPageSize();
+        this.maxMessageBatchSize = settings.getMaxMessageBatchSize();
+        this.maxUncompressedMessageBatchSize = settings.getMaxUncompressedMessageBatchSize();
+        this.maxTestEventBatchSize = settings.getMaxTestEventBatchSize();
+        this.maxUncompressedTestEventSize = settings.getMaxUncompressedTestEventSize();
+        this.singleRowResultExecutionPolicy = settings.getSingleRowResultExecutionPolicy();
+        this.multiRowResultExecutionPolicy = settings.getMultiRowResultExecutionPolicy();
 
-		this.sessionsCacheSize = settings.getSessionsCacheSize();
-		this.pageSessionsCacheSize = settings.getPageSessionsCacheSize();
-		this.scopesCacheSize = settings.getScopesCacheSize();
-		this.pageScopesCacheSize = settings.getPageScopesCacheSize();
-		this.counterPersistenceInterval = settings.getCounterPersistenceInterval();
-	}
+        this.sessionsCacheSize = settings.getSessionsCacheSize();
+        this.pageSessionsCacheSize = settings.getPageSessionsCacheSize();
+        this.scopesCacheSize = settings.getScopesCacheSize();
+        this.pageScopesCacheSize = settings.getPageScopesCacheSize();
+        this.counterPersistenceInterval = settings.getCounterPersistenceInterval();
+    }
 
 
-	public NetworkTopologyStrategy getNetworkTopologyStrategy()
-	{
-		return networkTopologyStrategy;
-	}
+    public NetworkTopologyStrategy getNetworkTopologyStrategy() {
+        return networkTopologyStrategy;
+    }
 
-	public long getTimeout()
-	{
-		return timeout;
-	}
+    public long getTimeout() {
+        return timeout;
+    }
 
-	public ConsistencyLevel getWriteConsistencyLevel()
-	{
-		return writeConsistencyLevel;
-	}
+    public ConsistencyLevel getWriteConsistencyLevel() {
+        return writeConsistencyLevel;
+    }
 
-	public ConsistencyLevel getReadConsistencyLevel()
-	{
-		return readConsistencyLevel;
-	}
+    public ConsistencyLevel getReadConsistencyLevel() {
+        return readConsistencyLevel;
+    }
 
 
-	public String getKeyspace()
-	{
-		return keyspace;
-	}
+    public String getKeyspace() {
+        return keyspace;
+    }
 
-	public void setKeyspace(String keyspace)
-	{
-		this.keyspace = keyspace;
-	}
+    public void setKeyspace(String keyspace) {
+        this.keyspace = keyspace;
+    }
 
 
-	public String getSchemaVersion()
-	{
-		return schemaVersion;
-	}
+    public String getSchemaVersion() {
+        return schemaVersion;
+    }
 
-	public String getTestEventParentIndex()
-	{
-		return testEventParentIndex;
-	}
+    public int getKeyspaceReplicationFactor() {
+        return keyspaceReplicationFactor;
+    }
 
-	public void setTestEventParentIndex(String testEventParentIndex)
-	{
-		this.testEventParentIndex = testEventParentIndex;
-	}
-
-	public int getKeyspaceReplicationFactor()
-	{
-		return keyspaceReplicationFactor;
-	}
-
-	public void setKeyspaceReplicationFactor(int keyspaceReplicationFactor)
-	{
-		this.keyspaceReplicationFactor = keyspaceReplicationFactor;
-	}
+    public void setKeyspaceReplicationFactor(int keyspaceReplicationFactor) {
+        this.keyspaceReplicationFactor = keyspaceReplicationFactor;
+    }
 
 
-	public int getMaxParallelQueries()
-	{
-		return maxParallelQueries;
-	}
+    public int getMaxParallelQueries() {
+        return maxParallelQueries;
+    }
 
-	public void setMaxParallelQueries(int maxParallelQueries)
-	{
-		this.maxParallelQueries = maxParallelQueries;
-	}
+    public void setMaxParallelQueries(int maxParallelQueries) {
+        this.maxParallelQueries = maxParallelQueries;
+    }
 
 
-	public int getResultPageSize()
-	{
-		return resultPageSize;
-	}
+    public int getResultPageSize() {
+        return resultPageSize;
+    }
 
-	public void setResultPageSize(int resultPageSize)
-	{
-		this.resultPageSize = resultPageSize;
-	}
+    public void setResultPageSize(int resultPageSize) {
+        this.resultPageSize = resultPageSize;
+    }
 
 
-	public int getMaxMessageBatchSize()
-	{
-		return maxMessageBatchSize;
-	}
+    public int getMaxMessageBatchSize() {
+        return maxMessageBatchSize;
+    }
 
-	public void setMaxMessageBatchSize(int maxMessageBatchSize)
-	{
-		this.maxMessageBatchSize = maxMessageBatchSize;
-	}
+    public void setMaxMessageBatchSize(int maxMessageBatchSize) {
+        this.maxMessageBatchSize = maxMessageBatchSize;
+    }
 
 
-	public int getMaxUncompressedMessageBatchSize()
-	{
-		return maxUncompressedMessageBatchSize;
-	}
+    public int getMaxUncompressedMessageBatchSize() {
+        return maxUncompressedMessageBatchSize;
+    }
 
-	public void setMaxUncompressedMessageBatchSize(int maxUncompressedMessageBatchSize)
-	{
-		this.maxUncompressedMessageBatchSize = maxUncompressedMessageBatchSize;
-	}
+    public void setMaxUncompressedMessageBatchSize(int maxUncompressedMessageBatchSize) {
+        this.maxUncompressedMessageBatchSize = maxUncompressedMessageBatchSize;
+    }
 
 
-	public int getMaxTestEventBatchSize()
-	{
-		return maxTestEventBatchSize;
-	}
+    public int getMaxTestEventBatchSize() {
+        return maxTestEventBatchSize;
+    }
 
-	public void setMaxTestEventBatchSize(int maxTestEventBatchSize)
-	{
-		this.maxTestEventBatchSize = maxTestEventBatchSize;
-	}
+    public void setMaxTestEventBatchSize(int maxTestEventBatchSize) {
+        this.maxTestEventBatchSize = maxTestEventBatchSize;
+    }
 
 
-	public int getMaxUncompressedTestEventSize()
-	{
-		return maxUncompressedTestEventSize;
-	}
+    public int getMaxUncompressedTestEventSize() {
+        return maxUncompressedTestEventSize;
+    }
 
-	public void setMaxUncompressedTestEventSize(int maxUncompressedTestEventSize)
-	{
-		this.maxUncompressedTestEventSize = maxUncompressedTestEventSize;
-	}
+    public void setMaxUncompressedTestEventSize(int maxUncompressedTestEventSize) {
+        this.maxUncompressedTestEventSize = maxUncompressedTestEventSize;
+    }
 
 
-	public int getSessionsCacheSize()
-	{
-		return sessionsCacheSize;
-	}
+    public int getSessionsCacheSize() {
+        return sessionsCacheSize;
+    }
 
-	public void setSessionsCacheSize(int sessionsCacheSize)
-	{
-		this.sessionsCacheSize = sessionsCacheSize;
-	}
+    public void setSessionsCacheSize(int sessionsCacheSize) {
+        this.sessionsCacheSize = sessionsCacheSize;
+    }
 
 
-	public int getPageSessionsCacheSize()
-	{
-		return pageSessionsCacheSize;
-	}
+    public int getPageSessionsCacheSize() {
+        return pageSessionsCacheSize;
+    }
 
-	public void setPageSessionsCacheSize(int pageSessionsCacheSize)
-	{
-		this.pageSessionsCacheSize = pageSessionsCacheSize;
-	}
+    public void setPageSessionsCacheSize(int pageSessionsCacheSize) {
+        this.pageSessionsCacheSize = pageSessionsCacheSize;
+    }
 
 
-	public int getScopesCacheSize()
-	{
-		return scopesCacheSize;
-	}
+    public int getScopesCacheSize() {
+        return scopesCacheSize;
+    }
 
-	public void setScopesCacheSize(int scopesCacheSize)
-	{
-		this.scopesCacheSize = scopesCacheSize;
-	}
+    public void setScopesCacheSize(int scopesCacheSize) {
+        this.scopesCacheSize = scopesCacheSize;
+    }
 
 
-	public int getPageScopesCacheSize()
-	{
-		return pageScopesCacheSize;
-	}
+    public int getPageScopesCacheSize() {
+        return pageScopesCacheSize;
+    }
 
-	public void setPageScopesCacheSize(int pageScopesCacheSize)
-	{
-		this.pageScopesCacheSize = pageScopesCacheSize;
-	}
+    public void setPageScopesCacheSize(int pageScopesCacheSize) {
+        this.pageScopesCacheSize = pageScopesCacheSize;
+    }
 
-	public int getCounterPersistenceInterval()
-	{
-		return counterPersistenceInterval;
-	}
+    public int getCounterPersistenceInterval() {
+        return counterPersistenceInterval;
+    }
 
-	public void setCounterPersistenceInterval(int counterPersistenceInterval)
-	{
-		this.counterPersistenceInterval = counterPersistenceInterval;
-	}
+    public void setCounterPersistenceInterval(int counterPersistenceInterval) {
+        this.counterPersistenceInterval = counterPersistenceInterval;
+    }
 
-	public SelectExecutionPolicy getMultiRowResultExecutionPolicy()
-	{
-		return multiRowResultExecutionPolicy;
-	}
+    public SelectExecutionPolicy getMultiRowResultExecutionPolicy() {
+        return multiRowResultExecutionPolicy;
+    }
 
-	public void setMultiRowResultExecutionPolicy(
-			SelectExecutionPolicy multiRowResultExecutionPolicy)
-	{
-		this.multiRowResultExecutionPolicy = multiRowResultExecutionPolicy;
-	}
+    public void setMultiRowResultExecutionPolicy(
+            SelectExecutionPolicy multiRowResultExecutionPolicy) {
+        this.multiRowResultExecutionPolicy = multiRowResultExecutionPolicy;
+    }
 
-	public SelectExecutionPolicy getSingleRowResultExecutionPolicy()
-	{
-		return singleRowResultExecutionPolicy;
-	}
+    public SelectExecutionPolicy getSingleRowResultExecutionPolicy() {
+        return singleRowResultExecutionPolicy;
+    }
 
-	public void setSingleRowResultExecutionPolicy(
-			SelectExecutionPolicy singleRowResultExecutionPolicy)
-	{
-		this.singleRowResultExecutionPolicy = singleRowResultExecutionPolicy;
-	}
+    public void setSingleRowResultExecutionPolicy(
+            SelectExecutionPolicy singleRowResultExecutionPolicy) {
+        this.singleRowResultExecutionPolicy = singleRowResultExecutionPolicy;
+    }
 }
