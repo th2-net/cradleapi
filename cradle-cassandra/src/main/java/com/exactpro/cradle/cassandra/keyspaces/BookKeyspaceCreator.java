@@ -154,8 +154,9 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 
 	private void createMessages() throws IOException
 	{
-		String tableName = getSettings().getMessagesTable();
+		String tableName = MessageBatchEntity.TABLE_NAME;
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(MessageBatchEntity.FIELD_BOOK, DataTypes.TEXT)
 				.withPartitionKey(MessageBatchEntity.FIELD_PAGE, DataTypes.TEXT)
 				.withPartitionKey(MessageBatchEntity.FIELD_SESSION_ALIAS, DataTypes.TEXT)
 				.withPartitionKey(MessageBatchEntity.FIELD_DIRECTION, DataTypes.TEXT)

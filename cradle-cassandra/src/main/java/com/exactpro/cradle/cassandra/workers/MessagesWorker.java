@@ -174,7 +174,7 @@ public class MessagesWorker extends Worker
 		String queryInfo = format("get nearest time and sequence before %s for page '%s'",
 				TimeUtils.toInstant(messageDate, messageTime), page.getId().getName());
 		return selectQueryExecutor.executeSingleRowResultQuery(
-						() -> mbOperator.getNearestTimeAndSequenceBefore(page.getId().getName(), sessionAlias,
+						() -> mbOperator.getNearestTimeAndSequenceBefore(page.getId().getBookId().getName(), page.getId().getName(), sessionAlias,
 								direction, messageDate, messageTime, sequence, readAttrs), Function.identity(), queryInfo)
 				.thenComposeAsync(row ->
 				{
@@ -216,7 +216,7 @@ public class MessagesWorker extends Worker
 						return CompletableFuture.completedFuture(null);
 					}
 					return selectQueryExecutor.executeSingleRowResultQuery(
-									() -> mbOperator.get(pageId.getName(), id.getSessionAlias(),
+									() -> mbOperator.get(pageId.getBookId().getName(), pageId.getName(), id.getSessionAlias(),
 											id.getDirection().getLabel(), ldt.toLocalDate(),
 											row.getLocalTime(FIELD_FIRST_MESSAGE_TIME), row.getLong(FIELD_SEQUENCE), readAttrs),
 									mbEntityConverter::getEntity,
@@ -330,13 +330,14 @@ public class MessagesWorker extends Worker
 		while (row == null && currentPage != null)
 		{
 			String page = currentPage.getId().getName();
-			String queryInfo = format("get %s sequence for page '%s', session alias '%s', " +
-					"direction '%s'", first ? "first" : "last", page, sessionAlias, direction);
+			String bookName = book.getId().getName();
+			String queryInfo = format("get %s sequence for book '%s' page '%s', session alias '%s', " +
+					"direction '%s'", (first ? "first" : "last"), bookName, page, sessionAlias, direction);
 			try
 			{
 				row = selectQueryExecutor.executeSingleRowResultQuery(
-						() -> first ? mbOp.getFirstSequence(page, sessionAlias, direction.getLabel(), readAttrs)
-								: mbOp.getLastSequence(page, sessionAlias, direction.getLabel(), readAttrs),
+						() -> first ? mbOp.getFirstSequence(bookName, page, sessionAlias, direction.getLabel(), readAttrs)
+								: mbOp.getLastSequence(bookName, page, sessionAlias, direction.getLabel(), readAttrs),
 						Function.identity(), queryInfo).get();
 			}
 			catch (InterruptedException | ExecutionException e)

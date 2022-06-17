@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,39 +31,81 @@ import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.*;
 @Dao
-public interface MessageBatchOperator
-{
+public interface MessageBatchOperator {
 	@Select
-	CompletableFuture<MessageBatchEntity> get(String page, String sessionAlias,
+	CompletableFuture<MessageBatchEntity> get(String book, String page, String sessionAlias,
 			String direction, LocalDate messageDate, LocalTime messageTime, long sequence,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-	@Query("SELECT " + FIELD_SEQUENCE + ", " + FIELD_FIRST_MESSAGE_TIME + " FROM ${qualifiedTableId} WHERE " + FIELD_PAGE + "=:page"
-			+ " AND " + FIELD_SESSION_ALIAS + "=:sessionAlias AND " + FIELD_DIRECTION + "=:direction AND "
-			+ FIELD_FIRST_MESSAGE_DATE + "=:messageDate AND (" + FIELD_FIRST_MESSAGE_TIME + ", " + FIELD_SEQUENCE + ")<=(:messageTime, :sequence)"
-			+ " ORDER BY " + FIELD_FIRST_MESSAGE_DATE + " DESC, " + FIELD_FIRST_MESSAGE_TIME + " DESC, " + FIELD_SEQUENCE + " DESC LIMIT 1")
-	CompletableFuture<Row> getNearestTimeAndSequenceBefore(String page, String sessionAlias,
+	@Query( "SELECT " +
+				FIELD_SEQUENCE + ", " +
+				FIELD_FIRST_MESSAGE_TIME + " " +
+			"FROM ${qualifiedTableId} " +
+			"WHERE " +
+				FIELD_BOOK + " =:book AND " +
+				FIELD_PAGE + " =:page AND " +
+				FIELD_SESSION_ALIAS + " =:sessionAlias AND " +
+				FIELD_DIRECTION + " =:direction AND " +
+				FIELD_FIRST_MESSAGE_DATE + " =:messageDate AND (" +
+					FIELD_FIRST_MESSAGE_TIME + ", " + FIELD_SEQUENCE + ") <= (:messageTime, :sequence) " +
+			"ORDER BY " +
+				FIELD_FIRST_MESSAGE_DATE + " DESC, " +
+				FIELD_FIRST_MESSAGE_TIME + " DESC, " +
+				FIELD_SEQUENCE + " DESC LIMIT 1")
+	CompletableFuture<Row> getNearestTimeAndSequenceBefore(String book, String page, String sessionAlias,
 			String direction, LocalDate messageDate, LocalTime messageTime, long sequence,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-	@Query("SELECT " + FIELD_FIRST_MESSAGE_TIME + " FROM ${qualifiedTableId} WHERE " + FIELD_PAGE + "=:page"
-			+ " AND " + FIELD_SESSION_ALIAS + "=:sessionAlias AND " + FIELD_DIRECTION + "=:direction AND "
-			+ FIELD_FIRST_MESSAGE_DATE + "=:messageDate AND " + FIELD_FIRST_MESSAGE_TIME + "<=:messageTime"
-			+ " ORDER BY " + FIELD_FIRST_MESSAGE_DATE + " DESC, " + FIELD_FIRST_MESSAGE_TIME + " DESC, " + FIELD_SEQUENCE + " DESC LIMIT 1")
-	CompletableFuture<Row> getNearestTime(String page, String sessionAlias,
+
+
+	@Query( "SELECT " +
+				FIELD_FIRST_MESSAGE_TIME + " " +
+			"FROM ${qualifiedTableId} " +
+			"WHERE " +
+				FIELD_BOOK + "=:book AND " +
+				FIELD_PAGE + "=:page AND " +
+				FIELD_SESSION_ALIAS + " =:sessionAlias AND " +
+				FIELD_DIRECTION + " =:direction AND " +
+				FIELD_FIRST_MESSAGE_DATE + " =:messageDate AND " +
+				FIELD_FIRST_MESSAGE_TIME + " <=:messageTime " +
+			"ORDER BY " +
+				FIELD_FIRST_MESSAGE_DATE + " DESC, " +
+				FIELD_FIRST_MESSAGE_TIME + " DESC, " +
+				FIELD_SEQUENCE + " DESC LIMIT 1")
+	CompletableFuture<Row> getNearestTime(String book, String page, String sessionAlias,
 			String direction, LocalDate messageDate, LocalTime messageTime,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-	@Query("SELECT " + FIELD_LAST_SEQUENCE + " FROM ${qualifiedTableId} WHERE " + FIELD_PAGE + "=:page"
-			+ " AND " + FIELD_SESSION_ALIAS + "=:sessionAlias AND " + FIELD_DIRECTION + "=:direction "
-			+ " ORDER BY " + FIELD_FIRST_MESSAGE_DATE + " DESC, " + FIELD_FIRST_MESSAGE_TIME + " DESC, " + FIELD_SEQUENCE + " DESC LIMIT 1" )
-	CompletableFuture<Row> getLastSequence(String page, String sessionAlias, String direction,
+
+
+	@Query( "SELECT " +
+				FIELD_LAST_SEQUENCE + " " +
+			"FROM ${qualifiedTableId} " +
+			"WHERE " +
+				FIELD_BOOK + "=:book AND " +
+				FIELD_PAGE + " =:page AND " +
+				FIELD_SESSION_ALIAS + " =:sessionAlias AND " +
+				FIELD_DIRECTION + " =:direction " +
+			"ORDER BY " +
+				FIELD_FIRST_MESSAGE_DATE + " DESC, " +
+				FIELD_FIRST_MESSAGE_TIME + " DESC, " +
+				FIELD_SEQUENCE + " DESC LIMIT 1" )
+	CompletableFuture<Row> getLastSequence(String book, String page, String sessionAlias, String direction,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-	@Query("SELECT " + FIELD_SEQUENCE + " FROM ${qualifiedTableId} WHERE " + FIELD_PAGE + "=:page"
-			+ " AND " + FIELD_SESSION_ALIAS + "=:sessionAlias AND " + FIELD_DIRECTION + "=:direction "
-			+ " ORDER BY " + FIELD_FIRST_MESSAGE_DATE + " ASC, " + FIELD_FIRST_MESSAGE_TIME + " ASC, " + FIELD_SEQUENCE + " ASC LIMIT 1" )
-	CompletableFuture<Row> getFirstSequence(String page, String sessionAlias, String direction,
+	@Query( "SELECT " +
+				FIELD_SEQUENCE + " " +
+			"FROM ${qualifiedTableId} " +
+			"WHERE " +
+				FIELD_BOOK + " =:book AND " +
+				FIELD_PAGE + " =:page AND " +
+				FIELD_SESSION_ALIAS + " =:sessionAlias AND " +
+				FIELD_DIRECTION + " =:direction " +
+			"ORDER BY " +
+				FIELD_FIRST_MESSAGE_DATE + " ASC, " +
+				FIELD_FIRST_MESSAGE_TIME + " ASC, " +
+				FIELD_SEQUENCE + " ASC LIMIT 1" )
+	CompletableFuture<Row> getFirstSequence(String book, String page, String sessionAlias, String direction,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@QueryProvider(providerClass = CommonQueryProvider.class, entityHelpers = MessageBatchEntity.class)
@@ -76,5 +118,5 @@ public interface MessageBatchOperator
 											Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Delete(entityClass = MessageBatchEntity.class)
-	void remove(String page, String sessionAlias, String direction, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	void remove(String book, String page, String sessionAlias, String direction, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

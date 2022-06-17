@@ -27,7 +27,6 @@ public class CassandraStorageSettings
 			SCHEMA_VERSION = "5.0.0",
 			BOOKS_TABLE = "books",
 			BOOKS_STATUS_TABLE = "books_status",
-			MESSAGES_TABLE = "messages",
 			GROUPED_MESSAGES_TABLE = "grouped_messages",
 			TEST_EVENTS_TABLE = "test_events",
 			TEST_EVENT_PARENT_INDEX = "test_event_parent_index";
@@ -52,7 +51,6 @@ public class CassandraStorageSettings
 			schemaVersion,
 			booksTable,
 			booksStatusTable,
-			messagesTable,
 			groupedMessagesTable,
 			testEventsTable,
 			testEventParentIndex;
@@ -95,7 +93,6 @@ public class CassandraStorageSettings
 		this.schemaVersion = SCHEMA_VERSION;
 		this.booksTable = BOOKS_TABLE;
 		this.booksStatusTable = BOOKS_STATUS_TABLE;
-		this.messagesTable = MESSAGES_TABLE;
 		this.groupedMessagesTable = GROUPED_MESSAGES_TABLE;
 		this.testEventsTable = TEST_EVENTS_TABLE;
 		this.testEventParentIndex = TEST_EVENT_PARENT_INDEX;
@@ -125,7 +122,6 @@ public class CassandraStorageSettings
 		this.schemaVersion = settings.getSchemaVersion();
 		this.booksTable = settings.getBooksTable();
 		this.booksStatusTable = settings.getBooksStatusTable();
-		this.messagesTable = settings.getMessagesTable();
 		this.groupedMessagesTable = settings.getGroupedMessagesTable();
 		this.testEventsTable = settings.getTestEventsTable();
 		this.testEventParentIndex = settings.getTestEventParentIndex();
@@ -204,16 +200,6 @@ public class CassandraStorageSettings
 	public void setBooksStatusTable(String booksStatusTable)
 	{
 		this.booksStatusTable = booksStatusTable;
-	}
-
-	public String getMessagesTable()
-	{
-		return messagesTable;
-	}
-
-	public void setMessagesTable(String messagesTable)
-	{
-		this.messagesTable = messagesTable;
 	}
 
 	public String getTestEventsTable()

@@ -1121,7 +1121,7 @@ public class CassandraCradleStorage extends CradleStorage
 		
 		PagingIterable<PageSessionEntity> rs = pageSessionsOp.get(bookName, pageName, readAttrs);
 		for (PageSessionEntity session : rs)
-			messageOp.remove(session.getPage(), session.getSessionAlias(), session.getDirection(), writeAttrs);
+			messageOp.remove(bookName, session.getPage(), session.getSessionAlias(), session.getDirection(), writeAttrs);
 		pageSessionsOp.remove(bookName, pageName, writeAttrs);
 	}
 	

@@ -109,8 +109,14 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 	{
 		while (page != null)
 		{
-			CompletableFuture<Row> future = op.getNearestTime(page.getId().getName(), sessionAlias, direction,
-					messageDate, messageTime, readAttrs);
+			CompletableFuture<Row> future = op.getNearestTime(
+					page.getId().getBookId().getName(),
+					page.getId().getName(),
+					sessionAlias,
+					direction,
+					messageDate,
+					messageTime,
+					readAttrs);
 			try
 			{
 				Row row = future.get();
