@@ -29,83 +29,82 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.*;
 import static com.exactpro.cradle.cassandra.dao.messages.CassandraStoredMessageFilter.*;
 
-public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMessageBatchEntity>
-{
-	private final String page, groupName;
-	private final Integer limit;
-	private final FilterForGreater<Instant> messageTimeFrom;
-	private final FilterForLess<Instant> messageTimeTo;
-	
-	public CassandraGroupedMessageFilter(String page, String groupName,
-			FilterForGreater<Instant> messageTimeFrom, FilterForLess<Instant> messageTimeTo, int limit)
-	{
-		this.page = page;
-		this.groupName = groupName;
-		this.messageTimeFrom = messageTimeFrom;
-		this.messageTimeTo = messageTimeTo;
-		this.limit = limit;
-	}
-	
-	public CassandraGroupedMessageFilter(String page, String groupName,
-			FilterForGreater<Instant> messageTimeFrom, FilterForLess<Instant> messageTimeTo)
-	{
-		this(page, groupName, messageTimeFrom, messageTimeTo, 0);
-	}
+public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMessageBatchEntity> {
+    private final String book, page, groupName;
+    private final Integer limit;
+    private final FilterForGreater<Instant> messageTimeFrom;
+    private final FilterForLess<Instant> messageTimeTo;
 
-	@Override
-	public Select addConditions(Select select)
-	{
-		select = select.whereColumn(FIELD_PAGE).isEqualTo(bindMarker())
-				.whereColumn(FIELD_ALIAS_GROUP).isEqualTo(bindMarker());
+    public CassandraGroupedMessageFilter(String book, String page, String groupName,
+                                         FilterForGreater<Instant> messageTimeFrom, FilterForLess<Instant> messageTimeTo, int limit) {
+        this.book = book;
+        this.page = page;
+        this.groupName = groupName;
+        this.messageTimeFrom = messageTimeFrom;
+        this.messageTimeTo = messageTimeTo;
+        this.limit = limit;
+    }
 
-		if (messageTimeFrom != null)
-			select = FilterUtils.timestampFilterToWhere(messageTimeFrom.getOperation(), select, FIELD_FIRST_MESSAGE_DATE, FIELD_FIRST_MESSAGE_TIME, DATE_FROM, TIME_FROM);
-		if (messageTimeTo != null)
-			select = FilterUtils.timestampFilterToWhere(messageTimeTo.getOperation(), select, FIELD_FIRST_MESSAGE_DATE, FIELD_FIRST_MESSAGE_TIME, DATE_TO, TIME_TO);
+    public CassandraGroupedMessageFilter(String book, String page, String groupName,
+                                         FilterForGreater<Instant> messageTimeFrom, FilterForLess<Instant> messageTimeTo) {
+        this(book, page, groupName, messageTimeFrom, messageTimeTo, 0);
+    }
 
-		if (limit != 0) {
-			select.limit(limit);
-		}
+    @Override
+    public Select addConditions(Select select) {
+        select = select
+				.whereColumn(FIELD_BOOK).isEqualTo(bindMarker())
+				.whereColumn(FIELD_PAGE).isEqualTo(bindMarker())
+                .whereColumn(FIELD_ALIAS_GROUP).isEqualTo(bindMarker());
 
-		return select;
-	}
+        if (messageTimeFrom != null)
+            select = FilterUtils.timestampFilterToWhere(messageTimeFrom.getOperation(), select, FIELD_FIRST_MESSAGE_DATE, FIELD_FIRST_MESSAGE_TIME, DATE_FROM, TIME_FROM);
+        if (messageTimeTo != null)
+            select = FilterUtils.timestampFilterToWhere(messageTimeTo.getOperation(), select, FIELD_FIRST_MESSAGE_DATE, FIELD_FIRST_MESSAGE_TIME, DATE_TO, TIME_TO);
 
-	@Override
-	public BoundStatementBuilder bindParameters(BoundStatementBuilder builder)
-	{
-		builder = builder.setString(FIELD_PAGE, page)
-				.setString(FIELD_ALIAS_GROUP, groupName);
-		
-		if (messageTimeFrom != null)
-			builder = FilterUtils.bindTimestamp(messageTimeFrom.getValue(), builder, DATE_FROM, TIME_FROM);
-		if (messageTimeTo != null)
-			builder = FilterUtils.bindTimestamp(messageTimeTo.getValue(), builder, DATE_TO, TIME_TO);
+        if (limit != 0) {
+            select.limit(limit);
+        }
 
-		return builder;
-	}
+        return select;
+    }
 
-	public String getPage()
-	{
-		return page;
-	}
+    @Override
+    public BoundStatementBuilder bindParameters(BoundStatementBuilder builder) {
+        builder = builder
+				.setString(FIELD_BOOK, book)
+				.setString(FIELD_PAGE, page)
+                .setString(FIELD_ALIAS_GROUP, groupName);
 
-	public String getGroupName()
-	{
-		return groupName;
+        if (messageTimeFrom != null)
+            builder = FilterUtils.bindTimestamp(messageTimeFrom.getValue(), builder, DATE_FROM, TIME_FROM);
+        if (messageTimeTo != null)
+            builder = FilterUtils.bindTimestamp(messageTimeTo.getValue(), builder, DATE_TO, TIME_TO);
+
+        return builder;
+    }
+
+	public String getBook() {
+		return book;
 	}
 
-	public Integer getLimit()
-	{
-		return limit;
-	}
+    public String getPage() {
+        return page;
+    }
 
-	public FilterForGreater<Instant> getMessageTimeFrom()
-	{
-		return messageTimeFrom;
-	}
+    public String getGroupName() {
+        return groupName;
+    }
 
-	public FilterForLess<Instant> getMessageTimeTo()
-	{
-		return messageTimeTo;
-	}
+    public Integer getLimit() {
+        return limit;
+    }
+
+    public FilterForGreater<Instant> getMessageTimeFrom() {
+        return messageTimeFrom;
+    }
+
+    public FilterForLess<Instant> getMessageTimeTo() {
+        return messageTimeTo;
+    }
 }

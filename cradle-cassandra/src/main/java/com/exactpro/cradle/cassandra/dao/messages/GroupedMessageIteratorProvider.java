@@ -79,8 +79,8 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 
 	private CassandraGroupedMessageFilter createInitialFilter(GroupedMessageFilter filter)
 	{
-		return new CassandraGroupedMessageFilter(firstPage.getId().getName(), filter.getGroupName(),
-				filter.getFrom(), filter.getTo(), filter.getLimit());
+		return new CassandraGroupedMessageFilter(book.getId().getName(), firstPage.getId().getName(),
+				filter.getGroupName(), filter.getFrom(), filter.getTo(), filter.getLimit());
 	}
 
 	protected CassandraGroupedMessageFilter createNextFilter(CassandraGroupedMessageFilter prevFilter, int updatedLimit)
@@ -91,8 +91,8 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 
 		PageInfo nextPage = book.getNextPage(prevPage.getStarted());
 
-		return new CassandraGroupedMessageFilter(nextPage.getId().getName(), prevFilter.getGroupName(),
-				prevFilter.getMessageTimeFrom(), prevFilter.getMessageTimeTo(), updatedLimit);
+		return new CassandraGroupedMessageFilter(book.getId().getName(), nextPage.getId().getName(),
+				prevFilter.getGroupName(), prevFilter.getMessageTimeFrom(), prevFilter.getMessageTimeTo(), updatedLimit);
 	}
 
 	@Override

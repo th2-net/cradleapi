@@ -177,8 +177,9 @@ public class BookKeyspaceCreator extends KeyspaceCreator
 	
 	private void createGroupedMessages() throws IOException
 	{
-		String tableName = getSettings().getGroupedMessagesTable();
+		String tableName = GroupedMessageBatchEntity.TABLE_NAME;
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(GroupedMessageBatchEntity.FIELD_BOOK, DataTypes.TEXT)
 				.withPartitionKey(GroupedMessageBatchEntity.FIELD_PAGE, DataTypes.TEXT)
 				.withPartitionKey(GroupedMessageBatchEntity.FIELD_ALIAS_GROUP, DataTypes.TEXT)
 

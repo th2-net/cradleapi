@@ -40,9 +40,13 @@ import java.util.List;
 import java.util.zip.DataFormatException;
 
 @Entity
+@CqlName(GroupedMessageBatchEntity.TABLE_NAME)
 public class GroupedMessageBatchEntity extends CradleEntity {
+	public static final String TABLE_NAME = "grouped_messages";
+
 	private static final Logger logger = LoggerFactory.getLogger(GroupedMessageBatchEntity.class);
 
+	public static final String FIELD_BOOK = "book";
 	public static final String FIELD_PAGE = "page";
 	public static final String FIELD_ALIAS_GROUP = "alias_group";
 	public static final String FIELD_FIRST_MESSAGE_DATE = "first_message_date";
@@ -71,6 +75,7 @@ public class GroupedMessageBatchEntity extends CradleEntity {
 			batchContent = CompressionUtils.compressData(batchContent);
 		}
 
+		setBook(pageId.getBookId().getName());
 		setPage(pageId.getName());
 		setFirstMessageTimestamp(batch.getFirstTimestamp());
 		setLastMessageTimestamp(batch.getLastTimestamp());
@@ -82,7 +87,18 @@ public class GroupedMessageBatchEntity extends CradleEntity {
 		setSerializedMessageMetadata(serializedEntityData.getSerializedEntityMetadata());
 	}
 
-	@PartitionKey(0)
+	@PartitionKey(1)
+	@CqlName(FIELD_BOOK)
+	String book;
+	public String getBook()	{
+		return book;
+	}
+
+	public void setBook(String book) {
+		this.book = book;
+	}
+
+	@PartitionKey(2)
 	@CqlName(FIELD_PAGE)
 	String page;
 	public String getPage()	{
@@ -93,7 +109,7 @@ public class GroupedMessageBatchEntity extends CradleEntity {
 		this.page = page;
 	}
 
-	@PartitionKey(1)
+	@PartitionKey(3)
 	@CqlName(FIELD_ALIAS_GROUP)
 	private String group;
 	public String getGroup() {
@@ -104,7 +120,7 @@ public class GroupedMessageBatchEntity extends CradleEntity {
 		this.group = group;
 	}
 
-	@ClusteringColumn(0)
+	@ClusteringColumn(1)
 	@CqlName(FIELD_FIRST_MESSAGE_DATE)
 	private LocalDate firstMessageDate;
 	public LocalDate getFirstMessageDate() {
@@ -115,7 +131,7 @@ public class GroupedMessageBatchEntity extends CradleEntity {
 		this.firstMessageDate = messageDate;
 	}
 
-	@ClusteringColumn(1)
+	@ClusteringColumn(2)
 	@CqlName(FIELD_FIRST_MESSAGE_TIME)
 	private LocalTime firstMessageTime;
 	public LocalTime getFirstMessageTime() {

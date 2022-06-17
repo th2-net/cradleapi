@@ -27,7 +27,6 @@ public class CassandraStorageSettings
 			SCHEMA_VERSION = "5.0.0",
 			BOOKS_TABLE = "books",
 			BOOKS_STATUS_TABLE = "books_status",
-			GROUPED_MESSAGES_TABLE = "grouped_messages",
 			TEST_EVENT_PARENT_INDEX = "test_event_parent_index";
 	public static final long DEFAULT_TIMEOUT = 5000;
 	public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
@@ -50,7 +49,6 @@ public class CassandraStorageSettings
 			schemaVersion,
 			booksTable,
 			booksStatusTable,
-			groupedMessagesTable,
 			testEventParentIndex;
 	private int keyspaceReplicationFactor;
 
@@ -91,7 +89,6 @@ public class CassandraStorageSettings
 		this.schemaVersion = SCHEMA_VERSION;
 		this.booksTable = BOOKS_TABLE;
 		this.booksStatusTable = BOOKS_STATUS_TABLE;
-		this.groupedMessagesTable = GROUPED_MESSAGES_TABLE;
 		this.testEventParentIndex = TEST_EVENT_PARENT_INDEX;
 
 		this.keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
@@ -119,7 +116,6 @@ public class CassandraStorageSettings
 		this.schemaVersion = settings.getSchemaVersion();
 		this.booksTable = settings.getBooksTable();
 		this.booksStatusTable = settings.getBooksStatusTable();
-		this.groupedMessagesTable = settings.getGroupedMessagesTable();
 		this.testEventParentIndex = settings.getTestEventParentIndex();
 
 		this.keyspaceReplicationFactor = settings.getKeyspaceReplicationFactor();
@@ -358,15 +354,5 @@ public class CassandraStorageSettings
 			SelectExecutionPolicy singleRowResultExecutionPolicy)
 	{
 		this.singleRowResultExecutionPolicy = singleRowResultExecutionPolicy;
-	}
-
-	public String getGroupedMessagesTable()
-	{
-		return groupedMessagesTable;
-	}
-
-	public void setGroupedMessagesTable(String groupedMessagesTable)
-	{
-		this.groupedMessagesTable = groupedMessagesTable;
 	}
 }

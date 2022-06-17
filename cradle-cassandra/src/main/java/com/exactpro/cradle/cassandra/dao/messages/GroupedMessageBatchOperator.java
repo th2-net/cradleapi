@@ -28,8 +28,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 @Dao
-public interface GroupedMessageBatchOperator
-{
+public interface GroupedMessageBatchOperator {
 	@QueryProvider(providerClass = CommonQueryProvider.class, entityHelpers = GroupedMessageBatchEntity.class)
 	CompletableFuture<MappedAsyncPagingIterable<GroupedMessageBatchEntity>> getByFilter(CassandraGroupedMessageFilter filter,
 			SelectQueryExecutor selectExecutor, String queryInfo,
