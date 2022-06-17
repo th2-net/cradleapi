@@ -145,11 +145,12 @@ public class CassandraCradleStorage extends CradleStorage
 					.setPageSize(resultPageSize);
 			ops = createOperators(connection.getSession(), settings);
 			bookCache = new ReadThroughBookCache(ops, readAttrs, settings.getSchemaVersion());
-			bpc = new BookAndPageChecker(getBookCache());
+			bookManager = new BookManager(getBookCache(), settings.getBookRefreshIntervalMillis());
+			bookManager.start();
 
 
 			statisticsWorker = new StatisticsWorker(ops, writeAttrs, settings.getCounterPersistenceInterval());
-			WorkerSupplies ws = new WorkerSupplies(settings, ops, composingService, bpc, selectExecutor, writeAttrs, readAttrs);
+			WorkerSupplies ws = new WorkerSupplies(settings, ops, composingService, bookCache, selectExecutor, writeAttrs, readAttrs);
 			eventsWorker = new EventsWorker(ws, statisticsWorker);
 			messagesWorker = new MessagesWorker(ws, statisticsWorker, statisticsWorker);
 			statisticsWorker.start();
@@ -163,6 +164,7 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected void doDispose() throws CradleStorageException
 	{
+		bookManager.stop();
 		statisticsWorker.stop();
 		if (connection.isRunning())
 		{
@@ -554,14 +556,14 @@ public class CassandraCradleStorage extends CradleStorage
 	protected long doGetLastSequence(String sessionAlias, Direction direction, BookId bookId)
 			throws CradleStorageException
 	{
-		return messagesWorker.getBoundarySequence(sessionAlias, direction, bpc.getBook(bookId), false);
+		return messagesWorker.getBoundarySequence(sessionAlias, direction, getBookCache().getBook(bookId), false);
 	}
 
 	@Override
 	protected long doGetFirstSequence(String sessionAlias, Direction direction, BookId bookId)
 			throws CradleStorageException
 	{
-		return messagesWorker.getBoundarySequence(sessionAlias, direction, bpc.getBook(bookId), true);
+		return messagesWorker.getBoundarySequence(sessionAlias, direction, getBookCache().getBook(bookId), true);
 	}
 
 	@Override
@@ -678,7 +680,7 @@ public class CassandraCradleStorage extends CradleStorage
 		logger.info("Getting {}", queryInfo);
 		MessageStatisticsIteratorProvider iteratorProvider = new MessageStatisticsIteratorProvider(queryInfo,
 				ops,
-				bpc.getBook(bookId),
+				getBookCache().getBook(bookId),
 				composingService,
 				selectExecutor,
 				sessionAlias,
@@ -877,7 +879,7 @@ public class CassandraCradleStorage extends CradleStorage
 		SessionsStatisticsIteratorProvider iteratorProvider = new SessionsStatisticsIteratorProvider(
 				queryInfo,
 				ops,
-				bpc.getBook(bookId),
+				getBookCache().getBook(bookId),
 				composingService,
 				selectExecutor,
 				readAttrs,
@@ -1029,7 +1031,7 @@ public class CassandraCradleStorage extends CradleStorage
 			throw new CradleStorageException("Error while creating storage", e);
 		}
 	}
-	
+
 	protected CassandraStorageSettings getSettings()
 	{
 		return settings;
@@ -1082,7 +1084,7 @@ public class CassandraCradleStorage extends CradleStorage
 		MessageBatchOperator messageOp = bookOps.getMessageBatchOperator();
 		String pageName = pageId.getName();
 		String bookName = pageId.getBookId().getName();
-		
+
 		PagingIterable<PageSessionEntity> rs = pageSessionsOp.get(bookName, pageName, readAttrs);
 		for (PageSessionEntity session : rs)
 			messageOp.remove(bookName, session.getPage(), session.getSessionAlias(), session.getDirection(), writeAttrs);
@@ -1095,7 +1097,7 @@ public class CassandraCradleStorage extends CradleStorage
 		TestEventOperator eventOp = bookOps.getTestEventOperator();
 		String pageName = pageId.getName();
 		String bookName = pageId.getBookId().getName();
-		
+
 		PagingIterable<PageScopeEntity> rs = pageScopesOp.get(bookName, pageName, readAttrs);
 		for (PageScopeEntity scope : rs)
 			eventOp.remove(bookName, pageName, scope.getScope(), writeAttrs);

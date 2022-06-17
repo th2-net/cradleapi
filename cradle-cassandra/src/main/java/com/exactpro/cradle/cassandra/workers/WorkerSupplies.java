@@ -17,7 +17,7 @@
 package com.exactpro.cradle.cassandra.workers;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.exactpro.cradle.BookAndPageChecker;
+import com.exactpro.cradle.BookCache;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
@@ -29,20 +29,20 @@ public class WorkerSupplies {
     private final CassandraStorageSettings settings;
     private final BookOperators operators;
     private final ExecutorService composingService;
-    private final BookAndPageChecker bpc;
+	private final BookCache bookCache;
     private final SelectQueryExecutor selectExecutor;
     private final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs;
     private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
 
     public WorkerSupplies(CassandraStorageSettings settings, BookOperators operators,
-                          ExecutorService composingService, BookAndPageChecker bpc,
+                          ExecutorService composingService, BookCache BookCache,
                           SelectQueryExecutor selectExecutor,
                           Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
                           Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) {
         this.settings = settings;
         this.operators = operators;
         this.composingService = composingService;
-        this.bpc = bpc;
+		this.bookCache = BookCache;
         this.selectExecutor = selectExecutor;
         this.writeAttrs = writeAttrs;
         this.readAttrs = readAttrs;
@@ -60,9 +60,9 @@ public class WorkerSupplies {
         return composingService;
     }
 
-    public BookAndPageChecker getBpc() {
-        return bpc;
-    }
+	public BookCache getBookCache()	{
+		return bookCache;
+	}
 
     public SelectQueryExecutor getSelectExecutor() {
         return selectExecutor;
