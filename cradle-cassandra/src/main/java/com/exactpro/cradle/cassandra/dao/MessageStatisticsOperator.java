@@ -62,4 +62,7 @@ public interface MessageStatisticsOperator {
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes
     );
 
+    @Delete(entityClass = MessageStatisticsEntity.class)
+    void remove(String book, String page, String sessionAlias, String direction, Byte frameType,
+                Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

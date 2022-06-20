@@ -17,10 +17,7 @@ package com.exactpro.cradle.cassandra.dao;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.datastax.oss.driver.api.mapper.annotations.CqlName;
-import com.datastax.oss.driver.api.mapper.annotations.Dao;
-import com.datastax.oss.driver.api.mapper.annotations.Increment;
-import com.datastax.oss.driver.api.mapper.annotations.Query;
+import com.datastax.oss.driver.api.mapper.annotations.*;
 
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
@@ -59,4 +56,8 @@ public interface EntityStatisticsOperator {
             @CqlName(FIELD_ENTITY_SIZE) long size,
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes
     );
+
+    @Delete(entityClass = EntityStatisticsEntity.class)
+    void remove(String book, String page, Byte entityType, Byte frameType,
+                Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

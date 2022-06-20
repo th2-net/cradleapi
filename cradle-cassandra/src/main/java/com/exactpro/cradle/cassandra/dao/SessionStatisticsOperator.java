@@ -18,6 +18,7 @@ package com.exactpro.cradle.cassandra.dao;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
+import com.datastax.oss.driver.api.mapper.annotations.Delete;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
 
@@ -42,4 +43,7 @@ public interface SessionStatisticsOperator {
             FIELD_FRAME_START + ">=:frameStart AND " +
             FIELD_FRAME_START + "<:frameEnd")
     CompletableFuture<MappedAsyncPagingIterable<SessionStatisticsEntity>> getStatistics (String book, String page, Byte recordType, Byte frameType, Instant frameStart, Instant frameEnd, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+    @Delete(entityClass = SessionStatisticsEntity.class)
+    void remove(String book, String page, Byte recordType, Byte frameType, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

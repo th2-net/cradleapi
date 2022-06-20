@@ -260,9 +260,10 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		PageId pageId = page.getId();
 
-		removeMessages(pageId, ops);
-		removeTestEvents(pageId, ops);
-		removePage(page, ops);
+		removeSessionData(pageId);
+		removeTestEventData(pageId);
+		removeEntityStatistics(pageId);
+		removePageData(page);
 	}
 	
 	
@@ -1078,42 +1079,71 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 	}
 	
-	protected void removeMessages(PageId pageId, BookOperators bookOps)
-	{
-		PageSessionsOperator pageSessionsOp = bookOps.getPageSessionsOperator();
-		MessageBatchOperator messageOp = bookOps.getMessageBatchOperator();
-		String pageName = pageId.getName();
-		String bookName = pageId.getBookId().getName();
+	protected void removeSessionData(PageId pageId) {
+		String book = pageId.getBookId().getName();
+		String page	= pageId.getName();
 
-		PagingIterable<PageSessionEntity> rs = pageSessionsOp.get(bookName, pageName, readAttrs);
-		for (PageSessionEntity session : rs)
-			messageOp.remove(bookName, session.getPage(), session.getSessionAlias(), session.getDirection(), writeAttrs);
-		pageSessionsOp.remove(bookName, pageName, writeAttrs);
+		PageSessionsOperator pageSessionsOp = ops.getPageSessionsOperator();
+		MessageBatchOperator messageOp = ops.getMessageBatchOperator();
+		MessageStatisticsOperator messageStatisticsOp = ops.getMessageStatisticsOperator();
+		SessionStatisticsOperator sessionStatisticsOp = ops.getSessionStatisticsOperator();
+
+		PagingIterable<PageSessionEntity> rs = pageSessionsOp.get(book, page, readAttrs);
+		for (PageSessionEntity session : rs) {
+			messageOp.remove(book, session.getPage(), session.getSessionAlias(), session.getDirection(), writeAttrs);
+
+			// remove statistics associated with session
+			for (FrameType ft : FrameType.values()) {
+
+				messageStatisticsOp.remove(book, page, session.getSessionAlias(),
+						session.getDirection(), ft.getValue(), writeAttrs);
+
+				sessionStatisticsOp.remove(book, page, SessionRecordType.SESSION.getValue(), ft.getValue(),
+						writeAttrs);
+			}
+		}
+
+		pageSessionsOp.remove(book, page, writeAttrs);
 	}
 	
-	protected void removeTestEvents(PageId pageId, BookOperators bookOps)
-	{
-		PageScopesOperator pageScopesOp = bookOps.getPageScopesOperator();
-		TestEventOperator eventOp = bookOps.getTestEventOperator();
-		String pageName = pageId.getName();
-		String bookName = pageId.getBookId().getName();
+	protected void removeTestEventData(PageId pageId) {
+		String book = pageId.getBookId().getName();
+		String page = pageId.getName();
 
-		PagingIterable<PageScopeEntity> rs = pageScopesOp.get(bookName, pageName, readAttrs);
+		PageScopesOperator pageScopesOp = ops.getPageScopesOperator();
+		TestEventOperator eventOp = ops.getTestEventOperator();
+
+		PagingIterable<PageScopeEntity> rs = pageScopesOp.get(book, page, readAttrs);
 		for (PageScopeEntity scope : rs)
-			eventOp.remove(bookName, pageName, scope.getScope(), writeAttrs);
-		pageScopesOp.remove(bookName, pageName, writeAttrs);
+			eventOp.remove(book, page, scope.getScope(), writeAttrs);
+
+		pageScopesOp.remove(book, page, writeAttrs);
 	}
 	
-	protected void removePage(PageInfo pageInfo, BookOperators bookOps)
-	{
+	protected void removePageData(PageInfo pageInfo) {
+
 		String book = pageInfo.getId().getBookId().getName();
-		bookOps.getPageNameOperator().remove(book, pageInfo.getId().getName(), writeAttrs);
-		
+		String page = pageInfo.getId().getName();
+
+		// remove sessions
+		ops.getPageSessionsOperator().remove(book, page, writeAttrs);
+
+		//remove page name
+		ops.getPageNameOperator().remove(book, page, writeAttrs);
+
+		//remove page
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(pageInfo.getStarted());
-		bookOps.getPageOperator().remove(book, 
+		ops.getPageOperator().remove(book,
 				ldt.toLocalDate(), 
 				ldt.toLocalTime(), 
 				Instant.now(), 
 				writeAttrs);
+	}
+
+	private void removeEntityStatistics(PageId pageId) {
+		String book = pageId.getBookId().getName();
+		for (FrameType ft : FrameType.values())
+			ops.getEntityStatisticsOperator().remove(book, pageId.getName(), EntityType.MESSAGE.getValue(),
+					ft.getValue(), writeAttrs);
 	}
 }
