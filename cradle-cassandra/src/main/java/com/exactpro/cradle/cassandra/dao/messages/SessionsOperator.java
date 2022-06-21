@@ -19,6 +19,7 @@ package com.exactpro.cradle.cassandra.dao.messages;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
+import com.datastax.oss.driver.api.mapper.annotations.Delete;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Select;
 
@@ -34,4 +35,7 @@ public interface SessionsOperator {
 	@Insert
 	CompletableFuture<SessionEntity> write(SessionEntity entity,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+	@Delete(entityClass=SessionEntity.class)
+	void remove(String book, String sessionAlias, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }
