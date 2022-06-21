@@ -109,8 +109,14 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 	{
 		while (page != null)
 		{
-			CompletableFuture<Row> future = op.getNearestTime(page.getId().getName(), sessionAlias, direction,
-					messageDate, messageTime, readAttrs);
+			CompletableFuture<Row> future = op.getNearestTime(
+					page.getId().getBookId().getName(),
+					page.getId().getName(),
+					sessionAlias,
+					direction,
+					messageDate,
+					messageTime,
+					readAttrs);
 			try
 			{
 				Row row = future.get();
@@ -140,7 +146,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 
 	protected CassandraStoredMessageFilter createInitialFilter(MessageFilter filter)
 	{
-		return new CassandraStoredMessageFilter(firstPage.getId().getName(), filter.getSessionAlias(),
+		return new CassandraStoredMessageFilter(firstPage.getId().getBookId().getName(),firstPage.getId().getName(), filter.getSessionAlias(),
 				filter.getDirection().getLabel(), leftBoundFilter, rightBoundFilter, filter.getSequence(), filter.getLimit());
 	}
 
@@ -152,7 +158,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 
 		PageInfo nextPage = book.getNextPage(prevPage.getStarted());
 
-		return new CassandraStoredMessageFilter(nextPage.getId().getName(), prevFilter.getSessionAlias(),
+		return new CassandraStoredMessageFilter(nextPage.getId().getBookId().getName(), nextPage.getId().getName(), prevFilter.getSessionAlias(),
 				prevFilter.getDirection(), leftBoundFilter, rightBoundFilter, prevFilter.getSequence(), updatedLimit);
 	}
 }

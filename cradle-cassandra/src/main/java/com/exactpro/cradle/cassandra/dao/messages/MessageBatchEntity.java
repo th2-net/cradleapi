@@ -47,10 +47,13 @@ import java.util.zip.DataFormatException;
  * Contains all data about {@link MessageBatch} to store in Cassandra
  */
 @Entity
+@CqlName(MessageBatchEntity.TABLE_NAME)
 public class MessageBatchEntity extends CradleEntity
 {
+	public static final String TABLE_NAME = "messages";
 	private static final Logger logger = LoggerFactory.getLogger(MessageBatchEntity.class);
 
+	public static final String FIELD_BOOK = "book";
 	public static final String FIELD_PAGE = "page";
 	public static final String FIELD_SESSION_ALIAS = "session_alias";
 	public static final String FIELD_DIRECTION = "direction";
@@ -64,27 +67,31 @@ public class MessageBatchEntity extends CradleEntity
 	public static final String  FIELD_REC_DATE = "rec_date";
 
 
-	@PartitionKey(0)
+	@PartitionKey(1)
+	@CqlName(FIELD_BOOK)
+	private String book;
+
+	@PartitionKey(2)
 	@CqlName(FIELD_PAGE)
 	private String page;
 
-	@PartitionKey(1)
+	@PartitionKey(3)
 	@CqlName(FIELD_SESSION_ALIAS)
 	private String sessionAlias;
 
-	@PartitionKey(2)
+	@PartitionKey(4)
 	@CqlName(FIELD_DIRECTION)
 	private String direction;
 
-	@ClusteringColumn(0)
+	@ClusteringColumn(1)
 	@CqlName(FIELD_FIRST_MESSAGE_DATE)
 	private LocalDate firstMessageDate;
 
-	@ClusteringColumn(1)
+	@ClusteringColumn(2)
 	@CqlName(FIELD_FIRST_MESSAGE_TIME)
 	private LocalTime firstMessageTime;
 
-	@ClusteringColumn(2)
+	@ClusteringColumn(3)
 	@CqlName(FIELD_SEQUENCE)
 	private long sequence;
 
@@ -123,6 +130,7 @@ public class MessageBatchEntity extends CradleEntity
 			batchContent = CompressionUtils.compressData(batchContent);
 		}
 
+		setBook(pageId.getBookId().getName());
 		setPage(pageId.getName());
 		StoredMessageId id = batch.getId();
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(id.getTimestamp());
@@ -142,6 +150,16 @@ public class MessageBatchEntity extends CradleEntity
 		//TODO: setLabels(batch.getLabels());
 		setContent(ByteBuffer.wrap(batchContent));
 		setSerializedMessageMetadata(serializedEntityData.getSerializedEntityMetadata());
+	}
+
+	public String getBook()
+	{
+		return book;
+	}
+
+	public void setBook(String book)
+	{
+		this.book = book;
 	}
 
 	public String getPage()

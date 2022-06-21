@@ -16,7 +16,6 @@
 
 package com.exactpro.cradle;
 
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -33,8 +32,7 @@ public class BookManager
 	private ScheduledExecutorService executorService;
 	private Long refreshIntervalMillis;
 
-	public BookManager(BookCache bookCache)
-	{
+	public BookManager(BookCache bookCache) {
 		this.bookCache = bookCache;
 	}
 
@@ -73,8 +71,8 @@ public class BookManager
 					try {
 						BookInfo newBookInfo = bookCache.loadBook(oldBookInfo.getId());
 						if (!oldBookInfo.equals(newBookInfo)) {
-							logger.info("Refreshing book {}", oldBookInfo.getId().getName());
-							bookCache.updateCachedBook(oldBookInfo);
+							logger.info("Refreshing book {}", newBookInfo.getId().getName());
+							bookCache.updateCachedBook(newBookInfo);
 						}
 
 					} catch (CradleStorageException e) {

@@ -30,7 +30,6 @@ import com.exactpro.cradle.cassandra.dao.books.*;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
-import com.exactpro.cradle.cassandra.keyspaces.BookKeyspaceCreator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
 import com.exactpro.cradle.cassandra.metrics.DriverMetrics;
 import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
@@ -80,7 +79,7 @@ public class CassandraCradleStorage extends CradleStorage
 	private final CassandraConnection connection;
 	private final CassandraStorageSettings settings;
 	
-	private CradleOperators ops;
+	private BookOperators ops;
 	private QueryExecutor exec;
 	private SelectQueryExecutor selectExecutor;
 	private Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
@@ -190,7 +189,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected Collection<BookListEntry> doListBooks() {
-		return ops.getCradleBookOperator().getAll(readAttrs).all().stream()
+		return ops.getBookOperator().getAll(readAttrs).all().stream()
 				.map(entity -> new BookListEntry(entity.getName(), entity.getSchemaVersion()))
 				.collect(Collectors.toList());
 	}
@@ -199,15 +198,9 @@ public class CassandraCradleStorage extends CradleStorage
 	protected void doAddBook(BookToAdd newBook, BookId bookId) throws IOException
 	{
 		BookEntity bookEntity = new BookEntity(newBook, settings.getSchemaVersion());
-		if (ops.getCradleBookOperator().get(newBook.getName(), readAttrs) != null) {
-			logger.info("Book {} already exists, skipping creation", newBook.getName());
-		} else {
-			createBookKeyspace(bookEntity);
-		}
-
 		try
 		{
-			if (!ops.getCradleBookOperator().write(bookEntity, writeAttrs).wasApplied())
+			if (!ops.getBookOperator().write(bookEntity, writeAttrs).wasApplied())
 				throw new IOException("Query to insert book '"+bookEntity.getName()+"' was not applied. Probably, book already exists");
 		}
 		catch (IOException e)
@@ -218,18 +211,14 @@ public class CassandraCradleStorage extends CradleStorage
 		{
 			throw new IOException("Error while writing info of book '"+bookId+"'", e);
 		}
-		ops.addOperators(bookId, bookEntity.getKeyspaceName());
-
-		ops.getCradleBookStatusOp().deleteBookStatuses(bookId.getName());
 	}
 	
 	@Override
 	protected void doAddPages(BookId bookId, List<PageInfo> pages, PageInfo lastPage)
 			throws CradleStorageException, IOException
 	{
-		BookOperators bookOps = ops.getOperators(bookId);
-		PageOperator pageOp = bookOps.getPageOperator();
-		PageNameOperator pageNameOp = bookOps.getPageNameOperator();
+		PageOperator pageOp = ops.getPageOperator();
+		PageNameOperator pageNameOp = ops.getPageNameOperator();
 		
 		String bookName = bookId.getName();
 		for (PageInfo page : pages)
@@ -270,11 +259,11 @@ public class CassandraCradleStorage extends CradleStorage
 	protected void doRemovePage(PageInfo page) throws CradleStorageException
 	{
 		PageId pageId = page.getId();
-		BookOperators bookOps = ops.getOperators(pageId.getBookId());
-		
-		removeMessages(pageId, bookOps);
-		removeTestEvents(pageId, bookOps);
-		removePage(page, bookOps);
+
+		removeSessionData(pageId);
+		removeTestEventData(pageId);
+		removeEntityStatistics(pageId);
+		removePageData(page);
 	}
 	
 	
@@ -385,13 +374,12 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		PageId pageId = page.getId();
 		BookId bookId = pageId.getBookId();
-		BookOperators bookOps = ops.getOperators(bookId);
 		try
 		{
 			TestEventEntity entity = eventsWorker.createEntity(event, pageId);
 			eventsWorker.storeEntity(entity, bookId).get();
-			eventsWorker.storeScope(event, bookOps).get();
-			eventsWorker.storePageScope(event, pageId, bookOps).get();
+			eventsWorker.storeScope(event, ops).get();
+			eventsWorker.storePageScope(event, pageId, ops).get();
 		}
 		catch (Exception e)
 		{
@@ -404,7 +392,6 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		PageId pageId = page.getId();
 		BookId bookId = pageId.getBookId();
-		BookOperators bookOps = ops.getOperators(bookId);
 		return CompletableFuture.supplyAsync(() -> {
 					try
 					{
@@ -416,8 +403,8 @@ public class CassandraCradleStorage extends CradleStorage
 					}
 				}, composingService)
 				.thenComposeAsync(entity -> eventsWorker.storeEntity(entity, bookId), composingService)
-				.thenComposeAsync((r) -> eventsWorker.storeScope(event, bookOps), composingService)
-				.thenComposeAsync((r) -> eventsWorker.storePageScope(event, pageId, bookOps), composingService)
+				.thenComposeAsync((r) -> eventsWorker.storeScope(event, ops), composingService)
+				.thenComposeAsync((r) -> eventsWorker.storePageScope(event, pageId, ops), composingService)
 				.thenAccept(NOOP);
 	}
 
@@ -585,14 +572,12 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		MappedAsyncPagingIterable<SessionEntity> entities;
 		String queryInfo = String.format("Getting session aliases for book '%s'", bookId);
-		BookOperators bookOps = null;
 		try
 		{
-			bookOps = ops.getOperators(bookId);
 			CompletableFuture<MappedAsyncPagingIterable<SessionEntity>> future =
-					bookOps.getSessionsOperator().get(bookId.getName(), readAttrs);
+					ops.getSessionsOperator().get(bookId.getName(), readAttrs);
 			entities = selectExecutor.executeMappedMultiRowResultQuery(
-					() -> future, bookOps.getSessionEntityConverter()::getEntity, queryInfo).get();
+					() -> future, ops.getSessionEntityConverter()::getEntity, queryInfo).get();
 		}
 		catch (Exception e)
 		{
@@ -604,7 +589,7 @@ public class CassandraCradleStorage extends CradleStorage
 		
 		Collection<String> result = new HashSet<>();
 		PagedIterator<SessionEntity> it = new PagedIterator<>(entities, selectExecutor,
-				bookOps.getSessionEntityConverter()::getEntity, "Fetching next page with session aliases");
+				ops.getSessionEntityConverter()::getEntity, "Fetching next page with session aliases");
 		while (it.hasNext())
 			result.add(it.next().getSessionAlias());
 		return result;
@@ -657,14 +642,12 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		MappedAsyncPagingIterable<ScopeEntity> entities;
 		String queryInfo = String.format("get scopes for book '%s'", bookId);
-		BookOperators bookOps = null;
 		try
 		{
-			bookOps = ops.getOperators(bookId);
 			CompletableFuture<MappedAsyncPagingIterable<ScopeEntity>> future =
-					bookOps.getScopeOperator().get(bookId.getName(), readAttrs);
+					ops.getScopeOperator().get(bookId.getName(), readAttrs);
 			entities = selectExecutor.executeMappedMultiRowResultQuery(() -> future,
-					bookOps.getScopeEntityConverter()::getEntity, queryInfo).get();
+					ops.getScopeEntityConverter()::getEntity, queryInfo).get();
 		}
 		catch (Exception e)
 		{
@@ -676,7 +659,7 @@ public class CassandraCradleStorage extends CradleStorage
 		
 		Collection<String> result = new HashSet<>();
 		PagedIterator<ScopeEntity> it = new PagedIterator<>(entities, selectExecutor,
-				bookOps.getScopeEntityConverter()::getEntity, "Fetching next page of scopes");
+				ops.getScopeEntityConverter()::getEntity, "Fetching next page of scopes");
 		while (it.hasNext())
 			result.add(it.next().getScope());
 		return result;
@@ -696,9 +679,8 @@ public class CassandraCradleStorage extends CradleStorage
 				interval.getEnd().toString());
 
 		logger.info("Getting {}", queryInfo);
-		BookOperators operators = ops.getOperators(bookId);
 		MessageStatisticsIteratorProvider iteratorProvider = new MessageStatisticsIteratorProvider(queryInfo,
-				operators,
+				ops,
 				getBookCache().getBook(bookId),
 				composingService,
 				selectExecutor,
@@ -748,10 +730,9 @@ public class CassandraCradleStorage extends CradleStorage
 
 		logger.info("Getting {}", queryInfo);
 
-		BookOperators operators = ops.getOperators(bookId);
 
 		EntityStatisticsIteratorProvider iteratorProvider = new EntityStatisticsIteratorProvider(queryInfo,
-						operators,
+						ops,
 						refreshBook(bookId.getName()),
 						composingService,
 						selectExecutor,
@@ -898,7 +879,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 		SessionsStatisticsIteratorProvider iteratorProvider = new SessionsStatisticsIteratorProvider(
 				queryInfo,
-				ops.getOperators(bookId),
+				ops,
 				getBookCache().getBook(bookId),
 				composingService,
 				selectExecutor,
@@ -946,8 +927,8 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected PageInfo doUpdatePageComment(BookId bookId, String pageName, String comment) throws CradleStorageException {
-		PageOperator pageOperator = ops.getOperators(bookId).getPageOperator();
-		PageNameOperator pageNameOperator = ops.getOperators(bookId).getPageNameOperator();
+		PageOperator pageOperator = ops.getPageOperator();
+		PageNameOperator pageNameOperator = ops.getPageNameOperator();
 
 		PageNameEntity pageNameEntity = pageNameOperator.get(bookId.getName(), pageName).one();
 		if (pageNameEntity == null)
@@ -976,8 +957,8 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected PageInfo doUpdatePageName(BookId bookId, String oldPageName, String newPageName) throws CradleStorageException {
-		PageOperator pageOperator = ops.getOperators(bookId).getPageOperator();
-		PageNameOperator pageNameOperator = ops.getOperators(bookId).getPageNameOperator();
+		PageOperator pageOperator = ops.getPageOperator();
+		PageNameOperator pageNameOperator = ops.getPageNameOperator();
 
 		PageNameEntity pageNameEntity = pageNameOperator.get(bookId.getName(), oldPageName).one();
 		if (pageNameEntity == null)
@@ -1032,10 +1013,10 @@ public class CassandraCradleStorage extends CradleStorage
 			logger.info("Already connected to Cassandra");
 	}
 	
-	protected CradleOperators createOperators(CqlSession session, CassandraStorageSettings settings)
+	protected BookOperators createOperators(CqlSession session, CassandraStorageSettings settings)
 	{
 		CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(session).build();
-		return new CradleOperators(dataMapper, settings, readAttrs);
+		return new BookOperators(dataMapper, settings);
 	}
 	
 	protected void createStorage() throws CradleStorageException
@@ -1051,23 +1032,7 @@ public class CassandraCradleStorage extends CradleStorage
 			throw new CradleStorageException("Error while creating storage", e);
 		}
 	}
-	
-	protected void createBookKeyspace(BookEntity bookEntity) throws IOException
-	{
-		String name = bookEntity.getName();
-		try
-		{
-			logger.info("Creating storage for book '{}'", name);
-//			new BookKeyspaceCreator(bookEntity.getKeyspaceName(), exec, settings).createAll();
-			new BookKeyspaceCreator(bookEntity, exec, settings, ops.getCradleBookStatusOp()).createAll();
-			logger.info("Storage creation for book '{}' finished", name);
-		}
-		catch (Exception e)
-		{
-			throw new IOException("Error while creating storage for book '"+name+"'", e);
-		}
-	}
-	
+
 	protected CassandraStorageSettings getSettings()
 	{
 		return settings;
@@ -1114,40 +1079,73 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 	}
 	
-	protected void removeMessages(PageId pageId, BookOperators bookOps)
-	{
-		PageSessionsOperator pageSessionsOp = bookOps.getPageSessionsOperator();
-		MessageBatchOperator messageOp = bookOps.getMessageBatchOperator();
-		String pageName = pageId.getName();
-		
-		PagingIterable<PageSessionEntity> rs = pageSessionsOp.get(pageName, readAttrs);
-		for (PageSessionEntity session : rs)
-			messageOp.remove(session.getPage(), session.getSessionAlias(), session.getDirection(), writeAttrs);
-		pageSessionsOp.remove(pageName, writeAttrs);
+	protected void removeSessionData(PageId pageId) {
+		String book = pageId.getBookId().getName();
+		String page	= pageId.getName();
+
+		PageSessionsOperator pageSessionsOp = ops.getPageSessionsOperator();
+		MessageBatchOperator messageOp = ops.getMessageBatchOperator();
+		MessageStatisticsOperator messageStatisticsOp = ops.getMessageStatisticsOperator();
+		SessionStatisticsOperator sessionStatisticsOp = ops.getSessionStatisticsOperator();
+		SessionsOperator sessionsOp = ops.getSessionsOperator();
+
+		PagingIterable<PageSessionEntity> rs = pageSessionsOp.get(book, page, readAttrs);
+		for (PageSessionEntity session : rs) {
+			messageOp.remove(book, session.getPage(), session.getSessionAlias(), session.getDirection(), writeAttrs);
+			sessionsOp.remove(book, session.getSessionAlias(), writeAttrs);
+
+			// remove statistics associated with session
+			for (FrameType ft : FrameType.values()) {
+
+				messageStatisticsOp.remove(book, page, session.getSessionAlias(),
+						session.getDirection(), ft.getValue(), writeAttrs);
+
+				sessionStatisticsOp.remove(book, page, SessionRecordType.SESSION.getValue(), ft.getValue(),
+						writeAttrs);
+			}
+		}
+
+		pageSessionsOp.remove(book, page, writeAttrs);
 	}
 	
-	protected void removeTestEvents(PageId pageId, BookOperators bookOps)
-	{
-		PageScopesOperator pageScopesOp = bookOps.getPageScopesOperator();
-		TestEventOperator eventOp = bookOps.getTestEventOperator();
-		String pageName = pageId.getName();
-		
-		PagingIterable<PageScopeEntity> rs = pageScopesOp.get(pageName, readAttrs);
+	protected void removeTestEventData(PageId pageId) {
+		String book = pageId.getBookId().getName();
+		String page = pageId.getName();
+
+		PageScopesOperator pageScopesOp = ops.getPageScopesOperator();
+		TestEventOperator eventOp = ops.getTestEventOperator();
+
+		PagingIterable<PageScopeEntity> rs = pageScopesOp.get(book, page, readAttrs);
 		for (PageScopeEntity scope : rs)
-			eventOp.remove(scope.getPage(), scope.getScope(), writeAttrs);
-		pageScopesOp.remove(pageName, writeAttrs);
+			eventOp.remove(book, page, scope.getScope(), writeAttrs);
+
+		pageScopesOp.remove(book, page, writeAttrs);
 	}
 	
-	protected void removePage(PageInfo pageInfo, BookOperators bookOps)
-	{
+	protected void removePageData(PageInfo pageInfo) {
+
 		String book = pageInfo.getId().getBookId().getName();
-		bookOps.getPageNameOperator().remove(book, pageInfo.getId().getName(), writeAttrs);
-		
+		String page = pageInfo.getId().getName();
+
+		// remove sessions
+		ops.getPageSessionsOperator().remove(book, page, writeAttrs);
+
+		//remove page name
+		ops.getPageNameOperator().remove(book, page, writeAttrs);
+
+		//remove page
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(pageInfo.getStarted());
-		bookOps.getPageOperator().remove(book, 
+		ops.getPageOperator().remove(book,
 				ldt.toLocalDate(), 
 				ldt.toLocalTime(), 
 				Instant.now(), 
 				writeAttrs);
+	}
+
+	private void removeEntityStatistics(PageId pageId) {
+		String book = pageId.getBookId().getName();
+		for (FrameType ft : FrameType.values())
+			ops.getEntityStatisticsOperator().remove(book, pageId.getName(), EntityType.MESSAGE.getValue(),
+					ft.getValue(), writeAttrs);
 	}
 }

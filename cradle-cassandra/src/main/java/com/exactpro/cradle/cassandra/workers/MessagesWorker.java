@@ -134,7 +134,7 @@ public class MessagesWorker extends Worker
 	{
 		MessageBatchesIteratorProvider provider =
 				new MessageBatchesIteratorProvider("get messages batches filtered by " + filter, filter,
-						getBookOps(book.getId()), book, composingService, selectQueryExecutor,
+						getOperators(), book, composingService, selectQueryExecutor,
 						composeReadAttrs(filter.getFetchParameters()));
 		return provider.nextIterator()
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, provider), composingService);
@@ -146,7 +146,7 @@ public class MessagesWorker extends Worker
 	{
 		GroupedMessageIteratorProvider provider =
 				new GroupedMessageIteratorProvider("get messages batches filtered by " + filter, filter,
-						getBookOps(book.getId()), book, composingService, selectQueryExecutor,
+						getOperators(), book, composingService, selectQueryExecutor,
 						composeReadAttrs(filter.getFetchParameters()));
 		return provider.nextIterator()
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, provider), composingService);
@@ -157,7 +157,7 @@ public class MessagesWorker extends Worker
 	{
 		MessagesIteratorProvider provider =
 				new MessagesIteratorProvider("get messages filtered by " + filter, filter,
-						ops.getOperators(book.getId()), book, composingService, selectQueryExecutor,
+						getOperators(), book, composingService, selectQueryExecutor,
 						composeReadAttrs(filter.getFetchParameters()));
 		return provider.nextIterator()
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, provider), composingService);
@@ -174,7 +174,7 @@ public class MessagesWorker extends Worker
 		String queryInfo = format("get nearest time and sequence before %s for page '%s'",
 				TimeUtils.toInstant(messageDate, messageTime), page.getId().getName());
 		return selectQueryExecutor.executeSingleRowResultQuery(
-						() -> mbOperator.getNearestTimeAndSequenceBefore(page.getId().getName(), sessionAlias,
+						() -> mbOperator.getNearestTimeAndSequenceBefore(page.getId().getBookId().getName(), page.getId().getName(), sessionAlias,
 								direction, messageDate, messageTime, sequence, readAttrs), Function.identity(), queryInfo)
 				.thenComposeAsync(row ->
 				{
@@ -202,7 +202,7 @@ public class MessagesWorker extends Worker
 		}
 
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(id.getTimestamp());
-		BookOperators bookOps = getBookOps(bookId);
+		BookOperators bookOps = getOperators();
 		MessageBatchEntityConverter mbEntityConverter = bookOps.getMessageBatchEntityConverter();
 		MessageBatchOperator mbOperator = bookOps.getMessageBatchOperator();
 
@@ -216,7 +216,7 @@ public class MessagesWorker extends Worker
 						return CompletableFuture.completedFuture(null);
 					}
 					return selectQueryExecutor.executeSingleRowResultQuery(
-									() -> mbOperator.get(pageId.getName(), id.getSessionAlias(),
+									() -> mbOperator.get(pageId.getBookId().getName(), pageId.getName(), id.getSessionAlias(),
 											id.getDirection().getLabel(), ldt.toLocalDate(),
 											row.getLocalTime(FIELD_FIRST_MESSAGE_TIME), row.getLong(FIELD_SEQUENCE), readAttrs),
 									mbEntityConverter::getEntity,
@@ -265,7 +265,7 @@ public class MessagesWorker extends Worker
 	public CompletableFuture<PageSessionEntity> storePageSession(MessageBatchToStore batch, PageId pageId)
 	{
 		StoredMessageId batchId = batch.getId();
-		BookOperators bookOps = getBookOps(pageId.getBookId());
+		BookOperators bookOps = getOperators();
 		CachedPageSession cachedPageSession = new CachedPageSession(pageId.toString(),
 				batchId.getSessionAlias(), batchId.getDirection().getLabel());
 		if (!bookOps.getPageSessionsCache().store(cachedPageSession))
@@ -283,7 +283,7 @@ public class MessagesWorker extends Worker
 	{
 		StoredMessageId batchId = batch.getId();
 		BookId bookId = batchId.getBookId();
-		BookOperators bookOps = getBookOps(bookId);
+		BookOperators bookOps = getOperators();
 		CachedSession cachedSession = new CachedSession(bookId.toString(), batch.getSessionAlias());
 		if (!bookOps.getSessionsCache().store(cachedSession))
 		{
@@ -297,7 +297,7 @@ public class MessagesWorker extends Worker
 
 	public CompletableFuture<Void> storeMessageBatch(MessageBatchEntity entity, BookId bookId)
 	{
-		BookOperators bookOps = getBookOps(bookId);
+		BookOperators bookOps = getOperators();
 		MessageBatchOperator mbOperator = bookOps.getMessageBatchOperator();
 		List<SerializedEntityMetadata> meta = entity.getSerializedMessageMetadata();
 
@@ -309,7 +309,7 @@ public class MessagesWorker extends Worker
 
 	public CompletableFuture<GroupedMessageBatchEntity> storeGroupedMessageBatch(GroupedMessageBatchEntity entity, BookId bookId)
 	{
-		BookOperators bookOps = getBookOps(bookId);
+		BookOperators bookOps = getOperators();
 		GroupedMessageBatchOperator gmbOperator = bookOps.getGroupedMessageBatchOperator();
 		List<SerializedEntityMetadata> meta = entity.getSerializedMessageMetadata();
 
@@ -323,20 +323,21 @@ public class MessagesWorker extends Worker
 	public long getBoundarySequence(String sessionAlias, Direction direction, BookInfo book, boolean first)
 			throws CradleStorageException
 	{
-		MessageBatchOperator mbOp = getBookOps(book.getId()).getMessageBatchOperator();
+		MessageBatchOperator mbOp = getOperators().getMessageBatchOperator();
 		PageInfo currentPage = first ? book.getFirstPage() : book.getLastPage();
 		Row row = null;
 
 		while (row == null && currentPage != null)
 		{
 			String page = currentPage.getId().getName();
-			String queryInfo = format("get %s sequence for page '%s', session alias '%s', " +
-					"direction '%s'", first ? "first" : "last", page, sessionAlias, direction);
+			String bookName = book.getId().getName();
+			String queryInfo = format("get %s sequence for book '%s' page '%s', session alias '%s', " +
+					"direction '%s'", (first ? "first" : "last"), bookName, page, sessionAlias, direction);
 			try
 			{
 				row = selectQueryExecutor.executeSingleRowResultQuery(
-						() -> first ? mbOp.getFirstSequence(page, sessionAlias, direction.getLabel(), readAttrs)
-								: mbOp.getLastSequence(page, sessionAlias, direction.getLabel(), readAttrs),
+						() -> first ? mbOp.getFirstSequence(bookName, page, sessionAlias, direction.getLabel(), readAttrs)
+								: mbOp.getLastSequence(bookName, page, sessionAlias, direction.getLabel(), readAttrs),
 						Function.identity(), queryInfo).get();
 			}
 			catch (InterruptedException | ExecutionException e)

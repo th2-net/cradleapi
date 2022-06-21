@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,47 +23,42 @@ import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 
 @Entity
-public class ScopeEntity
-{
-	public static final String FIELD_PART = "part",
-			FIELD_SCOPE = "scope";
+@CqlName(ScopeEntity.TABLE_NAME)
+public class ScopeEntity {
+	public static final String TABLE_NAME = "scopes";
+
+	public static final String FIELD_BOOK = "book";
+	public static final String FIELD_SCOPE = "scope";
+
 	@PartitionKey(0)
-	@CqlName(FIELD_PART)
-	private String part;
+	@CqlName(FIELD_BOOK)
+	private String book;
 	
 	@ClusteringColumn(0)
 	@CqlName(FIELD_SCOPE)
 	private String scope;
 	
-	public ScopeEntity()
-	{
+	public ScopeEntity() {
 	}
 	
-	public ScopeEntity(String part, String scope)
-	{
-		this.part = part;
+	public ScopeEntity(String book, String scope) {
+		this.book = book;
 		this.scope = scope;
 	}
 	
-	
-	public String getPart()
-	{
-		return part;
+	public String getBook() {
+		return book;
 	}
 	
-	public void setPart(String part)
-	{
-		this.part = part;
+	public void setBook(String book) {
+		this.book = book;
 	}
-	
-	
-	public String getScope()
-	{
+
+	public String getScope() {
 		return scope;
 	}
 	
-	public void setScope(String scope)
-	{
+	public void setScope(String scope) {
 		this.scope = scope;
 	}
 }

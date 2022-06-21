@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
-import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
+import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspaceStart;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
@@ -33,8 +33,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-public abstract class KeyspaceCreator
-{
+public abstract class KeyspaceCreator {
 	private static final Logger logger = LoggerFactory.getLogger(KeyspaceCreator.class);
 	
 	public static final long KEYSPACE_WAIT_TIMEOUT = 500;
@@ -46,8 +45,7 @@ public abstract class KeyspaceCreator
 
 	private KeyspaceMetadata keyspaceMetadata;
 	
-	public KeyspaceCreator(String keyspace, QueryExecutor queryExecutor, CassandraStorageSettings settings)
-	{
+	public KeyspaceCreator(String keyspace, QueryExecutor queryExecutor, CassandraStorageSettings settings) {
 		this.keyspace = keyspace;
 		this.queryExecutor = queryExecutor;
 		this.settings = settings;
@@ -57,8 +55,7 @@ public abstract class KeyspaceCreator
 	protected abstract void createTables() throws IOException;
 	
 	
-	public void createAll() throws IOException, CradleStorageException
-	{
+	public void createAll() throws IOException, CradleStorageException {
 		createKeyspace();
 		createTables();
 	}
@@ -68,117 +65,119 @@ public abstract class KeyspaceCreator
 	{
 		return keyspace;
 	}
-	
+
+
 	public QueryExecutor getQueryExecutor()
 	{
 		return queryExecutor;
 	}
-	
+
+
 	public CassandraStorageSettings getSettings()
 	{
 		return settings;
 	}
 	
 	
-	public void createKeyspace() throws IOException, CradleStorageException
-	{
+	public void createKeyspace() throws IOException, CradleStorageException {
+
 		Optional<KeyspaceMetadata> meta = obtainKeyspaceMetadata();
 		if (meta.isPresent()) {
 			logger.info("Keyspace \"{}\" already exists, skipping keyspace creation", keyspace);
 			return;
 		}
 
-		logger.info("Creating keyspace '{}'", keyspace);
-		CreateKeyspace createKs = settings.getNetworkTopologyStrategy() != null
-				? SchemaBuilder.createKeyspace(keyspace).ifNotExists()
-				.withNetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap())
-				: SchemaBuilder.createKeyspace(keyspace).withSimpleStrategy(settings.getKeyspaceReplicationFactor());
-		queryExecutor.executeQuery(createKs.asCql(), true);
-		logger.info("Keyspace '{}' has been created", keyspace);
+		logger.info("Creating keyspace \"{}\"", keyspace);
+		CreateKeyspaceStart createKeyspace = SchemaBuilder.createKeyspace(keyspace).ifNotExists();
+
+		String cql;
+		if (settings.getNetworkTopologyStrategy() != null) {
+			cql = createKeyspace.withNetworkTopologyStrategy(settings.getNetworkTopologyStrategy().asMap()).asCql();
+		} else {
+			cql = createKeyspace.withSimpleStrategy(settings.getKeyspaceReplicationFactor()).asCql();
+		}
+		queryExecutor.executeWrite(cql);
+		logger.info("Keyspace \"{}\" has been created", keyspace);
 		
-		awaitKeyspaceReady();
+		awaitKeyspaceReadiness();
 	}
-	
-	private void awaitKeyspaceReady() throws CradleStorageException
-	{
-		int attempt = 0;
+
+
+	private void awaitKeyspaceReadiness() throws CradleStorageException	{
 		long timeRemaining = keyspaceReadinessTimeout;
 
-		while(getKeyspaceMetadata() == null && timeRemaining > 0)
-		{
-			attempt++;
-			logger.debug("[{}] attempt to wait {}ms for the readiness of the keyspace", attempt, KEYSPACE_WAIT_TIMEOUT);
-			try
-			{
+		while (getKeyspaceMetadata() == null && timeRemaining > 0) {
+			logger.debug("[{}] waiting {}ms for keyspace to be ready", timeRemaining, KEYSPACE_WAIT_TIMEOUT);
+			try	{
 				TimeUnit.MILLISECONDS.sleep(Math.min(KEYSPACE_WAIT_TIMEOUT, timeRemaining));
 				timeRemaining -= KEYSPACE_WAIT_TIMEOUT;
-			}
-			catch (InterruptedException e)
-			{
+			} catch (InterruptedException e) {
 				throw new CradleStorageException(
-						"Waiting for keyspace '" + keyspace + "' readiness has been interrupted", e);
+						String.format("Interrupted while waiting for keyspace \"%s\" readiness", keyspace), e);
 			}
 		}
 		
 		if (getKeyspaceMetadata() == null)
 			throw new CradleStorageException(
-					"Keyspace '" + keyspace + "' unavailable after " + keyspaceReadinessTimeout + "ms of awaiting");
+					String.format("Keyspace \"%s\" still not available after %d ms", keyspace, keyspaceReadinessTimeout));
 	}
+
 	
-	protected boolean isTableExists(String tableName)
-	{
+	protected boolean isTableExists(String tableName) {
 		return getKeyspaceMetadata().getTable(tableName).isPresent();
 	}
-	
-	protected boolean isIndexExists(String indexName, String tableName)
-	{
+
+
+	protected boolean isIndexExists(String indexName, String tableName) {
 		Optional<TableMetadata> tableMetadata = getKeyspaceMetadata().getTable(tableName);
 		return tableMetadata.isPresent() && tableMetadata.get().getIndexes().containsKey(CqlIdentifier.fromCql(indexName));
 	}
-	
-	protected KeyspaceMetadata getKeyspaceMetadata()
-	{
+
+
+	protected KeyspaceMetadata getKeyspaceMetadata() {
 		if (keyspaceMetadata != null)
 			return keyspaceMetadata;
 		
 		obtainKeyspaceMetadata().ifPresent(value -> keyspaceMetadata = value);
 		return keyspaceMetadata;
 	}
+
 	
-	private Optional<KeyspaceMetadata> obtainKeyspaceMetadata()
-	{
+	private Optional<KeyspaceMetadata> obtainKeyspaceMetadata()	{
 		return queryExecutor.getSession().getMetadata().getKeyspace(keyspace);
 	}
+
 	
-	protected boolean isColumnExists(String tableName, String columnName)
-	{
+	protected boolean isColumnExists(String tableName, String columnName) {
 		return getKeyspaceMetadata().getTable(tableName).get().getColumn(columnName).isPresent();
 	}
-	
-	protected void createTable(String tableName, Supplier<CreateTable> query) throws IOException
-	{
-		if (isTableExists(tableName))
-		{
-			logger.info("Table '{}' already exists", tableName);
+
+
+	protected void createTable(String tableName, Supplier<CreateTable> query) throws IOException {
+		if (isTableExists(tableName)) {
+			logger.info("Table \"{}\" already exists, skipping creation", tableName);
 			return;
 		}
 		
-		logger.info("Creating table '{}'", tableName);
-		queryExecutor.executeQuery(query.get().asCql(), true);
-		logger.info("Table '{}' has been created", tableName);
+		logger.info("Creating table \"{}\"", tableName);
+		queryExecutor.executeWrite(query.get().asCql());
+		logger.info("Table \"{}\" has been created", tableName);
 	}
-	
-	protected void createIndex(String indexName, String tableName, String columnName) throws IOException
-	{
-		if (isIndexExists(indexName, tableName))
-		{
-			logger.info("Index '{}' already exists", indexName);
+
+
+	protected void createIndex(String indexName, String tableName, String columnName) throws IOException {
+		if (isIndexExists(indexName, tableName)) {
+			logger.info("Index \"{}\" already exists, skipping creation", indexName);
 			return;
 		}
 		
-		logger.info("Creating index '{}' for {}.{}", indexName, tableName, columnName);
-		queryExecutor.executeQuery(SchemaBuilder.createIndex(indexName)
-				.onTable(keyspace, tableName).andColumn(columnName).asCql(), true);
-		logger.info("Index '{}' for {}.{} has been created", indexName, tableName, columnName);
+		logger.info("Creating index \"{}\" on table \"{}\".\"{}\"", indexName, tableName, columnName);
+		String query = SchemaBuilder
+				.createIndex(indexName)
+				.onTable(keyspace, tableName)
+				.andColumn(columnName)
+				.asCql();
+		queryExecutor.executeWrite(query);
+		logger.info("Index \"{}\" has been created", indexName);
 	}
 }

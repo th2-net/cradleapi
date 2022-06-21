@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,46 +22,41 @@ import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 
 @Entity
-public class SessionEntity
-{
-	public static final String FIELD_PART = "part";
+@CqlName(SessionEntity.TABLE_NAME)
+public class SessionEntity {
+	public static final String TABLE_NAME = "sessions";
+
+	public static final String FIELD_BOOK = "book";
 	public static final String FIELD_SESSION_ALIAS = "session_alias";
 	@PartitionKey(0)
-	@CqlName(FIELD_PART)
-	private String part;
+	@CqlName(FIELD_BOOK)
+	private String book;
 
 	@ClusteringColumn(0)
 	@CqlName(FIELD_SESSION_ALIAS)
 	private String sessionAlias;
 
-	public SessionEntity()
-	{
+	public SessionEntity() {
 	}
 
-	public SessionEntity(String part, String sessionAlias)
-	{
-		this.part = part;
+	public SessionEntity(String book, String sessionAlias) {
+		this.book = book;
 		this.sessionAlias = sessionAlias;
 	}
 	
-	public String getPart()
-	{
-		return part;
+	public String getBook()	{
+		return book;
 	}
 	
-	public void setPart(String part)
-	{
-		this.part = part;
+	public void setBook(String book) {
+		this.book = book;
 	}
-	
-	
-	public String getSessionAlias()
-	{
+
+	public String getSessionAlias()	{
 		return sessionAlias;
 	}
 
-	public void setSessionAlias(String sessionAlias)
-	{
+	public void setSessionAlias(String sessionAlias) {
 		this.sessionAlias = sessionAlias;
 	}
 }

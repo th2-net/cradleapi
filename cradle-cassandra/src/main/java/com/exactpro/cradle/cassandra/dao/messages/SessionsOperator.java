@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.exactpro.cradle.cassandra.dao.messages;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
+import com.datastax.oss.driver.api.mapper.annotations.Delete;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Select;
 
@@ -26,13 +27,15 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 @Dao
-public interface SessionsOperator
-{
+public interface SessionsOperator {
 	@Select
-	CompletableFuture<MappedAsyncPagingIterable<SessionEntity>> get(String part,
+	CompletableFuture<MappedAsyncPagingIterable<SessionEntity>> get(String book,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Insert
 	CompletableFuture<SessionEntity> write(SessionEntity entity,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+	@Delete(entityClass=SessionEntity.class)
+	void remove(String book, String sessionAlias, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

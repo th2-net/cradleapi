@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,123 +32,89 @@ import java.util.Collection;
  * Contains information about book as stored in "cradle" keyspace
  */
 @Entity
-public class BookEntity
-{
-	public static final String BOOK_NAME_PREFIX = "book_";
-	public static final String FIELD_NAME = "name";
-	public static final String FIELD_FULLNAME = "fullname";
-	public static final String FIELD_KEYSPACE_NAME = "keyspace_name";
-	public static final String FIELD_DESCRIPTION = "description";
-	public static final String FIELD_CREATED = "created";
-	public static final String FIELD_SCHEMA_VERSION = "schema_version";
+@CqlName(BookEntity.TABLE_NAME)
+public class BookEntity {
+	public static final String TABLE_NAME = "books";
 
-	@PartitionKey(0)
-	@CqlName(FIELD_NAME)
-	private String name;
-	
-	@CqlName(FIELD_FULLNAME)
-	private String fullName;
-	
-	@CqlName(FIELD_KEYSPACE_NAME)
-	private String keyspaceName;
-	
-	@CqlName(FIELD_DESCRIPTION)
-	private String desc;
-	
-	@CqlName(FIELD_CREATED)
-	private Instant created;
+    public static final String FIELD_NAME = "name";
+    public static final String FIELD_FULLNAME = "fullname";
+    public static final String FIELD_DESCRIPTION = "description";
+    public static final String FIELD_CREATED = "created";
+    public static final String FIELD_SCHEMA_VERSION = "schema_version";
 
-	@CqlName(FIELD_SCHEMA_VERSION)
-	private String schemaVersion;
+    @PartitionKey(0)
+    @CqlName(FIELD_NAME)
+    private String name;
 
-	public BookEntity()
-	{
-	}
-	
-	public BookEntity(BookToAdd book, String schemaVersion)
-	{
-		this.name = book.getName();
-		this.fullName = book.getFullName();
-		this.keyspaceName = toKeyspaceName(name);
-		this.desc = book.getDesc();
-		this.created = book.getCreated();
-		this.schemaVersion = schemaVersion;
-	}
-	
-	
-	public String getName()
-	{
-		return name;
-	}
-	
-	public void setName(String name)
-	{
-		this.name = name;
-	}
-	
-	
-	public String getFullName()
-	{
-		return fullName;
-	}
-	
-	public void setFullName(String fullName)
-	{
-		this.fullName = fullName;
-	}
-	
-	
-	public String getKeyspaceName()
-	{
-		return keyspaceName;
-	}
-	
-	public void setKeyspaceName(String keyspaceName)
-	{
-		this.keyspaceName = keyspaceName;
-	}
-	
-	
-	public String getDesc()
-	{
-		return desc;
-	}
-	
-	public void setDesc(String desc)
-	{
-		this.desc = desc;
-	}
-	
-	
-	public Instant getCreated()
-	{
-		return created;
-	}
-	
-	public void setCreated(Instant created)
-	{
-		this.created = created;
-	}
+    @CqlName(FIELD_FULLNAME)
+    private String fullName;
+
+    @CqlName(FIELD_DESCRIPTION)
+    private String desc;
+
+    @CqlName(FIELD_CREATED)
+    private Instant created;
+
+    @CqlName(FIELD_SCHEMA_VERSION)
+    private String schemaVersion;
+
+    public BookEntity() {
+    }
+
+    public BookEntity(BookToAdd book, String schemaVersion) {
+        this.name = book.getName();
+        this.fullName = book.getFullName();
+        this.desc = book.getDesc();
+        this.created = book.getCreated();
+        this.schemaVersion = schemaVersion;
+    }
 
 
-	public String getSchemaVersion() {
-		return schemaVersion;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public void setSchemaVersion(String schemaVersion) {
-		this.schemaVersion = schemaVersion;
-	}
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
+    public String getDesc() {
+        return desc;
+    }
+
+    public void setDesc(String desc) {
+        this.desc = desc;
+    }
 
 
-	public BookInfo toBookInfo(Collection<PageInfo> pages) throws CradleStorageException
-	{
-		return new BookInfo(new BookId(name), fullName, desc, created, pages);
-	}
-	
-	private String toKeyspaceName(String name)
-	{
-		// Usually, book name is already checked in addBook() method in CradleStorage and has no invalid characters.
-		// It's enough to convert name to lower case and add prefix.
-		return BOOK_NAME_PREFIX.concat(name.toLowerCase());
-	}
+    public Instant getCreated() {
+        return created;
+    }
+
+    public void setCreated(Instant created) {
+        this.created = created;
+    }
+
+
+    public String getSchemaVersion() {
+        return schemaVersion;
+    }
+
+    public void setSchemaVersion(String schemaVersion) {
+        this.schemaVersion = schemaVersion;
+    }
+
+
+    public BookInfo toBookInfo(Collection<PageInfo> pages) throws CradleStorageException {
+        return new BookInfo(new BookId(name), fullName, desc, created, pages);
+    }
+
 }

@@ -8,14 +8,18 @@ import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import java.time.Instant;
 
 @Entity
+@CqlName(SessionStatisticsEntity.TABLE_NAME)
 public class SessionStatisticsEntity {
+    public static final String TABLE_NAME = "session_statistics";
 
+    public static final String FIELD_BOOK = "book";
     public static final String FIELD_PAGE = "page";
     public static final String FIELD_RECORD_TYPE = "record_type";
     public static final String FIELD_FRAME_TYPE = "frame_type";
     public static final String FIELD_FRAME_START = "frame_start";
     public static final String FIELD_SESSION = "session";
 
+    private String book;
     private String page;
     private Byte recordType;
     private Byte frameType;
@@ -25,7 +29,8 @@ public class SessionStatisticsEntity {
     public SessionStatisticsEntity() {
     }
 
-    public SessionStatisticsEntity(String page, Byte recordType, Byte frameType, Instant frameStart, String session) {
+    public SessionStatisticsEntity(String book, String page, Byte recordType, Byte frameType, Instant frameStart, String session) {
+        this.book = book;
         this.page = page;
         this.recordType = recordType;
         this.frameType = frameType;
@@ -34,6 +39,16 @@ public class SessionStatisticsEntity {
     }
 
     @PartitionKey(1)
+    @CqlName(FIELD_BOOK)
+    public String getBook() {
+        return book;
+    }
+
+    public void setBook(String book) {
+        this.book = book;
+    }
+
+    @PartitionKey(2)
     @CqlName(FIELD_PAGE)
     public String getPage() {
         return page;
@@ -43,7 +58,7 @@ public class SessionStatisticsEntity {
         this.page = page;
     }
 
-    @PartitionKey(2)
+    @PartitionKey(3)
     @CqlName(FIELD_RECORD_TYPE)
     public Byte getRecordType() {
         return recordType;
@@ -53,7 +68,7 @@ public class SessionStatisticsEntity {
         this.recordType = recordType;
     }
 
-    @PartitionKey(3)
+    @PartitionKey(4)
     @CqlName(FIELD_FRAME_TYPE)
     public Byte getFrameType() {
         return frameType;

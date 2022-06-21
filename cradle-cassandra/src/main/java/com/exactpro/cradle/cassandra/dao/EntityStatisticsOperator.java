@@ -24,19 +24,19 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.dao.EntityStatisticsEntity.*;
-import static com.exactpro.cradle.cassandra.dao.MessageStatisticsEntity.FIELD_ENTITY_COUNT;
-import static com.exactpro.cradle.cassandra.dao.MessageStatisticsEntity.FIELD_ENTITY_SIZE;
 
 @Dao
 public interface EntityStatisticsOperator {
 
     @Query("SELECT * FROM ${qualifiedTableId}  WHERE " +
+            FIELD_BOOK + "=:book AND " +
             FIELD_PAGE + "=:page AND " +
             FIELD_ENTITY_TYPE + "=:entityType AND " +
             FIELD_FRAME_TYPE + "=:frameType AND " +
             FIELD_FRAME_START + ">=:frameStart AND " +
             FIELD_FRAME_START + "<:frameEnd")
     CompletableFuture<MappedAsyncPagingIterable<EntityStatisticsEntity>> getStatistics (
+            String book,
             String page,
             Byte entityType,
             Byte frameType,
@@ -47,6 +47,7 @@ public interface EntityStatisticsOperator {
 
     @Increment(entityClass = EntityStatisticsEntity.class)
     CompletableFuture<Void> update(
+            String book,
             String page,
             Byte entityType,
             Byte frameType,
@@ -56,4 +57,7 @@ public interface EntityStatisticsOperator {
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes
     );
 
+    @Delete(entityClass = EntityStatisticsEntity.class)
+    void remove(String book, String page, Byte entityType, Byte frameType,
+                Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

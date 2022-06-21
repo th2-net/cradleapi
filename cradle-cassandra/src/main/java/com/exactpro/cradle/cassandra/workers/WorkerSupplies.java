@@ -19,69 +19,60 @@ package com.exactpro.cradle.cassandra.workers;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookCache;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
-import com.exactpro.cradle.cassandra.dao.CradleOperators;
+import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
-public class WorkerSupplies
-{
-	private final CassandraStorageSettings settings;
-	private final CradleOperators ops;
-	private final ExecutorService composingService;
+public class WorkerSupplies {
+    private final CassandraStorageSettings settings;
+    private final BookOperators operators;
+    private final ExecutorService composingService;
 	private final BookCache bookCache;
-	private final SelectQueryExecutor selectExecutor;
-	private final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs;
-	private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
-	
-	public WorkerSupplies(CassandraStorageSettings settings, CradleOperators ops,
-			ExecutorService composingService, BookCache BookCache,
-			SelectQueryExecutor selectExecutor,
-			Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
-			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
-	{
-		this.settings = settings;
-		this.ops = ops;
-		this.composingService = composingService;
+    private final SelectQueryExecutor selectExecutor;
+    private final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs;
+    private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
+
+    public WorkerSupplies(CassandraStorageSettings settings, BookOperators operators,
+                          ExecutorService composingService, BookCache BookCache,
+                          SelectQueryExecutor selectExecutor,
+                          Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
+                          Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) {
+        this.settings = settings;
+        this.operators = operators;
+        this.composingService = composingService;
 		this.bookCache = BookCache;
-		this.selectExecutor = selectExecutor;
-		this.writeAttrs = writeAttrs;
-		this.readAttrs = readAttrs;
-	}
+        this.selectExecutor = selectExecutor;
+        this.writeAttrs = writeAttrs;
+        this.readAttrs = readAttrs;
+    }
 
-	public CassandraStorageSettings getSettings()
-	{
-		return settings;
-	}
+    public CassandraStorageSettings getSettings() {
+        return settings;
+    }
 
-	public CradleOperators getOps()
-	{
-		return ops;
-	}
+    public BookOperators getOperators() {
+        return operators;
+    }
 
-	public ExecutorService getComposingService()
-	{
-		return composingService;
-	}
+    public ExecutorService getComposingService() {
+        return composingService;
+    }
 
-	public BookCache getBookCache()
-	{
+	public BookCache getBookCache()	{
 		return bookCache;
 	}
 
-	public SelectQueryExecutor getSelectExecutor()
-	{
-		return selectExecutor;
-	}
+    public SelectQueryExecutor getSelectExecutor() {
+        return selectExecutor;
+    }
 
-	public Function<BoundStatementBuilder, BoundStatementBuilder> getWriteAttrs()
-	{
-		return writeAttrs;
-	}
+    public Function<BoundStatementBuilder, BoundStatementBuilder> getWriteAttrs() {
+        return writeAttrs;
+    }
 
-	public Function<BoundStatementBuilder, BoundStatementBuilder> getReadAttrs()
-	{
-		return readAttrs;
-	}
+    public Function<BoundStatementBuilder, BoundStatementBuilder> getReadAttrs() {
+        return readAttrs;
+    }
 }

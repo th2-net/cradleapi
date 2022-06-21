@@ -20,6 +20,7 @@ import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
+import com.datastax.oss.driver.api.mapper.annotations.Delete;
 import com.datastax.oss.driver.api.mapper.annotations.QueryProvider;
 import com.exactpro.cradle.cassandra.dao.CommonQueryProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
@@ -28,8 +29,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 @Dao
-public interface GroupedMessageBatchOperator
-{
+public interface GroupedMessageBatchOperator {
 	@QueryProvider(providerClass = CommonQueryProvider.class, entityHelpers = GroupedMessageBatchEntity.class)
 	CompletableFuture<MappedAsyncPagingIterable<GroupedMessageBatchEntity>> getByFilter(CassandraGroupedMessageFilter filter,
 			SelectQueryExecutor selectExecutor, String queryInfo,
@@ -38,4 +38,7 @@ public interface GroupedMessageBatchOperator
 	@QueryProvider(providerClass = GroupedMessageBatchInserter.class, entityHelpers = GroupedMessageBatchEntity.class, providerMethod = "insert")
 	CompletableFuture<AsyncResultSet> write(GroupedMessageBatchEntity message,
 											Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+	@Delete(entityClass = GroupedMessageBatchEntity.class)
+	void remove(String book, String page, String groupAlias, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

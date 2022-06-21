@@ -88,7 +88,9 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
         SessionStatisticsOperator sessionStatisticsOperator = bookOperators.getSessionStatisticsOperator();
         SessionStatisticsEntityConverter converter = bookOperators.getSessionStatisticsEntityConverter();
 
-        return sessionStatisticsOperator.getStatistics(curPage.getId().getName(),
+        return sessionStatisticsOperator.getStatistics(
+                        curPage.getId().getBookId().getName(),
+                        curPage.getId().getName(),
                         recordType.getValue(),
                         frameInterval.getFrameType().getValue(),
                         actualStart,

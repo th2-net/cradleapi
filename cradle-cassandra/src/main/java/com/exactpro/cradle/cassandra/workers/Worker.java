@@ -23,17 +23,14 @@ import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.FetchParameters;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.BookOperators;
-import com.exactpro.cradle.cassandra.dao.CradleOperators;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 import java.time.Duration;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
-public abstract class Worker
-{
+public abstract class Worker {
 	// Metric Labels
 	public static final String BOOK_ID = "book_id";
 	public static final String SESSION_ALIAS = "session_alias";
@@ -41,17 +38,16 @@ public abstract class Worker
 	public static final String DIRECTION = "direction";
 
 	protected final CassandraStorageSettings settings;
-	protected final CradleOperators ops;
+	private final BookOperators operators;
 	protected final ExecutorService composingService;
 	protected final BookCache bookCache;
 	protected final SelectQueryExecutor selectQueryExecutor;
 	protected final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
 			readAttrs;
 
-	public Worker(WorkerSupplies workerSupplies)
-	{
+	public Worker(WorkerSupplies workerSupplies) {
 		this.settings = workerSupplies.getSettings();
-		this.ops = workerSupplies.getOps();
+		this.operators = workerSupplies.getOperators();
 		this.composingService = workerSupplies.getComposingService();
 		this.bookCache = workerSupplies.getBookCache();
 		this.selectQueryExecutor = workerSupplies.getSelectExecutor();
@@ -59,25 +55,15 @@ public abstract class Worker
 		this.readAttrs = workerSupplies.getReadAttrs();
 	}
 
-	protected BookOperators getBookOps(BookId bookId)
-	{
-		try
-		{
-			return ops.getOperators(bookId);
-		}
-		catch (CradleStorageException e)
-		{
-			throw new CompletionException(e);
-		}
+	protected BookOperators getOperators() {
+		return operators;
 	}
 
-	protected BookInfo getBook(BookId bookId) throws CradleStorageException
-	{
+	protected BookInfo getBook(BookId bookId) throws CradleStorageException	{
 		return bookCache.getBook(bookId);
 	}
 
-	protected Function<BoundStatementBuilder, BoundStatementBuilder> composeReadAttrs(FetchParameters fetchParams)
-	{
+	protected Function<BoundStatementBuilder, BoundStatementBuilder> composeReadAttrs(FetchParameters fetchParams) {
 		if (fetchParams == null)
 			return readAttrs;
 

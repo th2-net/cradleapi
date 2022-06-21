@@ -26,8 +26,11 @@ import com.exactpro.cradle.FrameType;
 import java.time.Instant;
 
 @Entity
+@CqlName(EntityStatisticsEntity.TABLE_NAME)
 public class EntityStatisticsEntity {
+    public static final String TABLE_NAME = "entity_statistics";
 
+    public static final String FIELD_BOOK = "book";
     public static final String FIELD_PAGE = "page";
     public static final String FIELD_ENTITY_TYPE = "entity_type";
     public static final String FIELD_FRAME_TYPE = "frame_type";
@@ -35,6 +38,7 @@ public class EntityStatisticsEntity {
     public static final String FIELD_ENTITY_COUNT = "entity_count";
     public static final String FIELD_ENTITY_SIZE = "entity_size";
 
+    private String book;
     private String page;
     private Byte entityType;
     private Byte frameType;
@@ -43,7 +47,6 @@ public class EntityStatisticsEntity {
     private Long entitySize;
 
     public EntityStatisticsEntity() {
-
     }
 
     public CounterSample toCounterSample () {
@@ -51,12 +54,26 @@ public class EntityStatisticsEntity {
     }
 
     @PartitionKey(0)
-    @CqlName(FIELD_PAGE)
-    public String getPage() { return page; }
+    @CqlName(FIELD_BOOK)
+    public String getBook() {
+        return book;
+    }
 
-    public void setPage(String page) { this.page = page; }
+    public void setBook(String book) {
+        this.book = book;
+    }
 
     @PartitionKey(1)
+    @CqlName(FIELD_PAGE)
+    public String getPage() {
+        return page;
+    }
+
+    public void setPage(String page) {
+        this.page = page;
+    }
+
+    @PartitionKey(2)
     @CqlName(FIELD_ENTITY_TYPE)
     public Byte getEntityType() {
         return entityType;
@@ -66,7 +83,7 @@ public class EntityStatisticsEntity {
         this.entityType = entityType;
     }
 
-    @PartitionKey(2)
+    @PartitionKey(3)
     @CqlName(FIELD_FRAME_TYPE)
     public Byte getFrameType() {
         return frameType;
@@ -81,7 +98,6 @@ public class EntityStatisticsEntity {
     public Instant getFrameStart() {
         return frameStart;
     }
-
 
     public void setFrameStart(Instant frameStart) {
         this.frameStart = frameStart;

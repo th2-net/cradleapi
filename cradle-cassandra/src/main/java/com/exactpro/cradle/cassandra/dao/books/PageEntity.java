@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,9 +32,11 @@ import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.utils.TimeUtils;
 
 @Entity
-public class PageEntity
-{
-	public static final String FIELD_PART = "part";
+@CqlName(PageEntity.TABLE_NAME)
+public class PageEntity {
+	public static final String TABLE_NAME = "pages";
+
+	public static final String FIELD_BOOK = "book";
 	public static final String FIELD_START_DATE = "start_date";
 	public static final String FIELD_START_TIME = "start_time";
 	public static final String FIELD_NAME = "name";
@@ -44,8 +46,8 @@ public class PageEntity
 	public static final String FIELD_UPDATED = "updated";
 	public static final String FIELD_REMOVED = "removed";
 	@PartitionKey(0)
-	@CqlName(FIELD_PART)
-	private String part;
+	@CqlName(FIELD_BOOK)
+	private String book;
 	
 	@ClusteringColumn(0)
 	@CqlName(FIELD_START_DATE)
@@ -74,144 +76,115 @@ public class PageEntity
 	private Instant removed;
 	
 	
-	public PageEntity()
-	{
+	public PageEntity()	{
 	}
 	
-	public PageEntity(String part, String name, Instant started, String comment, Instant ended)
-	{
+	public PageEntity(String book, String name, Instant started, String comment, Instant ended)	{
+
 		LocalDateTime startedLdt = TimeUtils.toLocalTimestamp(started);
 		
-		this.part = part;
+		this.book = book;
 		this.name = name;
 		this.startDate = startedLdt.toLocalDate();
 		this.startTime = startedLdt.toLocalTime();
 		this.comment = comment;
 		
-		if (ended != null)
-		{
+		if (ended != null) {
 			LocalDateTime endedLdt = TimeUtils.toLocalTimestamp(ended);
 			this.endDate = endedLdt.toLocalDate();
 			this.endTime = endedLdt.toLocalTime();
 		}
 	}
 	
-	public PageEntity(PageInfo pageInfo)
-	{
+	public PageEntity(PageInfo pageInfo) {
 		this(pageInfo.getId().getBookId().getName(), pageInfo.getId().getName(), pageInfo.getStarted(), pageInfo.getComment(), pageInfo.getEnded());
 	}
 	
 	
-	public String getPart()
-	{
-		return part;
+	public String getBook() {
+		return book;
 	}
 	
-	public void setPart(String part)
-	{
-		this.part = part;
+	public void setBook(String book) {
+		this.book = book;
 	}
 	
-	
-	public String getName()
-	{
+	public String getName()	{
 		return name;
 	}
 	
-	public void setName(String name)
-	{
+	public void setName(String name) {
 		this.name = name;
 	}
 	
-	
-	public LocalDate getStartDate()
-	{
+	public LocalDate getStartDate()	{
 		return startDate;
 	}
 	
-	public void setStartDate(LocalDate startDate)
-	{
+	public void setStartDate(LocalDate startDate) {
 		this.startDate = startDate;
 	}
-	
-	
-	public LocalTime getStartTime()
-	{
+
+	public LocalTime getStartTime()	{
 		return startTime;
 	}
 	
-	public void setStartTime(LocalTime startTime)
-	{
+	public void setStartTime(LocalTime startTime) {
 		this.startTime = startTime;
 	}
 	
 	@Transient
-	public Instant getStartTimestamp()
-	{
+	public Instant getStartTimestamp() {
 		return TimeUtils.fromLocalTimestamp(LocalDateTime.of(getStartDate(), getStartTime()));
 	}
 	
 	@Transient
-	public void setStartTimestamp(Instant timestamp)
-	{
+	public void setStartTimestamp(Instant timestamp) {
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
 		setStartDate(ldt.toLocalDate());
 		setStartTime(ldt.toLocalTime());
 	}
 	
-	
-	public String getComment()
-	{
+	public String getComment() {
 		return comment;
 	}
 	
-	public void setComment(String comment)
-	{
+	public void setComment(String comment) {
 		this.comment = comment;
 	}
 	
-	
-	public LocalDate getEndDate()
-	{
+	public LocalDate getEndDate() {
 		return endDate;
 	}
 	
-	public void setEndDate(LocalDate endDate)
-	{
+	public void setEndDate(LocalDate endDate) {
 		this.endDate = endDate;
 	}
 	
-	public LocalTime getEndTime()
-	{
+	public LocalTime getEndTime() {
 		return endTime;
 	}
 	
-	public void setEndTime(LocalTime endTime)
-	{
+	public void setEndTime(LocalTime endTime) {
 		this.endTime = endTime;
 	}
 	
 	@Transient
-	public Instant getEndTimestamp()
-	{
+	public Instant getEndTimestamp() {
 		LocalDate ed = getEndDate();
 		LocalTime et = getEndTime();
-		return ed == null || et == null ? null : TimeUtils.fromLocalTimestamp(LocalDateTime.of(ed, et));
+		return (ed == null || et == null) ? null : TimeUtils.fromLocalTimestamp(LocalDateTime.of(ed, et));
 	}
 	
 	@Transient
-	public void setEndTimestamp(Instant timestamp)
-	{
-		if (timestamp == null)
-		{
+	public void setEndTimestamp(Instant timestamp) {
+		if (timestamp == null) {
 			setEndDate(null);
 			setEndTime(null);
-		}
-		else
-		{
-  		LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
-  		setEndDate(ldt.toLocalDate());
-  		setEndTime(ldt.toLocalTime());
+		} else {
+  			LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
+  			setEndDate(ldt.toLocalDate());
+  			setEndTime(ldt.toLocalTime());
 		}
 	}
 
@@ -223,19 +196,15 @@ public class PageEntity
 		this.updated = updated;
 	}
 
-	public Instant getRemoved()
-	{
+	public Instant getRemoved() {
 		return removed;
 	}
 	
-	public void setRemoved(Instant removed)
-	{
+	public void setRemoved(Instant removed) {
 		this.removed = removed;
 	}
 	
-	
-	public PageInfo toPageInfo()
-	{
-		return new PageInfo(new PageId(new BookId(part), name), getStartTimestamp(), getEndTimestamp(), getComment(), getUpdated(), getRemoved());
+	public PageInfo toPageInfo() {
+		return new PageInfo(new PageId(new BookId(book), name), getStartTimestamp(), getEndTimestamp(), getComment(), getUpdated(), getRemoved());
 	}
 }

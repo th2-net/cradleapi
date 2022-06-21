@@ -41,7 +41,7 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 			TIME_FROM = "timeFrom", TIME_TO = "timeTo",
 			SEQ_FROM = "seqFrom", SEQ_TO = "seqTo";
 
-	private final String page, sessionAlias, direction;
+	private final String book, page, sessionAlias, direction;
 
 	private final FilterForGreater<Instant> messageTimeFrom;
 	private final FilterForLess<Instant> messageTimeTo;
@@ -49,10 +49,11 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 
 	private final Integer limit;
 
-	public CassandraStoredMessageFilter(String page, String sessionAlias, String direction,
+	public CassandraStoredMessageFilter(String book, String page, String sessionAlias, String direction,
 										FilterForGreater<Instant> messageTimeFrom, FilterForLess<Instant> messageTimeTo,
 										FilterForAny<Long> sequence)
 	{
+		this.book = book;
 		this.page = page;
 		this.sessionAlias = sessionAlias;
 		this.direction = direction;
@@ -62,10 +63,11 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 		this.limit = 0;
 	}
 
-	public CassandraStoredMessageFilter(String page, String sessionAlias, String direction,
+	public CassandraStoredMessageFilter(String book, String page, String sessionAlias, String direction,
 										FilterForGreater<Instant> messageTimeFrom, FilterForLess<Instant> messageTimeTo,
 										FilterForAny<Long> sequence, int limit)
 	{
+		this.book = book;
 		this.page = page;
 		this.sessionAlias = sessionAlias;
 		this.direction = direction;
@@ -78,9 +80,11 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	@Override
 	public Select addConditions(Select select)
 	{
-		select = select.whereColumn(FIELD_PAGE).isEqualTo(bindMarker())
-			.whereColumn(FIELD_SESSION_ALIAS).isEqualTo(bindMarker())
-			.whereColumn(FIELD_DIRECTION).isEqualTo(bindMarker());
+		select = select
+				.whereColumn(FIELD_BOOK).isEqualTo(bindMarker())
+				.whereColumn(FIELD_PAGE).isEqualTo(bindMarker())
+				.whereColumn(FIELD_SESSION_ALIAS).isEqualTo(bindMarker())
+				.whereColumn(FIELD_DIRECTION).isEqualTo(bindMarker());
 		
 		if (sequence != null)
 			select = addMessageIdConditions(select);
@@ -102,7 +106,9 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	@Override
 	public BoundStatementBuilder bindParameters(BoundStatementBuilder builder)
 	{
-		builder = builder.setString(FIELD_PAGE, page)
+		builder = builder
+				.setString(FIELD_BOOK, book)
+				.setString(FIELD_PAGE, page)
 				.setString(FIELD_SESSION_ALIAS, sessionAlias)
 				.setString(FIELD_DIRECTION, direction);
 		
@@ -116,6 +122,11 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 				builder = FilterUtils.bindTimestamp(messageTimeTo.getValue(), builder, DATE_TO, TIME_TO);
 		}
 		return builder;
+	}
+
+	public String getBook()
+	{
+		return book;
 	}
 
 	public String getPage()
@@ -143,6 +154,8 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	public String toString()
 	{
 		List<String> result = new ArrayList<>(10);
+		if (book != null)
+			result.add("book=" + book);
 		if (page != null)
 			result.add("page=" + page);
 		if (sessionAlias != null)

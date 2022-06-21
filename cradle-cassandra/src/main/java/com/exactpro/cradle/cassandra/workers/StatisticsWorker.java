@@ -21,7 +21,7 @@ import com.exactpro.cradle.EntityType;
 import com.exactpro.cradle.FrameType;
 import com.exactpro.cradle.SessionRecordType;
 import com.exactpro.cradle.cassandra.counters.*;
-import com.exactpro.cradle.cassandra.dao.CradleOperators;
+import com.exactpro.cradle.cassandra.dao.BookOperators;
 import com.exactpro.cradle.cassandra.dao.SessionStatisticsEntity;
 import com.exactpro.cradle.cassandra.dao.SessionStatisticsOperator;
 import com.exactpro.cradle.counters.Counter;
@@ -42,12 +42,12 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
     private static final Logger logger = LoggerFactory.getLogger(StatisticsWorker.class);
 
-    private final CradleOperators ops;
+    private final BookOperators ops;
     private final long interval;
     private final Map<BookId, BookStatisticsRecordsCaches> bookCounterCaches;
     private final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs;
 
-    public StatisticsWorker(CradleOperators ops, Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs, long persistanceInterval) {
+    public StatisticsWorker(BookOperators ops, Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs, long persistanceInterval) {
         this.ops = ops;
         this.writeAttrs = writeAttrs;
         this.interval = persistanceInterval;
@@ -165,7 +165,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
         try {
             logger.trace("Persisting entity counter for {}:{}:{}:{}", bookId, entityKey, frameType, counter.getFrameStart());
-            ops.getOperators(bookId).getEntityStatisticsOperator().update(
+            ops.getEntityStatisticsOperator().update(bookId.getName(),
                     entityKey.getPage(),
                     entityKey.getEntityType().getValue(),
                     frameType.getValue(),
@@ -197,7 +197,8 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
         try {
             logger.trace("Persisting message counter for {}:{}:{}:{}:{}", bookId, key.getSessionAlias(), key.getDirection(), frameType, counter.getFrameStart());
-            ops.getOperators(bookId).getMessageStatisticsOperator().update(
+            ops.getMessageStatisticsOperator().update(
+                    bookId.getName(),
                     key.getPage(),
                     key.getSessionAlias(),
                     key.getDirection(),
@@ -237,9 +238,10 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
                     , sessionsRecord.getFrameStart()
                     , sessions.size());
 
-            SessionStatisticsOperator op = ops.getOperators(bookId).getSessionStatisticsOperator();
+            SessionStatisticsOperator op = ops.getSessionStatisticsOperator();
             for (String session : sessions) {
                 op.write(new SessionStatisticsEntity(
+                                bookId.getName(),
                                 key.getPage(),
                                 key.getRecordType().getValue(),
                                 frameType.getValue(),

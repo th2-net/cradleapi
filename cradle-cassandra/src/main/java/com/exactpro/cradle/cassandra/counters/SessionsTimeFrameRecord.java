@@ -8,7 +8,7 @@ public class SessionsTimeFrameRecord extends AbstractTimeFrameRecord<SessionList
     }
 
     @Override
-    public void update(SessionList value) {
+    public synchronized void update(SessionList value) {
         record = record.mergedWith(value);
     }
 }

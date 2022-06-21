@@ -28,6 +28,7 @@ public class GroupedMessageBatchInserter {
 
     public CompletableFuture<AsyncResultSet> insert(GroupedMessageBatchEntity groupedMessageBatch, Function<BoundStatementBuilder, BoundStatementBuilder> attributes) {
         BoundStatementBuilder builder = insertStatement.boundStatementBuilder()
+                .setString(FIELD_BOOK, groupedMessageBatch.getBook())
                 .setString(FIELD_PAGE, groupedMessageBatch.getPage())
                 .setString(FIELD_ALIAS_GROUP, groupedMessageBatch.getGroup())
 
