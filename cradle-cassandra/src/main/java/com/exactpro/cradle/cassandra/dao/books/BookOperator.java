@@ -26,7 +26,7 @@ import com.datastax.oss.driver.api.mapper.annotations.Select;
 import java.util.function.Function;
 
 @Dao
-public interface CradleBookOperator {
+public interface BookOperator {
 	@Select
 	PagingIterable<BookEntity> getAll(Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 

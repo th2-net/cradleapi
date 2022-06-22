@@ -28,13 +28,14 @@ import static com.exactpro.cradle.cassandra.dao.EntityStatisticsEntity.*;
 @Dao
 public interface EntityStatisticsOperator {
 
-    @Query("SELECT * FROM ${qualifiedTableId}  WHERE " +
-            FIELD_BOOK + "=:book AND " +
-            FIELD_PAGE + "=:page AND " +
-            FIELD_ENTITY_TYPE + "=:entityType AND " +
-            FIELD_FRAME_TYPE + "=:frameType AND " +
-            FIELD_FRAME_START + ">=:frameStart AND " +
-            FIELD_FRAME_START + "<:frameEnd")
+    @Query( "SELECT * FROM ${qualifiedTableId} " +
+            "WHERE " +
+                FIELD_BOOK + "=:book AND " +
+                FIELD_PAGE + "=:page AND " +
+                FIELD_ENTITY_TYPE + "=:entityType AND " +
+                FIELD_FRAME_TYPE + "=:frameType AND " +
+                FIELD_FRAME_START + ">=:frameStart AND " +
+                FIELD_FRAME_START + "<:frameEnd")
     CompletableFuture<MappedAsyncPagingIterable<EntityStatisticsEntity>> getStatistics (
             String book,
             String page,

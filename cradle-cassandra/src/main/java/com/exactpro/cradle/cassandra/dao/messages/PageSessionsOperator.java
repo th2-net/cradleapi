@@ -30,12 +30,13 @@ public interface PageSessionsOperator {
 	PagingIterable<PageSessionEntity> get(String book, String page,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE " +
-			FIELD_BOOK + " =:book AND " +
-			FIELD_PAGE + " =:page AND " +
-			FIELD_SESSION_ALIAS + " =:sessionAlias AND " +
-			FIELD_DIRECTION + " =:direction ORDER BY " +
-			FIELD_SESSION_ALIAS + " DESC LIMIT 1")
+	@Query( "SELECT * FROM ${qualifiedTableId} " +
+			"WHERE " +
+				FIELD_BOOK + " =:book AND " +
+				FIELD_PAGE + " =:page AND " +
+				FIELD_SESSION_ALIAS + " =:sessionAlias AND " +
+				FIELD_DIRECTION + " =:direction ORDER BY " +
+				FIELD_SESSION_ALIAS + " DESC LIMIT 1")
 	CompletableFuture<PageSessionEntity> getLast(String book, String page, String sessionAlias, String direction,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	

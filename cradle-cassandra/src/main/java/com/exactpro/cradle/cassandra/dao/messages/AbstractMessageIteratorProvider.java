@@ -21,7 +21,7 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.PageInfo;
-import com.exactpro.cradle.cassandra.dao.BookOperators;
+import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.messages.converters.MessageBatchEntityConverter;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
@@ -59,13 +59,13 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 	protected final AtomicInteger returned;
 	protected CassandraStoredMessageFilter cassandraFilter;
 
-	public AbstractMessageIteratorProvider(String requestInfo, MessageFilter filter, BookOperators ops, BookInfo book,
-			ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
-			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException
+	public AbstractMessageIteratorProvider(String requestInfo, MessageFilter filter, CassandraOperators operators, BookInfo book,
+										   ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
+										   Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException
 	{
 		super(requestInfo);
-		this.op = ops.getMessageBatchOperator();
-		this.messageBatchEntityConverter = ops.getMessageBatchEntityConverter();
+		this.op = operators.getMessageBatchOperator();
+		this.messageBatchEntityConverter = operators.getMessageBatchEntityConverter();
 		this.book = book;
 		this.composingService = composingService;
 		this.selectQueryExecutor = selectQueryExecutor;

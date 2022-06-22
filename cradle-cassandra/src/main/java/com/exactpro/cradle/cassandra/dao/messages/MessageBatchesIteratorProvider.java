@@ -19,7 +19,7 @@ package com.exactpro.cradle.cassandra.dao.messages;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.PageId;
-import com.exactpro.cradle.cassandra.dao.BookOperators;
+import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.messages.StoredMessageBatch;
@@ -39,11 +39,11 @@ public class MessageBatchesIteratorProvider extends AbstractMessageIteratorProvi
 {
 	private static final Logger logger = LoggerFactory.getLogger(MessageBatchesIteratorProvider.class);
 
-	public MessageBatchesIteratorProvider(String requestInfo, MessageFilter filter, BookOperators ops, BookInfo book,
-			ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
-			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException
+	public MessageBatchesIteratorProvider(String requestInfo, MessageFilter filter, CassandraOperators operators, BookInfo book,
+										  ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
+										  Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException
 	{
-		super(requestInfo, filter, ops, book, composingService, selectQueryExecutor, readAttrs);
+		super(requestInfo, filter, operators, book, composingService, selectQueryExecutor, readAttrs);
 	}
 
 

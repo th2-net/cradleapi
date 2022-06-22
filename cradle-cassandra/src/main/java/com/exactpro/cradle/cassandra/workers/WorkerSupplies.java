@@ -19,7 +19,7 @@ package com.exactpro.cradle.cassandra.workers;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookCache;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
-import com.exactpro.cradle.cassandra.dao.BookOperators;
+import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 
 import java.util.concurrent.ExecutorService;
@@ -27,14 +27,14 @@ import java.util.function.Function;
 
 public class WorkerSupplies {
     private final CassandraStorageSettings settings;
-    private final BookOperators operators;
+    private final CassandraOperators operators;
     private final ExecutorService composingService;
 	private final BookCache bookCache;
     private final SelectQueryExecutor selectExecutor;
     private final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs;
     private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
 
-    public WorkerSupplies(CassandraStorageSettings settings, BookOperators operators,
+    public WorkerSupplies(CassandraStorageSettings settings, CassandraOperators operators,
                           ExecutorService composingService, BookCache BookCache,
                           SelectQueryExecutor selectExecutor,
                           Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
@@ -52,7 +52,7 @@ public class WorkerSupplies {
         return settings;
     }
 
-    public BookOperators getOperators() {
+    public CassandraOperators getOperators() {
         return operators;
     }
 

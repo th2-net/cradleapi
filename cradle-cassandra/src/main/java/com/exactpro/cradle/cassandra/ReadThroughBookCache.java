@@ -17,7 +17,7 @@ package com.exactpro.cradle.cassandra;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.*;
-import com.exactpro.cradle.cassandra.dao.BookOperators;
+import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.books.BookEntity;
 import com.exactpro.cradle.cassandra.dao.books.PageEntity;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -36,15 +36,15 @@ public class ReadThroughBookCache implements BookCache {
 
     private final String UNSUPPORTED_SCHEMA_VERSION_FORMAT = "Unsupported schema version for the book \"%s\". Expected: %s, found: %s";
 
-    private final BookOperators ops;
+    private final CassandraOperators operators;
     private final Map<BookId, BookInfo> books;
     private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
     private final String schemaVersion;
 
-    public ReadThroughBookCache(BookOperators ops,
+    public ReadThroughBookCache(CassandraOperators operators,
                                 Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs,
                                 String schemaVersion) {
-        this.ops = ops;
+        this.operators = operators;
         this.books = new ConcurrentHashMap<>();
         this.readAttrs = readAttrs;
         this.schemaVersion = schemaVersion;
@@ -68,7 +68,7 @@ public class ReadThroughBookCache implements BookCache {
     public Collection<PageInfo> loadPageInfo(BookId bookId, boolean loadRemoved) throws CradleStorageException
     {
         Collection<PageInfo> result = new ArrayList<>();
-        for (PageEntity pageEntity : ops.getPageOperator().getAll(bookId.getName(), readAttrs))
+        for (PageEntity pageEntity : operators.getPageOperator().getAll(bookId.getName(), readAttrs))
         {
             if (loadRemoved || pageEntity.getRemoved() == null) {
                 result.add(pageEntity.toPageInfo());
@@ -78,7 +78,7 @@ public class ReadThroughBookCache implements BookCache {
     }
 
     public BookInfo loadBook (BookId bookId) throws CradleStorageException {
-        BookEntity bookEntity = ops.getBookOperator().get(bookId.getName(), readAttrs);
+        BookEntity bookEntity = operators.getBookOperator().get(bookId.getName(), readAttrs);
 
         if (bookEntity == null) {
             throw new CradleStorageException(String.format("Book %s was not found in DB", bookId.getName()));

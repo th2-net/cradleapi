@@ -21,7 +21,7 @@ import com.exactpro.cradle.EntityType;
 import com.exactpro.cradle.FrameType;
 import com.exactpro.cradle.SessionRecordType;
 import com.exactpro.cradle.cassandra.counters.*;
-import com.exactpro.cradle.cassandra.dao.BookOperators;
+import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.SessionStatisticsEntity;
 import com.exactpro.cradle.cassandra.dao.SessionStatisticsOperator;
 import com.exactpro.cradle.counters.Counter;
@@ -42,13 +42,13 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
     private static final Logger logger = LoggerFactory.getLogger(StatisticsWorker.class);
 
-    private final BookOperators ops;
+    private final CassandraOperators operators;
     private final long interval;
     private final Map<BookId, BookStatisticsRecordsCaches> bookCounterCaches;
     private final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs;
 
-    public StatisticsWorker(BookOperators ops, Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs, long persistanceInterval) {
-        this.ops = ops;
+    public StatisticsWorker(CassandraOperators operators, Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs, long persistanceInterval) {
+        this.operators = operators;
         this.writeAttrs = writeAttrs;
         this.interval = persistanceInterval;
         this.bookCounterCaches = new ConcurrentHashMap<>();
@@ -165,7 +165,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
         try {
             logger.trace("Persisting entity counter for {}:{}:{}:{}", bookId, entityKey, frameType, counter.getFrameStart());
-            ops.getEntityStatisticsOperator().update(bookId.getName(),
+            operators.getEntityStatisticsOperator().update(bookId.getName(),
                     entityKey.getPage(),
                     entityKey.getEntityType().getValue(),
                     frameType.getValue(),
@@ -197,7 +197,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
         try {
             logger.trace("Persisting message counter for {}:{}:{}:{}:{}", bookId, key.getSessionAlias(), key.getDirection(), frameType, counter.getFrameStart());
-            ops.getMessageStatisticsOperator().update(
+            operators.getMessageStatisticsOperator().update(
                     bookId.getName(),
                     key.getPage(),
                     key.getSessionAlias(),
@@ -238,7 +238,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
                     , sessionsRecord.getFrameStart()
                     , sessions.size());
 
-            SessionStatisticsOperator op = ops.getSessionStatisticsOperator();
+            SessionStatisticsOperator op = operators.getSessionStatisticsOperator();
             for (String session : sessions) {
                 op.write(new SessionStatisticsEntity(
                                 bookId.getName(),

@@ -22,7 +22,7 @@ import com.datastax.oss.driver.internal.core.util.concurrent.CompletableFutures;
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.counters.MessageStatisticsCollector;
 import com.exactpro.cradle.cassandra.counters.SessionStatisticsCollector;
-import com.exactpro.cradle.cassandra.dao.BookOperators;
+import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageSession;
 import com.exactpro.cradle.cassandra.dao.cache.CachedSession;
 import com.exactpro.cradle.cassandra.dao.messages.*;
@@ -202,9 +202,9 @@ public class MessagesWorker extends Worker
 		}
 
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(id.getTimestamp());
-		BookOperators bookOps = getOperators();
-		MessageBatchEntityConverter mbEntityConverter = bookOps.getMessageBatchEntityConverter();
-		MessageBatchOperator mbOperator = bookOps.getMessageBatchOperator();
+		CassandraOperators operators = getOperators();
+		MessageBatchEntityConverter mbEntityConverter = operators.getMessageBatchEntityConverter();
+		MessageBatchOperator mbOperator = operators.getMessageBatchOperator();
 
 		return getNearestTimeAndSequenceBefore(bookInfo, bookInfo.getPage(pageId), mbOperator, id.getSessionAlias(),
 				id.getDirection().getLabel(), ldt.toLocalDate(), ldt.toLocalTime(), id.getSequence(), readAttrs)
@@ -265,10 +265,10 @@ public class MessagesWorker extends Worker
 	public CompletableFuture<PageSessionEntity> storePageSession(MessageBatchToStore batch, PageId pageId)
 	{
 		StoredMessageId batchId = batch.getId();
-		BookOperators bookOps = getOperators();
+		CassandraOperators operators = getOperators();
 		CachedPageSession cachedPageSession = new CachedPageSession(pageId.toString(),
 				batchId.getSessionAlias(), batchId.getDirection().getLabel());
-		if (!bookOps.getPageSessionsCache().store(cachedPageSession))
+		if (!operators.getPageSessionsCache().store(cachedPageSession))
 		{
 			logger.debug("Skipped writing page/session of message batch '{}'", batchId);
 			return CompletableFuture.completedFuture(null);
@@ -276,29 +276,28 @@ public class MessagesWorker extends Worker
 
 		logger.debug("Writing page/session of batch '{}'", batchId);
 
-		return bookOps.getPageSessionsOperator().write(new PageSessionEntity(batchId, pageId), writeAttrs);
+		return operators.getPageSessionsOperator().write(new PageSessionEntity(batchId, pageId), writeAttrs);
 	}
 
 	public CompletableFuture<SessionEntity> storeSession(MessageBatchToStore batch)
 	{
 		StoredMessageId batchId = batch.getId();
 		BookId bookId = batchId.getBookId();
-		BookOperators bookOps = getOperators();
+		CassandraOperators operators = getOperators();
 		CachedSession cachedSession = new CachedSession(bookId.toString(), batch.getSessionAlias());
-		if (!bookOps.getSessionsCache().store(cachedSession))
+		if (!operators.getSessionsCache().store(cachedSession))
 		{
 			logger.debug("Skipped writing book/session of message batch '{}'", batchId);
 			return CompletableFuture.completedFuture(null);
 		}
 		logger.debug("Writing book/session of batch '{}'", batchId);
 
-		return bookOps.getSessionsOperator().write(new SessionEntity(bookId.toString(), batch.getSessionAlias()), writeAttrs);
+		return operators.getSessionsOperator().write(new SessionEntity(bookId.toString(), batch.getSessionAlias()), writeAttrs);
 	}
 
 	public CompletableFuture<Void> storeMessageBatch(MessageBatchEntity entity, BookId bookId)
 	{
-		BookOperators bookOps = getOperators();
-		MessageBatchOperator mbOperator = bookOps.getMessageBatchOperator();
+		MessageBatchOperator mbOperator = getOperators().getMessageBatchOperator();
 		List<SerializedEntityMetadata> meta = entity.getSerializedMessageMetadata();
 
 		return mbOperator.write(entity, writeAttrs)
@@ -309,8 +308,7 @@ public class MessagesWorker extends Worker
 
 	public CompletableFuture<GroupedMessageBatchEntity> storeGroupedMessageBatch(GroupedMessageBatchEntity entity, BookId bookId)
 	{
-		BookOperators bookOps = getOperators();
-		GroupedMessageBatchOperator gmbOperator = bookOps.getGroupedMessageBatchOperator();
+		GroupedMessageBatchOperator gmbOperator = getOperators().getGroupedMessageBatchOperator();
 		List<SerializedEntityMetadata> meta = entity.getSerializedMessageMetadata();
 
 		return gmbOperator.write(entity, writeAttrs)

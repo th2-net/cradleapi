@@ -22,7 +22,7 @@ import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.FetchParameters;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
-import com.exactpro.cradle.cassandra.dao.BookOperators;
+import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.utils.CradleStorageException;
 
@@ -38,7 +38,7 @@ public abstract class Worker {
 	public static final String DIRECTION = "direction";
 
 	protected final CassandraStorageSettings settings;
-	private final BookOperators operators;
+	private final CassandraOperators operators;
 	protected final ExecutorService composingService;
 	protected final BookCache bookCache;
 	protected final SelectQueryExecutor selectQueryExecutor;
@@ -55,7 +55,7 @@ public abstract class Worker {
 		this.readAttrs = workerSupplies.getReadAttrs();
 	}
 
-	protected BookOperators getOperators() {
+	protected CassandraOperators getOperators() {
 		return operators;
 	}
 
