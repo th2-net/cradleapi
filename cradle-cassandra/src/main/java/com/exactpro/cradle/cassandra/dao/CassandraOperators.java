@@ -36,7 +36,7 @@ import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityCo
 import com.exactpro.cradle.cassandra.utils.LimitedCache;
 
 public class CassandraOperators {
-    private final CradleBookOperator bookOperator;
+    private final BookOperator bookOperator;
     private final PageOperator pageOperator;
     private final PageNameOperator pageNameOperator;
 
@@ -107,7 +107,7 @@ public class CassandraOperators {
         pageScopesCache = new LimitedCache<>(settings.getPageScopesCacheSize());
     }
 
-    public CradleBookOperator getBookOperator() {
+    public BookOperator getBookOperator() {
         return this.bookOperator;
     }
 
