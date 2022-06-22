@@ -74,7 +74,7 @@ public class BookManager
 						BookInfo newBookInfo = bookCache.loadBook(oldBookInfo.getId());
 						if (!oldBookInfo.equals(newBookInfo)) {
 							logger.info("Refreshing book {}", oldBookInfo.getId().getName());
-							bookCache.updateCachedBook(oldBookInfo);
+							bookCache.updateCachedBook(newBookInfo);
 						}
 
 					} catch (CradleStorageException e) {
