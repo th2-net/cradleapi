@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 public class MessageStatisticsIteratorProvider extends IteratorProvider<CounterSample> {
-    private BookOperators ops;
+    private CassandraOperators operators;
     private BookInfo book;
     private ExecutorService composingService;
     private SelectQueryExecutor selectQueryExecutor;
@@ -31,13 +31,13 @@ public class MessageStatisticsIteratorProvider extends IteratorProvider<CounterS
     private PageInfo currentPage;
 
 
-    public MessageStatisticsIteratorProvider(String requestInfo, BookOperators ops, BookInfo book,
+    public MessageStatisticsIteratorProvider(String requestInfo, CassandraOperators operators, BookInfo book,
                                              ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
                                              String sessionAlias, Direction direction, FrameInterval frameInterval,
                                              Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) {
         super(requestInfo);
 
-        this.ops = ops;
+        this.operators = operators;
         this.book = book;
         this.composingService = composingService;
         this.selectQueryExecutor = selectQueryExecutor;
@@ -58,8 +58,8 @@ public class MessageStatisticsIteratorProvider extends IteratorProvider<CounterS
         Instant actualStart = frameInterval.getFrameType().getFrameStart(frameInterval.getInterval().getStart());
         Instant actualEnd = frameInterval.getFrameType().getFrameEnd(frameInterval.getInterval().getEnd());
 
-        MessageStatisticsOperator messageStatsOperator = ops.getMessageStatisticsOperator();
-        MessageStatisticsEntityConverter messageStatsConverter = ops.getMessageStatisticsEntityConverter();
+        MessageStatisticsOperator messageStatsOperator = operators.getMessageStatisticsOperator();
+        MessageStatisticsEntityConverter messageStatsConverter = operators.getMessageStatisticsEntityConverter();
 
         return messageStatsOperator.getStatistics(
                         currentPage.getId().getBookId().getName(),

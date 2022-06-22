@@ -31,7 +31,7 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.PageInfo;
-import com.exactpro.cradle.cassandra.dao.BookOperators;
+import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
@@ -64,13 +64,13 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 	private final AtomicInteger returned;
 	private CassandraTestEventFilter cassandraFilter;
 	
-	public TestEventIteratorProvider(String requestInfo, TestEventFilter filter, BookOperators ops, BookInfo book,
-			ExecutorService composingService,  SelectQueryExecutor selectQueryExecutor,
-			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
+	public TestEventIteratorProvider(String requestInfo, TestEventFilter filter, CassandraOperators operators, BookInfo book,
+									 ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
+									 Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
 	{
 		super(requestInfo);
-		this.op = ops.getTestEventOperator();
-		this.entityConverter = ops.getTestEventEntityConverter();
+		this.op = operators.getTestEventOperator();
+		this.entityConverter = operators.getTestEventEntityConverter();
 		this.book = book;
 		this.composingService = composingService;
 		this.selectQueryExecutor = selectQueryExecutor;

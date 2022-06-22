@@ -5,7 +5,7 @@ import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.SessionRecordType;
 import com.exactpro.cradle.cassandra.counters.FrameInterval;
-import com.exactpro.cradle.cassandra.dao.BookOperators;
+import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.SessionStatisticsEntity;
 import com.exactpro.cradle.cassandra.dao.SessionStatisticsEntityConverter;
 import com.exactpro.cradle.cassandra.dao.SessionStatisticsOperator;
@@ -31,7 +31,7 @@ import java.util.function.Function;
 public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>{
 
 
-    private final BookOperators bookOperators;
+    private final CassandraOperators operators;
     private final BookInfo bookInfo;
     private final ExecutorService composingService;
     private final SelectQueryExecutor selectQueryExecutor;
@@ -48,7 +48,7 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
     private PageInfo curPage;
 
     public SessionsStatisticsIteratorProvider (String requestInfo,
-                                               BookOperators bookOperators,
+                                               CassandraOperators operators,
                                                BookInfo bookInfo,
                                                ExecutorService composingService,
                                                SelectQueryExecutor selectQueryExecutor,
@@ -56,7 +56,7 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
                                                List<FrameInterval> frameIntervals,
                                                SessionRecordType recordType) {
         super(requestInfo);
-        this.bookOperators = bookOperators;
+        this.operators = operators;
         this.bookInfo = bookInfo;
         this.composingService = composingService;
         this.selectQueryExecutor = selectQueryExecutor;
@@ -85,8 +85,8 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
         Instant actualStart = frameInterval.getInterval().getStart();
         Instant actualEnd = frameInterval.getInterval().getEnd();
 
-        SessionStatisticsOperator sessionStatisticsOperator = bookOperators.getSessionStatisticsOperator();
-        SessionStatisticsEntityConverter converter = bookOperators.getSessionStatisticsEntityConverter();
+        SessionStatisticsOperator sessionStatisticsOperator = operators.getSessionStatisticsOperator();
+        SessionStatisticsEntityConverter converter = operators.getSessionStatisticsEntityConverter();
 
         return sessionStatisticsOperator.getStatistics(
                         curPage.getId().getBookId().getName(),

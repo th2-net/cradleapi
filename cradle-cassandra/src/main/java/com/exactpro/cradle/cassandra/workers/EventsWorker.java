@@ -34,7 +34,7 @@ import io.prometheus.client.Counter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.exactpro.cradle.cassandra.dao.BookOperators;
+import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
 import com.exactpro.cradle.cassandra.dao.testevents.PageScopeEntity;
@@ -107,40 +107,42 @@ public class EventsWorker extends Worker
 				.thenAcceptAsync(result -> updateEventWriteMetrics(entity, bookId));
 	}
 	
-	public CompletableFuture<ScopeEntity> storeScope(TestEventToStore event, BookOperators bookOps)
+	public CompletableFuture<ScopeEntity> storeScope(TestEventToStore event)
 	{
 		String bookName = event.getBookId().getName();
-		if (!bookOps.getScopesCache().store(new CachedScope(bookName, event.getScope())))
+		CassandraOperators operators = getOperators();
+		if (!operators.getScopesCache().store(new CachedScope(bookName, event.getScope())))
 		{
 			logger.debug("Skipped writing scope of event '{}'", event.getId());
 			return CompletableFuture.completedFuture(null);
 		}
 		
 		logger.debug("Writing scope of event '{}'", event.getId());
-		return bookOps.getScopeOperator()
+		return operators.getScopeOperator()
 				.write(new ScopeEntity(bookName, event.getScope()), writeAttrs);
 	}
 	
-	public CompletableFuture<PageScopeEntity> storePageScope(TestEventToStore event, PageId pageId, BookOperators bookOps)
+	public CompletableFuture<PageScopeEntity> storePageScope(TestEventToStore event, PageId pageId)
 	{
-		if (!bookOps.getPageScopesCache().store(new CachedPageScope(pageId.toString(), event.getScope())))
+		CassandraOperators operators = getOperators();
+		if (!operators.getPageScopesCache().store(new CachedPageScope(pageId.toString(), event.getScope())))
 		{
 			logger.debug("Skipped writing scope partition of event '{}'", event.getId());
 			return CompletableFuture.completedFuture(null);
 		}
 		
 		logger.debug("Writing scope partition of event '{}'", event.getId());
-		return bookOps.getPageScopesOperator()
+		return operators.getPageScopesOperator()
 				.write(new PageScopeEntity(pageId.getBookId().getName(), pageId.getName(), event.getScope()), writeAttrs);
 	}
 	
 	public CompletableFuture<StoredTestEvent> getTestEvent(StoredTestEventId id, PageId pageId)
 	{
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(id.getStartTimestamp());
-		BookOperators bookOps = getOperators();
-		TestEventEntityConverter converter = bookOps.getTestEventEntityConverter();
+		CassandraOperators operators = getOperators();
+		TestEventEntityConverter converter = operators.getTestEventEntityConverter();
 		return selectQueryExecutor.executeSingleRowResultQuery(
-				() -> bookOps.getTestEventOperator().get(pageId.getBookId().getName(), pageId.getName(), id.getScope(),
+				() -> operators.getTestEventOperator().get(pageId.getBookId().getName(), pageId.getName(), id.getScope(),
 						ldt.toLocalDate(), ldt.toLocalTime(), id.getId(), readAttrs), converter::getEntity,
 				String.format("get test event by id '%s'", id))
 				.thenApplyAsync(entity -> {
@@ -169,11 +171,10 @@ public class EventsWorker extends Worker
 	
 	public CompletableFuture<Void> updateStatus(StoredTestEvent event, boolean success)
 	{
-		BookOperators bookOps = getOperators();
 		StoredTestEventId id = event.getId();
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(event.getStartTimestamp());
 		PageId pageId = event.getPageId();
-		return bookOps.getTestEventOperator().updateStatus(pageId.getBookId().getName(), pageId.getName(), id.getScope(),
+		return getOperators().getTestEventOperator().updateStatus(pageId.getBookId().getName(), pageId.getName(), id.getScope(),
 				ldt.toLocalDate(), ldt.toLocalTime(), id.getId(), success, writeAttrs);
 	}
 }

@@ -20,7 +20,7 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.PageInfo;
-import com.exactpro.cradle.cassandra.dao.BookOperators;
+import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.messages.converters.GroupedMessageBatchEntityConverter;
 import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
@@ -56,14 +56,14 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 	protected CassandraGroupedMessageFilter cassandraFilter;
 	
 	public GroupedMessageIteratorProvider(String requestInfo,
-			GroupedMessageFilter filter, BookOperators ops, BookInfo book,
-			ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
-			Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException
+										  GroupedMessageFilter filter, CassandraOperators operators, BookInfo book,
+										  ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
+										  Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException
 	{
 
 		super(requestInfo);
-		this.op = ops.getGroupedMessageBatchOperator();
-		this.converter = ops.getGroupedMessageBatchEntityConverter();
+		this.op = operators.getGroupedMessageBatchOperator();
+		this.converter = operators.getGroupedMessageBatchEntityConverter();
 		this.book = book;
 		this.composingService = composingService;
 		this.selectQueryExecutor = selectQueryExecutor;

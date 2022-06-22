@@ -35,7 +35,7 @@ import com.exactpro.cradle.cassandra.dao.testevents.converters.ScopeEntityConver
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
 import com.exactpro.cradle.cassandra.utils.LimitedCache;
 
-public class BookOperators {
+public class CassandraOperators {
     private final CradleBookOperator bookOperator;
     private final PageOperator pageOperator;
     private final PageNameOperator pageNameOperator;
@@ -69,7 +69,7 @@ public class BookOperators {
     private final LimitedCache<CachedScope> scopesCache;
     private final LimitedCache<CachedPageScope> pageScopesCache;
 
-    public BookOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings) {
+    public CassandraOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings) {
 
         String keyspace = settings.getKeyspace();
         bookOperator = dataMapper.cradleBookOperator(keyspace, BookEntity.TABLE_NAME);
