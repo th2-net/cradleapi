@@ -28,14 +28,15 @@ import static com.exactpro.cradle.cassandra.dao.MessageStatisticsEntity.*;
 @Dao
 public interface MessageStatisticsOperator {
 
-    @Query("SELECT * FROM ${qualifiedTableId}  WHERE " +
-            FIELD_BOOK + "=:book AND " +
-            FIELD_PAGE + "=:page AND " +
-            FIELD_SESSION_ALIAS + "=:sessionAlias AND " +
-            FIELD_DIRECTION + "=:direction AND " +
-            FIELD_FRAME_TYPE + "=:frameType AND " +
-            FIELD_FRAME_START + ">=:frameStart AND " +
-            FIELD_FRAME_START + "<:frameEnd")
+    @Query( "SELECT * FROM ${qualifiedTableId} " +
+            "WHERE " +
+                FIELD_BOOK + "=:book AND " +
+                FIELD_PAGE + "=:page AND " +
+                FIELD_SESSION_ALIAS + "=:sessionAlias AND " +
+                FIELD_DIRECTION + "=:direction AND " +
+                FIELD_FRAME_TYPE + "=:frameType AND " +
+                FIELD_FRAME_START + ">=:frameStart AND " +
+                FIELD_FRAME_START + "<:frameEnd")
     CompletableFuture<MappedAsyncPagingIterable<MessageStatisticsEntity>> getStatistics (
             String book,
             String page,

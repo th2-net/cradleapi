@@ -35,7 +35,7 @@ import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.*;
 
 @Dao
 public interface TestEventOperator {
-	@Query("SELECT * FROM ${qualifiedTableId} " +
+	@Query( "SELECT * FROM ${qualifiedTableId} " +
 			"WHERE " +
 				FIELD_BOOK + " =:book AND " +
 				FIELD_PAGE + " =:page AND " +
@@ -58,7 +58,8 @@ public interface TestEventOperator {
 	CompletableFuture<AsyncResultSet> write(TestEventEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 
-	@Query("UPDATE ${qualifiedTableId} SET " +
+	@Query( "UPDATE ${qualifiedTableId} " +
+			"SET " +
 				FIELD_SUCCESS + " =:success " +
 			"WHERE " +
 				FIELD_BOOK + " =:book AND " +

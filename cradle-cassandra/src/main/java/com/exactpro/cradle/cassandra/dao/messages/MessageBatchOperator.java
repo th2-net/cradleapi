@@ -46,8 +46,8 @@ public interface MessageBatchOperator {
 				FIELD_PAGE + " =:page AND " +
 				FIELD_SESSION_ALIAS + " =:sessionAlias AND " +
 				FIELD_DIRECTION + " =:direction AND " +
-				FIELD_FIRST_MESSAGE_DATE + " =:messageDate AND (" +
-					FIELD_FIRST_MESSAGE_TIME + ", " + FIELD_SEQUENCE + ") <= (:messageTime, :sequence) " +
+				FIELD_FIRST_MESSAGE_DATE + " =:messageDate AND " +
+			    "(" + FIELD_FIRST_MESSAGE_TIME + ", " + FIELD_SEQUENCE + ") <= (:messageTime, :sequence) " +
 			"ORDER BY " +
 				FIELD_FIRST_MESSAGE_DATE + " DESC, " +
 				FIELD_FIRST_MESSAGE_TIME + " DESC, " +
@@ -118,5 +118,6 @@ public interface MessageBatchOperator {
 											Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Delete(entityClass = MessageBatchEntity.class)
-	void remove(String book, String page, String sessionAlias, String direction, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	void remove(String book, String page, String sessionAlias, String direction,
+										Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }
