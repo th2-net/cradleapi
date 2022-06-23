@@ -150,8 +150,12 @@ public class StoredGroupMessageBatch extends AbstractStoredMessageBatch
 	@Override
 	protected int calculateSizeAndCheckConstraints(MessageToStore message) throws CradleStorageException {
 		int expectedMessageSize = MessagesSizeCalculator.calculateMessageSizeInGroupBatch(message);
-		if (!hasSpace(expectedMessageSize, message.getStreamName()))
-			throw new CradleStorageException("Batch has not enough space to hold given message");
+		if (!hasSpace(expectedMessageSize, message.getStreamName())) {
+			throw new CradleStorageException(
+					String.format("Batch has not enough space to hold given message, batch current size %d, given message size %d",
+							batchSize,
+							expectedMessageSize));
+		}
 
 		MessageUtils.validateMessage(message);
 
@@ -273,5 +277,12 @@ public class StoredGroupMessageBatch extends AbstractStoredMessageBatch
 		this.batchSize = resultSize;
 
 		return true;
+	}
+
+	@Override
+	protected boolean hasSpace(int expected, String streamName) {
+		long currentSize = messages.isEmpty()
+				? MessagesSizeCalculator.calculateServiceMessageGroupBatchSize(streamName) : getBatchSize();
+		return currentSize + expected <= maxBatchSize;
 	}
 }
