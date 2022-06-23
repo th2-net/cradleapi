@@ -17,6 +17,7 @@
 package com.exactpro.cradle;
 
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * Information about book's page
@@ -82,5 +83,18 @@ public class PageInfo
 	public static PageInfo ended(PageInfo page, Instant endTimestamp)
 	{
 		return page == null ? null : new PageInfo(page.getId(), page.getStarted(), endTimestamp, page.getComment(), page.getUpdated(), page.getRemoved());
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		PageInfo pageInfo = (PageInfo) o;
+		return getId().equals(pageInfo.getId())
+				&& getStarted().equals(pageInfo.getStarted())
+				&& Objects.equals(getEnded(), pageInfo.getEnded())
+				&& Objects.equals(getComment(), pageInfo.getComment())
+				&& Objects.equals(getUpdated(), pageInfo.getUpdated())
+				&& Objects.equals(getRemoved(), pageInfo.getRemoved());
 	}
 }

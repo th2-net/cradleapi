@@ -18,11 +18,8 @@ package com.exactpro.cradle;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -138,5 +135,51 @@ public class BookInfo
 	{
 		pages.put(page.getId(), page);
 		orderedPages.put(page.getStarted(), page);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		BookInfo bookInfo = (BookInfo) o;
+
+		if (!Objects.equals(this.getId(), bookInfo.getId())) {
+			return false;
+		}
+		if (!Objects.equals(this.getCreated(), bookInfo.getCreated())) {
+			return false;
+		}
+
+		if (!Objects.equals(this.getDesc(), bookInfo.getDesc())) {
+			return false;
+		}
+
+		if (!Objects.equals(this.getFullName(), bookInfo.getFullName())) {
+			return false;
+		}
+
+		/*
+			As getPages returns new unmodifiable list of ordered pages
+			this should work without any problems
+		 */
+		List<PageInfo> pages = new ArrayList<> (this.getPages());
+		List<PageInfo> otherPages = new ArrayList<> (bookInfo.getPages());
+
+		if (pages.size() != otherPages.size()) {
+			return false;
+		}
+
+		for (int i = 0; i < pages.size(); i ++) {
+			if (!pages.get(i).equals(otherPages.get(i))) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(getId(), getFullName(), getDesc(), getCreated(), getPages(), orderedPages);
 	}
 }
