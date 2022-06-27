@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 
 import java.time.Instant;
+import java.util.Objects;
 
 @Entity
 @CqlName(SessionStatisticsEntity.TABLE_NAME)
@@ -96,5 +97,23 @@ public class SessionStatisticsEntity {
 
     public void setSession(String session) {
         this.session = session;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SessionStatisticsEntity that = (SessionStatisticsEntity) o;
+        return Objects.equals(book, that.book) &&
+                Objects.equals(page, that.page) &&
+                Objects.equals(recordType, that.recordType) &&
+                Objects.equals(frameType, that.frameType) &&
+                Objects.equals(frameStart, that.frameStart) &&
+                Objects.equals(session, that.session);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(book, page, recordType, frameType, frameStart, session);
     }
 }

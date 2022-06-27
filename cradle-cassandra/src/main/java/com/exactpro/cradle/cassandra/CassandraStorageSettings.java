@@ -34,6 +34,7 @@ public class CassandraStorageSettings {
             DEFAULT_SCOPES_CACHE_SIZE = 10,
             DEFAULT_PAGE_SESSION_CACHE_SIZE = 100,
             DEFAULT_PAGE_SCOPES_CACHE_SIZE = 100,
+            DEFAULT_SESSION_STATISTICS_CACHE_SIZE = 10_000,
             DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS = 1000;
 	public static final long DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS = 60000;
 
@@ -55,6 +56,7 @@ public class CassandraStorageSettings {
             scopesCacheSize,
             pageSessionsCacheSize,
             pageScopesCacheSize,
+            sessionStatisticsCacheSize,
             counterPersistenceInterval;
 
     private SelectExecutionPolicy multiRowResultExecutionPolicy, singleRowResultExecutionPolicy;
@@ -92,6 +94,7 @@ public class CassandraStorageSettings {
         this.pageScopesCacheSize = DEFAULT_PAGE_SCOPES_CACHE_SIZE;
         this.counterPersistenceInterval = DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS;
 		this.bookRefreshIntervalMillis = DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS;
+		this.sessionsCacheSize = DEFAULT_SESSION_STATISTICS_CACHE_SIZE;
     }
 
     public CassandraStorageSettings(CassandraStorageSettings settings) {
@@ -117,6 +120,7 @@ public class CassandraStorageSettings {
         this.pageSessionsCacheSize = settings.getPageSessionsCacheSize();
         this.scopesCacheSize = settings.getScopesCacheSize();
         this.pageScopesCacheSize = settings.getPageScopesCacheSize();
+        this.sessionStatisticsCacheSize = settings.getSessionStatisticsCacheSize();
         this.counterPersistenceInterval = settings.getCounterPersistenceInterval();
 		this.bookRefreshIntervalMillis = settings.getBookRefreshIntervalMillis();
     }
@@ -232,6 +236,13 @@ public class CassandraStorageSettings {
         this.pageSessionsCacheSize = pageSessionsCacheSize;
     }
 
+    public int getSessionStatisticsCacheSize() {
+        return sessionStatisticsCacheSize;
+    }
+
+    public void setSessionStatisticsCacheSize(int size) {
+        this.sessionStatisticsCacheSize = size;
+    }
 
     public int getScopesCacheSize() {
         return scopesCacheSize;

@@ -24,6 +24,7 @@ import com.exactpro.cradle.cassandra.counters.*;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.SessionStatisticsEntity;
 import com.exactpro.cradle.cassandra.dao.SessionStatisticsOperator;
+import com.exactpro.cradle.cassandra.utils.LimitedCache;
 import com.exactpro.cradle.counters.Counter;
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
 import org.slf4j.Logger;
@@ -239,19 +240,24 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
                     , sessions.size());
 
             SessionStatisticsOperator op = operators.getSessionStatisticsOperator();
+            LimitedCache<SessionStatisticsEntity> cache = operators.getSessionStatisticsCache();
             for (String session : sessions) {
-                op.write(new SessionStatisticsEntity(
-                                bookId.getName(),
-                                key.getPage(),
-                                key.getRecordType().getValue(),
-                                frameType.getValue(),
-                                sessionsRecord.getFrameStart(),
-                                session)
-                        , writeAttrs)
-                        .whenComplete((result, e) -> {
-                            if (e != null)
-                                exceptionHandler.accept(e);
-                        });
+                SessionStatisticsEntity entity = new SessionStatisticsEntity(
+                        bookId.getName(),
+                        key.getPage(),
+                        key.getRecordType().getValue(),
+                        frameType.getValue(),
+                        sessionsRecord.getFrameStart(),
+                        session);
+                if (!cache.contains(entity)) {
+                    op.write(entity,writeAttrs)
+                            .whenComplete((result, e) -> {
+                                if (e != null)
+                                    exceptionHandler.accept(e);
+                                else
+                                    cache.store(entity);
+                            });
+                }
             }
         } catch (Exception e) {
             exceptionHandler.accept(e);
