@@ -64,7 +64,11 @@ public class MessageUtils
 	{
 		return serializer.serializeBatch(messages);
 	}
-	
+
+	public static byte[] serializeGroupMessages (Collection<StoredMessage> messages) throws IOException {
+		return serializer.serializeGroupBatch(messages);
+	}
+
 	/**
 	 * Deserializes messages from given array of bytes till message with needed ID is found
 	 * @param contentBytes to deserialize needed message from
@@ -95,6 +99,14 @@ public class MessageUtils
 			return LegacyMessageDeserializer.deserializeMessages(contentBytes);
 		}
 	}
+
+	public static List<StoredMessage> deserializeGroupMessages (byte[] contentBytes) throws IOException {
+		if (deserializer.checkMessageBatchHeader(contentBytes)) {
+			return deserializer.deserializeGroupBatch(contentBytes);
+		} else {
+			return LegacyMessageDeserializer.deserializeMessages(contentBytes);
+		}
+	}
 	
 	/**
 	 * Decompresses given ByteBuffer and deserializes messages till message with needed ID is found
@@ -121,7 +133,12 @@ public class MessageUtils
 	{
 		byte[] contentBytes = getMessageContentBytes(content, compressed, null);
 		return deserializeMessages(contentBytes);
-	}	
+	}
+
+	public static List<StoredMessage> bytesToGroupedMessages (ByteBuffer content, boolean compressed) throws IOException {
+		byte[] contentBytes = getMessageContentBytes(content, compressed, null);
+		return deserializeGroupMessages(contentBytes);
+	}
 	
 	private static byte[] getMessageContentBytes(ByteBuffer content, boolean compressed, StoredMessageId id) throws IOException
 	{

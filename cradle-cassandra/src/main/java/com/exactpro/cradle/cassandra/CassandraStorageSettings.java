@@ -38,7 +38,6 @@ public class CassandraStorageSettings
 			TEST_EVENTS_CHILDREN_DATES_TABLE_DEFAULT_NAME = "test_events_children_dates",
 			INTERVALS_TABLE_DEFAULT_NAME = "intervals";
 	public static final long DEFAULT_TIMEOUT = 5000,
-			DEFAULT_MAX_MESSAGE_BATCH_DURATION_LIMIT_SECONDS = StoredMessageBatch.DEFAULT_MAX_MESSAGE_BATCH_DURATION_SEC,
 			DEFAULT_MAX_MESSAGE_BATCH_SIZE = StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE,
 			DEFAULT_MAX_EVENT_BATCH_SIZE = StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE;
 	public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
@@ -62,7 +61,6 @@ public class CassandraStorageSettings
 			readConsistencyLevel;
 	private int keyspaceReplicationFactor;
 	private long maxMessageBatchSize,
-			maxMessageBatchDurationLimit,
 			maxTestEventBatchSize;
 	
 	public CassandraStorageSettings(String keyspace, NetworkTopologyStrategy networkTopologyStrategy, 
@@ -85,7 +83,6 @@ public class CassandraStorageSettings
 		this.readConsistencyLevel = readConsistencyLevel;
 		this.keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
 		this.maxMessageBatchSize = DEFAULT_MAX_MESSAGE_BATCH_SIZE;
-		this.maxMessageBatchDurationLimit = DEFAULT_MAX_MESSAGE_BATCH_DURATION_LIMIT_SECONDS;
 		this.maxTestEventBatchSize = DEFAULT_MAX_EVENT_BATCH_SIZE;
 	}
 
@@ -284,15 +281,5 @@ public class CassandraStorageSettings
 	public void setGroupedMessagesTableName(String groupedMessagesTableName)
 	{
 		this.groupedMessagesTableName = groupedMessagesTableName;
-	}
-
-	public long getMaxMessageBatchDurationLimit()
-	{
-		return maxMessageBatchDurationLimit;
-	}
-
-	public void setMaxMessageBatchDurationLimit(long maxMessageBatchDurationLimit)
-	{
-		this.maxMessageBatchDurationLimit = maxMessageBatchDurationLimit;
 	}
 }

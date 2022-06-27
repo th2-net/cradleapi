@@ -46,6 +46,10 @@ public class MessageDeserializer {
 	public List<StoredMessage> deserializeBatch(byte[] buffer) throws SerializationException {
 		return this.deserializeBatch(ByteBuffer.wrap(buffer));
 	}
+
+	public List<StoredMessage> deserializeGroupBatch (byte[] buffer) throws SerializationException {
+		return this.deserializeGroupBatch(ByteBuffer.wrap(buffer));
+	}
 	
 	private void checkMessageBatchMagics(ByteBuffer buffer) throws SerializationException {
 		int magicNumber = buffer.getInt();
@@ -59,7 +63,7 @@ public class MessageDeserializer {
 					protocolVer, MESSAGE_PROTOCOL_VER));
 		}
 	}
-	
+
 	public List<StoredMessage> deserializeBatch(ByteBuffer buffer) throws SerializationException {
 		checkMessageBatchMagics(buffer);
 
@@ -74,7 +78,22 @@ public class MessageDeserializer {
 			messages.add(this.deserialize(msgBuf, sessionAlias, direction));
 			buffer.position(buffer.position() + msgLen);
 		}
-		
+
+		return messages;
+	}
+
+	public List<StoredMessage> deserializeGroupBatch(ByteBuffer buffer) throws SerializationException {
+		checkMessageBatchMagics(buffer);
+
+		int messagesCount = buffer.getInt();
+		List<StoredMessage> messages = new ArrayList<>(messagesCount);
+		for (int i = 0; i < messagesCount; ++i) {
+			int msgLen = buffer.getInt();
+			ByteBuffer msgBuf = ByteBuffer.wrap(buffer.array(), buffer.position(), msgLen);
+			messages.add(this.deserializeGroupMessage(msgBuf));
+			buffer.position(buffer.position() + msgLen);
+		}
+
 		return messages;
 	}
 
@@ -114,6 +133,19 @@ public class MessageDeserializer {
 		builder.setContent(readBody(buffer));
 		return builder.build();
 	}
+
+	public StoredMessage deserializeGroupMessage(ByteBuffer buffer) throws SerializationException {
+		short magicNumber = buffer.getShort();
+		if (magicNumber != MESSAGE_MAGIC) {
+			throw SerializationUtils.incorrectMagicNumber(StoredMessage.class.getSimpleName(), magicNumber, MESSAGE_MAGIC);
+		}
+		StoredMessageBuilder builder = new StoredMessageBuilder();
+		builder.setMessageId(readGroupMessageId(buffer));
+		builder.setTimestamp(readInstant(buffer));
+		readMessageMetaData(buffer, builder);
+		builder.setContent(readBody(buffer));
+		return builder.build();
+	}
 	
 	private Direction getDirection(int ordinal) throws SerializationException {
 		Direction[] values = Direction.values();
@@ -125,6 +157,14 @@ public class MessageDeserializer {
 
 	private StoredMessageId readMessageId(ByteBuffer buffer, String stream, Direction direction) throws SerializationException {
 		long index = buffer.getLong();
+		return new StoredMessageId(stream, direction, index);
+	}
+
+	private StoredMessageId readGroupMessageId(ByteBuffer buffer) throws SerializationException {
+		String stream = readShortString(buffer);
+		Direction direction = getDirection(buffer.get());
+		long index = buffer.getLong();
+
 		return new StoredMessageId(stream, direction, index);
 	}
 

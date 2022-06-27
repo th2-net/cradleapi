@@ -40,7 +40,7 @@ import com.exactpro.cradle.cassandra.CassandraCradleStorage;
  * Contains all data about {@link StoredMessageBatch} to store in Cassandra
  */
 @Entity
-public class DetailedMessageBatchEntity extends MessageBatchEntity
+public class  DetailedMessageBatchEntity extends MessageBatchEntity
 {
 	private static final Logger logger = LoggerFactory.getLogger(DetailedMessageBatchEntity.class);
 	
@@ -69,13 +69,23 @@ public class DetailedMessageBatchEntity extends MessageBatchEntity
 	public DetailedMessageBatchEntity()
 	{
 	}
-	
+
 	public DetailedMessageBatchEntity(StoredMessageBatch batch, UUID instanceId) throws IOException
 	{
 		super(batch, instanceId);
 		
 		logger.trace("Adding details to Entity");
 		//All timestamps should be created from UTC, not simply by using LocalTime.now()!
+		this.setStoredTimestamp(Instant.now());
+		this.setFirstMessageTimestamp(batch.getFirstTimestamp());
+		this.setLastMessageTimestamp(batch.getLastTimestamp());
+		this.setMessageCount(batch.getMessageCount());
+		this.setLastMessageIndex(batch.getLastMessage().getIndex());
+	}
+
+	public DetailedMessageBatchEntity(StoredGroupMessageBatch batch, UUID instanceId) throws IOException {
+		super(batch, instanceId);
+
 		this.setStoredTimestamp(Instant.now());
 		this.setFirstMessageTimestamp(batch.getFirstTimestamp());
 		this.setLastMessageTimestamp(batch.getLastTimestamp());

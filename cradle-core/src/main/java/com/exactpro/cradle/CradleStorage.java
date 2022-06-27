@@ -22,14 +22,11 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import com.exactpro.cradle.intervals.IntervalsWorker;
+import com.exactpro.cradle.messages.*;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.exactpro.cradle.messages.StoredMessage;
-import com.exactpro.cradle.messages.StoredMessageBatch;
-import com.exactpro.cradle.messages.StoredMessageFilter;
-import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEventWrapper;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
@@ -66,9 +63,9 @@ public abstract class CradleStorage
 	
 	
 	protected abstract void doStoreMessageBatch(StoredMessageBatch batch) throws IOException;
-	protected abstract void doStoreGroupedMessageBatch(StoredMessageBatch batch, String groupName) throws IOException;
+	protected abstract void doStoreGroupedMessageBatch(StoredGroupMessageBatch batch, String groupName) throws IOException;
 	protected abstract CompletableFuture<Void> doStoreMessageBatchAsync(StoredMessageBatch batch);
-	protected abstract CompletableFuture<Void> doStoreGroupedMessageBatchAsync(StoredMessageBatch batch, String groupName);
+	protected abstract CompletableFuture<Void> doStoreGroupedMessageBatchAsync(StoredGroupMessageBatch batch, String groupName);
 	protected abstract void doStoreTimeMessage(StoredMessage message) throws IOException;
 	protected abstract CompletableFuture<Void> doStoreTimeMessageAsync(StoredMessage message);
 	protected abstract void doStoreProcessedMessageBatch(StoredMessageBatch batch) throws IOException;
@@ -110,10 +107,10 @@ public abstract class CradleStorage
 	
 	protected abstract Iterable<StoredMessage> doGetMessages(StoredMessageFilter filter) throws IOException;
 	protected abstract CompletableFuture<Iterable<StoredMessage>> doGetMessagesAsync(StoredMessageFilter filter);
-	protected abstract CompletableFuture<Iterable<StoredMessageBatch>> doGetGroupedMessageBatchesAsync(String groupName,
+	protected abstract CompletableFuture<Iterable<StoredGroupMessageBatch>> doGetGroupedMessageBatchesAsync(String groupName,
 			Instant from, Instant to);
 	protected abstract Iterable<StoredMessageBatch> doGetMessagesBatches(StoredMessageFilter filter) throws IOException;
-	protected abstract Iterable<StoredMessageBatch> doGetGroupedMessageBatches(String groupName, Instant from, Instant to)
+	protected abstract Iterable<StoredGroupMessageBatch> doGetGroupedMessageBatches(String groupName, Instant from, Instant to)
 			throws IOException;
 	protected abstract CompletableFuture<Iterable<StoredMessageBatch>> doGetMessagesBatchesAsync(
 			StoredMessageFilter filter);
@@ -242,13 +239,13 @@ public abstract class CradleStorage
 	 * @param groupName group name
 	 * @throws IOException if data writing failed
 	 */
-	public final void storeGroupedMessageBatch(StoredMessageBatch batch, String groupName) throws IOException
+	public final void storeGroupedMessageBatch(StoredGroupMessageBatch batch, String groupName) throws IOException
 	{
-		logger.debug("Storing message batch {} grouped by '{}'", batch.getId(), groupName);
+		logger.debug("Storing message batch grouped by '{}'", groupName);
 		doStoreGroupedMessageBatch(batch, groupName);
-		logger.debug("Storing time/message data for batch {}", batch.getId());
+		logger.debug("Storing time/message data for batch grouped by '{}'", groupName);
 		storeTimeMessages(batch.getMessages());
-		logger.debug("Message batch {} grouped by '{}' has been stored", batch.getId(), groupName);
+		logger.debug("Message batch grouped by '{}' has been stored", groupName);
 	}
 
 
@@ -259,18 +256,17 @@ public abstract class CradleStorage
 	 * @param groupName group name
 	 * @return future to get know if storing was successful   
 	 */
-	public final CompletableFuture<Void> storeGroupedMessageBatchAsync(StoredMessageBatch batch, String groupName)
+	public final CompletableFuture<Void> storeGroupedMessageBatchAsync(StoredGroupMessageBatch batch, String groupName)
 	{
-		logger.debug("Storing message batch {} grouped by '{}' asynchronously", batch.getId(), groupName);
+		logger.debug("Storing message batch grouped by '{}' asynchronously", groupName);
 		return doStoreGroupedMessageBatchAsync(batch, groupName)
 				.thenComposeAsync(r -> storeTimeMessagesAsync(batch.getMessages()))
 				.whenComplete((r, error) -> {
 					if (error != null)
-						logger.error("Error while storing message batch " + batch.getId() + " grouped by '"
+						logger.error("Error while storing message batch grouped by '"
 								+ groupName + "' asynchronously", error);
 					else
-						logger.debug("Message batch {} grouped by '{}' has been stored asynchronously",
-								batch.getId(), groupName);
+						logger.debug("Message batch grouped by '{}' has been stored asynchronously", groupName);
 				});
 	}
 
@@ -680,7 +676,7 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if some params are missing 
 	 * @throws IOException if data retrieval failed
 	 */
-	public final Iterable<StoredMessageBatch> getGroupedMessageBatches(String groupName, Instant from, Instant to)
+	public final Iterable<StoredGroupMessageBatch> getGroupedMessageBatches(String groupName, Instant from, Instant to)
 			throws CradleStorageException, IOException
 	{
 		logger.debug("Getting message batches grouped by '{}' between {} and {}", groupName, from, to);
@@ -690,7 +686,7 @@ public abstract class CradleStorage
 		if (from == null || to == null)
 			throw new CradleStorageException("Both boundaries (from and to) should be specified");
 
-		Iterable<StoredMessageBatch> result = doGetGroupedMessageBatches(groupName, from, to);
+		Iterable<StoredGroupMessageBatch> result = doGetGroupedMessageBatches(groupName, from, to);
 		logger.debug("Prepared iterator for message batches grouped by {} between {} and {}", groupName, from, to);
 		return result;
 	}
@@ -725,8 +721,8 @@ public abstract class CradleStorage
 	 * @param to right boundary of timestamps range
 	 * @return future to obtain iterable object to enumerate message batches
 	 */
-	public final CompletableFuture<Iterable<StoredMessageBatch>> getGroupedMessageBatchesAsync(String groupName,
-			Instant from, Instant to)
+	public final CompletableFuture<Iterable<StoredGroupMessageBatch>> getGroupedMessageBatchesAsync(String groupName,
+																									Instant from, Instant to)
 	{
 		logger.debug("Getting message batches grouped by '{}' between {} and {} asynchronously", groupName, from, to);
 		if (groupName == null)

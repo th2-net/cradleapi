@@ -48,6 +48,18 @@ public class MessageToStore
 		this.metadata = copyFrom.getMetadata() != null ? new MessageMetadata(copyFrom.getMetadata()) : null;
 		this.content = copyFrom.getContent();
 	}
+
+	public MessageToStore (StoredMessage storedMessage) {
+		this.streamName = storedMessage.getStreamName();
+		this.direction = storedMessage.getDirection();
+		this.index = storedMessage.getIndex();
+		this.timestamp = storedMessage.getTimestamp();
+		this.content = storedMessage.getContent();
+		this.metadata = new MessageMetadata();
+		if (storedMessage.getMetadata() != null) {
+			storedMessage.getMetadata().toMap().forEach((key, value) -> this.metadata.add(key, value));
+		}
+	}
 	
 	
 	/**

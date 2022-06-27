@@ -42,10 +42,7 @@ import com.exactpro.cradle.cassandra.retries.*;
 import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.intervals.IntervalsWorker;
-import com.exactpro.cradle.messages.StoredMessage;
-import com.exactpro.cradle.messages.StoredMessageBatch;
-import com.exactpro.cradle.messages.StoredMessageFilter;
-import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.testevents.*;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.MessageUtils;
@@ -207,7 +204,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected void doStoreGroupedMessageBatch(StoredMessageBatch batch, String groupName) throws IOException
+	protected void doStoreGroupedMessageBatch(StoredGroupMessageBatch batch, String groupName) throws IOException
 	{
 		try
 		{
@@ -215,7 +212,7 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 		catch (Exception e)
 		{
-			throw new IOException("Error while storing message batch "+batch.getId(), e);
+			throw new IOException("Error while storing message batch with group name"+groupName, e);
 		}
 	}
 	
@@ -238,10 +235,9 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected CompletableFuture<Void> doStoreGroupedMessageBatchAsync(StoredMessageBatch batch, String groupName)
+	protected CompletableFuture<Void> doStoreGroupedMessageBatchAsync(StoredGroupMessageBatch batch, String groupName)
 	{
-		logger.debug("Creating grouped message batch entity from message batch with id {} and group {}",
-				batch.getId(), groupName);
+		logger.debug("Creating grouped message batch entity from message batch with group {}", groupName);
 		GroupedMessageBatchEntity entity;
 		try
 		{
@@ -253,8 +249,26 @@ public class CassandraCradleStorage extends CradleStorage
 			error.completeExceptionally(e);
 			return error;
 		}
-		return new AsyncOperator<Void>(semaphore).getFuture(() -> doWriteMessage(entity.getBatchEntity(), true))
-				.thenComposeAsync(r -> doWriteGroupedMessage(entity));
+
+		CompletableFuture<Void> future = new AsyncOperator<Void>(semaphore).getFuture(() -> doWriteGroupedMessage(entity));
+		try {
+			Collection<StoredMessageBatch> batches = entity.toStoredGroupMessageBatch().toStoredMessageBatches();
+
+			for (StoredMessageBatch el : batches) {
+				future = future.thenComposeAsync(r ->  {
+					try {
+						return doWriteMessage(new DetailedMessageBatchEntity(el, instanceUuid), true);
+					} catch (IOException e) {
+						logger.error("Could not save batch {}", el.getId());
+						return new CompletableFuture<>();
+					}
+				});
+			}
+		} catch (IOException | CradleStorageException e) {
+			logger.error("Could not get message batches from group message batch: {}", e.getMessage());
+		}
+
+		return future;
 	}
 	
 	@Override
@@ -599,7 +613,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Iterable<StoredMessageBatch> doGetGroupedMessageBatches(String groupName, Instant from, Instant to)
+	protected Iterable<StoredGroupMessageBatch> doGetGroupedMessageBatches(String groupName, Instant from, Instant to)
 			throws IOException
 	{
 		try
@@ -623,13 +637,12 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredMessageBatch>> doGetGroupedMessageBatchesAsync(String groupName,
-			Instant from, Instant to)
+	protected CompletableFuture<Iterable<StoredGroupMessageBatch>> doGetGroupedMessageBatchesAsync(String groupName,
+																								   Instant from, Instant to)
 	{
-		Instant shiftedFrom = from.minus(settings.getMaxMessageBatchDurationLimit(), ChronoUnit.SECONDS);
 		String queryInfo = format("fetching grouped message batches by group '%s' between %s and %s", groupName,
-				shiftedFrom, to);
-		return doGetGroupedMessageBatchEntities(groupName, shiftedFrom, to, queryInfo)
+				from, to);
+		return doGetGroupedMessageBatchEntities(groupName, from, to, queryInfo)
 				.thenApplyAsync(it -> new GroupedMessageBatchAdapter(it, pagingSupplies,
 						ops.getGroupedMessageBatchConverter(), queryInfo, from, to));
 	}

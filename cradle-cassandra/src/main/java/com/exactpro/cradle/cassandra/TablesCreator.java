@@ -244,9 +244,6 @@ public class TablesCreator
 
 				.withClusteringColumn(MESSAGE_DATE, DataTypes.DATE)
 				.withClusteringColumn(MESSAGE_TIME, DataTypes.TIME)
-				.withClusteringColumn(STREAM_NAME, DataTypes.TEXT)
-				.withClusteringColumn(DIRECTION, DataTypes.TEXT)
-				.withClusteringColumn(MESSAGE_INDEX, DataTypes.BIGINT)
 
 				.withColumn(LAST_MESSAGE_DATE, DataTypes.DATE)
 				.withColumn(LAST_MESSAGE_TIME, DataTypes.TIME)
@@ -255,14 +252,10 @@ public class TablesCreator
 				.withColumn(COMPRESSED, DataTypes.BOOLEAN)
 				.withColumn(CONTENT, DataTypes.BLOB)
 				.withColumn(MESSAGE_COUNT, DataTypes.INT)
-				.withColumn(LAST_MESSAGE_INDEX, DataTypes.BIGINT)
-				
+
 				.withClusteringOrder(MESSAGE_DATE, ClusteringOrder.ASC)
-				.withClusteringOrder(MESSAGE_TIME, ClusteringOrder.ASC)
-				.withClusteringOrder(STREAM_NAME, ClusteringOrder.ASC)
-				.withClusteringOrder(DIRECTION, ClusteringOrder.ASC)
-				.withClusteringOrder(MESSAGE_INDEX, ClusteringOrder.ASC);
-		
+				.withClusteringOrder(MESSAGE_TIME, ClusteringOrder.ASC);
+
 		exec.executeQuery(create.asCql(), true);
 		logger.info("Table '{}' has been created", name);
 	}

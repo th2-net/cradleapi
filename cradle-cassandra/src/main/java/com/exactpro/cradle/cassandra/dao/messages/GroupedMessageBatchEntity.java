@@ -17,13 +17,19 @@
 package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.mapper.annotations.*;
-import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.Order;
+import com.exactpro.cradle.messages.*;
+import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.MessageUtils;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
@@ -36,7 +42,7 @@ public class GroupedMessageBatchEntity
 	@Transient
 	private final DetailedMessageBatchEntity batchEntity;
 	
-	public GroupedMessageBatchEntity(StoredMessageBatch batch, UUID instanceId, String group) throws IOException
+	public GroupedMessageBatchEntity(StoredGroupMessageBatch batch, UUID instanceId, String group) throws IOException
 	{
 		this(new DetailedMessageBatchEntity(batch, instanceId), group);
 	}
@@ -100,42 +106,6 @@ public class GroupedMessageBatchEntity
 		batchEntity.setFirstMessageTime(messageTime);
 	}
 
-	@ClusteringColumn(2)
-	@CqlName(STREAM_NAME)
-	public String getStreamName()
-	{
-		return batchEntity.getStreamName();
-	}
-	
-	public void setStreamName(String streamName)
-	{
-		batchEntity.setStreamName(streamName);
-	}
-	
-	@ClusteringColumn(3)
-	@CqlName(DIRECTION)
-	public String getDirection()
-	{
-		return batchEntity.getDirection();
-	}
-	
-	public void setDirection(String direction)
-	{
-		batchEntity.setDirection(direction);
-	}
-	
-	@ClusteringColumn(4)
-	@CqlName(MESSAGE_INDEX)
-	public long getMessageIndex()
-	{
-		return batchEntity.getMessageIndex();
-	}
-	
-	public void setMessageIndex(long messageIndex)
-	{
-		batchEntity.setMessageIndex(messageIndex);
-	}
-	
 	// Columns
 	@CqlName(LAST_MESSAGE_DATE)
 	public LocalDate getLastMessageDate()
@@ -214,12 +184,6 @@ public class GroupedMessageBatchEntity
 		batchEntity.setMessageCount(messageCount);
 	}
 	
-	@CqlName(LAST_MESSAGE_INDEX)
-	public long getLastMessageIndex()
-	{
-		return batchEntity.getLastMessageIndex();
-	}
-	
 	public void setLastMessageIndex(long lastMessageIndex)
 	{
 		batchEntity.setLastMessageIndex(lastMessageIndex);
@@ -229,6 +193,43 @@ public class GroupedMessageBatchEntity
 	public DetailedMessageBatchEntity getBatchEntity()
 	{
 		return batchEntity;
+	}
+
+	public StoredGroupMessageBatch toStoredGroupMessageBatch() throws IOException, CradleStorageException
+	{
+		StoredGroupMessageBatch messageBatch = new StoredGroupMessageBatch(getGroup());
+
+		for (StoredMessage storedMessage : toStoredMessages())
+		{
+			MessageToStoreBuilder builder = new MessageToStoreBuilder()
+					.content(storedMessage.getContent())
+					.direction(storedMessage.getDirection())
+					.streamName(storedMessage.getStreamName())
+					.timestamp(storedMessage.getTimestamp())
+					.index(storedMessage.getIndex());
+			StoredMessageMetadata metadata = storedMessage.getMetadata();
+			if (metadata != null)
+				metadata.toMap().forEach(builder::metadata);
+
+			messageBatch.addMessage(builder.build());
+		}
+
+		return messageBatch;
+	}
+
+	public Collection<StoredMessage> toStoredMessages() throws IOException
+	{
+		return toStoredMessages(Order.DIRECT);
+	}
+
+	public Collection<StoredMessage> toStoredMessages(Order order) throws IOException
+	{
+		List<StoredMessage> messages = MessageUtils.bytesToGroupedMessages(batchEntity.getContent(), isCompressed());
+		if (order == Order.DIRECT)
+			return messages;
+
+		Collections.reverse(messages);
+		return messages;
 	}
 	
 	@Transient

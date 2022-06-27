@@ -22,6 +22,7 @@ import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.messages.StoredMessageMetadata;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Map;
 
@@ -38,6 +39,15 @@ public class MessageSerializer {
 		
 		this.serializeBatch(batch, buffer, messageBatchSizes);
 		
+		return buffer.array();
+	}
+
+	public byte[] serializeGroupBatch(Collection<StoredMessage> batch) throws SerializationException {
+		SerializationBatchSizes messageBatchSizes = MessagesSizeCalculator.calculateGroupMessageBatchSize(batch);
+		ByteBuffer buffer = ByteBuffer.allocate(messageBatchSizes.total);
+
+		this.serializeGroupBatch(batch, buffer, messageBatchSizes);
+
 		return buffer.array();
 	}
 
@@ -63,6 +73,24 @@ public class MessageSerializer {
 			i++;
 		}
 	}
+
+	public void serializeGroupBatch(Collection<StoredMessage> batch, ByteBuffer buffer, SerializationBatchSizes messageBatchSizes) throws SerializationException {
+
+		if (messageBatchSizes == null) {
+			messageBatchSizes = MessagesSizeCalculator.calculateGroupMessageBatchSize(batch);
+		}
+
+		buffer.putInt(MESSAGE_BATCH_MAGIC);
+		buffer.put(MESSAGE_PROTOCOL_VER);
+
+		buffer.putInt(batch.size());
+		int i = 0;
+		for (StoredMessage message : batch) {
+			buffer.putInt(messageBatchSizes.mess[i]);
+			this.serializeGroupMessage(message, buffer);
+			i++;
+		}
+	}
 	
 	public byte[] serialize(StoredMessage message) throws SerializationException {
 		ByteBuffer b = ByteBuffer.allocate(MessagesSizeCalculator.calculateMessageSize(message));
@@ -70,8 +98,25 @@ public class MessageSerializer {
 		return b.array();
 	}
 
+	public byte[] serializeGroupMessage (StoredMessage message) throws SerializationException {
+		ByteBuffer b = ByteBuffer.allocate(MessagesSizeCalculator.calculateGroupMessageSize(message));
+		this.serializeGroupMessage(message, b);
+		return b.array();
+	}
+
 	public void serialize(StoredMessage message, ByteBuffer buffer) throws SerializationException {
 		buffer.putShort(MESSAGE_MAGIC);
+		buffer.putLong(message.getId().getIndex());
+		printInstant(message.getTimestamp(), buffer);
+		this.printMessageMetaData(message.getMetadata(), buffer);
+		printBody(message.getContent(), buffer);
+	}
+
+	public void serializeGroupMessage (StoredMessage message, ByteBuffer buffer) throws SerializationException {
+		buffer.putShort(MESSAGE_MAGIC);
+		buffer.putShort((short) message.getStreamName().length());
+		buffer.put(message.getStreamName().getBytes(StandardCharsets.UTF_8));
+		buffer.put((byte) message.getDirection().ordinal());
 		buffer.putLong(message.getId().getIndex());
 		printInstant(message.getTimestamp(), buffer);
 		this.printMessageMetaData(message.getMetadata(), buffer);
