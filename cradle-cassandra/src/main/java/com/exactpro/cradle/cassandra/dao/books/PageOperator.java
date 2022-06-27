@@ -39,7 +39,7 @@ public interface PageOperator {
 	
 	@Query( "SELECT * FROM ${qualifiedTableId} " +
 			"WHERE " +
-				FIELD_BOOK +"=:part AND " +
+				FIELD_BOOK +"=:book AND " +
 			    "(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") > (:startDate, :startTime)")
 	PagingIterable<PageEntity> get(String book, LocalDate startDate, LocalTime startTime,
 								   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
@@ -54,7 +54,7 @@ public interface PageOperator {
 			"SET " +
 				FIELD_REMOVED + "=:removed " +
 			"WHERE " +
-				FIELD_BOOK +"=:part AND " +
+				FIELD_BOOK +"=:book AND " +
 				FIELD_START_DATE + "=:startDate AND " +
 				FIELD_START_TIME + "=:startTime")
 	ResultSet remove(String book, LocalDate startDate, LocalTime startTime, Instant removed,
