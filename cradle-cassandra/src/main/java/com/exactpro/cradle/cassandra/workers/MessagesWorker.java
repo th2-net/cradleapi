@@ -266,7 +266,7 @@ public class MessagesWorker extends Worker
 	{
 		StoredMessageId batchId = batch.getId();
 		CassandraOperators operators = getOperators();
-		CachedPageSession cachedPageSession = new CachedPageSession(pageId.toString(),
+		CachedPageSession cachedPageSession = new CachedPageSession(pageId.getBookId().getName(), pageId.getName(),
 				batchId.getSessionAlias(), batchId.getDirection().getLabel());
 		if (!operators.getPageSessionsCache().store(cachedPageSession))
 		{
@@ -284,7 +284,7 @@ public class MessagesWorker extends Worker
 		StoredMessageId batchId = batch.getId();
 		BookId bookId = batchId.getBookId();
 		CassandraOperators operators = getOperators();
-		CachedSession cachedSession = new CachedSession(bookId.toString(), batch.getSessionAlias());
+		CachedSession cachedSession = new CachedSession(bookId.getName(), batch.getSessionAlias());
 		if (!operators.getSessionsCache().store(cachedSession))
 		{
 			logger.debug("Skipped writing book/session of message batch '{}'", batchId);

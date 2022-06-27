@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,49 +18,36 @@ package com.exactpro.cradle.cassandra.dao.cache;
 
 import java.util.Objects;
 
-public class CachedScope
-{
-	private final String book, scope;
-	
-	public CachedScope(String book, String scope)
-	{
-		this.book = book;
-		this.scope = scope;
-	}
-	
-	@Override
-	public int hashCode()
-	{
-		return Objects.hash(book, scope);
-	}
-	
-	@Override
-	public boolean equals(Object obj)
-	{
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		CachedScope other = (CachedScope) obj;
-		return Objects.equals(book, other.book) && Objects.equals(scope, other.scope);
-	}
+public class CachedScope {
+    private final String book;
+	private final String scope;
 
-	@Override
-	public String toString()
-	{
-		return "CachedScope [book=" + book + ", scope=" + scope + "]";
-	}
-	
-	
-	public String getBook()
-	{
-		return book;
-	}
-	
-	public String getScope()
-	{
-		return scope;
-	}
+    public CachedScope(String book, String scope) {
+        this.book = book;
+        this.scope = scope;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(book, scope);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        CachedScope other = (CachedScope) obj;
+        return Objects.equals(book, other.book) &&
+				Objects.equals(scope, other.scope);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s [book=\"%s\", scope=\"%s\"]",
+				this.getClass().getSimpleName(), book, scope);
+    }
 }

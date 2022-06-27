@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,49 +17,43 @@
 package com.exactpro.cradle.cassandra.dao.cache;
 
 import java.util.Objects;
-import java.util.StringJoiner;
 
-public class CachedPageSession
-{
+public class CachedPageSession {
+	private final String book;
 	private final String page;
-	private final String sessionAlias,
-			direction;
+    private final String sessionAlias;
+	private final String direction;
 
-	public CachedPageSession(String page, String sessionAlias, String direction)
-	{
-		this.page = page;
-		this.sessionAlias = sessionAlias;
-		this.direction = direction;
-	}
+    public CachedPageSession(String book, String page, String sessionAlias, String direction) {
+    	this.book = book;
+        this.page = page;
+        this.sessionAlias = sessionAlias;
+        this.direction = direction;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(book, page, sessionAlias, direction);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        CachedPageSession other = (CachedPageSession) obj;
+        return Objects.equals(book, other.book)
+				&& Objects.equals(page, other.page)
+                && Objects.equals(sessionAlias, other.sessionAlias)
+                && Objects.equals(direction, other.direction);
+    }
 
 	@Override
-	public int hashCode()
-	{
-		return Objects.hash(page, sessionAlias, direction);
-	}
-
-	@Override
-	public boolean equals(Object obj)
-	{
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		CachedPageSession other = (CachedPageSession) obj;
-		return Objects.equals(page, other.page) 
-				&& Objects.equals(sessionAlias, other.sessionAlias)
-				&& Objects.equals(direction, other.direction);
-	}
-
-	@Override
-	public String toString()
-	{
-		return new StringJoiner(", ", CachedPageSession.class.getSimpleName() + "[", "]")
-				.add("page='" + page + "'")
-				.add("sessionAlias='" + sessionAlias + "'")
-				.add("direction='" + direction + "'")
-				.toString();
+	public String toString() {
+		return String.format("%s [book=\"%s\", page=\"%s\", sessionAlias=\"%s\", direction=\"%s\"]",
+				this.getClass().getSimpleName(), book, page, sessionAlias, direction);
 	}
 }

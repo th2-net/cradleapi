@@ -125,7 +125,8 @@ public class EventsWorker extends Worker
 	public CompletableFuture<PageScopeEntity> storePageScope(TestEventToStore event, PageId pageId)
 	{
 		CassandraOperators operators = getOperators();
-		if (!operators.getPageScopesCache().store(new CachedPageScope(pageId.toString(), event.getScope())))
+		if (!operators.getPageScopesCache().store(
+				new CachedPageScope(pageId.getBookId().getName(), pageId.getName(), event.getScope())))
 		{
 			logger.debug("Skipped writing scope partition of event '{}'", event.getId());
 			return CompletableFuture.completedFuture(null);
