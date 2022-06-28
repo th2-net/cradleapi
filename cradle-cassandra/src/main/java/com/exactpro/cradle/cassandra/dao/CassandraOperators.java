@@ -18,8 +18,8 @@ package com.exactpro.cradle.cassandra.dao;
 
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.books.*;
-import com.exactpro.cradle.cassandra.dao.cache.CachedPageSession;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
+import com.exactpro.cradle.cassandra.dao.cache.CachedPageSession;
 import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
 import com.exactpro.cradle.cassandra.dao.cache.CachedSession;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalEntity;
@@ -68,6 +68,7 @@ public class CassandraOperators {
     private final LimitedCache<CachedPageSession> pageSessionsCache;
     private final LimitedCache<CachedScope> scopesCache;
     private final LimitedCache<CachedPageScope> pageScopesCache;
+    private final LimitedCache<SessionStatisticsEntity> sessionStatisticsCache;
 
     public CassandraOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings) {
 
@@ -105,6 +106,7 @@ public class CassandraOperators {
         pageSessionsCache = new LimitedCache<>(settings.getPageSessionsCacheSize());
         scopesCache = new LimitedCache<>(settings.getScopesCacheSize());
         pageScopesCache = new LimitedCache<>(settings.getPageScopesCacheSize());
+        sessionStatisticsCache = new LimitedCache<>(settings.getSessionStatisticsCacheSize());
     }
 
     public BookOperator getBookOperator() {
@@ -217,5 +219,9 @@ public class CassandraOperators {
 
     public LimitedCache<CachedPageScope> getPageScopesCache() {
         return pageScopesCache;
+    }
+
+    public LimitedCache<SessionStatisticsEntity> getSessionStatisticsCache() {
+        return sessionStatisticsCache;
     }
 }
