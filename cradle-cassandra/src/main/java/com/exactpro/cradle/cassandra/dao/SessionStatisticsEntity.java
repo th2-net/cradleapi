@@ -101,8 +101,10 @@ public class SessionStatisticsEntity {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         SessionStatisticsEntity that = (SessionStatisticsEntity) o;
         return Objects.equals(book, that.book) &&
                 Objects.equals(page, that.page) &&
@@ -115,5 +117,17 @@ public class SessionStatisticsEntity {
     @Override
     public int hashCode() {
         return Objects.hash(book, page, recordType, frameType, frameStart, session);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s [%s=\"%s\", %s=\"%s\", %s=%d, %s=%d, %s=%s, %s=\"%s\"]"
+                , getClass().getSimpleName()
+                , FIELD_BOOK, book
+                , FIELD_PAGE, page
+                , FIELD_RECORD_TYPE, recordType
+                , FIELD_FRAME_TYPE, frameType
+                , FIELD_FRAME_START, frameStart.toString()
+                , FIELD_SESSION, session);
     }
 }

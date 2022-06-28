@@ -250,6 +250,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
                         sessionsRecord.getFrameStart(),
                         session);
                 if (!cache.contains(entity)) {
+                    logger.trace("Persisting {}", entity.toString());
                     op.write(entity,writeAttrs)
                             .whenComplete((result, e) -> {
                                 if (e != null)
@@ -257,6 +258,8 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
                                 else
                                     cache.store(entity);
                             });
+                } else {
+                    logger.trace("{} found in cache, ignoring", entity.toString());
                 }
             }
         } catch (Exception e) {

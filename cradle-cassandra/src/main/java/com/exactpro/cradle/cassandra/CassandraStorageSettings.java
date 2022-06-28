@@ -95,6 +95,7 @@ public class CassandraStorageSettings {
         this.counterPersistenceInterval = DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS;
 		this.bookRefreshIntervalMillis = DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS;
 		this.sessionsCacheSize = DEFAULT_SESSION_STATISTICS_CACHE_SIZE;
+		this.sessionStatisticsCacheSize = DEFAULT_SESSION_STATISTICS_CACHE_SIZE;
     }
 
     public CassandraStorageSettings(CassandraStorageSettings settings) {
