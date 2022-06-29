@@ -121,6 +121,12 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
     @Override
     public void updateEntityBatchStatistics(BookId bookId, BookStatisticsRecordsCaches.EntityKey entityKey, Collection<SerializedEntityMetadata> batchMetadata) {
+        if (interval == 0) {
+            logger.trace("Counter persistence service is disabled");
+
+            return;
+        }
+
         TimeFrameRecordCache<Counter> counters = getBookStatisticsRecordsCaches(bookId)
                 .getEntityCounterCache()
                 .get(entityKey);
@@ -130,6 +136,12 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
     @Override
     public void updateMessageBatchStatistics(BookId bookId, String page, String sessionAlias, String direction, Collection<SerializedEntityMetadata> batchMetadata) {
+        if (interval == 0) {
+            logger.trace("Counter persistence service is disabled");
+
+            return;
+        }
+
         TimeFrameRecordCache<Counter> counters = getBookStatisticsRecordsCaches(bookId)
                 .getMessageCounterCache()
                 .get(new BookStatisticsRecordsCaches.MessageKey(page, sessionAlias, direction));
@@ -141,6 +153,12 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
     @Override
     public void updateSessionStatistics(BookId bookId, String page, SessionRecordType recordType, String session, Collection<SerializedEntityMetadata> batchMetadata) {
+        if (interval == 0) {
+            logger.trace("Counter persistence service is disabled");
+
+            return;
+        }
+
         TimeFrameRecordCache<SessionList> samples = getBookStatisticsRecordsCaches(bookId)
                 .getSessionRecordCache()
                 .get(new BookStatisticsRecordsCaches.SessionRecordKey(page, recordType));
