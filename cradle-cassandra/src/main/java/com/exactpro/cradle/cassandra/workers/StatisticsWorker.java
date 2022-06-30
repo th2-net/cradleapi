@@ -47,17 +47,19 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
     private final long interval;
     private final Map<BookId, BookStatisticsRecordsCaches> bookCounterCaches;
     private final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs;
+    private final boolean isEnabled;
 
     public StatisticsWorker(CassandraOperators operators, Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs, long persistanceInterval) {
         this.operators = operators;
         this.writeAttrs = writeAttrs;
         this.interval = persistanceInterval;
         this.bookCounterCaches = new ConcurrentHashMap<>();
+        this.isEnabled = interval!=0;
     }
 
     private ScheduledExecutorService executorService;
     public void start() {
-        if (interval == 0) {
+        if (!isEnabled) {
             logger.info("Counter persistence service is disabled");
             return;
         }
@@ -69,7 +71,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
     }
 
     public void stop() {
-        if (interval == 0)
+        if (!isEnabled)
             return;
 
         if (executorService == null)
@@ -121,7 +123,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
     @Override
     public void updateEntityBatchStatistics(BookId bookId, BookStatisticsRecordsCaches.EntityKey entityKey, Collection<SerializedEntityMetadata> batchMetadata) {
-        if (interval == 0) {
+        if (!isEnabled) {
             logger.trace("Counter persistence service is disabled");
 
             return;
@@ -136,7 +138,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
     @Override
     public void updateMessageBatchStatistics(BookId bookId, String page, String sessionAlias, String direction, Collection<SerializedEntityMetadata> batchMetadata) {
-        if (interval == 0) {
+        if (!isEnabled) {
             logger.trace("Counter persistence service is disabled");
 
             return;
@@ -153,7 +155,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
     @Override
     public void updateSessionStatistics(BookId bookId, String page, SessionRecordType recordType, String session, Collection<SerializedEntityMetadata> batchMetadata) {
-        if (interval == 0) {
+        if (!isEnabled) {
             logger.trace("Counter persistence service is disabled");
 
             return;
