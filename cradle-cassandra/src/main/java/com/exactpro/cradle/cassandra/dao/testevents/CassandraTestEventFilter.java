@@ -16,41 +16,50 @@
 
 package com.exactpro.cradle.cassandra.dao.testevents;
 
-import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
-
-import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.*;
+import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
+import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
+import com.datastax.oss.driver.api.querybuilder.select.Select;
+import com.exactpro.cradle.Order;
+import com.exactpro.cradle.cassandra.dao.CassandraFilter;
+import com.exactpro.cradle.cassandra.utils.FilterUtils;
+import com.exactpro.cradle.filters.ComparisonOperation;
+import com.exactpro.cradle.filters.FilterForGreater;
+import com.exactpro.cradle.filters.FilterForLess;
+import com.exactpro.cradle.testevents.StoredTestEventId;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.exactpro.cradle.cassandra.dao.CassandraFilter;
-import com.exactpro.cradle.cassandra.utils.FilterUtils;
-import com.exactpro.cradle.filters.FilterForGreater;
-import com.exactpro.cradle.filters.FilterForLess;
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
+import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.*;
 
 public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity> {
     private static final String START_DATE_FROM = "startDateFrom";
     private static final String START_DATE_TO = "startDateTo";
     private static final String START_TIME_FROM = "startTimeFrom";
     private static final String START_TIME_TO = "startTimeTo";
+    private static final String ID = "id";
 
     private final String book, page, scope;
     private final FilterForGreater<Instant> startTimestampFrom;
     private final FilterForLess<Instant> startTimestampTo;
     private final String parentId;
+    private final StoredTestEventId id;
+    private final Order order;
 
     public CassandraTestEventFilter(String book, String page, String scope,
                                     FilterForGreater<Instant> startTimestampFrom, FilterForLess<Instant> startTimestampTo,
-                                    String parentId) {
+                                    StoredTestEventId id,
+                                    String parentId, Order order) {
         this.book = book;
         this.page = page;
         this.scope = scope;
         this.startTimestampFrom = startTimestampFrom;
         this.startTimestampTo = startTimestampTo;
+        this.id = id;
         this.parentId = parentId;
+        this.order = (order == null) ? Order.DIRECT : order;
     }
 
 
@@ -63,13 +72,30 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
 
         if (startTimestampFrom != null)
             select = FilterUtils.timestampFilterToWhere(startTimestampFrom.getOperation(), select, FIELD_START_DATE, FIELD_START_TIME, START_DATE_FROM, START_TIME_FROM);
+
         if (startTimestampTo != null)
             select = FilterUtils.timestampFilterToWhere(startTimestampTo.getOperation(), select, FIELD_START_DATE, FIELD_START_TIME, START_DATE_TO, START_TIME_TO);
+
+        if (id != null) {
+            if (order == Order.DIRECT)
+                select = FilterUtils.timestampAndIdFilterToWhere(ComparisonOperation.GREATER_OR_EQUALS, select, FIELD_START_DATE, FIELD_START_TIME, FIELD_ID, START_DATE_FROM, START_TIME_FROM, ID);
+            else
+                select = FilterUtils.timestampAndIdFilterToWhere(ComparisonOperation.LESS_OR_EQUALS, select, FIELD_START_DATE, FIELD_START_TIME, FIELD_ID, START_DATE_TO, START_TIME_TO, ID);
+        }
+
         if (parentId != null)
             select = select.whereColumn(FIELD_PARENT_ID).isEqualTo(bindMarker());
-
+        else {
+            // ordering is not supported when filtering by parent id requested
+            ClusteringOrder orderBy = (order == Order.DIRECT) ? ClusteringOrder.ASC : ClusteringOrder.DESC;
+            select = select
+                    .orderBy(FIELD_START_DATE, orderBy)
+                    .orderBy(FIELD_START_TIME, orderBy)
+                    .orderBy(FIELD_ID, orderBy);
+        }
         return select;
     }
+
 
     @Override
     public BoundStatementBuilder bindParameters(BoundStatementBuilder builder) {
@@ -80,8 +106,17 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
 
         if (startTimestampFrom != null)
             builder = FilterUtils.bindTimestamp(startTimestampFrom.getValue(), builder, START_DATE_FROM, START_TIME_FROM);
+
         if (startTimestampTo != null)
             builder = FilterUtils.bindTimestamp(startTimestampTo.getValue(), builder, START_DATE_TO, START_TIME_TO);
+
+        if (id != null) {
+            if (order == Order.DIRECT)
+                builder = FilterUtils.bindTimestampAndId(id.getStartTimestamp(), id.getId(), builder, START_DATE_FROM, START_TIME_FROM, ID);
+            else
+                builder = FilterUtils.bindTimestampAndId(id.getStartTimestamp(), id.getId(), builder, START_DATE_TO, START_TIME_TO, ID);
+        }
+
         if (parentId != null)
             builder = builder.setString(FIELD_PARENT_ID, parentId);
 
@@ -101,6 +136,10 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
         return scope;
     }
 
+    public StoredTestEventId getId() {
+        return id;
+    }
+
     public FilterForGreater<Instant> getStartTimestampFrom() {
         return startTimestampFrom;
     }
@@ -113,6 +152,9 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
         return parentId;
     }
 
+    public Order getOrder() {
+        return order;
+    }
 
     @Override
     public String toString() {
@@ -124,11 +166,15 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
         if (scope != null)
             result.add("scope=" + scope);
         if (startTimestampFrom != null)
-            result.add("timestamp" + startTimestampFrom);
+            result.add("timestampFrom" + startTimestampFrom);
         if (startTimestampTo != null)
-            result.add("timestamp" + startTimestampTo);
+            result.add("timestampTo" + startTimestampTo);
+        if (id != null)
+            result.add("id=" + id);
         if (parentId != null)
             result.add("parentId=" + parentId);
+        if (order != null)
+            result.add("order=" + order);
         return String.join(", ", result);
     }
 }

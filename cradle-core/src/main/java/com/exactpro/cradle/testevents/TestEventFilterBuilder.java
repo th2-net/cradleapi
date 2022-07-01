@@ -29,6 +29,7 @@ public class TestEventFilterBuilder extends AbstractFilterBuilder<TestEventFilte
 {
 	private String scope;
 	private StoredTestEventId parentId;
+	private StoredTestEventId id;
 	private boolean root;
 
 	public TestEventFilterBuilder scope(String scope)
@@ -36,7 +37,13 @@ public class TestEventFilterBuilder extends AbstractFilterBuilder<TestEventFilte
 		this.scope = scope;
 		return this;
 	}
-	
+
+	public TestEventFilterBuilder id(StoredTestEventId id)
+	{
+		this.id = id;
+		return this;
+	}
+
 	public FilterForGreaterBuilder<Instant, TestEventFilterBuilder> startTimestampFrom()
 	{
 		return super.timestampFrom();
@@ -71,6 +78,8 @@ public class TestEventFilterBuilder extends AbstractFilterBuilder<TestEventFilte
 				result.setRoot();
 			else
 				result.setParentId(parentId);
+			result.setId(id);
+			result.validate();
 			return result;
 		}
 		finally
@@ -89,6 +98,7 @@ public class TestEventFilterBuilder extends AbstractFilterBuilder<TestEventFilte
 	{
 		super.reset();
 		scope = null;
+		id = null;
 		parentId = null;
 		root = false;
 	}
