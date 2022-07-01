@@ -21,6 +21,8 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
+import com.datastax.oss.driver.api.mapper.annotations.QueryProvider;
+import com.exactpro.cradle.Order;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -43,6 +45,25 @@ public interface TimeTestEventOperator
 	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getTestEvents(UUID instanceId, LocalDate startDate,
 			LocalTime timeFrom, LocalTime timeTo,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+	@QueryProvider(providerClass = TestEventQueryProvider.class, entityHelpers = TestEventEntity.class)
+	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getTestEventsFromId(UUID instanceId, LocalDate startDate, String fromId,
+																					  LocalTime timeFrom, LocalTime timeTo, Order order,
+																					  Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+	@QueryProvider(providerClass = TestEventQueryProvider.class, entityHelpers = TestEventEntity.class)
+	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getTestEventsFromId(UUID instanceId, LocalDate startDate, String parentId,
+																					  String fromId, LocalTime timeFrom, LocalTime timeTo, Order order,
+																					  Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	@QueryProvider(providerClass = TestEventMetadataQueryProvider.class, entityHelpers = TestEventMetadataEntity.class)
+	CompletableFuture<MappedAsyncPagingIterable<TestEventMetadataEntity>> getTestEventsFromIdMetadata (UUID instanceId, LocalDate startDate, String parentId,
+																							   String fromId, LocalTime timeFrom, LocalTime timeTo,
+																							   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+	@QueryProvider(providerClass = TestEventMetadataQueryProvider.class, entityHelpers = TestEventMetadataEntity.class)
+	CompletableFuture<MappedAsyncPagingIterable<TestEventMetadataEntity>> getTestEventsFromIdMetadata (UUID instanceId, LocalDate startDate,
+																							   String fromId, LocalTime timeFrom, LocalTime timeTo,
+																							   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Query(METADATA_SELECT_START +
 			" FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " +

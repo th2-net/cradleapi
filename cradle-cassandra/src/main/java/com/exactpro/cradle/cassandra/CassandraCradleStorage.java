@@ -59,6 +59,7 @@ import java.time.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
@@ -84,7 +85,7 @@ public class CassandraCradleStorage extends CradleStorage
 			strictReadAttrs;
 	private int resultPageSize;
 	private SelectExecutionPolicy selectExecutionPolicy;
-	
+
 	private QueryExecutor exec;
 	private RetryingSelectExecutor selectExecutor;
 	private PagingSupplies pagingSupplies;
@@ -349,7 +350,7 @@ public class CassandraCradleStorage extends CradleStorage
 		return entityFuture.thenApply(entity -> {
 			if (entity == null)
 				return null;
-			
+
 			try
 			{
 				return MessageUtils.bytesToMessages(entity.getContent(), entity.isCompressed());
@@ -652,6 +653,87 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
+	protected Iterable<StoredTestEventWrapper> doGetTestEventsFromId(StoredTestEventId fromId, Instant from, Instant to, Order order) throws CradleStorageException, ExecutionException, InterruptedException {
+		return doGetTestEventsFromIdAsync(fromId, from, to, order).get();
+	}
+
+	@Override
+	protected Iterable<StoredTestEventWrapper> doGetTestEventsFromId(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to, Order order) throws CradleStorageException, ExecutionException, InterruptedException {
+		return doGetTestEventsFromIdAsync(parentId, fromId, from, to, order).get();
+	}
+
+	@Override
+	protected Iterable<StoredTestEventMetadata> doGetTestEventsFromIdMetadata(StoredTestEventId fromId, Instant from, Instant to) throws CradleStorageException, ExecutionException, InterruptedException {
+		return doGetTestEventsFromIdMetadataAsync(fromId, from, to).get();
+	}
+
+	@Override
+	protected Iterable<StoredTestEventMetadata> doGetTestEventsFromIdMetadata(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to) throws CradleStorageException, ExecutionException, InterruptedException {
+		return doGetTestEventsFromIdMetadataAsync(parentId, fromId, from, to).get();
+	}
+
+	@Override
+	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsFromIdAsync(StoredTestEventId fromId, Instant from, Instant to, Order order) throws CradleStorageException {
+		TestEventsQueryParams params = new TestEventsQueryParams(fromId, from, to, order);
+		String queryInfo = String.format("get test events starting with id %s from range %s..%s", fromId, from, to);
+
+		return new AsyncOperator<MappedAsyncPagingIterable<TestEventEntity>>(semaphore)
+				.getFuture(() -> selectExecutor.executeQuery(
+						() -> ops.getTimeTestEventOperator().getTestEventsFromId(instanceUuid,
+								params.getFromDate(), params.getFromId(), params.getFromTime(), params.getToTime(), params.getOrder(), readAttrs),
+						ops.getTestEventConverter(), queryInfo))
+				.thenApply(entity -> new TestEventDataIteratorAdapter(entity, pagingSupplies,
+						ops.getTestEventConverter(), queryInfo));
+	}
+
+	@Override
+	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsFromIdAsync(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to, Order order) throws CradleStorageException {
+		TestEventsQueryParams params = new TestEventsQueryParams(parentId, fromId, from, to, order);
+		String queryInfo = String.format("get test events starting with id %s and parentId %s from range %s..%s", fromId, parentId, from, to);
+
+		return new AsyncOperator<MappedAsyncPagingIterable<TestEventEntity>>(semaphore)
+				.getFuture(() -> selectExecutor.executeQuery(
+						() -> ops.getTimeTestEventOperator().getTestEventsFromId(instanceUuid,
+								params.getFromDate(), params.getParentId(), params.getFromId(),
+								params.getFromTime(), params.getToTime(), params.getOrder(), readAttrs),
+						ops.getTestEventConverter(), queryInfo))
+				.thenApply(entity -> new TestEventDataIteratorAdapter(entity, pagingSupplies,
+						ops.getTestEventConverter(), queryInfo));
+	}
+
+	@Override
+	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsFromIdMetadataAsync(StoredTestEventId fromId, Instant from, Instant to) throws CradleStorageException {
+		TestEventsQueryParams params = new TestEventsQueryParams(fromId, from, to);
+		String queryInfo = String.format("get test events' metadata starting with id %s from range %s..%s", fromId, from, to);
+
+		return new AsyncOperator<MappedAsyncPagingIterable<TestEventMetadataEntity>>(semaphore)
+				.getFuture(() -> selectExecutor.executeQuery(() ->
+								ops.getTimeTestEventOperator().getTestEventsFromIdMetadata(instanceUuid,
+										params.getFromDate(), params.getFromId(), params.getFromTime(),
+										params.getToTime(), readAttrs),
+						ops.getTestEventMetadataConverter(), queryInfo))
+				.thenApply(r -> new TestEventMetadataIteratorAdapter(r, pagingSupplies,
+						ops.getTestEventMetadataConverter(),
+						queryInfo));
+	}
+
+	@Override
+	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsFromIdMetadataAsync(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to) throws CradleStorageException {
+		TestEventsQueryParams params = new TestEventsQueryParams(parentId, fromId, from, to, null);
+		String queryInfo = String.format("get test events' metadata starting with id %s and parentId %s from range %s..%s", fromId, parentId, from, to);
+
+		return new AsyncOperator<MappedAsyncPagingIterable<TestEventMetadataEntity>>(semaphore)
+				.getFuture(() -> selectExecutor.executeQuery(() ->
+								ops.getTimeTestEventOperator().getTestEventsFromIdMetadata(instanceUuid,
+										params.getFromDate(), params.getParentId(), params.getFromId(), params.getFromTime(),
+										params.getToTime(), readAttrs),
+						ops.getTestEventMetadataConverter(), queryInfo))
+				.thenApply(r -> new TestEventMetadataIteratorAdapter(r, pagingSupplies,
+						ops.getTestEventMetadataConverter(),
+						queryInfo));
+	}
+
+	@Override
 	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsMetadataAsync(
 			StoredTestEventId parentId, Instant from, Instant to) throws CradleStorageException
 	{
@@ -885,7 +967,7 @@ public class CassandraCradleStorage extends CradleStorage
 		return entityFuture.thenApply(entity -> {
 			if (entity == null)
 				return null;
-			
+
 			try
 			{
 				return MessageUtils.bytesToOneMessage(entity.getContent(), entity.isCompressed(), id);
@@ -1002,14 +1084,31 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		private final LocalDateTime fromDateTime, toDateTime;
 		private final String parentId;
+		private final String fromId;
+		private final Order order;
 
-		public TestEventsQueryParams(StoredTestEventId parentId, Instant from, Instant to)
+		public TestEventsQueryParams(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to, Order order)
 				throws CradleStorageException
 		{
 			this.fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET);
 			this.toDateTime = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
 			this.parentId = parentId == null ? ROOT_EVENT_PARENT_ID : parentId.toString();
+			this.fromId = fromId.toString();
+			this.order = order;
+
 			checkTimeBoundaries(fromDateTime, toDateTime, from, to);
+		}
+
+		public TestEventsQueryParams(StoredTestEventId fromId, Instant from, Instant to, Order order)
+				throws CradleStorageException
+		{
+			this (null, fromId, from, to, order);
+		}
+
+		public TestEventsQueryParams(StoredTestEventId parentId, Instant from, Instant to)
+				throws CradleStorageException
+		{
+			this (parentId, null, from, to, Order.DIRECT);
 		}
 
 		public TestEventsQueryParams(Instant from, Instant to) throws CradleStorageException
@@ -1046,6 +1145,14 @@ public class CassandraCradleStorage extends CradleStorage
 		public LocalTime getToTime()
 		{
 			return toDateTime.toLocalTime();
+		}
+
+		public String getFromId() {
+			return fromId;
+		}
+
+		public Order getOrder() {
+			return order;
 		}
 	}
 }
