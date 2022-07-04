@@ -54,7 +54,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
         this.writeAttrs = writeAttrs;
         this.interval = persistanceInterval;
         this.bookCounterCaches = new ConcurrentHashMap<>();
-        this.isEnabled = interval!=0;
+        this.isEnabled = (interval != 0);
     }
 
     private ScheduledExecutorService executorService;
@@ -123,11 +123,9 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
     @Override
     public void updateEntityBatchStatistics(BookId bookId, BookStatisticsRecordsCaches.EntityKey entityKey, Collection<SerializedEntityMetadata> batchMetadata) {
-        if (!isEnabled) {
-            logger.trace("Counter persistence service is disabled");
 
+        if (!isEnabled)
             return;
-        }
 
         TimeFrameRecordCache<Counter> counters = getBookStatisticsRecordsCaches(bookId)
                 .getEntityCounterCache()
@@ -138,11 +136,9 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
     @Override
     public void updateMessageBatchStatistics(BookId bookId, String page, String sessionAlias, String direction, Collection<SerializedEntityMetadata> batchMetadata) {
-        if (!isEnabled) {
-            logger.trace("Counter persistence service is disabled");
 
+        if (!isEnabled)
             return;
-        }
 
         TimeFrameRecordCache<Counter> counters = getBookStatisticsRecordsCaches(bookId)
                 .getMessageCounterCache()
@@ -155,11 +151,9 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
     @Override
     public void updateSessionStatistics(BookId bookId, String page, SessionRecordType recordType, String session, Collection<SerializedEntityMetadata> batchMetadata) {
-        if (!isEnabled) {
-            logger.trace("Counter persistence service is disabled");
 
+        if (!isEnabled)
             return;
-        }
 
         TimeFrameRecordCache<SessionList> samples = getBookStatisticsRecordsCaches(bookId)
                 .getSessionRecordCache()
