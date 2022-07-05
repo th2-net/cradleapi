@@ -134,9 +134,9 @@ public abstract class CradleStorage
 			throws CradleStorageException, IOException;
 	protected abstract Iterable<StoredTestEventWrapper> doGetTestEventsFromId(StoredTestEventId fromId, Instant from, Instant to, Order order)
 			throws CradleStorageException, ExecutionException, InterruptedException;
-	protected abstract Iterable<StoredTestEventWrapper> doGetTestEventsFromId(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to, Order order)
+	protected abstract Iterable<StoredTestEventWrapper> doGetTestEventsFromId(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to)
 			throws CradleStorageException, ExecutionException, InterruptedException;
-	protected abstract Iterable<StoredTestEventMetadata> doGetTestEventsFromIdMetadata(StoredTestEventId fromId, Instant from, Instant to)
+	protected abstract Iterable<StoredTestEventMetadata> doGetTestEventsFromIdMetadata(StoredTestEventId fromId, Instant from, Instant to, Order order)
 			throws CradleStorageException, ExecutionException, InterruptedException;
 	protected abstract Iterable<StoredTestEventMetadata> doGetTestEventsFromIdMetadata(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to)
 			throws CradleStorageException, ExecutionException, InterruptedException;
@@ -144,9 +144,9 @@ public abstract class CradleStorage
 			Instant to) throws CradleStorageException;
 	protected abstract CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsFromIdAsync(StoredTestEventId fromId, Instant from, Instant to, Order order)
 			throws CradleStorageException;
-	protected abstract CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsFromIdAsync(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to, Order order)
+	protected abstract CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsFromIdAsync(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to)
 			throws CradleStorageException;
-	protected abstract CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsFromIdMetadataAsync(StoredTestEventId fromId, Instant from, Instant to)
+	protected abstract CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsFromIdMetadataAsync(StoredTestEventId fromId, Instant from, Instant to, Order order)
 			throws CradleStorageException;
 	protected abstract CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsFromIdMetadataAsync(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to)
 			throws CradleStorageException;
@@ -967,25 +967,6 @@ public abstract class CradleStorage
 				});
 	}
 
-	public final CompletableFuture<Iterable<StoredTestEventWrapper>> getTestEventsFromIdAsync(Instant from, Instant to)
-			throws CradleStorageException
-	{
-		if (from == null || to == null)
-			throw new CradleStorageException("Both boundaries (from and to) should be specified");
-
-		logger.debug("Getting test events from range {}..{} asynchronously", from, to);
-
-		return doGetTestEventsAsync(from, to)
-				.whenComplete((r, error) ->
-				{
-					if (error != null)
-						logger.error("Error while getting test events from range " + from + ".." + to +
-								" asynchronously", error);
-					else
-						logger.debug("Iterator for test events from range {}..{} got asynchronously", from, to);
-				});
-	}
-
 
 	/**
 	 * Allows to asynchronously obtain iterable object to enumerate test events' metadata started in given range of
@@ -1036,29 +1017,29 @@ public abstract class CradleStorage
 	 * @param fromId id of first event of response
 	 * @param from interval start
 	 * @param to interval end
-	 * @param order order of response
 	 * @return test events with parentId for given time range, first event will be one with given fromId
 	 * @throws CradleStorageException
 	 * @throws ExecutionException
 	 * @throws InterruptedException
 	 */
-	public Iterable<StoredTestEventWrapper> getTestEventsFromId(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to, Order order)
+	public Iterable<StoredTestEventWrapper> getTestEventsFromId(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to)
 			throws CradleStorageException, ExecutionException, InterruptedException {
-		return doGetTestEventsFromId(parentId, fromId, from, to, order);
+		return doGetTestEventsFromId(parentId, fromId, from, to);
 	}
 
 	/**
 	 * @param fromId id of first event of response
 	 * @param from interval start
 	 * @param to interval end
+	 * @param order order of response
 	 * @return metadata of test events for given time range, first event will be one with given fromId
 	 * @throws CradleStorageException
 	 * @throws ExecutionException
 	 * @throws InterruptedException
 	 */
-	public Iterable<StoredTestEventMetadata> getTestEventsFromIdMetadata(StoredTestEventId fromId, Instant from, Instant to)
+	public Iterable<StoredTestEventMetadata> getTestEventsFromIdMetadata(StoredTestEventId fromId, Instant from, Instant to, Order order)
 			throws CradleStorageException, ExecutionException, InterruptedException {
-		return doGetTestEventsFromIdMetadata(fromId, from, to);
+		return doGetTestEventsFromIdMetadata(fromId, from, to, order);
 	}
 
 	/**
@@ -1080,6 +1061,7 @@ public abstract class CradleStorage
 	 * @param fromId id of first event of response
 	 * @param from interval start
 	 * @param to interval end
+	 * @param order order of response
 	 * @return future of test events for given time range, first event will be one with given fromId
 	 * @throws CradleStorageException
 	 */
@@ -1096,13 +1078,13 @@ public abstract class CradleStorage
 	 * @return future of test events with parentId for given time range, first event will be one with given fromId
 	 * @throws CradleStorageException
 	 */
-	public CompletableFuture<Iterable<StoredTestEventWrapper>> getTestEventsFromIdAsync(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to, Order order)
+	public CompletableFuture<Iterable<StoredTestEventWrapper>> getTestEventsFromIdAsync(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to)
 			throws CradleStorageException {
-		return doGetTestEventsFromIdAsync(parentId, fromId, from, to, order);
+		return doGetTestEventsFromIdAsync(parentId, fromId, from, to);
 	}
-	public CompletableFuture<Iterable<StoredTestEventMetadata>> getTestEventsFromIdMetadataAsync(StoredTestEventId fromId, Instant from, Instant to)
+	public CompletableFuture<Iterable<StoredTestEventMetadata>> getTestEventsFromIdMetadataAsync(StoredTestEventId fromId, Instant from, Instant to, Order order)
 			throws CradleStorageException {
-		return doGetTestEventsFromIdMetadataAsync(fromId, from, to);
+		return doGetTestEventsFromIdMetadataAsync(fromId, from, to, order);
 	}
 
 	/**

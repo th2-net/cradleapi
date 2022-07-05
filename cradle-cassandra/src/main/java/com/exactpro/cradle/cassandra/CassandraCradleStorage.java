@@ -644,9 +644,14 @@ public class CassandraCradleStorage extends CradleStorage
 
 		return new AsyncOperator<MappedAsyncPagingIterable<TestEventEntity>>(semaphore)
 				.getFuture(() -> selectExecutor.executeQuery(() ->
-								ops.getTimeTestEventOperator().getTestEvents(instanceUuid,
-										params.getParentId(), params.getFromDate(), params.getFromTime(),
-										params.getToTime(), readAttrs),
+								ops.getTimeTestEventOperator().getTestEvents(
+										instanceUuid,
+										params.getFromDate(),
+										params.getFromTime(),
+										null,
+										params.getToTime(),
+										params.getParentId(),
+										readAttrs),
 						ops.getTestEventConverter(), queryInfo))
 				.thenApply(r -> new TestEventDataIteratorAdapter(r, pagingSupplies, ops.getTestEventConverter(),
 						queryInfo));
@@ -658,13 +663,13 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Iterable<StoredTestEventWrapper> doGetTestEventsFromId(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to, Order order) throws CradleStorageException, ExecutionException, InterruptedException {
-		return doGetTestEventsFromIdAsync(parentId, fromId, from, to, order).get();
+	protected Iterable<StoredTestEventWrapper> doGetTestEventsFromId(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to) throws CradleStorageException, ExecutionException, InterruptedException {
+		return doGetTestEventsFromIdAsync(parentId, fromId, from, to).get();
 	}
 
 	@Override
-	protected Iterable<StoredTestEventMetadata> doGetTestEventsFromIdMetadata(StoredTestEventId fromId, Instant from, Instant to) throws CradleStorageException, ExecutionException, InterruptedException {
-		return doGetTestEventsFromIdMetadataAsync(fromId, from, to).get();
+	protected Iterable<StoredTestEventMetadata> doGetTestEventsFromIdMetadata(StoredTestEventId fromId, Instant from, Instant to, Order order) throws CradleStorageException, ExecutionException, InterruptedException {
+		return doGetTestEventsFromIdMetadataAsync(fromId, from, to, order).get();
 	}
 
 	@Override
@@ -678,39 +683,55 @@ public class CassandraCradleStorage extends CradleStorage
 		String queryInfo = String.format("get test events starting with id %s from range %s..%s", fromId, from, to);
 
 		return new AsyncOperator<MappedAsyncPagingIterable<TestEventEntity>>(semaphore)
-				.getFuture(() -> selectExecutor.executeQuery(
-						() -> ops.getTimeTestEventOperator().getTestEventsFromId(instanceUuid,
-								params.getFromDate(), params.getFromId(), params.getFromTime(), params.getToTime(), params.getOrder(), readAttrs),
+				.getFuture(() -> selectExecutor.executeQuery(() ->
+						ops.getTimeTestEventOperator().getTestEvents(
+								instanceUuid,
+								params.getFromDate(),
+								params.getFromTime(),
+								params.getFromId(),
+								params.getToTime(),
+								order,
+								readAttrs),
 						ops.getTestEventConverter(), queryInfo))
 				.thenApply(entity -> new TestEventDataIteratorAdapter(entity, pagingSupplies,
 						ops.getTestEventConverter(), queryInfo));
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsFromIdAsync(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to, Order order) throws CradleStorageException {
-		TestEventsQueryParams params = new TestEventsQueryParams(parentId, fromId, from, to, order);
+	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsFromIdAsync(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to) throws CradleStorageException {
+		TestEventsQueryParams params = new TestEventsQueryParams(parentId, fromId, from, to, null);
 		String queryInfo = String.format("get test events starting with id %s and parentId %s from range %s..%s", fromId, parentId, from, to);
 
 		return new AsyncOperator<MappedAsyncPagingIterable<TestEventEntity>>(semaphore)
-				.getFuture(() -> selectExecutor.executeQuery(
-						() -> ops.getTimeTestEventOperator().getTestEventsFromId(instanceUuid,
-								params.getFromDate(), params.getParentId(), params.getFromId(),
-								params.getFromTime(), params.getToTime(), params.getOrder(), readAttrs),
+				.getFuture(() -> selectExecutor.executeQuery(() ->
+								ops.getTimeTestEventOperator().getTestEvents(
+										instanceUuid,
+										params.getFromDate(),
+										params.getFromTime(),
+										params.getFromId(),
+										params.getToTime(),
+										params.getParentId(),
+										readAttrs),
 						ops.getTestEventConverter(), queryInfo))
 				.thenApply(entity -> new TestEventDataIteratorAdapter(entity, pagingSupplies,
 						ops.getTestEventConverter(), queryInfo));
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsFromIdMetadataAsync(StoredTestEventId fromId, Instant from, Instant to) throws CradleStorageException {
+	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsFromIdMetadataAsync(StoredTestEventId fromId, Instant from, Instant to, Order order) throws CradleStorageException {
 		TestEventsQueryParams params = new TestEventsQueryParams(fromId, from, to);
 		String queryInfo = String.format("get test events' metadata starting with id %s from range %s..%s", fromId, from, to);
 
 		return new AsyncOperator<MappedAsyncPagingIterable<TestEventMetadataEntity>>(semaphore)
 				.getFuture(() -> selectExecutor.executeQuery(() ->
-								ops.getTimeTestEventOperator().getTestEventsFromIdMetadata(instanceUuid,
-										params.getFromDate(), params.getFromId(), params.getFromTime(),
-										params.getToTime(), readAttrs),
+						ops.getTimeTestEventOperator().getTestEventsMetadata(
+								instanceUuid,
+								params.getFromDate(),
+								params.getFromTime(),
+								params.getFromId(),
+								params.getToTime(),
+								order,
+								readAttrs),
 						ops.getTestEventMetadataConverter(), queryInfo))
 				.thenApply(r -> new TestEventMetadataIteratorAdapter(r, pagingSupplies,
 						ops.getTestEventMetadataConverter(),
@@ -724,9 +745,14 @@ public class CassandraCradleStorage extends CradleStorage
 
 		return new AsyncOperator<MappedAsyncPagingIterable<TestEventMetadataEntity>>(semaphore)
 				.getFuture(() -> selectExecutor.executeQuery(() ->
-								ops.getTimeTestEventOperator().getTestEventsFromIdMetadata(instanceUuid,
-										params.getFromDate(), params.getParentId(), params.getFromId(), params.getFromTime(),
-										params.getToTime(), readAttrs),
+						ops.getTimeTestEventOperator().getTestEventsMetadata(
+								instanceUuid,
+								params.getFromDate(),
+								params.getFromTime(),
+								params.getFromId(),
+								params.getToTime(),
+								params.getParentId(),
+								readAttrs),
 						ops.getTestEventMetadataConverter(), queryInfo))
 				.thenApply(r -> new TestEventMetadataIteratorAdapter(r, pagingSupplies,
 						ops.getTestEventMetadataConverter(),
@@ -743,9 +769,14 @@ public class CassandraCradleStorage extends CradleStorage
 
 		return new AsyncOperator<MappedAsyncPagingIterable<TestEventMetadataEntity>>(semaphore)
 				.getFuture(() -> selectExecutor.executeQuery(() ->
-								ops.getTimeTestEventOperator().getTestEventsMetadata(instanceUuid,
-										params.getParentId(), params.getFromDate(), params.getFromTime(),
-										params.getToTime(), readAttrs),
+						ops.getTimeTestEventOperator().getTestEventsMetadata(
+								instanceUuid,
+								params.getFromDate(),
+								params.getFromTime(),
+								null,
+								params.getToTime(),
+								params.getParentId(),
+								readAttrs),
 						ops.getTestEventMetadataConverter(), queryInfo))
 				.thenApply(r -> new TestEventMetadataIteratorAdapter(r, pagingSupplies,
 						ops.getTestEventMetadataConverter(),
@@ -813,9 +844,15 @@ public class CassandraCradleStorage extends CradleStorage
 		String queryInfo = String.format("get test events' metadata from range %s..%s", from, to);
 
 		return new AsyncOperator<MappedAsyncPagingIterable<TestEventMetadataEntity>>(semaphore)
-				.getFuture(() -> selectExecutor.executeQuery(
-						() -> ops.getTimeTestEventOperator().getTestEventsMetadata(instanceUuid,
-								params.getFromDate(), params.getFromTime(), params.getToTime(), readAttrs),
+				.getFuture(() -> selectExecutor.executeQuery(() ->
+						ops.getTimeTestEventOperator().getTestEventsMetadata(
+								instanceUuid,
+								params.getFromDate(),
+								params.getFromTime(),
+								null,
+								params.getToTime(),
+								Order.DIRECT,
+								readAttrs),
 						ops.getTestEventMetadataConverter(), queryInfo))
 				.thenApply(entity -> new TestEventMetadataIteratorAdapter(entity, pagingSupplies,
 						ops.getTestEventMetadataConverter(), queryInfo));

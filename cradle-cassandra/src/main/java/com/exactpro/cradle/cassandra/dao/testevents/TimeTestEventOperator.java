@@ -33,57 +33,55 @@ import java.util.function.Function;
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 @Dao
-public interface TimeTestEventOperator
-{
-	String METADATA_SELECT_START =
-			"SELECT " + INSTANCE_ID + ',' + START_DATE + ',' + START_TIME + ',' + ID + ',' + NAME + ',' + TYPE +
-					',' + EVENT_BATCH + ',' + END_DATE + ',' + END_TIME + ',' + SUCCESS + ',' + EVENT_COUNT +
-					',' + EVENT_BATCH_METADATA + ',' + ROOT + ',' + PARENT_ID;
-
+public interface TimeTestEventOperator {
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " +
 			START_DATE + "=:startDate AND " + START_TIME + ">=:timeFrom AND " + START_TIME + "<=:timeTo")
 	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getTestEvents(UUID instanceId, LocalDate startDate,
 			LocalTime timeFrom, LocalTime timeTo,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-	@QueryProvider(providerClass = TestEventQueryProvider.class, entityHelpers = TestEventEntity.class)
-	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getTestEventsFromId(UUID instanceId, LocalDate startDate, String fromId,
-																					  LocalTime timeFrom, LocalTime timeTo, Order order,
-																					  Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@QueryProvider(providerClass = TestEventQueryProvider.class, entityHelpers = TestEventEntity.class)
-	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getTestEventsFromId(UUID instanceId, LocalDate startDate, String parentId,
-																					  String fromId, LocalTime timeFrom, LocalTime timeTo, Order order,
-																					  Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getTestEvents(
+			UUID instanceId,
+			LocalDate startDate,
+			LocalTime timeFrom,
+			String idFrom,
+			LocalTime timeTo,
+			String parentId,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+	@QueryProvider(providerClass = TestEventQueryProvider.class, entityHelpers = TestEventEntity.class)
+	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getTestEvents(
+			UUID instanceId,
+			LocalDate startDate,
+			LocalTime timeFrom,
+			String idFrom,
+			LocalTime timeTo,
+			Order order,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+
 	@QueryProvider(providerClass = TestEventMetadataQueryProvider.class, entityHelpers = TestEventMetadataEntity.class)
-	CompletableFuture<MappedAsyncPagingIterable<TestEventMetadataEntity>> getTestEventsFromIdMetadata (UUID instanceId, LocalDate startDate, String parentId,
-																							   String fromId, LocalTime timeFrom, LocalTime timeTo,
-																							   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<MappedAsyncPagingIterable<TestEventMetadataEntity>> getTestEventsMetadata(
+			UUID instanceId,
+			LocalDate startDate,
+			LocalTime timeFrom,
+			String idFrom,
+			LocalTime timeTo,
+			String parentId,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@QueryProvider(providerClass = TestEventMetadataQueryProvider.class, entityHelpers = TestEventMetadataEntity.class)
-	CompletableFuture<MappedAsyncPagingIterable<TestEventMetadataEntity>> getTestEventsFromIdMetadata (UUID instanceId, LocalDate startDate,
-																							   String fromId, LocalTime timeFrom, LocalTime timeTo,
-																							   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-
-	@Query(METADATA_SELECT_START +
-			" FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " +
-			START_DATE + "=:startDate AND " + START_TIME + ">=:timeFrom AND " + START_TIME + "<=:timeTo")
-	CompletableFuture<MappedAsyncPagingIterable<TestEventMetadataEntity>> getTestEventsMetadata(UUID instanceId,
-			LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
+	CompletableFuture<MappedAsyncPagingIterable<TestEventMetadataEntity>> getTestEventsMetadata(
+			UUID instanceId,
+			LocalDate startDate,
+			LocalTime timeFrom,
+			String idFrom,
+			LocalTime timeTo,
+			Order order,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " + PARENT_ID + "=:parentId AND " +
-			START_DATE + "=:startDate AND " + START_TIME + ">=:timeFrom AND " + START_TIME + "<=:timeTo")
-	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getTestEvents(UUID instanceId, String parentId,
-			LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-
-	@Query(METADATA_SELECT_START +
-			" FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " + PARENT_ID + "=:parentId AND " +
-			START_DATE + "=:startDate AND " + START_TIME + ">=:timeFrom AND " + START_TIME + "<=:timeTo")
-	CompletableFuture<MappedAsyncPagingIterable<TestEventMetadataEntity>> getTestEventsMetadata(UUID instanceId,
-			String parentId, LocalDate startDate, LocalTime timeFrom, LocalTime timeTo,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " +
 			START_DATE + "=:startDate AND " + START_TIME + "=:startTime AND " + ID + "=:eventId")
