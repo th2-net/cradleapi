@@ -1,12 +1,12 @@
 dependencies {
 	implementation "org.slf4j:slf4j-api:${slf4j_version}"
 	testImplementation "org.slf4j:slf4j-simple:${slf4j_version}"
-	compile "com.fasterxml.jackson.core:jackson-databind:${jackson_version}"
-	compile "commons-io:commons-io:2.5"
-	compile "org.apache.commons:commons-lang3:3.8.1"
-	
-	testCompile 'org.testng:testng:7.1.0'
-	testCompile 'org.assertj:assertj-core:3.12.2'
+	implementation "com.fasterxml.jackson.core:jackson-databind:${jackson_version}"
+	implementation "commons-io:commons-io:2.5"
+	implementation "org.apache.commons:commons-lang3:3.8.1"
+
+	testImplementation 'org.testng:testng:7.1.0'
+	testImplementation 'org.assertj:assertj-core:3.12.2'
 }
 
 test {
