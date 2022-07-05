@@ -142,6 +142,10 @@ Test events have mandatory parameters that are verified when storing an event. T
 
 ## Release notes
 
+### 3.1.2 
+
++ Changed compile to implementation for all dependencies
+
 ### 3.1.1 (This version requires migration from previous versions)
 
 + Changed serialization algorithm for events and message batches
