@@ -8,11 +8,13 @@ configurations.all {
 }
 
 dependencies {
-	compile project(":cradle-core")
-	compile "com.datastax.oss:java-driver-core:${driver_version}"
-	compile "com.datastax.oss:java-driver-query-builder:${driver_version}"
-	compile "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
-	compile "com.datastax.oss:java-driver-mapper-runtime:${driver_version}"
+	implementation project(":cradle-core")
+	implementation "commons-io:commons-io:2.5"
+	implementation "org.apache.commons:commons-lang3:3.8.1"
+	implementation "com.datastax.oss:java-driver-core:${driver_version}"
+	implementation "com.datastax.oss:java-driver-query-builder:${driver_version}"
+	implementation "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
+	implementation "com.datastax.oss:java-driver-mapper-runtime:${driver_version}"
 
 	annotationProcessor "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
 	
