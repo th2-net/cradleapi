@@ -22,7 +22,7 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.tuple;
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
-public class AbstractTestEventQueryProvider<V> {
+public abstract class AbstractTestEventQueryProvider<V> {
 
     private final CqlSession session;
     private final EntityHelper<V> helper;
