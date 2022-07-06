@@ -11,9 +11,12 @@ import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.Order;
+import com.exactpro.cradle.cassandra.utils.BoundStatementParameters;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -27,9 +30,12 @@ public abstract class AbstractTestEventQueryProvider<V> {
     private final CqlSession session;
     private final EntityHelper<V> helper;
 
+    private final Map<BoundStatementParameters, BoundStatement> statementCache;
+
     public AbstractTestEventQueryProvider(MapperContext context, EntityHelper<V> helper) {
         this.session = context.getSession();
         this.helper = helper;
+        statementCache = new HashMap<>();
     }
 
 
@@ -94,6 +100,17 @@ public abstract class AbstractTestEventQueryProvider<V> {
             String parentId,
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
     {
+        BoundStatementParameters boundStatementParameters = new BoundStatementParameters(select,
+                 instanceId,
+                 startDate,
+                 timeFrom,
+                 idFrom,
+                 timeTo,
+                 parentId,
+                attributes);
+        if(statementCache.containsKey(boundStatementParameters)){
+            return statementCache.get(boundStatementParameters);
+        }
         PreparedStatement preparedStatement = session.prepare(select.build());
         BoundStatementBuilder builder =  preparedStatement.boundStatementBuilder();
         attributes.apply(builder);
@@ -109,7 +126,9 @@ public abstract class AbstractTestEventQueryProvider<V> {
         if (parentId != null)
             builder = builder.setString(PARENT_ID, parentId);
 
-        return builder.build();
+        BoundStatement boundStatement = builder.build();
+        statementCache.put(boundStatementParameters, boundStatement);
+        return boundStatement;
     }
 
     protected CompletableFuture<MappedAsyncPagingIterable<V>> execute(BoundStatement statement) {
