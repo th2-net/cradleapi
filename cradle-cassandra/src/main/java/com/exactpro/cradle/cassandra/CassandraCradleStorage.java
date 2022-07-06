@@ -1129,8 +1129,8 @@ public class CassandraCradleStorage extends CradleStorage
 		{
 			this.fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET);
 			this.toDateTime = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
-			this.parentId = parentId == null ? ROOT_EVENT_PARENT_ID : parentId.toString();
-			this.fromId = fromId.toString();
+			this.parentId = (parentId == null) ? ROOT_EVENT_PARENT_ID : parentId.toString();
+			this.fromId = (fromId == null) ? null : fromId.getId();
 			this.order = order;
 
 			checkTimeBoundaries(fromDateTime, toDateTime, from, to);
