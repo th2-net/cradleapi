@@ -37,7 +37,7 @@ public abstract class AbstractTestEventQueryProvider<V> {
         Select select = QueryBuilder.selectFrom(helper.getKeyspaceId(), helper.getTableId())
                 .column(INSTANCE_ID)
                 .column(START_DATE)
-                .column(START_DATE)
+                .column(START_TIME)
                 .column(ID)
                 .column(NAME)
                 .column(TYPE)
@@ -52,8 +52,8 @@ public abstract class AbstractTestEventQueryProvider<V> {
 
         if (includeContent)
             select = select .column(CONTENT)
-                            .column(COMPRESSED);
-
+                            .column(COMPRESSED)
+                            .column(MESSAGE_IDS);
         return select;
     }
 
