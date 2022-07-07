@@ -68,7 +68,8 @@ public abstract class AbstractTestEventQueryProvider<V> {
 
         if (includeContent)
             select = select .column(CONTENT)
-                            .column(COMPRESSED);
+                            .column(COMPRESSED)
+                            .column(MESSAGE_IDS);
 
         return select;
     }
