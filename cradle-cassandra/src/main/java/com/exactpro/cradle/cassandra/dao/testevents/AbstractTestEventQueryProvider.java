@@ -66,7 +66,7 @@ public abstract class AbstractTestEventQueryProvider<V> {
         if (idFrom == null)
             select = select.whereColumn(START_TIME).isGreaterThanOrEqualTo(bindMarker(START_TIME + "_FROM"));
         else
-            select = select.whereColumns(START_TIME, ID).isGreaterThan(tuple(bindMarker(START_TIME + "_FROM"), bindMarker(ID)));
+            select = select.whereColumns(START_TIME, ID).isGreaterThanOrEqualTo(tuple(bindMarker(START_TIME + "_FROM"), bindMarker(ID)));
 
 
         if (parentId != null)
@@ -77,7 +77,7 @@ public abstract class AbstractTestEventQueryProvider<V> {
         if (order != null && parentId == null) {
             ClusteringOrder orderBy = order.equals(Order.DIRECT) ? ClusteringOrder.ASC : ClusteringOrder.DESC;
             select = select .orderBy(START_TIME, orderBy)
-                            .orderBy(START_TIME, orderBy);
+                            .orderBy(ID, orderBy);
         }
 
         return select;
