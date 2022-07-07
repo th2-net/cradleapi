@@ -780,101 +780,162 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Iterable<StoredTestEventWrapper> doGetTestEventsFromId(StoredTestEventId fromId, Instant from, Instant to, Order order) throws CradleStorageException, ExecutionException, InterruptedException {
-		return doGetTestEventsFromIdAsync(fromId, from, to, order).get();
+	protected Iterable<StoredTestEventWrapper> doGetTestEventsFromId(StoredTestEventId fromId, Instant to, Order order) throws ExecutionException, InterruptedException {
+		return doGetTestEventsFromIdAsync(fromId, to, order).get();
 	}
 
 	@Override
-	protected Iterable<StoredTestEventWrapper> doGetTestEventsFromId(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to) throws CradleStorageException, ExecutionException, InterruptedException {
-		return doGetTestEventsFromIdAsync(parentId, fromId, from, to).get();
+	protected Iterable<StoredTestEventWrapper> doGetTestEventsFromId(StoredTestEventId parentId, StoredTestEventId fromId, Instant to) throws ExecutionException, InterruptedException {
+		return doGetTestEventsFromIdAsync(parentId, fromId, to).get();
 	}
 
 	@Override
-	protected Iterable<StoredTestEventMetadata> doGetTestEventsFromIdMetadata(StoredTestEventId fromId, Instant from, Instant to, Order order) throws CradleStorageException, ExecutionException, InterruptedException {
-		return doGetTestEventsFromIdMetadataAsync(fromId, from, to, order).get();
+	protected Iterable<StoredTestEventMetadata> doGetTestEventsFromIdMetadata(StoredTestEventId fromId, Instant to, Order order) throws ExecutionException, InterruptedException {
+		return doGetTestEventsFromIdMetadataAsync(fromId, to, order).get();
 	}
 
 	@Override
-	protected Iterable<StoredTestEventMetadata> doGetTestEventsFromIdMetadata(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to) throws CradleStorageException, ExecutionException, InterruptedException {
-		return doGetTestEventsFromIdMetadataAsync(parentId, fromId, from, to).get();
+	protected Iterable<StoredTestEventMetadata> doGetTestEventsFromIdMetadata(StoredTestEventId parentId, StoredTestEventId fromId, Instant to) throws CradleStorageException, ExecutionException, InterruptedException {
+		return doGetTestEventsFromIdMetadataAsync(parentId, fromId, to).get();
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsFromIdAsync(StoredTestEventId fromId, Instant from, Instant to, Order order) throws CradleStorageException {
-		TestEventsQueryParams params = new TestEventsQueryParams(fromId, from, to, order);
-		String queryInfo = String.format("get test events starting with id %s from range %s..%s", fromId, from, to);
+	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsFromIdAsync(StoredTestEventId fromId, Instant to, Order order) {
 
-		return selectExecutor.executeMultiRowResultQuery(() ->
-						ops.getTimeTestEventOperator().getTestEvents(
-										instanceUuid,
-										params.getFromDate(),
-										params.getFromTime(),
-										params.getFromId(),
-										params.getToTime(),
-										order,
-										readAttrs),
-						ops.getTestEventConverter(), queryInfo)
-						.thenApply(r -> new TestEventDataIteratorAdapter(r, objectsFactory, pagingSupplies,
-								ops.getTestEventConverter(), queryInfo));
-	}
+		CompletableFuture<DateTimeEventEntity> future = new AsyncOperator<DateTimeEventEntity>(semaphore)
+				.getFuture(() -> ops.getTestEventOperator().get(instanceUuid, fromId.getId(), readAttrs));
 
-	@Override
-	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsFromIdAsync(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to) throws CradleStorageException {
-		TestEventsQueryParams params = new TestEventsQueryParams(parentId, fromId, from, to, null);
-		String queryInfo = String.format("get test events starting with id %s and parentId %s from range %s..%s", fromId, parentId, from, to);
+		return future.thenCompose(dtEntity ->
+		{
+			if (dtEntity == null)
+				return CompletableFuture.completedFuture(null);
+			Instant from = dtEntity.getStartTimestamp();
 
-		return selectExecutor.executeMultiRowResultQuery(() ->
+			try {
+				TestEventsQueryParams params = new TestEventsQueryParams(fromId, from, to, order);
+				String queryInfo = String.format("get test events starting with id %s from range %s..%s", fromId, from, to);
+
+				return selectExecutor.executeMultiRowResultQuery(() ->
 								ops.getTimeTestEventOperator().getTestEvents(
-										instanceUuid,
-										params.getFromDate(),
-										params.getFromTime(),
-										params.getFromId(),
-										params.getToTime(),
-										params.getParentId(),
-										readAttrs),
+												instanceUuid,
+												params.getFromDate(),
+												params.getFromTime(),
+												params.getFromId(),
+												params.getToTime(),
+												order,
+												readAttrs),
 								ops.getTestEventConverter(), queryInfo)
-							.thenApply(r -> new TestEventDataIteratorAdapter(r, objectsFactory, pagingSupplies,
+								.thenApply(r -> new TestEventDataIteratorAdapter(r, objectsFactory, pagingSupplies,
 										ops.getTestEventConverter(), queryInfo));
+
+			} catch (Exception e) {
+				throw new CompletionException(e);
+			}
+		});
 	}
 
 	@Override
-	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsFromIdMetadataAsync(StoredTestEventId fromId, Instant from, Instant to, Order order) throws CradleStorageException {
-		TestEventsQueryParams params = new TestEventsQueryParams(fromId, from, to);
-		String queryInfo = String.format("get test events' metadata starting with id %s from range %s..%s", fromId, from, to);
+	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsFromIdAsync(StoredTestEventId parentId, StoredTestEventId fromId, Instant to) {
 
-		return selectExecutor.executeMultiRowResultQuery(() ->
-						ops.getTimeTestEventOperator().getTestEventsMetadata(
-										instanceUuid,
-										params.getFromDate(),
-										params.getFromTime(),
-										params.getFromId(),
-										params.getToTime(),
-										order,
-										readAttrs),
-						ops.getTestEventMetadataConverter(), queryInfo)
+		CompletableFuture<DateTimeEventEntity> future = new AsyncOperator<DateTimeEventEntity>(semaphore)
+				.getFuture(() -> ops.getTestEventOperator().get(instanceUuid, fromId.getId(), readAttrs));
+
+		return future.thenCompose(dtEntity ->
+		{
+			if (dtEntity == null)
+				return CompletableFuture.completedFuture(null);
+			Instant from = dtEntity.getStartTimestamp();
+
+			try {
+				TestEventsQueryParams params = new TestEventsQueryParams(parentId, fromId, from, to, null);
+				String queryInfo = String.format("get test events starting with id %s and parentId %s from range %s..%s", fromId, parentId, from, to);
+
+				return selectExecutor.executeMultiRowResultQuery(() ->
+										ops.getTimeTestEventOperator().getTestEvents(
+												instanceUuid,
+												params.getFromDate(),
+												params.getFromTime(),
+												params.getFromId(),
+												params.getToTime(),
+												params.getParentId(),
+												readAttrs),
+										ops.getTestEventConverter(), queryInfo)
+									.thenApply(r -> new TestEventDataIteratorAdapter(r, objectsFactory, pagingSupplies,
+												ops.getTestEventConverter(), queryInfo));
+			} catch (Exception e) {
+				throw new CompletionException(e);
+			}
+		});
+	}
+
+	@Override
+	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsFromIdMetadataAsync(StoredTestEventId fromId, Instant to, Order order) {
+
+		CompletableFuture<DateTimeEventEntity> future = new AsyncOperator<DateTimeEventEntity>(semaphore)
+				.getFuture(() -> ops.getTestEventOperator().get(instanceUuid, fromId.getId(), readAttrs));
+
+		return future.thenCompose(dtEntity ->
+		{
+			if (dtEntity == null)
+				return CompletableFuture.completedFuture(null);
+			Instant from = dtEntity.getStartTimestamp();
+
+			try {
+				TestEventsQueryParams params = new TestEventsQueryParams(fromId, from, to);
+				String queryInfo = String.format("get test events' metadata starting with id %s from range %s..%s", fromId, from, to);
+
+				return selectExecutor.executeMultiRowResultQuery(() ->
+								ops.getTimeTestEventOperator().getTestEventsMetadata(
+												instanceUuid,
+												params.getFromDate(),
+												params.getFromTime(),
+												params.getFromId(),
+												params.getToTime(),
+												order,
+												readAttrs),
+								ops.getTestEventMetadataConverter(), queryInfo)
+								.thenApply(r -> new TestEventMetadataIteratorAdapter(r, pagingSupplies,
+										ops.getTestEventMetadataConverter(),
+										queryInfo));
+			} catch (Exception e) {
+				throw new CompletionException(e);
+			}
+		});
+	}
+
+	@Override
+	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsFromIdMetadataAsync(StoredTestEventId parentId, StoredTestEventId fromId, Instant to) {
+
+		CompletableFuture<DateTimeEventEntity> future = new AsyncOperator<DateTimeEventEntity>(semaphore)
+				.getFuture(() -> ops.getTestEventOperator().get(instanceUuid, fromId.getId(), readAttrs));
+
+		return future.thenCompose(dtEntity ->
+		{
+			if (dtEntity == null)
+				return CompletableFuture.completedFuture(null);
+			Instant from = dtEntity.getStartTimestamp();
+
+			try {
+				TestEventsQueryParams params = new TestEventsQueryParams(parentId, fromId, from, to, null);
+				String queryInfo = String.format("get test events' metadata starting with id %s and parentId %s from range %s..%s", fromId, parentId, from, to);
+
+				return selectExecutor.executeMultiRowResultQuery(() ->
+								ops.getTimeTestEventOperator().getTestEventsMetadata(
+												instanceUuid,
+												params.getFromDate(),
+												params.getFromTime(),
+												params.getFromId(),
+												params.getToTime(),
+												params.getParentId(),
+												readAttrs),
+								ops.getTestEventMetadataConverter(), queryInfo)
 						.thenApply(r -> new TestEventMetadataIteratorAdapter(r, pagingSupplies,
-								ops.getTestEventMetadataConverter(),
-								queryInfo));
-	}
-
-	@Override
-	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsFromIdMetadataAsync(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to) throws CradleStorageException {
-		TestEventsQueryParams params = new TestEventsQueryParams(parentId, fromId, from, to, null);
-		String queryInfo = String.format("get test events' metadata starting with id %s and parentId %s from range %s..%s", fromId, parentId, from, to);
-
-		return selectExecutor.executeMultiRowResultQuery(() ->
-						ops.getTimeTestEventOperator().getTestEventsMetadata(
-										instanceUuid,
-										params.getFromDate(),
-										params.getFromTime(),
-										params.getFromId(),
-										params.getToTime(),
-										params.getParentId(),
-										readAttrs),
-						ops.getTestEventMetadataConverter(), queryInfo)
-				.thenApply(r -> new TestEventMetadataIteratorAdapter(r, pagingSupplies,
-				ops.getTestEventMetadataConverter(),
-				queryInfo));
+						ops.getTestEventMetadataConverter(),
+						queryInfo));
+			} catch (Exception e) {
+				throw new CompletionException(e);
+			}
+		});
 	}
 
 	@Override
