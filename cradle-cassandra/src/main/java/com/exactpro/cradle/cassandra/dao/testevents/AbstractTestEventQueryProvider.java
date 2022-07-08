@@ -11,7 +11,6 @@ import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.Order;
-import com.exactpro.cradle.cassandra.utils.BoundStatementParameters;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -30,7 +29,7 @@ public abstract class AbstractTestEventQueryProvider<V> {
     private final CqlSession session;
     private final EntityHelper<V> helper;
 
-    private final Map<BoundStatementParameters, BoundStatement> statementCache;
+    private final Map<Select, PreparedStatement> statementCache;
 
     public AbstractTestEventQueryProvider(MapperContext context, EntityHelper<V> helper) {
         this.session = context.getSession();
@@ -100,18 +99,15 @@ public abstract class AbstractTestEventQueryProvider<V> {
             String parentId,
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
     {
-        BoundStatementParameters boundStatementParameters = new BoundStatementParameters(select,
-                 instanceId,
-                 startDate,
-                 timeFrom,
-                 idFrom,
-                 timeTo,
-                 parentId,
-                attributes);
-        if(statementCache.containsKey(boundStatementParameters)){
-            return statementCache.get(boundStatementParameters);
+
+        PreparedStatement preparedStatement;
+        if(statementCache.containsKey(select)){
+            preparedStatement = statementCache.get(select);
+        }else{
+            preparedStatement = session.prepare(select.build());
+            statementCache.put(select, preparedStatement);
         }
-        PreparedStatement preparedStatement = session.prepare(select.build());
+
         BoundStatementBuilder builder =  preparedStatement.boundStatementBuilder();
         attributes.apply(builder);
 
@@ -127,7 +123,6 @@ public abstract class AbstractTestEventQueryProvider<V> {
             builder = builder.setString(PARENT_ID, parentId);
 
         BoundStatement boundStatement = builder.build();
-        statementCache.put(boundStatementParameters, boundStatement);
         return boundStatement;
     }
 
