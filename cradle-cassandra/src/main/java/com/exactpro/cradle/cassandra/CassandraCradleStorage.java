@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -677,19 +677,30 @@ public class CassandraCradleStorage extends CradleStorage
 		return doGetTestEventsFromIdMetadataAsync(parentId, fromId, to).get();
 	}
 
+
+	private<T> CompletableFuture<T> getEventTimestampAndThenCompose(StoredTestEventId fromId, Callback<Instant, CompletableFuture<T>> callback) {
+
+		return new AsyncOperator<DateTimeEventEntity>(semaphore)
+				.getFuture(() -> ops.getTestEventOperator().get(instanceUuid, fromId.getId(), readAttrs))
+				.thenCompose(eventDateTime -> {
+
+							if (eventDateTime == null)
+								return CompletableFuture.completedFuture(null);
+							Instant from = eventDateTime.getStartTimestamp();
+
+							try {
+								return callback.call(from);
+							} catch (Exception e) {
+								throw new CompletionException(e);
+							}
+						});
+	}
+
 	@Override
 	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsFromIdAsync(StoredTestEventId fromId, Instant to, Order order) {
 
-		CompletableFuture<DateTimeEventEntity> future = new AsyncOperator<DateTimeEventEntity>(semaphore)
-				.getFuture(() -> ops.getTestEventOperator().get(instanceUuid, fromId.getId(), readAttrs));
+		return getEventTimestampAndThenCompose(fromId, from -> {
 
-		return future.thenCompose(dtEntity ->
-		{
-			if (dtEntity == null)
-				return CompletableFuture.completedFuture(null);
-			Instant from = dtEntity.getStartTimestamp();
-
-			try {
 				TestEventsQueryParams params = new TestEventsQueryParams(fromId, from, to, order);
 				String queryInfo = String.format("get test events starting with id %s from range %s..%s", fromId, from, to);
 
@@ -707,25 +718,15 @@ public class CassandraCradleStorage extends CradleStorage
 						.thenApply(entity -> new TestEventDataIteratorAdapter(entity, pagingSupplies,
 								ops.getTestEventConverter(), queryInfo));
 
-			} catch (Exception e) {
-				throw new CompletionException(e);
-			}
 		});
 	}
+
 
 	@Override
 	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsFromIdAsync(StoredTestEventId parentId, StoredTestEventId fromId, Instant to) {
 
-		CompletableFuture<DateTimeEventEntity> future = new AsyncOperator<DateTimeEventEntity>(semaphore)
-				.getFuture(() -> ops.getTestEventOperator().get(instanceUuid, fromId.getId(), readAttrs));
+		return getEventTimestampAndThenCompose(fromId, from -> {
 
-		return future.thenCompose(dtEntity ->
-		{
-			if (dtEntity == null)
-				return CompletableFuture.completedFuture(null);
-			Instant from = dtEntity.getStartTimestamp();
-
-			try {
 				TestEventsQueryParams params = new TestEventsQueryParams(parentId, fromId, from, to, null);
 				String queryInfo = String.format("get test events starting with id %s and parentId %s from range %s..%s", fromId, parentId, from, to);
 
@@ -742,25 +743,15 @@ public class CassandraCradleStorage extends CradleStorage
 								ops.getTestEventConverter(), queryInfo))
 						.thenApply(entity -> new TestEventDataIteratorAdapter(entity, pagingSupplies,
 								ops.getTestEventConverter(), queryInfo));
-			} catch (Exception e) {
-				throw new CompletionException(e);
-			}
 		});
 	}
+
 
 	@Override
 	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsFromIdMetadataAsync(StoredTestEventId fromId, Instant to, Order order) {
 
-		CompletableFuture<DateTimeEventEntity> future = new AsyncOperator<DateTimeEventEntity>(semaphore)
-				.getFuture(() -> ops.getTestEventOperator().get(instanceUuid, fromId.getId(), readAttrs));
+		return getEventTimestampAndThenCompose(fromId, from -> {
 
-		return future.thenCompose(dtEntity ->
-		{
-			if (dtEntity == null)
-				return CompletableFuture.completedFuture(null);
-			Instant from = dtEntity.getStartTimestamp();
-
-			try {
 				TestEventsQueryParams params = new TestEventsQueryParams(fromId, from, to);
 				String queryInfo = String.format("get test events' metadata starting with id %s from range %s..%s", fromId, from, to);
 
@@ -778,25 +769,15 @@ public class CassandraCradleStorage extends CradleStorage
 						.thenApply(r -> new TestEventMetadataIteratorAdapter(r, pagingSupplies,
 								ops.getTestEventMetadataConverter(),
 								queryInfo));
-			} catch (Exception e) {
-				throw new CompletionException(e);
-			}
 		});
 	}
+
 
 	@Override
 	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsFromIdMetadataAsync(StoredTestEventId parentId, StoredTestEventId fromId, Instant to) {
 
-		CompletableFuture<DateTimeEventEntity> future = new AsyncOperator<DateTimeEventEntity>(semaphore)
-				.getFuture(() -> ops.getTestEventOperator().get(instanceUuid, fromId.getId(), readAttrs));
+		return getEventTimestampAndThenCompose(fromId, from -> {
 
-		return future.thenCompose(dtEntity ->
-		{
-			if (dtEntity == null)
-				return CompletableFuture.completedFuture(null);
-			Instant from = dtEntity.getStartTimestamp();
-
-			try {
 				TestEventsQueryParams params = new TestEventsQueryParams(parentId, fromId, from, to, null);
 				String queryInfo = String.format("get test events' metadata starting with id %s and parentId %s from range %s..%s", fromId, parentId, from, to);
 
@@ -814,11 +795,9 @@ public class CassandraCradleStorage extends CradleStorage
 						.thenApply(r -> new TestEventMetadataIteratorAdapter(r, pagingSupplies,
 								ops.getTestEventMetadataConverter(),
 								queryInfo));
-			} catch (Exception e) {
-				throw new CompletionException(e);
-			}
 		});
 	}
+
 
 	@Override
 	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsMetadataAsync(
@@ -1176,6 +1155,10 @@ public class CassandraCradleStorage extends CradleStorage
 						return update.thenComposeAsync(u -> failEventAndParents(event.getParentId()));
 					return update;
 				});
+	}
+
+	private interface Callback<T, R> {
+		R call(T param) throws Exception;
 	}
 
 	private static class TestEventsQueryParams
