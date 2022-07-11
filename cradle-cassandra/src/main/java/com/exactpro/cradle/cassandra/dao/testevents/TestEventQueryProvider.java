@@ -10,6 +10,7 @@ import com.exactpro.cradle.Order;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.chrono.MinguoChronology;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -32,8 +33,7 @@ public class TestEventQueryProvider extends AbstractTestEventQueryProvider<TestE
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 
     {
-        Select select = selectStart(true);
-        select = addConditions(select, idFrom, null, order);
+        Select select = getSelect(true, idFrom, null, order);
 
         BoundStatement statement = bindParameters(  select,
                 instanceId,
@@ -57,8 +57,7 @@ public class TestEventQueryProvider extends AbstractTestEventQueryProvider<TestE
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 
     {
-        Select select = selectStart(true);
-        select = addConditions(select, idFrom, parentId, null);
+        Select select = getSelect(true, idFrom, parentId, null);
 
         BoundStatement statement = bindParameters(  select,
                 instanceId,

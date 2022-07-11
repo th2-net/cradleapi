@@ -20,8 +20,6 @@ public class TestEventMetadataQueryProvider extends AbstractTestEventQueryProvid
         super(context, helper);
     }
 
-
-
     public CompletableFuture<MappedAsyncPagingIterable<TestEventMetadataEntity>> getTestEventsMetadata(
             UUID instanceId,
             LocalDate startDate,
@@ -32,8 +30,7 @@ public class TestEventMetadataQueryProvider extends AbstractTestEventQueryProvid
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 
     {
-        Select select = selectStart(true);
-        select = addConditions(select, idFrom, null, order);
+        Select select = getSelect(true, idFrom, null, order);
 
         BoundStatement statement = bindParameters(  select,
                 instanceId,
@@ -57,8 +54,7 @@ public class TestEventMetadataQueryProvider extends AbstractTestEventQueryProvid
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 
     {
-        Select select = selectStart(true);
-        select = addConditions(select, idFrom, parentId, null);
+        Select select = getSelect(true, idFrom, parentId, null);
 
         BoundStatement statement = bindParameters(  select,
                 instanceId,
