@@ -35,6 +35,8 @@ public class CassandraStorageSettings {
             DEFAULT_PAGE_SESSION_CACHE_SIZE = 100,
             DEFAULT_PAGE_SCOPES_CACHE_SIZE = 100,
             DEFAULT_SESSION_STATISTICS_CACHE_SIZE = 10_000,
+            DEFAULT_GROUPS_CACHE_SIZE = 10_000,
+            DEFAULT_PAGE_GROUPS_CACHE_SIZE = 10_000,
             DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS = 1000;
 	public static final long DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS = 60000;
 
@@ -57,6 +59,8 @@ public class CassandraStorageSettings {
             pageSessionsCacheSize,
             pageScopesCacheSize,
             sessionStatisticsCacheSize,
+            pageGroupsCacheSize,
+            groupsCacheSize,
             counterPersistenceInterval;
 
     private SelectExecutionPolicy multiRowResultExecutionPolicy, singleRowResultExecutionPolicy;
@@ -88,14 +92,15 @@ public class CassandraStorageSettings {
         this.maxUncompressedMessageBatchSize = DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_SIZE;
         this.maxTestEventBatchSize = CradleStorage.DEFAULT_MAX_TEST_EVENT_BATCH_SIZE;
         this.maxUncompressedTestEventSize = DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE;
-        this.sessionsCacheSize = DEFAULT_SESSIONS_CACHE_SIZE;
         this.pageSessionsCacheSize = DEFAULT_PAGE_SESSION_CACHE_SIZE;
         this.scopesCacheSize = DEFAULT_SCOPES_CACHE_SIZE;
         this.pageScopesCacheSize = DEFAULT_PAGE_SCOPES_CACHE_SIZE;
         this.counterPersistenceInterval = DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS;
 		this.bookRefreshIntervalMillis = DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS;
-		this.sessionsCacheSize = DEFAULT_SESSION_STATISTICS_CACHE_SIZE;
-		this.sessionStatisticsCacheSize = DEFAULT_SESSION_STATISTICS_CACHE_SIZE;
+        this.sessionsCacheSize = DEFAULT_SESSIONS_CACHE_SIZE;
+        this.sessionStatisticsCacheSize = DEFAULT_SESSION_STATISTICS_CACHE_SIZE;
+        this.pageGroupsCacheSize = DEFAULT_PAGE_GROUPS_CACHE_SIZE;
+        this.groupsCacheSize = DEFAULT_GROUPS_CACHE_SIZE;
     }
 
     public CassandraStorageSettings(CassandraStorageSettings settings) {
@@ -121,6 +126,8 @@ public class CassandraStorageSettings {
         this.pageSessionsCacheSize = settings.getPageSessionsCacheSize();
         this.scopesCacheSize = settings.getScopesCacheSize();
         this.pageScopesCacheSize = settings.getPageScopesCacheSize();
+        this.pageGroupsCacheSize = settings.getPageGroupsCacheSize();
+        this.groupsCacheSize = settings.getGroupsCacheSize();
         this.sessionStatisticsCacheSize = settings.getSessionStatisticsCacheSize();
         this.counterPersistenceInterval = settings.getCounterPersistenceInterval();
 		this.bookRefreshIntervalMillis = settings.getBookRefreshIntervalMillis();
@@ -260,6 +267,22 @@ public class CassandraStorageSettings {
 
     public void setPageScopesCacheSize(int pageScopesCacheSize) {
         this.pageScopesCacheSize = pageScopesCacheSize;
+    }
+
+    public int getPageGroupsCacheSize() {
+        return pageGroupsCacheSize;
+    }
+
+    public void setPageGroupsCacheSize(int pageGroupsCacheSize) {
+        this.pageGroupsCacheSize = pageGroupsCacheSize;
+    }
+
+    public int getGroupsCacheSize() {
+        return groupsCacheSize;
+    }
+
+    public void setGroupsCacheSize(int groupsCacheSize) {
+        this.groupsCacheSize = groupsCacheSize;
     }
 
     public int getCounterPersistenceInterval() {

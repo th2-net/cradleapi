@@ -25,10 +25,7 @@ import com.exactpro.cradle.cassandra.dao.cache.CachedSession;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalEntity;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
 import com.exactpro.cradle.cassandra.dao.messages.*;
-import com.exactpro.cradle.cassandra.dao.messages.converters.GroupedMessageBatchEntityConverter;
-import com.exactpro.cradle.cassandra.dao.messages.converters.MessageBatchEntityConverter;
-import com.exactpro.cradle.cassandra.dao.messages.converters.PageSessionEntityConverter;
-import com.exactpro.cradle.cassandra.dao.messages.converters.SessionEntityConverter;
+import com.exactpro.cradle.cassandra.dao.messages.converters.*;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.PageScopeEntityConverter;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.ScopeEntityConverter;
@@ -46,6 +43,8 @@ public class CassandraOperators {
     private final MessageBatchOperator messageBatchOperator;
     private final GroupedMessageBatchOperator groupedMessageBatchOperator;
     private final PageSessionsOperator pageSessionsOperator;
+    private final GroupsOperator groupsOperator;
+    private final PageGroupsOperator pageGroupsOperator;
     private final TestEventOperator testEventOperator;
     private final PageScopesOperator pageScopesOperator;
     private final IntervalOperator intervalOperator;
@@ -63,11 +62,15 @@ public class CassandraOperators {
     private final MessageStatisticsEntityConverter messageStatisticsEntityConverter;
     private final EntityStatisticsEntityConverter entityStatisticsEntityConverter;
     private final SessionStatisticsEntityConverter sessionStatisticsEntityConverter;
+    private final GroupEntityConverter groupEntityConverter;
+    private final PageGroupEntityConverter pageGroupEntityConverter;
 
     private final LimitedCache<CachedSession> sessionsCache;
     private final LimitedCache<CachedPageSession> pageSessionsCache;
     private final LimitedCache<CachedScope> scopesCache;
     private final LimitedCache<CachedPageScope> pageScopesCache;
+    private final LimitedCache<GroupEntity> groupCache;
+    private final LimitedCache<PageGroupEntity> pageGroupCache;
     private final LimitedCache<SessionStatisticsEntity> sessionStatisticsCache;
 
     public CassandraOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings) {
@@ -85,6 +88,8 @@ public class CassandraOperators {
         pageSessionsOperator = dataMapper.pageSessionsOperator(keyspace, PageSessionEntity.TABLE_NAME);
         testEventOperator = dataMapper.testEventOperator(keyspace, TestEventEntity.TABLE_NAME);
         pageScopesOperator = dataMapper.pageScopesOperator(keyspace, PageScopeEntity.TABLE_NAME);
+        groupsOperator = dataMapper.groupsOperator(keyspace, GroupEntity.TABLE_NAME);
+        pageGroupsOperator = dataMapper.pageGroupsOperator(keyspace, PageGroupEntity.TABLE_NAME);
         messageStatisticsOperator = dataMapper.messageStatisticsOperator(keyspace, MessageStatisticsEntity.TABLE_NAME);
         entityStatisticsOperator = dataMapper.entityStatisticsOperator(keyspace, EntityStatisticsEntity.TABLE_NAME);
         sessionStatisticsOperator = dataMapper.sessionStatisticsOperator(keyspace, SessionStatisticsEntity.TABLE_NAME);
@@ -98,12 +103,16 @@ public class CassandraOperators {
         pageSessionEntityConverter = dataMapper.pageSessionEntityConverter();
         testEventEntityConverter = dataMapper.testEventEntityConverter();
         pageScopeEntityConverter = dataMapper.pageScopeEntityConverter();
+        groupEntityConverter = dataMapper.groupEntityConverter();
+        pageGroupEntityConverter = dataMapper.pageGroupEntityConverter();
         messageStatisticsEntityConverter = dataMapper.messageStatisticsEntityConverter();
         entityStatisticsEntityConverter = dataMapper.entityStatisticsEntityConverter();
         sessionStatisticsEntityConverter = dataMapper.sessionStatisticsEntityConverter();
 
         sessionsCache = new LimitedCache<>(settings.getSessionsCacheSize());
         pageSessionsCache = new LimitedCache<>(settings.getPageSessionsCacheSize());
+        groupCache = new LimitedCache<>(settings.getGroupsCacheSize());
+        pageGroupCache = new LimitedCache<>(settings.getPageGroupsCacheSize());
         scopesCache = new LimitedCache<>(settings.getScopesCacheSize());
         pageScopesCache = new LimitedCache<>(settings.getPageScopesCacheSize());
         sessionStatisticsCache = new LimitedCache<>(settings.getSessionStatisticsCacheSize());
@@ -223,5 +232,29 @@ public class CassandraOperators {
 
     public LimitedCache<SessionStatisticsEntity> getSessionStatisticsCache() {
         return sessionStatisticsCache;
+    }
+
+    public GroupsOperator getGroupsOperator() {
+        return groupsOperator;
+    }
+
+    public PageGroupsOperator getPageGroupsOperator() {
+        return pageGroupsOperator;
+    }
+
+    public GroupEntityConverter getGroupEntityConverter() {
+        return groupEntityConverter;
+    }
+
+    public PageGroupEntityConverter getPageGroupEntityConverter() {
+        return pageGroupEntityConverter;
+    }
+
+    public LimitedCache<GroupEntity> getGroupCache() {
+        return groupCache;
+    }
+
+    public LimitedCache<PageGroupEntity> getPageGroupCache() {
+        return pageGroupCache;
     }
 }
