@@ -80,6 +80,7 @@ public class MessageSerializer {
 		printString(id.getDirection().getLabel(), buffer);
 		printInstant(id.getTimestamp(), buffer);
 		buffer.putLong(id.getSequence());
+		printString(message.getProtocol(), buffer);
 		this.printMessageMetaData(message.getMetadata(), buffer);
 		printBody(message.getContent(), buffer);
 	}

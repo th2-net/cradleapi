@@ -19,6 +19,7 @@ package com.exactpro.cradle.messages;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Objects;
 
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
@@ -28,146 +29,115 @@ import com.exactpro.cradle.utils.CompressionUtils;
 /**
  * Holds information about one message stored in Cradle.
  */
-public class StoredMessage implements Serializable, CradleMessage
-{
-	private static final long serialVersionUID = 5602557739148866986L;
-	
-	private final StoredMessageId id;
-	private final byte[] content;
-	private final StoredMessageMetadata metadata;
-	private final PageId pageId;
-	
-	public StoredMessage(CradleMessage message, StoredMessageId id, PageId pageId)
-	{
-		this(id, message.getContent(), message.getMetadata() != null
-				? new StoredMessageMetadata(message.getMetadata()) : null, pageId);
-	}
-	
-	public StoredMessage(StoredMessage copyFrom)
-	{
-		this(copyFrom, copyFrom.getId(), copyFrom.getPageId());
-	}
+public class StoredMessage implements Serializable, CradleMessage {
+    private static final long serialVersionUID = 5602557739148866986L;
 
-	protected StoredMessage(StoredMessageId id, byte[] content, StoredMessageMetadata metadata, PageId pageId) {
-		this.id = id;
-		this.content = content;
-		this.metadata = metadata;
-		this.pageId = pageId;
-	}
+    private final StoredMessageId id;
+    private final byte[] content;
+    private final StoredMessageMetadata metadata;
+    private final PageId pageId;
+    private final String protocol;
 
-	/**
-	 * @return unique message ID as stored in Cradle.
-	 * Result of this method should be used for referencing stored messages to obtain them from Cradle
-	 */
-	public StoredMessageId getId()
-	{
-		return id;
-	}
+    public StoredMessage(CradleMessage message, StoredMessageId id, PageId pageId) {
+        this(id, message.getProtocol(), message.getContent(), message.getMetadata() != null
+                ? new StoredMessageMetadata(message.getMetadata()) : null, pageId);
+    }
 
-	@Override
-	public BookId getBookId()
-	{
-		return id.getBookId();
-	}
+    public StoredMessage(StoredMessage copyFrom) {
+        this(copyFrom, copyFrom.getId(), copyFrom.getPageId());
+    }
 
-	@Override
-	public String getSessionAlias()
-	{
-		return id.getSessionAlias();
-	}
+    protected StoredMessage(StoredMessageId id, String protocol, byte[] content, StoredMessageMetadata metadata, PageId pageId) {
+        this.id = id;
+        this.protocol = protocol;
+        this.content = content;
+        this.metadata = metadata;
+        this.pageId = pageId;
+    }
 
-	@Override
-	public Direction getDirection()
-	{
-		return id.getDirection();
-	}
+    /**
+     * @return unique message ID as stored in Cradle.
+     * Result of this method should be used for referencing stored messages to obtain them from Cradle
+     */
+    public StoredMessageId getId() {
+        return id;
+    }
 
-	@Override
-	public Instant getTimestamp()
-	{
-		return id.getTimestamp();
-	}
+    @Override
+    public BookId getBookId() {
+        return id.getBookId();
+    }
 
-	@Override
-	public long getSequence()
-	{
-		return id.getSequence();
-	}
+    @Override
+    public String getSessionAlias() {
+        return id.getSessionAlias();
+    }
 
-	@Override
-	public byte[] getContent()
-	{
-		return content;
-	}
-	
-	@Override
-	public StoredMessageMetadata getMetadata()
-	{
-		return metadata;
-	}
+    @Override
+    public Direction getDirection() {
+        return id.getDirection();
+    }
 
-	public PageId getPageId()
-	{
-		return pageId;
-	}
-	
-	
-	@Override
-	public int hashCode()
-	{
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + Arrays.hashCode(content);
-		result = prime * result + ((id == null) ? 0 : id.hashCode());
-		result = prime * result + ((metadata == null) ? 0 : metadata.hashCode());
-		result = prime * result + ((pageId == null) ? 0 : pageId.hashCode());
-		return result;
-	}
-	
-	@Override
-	public boolean equals(Object obj)
-	{
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
+    @Override
+    public Instant getTimestamp() {
+        return id.getTimestamp();
+    }
+
+    @Override
+    public long getSequence() {
+        return id.getSequence();
+    }
+
+    @Override
+    public byte[] getContent() {
+        return content;
+    }
+
+    @Override
+    public String getProtocol() {
+        return protocol;
+    }
+
+    @Override
+    public StoredMessageMetadata getMetadata() {
+        return metadata;
+    }
+
+    public PageId getPageId() {
+        return pageId;
+    }
+
+
+    @Override
+    public int hashCode() {
+		return Objects.hash(id, metadata, pageId, protocol, Arrays.hashCode(content));
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (! (obj instanceof StoredMessage))
+        	return false;
+
 		StoredMessage other = (StoredMessage) obj;
-		if (!Arrays.equals(content, other.content))
-			return false;
-		if (id == null)
-		{
-			if (other.id != null)
-				return false;
-		} else if (!id.equals(other.id))
-			return false;
-		if (metadata == null)
-		{
-			if (other.metadata != null)
-				return false;
-		} else if (!metadata.equals(other.metadata))
-			return false;
-		
-		if (pageId == null)
-		{
-			if (other.pageId != null)
-				return false;
-		} else if (!pageId.equals(other.pageId))
-			return false;
-		
-		return true;
-	}
-	
-	@Override
-	public String toString()
-	{
-		return new StringBuilder()
-				.append("StoredMessage{").append(CompressionUtils.EOL)
-				.append("id=").append(id).append(",").append(CompressionUtils.EOL)
-				.append("content=").append(Arrays.toString(getContent())).append(CompressionUtils.EOL)
+
+        return Objects.equals(id, other.id) &&
+				Objects.equals(pageId, other.pageId) &&
+				Objects.equals(protocol, other.protocol) &&
+				Objects.equals(metadata, other.metadata) &&
+				Arrays.equals(content, other.content);
+    }
+
+    @Override
+    public String toString() {
+        return new StringBuilder()
+                .append("StoredMessage{").append(CompressionUtils.EOL)
+                .append("id=").append(id).append(",").append(CompressionUtils.EOL)
+                .append("content=").append(Arrays.toString(getContent())).append(CompressionUtils.EOL)
 				.append("metadata=").append(getMetadata()).append(",").append(CompressionUtils.EOL)
-				.append("pageId=").append(getPageId()).append(CompressionUtils.EOL)
-				.append("}").toString();
-	}
+				.append("protocol=").append(getProtocol()).append(",").append(CompressionUtils.EOL)
+                .append("pageId=").append(getPageId()).append(CompressionUtils.EOL)
+                .append("}").toString();
+    }
 }

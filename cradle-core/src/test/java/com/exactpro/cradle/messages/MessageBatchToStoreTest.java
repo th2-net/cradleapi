@@ -41,6 +41,7 @@ public class MessageBatchToStoreTest
 	private String sessionAlias;
 	private Direction direction;
 	private Instant timestamp;
+	private String protocol;
 	private byte[] messageContent;
 	
 	@BeforeClass
@@ -51,6 +52,7 @@ public class MessageBatchToStoreTest
 		sessionAlias = "Session1";
 		direction = Direction.FIRST;
 		timestamp = Instant.now().minus(1, ChronoUnit.DAYS);
+		protocol = "protocol";
 		messageContent = "Message text".getBytes();
 	}
 	
@@ -121,7 +123,7 @@ public class MessageBatchToStoreTest
 	public void batchIsFull1() throws CradleStorageException
 	{
 		MessageBatchToStore fullBySizeBatch = MessageBatchToStoreJoinTest.createFullBySizeBatch(book, sessionAlias,
-				1, direction, timestamp);
+				1, direction, timestamp, protocol);
 
 		Assert.assertTrue(fullBySizeBatch.isFull(), "Batch indicates it is full");
 		Assert.assertEquals(fullBySizeBatch.getBatchSize(), MessageBatchToStoreJoinTest.MAX_SIZE);
@@ -132,24 +134,28 @@ public class MessageBatchToStoreTest
 	public void batchIsFull() throws CradleStorageException
 	{
 		byte[] content = new byte[MAX_SIZE/2];
-		MessageBatchToStore batch = MessageBatchToStore.singleton(builder
+		MessageToStore message = builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.sequence(1)
 				.timestamp(timestamp)
+				.protocol(protocol)
 				.content(content)
-				.build(), MAX_SIZE);
+				.build();
+		MessageBatchToStore batch = MessageBatchToStore.singleton(message, MAX_SIZE);
 		batch.addMessage(builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.timestamp(timestamp)
+				.protocol(protocol)
 				.content(new byte[MAX_SIZE - MessagesSizeCalculator.MESSAGE_BATCH_CONST_VALUE
 						- MessagesSizeCalculator.MESSAGE_LENGTH_IN_BATCH * 2
 						- MessagesSizeCalculator.MESSAGE_SIZE_CONST_VALUE * 2
 						- MessagesSizeCalculator.calculateStringSize(sessionAlias) * 2
 						- MessagesSizeCalculator.calculateStringSize(direction.getLabel()) * 2
+						- MessagesSizeCalculator.calculateStringSize(protocol) * 2
 						- content.length])
 				.build());
 
