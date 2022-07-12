@@ -269,24 +269,36 @@ public class MessagesWorker extends Worker
 				groupedMessageBatchEntity.getPage(),
 				groupedMessageBatchEntity.getGroup());
 
-		if (!operators.getPageGroupCache().store(pageGroupEntity)) {
+		if (operators.getPageGroupCache().contains(pageGroupEntity)) {
 			logger.debug("Skipped writing group '{}' for page '{}'", pageGroupEntity.getGroup(), pageGroupEntity.getPage());
 			return CompletableFuture.completedFuture(null);
 		}
 
-		return operators.getPageGroupsOperator().write(pageGroupEntity, writeAttrs);
+		logger.debug("Writing group '{}' for page '{}'", pageGroupEntity.getGroup(), pageGroupEntity.getPage());
+		return operators.getPageGroupsOperator().write(pageGroupEntity, writeAttrs)
+				.whenComplete((result, e) -> {
+					if (e == null) {
+						operators.getPageGroupCache().store(pageGroupEntity);
+					}
+				});
 	}
 
 	public CompletableFuture<GroupEntity> storeGroup (GroupedMessageBatchEntity groupedMessageBatchEntity) {
 		CassandraOperators operators = getOperators();
 		GroupEntity groupEntity = new GroupEntity(groupedMessageBatchEntity.getBook(), groupedMessageBatchEntity.getGroup());
 
-		if (!operators.getGroupCache().store(groupEntity)) {
+		if (operators.getGroupCache().contains(groupEntity)) {
 			logger.debug("Skipped writing group '{}'", groupEntity.getGroup());
 			return CompletableFuture.completedFuture(null);
 		}
 
-		return operators.getGroupsOperator().write(groupEntity, writeAttrs);
+		logger.debug("Writing group '{}'", groupEntity.getGroup());
+		return operators.getGroupsOperator().write(groupEntity, writeAttrs)
+				.whenComplete((result, e) -> {
+					if (e == null) {
+						operators.getGroupCache().store(groupEntity);
+					}
+				});
 	}
 
 	public CompletableFuture<PageSessionEntity> storePageSession(MessageBatchToStore batch, PageId pageId)
