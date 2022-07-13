@@ -6,15 +6,14 @@ import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.mapper.MapperContext;
 import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
-import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.Order;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import java.util.UUID;
 
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
 
 
 public class TestEventQueryProviderTest {
@@ -25,7 +24,7 @@ public class TestEventQueryProviderTest {
     private EntityHelper<TestEventEntity> entityHelper;
 
 
-    @BeforeClass
+    @BeforeEach
     public void prepare() {
         session = mock(CqlSession.class);
         when(session.prepare(any(SimpleStatement.class))).thenAnswer(invocation -> {
@@ -45,29 +44,54 @@ public class TestEventQueryProviderTest {
 
         queryProvider = new AbstractTestEventQueryProvider<>(mapperContext, entityHelper) {
             @Override
-            protected Select getSelect(boolean includeContent, String idFrom, String parentId, Order order) {
-                return super.getSelect(includeContent, idFrom, parentId, order);
+            public PreparedStatement getPreparedStatement(boolean includeContent, String idFrom, String parentId, Order order) {
+                return super.getPreparedStatement(includeContent, idFrom, parentId, order);
             }
         };
     }
 
     @Test
-    void cachingTest(){
-        Select select1 = queryProvider.getSelect(true, null, null, null);
-        Select select2 = queryProvider.getSelect(true, null, null, null);
-        Select select3 = queryProvider.getSelect(true, UUID.randomUUID().toString(), null, null);
-
-        assertEquals(select1, select2);
-
-        PreparedStatement preparedStatement1 = queryProvider.getPreparedStatement(select1);
+    void cachingWithNulls(){
+        PreparedStatement preparedStatement1 = queryProvider.getPreparedStatement(false, null, null, null);
         verify(session, times(1)).prepare(any(SimpleStatement.class));
 
-        PreparedStatement preparedStatement2 = queryProvider.getPreparedStatement(select2);
+        PreparedStatement preparedStatement2 = queryProvider.getPreparedStatement(false, null, null, null);
         verify(session, times(1)).prepare(any(SimpleStatement.class));
+
         assertEquals(preparedStatement1, preparedStatement2);
+    }
 
-        PreparedStatement preparedStatement3 = queryProvider.getPreparedStatement(select3);
+    @Test
+    void cachingJustIncludeContent(){
+        PreparedStatement preparedStatement1 = queryProvider.getPreparedStatement(true, null, null, null);
+        verify(session, times(1)).prepare(any(SimpleStatement.class));
+
+        PreparedStatement preparedStatement2 = queryProvider.getPreparedStatement(true, null, null, null);
+        verify(session, times(1)).prepare(any(SimpleStatement.class));
+
+        assertEquals(preparedStatement1, preparedStatement2);
+    }
+
+    @Test
+    void cachingWithDifferentIdFroms(){
+        PreparedStatement preparedStatement1 = queryProvider.getPreparedStatement(true, "idFrom1", null, null);
+        verify(session, times(1)).prepare(any(SimpleStatement.class));
+
+        PreparedStatement preparedStatement2 = queryProvider.getPreparedStatement(true, "idFrom2", null, null);
+        verify(session, times(1)).prepare(any(SimpleStatement.class));
+
+        assertEquals(preparedStatement1, preparedStatement2);
+    }
+
+    @Test
+    void cachingWithDifferentNullArguements(){
+        PreparedStatement preparedStatement1 = queryProvider.getPreparedStatement(true, "idFrom", "parentId", null);
+        verify(session, times(1)).prepare(any(SimpleStatement.class));
+
+        PreparedStatement preparedStatement2 = queryProvider.getPreparedStatement(true, "idFrom", null, null);
         verify(session, times(2)).prepare(any(SimpleStatement.class));
+
+        assertNotEquals(preparedStatement1, preparedStatement2);
     }
 
 }

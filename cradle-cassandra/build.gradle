@@ -8,6 +8,9 @@ configurations.all {
 }
 
 dependencies {
+	implementation 'junit:junit:4.13.1'
+	implementation 'junit:junit:4.13.1'
+	implementation 'org.junit.jupiter:junit-jupiter:5.8.1'
 	compile project(":cradle-core")
 	compile "com.datastax.oss:java-driver-core:${driver_version}"
 	compile "com.datastax.oss:java-driver-query-builder:${driver_version}"
@@ -30,6 +33,7 @@ compileJava {
 
 test {
 	useTestNG()
+	useJUnitPlatform()
 }
 
 jar {

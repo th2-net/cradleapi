@@ -16,16 +16,11 @@
 
 package com.exactpro.cradle.cassandra.dao.testevents;
 
-import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
-import com.datastax.oss.driver.api.mapper.annotations.QueryProvider;
-import com.exactpro.cradle.Order;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -38,16 +33,6 @@ public interface TestEventOperator
 {
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " + ID + "=:id LIMIT 1")
 	CompletableFuture<DateTimeEventEntity> get(UUID instanceId, String id,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-
-	@QueryProvider(providerClass = TestEventQueryProvider.class, entityHelpers = TestEventEntity.class)
-	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getTestEvents(
-			UUID instanceId,
-			LocalDate startDate,
-			LocalTime timeFrom,
-			String idFrom,
-			LocalTime timeTo,
-			Order order,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Insert
