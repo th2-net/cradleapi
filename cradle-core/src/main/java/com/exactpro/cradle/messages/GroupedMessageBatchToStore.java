@@ -211,7 +211,13 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 					message.getTimestamp(),
 					message.getSequence());
 
-			batch.addMessage(new MessageToStore(msgId, message.getContent()));
+			MessageToStore batchedMessage = MessageToStore.builder()
+					.id(msgId)
+					.protocol(message.getProtocol())
+					.content(message.getContent())
+					.build();
+
+			batch.addMessage(batchedMessage);
 		}
 
 		return batches.values();

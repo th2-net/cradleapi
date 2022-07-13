@@ -32,12 +32,13 @@ public class GroupedMessageBatchToStoreJoinTest
 {
     private static final BookId bookId = new BookId("test-book");
     private static final String groupName = "test-group";
+    private static final String protocol = "test-protocol";
     static final int MAX_SIZE = 1024;
 
     @Test
     public void testJoinEmptyBatchWithOther() throws CradleStorageException, SerializationException {
         GroupedMessageBatchToStore emptyBatch = createEmptyBatch(groupName);
-        GroupedMessageBatchToStore batch = createBatch(bookId, "test", 1, Direction.FIRST, Instant.EPOCH, 5, 5, groupName);
+        GroupedMessageBatchToStore batch = createBatch(bookId, "test", 1, Direction.FIRST, Instant.EPOCH, 5, 5, groupName, null);
         assertTrue(emptyBatch.addBatch(batch));
 
         assertEquals(emptyBatch.getMessageCount(), 5);
@@ -58,7 +59,7 @@ public class GroupedMessageBatchToStoreJoinTest
     @DataProvider(name = "full batches")
     public Object[][] fullBatches() throws CradleStorageException {
         return new Object[][] {
-                { createFullBySizeBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, groupName) }
+                { createFullBySizeBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, groupName, protocol) }
         };
     }
 
@@ -76,7 +77,7 @@ public class GroupedMessageBatchToStoreJoinTest
 
     @DataProvider(name = "full batches matrix")
     public Object[][] fullBatchesMatrix() throws CradleStorageException {
-        GroupedMessageBatchToStore fullBySizeBatch = createFullBySizeBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, groupName);
+        GroupedMessageBatchToStore fullBySizeBatch = createFullBySizeBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, groupName, protocol);
         return new Object[][] {
                 { fullBySizeBatch, fullBySizeBatch }
         };
@@ -90,8 +91,8 @@ public class GroupedMessageBatchToStoreJoinTest
 
     @Test
     public void testAddBatchLessThanLimit() throws CradleStorageException, SerializationException {
-        GroupedMessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, 5, 5, groupName);
-        GroupedMessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH.plusMillis(5), 5, 5, groupName);
+        GroupedMessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, 5, 5, groupName, protocol);
+        GroupedMessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH.plusMillis(5), 5, 5, groupName, protocol);
 
         assertEquals(first.getBatchSize(), getBatchSize(first));
         assertTrue(first.addBatch(second));
@@ -102,8 +103,8 @@ public class GroupedMessageBatchToStoreJoinTest
 
     @Test
     public void testAddBatchMoreThanLimitBySize() throws CradleStorageException, SerializationException {
-        GroupedMessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, 1, MAX_SIZE / 2, groupName);
-        GroupedMessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH, 1, MAX_SIZE / 2, groupName);
+        GroupedMessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, 1, MAX_SIZE / 2, groupName, protocol);
+        GroupedMessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH, 1, MAX_SIZE / 2, groupName, protocol);
 
         long sizeBefore = first.getBatchSize();
         assertFalse(first.addBatch(second));
@@ -119,9 +120,9 @@ public class GroupedMessageBatchToStoreJoinTest
         expectedExceptionsMessageRegExp = "Batch BookId-s differ.*"
     )
     public void testThrowExceptionOnDifferentBooks() throws CradleStorageException {
-        GroupedMessageBatchToStore first = createBatch(bookId, "testA", 0, Direction.FIRST, Instant.EPOCH, 5, 5, groupName);
+        GroupedMessageBatchToStore first = createBatch(bookId, "testA", 0, Direction.FIRST, Instant.EPOCH, 5, 5, groupName, protocol);
         GroupedMessageBatchToStore second =
-                createBatch(new BookId(bookId.getName()+"2"), "testA", 5, Direction.FIRST, Instant.EPOCH, 5, 5, groupName);
+                createBatch(new BookId(bookId.getName()+"2"), "testA", 5, Direction.FIRST, Instant.EPOCH, 5, 5, groupName, protocol);
 
         first.addBatch(second);
     }
@@ -131,16 +132,16 @@ public class GroupedMessageBatchToStoreJoinTest
             expectedExceptionsMessageRegExp = "Batch groups differ.*"
     )
     public void testThrowExceptionOnDifferentGroups() throws CradleStorageException {
-        GroupedMessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, 5, 5, "test-group-1");
-        GroupedMessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH, 5, 5, "test-group-2");
+        GroupedMessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, 5, 5, "test-group-1", protocol);
+        GroupedMessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH, 5, 5, "test-group-2", protocol);
 
         first.addBatch(second);
     }
 
     @Test
     public void testJoinDifferentSessions() throws CradleStorageException {
-        GroupedMessageBatchToStore first = createBatch(bookId, "testA", 0, Direction.FIRST, Instant.EPOCH, 5, 5, groupName);
-        GroupedMessageBatchToStore second = createBatch(bookId, "testB", 5, Direction.SECOND, Instant.EPOCH.plusSeconds(100), 5, 5, groupName);
+        GroupedMessageBatchToStore first = createBatch(bookId, "testA", 0, Direction.FIRST, Instant.EPOCH, 5, 5, groupName, protocol);
+        GroupedMessageBatchToStore second = createBatch(bookId, "testB", 5, Direction.SECOND, Instant.EPOCH.plusSeconds(100), 5, 5, groupName, protocol);
 
         first.addBatch(second);
     }
@@ -150,8 +151,8 @@ public class GroupedMessageBatchToStoreJoinTest
             expectedExceptionsMessageRegExp = "Batches intersect by time.*"
     )
     public void testThrowExceptionOnUnorderedTimestamps() throws CradleStorageException {
-        GroupedMessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH.plusMillis(5), 5, 5, groupName);
-        GroupedMessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH, 5, 5, groupName);
+        GroupedMessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH.plusMillis(5), 5, 5, groupName, protocol);
+        GroupedMessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH, 5, 5, groupName, protocol);
 
         first.addBatch(second);
     }
@@ -161,14 +162,14 @@ public class GroupedMessageBatchToStoreJoinTest
             expectedExceptionsMessageRegExp = "Batches are not ordered.*"
     )
     public void testThrowExceptionOnUnorderedSequences() throws CradleStorageException {
-        GroupedMessageBatchToStore first = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH, 5, 5, groupName);
-        GroupedMessageBatchToStore second = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH.plusSeconds(10), 5, 5, groupName);
+        GroupedMessageBatchToStore first = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH, 5, 5, groupName, protocol);
+        GroupedMessageBatchToStore second = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH.plusSeconds(10), 5, 5, groupName, protocol);
 
         first.addBatch(second);
     }
 
     private static GroupedMessageBatchToStore createBatch(BookId bookId, String sessionAlias, long startSequence, Direction direction, Instant startTimestamp,
-            int messageCount, int contentSizePerMessage, String group) throws CradleStorageException {
+            int messageCount, int contentSizePerMessage, String group, String protocol) throws CradleStorageException {
         GroupedMessageBatchToStore batch = createEmptyBatch(group);
         long begin = startSequence;
         Instant timestamp = startTimestamp;
@@ -178,6 +179,7 @@ public class GroupedMessageBatchToStoreJoinTest
                     .sessionAlias(sessionAlias)
                     .direction(direction)
                     .timestamp(timestamp)
+                    .protocol(protocol)
                     .sequence(begin++);
             if (contentSizePerMessage > 0) {
                 toStore = toStore.content(new byte[contentSizePerMessage]);
@@ -194,7 +196,7 @@ public class GroupedMessageBatchToStoreJoinTest
     }
 
     static GroupedMessageBatchToStore createFullBySizeBatch(BookId bookId,
-            String sessionAlias, long startSequence, Direction direction, Instant startTimestamp, String group) throws CradleStorageException {
+            String sessionAlias, long startSequence, Direction direction, Instant startTimestamp, String group, String protocol) throws CradleStorageException {
         return createBatch(bookId,
                 sessionAlias,
                 startSequence,
@@ -205,8 +207,10 @@ public class GroupedMessageBatchToStoreJoinTest
                                 MessagesSizeCalculator.MESSAGE_SIZE_CONST_VALUE +
                                 MessagesSizeCalculator.MESSAGE_LENGTH_IN_BATCH +
                                 MessagesSizeCalculator.calculateStringSize(sessionAlias) +
+                                MessagesSizeCalculator.calculateStringSize(protocol) +
                                 MessagesSizeCalculator.calculateStringSize(direction.getLabel())),
-                group);
+                group,
+                protocol);
     }
 
     private int getBatchSize(StoredGroupedMessageBatch batch) throws SerializationException {
