@@ -21,14 +21,8 @@ import com.exactpro.cradle.cassandra.dao.books.BookOperator;
 import com.exactpro.cradle.cassandra.dao.books.PageNameOperator;
 import com.exactpro.cradle.cassandra.dao.books.PageOperator;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
-import com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchOperator;
-import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
-import com.exactpro.cradle.cassandra.dao.messages.PageSessionsOperator;
-import com.exactpro.cradle.cassandra.dao.messages.SessionsOperator;
-import com.exactpro.cradle.cassandra.dao.messages.converters.GroupedMessageBatchEntityConverter;
-import com.exactpro.cradle.cassandra.dao.messages.converters.MessageBatchEntityConverter;
-import com.exactpro.cradle.cassandra.dao.messages.converters.PageSessionEntityConverter;
-import com.exactpro.cradle.cassandra.dao.messages.converters.SessionEntityConverter;
+import com.exactpro.cradle.cassandra.dao.messages.*;
+import com.exactpro.cradle.cassandra.dao.messages.converters.*;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.PageScopesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
@@ -71,6 +65,12 @@ public interface CassandraDataMapper {
     PageScopesOperator pageScopesOperator(@DaoKeyspace String keyspace, @DaoTable String pageScopesTable);
 
     @DaoFactory
+    PageGroupsOperator pageGroupsOperator (@DaoKeyspace String keyspace, @DaoTable String pageGroupsTable);
+
+    @DaoFactory
+    GroupsOperator groupsOperator (@DaoKeyspace String keyspace, @DaoTable String groupsTable);
+
+    @DaoFactory
     IntervalOperator intervalOperator(@DaoKeyspace String keyspace, @DaoTable String intervalsTable);
 
     @DaoFactory
@@ -111,4 +111,10 @@ public interface CassandraDataMapper {
 
     @DaoFactory
     SessionStatisticsEntityConverter sessionStatisticsEntityConverter();
+
+    @DaoFactory
+    PageGroupEntityConverter pageGroupEntityConverter();
+
+    @DaoFactory
+    GroupEntityConverter groupEntityConverter();
 }
