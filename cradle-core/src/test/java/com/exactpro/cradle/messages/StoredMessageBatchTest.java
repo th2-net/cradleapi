@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
+import com.exactpro.cradle.serialization.SerializationUtils;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
@@ -352,4 +353,52 @@ public class StoredMessageBatchTest
 			return streamName+StoredMessageBatchId.IDS_DELIMITER+direction.getLabel()+StoredMessageBatchId.IDS_DELIMITER+index;
 		}
 	}
+
+	@Test
+	public void streamNameAffectsBatchLength() throws CradleStorageException, IOException
+	{
+		String shortStreamName = "strNm";
+		String longStreamName = "s".repeat(SerializationUtils.USHORT_MAX_VALUE);
+		MessageToStore shortMsg = builder.streamName(shortStreamName).direction(direction).index(0).timestamp(timestamp)
+				.metadata("md", "some value").content(messageContent).build();
+		MessageToStore longMsg = builder.streamName(longStreamName).direction(direction).index(0).timestamp(timestamp)
+				.metadata("md", "some value").content(messageContent).build();
+		StoredMessageBatch batch = StoredMessageBatch.singleton(shortMsg);
+		StoredMessageBatch batch2 = StoredMessageBatch.singleton(longMsg);
+
+		Assert.assertTrue(batch.getBatchSize() < batch2.getBatchSize());
+		Assert.assertEquals(batch2.getBatchSize() - batch.getBatchSize(), longStreamName.length() - shortStreamName.length());
+	}
+
+	@Test
+	public void streamNameAffectsBatchLength2() throws CradleStorageException, IOException
+	{
+		String shortStreamName = "strNm";
+		String longStreamName = "s".repeat(SerializationUtils.USHORT_MAX_VALUE);
+		MessageToStore msgExample = builder.streamName(shortStreamName).direction(direction).index(0).timestamp(timestamp)
+				.metadata("md", "some value").content(messageContent).build();
+		int size = MessagesSizeCalculator.calculateMessageSizeInBatch(msgExample);
+		StoredMessageBatch batch = fillBatch(shortStreamName);
+		StoredMessageBatch batch2 = fillBatch(longStreamName);
+
+		// (+ size - 1) / size = to round up integer dividing
+		Assert.assertEquals(batch.getMessageCount() - batch2.getMessageCount(),
+				((longStreamName.length() - shortStreamName.length()) + size - 1) / size);
+	}
+
+	private StoredMessageBatch fillBatch (String streamName) throws CradleStorageException {
+		StoredMessageBatch batch = new StoredMessageBatch();
+		boolean added;
+		long index = 0;
+		do {
+			MessageToStore build = builder.streamName(streamName).direction(direction).index(index).timestamp(timestamp)
+					.metadata("md", "some value").content(messageContent).build();
+			added = batch.hasSpace(build);
+			if (added)
+				batch.addMessage(build);
+			index++;
+		} while (added);
+		return batch;
+	}
+
 }

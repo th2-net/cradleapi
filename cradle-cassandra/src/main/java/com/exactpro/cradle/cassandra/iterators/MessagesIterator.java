@@ -33,9 +33,9 @@ public class MessagesIterator implements Iterator<StoredMessage>
 {
 	private static final Logger logger = LoggerFactory.getLogger(MessagesIterator.class);
 	
-	private final MessageBatchIterator entitiesIterator;
+	private final MessageBatchIterator batchIterator;
 	private final StoredMessageFilter filter;
-	private Iterator<StoredMessage> batchIterator;
+	private Iterator<StoredMessage> messagesIterator;
 	private long returnedMessages;
 	private StoredMessage nextMessage;
 	
@@ -43,7 +43,7 @@ public class MessagesIterator implements Iterator<StoredMessage>
 			PagingSupplies pagingSupplies, DetailedMessageBatchConverter converter, String queryInfo)
 	{
 		this.filter = filter;
-		this.entitiesIterator = new MessageBatchIterator(rows, filter == null ? Order.DIRECT : filter.getOrder(),
+		this.batchIterator = new MessageBatchIterator(rows, filter == null ? Order.DIRECT : filter.getOrder(),
 				pagingSupplies, converter, queryInfo);
 	}
 	
@@ -53,20 +53,28 @@ public class MessagesIterator implements Iterator<StoredMessage>
 	{
 		if (filter != null && filter.getLimit() > 0 && returnedMessages >= filter.getLimit())
 			return false;
-		
-		if (batchIterator != null)
+
+		if (messagesIterator == null)
+			messagesIterator = getNextMessagesIterator();
+
+		while (messagesIterator != null)
 		{
 			if ((nextMessage = checkNext()) != null)
 				return true;
-			batchIterator = null;
+
+			messagesIterator = getNextMessagesIterator();
 		}
-		
-		if (!entitiesIterator.hasNext())
-			return false;
-		
+
+		return false;
+	}
+
+	private Iterator<StoredMessage> getNextMessagesIterator()
+	{
 		logger.trace("Getting messages from next batch");
-		batchIterator = entitiesIterator.next().iterator();
-		return hasNext();
+		if (batchIterator.hasNext())
+			return batchIterator.next().iterator();
+
+		return null;
 	}
 	
 	@Override
@@ -87,9 +95,9 @@ public class MessagesIterator implements Iterator<StoredMessage>
 	
 	private StoredMessage checkNext()
 	{
-		while (batchIterator.hasNext())
+		while (messagesIterator.hasNext())
 		{
-			StoredMessage msg = batchIterator.next();
+			StoredMessage msg = messagesIterator.next();
 			if (checkFilter(msg))
 				return msg;
 		}

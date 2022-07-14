@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,8 @@ public interface TimeTestEventOperator {
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " +
 			START_DATE + "=:startDate AND " + START_TIME + ">=:timeFrom AND " + START_TIME + "<=:timeTo")
 	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getTestEvents(UUID instanceId, LocalDate startDate,
-			LocalTime timeFrom, LocalTime timeTo,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+																				LocalTime timeFrom, LocalTime timeTo,
+																				Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 
 	@QueryProvider(providerClass = TestEventQueryProvider.class, entityHelpers = TestEventEntity.class)
@@ -86,14 +86,14 @@ public interface TimeTestEventOperator {
 	@Query("SELECT * FROM ${qualifiedTableId} WHERE " + INSTANCE_ID + "=:instanceId AND " +
 			START_DATE + "=:startDate AND " + START_TIME + "=:startTime AND " + ID + "=:eventId")
 	CompletableFuture<DetailedTestEventEntity> get(UUID instanceId, LocalDate startDate, LocalTime startTime,
-			String eventId, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+												   String eventId, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Insert
 	CompletableFuture<Void> writeTestEvent(DetailedTestEventEntity timeTestEvent,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
+										   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
 	@Query("UPDATE ${qualifiedTableId} SET "+SUCCESS+"=:success WHERE "+INSTANCE_ID+"=:instanceId AND "+
 			START_DATE+"=:startDate AND "+START_TIME+"=:startTime AND "+ID+"=:eventId")
 	CompletableFuture<Void> updateStatus(UUID instanceId, LocalDate startDate, LocalTime startTime,
-					String eventId, boolean success, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+										 String eventId, boolean success, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

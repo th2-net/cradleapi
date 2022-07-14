@@ -16,9 +16,7 @@
 
 package com.exactpro.cradle.cassandra.retries;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.DriverException;
@@ -28,6 +26,9 @@ import com.datastax.oss.driver.api.core.cql.Statement;
 
 public class RetryUtils
 {
+	private static final long BASE_DELAYS_MS = 1_000;
+	private static final long MAX_DELAYS_MS = 10_000;
+
 	public static DriverException getDriverException(Throwable e)
 	{
 		if (e instanceof DriverException)
@@ -60,29 +61,17 @@ public class RetryUtils
 			stmt = stmt.setPageSize(pageSize);
 		return stmt;
 	}
-	
-	public static List<List<String>> applyPolicyVerdict(List<String> ids, SelectExecutionVerdict policyVerdict)
-	{
-		if (policyVerdict == null)
-			return Collections.singletonList(ids);
-		
-		int pageSize = policyVerdict.getPageSize();
-		if (pageSize <= 0)
-			return Collections.singletonList(ids);
-		
-		List<List<String>> result = new ArrayList<>();
-		
-		int length = ids.size();
-		for (int i = 0; i < length/pageSize; i++)
-		{
-			int index = i*pageSize;
-			result.add(ids.subList(index, index+pageSize));
-		}
-		
-		int tail = length%pageSize;
-		if (tail > 0)
-			result.add(ids.subList(length-tail, length));
-		
-		return result;
+
+	public static long calculateDelayWithJitter(int retryCount) {
+		// get the pure exponential delay based on the attempt count
+		long delay = Math.min(BASE_DELAYS_MS * (1L << retryCount++), MAX_DELAYS_MS);
+		// calculate up to 15% jitter, plus or minus (i.e. 85 - 115% of the pure value)
+		int jitter = ThreadLocalRandom.current().nextInt(85, 116);
+		// apply jitter
+		delay = (jitter * delay) / 100;
+		// ensure the final delay is between the base and max
+		delay = Math.min(MAX_DELAYS_MS, Math.max(BASE_DELAYS_MS, delay));
+		return delay;
 	}
+
 }

@@ -119,9 +119,10 @@ public class TablesCreator
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
 				.withPartitionKey(STREAM_NAME, DataTypes.TEXT)
 				.withPartitionKey(DIRECTION, DataTypes.TEXT)
-				.withPartitionKey(MESSAGE_DATE, DataTypes.DATE)
+				.withClusteringColumn(MESSAGE_DATE, DataTypes.DATE)
 				.withClusteringColumn(MESSAGE_TIME, DataTypes.TIME)
 				.withClusteringColumn(MESSAGE_INDEX, DataTypes.BIGINT)
+				.withClusteringOrder(MESSAGE_DATE, ClusteringOrder.ASC)
 				.withClusteringOrder(MESSAGE_TIME, ClusteringOrder.ASC)
 				.withClusteringOrder(MESSAGE_INDEX, ClusteringOrder.ASC);
 		
