@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
@@ -40,7 +41,8 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
     private static final Logger logger = LoggerFactory.getLogger(StatisticsWorker.class);
 
-    private final ExecutorService composingService;
+    // Map where active futures are being tracked
+    private final Map<CompletableFuture<Void>, String> startedFutures;
     private final CassandraOperators operators;
     private final long interval;
     private final Map<BookId, BookStatisticsRecordsCaches> bookCounterCaches;
@@ -48,7 +50,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
     private final boolean isEnabled;
 
     public StatisticsWorker (WorkerSupplies workerSupplies, long persistenceInterval) {
-        this.composingService = workerSupplies.getComposingService();
+        this.startedFutures = new ConcurrentHashMap<>();
         this.operators = workerSupplies.getOperators();
         this.writeAttrs = workerSupplies.getWriteAttrs();
         this.interval = persistenceInterval;
@@ -96,6 +98,41 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
             logger.debug("StatisticsWorker shutdown complete");
         } catch (InterruptedException e) {
             logger.error("Interrupted while waiting jobs to complete");
+        }
+
+        // After executor service stops, we need to wait for futures
+        awaitFutures();
+    }
+
+    private void awaitFutures() {
+        logger.debug("Waiting for futures completion");
+        Collection<CompletableFuture<Void>> futuresToRemove = new HashSet<>();
+        while (!(startedFutures.isEmpty() || Thread.currentThread().isInterrupted())) {
+            logger.info("Wait for the completion of {} futures", startedFutures.size());
+            futuresToRemove.clear();
+            startedFutures.forEach((future, book) -> {
+                try {
+                    if (!future.isDone()) {
+                        future.get(1, TimeUnit.SECONDS);
+                    }
+                    futuresToRemove.add(future);
+                } catch (CancellationException | ExecutionException e) {
+                    logger.warn("Could not execute future for book {}", book, e);
+
+                    futuresToRemove.add(future);
+                } catch (TimeoutException | InterruptedException e) {
+                    logger.error("Could not execute future for book {}", book, e);
+
+                    // Current thread was interrupted
+                    boolean mayInterruptIfRunning = e instanceof InterruptedException;
+                    future.cancel(mayInterruptIfRunning);
+
+                    if (mayInterruptIfRunning) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            });
+            startedFutures.keySet().removeAll(futuresToRemove);
         }
     }
 
@@ -179,16 +216,17 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
         try {
             logger.trace("Persisting entity counter for {}:{}:{}:{}", bookId, entityKey, frameType, counter.getFrameStart());
-            operators.getEntityStatisticsOperator().update(bookId.getName(),
+            CompletableFuture<Void> future = operators.getEntityStatisticsOperator().update(bookId.getName(),
                     entityKey.getPage(),
                     entityKey.getEntityType().getValue(),
                     frameType.getValue(),
                     counter.getFrameStart(),
                     counter.getRecord().getEntityCount(),
                     counter.getRecord().getEntitySize(),
-                    writeAttrs)
-                    .thenApplyAsync(res -> res, composingService)
-                    .whenComplete((result, e) -> {
+                    writeAttrs);
+            startedFutures.put(future, bookId.getName());
+            future.whenComplete((result, e) -> {
+                startedFutures.remove(future);
                 if (e != null)
                     exceptionHandler.accept(e);
             });
@@ -212,7 +250,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
         try {
             logger.trace("Persisting message counter for {}:{}:{}:{}:{}", bookId, key.getSessionAlias(), key.getDirection(), frameType, counter.getFrameStart());
-            operators.getMessageStatisticsOperator().update(
+            CompletableFuture<Void> future = operators.getMessageStatisticsOperator().update(
                     bookId.getName(),
                     key.getPage(),
                     key.getSessionAlias(),
@@ -221,9 +259,11 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
                     counter.getFrameStart(),
                     counter.getRecord().getEntityCount(),
                     counter.getRecord().getEntitySize(),
-                    writeAttrs)
-                    .thenApplyAsync(res -> res, composingService)
-                    .whenComplete((result, e) -> {
+                    writeAttrs);
+
+            startedFutures.put(future, bookId.getName());
+            future.whenComplete((result, e) -> {
+                startedFutures.remove(future);
                 if (e != null)
                     exceptionHandler.accept(e);
             });
@@ -266,14 +306,16 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
                         session);
                 if (!cache.contains(entity)) {
                     logger.trace("Persisting {}", entity.toString());
-                    op.write(entity,writeAttrs)
-                            .thenApplyAsync(res -> res, composingService)
-                            .whenComplete((result, e) -> {
-                                if (e != null)
-                                    exceptionHandler.accept(e);
-                                else
-                                    cache.store(entity);
-                            });
+
+                    CompletableFuture<Void> future = op.write(entity,writeAttrs);
+                    startedFutures.put(future, bookId.getName());
+                    future.whenComplete((result, e) -> {
+                        startedFutures.remove(future);
+                        if (e != null)
+                            exceptionHandler.accept(e);
+                        else
+                            cache.store(entity);
+                        });
                 } else {
                     logger.trace("{} found in cache, ignoring", entity.toString());
                 }
