@@ -262,6 +262,45 @@ public class MessagesWorker extends Worker
 		return new GroupedMessageBatchEntity(batch, pageId, settings.getMaxUncompressedMessageBatchSize());
 	}
 
+	public CompletableFuture<PageGroupEntity> storePageGroup (GroupedMessageBatchEntity groupedMessageBatchEntity) {
+		CassandraOperators operators = getOperators();
+		PageGroupEntity pageGroupEntity = new PageGroupEntity(
+				groupedMessageBatchEntity.getBook(),
+				groupedMessageBatchEntity.getPage(),
+				groupedMessageBatchEntity.getGroup());
+
+		if (operators.getPageGroupCache().contains(pageGroupEntity)) {
+			logger.debug("Skipped writing group '{}' for page '{}'", pageGroupEntity.getGroup(), pageGroupEntity.getPage());
+			return CompletableFuture.completedFuture(null);
+		}
+
+		logger.debug("Writing group '{}' for page '{}'", pageGroupEntity.getGroup(), pageGroupEntity.getPage());
+		return operators.getPageGroupsOperator().write(pageGroupEntity, writeAttrs)
+				.whenComplete((result, e) -> {
+					if (e == null) {
+						operators.getPageGroupCache().store(pageGroupEntity);
+					}
+				});
+	}
+
+	public CompletableFuture<GroupEntity> storeGroup (GroupedMessageBatchEntity groupedMessageBatchEntity) {
+		CassandraOperators operators = getOperators();
+		GroupEntity groupEntity = new GroupEntity(groupedMessageBatchEntity.getBook(), groupedMessageBatchEntity.getGroup());
+
+		if (operators.getGroupCache().contains(groupEntity)) {
+			logger.debug("Skipped writing group '{}'", groupEntity.getGroup());
+			return CompletableFuture.completedFuture(null);
+		}
+
+		logger.debug("Writing group '{}'", groupEntity.getGroup());
+		return operators.getGroupsOperator().write(groupEntity, writeAttrs)
+				.whenComplete((result, e) -> {
+					if (e == null) {
+						operators.getGroupCache().store(groupEntity);
+					}
+				});
+	}
+
 	public CompletableFuture<PageSessionEntity> storePageSession(MessageBatchToStore batch, PageId pageId)
 	{
 		StoredMessageId batchId = batch.getId();
@@ -312,6 +351,8 @@ public class MessagesWorker extends Worker
 		List<SerializedEntityMetadata> meta = entity.getSerializedMessageMetadata();
 
 		return gmbOperator.write(entity, writeAttrs)
+				.thenApplyAsync(result -> storePageGroup(entity))
+				.thenApplyAsync(result -> storeGroup(entity))
 				.thenAccept(result -> messageStatisticsCollector.updateMessageBatchStatistics(bookId, entity.getPage(), entity.getGroup(), "", meta))
 				.thenAcceptAsync(result -> sessionStatisticsCollector.updateSessionStatistics(bookId, entity.getPage(), SessionRecordType.SESSION_GROUP, entity.getGroup(), meta))
 				.thenAcceptAsync(result -> updateMessageWriteMetrics(entity, bookId), composingService)

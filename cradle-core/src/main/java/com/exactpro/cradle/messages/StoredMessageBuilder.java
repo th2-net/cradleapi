@@ -37,6 +37,8 @@ public class StoredMessageBuilder {
 	private PageId pageId;
 
 
+	private String protocol;
+
 	//metadata
 	protected Map<String, String> metadata;
 	
@@ -91,6 +93,11 @@ public class StoredMessageBuilder {
 		return this;
 	}
 
+	public StoredMessageBuilder setProtocol(String protocol) {
+		this.protocol = protocol;
+		return this;
+	}
+
 	public StoredMessage build() {
 		StoredMessageMetadata smm = this.metadata == null ? StoredMessageMetadata.empty()
 				: new StoredMessageMetadata(this.metadata);
@@ -98,6 +105,6 @@ public class StoredMessageBuilder {
 		if (msgId == null) {
 			msgId = new StoredMessageId(bookId, sessionAlias, direction, timestamp, index);
 		}
-		return new StoredMessage(msgId, content, smm, pageId);
+		return new StoredMessage(msgId, protocol, content, smm, pageId);
 	}
 }

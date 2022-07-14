@@ -54,7 +54,8 @@ public class MessagesSizeCalculator {
 	public static int calculateMessageSize(CradleMessage message) {
 		int len = (message.getContent() != null ? message.getContent().length : 0) + MESSAGE_SIZE_CONST_VALUE;
 		len += calculateStringSize(message.getSessionAlias()) +
-				calculateStringSize(message.getDirection().getLabel());
+				calculateStringSize(message.getDirection().getLabel()) +
+				calculateStringSize(message.getProtocol());
 		Map<String, String> md ;
 		if (message.getMetadata() != null && (md = message.getMetadata().toMap()) != null) {
 			for (Map.Entry<String, String> entry : md.entrySet()) {

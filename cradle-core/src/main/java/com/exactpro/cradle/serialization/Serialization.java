@@ -23,7 +23,7 @@ public class Serialization {
 
 	public static class MessageBatchConst {
 		public static final int MESSAGE_BATCH_MAGIC =  0xd3b7c736;
-		public static final byte MESSAGE_PROTOCOL_VER =  3;
+		public static final byte MESSAGE_PROTOCOL_VER =  4;
 		public static final short MESSAGE_MAGIC = (short) 0x8fcd;
 	}
 

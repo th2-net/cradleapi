@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,66 +21,65 @@ import com.exactpro.cradle.Direction;
 
 import java.time.Instant;
 
-public interface CradleMessage
-{
-	/**
-	 * @return ID of message
-	 */
-	StoredMessageId getId();
-	
-	/**
-	 * @return message content
-	 */
-	byte[] getContent();
-	
-	/**
-	 * @return metadata attached to message
-	 */
-	StoredMessageMetadata getMetadata();
+public interface CradleMessage {
+    /**
+     * @return ID of message
+     */
+    StoredMessageId getId();
 
-	
-	/**
-	 * @return ID of book the message is related to
-	 */
-	public default BookId getBookId()
-	{
-		StoredMessageId id = getId();
-		return id != null ? id.getBookId() : null;
-	}
-	
-	/**
-	 * @return alias of session the message is related to
-	 */
-	public default String getSessionAlias()
-	{
-		StoredMessageId id = getId();
-		return id != null ? id.getSessionAlias() : null;
-	}
-	
-	/**
-	 * @return direction in which the message went through the session
-	 */
-	public default Direction getDirection()
-	{
-		StoredMessageId id = getId();
-		return id != null ? id.getDirection() : null;
-	}
-	
-	/**
-	 * @return timestamp of message creation
-	 */
-	public default Instant getTimestamp()
-	{
-		StoredMessageId id = getId();
-		return id != null ? id.getTimestamp() : null;
-	}
+    /**
+     * @return message content
+     */
+    byte[] getContent();
 
 	/**
-	 * @return sequence number the message has for its session, direction and timestamp
+	 * @return grpc protocol
 	 */
-	public default long getSequence()
-	{
-		StoredMessageId id = getId();
-		return id != null ? id.getSequence() : null;
-	}
+    String getProtocol();
+
+    /**
+     * @return metadata attached to message
+     */
+    StoredMessageMetadata getMetadata();
+
+
+    /**
+     * @return ID of book the message is related to
+     */
+    public default BookId getBookId() {
+        StoredMessageId id = getId();
+        return id != null ? id.getBookId() : null;
+    }
+
+    /**
+     * @return alias of session the message is related to
+     */
+    public default String getSessionAlias() {
+        StoredMessageId id = getId();
+        return id != null ? id.getSessionAlias() : null;
+    }
+
+    /**
+     * @return direction in which the message went through the session
+     */
+    public default Direction getDirection() {
+        StoredMessageId id = getId();
+        return id != null ? id.getDirection() : null;
+    }
+
+    /**
+     * @return timestamp of message creation
+     */
+    public default Instant getTimestamp() {
+        StoredMessageId id = getId();
+        return id != null ? id.getTimestamp() : null;
+    }
+
+    /**
+     * @return sequence number the message has for its session, direction and timestamp
+     */
+    public default long getSequence() {
+        StoredMessageId id = getId();
+        return id != null ? id.getSequence() : null;
+    }
 }

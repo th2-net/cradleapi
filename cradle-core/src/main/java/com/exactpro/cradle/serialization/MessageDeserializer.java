@@ -100,7 +100,7 @@ public class MessageDeserializer {
 		}
 		StoredMessageBuilder builder = new StoredMessageBuilder();
 		builder.setMessageId(readMessageId(buffer, commonParams));
-
+		builder.setProtocol(readString(buffer));
 		readMessageMetaData(buffer, builder);
 		builder.setContent(readBody(buffer));
 		return builder.build();

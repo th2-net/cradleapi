@@ -28,10 +28,7 @@ import com.exactpro.cradle.cassandra.dao.books.PageEntity;
 import com.exactpro.cradle.cassandra.dao.books.PageNameEntity;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalEntity;
 import com.exactpro.cradle.cassandra.dao.labels.LabelEntity;
-import com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity;
-import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
-import com.exactpro.cradle.cassandra.dao.messages.PageSessionEntity;
-import com.exactpro.cradle.cassandra.dao.messages.SessionEntity;
+import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.testevents.PageScopeEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
@@ -66,6 +63,8 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 		createMessages();
 		createGroupedMessages();
 		createPageSessions();
+		createPageGroups();
+		createGroups();
 
 		createTestEvents();
 		createPageScopes();
@@ -197,6 +196,23 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 
 				.withClusteringColumn(PageSessionEntity.FIELD_SESSION_ALIAS, DataTypes.TEXT)
 				.withClusteringColumn(PageSessionEntity.FIELD_DIRECTION, DataTypes.TEXT));
+	}
+
+	private void createPageGroups () throws IOException {
+		String tableName = PageGroupEntity.TABLE_NAME;
+
+		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(PageGroupEntity.FIELD_BOOK, DataTypes.TEXT)
+				.withPartitionKey(PageGroupEntity.FIELD_PAGE, DataTypes.TEXT)
+				.withClusteringColumn(PageGroupEntity.FIELD_GROUP, DataTypes.TEXT));
+	}
+
+	private void createGroups () throws IOException {
+		String tableName = GroupEntity.TABLE_NAME;
+
+		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(GroupEntity.FIELD_BOOK, DataTypes.TEXT)
+				.withClusteringColumn(GroupEntity.FIELD_GROUP, DataTypes.TEXT));
 	}
 
 	private void createTestEvents() throws IOException

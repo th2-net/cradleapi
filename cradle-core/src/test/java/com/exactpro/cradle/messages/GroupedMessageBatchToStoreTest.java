@@ -42,6 +42,7 @@ public class GroupedMessageBatchToStoreTest
 	private String groupName;
 	private Direction direction;
 	private Instant timestamp;
+	private String protocol;
 	private byte[] messageContent;
 	
 	@BeforeClass
@@ -52,6 +53,7 @@ public class GroupedMessageBatchToStoreTest
 		sessionAlias = "test-session";
 		groupName = "test-group";
 		direction = Direction.FIRST;
+		this.protocol = "test-protocol";
 		timestamp = Instant.now().minus(1, ChronoUnit.DAYS);
 		messageContent = "Message text".getBytes();
 	}
@@ -120,7 +122,7 @@ public class GroupedMessageBatchToStoreTest
 	public void batchIsFull1() throws CradleStorageException
 	{
 		GroupedMessageBatchToStore fullBySizeBatch = GroupedMessageBatchToStoreJoinTest.createFullBySizeBatch(book, sessionAlias,
-				1, direction, timestamp, groupName);
+				1, direction, timestamp, groupName, protocol);
 
 		Assert.assertTrue(fullBySizeBatch.isFull(), "Batch indicates it is full");
 		Assert.assertEquals(fullBySizeBatch.getBatchSize(), GroupedMessageBatchToStoreJoinTest.MAX_SIZE);
@@ -139,17 +141,20 @@ public class GroupedMessageBatchToStoreTest
 				.sequence(1)
 				.timestamp(timestamp)
 				.content(content)
+				.protocol(protocol)
 				.build());
 		batch.addMessage(builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)
 				.direction(direction)
 				.timestamp(timestamp)
+				.protocol(protocol)
 				.content(new byte[MAX_SIZE - MessagesSizeCalculator.MESSAGE_BATCH_CONST_VALUE
 						- MessagesSizeCalculator.MESSAGE_LENGTH_IN_BATCH * 2
 						- MessagesSizeCalculator.MESSAGE_SIZE_CONST_VALUE * 2
 						- MessagesSizeCalculator.calculateStringSize(sessionAlias) * 2
 						- MessagesSizeCalculator.calculateStringSize(direction.getLabel()) * 2
+						- MessagesSizeCalculator.calculateStringSize(protocol) * 2
 						- content.length])
 				.build());
 
