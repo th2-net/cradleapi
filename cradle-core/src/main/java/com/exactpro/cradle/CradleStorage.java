@@ -16,6 +16,24 @@
 
 package com.exactpro.cradle;
 
+import com.exactpro.cradle.counters.Counter;
+import com.exactpro.cradle.counters.CounterSample;
+import com.exactpro.cradle.counters.Interval;
+import com.exactpro.cradle.filters.AbstractFilter;
+import com.exactpro.cradle.intervals.IntervalsWorker;
+import com.exactpro.cradle.messages.*;
+import com.exactpro.cradle.resultset.CradleResultSet;
+import com.exactpro.cradle.resultset.EmptyResultSet;
+import com.exactpro.cradle.testevents.StoredTestEvent;
+import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.TestEventFilter;
+import com.exactpro.cradle.testevents.TestEventToStore;
+import com.exactpro.cradle.utils.BookPagesNamesChecker;
+import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.TestEventUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -23,25 +41,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import com.exactpro.cradle.counters.Counter;
-import com.exactpro.cradle.counters.CounterSample;
-import com.exactpro.cradle.counters.Interval;
-import com.exactpro.cradle.filters.AbstractFilter;
-import com.exactpro.cradle.intervals.IntervalsWorker;
-import com.exactpro.cradle.messages.*;
-import com.exactpro.cradle.utils.BookPagesNamesChecker;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.exactpro.cradle.resultset.CradleResultSet;
-import com.exactpro.cradle.resultset.EmptyResultSet;
-import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.TestEventFilter;
-import com.exactpro.cradle.testevents.StoredTestEventId;
-import com.exactpro.cradle.testevents.TestEventToStore;
-import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.TestEventUtils;
 
 /**
  * Storage which holds information about all data sent or received and test events.
