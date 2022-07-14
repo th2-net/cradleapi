@@ -16,18 +16,17 @@
 
 package com.exactpro.cradle.cassandra.dao.testevents;
 
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
+
+import static com.exactpro.cradle.cassandra.StorageConstants.ID;
+import static com.exactpro.cradle.cassandra.StorageConstants.INSTANCE_ID;
 
 @Dao
 public interface TestEventOperator
