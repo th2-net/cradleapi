@@ -43,16 +43,17 @@ import com.exactpro.cradle.cassandra.utils.CassandraMessageUtils;
 import com.exactpro.cradle.cassandra.utils.QueryExecutor;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
-import com.exactpro.cradle.testevents.*;
+import com.exactpro.cradle.testevents.StoredTestEvent;
+import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.StoredTestEventMetadata;
+import com.exactpro.cradle.testevents.StoredTestEventWrapper;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.MessageUtils;
-
-import com.exactpro.cradle.utils.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.io.*;
+
+import java.io.IOException;
 import java.time.*;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -60,7 +61,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
-import static com.exactpro.cradle.cassandra.CassandraStorageSettings.*;
+import static com.exactpro.cradle.cassandra.CassandraStorageSettings.INSTANCES_TABLE_DEFAULT_NAME;
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 import static java.lang.String.format;
 
@@ -761,15 +762,155 @@ public class CassandraCradleStorage extends CradleStorage
 			Instant from, Instant to) throws CradleStorageException
 	{
 		TestEventsQueryParams params = new TestEventsQueryParams(parentId, from, to);
-		String queryInfo = format("get %s from range %s..%s",
+		String queryInfo = String.format("get %s from range %s..%s",
 				parentId == null ? "root" : "child test events of '" + parentId + "'", from, to);
 
-		return selectExecutor.executeMultiRowResultQuery(
-				() -> ops.getTimeTestEventOperator().getTestEvents(instanceUuid, params.getParentId(),
-						params.getFromDate(), params.getFromTime(), params.getToTime(), readAttrs),
-				ops.getTestEventConverter(), queryInfo)
+		return selectExecutor.executeMultiRowResultQuery(() ->
+						ops.getTimeTestEventOperator().getTestEvents(
+								instanceUuid,
+								params.getFromDate(),
+								params.getFromTime(),
+								null,
+								params.getToTime(),
+								params.getParentId(),
+								readAttrs),
+						ops.getTestEventConverter(), queryInfo)
 				.thenApply(r -> new TestEventDataIteratorAdapter(r, objectsFactory, pagingSupplies,
 						ops.getTestEventConverter(), queryInfo));
+	}
+
+	@Override
+	protected Iterable<StoredTestEventWrapper> doGetTestEventsFromId(StoredTestEventId fromId, Instant to, Order order) throws ExecutionException, InterruptedException {
+		return doGetTestEventsFromIdAsync(fromId, to, order).get();
+	}
+
+	@Override
+	protected Iterable<StoredTestEventWrapper> doGetTestEventsFromId(StoredTestEventId parentId, StoredTestEventId fromId, Instant to) throws ExecutionException, InterruptedException {
+		return doGetTestEventsFromIdAsync(parentId, fromId, to).get();
+	}
+
+	@Override
+	protected Iterable<StoredTestEventMetadata> doGetTestEventsFromIdMetadata(StoredTestEventId fromId, Instant to, Order order) throws ExecutionException, InterruptedException {
+		return doGetTestEventsFromIdMetadataAsync(fromId, to, order).get();
+	}
+
+	@Override
+	protected Iterable<StoredTestEventMetadata> doGetTestEventsFromIdMetadata(StoredTestEventId parentId, StoredTestEventId fromId, Instant to) throws CradleStorageException, ExecutionException, InterruptedException {
+		return doGetTestEventsFromIdMetadataAsync(parentId, fromId, to).get();
+	}
+
+
+	private<T> CompletableFuture<T> getEventTimestampAndThenCompose(StoredTestEventId fromId, Callback<Instant, CompletableFuture<T>> callback) {
+
+		return new AsyncOperator<DateTimeEventEntity>(semaphore)
+				.getFuture(() -> ops.getTestEventOperator().get(instanceUuid, fromId.getId(), readAttrs))
+				.thenCompose(eventDateTime -> {
+
+							if (eventDateTime == null)
+								return CompletableFuture.completedFuture(null);
+							Instant from = eventDateTime.getStartTimestamp();
+
+							try {
+								return callback.call(from);
+							} catch (Exception e) {
+								throw new CompletionException(e);
+							}
+						});
+	}
+
+	@Override
+	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsFromIdAsync(StoredTestEventId fromId, Instant to, Order order) {
+
+		return getEventTimestampAndThenCompose(fromId, from -> {
+
+				TestEventsQueryParams params = new TestEventsQueryParams(fromId, from, to, order);
+				String queryInfo = String.format("get test events starting with id %s from range %s..%s", fromId, from, to);
+
+				return selectExecutor.executeMultiRowResultQuery(() ->
+								ops.getTimeTestEventOperator().getTestEvents(
+												instanceUuid,
+												params.getFromDate(),
+												params.getFromTime(),
+												params.getFromId(),
+												params.getToTime(),
+												order,
+												readAttrs),
+								ops.getTestEventConverter(), queryInfo)
+								.thenApply(r -> new TestEventDataIteratorAdapter(r, objectsFactory, pagingSupplies,
+										ops.getTestEventConverter(), queryInfo));
+
+		});
+	}
+
+	@Override
+	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsFromIdAsync(StoredTestEventId parentId, StoredTestEventId fromId, Instant to) {
+
+		return getEventTimestampAndThenCompose(fromId, from -> {
+
+				TestEventsQueryParams params = new TestEventsQueryParams(parentId, fromId, from, to, null);
+				String queryInfo = String.format("get test events starting with id %s and parentId %s from range %s..%s", fromId, parentId, from, to);
+
+				return selectExecutor.executeMultiRowResultQuery(() ->
+										ops.getTimeTestEventOperator().getTestEvents(
+												instanceUuid,
+												params.getFromDate(),
+												params.getFromTime(),
+												params.getFromId(),
+												params.getToTime(),
+												params.getParentId(),
+												readAttrs),
+										ops.getTestEventConverter(), queryInfo)
+									.thenApply(r -> new TestEventDataIteratorAdapter(r, objectsFactory, pagingSupplies,
+												ops.getTestEventConverter(), queryInfo));
+		});
+	}
+
+	@Override
+	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsFromIdMetadataAsync(StoredTestEventId fromId, Instant to, Order order) {
+
+		return getEventTimestampAndThenCompose(fromId, from -> {
+
+				TestEventsQueryParams params = new TestEventsQueryParams(fromId, from, to);
+				String queryInfo = String.format("get test events' metadata starting with id %s from range %s..%s", fromId, from, to);
+
+				return selectExecutor.executeMultiRowResultQuery(() ->
+								ops.getTimeTestEventOperator().getTestEventsMetadata(
+												instanceUuid,
+												params.getFromDate(),
+												params.getFromTime(),
+												params.getFromId(),
+												params.getToTime(),
+												order,
+												readAttrs),
+								ops.getTestEventMetadataConverter(), queryInfo)
+								.thenApply(r -> new TestEventMetadataIteratorAdapter(r, pagingSupplies,
+										ops.getTestEventMetadataConverter(),
+										queryInfo));
+		});
+	}
+
+	@Override
+	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsFromIdMetadataAsync(StoredTestEventId parentId, StoredTestEventId fromId, Instant to) {
+
+		return getEventTimestampAndThenCompose(fromId, from -> {
+
+				TestEventsQueryParams params = new TestEventsQueryParams(parentId, fromId, from, to, null);
+				String queryInfo = String.format("get test events' metadata starting with id %s and parentId %s from range %s..%s", fromId, parentId, from, to);
+
+				return selectExecutor.executeMultiRowResultQuery(() ->
+								ops.getTimeTestEventOperator().getTestEventsMetadata(
+												instanceUuid,
+												params.getFromDate(),
+												params.getFromTime(),
+												params.getFromId(),
+												params.getToTime(),
+												params.getParentId(),
+												readAttrs),
+								ops.getTestEventMetadataConverter(), queryInfo)
+						.thenApply(r -> new TestEventMetadataIteratorAdapter(r, pagingSupplies,
+						ops.getTestEventMetadataConverter(),
+						queryInfo));
+		});
 	}
 
 	@Override
@@ -777,15 +918,22 @@ public class CassandraCradleStorage extends CradleStorage
 			StoredTestEventId parentId, Instant from, Instant to) throws CradleStorageException
 	{
 		TestEventsQueryParams params = new TestEventsQueryParams(parentId, from, to);
-		String queryInfo = format("get %s from range %s..%s",
+		String queryInfo = String.format("get %s from range %s..%s",
 				parentId == null ? "root" : "child test events' metadata of '" + parentId + "'", from, to);
 
-		return selectExecutor.executeMultiRowResultQuery(
-				() -> ops.getTimeTestEventOperator().getTestEventsMetadata(instanceUuid, params.getParentId(),
-						params.getFromDate(), params.getFromTime(), params.getToTime(), readAttrs),
-				ops.getTestEventMetadataConverter(), queryInfo)
+		return selectExecutor.executeMultiRowResultQuery(() ->
+						ops.getTimeTestEventOperator().getTestEventsMetadata(
+								instanceUuid,
+								params.getFromDate(),
+								params.getFromTime(),
+								null,
+								params.getToTime(),
+								params.getParentId(),
+								readAttrs),
+						ops.getTestEventMetadataConverter(), queryInfo)
 				.thenApply(r -> new TestEventMetadataIteratorAdapter(r, pagingSupplies,
-						ops.getTestEventMetadataConverter(), queryInfo));
+						ops.getTestEventMetadataConverter(),
+						queryInfo));
 	}
 
 
@@ -830,7 +978,7 @@ public class CassandraCradleStorage extends CradleStorage
 			throws CradleStorageException
 	{
 		TestEventsQueryParams params = new TestEventsQueryParams(from, to);
-		String queryInfo = format("get test events from range %s..%s", from, to);
+		String queryInfo = String.format("get test events from range %s..%s", from, to);
 
 		return selectExecutor.executeMultiRowResultQuery(
 				() -> ops.getTimeTestEventOperator().getTestEvents(instanceUuid,
@@ -845,12 +993,18 @@ public class CassandraCradleStorage extends CradleStorage
 			Instant to) throws CradleStorageException
 	{
 		TestEventsQueryParams params = new TestEventsQueryParams(from, to);
-		String queryInfo = format("get test events' metadata from range %s..%s", from, to);
+		String queryInfo = String.format("get test events' metadata from range %s..%s", from, to);
 
-		return selectExecutor.executeMultiRowResultQuery(
-				() -> ops.getTimeTestEventOperator().getTestEventsMetadata(instanceUuid,
-						params.getFromDate(), params.getFromTime(), params.getToTime(), readAttrs),
-				ops.getTestEventMetadataConverter(), queryInfo)
+		return selectExecutor.executeMultiRowResultQuery(() ->
+						ops.getTimeTestEventOperator().getTestEventsMetadata(
+								instanceUuid,
+								params.getFromDate(),
+								params.getFromTime(),
+								null,
+								params.getToTime(),
+								Order.DIRECT,
+								readAttrs),
+						ops.getTestEventMetadataConverter(), queryInfo)
 				.thenApply(entity -> new TestEventMetadataIteratorAdapter(entity, pagingSupplies,
 						ops.getTestEventMetadataConverter(), queryInfo));
 	}
@@ -1114,18 +1268,39 @@ public class CassandraCradleStorage extends CradleStorage
 				});
 	}
 
+	private interface Callback<T, R> {
+		R call(T param) throws Exception;
+	}
+
 	private static class TestEventsQueryParams
 	{
 		private final LocalDateTime fromDateTime, toDateTime;
 		private final String parentId;
+		private final String fromId;
+		private final Order order;
 
-		public TestEventsQueryParams(StoredTestEventId parentId, Instant from, Instant to)
+		public TestEventsQueryParams(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to, Order order)
 				throws CradleStorageException
 		{
 			this.fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET);
 			this.toDateTime = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
-			this.parentId = parentId == null ? ROOT_EVENT_PARENT_ID : parentId.toString();
+			this.parentId = (parentId == null) ? ROOT_EVENT_PARENT_ID : parentId.toString();
+			this.fromId = (fromId == null) ? null : fromId.getId();
+			this.order = order;
+
 			checkTimeBoundaries(fromDateTime, toDateTime, from, to);
+		}
+
+		public TestEventsQueryParams(StoredTestEventId fromId, Instant from, Instant to, Order order)
+				throws CradleStorageException
+		{
+			this (null, fromId, from, to, order);
+		}
+
+		public TestEventsQueryParams(StoredTestEventId parentId, Instant from, Instant to)
+				throws CradleStorageException
+		{
+			this (parentId, null, from, to, Order.DIRECT);
 		}
 
 		public TestEventsQueryParams(Instant from, Instant to) throws CradleStorageException
@@ -1162,6 +1337,14 @@ public class CassandraCradleStorage extends CradleStorage
 		public LocalTime getToTime()
 		{
 			return toDateTime.toLocalTime();
+		}
+
+		public String getFromId() {
+			return fromId;
+		}
+
+		public Order getOrder() {
+			return order;
 		}
 	}
 }
