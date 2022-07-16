@@ -29,7 +29,7 @@ public class CassandraStorageSettings
 			INSTANCES_TABLE_DEFAULT_NAME = "instances",
 			MESSAGES_TABLE_DEFAULT_NAME = "messages",
 			PROCESSED_MESSAGES_TABLE_DEFAULT_NAME = "processed_messages",
-			TIME_MESSAGES_TABLE_DEFAULT_NAME = "time_messages",
+			TIME_MESSAGES_TABLE_DEFAULT_NAME = "messages_timestamps",
 			TEST_EVENTS_TABLE_DEFAULT_NAME = "test_events",
 			TIME_TEST_EVENTS_TABLE_DEFAULT_NAME = "time_test_events",
 			ROOT_TEST_EVENTS_TABLE_DEFAULT_NAME = "root_test_events",

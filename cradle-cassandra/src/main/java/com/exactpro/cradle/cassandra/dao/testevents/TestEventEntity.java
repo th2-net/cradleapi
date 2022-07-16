@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 
 import com.datastax.oss.driver.api.mapper.annotations.*;
+import com.exactpro.cradle.CradleObjectsFactory;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.*;
 import org.slf4j.Logger;
@@ -126,7 +127,8 @@ public class TestEventEntity extends TestEventMetadataEntity
 	
 	
 	
-	public StoredTestEventSingle toStoredTestEventSingle() throws IOException, CradleStorageException
+	public StoredTestEventSingle toStoredTestEventSingle(CradleObjectsFactory objectsFactory)
+			throws IOException, CradleStorageException
 	{
 		if (isEventBatch())
 			return null;
@@ -134,7 +136,7 @@ public class TestEventEntity extends TestEventMetadataEntity
 		StoredTestEventId eventId = new StoredTestEventId(getId());
 		byte[] eventContent = TestEventUtils.getTestEventContentBytes(content, compressed, eventId);
 		Collection<StoredMessageId> ids = messageIds != null ? TestEventUtils.deserializeLinkedMessageIds(messageIds.array()) : null;
-		return new StoredTestEventSingle(new TestEventToStoreBuilder().id(eventId)
+		TestEventToStore eventToStore = new TestEventToStoreBuilder().id(eventId)
 				.name(getName())
 				.type(getType())
 				.parentId(getParentId() != null ? new StoredTestEventId(getParentId()) : null)
@@ -143,41 +145,66 @@ public class TestEventEntity extends TestEventMetadataEntity
 				.success(isSuccess())
 				.content(eventContent)
 				.messageIds(ids)
-				.build());
+				.build();
+		return objectsFactory == null ? new StoredTestEventSingle(eventToStore) : objectsFactory.createTestEvent(eventToStore);
+	}
+
+	public StoredTestEventSingle toStoredTestEventSingle() throws CradleStorageException, IOException
+	{
+		return toStoredTestEventSingle(null);
 	}
 	
-	public StoredTestEventBatch toStoredTestEventBatch() throws IOException, CradleStorageException
+	public StoredTestEventBatch toStoredTestEventBatch(CradleObjectsFactory objectsFactory)
+			throws IOException, CradleStorageException
 	{
 		if (!isEventBatch())
 			return null;
 		Map<StoredTestEventId, Collection<StoredMessageId>> ids = messageIds != null 
 				? TestEventUtils.deserializeBatchLinkedMessageIds(messageIds.array()) : null;
 		StoredTestEventId eventId = new StoredTestEventId(getId());
-		StoredTestEventBatch result = new StoredTestEventBatch(new TestEventBatchToStoreBuilder()
+		TestEventBatchToStore batchToStore = new TestEventBatchToStoreBuilder()
 				.id(eventId)
 				.name(getName())
 				.type(getType())
 				.parentId(getParentId() != null ? new StoredTestEventId(getParentId()) : null)
-				.build());
+				.build();
+		StoredTestEventBatch storedBatch = objectsFactory == null
+				? new StoredTestEventBatch(batchToStore) : objectsFactory.createTestEventBatch(batchToStore);
 		try
 		{
-			TestEventUtils.bytesToTestEvents(content, compressed, result, ids);
+			TestEventUtils.bytesToTestEvents(content, compressed, storedBatch, ids);
 		}
 		catch (CradleStorageException e)
 		{
 			throw new IOException("Error while adding deserialized test events to batch", e);
 		}
-		return result;
+		return storedBatch;
+	}
+
+	public StoredTestEventBatch toStoredTestEventBatch() throws CradleStorageException, IOException
+	{
+		return toStoredTestEventBatch(null);
 	}
 	
+	public StoredTestEvent toStoredTestEvent(CradleObjectsFactory objectsFactory) throws IOException, CradleStorageException
+	{
+		return isEventBatch() ? toStoredTestEventBatch(objectsFactory) : toStoredTestEventSingle(objectsFactory);
+	}
+
 	public StoredTestEvent toStoredTestEvent() throws IOException, CradleStorageException
 	{
-		return isEventBatch() ? toStoredTestEventBatch() : toStoredTestEventSingle();
+		return toStoredTestEvent(null);
 	}
-	
-	public StoredTestEventWrapper toStoredTestEventWrapper() throws IOException, CradleStorageException
+
+	public StoredTestEventWrapper toStoredTestEventWrapper(CradleObjectsFactory objectsFactory)
+			throws IOException, CradleStorageException
 	{
-		return new StoredTestEventWrapper(toStoredTestEvent());
+		return new StoredTestEventWrapper(toStoredTestEvent(objectsFactory));
+	}
+
+	public StoredTestEventWrapper toStoredTestEventWrapper() throws CradleStorageException, IOException
+	{
+		return toStoredTestEventWrapper(null);
 	}
 
 	public ByteBuffer getMessageIds()

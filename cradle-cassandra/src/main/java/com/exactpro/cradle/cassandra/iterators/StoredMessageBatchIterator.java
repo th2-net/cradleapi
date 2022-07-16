@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,16 +28,13 @@ import java.io.IOException;
 
 public class StoredMessageBatchIterator extends ConvertingPagedIterator<StoredMessageBatch, DetailedMessageBatchEntity>
 {
-	private final CradleObjectsFactory objectsFactory;
 	private final int limit;
 	private long returnedEntities;
 	
 	public StoredMessageBatchIterator(MappedAsyncPagingIterable<DetailedMessageBatchEntity> rows,
-			PagingSupplies pagingSupplies, DetailedMessageBatchConverter converter, String queryInfo,
-			CradleObjectsFactory objectsFactory, int limit)
+			PagingSupplies pagingSupplies, DetailedMessageBatchConverter converter, String queryInfo, int limit)
 	{
 		super(rows, pagingSupplies, converter, queryInfo);
-		this.objectsFactory = objectsFactory;
 		this.limit = limit;
 	}
 
@@ -62,7 +59,7 @@ public class StoredMessageBatchIterator extends ConvertingPagedIterator<StoredMe
 	{
 		try
 		{
-			return entity.toStoredMessageBatch(objectsFactory.createMessageBatch());
+			return entity.toStoredMessageBatch();
 		}
 		catch (CradleStorageException e)
 		{

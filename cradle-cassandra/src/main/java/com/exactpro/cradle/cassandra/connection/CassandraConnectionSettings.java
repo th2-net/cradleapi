@@ -33,7 +33,7 @@ public class CassandraConnectionSettings
 	private NetworkTopologyStrategy networkTopologyStrategy;
 	private int maxParallelQueries,
 			resultPageSize;
-	private SelectExecutionPolicy selectExecutionPolicy;
+	private SelectExecutionPolicy selectExecutionPolicy, singleRowResultExecutionPolicy;
 
 	public CassandraConnectionSettings()
 	{
@@ -50,6 +50,7 @@ public class CassandraConnectionSettings
 		maxParallelQueries = 500;
 		resultPageSize = 0;  //In this case default page size will be used
 		selectExecutionPolicy = null;
+		singleRowResultExecutionPolicy = null;
 	}
 
 	public CassandraConnectionSettings(String localDataCenter, String host, int port, String keyspace)
@@ -77,6 +78,7 @@ public class CassandraConnectionSettings
 		this.maxParallelQueries = settings.maxParallelQueries;
 		this.resultPageSize = settings.resultPageSize;
 		this.selectExecutionPolicy = settings.selectExecutionPolicy;
+		this.singleRowResultExecutionPolicy = settings.singleRowResultExecutionPolicy;
 	}
 
 	
@@ -220,5 +222,15 @@ public class CassandraConnectionSettings
 	public void setSelectExecutionPolicy(SelectExecutionPolicy selectExecutionPolicy)
 	{
 		this.selectExecutionPolicy = selectExecutionPolicy;
+	}
+
+	public SelectExecutionPolicy getSingleRowResultExecutionPolicy()
+	{
+		return singleRowResultExecutionPolicy;
+	}
+
+	public void setSingleRowResultExecutionPolicy(SelectExecutionPolicy singleRowResultExecutionPolicy)
+	{
+		this.singleRowResultExecutionPolicy = singleRowResultExecutionPolicy;
 	}
 }
