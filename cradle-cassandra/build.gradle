@@ -33,7 +33,6 @@ compileJava {
 
 test {
 	useTestNG()
-	useJUnitPlatform()
 }
 
 jar {

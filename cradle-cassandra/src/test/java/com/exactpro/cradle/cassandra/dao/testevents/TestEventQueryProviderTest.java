@@ -7,8 +7,9 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.mapper.MapperContext;
 import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
 import com.exactpro.cradle.Order;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 
 import static org.mockito.Mockito.*;
@@ -24,7 +25,7 @@ public class TestEventQueryProviderTest {
     private EntityHelper<TestEventEntity> entityHelper;
 
 
-    @BeforeEach
+    @BeforeMethod
     public void prepare() {
         session = mock(CqlSession.class);
         when(session.prepare(any(SimpleStatement.class))).thenAnswer(invocation -> {
