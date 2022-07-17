@@ -27,7 +27,7 @@ public class CassandraStorageSettings {
     public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
     public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1,
             DEFAULT_MAX_PARALLEL_QUERIES = 500,
-            DEFAULT_RESULT_PAGE_SIZE = 0,
+            DEFAULT_RESULT_PAGE_SIZE = 2,
             DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_SIZE = 5 * 1024,
             DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE = 5 * 1024,
             DEFAULT_SESSIONS_CACHE_SIZE = 100,
