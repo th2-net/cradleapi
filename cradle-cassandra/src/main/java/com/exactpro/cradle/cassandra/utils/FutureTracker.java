@@ -65,9 +65,11 @@ public class FutureTracker {
                 if (!el.isDone()) {
                     el.get();
                 }
-            } catch (InterruptedException | ExecutionException e) {
+            } catch (InterruptedException e) {
                 logger.error("Interrupt was called while awaiting futures {}", e.getMessage());
                 throw new RuntimeException(e);
+            } catch (ExecutionException e) {
+                logger.warn("Exception was thrown during execution {}", e.getMessage());
             }
         }
     }
