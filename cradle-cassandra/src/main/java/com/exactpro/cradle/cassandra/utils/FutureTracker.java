@@ -32,7 +32,7 @@ public class FutureTracker {
     private static final Logger logger = LoggerFactory.getLogger(FutureTracker.class);
 
     private final Set<CompletableFuture> futures;
-    private boolean enabled;
+    private volatile boolean enabled;
 
     public FutureTracker () {
         this.futures = new HashSet<>();
@@ -41,6 +41,9 @@ public class FutureTracker {
 
     public void trackFuture (CompletableFuture future) {
         if (enabled) {
+            if (future.isDone()) {
+                return;
+            }
             synchronized (futures) {
                 futures.add(future);
                 future.whenComplete((res, ex) -> {
@@ -57,6 +60,12 @@ public class FutureTracker {
 
         List<CompletableFuture> ls;
         synchronized (futures) {
+            if (futures.isEmpty()) {
+                logger.info("Future Tracker does not have any active futures, finishing tracking without await");
+            } else {
+                logger.info("Future Tracker has {} active futures, waiting for them to finish", futures.size());
+            }
+
             ls = new ArrayList<>(futures);
         }
 
