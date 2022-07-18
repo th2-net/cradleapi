@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.exactpro.cradle.cassandra.utils;
+package com.exactpro.cradle.utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,10 +28,10 @@ import java.util.concurrent.ExecutionException;
 /**
  * Following class tracks futures and when needed tries to wait for them
  */
-public class FutureTracker {
+public class FutureTracker<T> {
     private static final Logger logger = LoggerFactory.getLogger(FutureTracker.class);
 
-    private final Set<CompletableFuture> futures;
+    private final Set<CompletableFuture<T>> futures;
     private volatile boolean enabled;
 
     public FutureTracker () {
@@ -39,26 +39,26 @@ public class FutureTracker {
         this.enabled = true;
     }
 
-    public void trackFuture (CompletableFuture future) {
+    public void trackFuture (CompletableFuture<T> future) {
         if (enabled) {
             if (future.isDone()) {
                 return;
             }
             synchronized (futures) {
                 futures.add(future);
-                future.whenComplete((res, ex) -> {
-                    synchronized (futures) {
-                        futures.remove(future);
-                    }
-                });
             }
+            future.whenComplete((res, ex) -> {
+                synchronized (futures) {
+                    futures.remove(future);
+                }
+            });
         }
     }
 
     public void awaitRemaining () {
         this.enabled = false;
 
-        List<CompletableFuture> ls;
+        List<CompletableFuture<T>> ls;
         synchronized (futures) {
             if (futures.isEmpty()) {
                 logger.info("Future Tracker does not have any active futures, finishing tracking without await");
@@ -69,7 +69,7 @@ public class FutureTracker {
             ls = new ArrayList<>(futures);
         }
 
-        for (CompletableFuture el : ls) {
+        for (CompletableFuture<T> el : ls) {
             try {
                 if (!el.isDone()) {
                     el.get();

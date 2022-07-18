@@ -1,5 +1,6 @@
-package com.exactpro.cradle.cassandra.utils;
+package com.exactpro.cradle.utils;
 
+import com.exactpro.cradle.utils.FutureTracker;
 import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
@@ -20,7 +21,6 @@ public class FutureTrackerTest {
     private CompletableFuture<Integer> getFutureWithDelay () {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                var before = Instant.now();
                 Thread.sleep(DELAY_MILLIS);
             } catch (InterruptedException e) {
                 throw new RuntimeException();
@@ -33,7 +33,6 @@ public class FutureTrackerTest {
     private CompletableFuture<Integer> chainFuture (CompletableFuture<Integer> future) {
         return future.thenApplyAsync((res) -> {
             try {
-                var before = Instant.now();
                 Thread.sleep(DELAY_MILLIS);
             } catch (InterruptedException e) {
                 throw new RuntimeException();
@@ -79,7 +78,7 @@ public class FutureTrackerTest {
 
     @Test
     public void testTracking5Futures() {
-        long expectedTrackingTime = 5* DELAY_MILLIS;
+        long expectedTrackingTime = 5 * DELAY_MILLIS;
         Instant start = Instant.now();
         FutureTracker futureTracker = new FutureTracker();
 
