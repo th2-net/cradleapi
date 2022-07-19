@@ -18,12 +18,16 @@ package com.exactpro.cradle.utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Following class tracks futures and when needed tries to wait for them
@@ -56,6 +60,19 @@ public class FutureTracker<T> {
     }
 
     public void awaitRemaining () {
+        awaitRemaining(-1);
+    }
+
+
+    /**
+     * Waits for tracked futures, cancels futures after timeout.
+     * Cancels all futures if passed 0.
+     * Waits without timeout if passed negative.
+     * @param timeout milliseconds to wait
+     */
+    public void awaitRemaining (long timeout) {
+        Instant beforeAwait = Instant.now();
+
         this.enabled = false;
 
         List<CompletableFuture<T>> remainingFutures;
@@ -70,16 +87,43 @@ public class FutureTracker<T> {
         }
 
         for (CompletableFuture<T> future : remainingFutures) {
+            Instant curInstant = Instant.now();
+
             try {
                 if (!future.isDone()) {
-                    future.get();
+                    if (timeout < 0) {
+                        future.get();
+                    } else {
+                        if (curInstant.minusMillis(timeout).isBefore(beforeAwait)) {
+                            future.cancel(true);
+                        } else {
+                            long curAwaitMillis = timeout - Duration.between(beforeAwait, curInstant).toMillis();
+                            future.get(curAwaitMillis, TimeUnit.MILLISECONDS);
+                        }
+                    }
                 }
             } catch (InterruptedException e) {
-                logger.error("Interrupt was called while awaiting futures {}", e);
+                logger.error("Interrupt was called while awaiting futures {}", e.toString());
                 throw new RuntimeException(e);
             } catch (ExecutionException e) {
-                logger.warn("Exception was thrown during execution {}", e);
+                logger.warn("Exception was thrown during execution {}", e.toString());
+            } catch (TimeoutException e) {
+                logger.warn("Await timeout was exceeded {}", e.toString());
             }
         }
+    }
+
+    /**
+     * Informational method for getting remaining number of futures
+     * @return number of unfinished futures
+     */
+    public int remaining () {
+        synchronized (futures) {
+            return futures.size();
+        }
+    }
+
+    public boolean isEmpty () {
+        return remaining() == 0;
     }
 }

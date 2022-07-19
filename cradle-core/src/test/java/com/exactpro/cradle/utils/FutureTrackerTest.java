@@ -44,9 +44,10 @@ public class FutureTrackerTest {
     @Test
     public void testEmptyTracker () {
         Instant start = Instant.now();
-        FutureTracker futureTracker = new FutureTracker();
+        FutureTracker<Integer> futureTracker = new FutureTracker<>();
         futureTracker.awaitRemaining();
 
+        Assertions.assertThat(futureTracker.isEmpty()).isTrue();
         Assertions.assertThat(Duration.between(start, Instant.now())).isLessThan(Duration.ofMillis(NO_PAUSE_MILLIS));
     }
 
@@ -54,9 +55,10 @@ public class FutureTrackerTest {
     public void testTrackingSingleFuture () {
         long expectedTrackingTime = DELAY_MILLIS;
         Instant start = Instant.now();
-        FutureTracker futureTracker = new FutureTracker();
+        FutureTracker<Integer> futureTracker = new FutureTracker<>();
 
         futureTracker.track(getFutureWithDelay());
+        Assertions.assertThat(futureTracker.isEmpty()).isFalse();
 
         futureTracker.awaitRemaining();
 
@@ -66,7 +68,7 @@ public class FutureTrackerTest {
     @Test
     public void testTrackingFutureWithException () {
         Instant start = Instant.now();
-        FutureTracker futureTracker = new FutureTracker();
+        FutureTracker<Integer> futureTracker = new FutureTracker<>();
 
         futureTracker.track(getFutureWithException());
 
@@ -79,7 +81,7 @@ public class FutureTrackerTest {
     public void testTracking5Futures() {
         long expectedTrackingTime = 5 * DELAY_MILLIS;
         Instant start = Instant.now();
-        FutureTracker futureTracker = new FutureTracker();
+        FutureTracker<Integer> futureTracker = new FutureTracker<>();
 
         CompletableFuture<Integer> lastFuture = null;
         for (int i = 0; i < 5; i ++) {
@@ -90,9 +92,24 @@ public class FutureTrackerTest {
             futureTracker.track(curFuture);
             lastFuture = curFuture;
         }
+        Assertions.assertThat(futureTracker.isEmpty()).isFalse();
+        Assertions.assertThat(futureTracker.remaining()).isEqualTo(5);
 
         futureTracker.awaitRemaining();
 
         Assertions.assertThat(Duration.between(start, Instant.now())).isGreaterThan(Duration.ofMillis(expectedTrackingTime));
+    }
+
+    @Test
+    public void testAwaitZeroTimeout() {
+        Instant start = Instant.now();
+        FutureTracker<Integer> futureTracker = new FutureTracker<>();
+
+        futureTracker.track(getFutureWithDelay());
+
+        futureTracker.awaitRemaining(0);
+
+        Assertions.assertThat(Duration.between(start, Instant.now())).isLessThan(Duration.ofMillis(NO_PAUSE_MILLIS));
+
     }
 }
