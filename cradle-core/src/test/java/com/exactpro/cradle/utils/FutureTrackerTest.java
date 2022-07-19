@@ -1,6 +1,5 @@
 package com.exactpro.cradle.utils;
 
-import com.exactpro.cradle.utils.FutureTracker;
 import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
@@ -57,7 +56,7 @@ public class FutureTrackerTest {
         Instant start = Instant.now();
         FutureTracker futureTracker = new FutureTracker();
 
-        futureTracker.trackFuture(getFutureWithDelay());
+        futureTracker.track(getFutureWithDelay());
 
         futureTracker.awaitRemaining();
 
@@ -69,7 +68,7 @@ public class FutureTrackerTest {
         Instant start = Instant.now();
         FutureTracker futureTracker = new FutureTracker();
 
-        futureTracker.trackFuture(getFutureWithException());
+        futureTracker.track(getFutureWithException());
 
         futureTracker.awaitRemaining();
 
@@ -88,7 +87,7 @@ public class FutureTrackerTest {
             if (i != 0) {
                 curFuture = chainFuture(lastFuture);
             }
-            futureTracker.trackFuture(curFuture);
+            futureTracker.track(curFuture);
             lastFuture = curFuture;
         }
 

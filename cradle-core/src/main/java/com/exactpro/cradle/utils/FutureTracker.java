@@ -39,7 +39,7 @@ public class FutureTracker<T> {
         this.enabled = true;
     }
 
-    public void trackFuture (CompletableFuture<T> future) {
+    public void track(CompletableFuture<T> future) {
         if (enabled) {
             if (future.isDone()) {
                 return;
@@ -58,27 +58,27 @@ public class FutureTracker<T> {
     public void awaitRemaining () {
         this.enabled = false;
 
-        List<CompletableFuture<T>> ls;
+        List<CompletableFuture<T>> remainingFutures;
         synchronized (futures) {
             if (futures.isEmpty()) {
-                logger.info("Future Tracker does not have any active futures, finishing tracking without await");
+                logger.debug("Future Tracker does not have any active futures, finishing tracking without await");
             } else {
-                logger.info("Future Tracker has {} active futures, waiting for them to finish", futures.size());
+                logger.debug("Future Tracker has {} active futures, waiting for them to finish", futures.size());
             }
 
-            ls = new ArrayList<>(futures);
+            remainingFutures = new ArrayList<>(futures);
         }
 
-        for (CompletableFuture<T> el : ls) {
+        for (CompletableFuture<T> future : remainingFutures) {
             try {
-                if (!el.isDone()) {
-                    el.get();
+                if (!future.isDone()) {
+                    future.get();
                 }
             } catch (InterruptedException e) {
-                logger.error("Interrupt was called while awaiting futures {}", e.getMessage());
+                logger.error("Interrupt was called while awaiting futures {}", e);
                 throw new RuntimeException(e);
             } catch (ExecutionException e) {
-                logger.warn("Exception was thrown during execution {}", e.getMessage());
+                logger.warn("Exception was thrown during execution {}", e);
             }
         }
     }

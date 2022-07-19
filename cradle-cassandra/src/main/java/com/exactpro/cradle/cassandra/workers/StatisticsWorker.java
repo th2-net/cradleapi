@@ -41,7 +41,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
     private static final Logger logger = LoggerFactory.getLogger(StatisticsWorker.class);
 
-    private final FutureTracker futureTracker;
+    private final FutureTracker futures;
     private final CassandraOperators operators;
     private final long interval;
     private final Map<BookId, BookStatisticsRecordsCaches> bookCounterCaches;
@@ -49,7 +49,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
     private final boolean isEnabled;
 
     public StatisticsWorker (WorkerSupplies workerSupplies, long persistenceInterval) {
-        this.futureTracker = new FutureTracker();
+        this.futures = new FutureTracker();
         this.operators = workerSupplies.getOperators();
         this.writeAttrs = workerSupplies.getWriteAttrs();
         this.interval = persistenceInterval;
@@ -57,7 +57,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
         this.isEnabled = (interval != 0);
     }
 
-    private ScheduledExecutorService persistenceExecutorService;
+    private ScheduledExecutorService executorService;
     public void start() {
         if (!isEnabled) {
             logger.info("Counter persistence service is disabled");
@@ -65,8 +65,8 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
         }
 
         logger.info("Starting executor for StatisticsWorker");
-        persistenceExecutorService = Executors.newScheduledThreadPool(1);
-        persistenceExecutorService.scheduleAtFixedRate(this, 0, interval, TimeUnit.MILLISECONDS);
+        executorService = Executors.newScheduledThreadPool(1);
+        executorService.scheduleAtFixedRate(this, 0, interval, TimeUnit.MILLISECONDS);
         logger.info("StatisticsWorker executor started");
     }
 
@@ -74,7 +74,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
         if (!isEnabled)
             return;
 
-        if (persistenceExecutorService == null)
+        if (executorService == null)
             throw new IllegalStateException("Can not stop statistics worker as it is not started");
 
         // ensure that cache is empty before executor service initiating shutdown
@@ -90,17 +90,17 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
         // shut down executor service and wait for current job to complete
         logger.info("Shutting down StatisticsWorker executor");
-        persistenceExecutorService.shutdown();
+        executorService.shutdown();
         try {
             logger.debug("Waiting StatisticsWorker jobs to complete");
-            persistenceExecutorService.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
+            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
             logger.debug("StatisticsWorker shutdown complete");
         } catch (InterruptedException e) {
             logger.error("Interrupted while waiting jobs to complete");
         }
 
-        // After executor service stops, we need to wait for futures
-        futureTracker.awaitRemaining();
+        // After executor service stops, we need to wait for futures to complete
+        futures.awaitRemaining();
     }
 
     private BookStatisticsRecordsCaches getBookStatisticsRecordsCaches(BookId bookId) {
@@ -190,7 +190,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
                     counter.getRecord().getEntityCount(),
                     counter.getRecord().getEntitySize(),
                     writeAttrs);
-            futureTracker.trackFuture(future);
+            futures.track(future);
             future.whenComplete((result, e) -> {
                 if (e != null)
                     exceptionHandler.accept(e);
@@ -225,7 +225,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
                     counter.getRecord().getEntityCount(),
                     counter.getRecord().getEntitySize(),
                     writeAttrs);
-            futureTracker.trackFuture(future);
+            futures.track(future);
             future.whenComplete((result, e) -> {
                 if (e != null)
                     exceptionHandler.accept(e);
@@ -271,7 +271,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
                     logger.trace("Persisting {}", entity.toString());
 
                     CompletableFuture<Void> future = op.write(entity,writeAttrs);
-                    futureTracker.trackFuture(future);
+                    futures.track(future);
                     future.whenComplete((result, e) -> {
                         if (e != null)
                             exceptionHandler.accept(e);
