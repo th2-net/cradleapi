@@ -93,7 +93,7 @@ public abstract class AbstractTestEventQueryProvider<V> {
 
 
         if (parentId != null)
-            select = select.whereColumns(PARENT_ID).isEqualTo(bindMarker(PARENT_ID));
+            select = select.whereColumn(PARENT_ID).isEqualTo(bindMarker(PARENT_ID));
 
         select = select.whereColumn(START_TIME).isLessThan(bindMarker(START_TIME + "_TO"));
 
