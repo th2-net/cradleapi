@@ -60,7 +60,7 @@ public abstract class AbstractTestEventQueryProvider<V> {
         Select select = QueryBuilder.selectFrom(helper.getKeyspaceId(), helper.getTableId())
                 .column(INSTANCE_ID)
                 .column(START_DATE)
-                .column(START_DATE)
+                .column(START_TIME)
                 .column(ID)
                 .column(NAME)
                 .column(TYPE)
@@ -75,7 +75,8 @@ public abstract class AbstractTestEventQueryProvider<V> {
 
         if (includeContent)
             select = select .column(CONTENT)
-                            .column(COMPRESSED);
+                            .column(COMPRESSED)
+                            .column(MESSAGE_IDS);
 
         return select;
     }
@@ -89,7 +90,7 @@ public abstract class AbstractTestEventQueryProvider<V> {
         if (idFrom == null)
             select = select.whereColumn(START_TIME).isGreaterThanOrEqualTo(bindMarker(START_TIME + "_FROM"));
         else
-            select = select.whereColumns(START_TIME, ID).isGreaterThan(tuple(bindMarker(START_TIME + "_FROM"), bindMarker(ID)));
+            select = select.whereColumns(START_TIME, ID).isGreaterThanOrEqualTo(tuple(bindMarker(START_TIME + "_FROM"), bindMarker(ID)));
 
 
         if (parentId != null)
@@ -100,7 +101,7 @@ public abstract class AbstractTestEventQueryProvider<V> {
         if (order != null && parentId == null) {
             ClusteringOrder orderBy = order.equals(Order.DIRECT) ? ClusteringOrder.ASC : ClusteringOrder.DESC;
             select = select .orderBy(START_TIME, orderBy)
-                            .orderBy(START_TIME, orderBy);
+                            .orderBy(ID, orderBy);
         }
 
         return select;
@@ -141,8 +142,7 @@ public abstract class AbstractTestEventQueryProvider<V> {
         if (parentId != null)
             builder = builder.setString(PARENT_ID, parentId);
 
-        BoundStatement boundStatement = builder.build();
-        return boundStatement;
+        return builder.build();
     }
 
     protected CompletableFuture<MappedAsyncPagingIterable<V>> execute(BoundStatement statement) {
