@@ -27,11 +27,14 @@ import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.Order;
+import com.exactpro.cradle.cassandra.utils.SelectArguments;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
@@ -43,13 +46,17 @@ public abstract class AbstractTestEventQueryProvider<V> {
     private final CqlSession session;
     private final EntityHelper<V> helper;
 
+    private final Map<SelectArguments, PreparedStatement> statementCache;
+
+
     public AbstractTestEventQueryProvider(MapperContext context, EntityHelper<V> helper) {
         this.session = context.getSession();
         this.helper = helper;
+        statementCache = new ConcurrentHashMap<>();
     }
 
 
-    protected Select selectStart (boolean includeContent) {
+    private Select selectStart (boolean includeContent) {
         Select select = QueryBuilder.selectFrom(helper.getKeyspaceId(), helper.getTableId())
                 .column(INSTANCE_ID)
                 .column(START_DATE)
@@ -75,7 +82,7 @@ public abstract class AbstractTestEventQueryProvider<V> {
     }
 
 
-    protected Select addConditions(Select select, String idFrom, String parentId, Order order) {
+    private Select addConditions(Select select, String idFrom, String parentId, Order order) {
         select = select
                 .whereColumn(INSTANCE_ID).isEqualTo(bindMarker(INSTANCE_ID))
                 .whereColumn(START_DATE).isEqualTo(bindMarker(START_DATE));
@@ -101,8 +108,18 @@ public abstract class AbstractTestEventQueryProvider<V> {
     }
 
 
+    public PreparedStatement getPreparedStatement(boolean includeContent, String idFrom, String parentId, Order order){
+        SelectArguments arguments = new SelectArguments(includeContent, idFrom, parentId, order);
+        PreparedStatement preparedStatement = statementCache.computeIfAbsent(arguments, key -> {
+             Select select = selectStart(key.getIncludeContent());
+             select = addConditions(select, key.getIdFrom(), key.getParentId(), key.getOrder());
+             return session.prepare(select.build());
+        });
+        return preparedStatement;
+    }
+
     protected BoundStatement bindParameters(
-            Select select,
+            PreparedStatement preparedStatement,
             UUID instanceId,
             LocalDate startDate,
             LocalTime timeFrom,
@@ -111,7 +128,6 @@ public abstract class AbstractTestEventQueryProvider<V> {
             String parentId,
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
     {
-        PreparedStatement preparedStatement = session.prepare(select.build());
         BoundStatementBuilder builder =  preparedStatement.boundStatementBuilder();
         attributes.apply(builder);
 

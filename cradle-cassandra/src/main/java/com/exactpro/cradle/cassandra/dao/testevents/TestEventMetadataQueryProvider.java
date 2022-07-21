@@ -19,9 +19,9 @@ package com.exactpro.cradle.cassandra.dao.testevents;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.mapper.MapperContext;
 import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
-import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.Order;
 
 import java.time.LocalDate;
@@ -36,8 +36,6 @@ public class TestEventMetadataQueryProvider extends AbstractTestEventQueryProvid
         super(context, helper);
     }
 
-
-
     public CompletableFuture<MappedAsyncPagingIterable<TestEventMetadataEntity>> getTestEventsMetadata(
             UUID instanceId,
             LocalDate startDate,
@@ -48,10 +46,9 @@ public class TestEventMetadataQueryProvider extends AbstractTestEventQueryProvid
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 
     {
-        Select select = selectStart(true);
-        select = addConditions(select, idFrom, null, order);
+        PreparedStatement preparedStatement = getPreparedStatement(false, idFrom, null, order);
 
-        BoundStatement statement = bindParameters(  select,
+        BoundStatement statement = bindParameters(  preparedStatement,
                 instanceId,
                 startDate,
                 timeFrom,
@@ -73,10 +70,9 @@ public class TestEventMetadataQueryProvider extends AbstractTestEventQueryProvid
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 
     {
-        Select select = selectStart(true);
-        select = addConditions(select, idFrom, parentId, null);
+        PreparedStatement preparedStatement = getPreparedStatement(false, idFrom, parentId, null);
 
-        BoundStatement statement = bindParameters(  select,
+        BoundStatement statement = bindParameters(  preparedStatement,
                 instanceId,
                 startDate,
                 timeFrom,
