@@ -48,7 +48,7 @@ public class TestEventMetadataQueryProvider extends AbstractTestEventQueryProvid
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 
     {
-        Select select = selectStart(true);
+        Select select = selectStart(false);
         select = addConditions(select, idFrom, null, order);
 
         BoundStatement statement = bindParameters(  select,
@@ -73,7 +73,7 @@ public class TestEventMetadataQueryProvider extends AbstractTestEventQueryProvid
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 
     {
-        Select select = selectStart(true);
+        Select select = selectStart(false);
         select = addConditions(select, idFrom, parentId, null);
 
         BoundStatement statement = bindParameters(  select,
