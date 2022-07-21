@@ -46,7 +46,7 @@ public class TestEventMetadataQueryProvider extends AbstractTestEventQueryProvid
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 
     {
-        PreparedStatement preparedStatement = getPreparedStatement(true, idFrom, null, order);
+        PreparedStatement preparedStatement = getPreparedStatement(false, idFrom, null, order);
 
         BoundStatement statement = bindParameters(  preparedStatement,
                 instanceId,
@@ -70,7 +70,7 @@ public class TestEventMetadataQueryProvider extends AbstractTestEventQueryProvid
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 
     {
-        PreparedStatement preparedStatement = getPreparedStatement(true, idFrom, parentId, null);
+        PreparedStatement preparedStatement = getPreparedStatement(false, idFrom, parentId, null);
 
         BoundStatement statement = bindParameters(  preparedStatement,
                 instanceId,
