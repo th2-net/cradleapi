@@ -1106,9 +1106,9 @@ public abstract class CradleStorage
 	 * @param to interval end
 	 * @param order order of response
 	 * @return test events for given time range, first event will be one with given id
-	 * @throws CradleStorageException
-	 * @throws ExecutionException
-	 * @throws InterruptedException
+	 * @throws CradleStorageException if given parameters are invalid
+	 * @throws ExecutionException if tried to retrieve the result of a task that aborted by throwing an exception
+	 * @throws InterruptedException if a thread is occupied, and the thread is interrupted, either before or during the activity
 	 */
 	public Iterable<StoredTestEventWrapper> getTestEvents(StoredTestEventId idFrom, Instant to,  Order order)
 			throws CradleStorageException, ExecutionException, InterruptedException {
@@ -1120,9 +1120,9 @@ public abstract class CradleStorage
 	 * @param to interval end
 	 * @param parentId events should have parentId set to this
 	 * @return test events with parentId for given time range, first event will be one with given id
-	 * @throws CradleStorageException
-	 * @throws ExecutionException
-	 * @throws InterruptedException
+	 * @throws CradleStorageException if given parameters are invalid
+	 * @throws ExecutionException if tried to retrieve the result of a task that aborted by throwing an exception
+	 * @throws InterruptedException if a thread is occupied, and the thread is interrupted, either before or during the activity
 	 */
 	public Iterable<StoredTestEventWrapper> getTestEvents(StoredTestEventId idFrom, Instant to, StoredTestEventId parentId)
 			throws CradleStorageException, ExecutionException, InterruptedException {
@@ -1134,9 +1134,9 @@ public abstract class CradleStorage
 	 * @param to interval end
 	 * @param order order of response
 	 * @return metadata of test events for given time range, first event will be one with given id
-	 * @throws CradleStorageException
-	 * @throws ExecutionException
-	 * @throws InterruptedException
+	 * @throws CradleStorageException if given parameters are invalid
+	 * @throws ExecutionException if tried to retrieve the result of a task that aborted by throwing an exception
+	 * @throws InterruptedException if a thread is occupied, and the thread is interrupted, either before or during the activity
 	 */
 	public Iterable<StoredTestEventMetadata> getTestEventsMetadata(StoredTestEventId idFrom, Instant to, Order order)
 			throws CradleStorageException, ExecutionException, InterruptedException {
@@ -1148,9 +1148,9 @@ public abstract class CradleStorage
 	 * @param to interval end
 	 * @param parentId events should have parentId set to this
 	 * @return metadata of test events with parentId for given time range, first event will be one with given id
-	 * @throws CradleStorageException
-	 * @throws ExecutionException
-	 * @throws InterruptedException
+	 * @throws CradleStorageException if given parameters are invalid
+	 * @throws ExecutionException if tried to retrieve the result of a task that aborted by throwing an exception
+	 * @throws InterruptedException if a thread is occupied, and the thread is interrupted, either before or during the activity
 	 */
 	public Iterable<StoredTestEventMetadata> getTestEventsMetadata(StoredTestEventId idFrom, Instant to, StoredTestEventId parentId)
 			throws CradleStorageException, ExecutionException, InterruptedException {
@@ -1162,7 +1162,7 @@ public abstract class CradleStorage
 	 * @param to interval end
 	 * @param order order of response
 	 * @return future of test events for given time range, first event will be one with given id
-	 * @throws CradleStorageException
+	 * @throws CradleStorageException if given parameters are invalid
 	 */
 	public CompletableFuture<Iterable<StoredTestEventWrapper>> getTestEventsAsync(StoredTestEventId idFrom, Instant to, Order order)
 			throws CradleStorageException {
@@ -1174,7 +1174,7 @@ public abstract class CradleStorage
 	 * @param to interval end
 	 * @param parentId events should have parentId set to this
 	 * @return future of test events with parentId for given time range, first event will be one with given id
-	 * @throws CradleStorageException
+	 * @throws CradleStorageException if given parameters are invalid
 	 */
 	public CompletableFuture<Iterable<StoredTestEventWrapper>> getTestEventsAsync(StoredTestEventId idFrom, Instant to, StoredTestEventId parentId)
 			throws CradleStorageException {
@@ -1192,7 +1192,7 @@ public abstract class CradleStorage
 	 * @param to interval end
 	 * @param parentId events should have parentId set to this
 	 * @return future of test events with parentId for given time range, first event will be one with given id
-	 * @throws CradleStorageException
+	 * @throws CradleStorageException if given parameters are invalid
 	 */
 	public CompletableFuture<Iterable<StoredTestEventMetadata>> getTestEventsMetadataAsync(StoredTestEventId idFrom, Instant to, StoredTestEventId parentId)
 			throws CradleStorageException {

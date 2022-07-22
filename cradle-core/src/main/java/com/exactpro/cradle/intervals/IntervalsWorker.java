@@ -47,6 +47,7 @@ public interface IntervalsWorker
      * @param crawlerVersion version of Crawler
      * @param crawlerType type of Crawler
      * @return iterable of intervals
+     * @throws IOException if data retrieval failed
      */
     Iterable<Interval> getIntervalsPerDay(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException;
 
@@ -70,6 +71,7 @@ public interface IntervalsWorker
      * @param crawlerVersion version of Crawler
      * @param crawlerType type of Crawler
      * @return iterable of intervals
+     * @throws IOException if data retrieval failed
      */
     Iterable<Interval> getIntervals(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException;
 
@@ -80,6 +82,7 @@ public interface IntervalsWorker
      * @return the new instance of {@link Interval} with updated newLastUpdateTime. This operation is successful
      * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
      * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
+     * @throws IOException if data update failed and not UpdateNotAppliedException was thrown
      */
     Interval setIntervalLastUpdateTimeAndDate(Interval interval, Instant newLastUpdateTime) throws IOException;
 
@@ -100,6 +103,7 @@ public interface IntervalsWorker
      * @return the new instance of {@link Interval} with updated recoveryState. This operation is successful
      * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
      * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
+     * @throws IOException if data update failed and not UpdateNotAppliedException was thrown
      */
     Interval updateRecoveryState(Interval interval, String recoveryState) throws IOException;
 
@@ -120,6 +124,7 @@ public interface IntervalsWorker
      * @return the new instance of {@link Interval} with updated processed. This operation is successful
      * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
      * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
+     * @throws IOException if settomg data failed and not UpdateNotAppliedException was thrown
      */
     Interval setIntervalProcessed(Interval interval, boolean processed) throws IOException;
 
