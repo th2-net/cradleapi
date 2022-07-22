@@ -43,6 +43,10 @@ public class FutureTracker<T> {
         this.enabled = true;
     }
 
+    /**
+     * Track a future
+     * @param future to be tracked
+     */
     public void track(CompletableFuture<T> future) {
         if (enabled) {
             if (future.isDone()) {
@@ -59,20 +63,23 @@ public class FutureTracker<T> {
         }
     }
 
+    /**
+     * Stops accepting new futures and waits for
+     * currently tracked futures
+     */
     public void awaitRemaining () {
         awaitRemaining(-1);
     }
 
-
     /**
      * Waits for tracked futures, cancels futures after timeout.
-     * Cancels all futures if passed 0.
+     * Cancels all futures without wait if passed 0.
      * Waits without timeout if passed negative.
-     * @param timeout milliseconds to wait
+     * @param timeoutMillis milliseconds to wait
      */
-    public void awaitRemaining (long timeout) {
-        Instant beforeAwait = Instant.now();
-
+    public void awaitRemaining (long timeoutMillis) {
+        long timeoutNanos = timeoutMillis * 1000;
+        long startNanos = System.nanoTime();
         this.enabled = false;
 
         List<CompletableFuture<T>> remainingFutures;
@@ -87,18 +94,17 @@ public class FutureTracker<T> {
         }
 
         for (CompletableFuture<T> future : remainingFutures) {
-            Instant curInstant = Instant.now();
+            long curNanos = System.nanoTime();
 
             try {
                 if (!future.isDone()) {
-                    if (timeout < 0) {
+                    if (timeoutMillis < 0) {
                         future.get();
                     } else {
-                        if (curInstant.minusMillis(timeout).isBefore(beforeAwait)) {
+                        if (startNanos + timeoutNanos < curNanos) {
                             future.cancel(true);
                         } else {
-                            long curAwaitMillis = timeout - Duration.between(beforeAwait, curInstant).toMillis();
-                            future.get(curAwaitMillis, TimeUnit.MILLISECONDS);
+                            future.get(timeoutMillis - (curNanos - startNanos), TimeUnit.NANOSECONDS);
                         }
                     }
                 }
@@ -123,6 +129,10 @@ public class FutureTracker<T> {
         }
     }
 
+    /**
+     * Informs if there are any active futures
+     * @return true if there are no active futures
+     */
     public boolean isEmpty () {
         return remaining() == 0;
     }
