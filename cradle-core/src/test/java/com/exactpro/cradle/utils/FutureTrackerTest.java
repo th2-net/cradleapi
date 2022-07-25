@@ -3,13 +3,37 @@ package com.exactpro.cradle.utils;
 import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class FutureTrackerTest {
-    private final long NO_PAUSE_MILLIS = 75;
+    private final long NO_DELAY_MILLIS = 75;
     private final long DELAY_MILLIS = 100;
+
+    /*
+        Following Runnable will be applied to FutureTracker
+        asynchronously
+     */
+    private static class LockedRunnable implements Runnable {
+
+        private final long sleepMillis;
+        private final ReentrantLock lock;
+
+        public LockedRunnable(long sleepMillis, ReentrantLock lock) {
+            this.sleepMillis = sleepMillis;
+            this.lock = lock;
+        }
+
+        @Override
+        public void run() {
+            try {
+                lock.lock();
+                Thread.sleep(sleepMillis);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 
     private CompletableFuture<Integer> getFutureWithException () {
         return CompletableFuture.supplyAsync(() -> {
@@ -17,25 +41,18 @@ public class FutureTrackerTest {
         });
     }
 
-    private CompletableFuture<Integer> getFutureWithDelay () {
+    private CompletableFuture<Integer> getFutureWithDelay (ReentrantLock lock) {
         return CompletableFuture.supplyAsync(() -> {
-            try {
-                Thread.sleep(DELAY_MILLIS);
-            } catch (InterruptedException e) {
-                throw new RuntimeException();
-            }
-
+            new LockedRunnable(DELAY_MILLIS, lock).run();
+            lock.unlock();
             return 0;
         });
     }
 
-    private CompletableFuture<Integer> chainFuture (CompletableFuture<Integer> future) {
+    private CompletableFuture<Integer> chainFuture (CompletableFuture<Integer> future, ReentrantLock lock) {
         return future.thenApplyAsync((res) -> {
-            try {
-                Thread.sleep(DELAY_MILLIS);
-            } catch (InterruptedException e) {
-                throw new RuntimeException();
-            }
+            new LockedRunnable(DELAY_MILLIS, lock).run();
+            lock.unlock();
 
             return res;
         });
@@ -43,51 +60,66 @@ public class FutureTrackerTest {
 
     @Test
     public void testEmptyTracker () {
-        Instant start = Instant.now();
+        long expectedTrackingMillis = NO_DELAY_MILLIS;
+
         FutureTracker<Integer> futureTracker = new FutureTracker<>();
+        long start = System.nanoTime();
         futureTracker.awaitRemaining();
 
         Assertions.assertThat(futureTracker.isEmpty()).isTrue();
-        Assertions.assertThat(Duration.between(start, Instant.now())).isLessThan(Duration.ofMillis(NO_PAUSE_MILLIS));
+
+        long actualTrackingMillis = (System.nanoTime() - start)/1000_000;
+        Assertions.assertThat(actualTrackingMillis).isLessThan(expectedTrackingMillis);
     }
 
     @Test
     public void testTrackingSingleFuture () {
-        long expectedTrackingTime = DELAY_MILLIS;
-        Instant start = Instant.now();
+        long expectedTrackingMillis = DELAY_MILLIS;
+
         FutureTracker<Integer> futureTracker = new FutureTracker<>();
 
-        futureTracker.track(getFutureWithDelay());
+        ReentrantLock lock = new ReentrantLock();
+        lock.lock();
+
+        futureTracker.track(getFutureWithDelay(lock));
         Assertions.assertThat(futureTracker.isEmpty()).isFalse();
 
+        lock.unlock();
+        long start = System.nanoTime();
         futureTracker.awaitRemaining();
 
-        Assertions.assertThat(Duration.between(start, Instant.now())).isGreaterThan(Duration.ofMillis(expectedTrackingTime));
+        long actualTrackingMillis = (System.nanoTime() - start)/1000_000;
+        Assertions.assertThat(actualTrackingMillis).isGreaterThanOrEqualTo(expectedTrackingMillis);
     }
 
     @Test
     public void testTrackingFutureWithException () {
-        Instant start = Instant.now();
+        long expectedTrackingMillis = NO_DELAY_MILLIS;
+
         FutureTracker<Integer> futureTracker = new FutureTracker<>();
 
+        long start = System.nanoTime();
         futureTracker.track(getFutureWithException());
-
         futureTracker.awaitRemaining();
 
-        Assertions.assertThat(Duration.between(start, Instant.now())).isLessThan(Duration.ofMillis(NO_PAUSE_MILLIS));
+        long actualTrackingMillis = (System.nanoTime() - start)/1000_000;
+        Assertions.assertThat(actualTrackingMillis).isLessThan(expectedTrackingMillis);
     }
 
     @Test
     public void testTracking5Futures() {
         long expectedTrackingTime = 5 * DELAY_MILLIS;
-        Instant start = Instant.now();
+
+        ReentrantLock lock = new ReentrantLock();
+        lock.lock();
+
         FutureTracker<Integer> futureTracker = new FutureTracker<>();
 
         CompletableFuture<Integer> lastFuture = null;
         for (int i = 0; i < 5; i ++) {
-            CompletableFuture<Integer> curFuture = getFutureWithDelay();
+            CompletableFuture<Integer> curFuture = getFutureWithDelay(lock);
             if (i != 0) {
-                curFuture = chainFuture(lastFuture);
+                curFuture = chainFuture(lastFuture, lock);
             }
             futureTracker.track(curFuture);
             lastFuture = curFuture;
@@ -95,21 +127,30 @@ public class FutureTrackerTest {
         Assertions.assertThat(futureTracker.isEmpty()).isFalse();
         Assertions.assertThat(futureTracker.remaining()).isEqualTo(5);
 
+        lock.unlock();
+        long start = System.nanoTime();
         futureTracker.awaitRemaining();
 
-        Assertions.assertThat(Duration.between(start, Instant.now())).isGreaterThan(Duration.ofMillis(expectedTrackingTime));
+        long actualTrackingMillis = (System.nanoTime() - start)/1000_000;
+        Assertions.assertThat(actualTrackingMillis).isGreaterThanOrEqualTo(expectedTrackingTime);
     }
 
     @Test
     public void testAwaitZeroTimeout() {
-        Instant start = Instant.now();
+        long expectedTrackingMillis = NO_DELAY_MILLIS;
+
+        ReentrantLock lock = new ReentrantLock();
+        lock.lock();
+
         FutureTracker<Integer> futureTracker = new FutureTracker<>();
+        futureTracker.track(getFutureWithDelay(lock));
 
-        futureTracker.track(getFutureWithDelay());
-
+        lock.unlock();
+        long start = System.nanoTime();
         futureTracker.awaitRemaining(0);
 
-        Assertions.assertThat(Duration.between(start, Instant.now())).isLessThan(Duration.ofMillis(NO_PAUSE_MILLIS));
 
+        long actualTrackingMillis = (System.nanoTime() - start)/1000_000;
+        Assertions.assertThat(actualTrackingMillis).isLessThan(expectedTrackingMillis);
     }
 }
