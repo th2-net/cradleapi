@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,33 +16,35 @@
 
 package com.exactpro.cradle.cassandra.dao.testevents;
 
+import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
+import com.exactpro.cradle.BookInfo;
+import com.exactpro.cradle.Order;
+import com.exactpro.cradle.PageId;
+import com.exactpro.cradle.PageInfo;
+import com.exactpro.cradle.cassandra.dao.CassandraOperators;
+import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
+import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
+import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
+import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
+import com.exactpro.cradle.cassandra.utils.FilterUtils;
+import com.exactpro.cradle.filters.FilterForGreater;
+import com.exactpro.cradle.filters.FilterForLess;
+import com.exactpro.cradle.testevents.StoredTestEvent;
+import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.TestEventFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.time.Instant;
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
-import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.exactpro.cradle.BookInfo;
-import com.exactpro.cradle.PageId;
-import com.exactpro.cradle.PageInfo;
-import com.exactpro.cradle.cassandra.dao.CassandraOperators;
-import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
-import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
-import com.exactpro.cradle.cassandra.utils.FilterUtils;
-import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.StoredTestEventId;
-import com.exactpro.cradle.testevents.TestEventFilter;
-
 import static com.exactpro.cradle.cassandra.workers.EventsWorker.mapTestEventEntity;
 
-public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
-{
+public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent> {
 	/*
 	 * The iterator creates CassandraTestEventFilter for each new DB query.
 	 * Each query targets one page, returning iterator to access the data.
@@ -66,29 +68,54 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 	
 	public TestEventIteratorProvider(String requestInfo, TestEventFilter filter, CassandraOperators operators, BookInfo book,
 									 ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
-									 Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
-	{
+									 Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) {
 		super(requestInfo);
 		this.op = operators.getTestEventOperator();
 		this.entityConverter = operators.getTestEventEntityConverter();
 		this.book = book;
 		this.composingService = composingService;
 		this.selectQueryExecutor = selectQueryExecutor;
-		this.firstPage = FilterUtils.findFirstPage(filter.getPageId(), filter.getStartTimestampFrom(), book);
-		this.lastPage = FilterUtils.findLastPage(filter.getPageId(), filter.getStartTimestampTo(), book);
+
+		// setup first & last pages according to filter order
+		PageInfo pageFrom = FilterUtils.findFirstPage(filter.getPageId(), effectiveStartTimestampFrom(filter), book);
+		PageInfo pageTo = FilterUtils.findLastPage(filter.getPageId(), effectiveStartTimestampTo(filter), book);
+		Order order = filter.getOrder();
+		this.firstPage = (order == Order.DIRECT) ? pageFrom : pageTo;
+		this.lastPage = (order == Order.DIRECT) ? pageTo : pageFrom;
+
 		this.readAttrs = readAttrs;
 		this.limit = filter.getLimit();
 		this.returned = new AtomicInteger();
 		cassandraFilter = createInitialFilter(filter);
 	}
-	
+
+
+	private FilterForGreater<Instant> effectiveStartTimestampFrom(TestEventFilter filter) {
+		if (filter.getOrder() == Order.DIRECT && filter.getId() != null) {
+			FilterForGreater<Instant> result = new FilterForGreater<>(filter.getId().getStartTimestamp());
+			result.setGreaterOrEquals();
+			return result;
+		}
+		return filter.getStartTimestampFrom();
+	}
+
+
+	private FilterForLess<Instant> effectiveStartTimestampTo(TestEventFilter filter) {
+		if (filter.getOrder() == Order.REVERSE && filter.getId() != null) {
+			FilterForLess<Instant> result = new FilterForLess<>(filter.getId().getStartTimestamp());
+			result.setLessOrEquals();
+			return result;
+		}
+		return filter.getStartTimestampTo();
+	}
+
 	@Override
-	public CompletableFuture<Iterator<StoredTestEvent>> nextIterator()
-	{
+	public CompletableFuture<Iterator<StoredTestEvent>> nextIterator() {
+
 		if (cassandraFilter == null)
 			return CompletableFuture.completedFuture(null);
-		if (limit > 0 && returned.get() >= limit)
-		{
+
+		if (limit > 0 && returned.get() >= limit) {
 			logger.debug("Filtering interrupted because limit for records to return ({}) is reached ({})", limit, returned);
 			return CompletableFuture.completedFuture(null);
 		}
@@ -103,27 +130,47 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 				}, composingService);
 	}
 
-	private CassandraTestEventFilter createInitialFilter(TestEventFilter filter)
-	{
+
+	private CassandraTestEventFilter createInitialFilter(TestEventFilter filter) {
 		String parentId = getParentIdString(filter);
-		return new CassandraTestEventFilter(book.getId().getName(), firstPage.getId().getName(), filter.getScope(),
-				filter.getStartTimestampFrom(), filter.getStartTimestampTo(), parentId);
+		return new CassandraTestEventFilter(
+				book.getId().getName(),
+				firstPage.getId().getName(),
+				filter.getScope(),
+				filter.getStartTimestampFrom(),
+				filter.getStartTimestampTo(),
+				filter.getId(),
+				parentId,
+				filter.getOrder());
 	}
 	
-	private CassandraTestEventFilter createNextFilter(CassandraTestEventFilter prevFilter)
-	{
+	private CassandraTestEventFilter createNextFilter(CassandraTestEventFilter prevFilter) {
+
 		PageInfo prevPage = book.getPage(new PageId(book.getId(), prevFilter.getPage()));
 		if (prevPage == lastPage)
 			return null;
-		
-		PageInfo nextPage = book.getNextPage(prevPage.getStarted());
-		return new CassandraTestEventFilter(book.getId().getName(), nextPage.getId().getName(), prevFilter.getScope(),
-				prevFilter.getStartTimestampFrom(), prevFilter.getStartTimestampTo(), prevFilter.getParentId());
+
+		// calculate next page according to filter order
+		PageInfo nextPage;
+		if (prevFilter.getOrder() == Order.DIRECT)
+			nextPage = book.getNextPage(prevPage.getStarted());
+		else
+			nextPage = book.getPreviousPage(prevPage.getStarted());
+
+		return new CassandraTestEventFilter(
+				book.getId().getName(),
+				nextPage.getId().getName(),
+				prevFilter.getScope(),
+				prevFilter.getStartTimestampFrom(),
+				prevFilter.getStartTimestampTo(),
+				prevFilter.getId(),
+				prevFilter.getParentId(),
+				prevFilter.getOrder());
 	}
 	
 	
-	private String getParentIdString(TestEventFilter filter)
-	{
+	private String getParentIdString(TestEventFilter filter) {
+
 		if (filter.isRoot())
 			return "";
 		

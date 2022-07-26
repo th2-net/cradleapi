@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,7 +116,27 @@ public class FilterUtils
 			default: return mcrBuilder.isEqualTo(tuple(bindMarker(dateMarker), bindMarker(timeMarker)));
 		}
 	}
-	
+
+
+	public static Select timestampAndIdFilterToWhere(ComparisonOperation operation, Select select,
+													 String dateColumn,
+													 String timeColumn,
+													 String idColumn,
+												     String dateMarker,
+													 String timeMarker,
+													 String idMarker)
+	{
+		MultiColumnRelationBuilder<Select> mcrBuilder = select.whereColumns(dateColumn, timeColumn, idColumn);
+		switch (operation)
+		{
+			case LESS: return mcrBuilder.isLessThan(tuple(bindMarker(dateMarker), bindMarker(timeMarker), bindMarker(idMarker)));
+			case GREATER: return mcrBuilder.isGreaterThan(tuple(bindMarker(dateMarker), bindMarker(timeMarker), bindMarker(idMarker)));
+			case LESS_OR_EQUALS: return mcrBuilder.isLessThanOrEqualTo(tuple(bindMarker(dateMarker), bindMarker(timeMarker), bindMarker(idMarker)));
+			case GREATER_OR_EQUALS: return mcrBuilder.isGreaterThanOrEqualTo(tuple(bindMarker(dateMarker), bindMarker(timeMarker), bindMarker(idMarker)));
+			default: return mcrBuilder.isEqualTo(tuple(bindMarker(dateMarker), bindMarker(timeMarker), bindMarker(idMarker)));
+		}
+	}
+
 	/**
 	 * Binds timestamp to corresponding values of parameters in a prepared statement
 	 * @param timestamp to bind to prepared statement
@@ -133,7 +153,17 @@ public class FilterUtils
 		builder = builder.setLocalTime(timeMarker, ldt.toLocalTime());
 		return builder;
 	}
-	
+
+	public static BoundStatementBuilder bindTimestampAndId(Instant timestamp, String id, BoundStatementBuilder builder,
+													  String dateMarker, String timeMarker, String idMarker)
+	{
+		LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
+		builder = builder.setLocalDate(dateMarker, ldt.toLocalDate());
+		builder = builder.setLocalTime(timeMarker, ldt.toLocalTime());
+		builder = builder.setString(idMarker, id);
+		return builder;
+	}
+
 	/**
 	 * Converts given filter by Instant with "&gt;" or "&gt;=" operation into filter by LocalTime
 	 * @param filterTimeFrom to convert
