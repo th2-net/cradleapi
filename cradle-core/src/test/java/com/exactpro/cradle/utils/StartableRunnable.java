@@ -23,17 +23,19 @@ public class StartableRunnable implements Runnable {
     private volatile boolean ready;
     private volatile boolean started;
 
-    private Object waitSignal;
-    private Object startSignal;
+    private final Object waitSignal;
+    private final Object startSignal;
     private final Runnable runnable;
-    private final Lock readinessLock = new ReentrantLock();
-    private final Lock startingLock = new ReentrantLock();
+    private final Lock readinessLock;
+    private final Lock startingLock;
 
     private StartableRunnable(Runnable runnable) {
-        this.ready = false;
+        this.runnable = runnable;
+
         this.waitSignal = new Object();
         this.startSignal = new Object();
-        this.runnable = runnable;
+        this.readinessLock = new ReentrantLock();
+        this.startingLock = new ReentrantLock();
     }
 
 
@@ -45,7 +47,7 @@ public class StartableRunnable implements Runnable {
     public void awaitReadiness() {
         readinessLock.lock();
         if (!isReady()) {
-            _wait(waitSignal, readinessLock);
+            _unlockAndWait(readinessLock, waitSignal);
         } else
             readinessLock.unlock();
     }
@@ -59,7 +61,7 @@ public class StartableRunnable implements Runnable {
     private void awaitStart() {
         startingLock.lock();
         if (!isStarted()) {
-            _wait(startSignal, startingLock);
+            _unlockAndWait(startingLock, startSignal);
         } else
             startingLock.unlock();
     }
@@ -125,7 +127,7 @@ public class StartableRunnable implements Runnable {
     }
 
 
-    private void _wait(Object o, Lock lock) {
+    private void _unlockAndWait(Lock lock, Object o) {
         synchronized (o) {
             try {
                 if (lock != null)
