@@ -5,43 +5,12 @@ import org.testng.annotations.Test;
 
 import java.util.concurrent.CompletableFuture;
 
+import static com.exactpro.cradle.utils.WaitingRunnable.WAIT_TIMEOUT_MILLIS;
+
 public class FutureTrackerTest {
     private final long NO_DELAY_MILLIS = 75;
     private final long DELAY_MILLIS = 100;
     private final long PAUSE_MILLIS = 20;
-    private static final long WAIT_TIMEOUT_MILLIS = 3_000;
-
-    /*
-        Following Runnable will be applied to FutureTracker
-        asynchronously
-     */
-    private static class WaitingRunnable implements Runnable {
-        private final long sleepMillis;
-        private boolean ready;
-
-        public WaitingRunnable(long sleepMillis) {
-            this.sleepMillis = sleepMillis;
-            this.ready = false;
-        }
-
-        private boolean isReady () {
-            return ready;
-        }
-
-        @Override
-        public void run() {
-            try {
-                this.ready = true;
-                synchronized (this) {
-                    this.wait(WAIT_TIMEOUT_MILLIS);
-                }
-
-                Thread.sleep(sleepMillis);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
 
     private CompletableFuture<Integer> getFutureWithException () {
         return CompletableFuture.supplyAsync(() -> {
