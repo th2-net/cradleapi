@@ -24,7 +24,6 @@ import java.util.concurrent.CompletableFuture;
 public class FutureTrackerTest {
     private final long NO_DELAY_MILLIS = 75;
     private final long DELAY_MILLIS = 100;
-    private final long WAIT_TIMEOUT_MILLIS = 100;
 
     private class SleepingRunnable implements Runnable {
         final long sleepTimeMillis;
@@ -77,7 +76,6 @@ public class FutureTrackerTest {
 
         long actualTrackingMillis = (System.nanoTime() - start)/1_000_000;
         Assertions.assertThat(actualTrackingMillis).isLessThan(expectedTrackingMillis);
-        Assertions.assertThat(actualTrackingMillis).isLessThan(WAIT_TIMEOUT_MILLIS);
     }
 
     @Test
@@ -99,7 +97,6 @@ public class FutureTrackerTest {
 
         long actualTrackingMillis = (System.nanoTime() - start)/1_000_000;
         Assertions.assertThat(actualTrackingMillis).isGreaterThanOrEqualTo(expectedTrackingMillis);
-        Assertions.assertThat(actualTrackingMillis).isLessThan(WAIT_TIMEOUT_MILLIS);
     }
 
     @Test
@@ -114,7 +111,6 @@ public class FutureTrackerTest {
 
         long actualTrackingMillis = (System.nanoTime() - start)/1_000_000;
         Assertions.assertThat(actualTrackingMillis).isLessThan(expectedTrackingMillis);
-        Assertions.assertThat(actualTrackingMillis).isLessThan(WAIT_TIMEOUT_MILLIS);
     }
 
     @Test
@@ -145,7 +141,6 @@ public class FutureTrackerTest {
 
         long actualTrackingMillis = (System.nanoTime() - start)/1_000_000;
         Assertions.assertThat(actualTrackingMillis).isGreaterThanOrEqualTo(expectedTrackingTime);
-        Assertions.assertThat(actualTrackingMillis).isLessThan(WAIT_TIMEOUT_MILLIS);
     }
 
     @Test
@@ -166,6 +161,5 @@ public class FutureTrackerTest {
 
         long actualTrackingMillis = (System.nanoTime() - start)/1_000_000;
         Assertions.assertThat(actualTrackingMillis).isLessThan(expectedTrackingMillis);
-        Assertions.assertThat(actualTrackingMillis).isLessThan(WAIT_TIMEOUT_MILLIS);
     }
 }
