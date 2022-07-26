@@ -18,8 +18,6 @@ package com.exactpro.cradle.utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -78,7 +76,7 @@ public class FutureTracker<T> {
      * @param timeoutMillis milliseconds to wait
      */
     public void awaitRemaining (long timeoutMillis) {
-        long timeoutNanos = timeoutMillis * 1000;
+        long timeoutNanos = timeoutMillis * 1_000_000;
         long startNanos = System.nanoTime();
         this.enabled = false;
 
@@ -101,10 +99,10 @@ public class FutureTracker<T> {
                     if (timeoutMillis < 0) {
                         future.get();
                     } else {
-                        if (startNanos + timeoutNanos < curNanos) {
+                        if (curNanos - startNanos >= timeoutNanos) {
                             future.cancel(true);
                         } else {
-                            future.get(timeoutMillis - (curNanos - startNanos), TimeUnit.NANOSECONDS);
+                            future.get(timeoutNanos - (curNanos - startNanos), TimeUnit.NANOSECONDS);
                         }
                     }
                 }
