@@ -1,3 +1,19 @@
+/*
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.exactpro.cradle.utils;
 
 import org.assertj.core.api.Assertions;
@@ -5,20 +21,32 @@ import org.testng.annotations.Test;
 
 import java.util.concurrent.CompletableFuture;
 
-import static com.exactpro.cradle.utils.WaitingRunnable.WAIT_TIMEOUT_MILLIS;
-
 public class FutureTrackerTest {
     private final long NO_DELAY_MILLIS = 75;
     private final long DELAY_MILLIS = 100;
-    private final long PAUSE_MILLIS = 20;
+    private final long WAIT_TIMEOUT_MILLIS = 100;
 
+    private class SleepingRunnable implements Runnable {
+        final long sleepTimeMillis;
+        public SleepingRunnable(long sleepTimeMillis) {
+            this.sleepTimeMillis = sleepTimeMillis;
+        }
+        @Override
+        public void run() {
+            try {
+                Thread.sleep(sleepTimeMillis);
+            } catch (InterruptedException e) {
+
+            }
+        }
+    }
     private CompletableFuture<Integer> getFutureWithException () {
         return CompletableFuture.supplyAsync(() -> {
             throw new RuntimeException();
         });
     }
 
-    private CompletableFuture<Integer> getFutureWithDelay (WaitingRunnable waitingRunnable) {
+    private CompletableFuture<Integer> getFutureWithDelay (StartableRunnable waitingRunnable) {
         return CompletableFuture.supplyAsync(() -> {
             waitingRunnable.run();
             return 0;
@@ -35,20 +63,6 @@ public class FutureTrackerTest {
 
             return res;
         });
-    }
-
-    private void waitForReady (WaitingRunnable waitingRunnable) {
-        // Make sure async task is started before we start timer
-        while (!waitingRunnable.isReady()) {
-            try {
-                Thread.sleep(PAUSE_MILLIS);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        synchronized (waitingRunnable) {
-            waitingRunnable.notifyAll();
-        }
     }
 
     @Test
@@ -72,12 +86,13 @@ public class FutureTrackerTest {
 
         FutureTracker<Integer> futureTracker = new FutureTracker<>();
 
-        WaitingRunnable waitingRunnable = new WaitingRunnable(DELAY_MILLIS);
+        StartableRunnable waitingRunnable = StartableRunnable.of(new SleepingRunnable(DELAY_MILLIS));
 
         futureTracker.track(getFutureWithDelay(waitingRunnable));
         Assertions.assertThat(futureTracker.isEmpty()).isFalse();
 
-        waitForReady(waitingRunnable);
+        waitingRunnable.awaitReadiness();
+        waitingRunnable.start();
 
         long start = System.nanoTime();
         futureTracker.awaitRemaining();
@@ -106,7 +121,7 @@ public class FutureTrackerTest {
     public void testTracking5Futures() {
         long expectedTrackingTime = 5 * DELAY_MILLIS;
 
-        WaitingRunnable waitingRunnable = new WaitingRunnable(DELAY_MILLIS);
+        StartableRunnable waitingRunnable = StartableRunnable.of(new SleepingRunnable(DELAY_MILLIS));
 
         FutureTracker<Integer> futureTracker = new FutureTracker<>();
 
@@ -122,7 +137,8 @@ public class FutureTrackerTest {
         Assertions.assertThat(futureTracker.isEmpty()).isFalse();
         Assertions.assertThat(futureTracker.remaining()).isEqualTo(5);
 
-        waitForReady(waitingRunnable);
+        waitingRunnable.awaitReadiness();
+        waitingRunnable.start();
 
         long start = System.nanoTime();
         futureTracker.awaitRemaining();
@@ -136,10 +152,13 @@ public class FutureTrackerTest {
     public void testAwaitZeroTimeout() {
         long expectedTrackingMillis = NO_DELAY_MILLIS;
 
-        WaitingRunnable waitingRunnable = new WaitingRunnable(DELAY_MILLIS);
+        StartableRunnable waitingRunnable = StartableRunnable.of(new SleepingRunnable(DELAY_MILLIS));
 
         FutureTracker<Integer> futureTracker = new FutureTracker<>();
         futureTracker.track(getFutureWithDelay(waitingRunnable));
+
+        waitingRunnable.awaitReadiness();
+        waitingRunnable.start();
 
         long start = System.nanoTime();
         futureTracker.awaitRemaining(0);
