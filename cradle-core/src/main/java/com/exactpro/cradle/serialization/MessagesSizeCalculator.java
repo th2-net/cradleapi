@@ -90,7 +90,7 @@ public class MessagesSizeCalculator {
 	/**
 	 * Calculates serialized message size inside the batch
 	 * @param message actual message
-	 * @return
+	 * @return number of bytes of serialized message batch
 	 */
 	public static int calculateMessageSize(StoredMessage message) {
 		int i = (message.getContent() != null ? message.getContent().length : 0) + MESSAGE_SIZE_CONST_VALUE;
@@ -102,7 +102,7 @@ public class MessagesSizeCalculator {
 	/**
 	 * Calculates serialized message size inside the grouped batch
 	 * @param message actual message
-	 * @return
+	 * @return number of bytes of serialized grouped message batch
 	 */
 	public static int calculateGroupMessageSize(StoredMessage message) {
 		int i = (message.getContent() != null ? message.getContent().length : 0) + GROUP_MESSAGE_SIZE_CONST_VALUE;
