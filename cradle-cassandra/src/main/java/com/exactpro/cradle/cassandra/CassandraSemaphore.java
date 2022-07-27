@@ -46,7 +46,7 @@ public class CassandraSemaphore
 		return maxParallelQueries;
 	}
 	
-	public int getAquiredQueriesNumber() throws InterruptedException
+	public int getAcquiredQueriesNumber() throws InterruptedException
 	{
 		return maxParallelQueries-semaphore.availablePermits();
 	}
