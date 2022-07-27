@@ -67,6 +67,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -595,8 +596,37 @@ public class CassandraCradleStorage extends CradleStorage
 			result.add(it.next().getSessionAlias());
 		return result;
 	}
-	
-	
+
+	@Override
+	protected Collection<String> doGetGroups(BookId bookId) throws IOException, CradleStorageException {
+
+		String queryInfo = String.format("Getting groups for book '%s'", bookId);
+
+		MappedAsyncPagingIterable<GroupEntity> entities = null;
+		try {
+			var future = operators.getGroupsOperator().get(bookId.getName(), getReadAttrs());
+
+			entities = selectExecutor.executeMappedMultiRowResultQuery(
+					() -> future, operators.getGroupEntityConverter()::getEntity, queryInfo).get();
+		} catch (InterruptedException | ExecutionException e) {
+			throw new CradleStorageException("Error occurred while " + StringUtils.uncapitalize(queryInfo), e);
+		}
+
+		if (entities == null) {
+			return Collections.emptyList();
+		}
+
+		List<String> result = new ArrayList<>();
+		PagedIterator<GroupEntity> it = new PagedIterator<>(entities, selectExecutor,
+				operators.getGroupEntityConverter()::getEntity, "Fetching next page with groups");
+
+		while (it.hasNext()) {
+			result.add(it.next().getGroup());
+		}
+
+		return result;
+	}
+
 	@Override
 	protected StoredTestEvent doGetTestEvent(StoredTestEventId id, PageId pageId) throws IOException
 	{

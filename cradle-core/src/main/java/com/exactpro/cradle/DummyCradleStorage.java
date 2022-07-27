@@ -282,8 +282,13 @@ public class DummyCradleStorage extends CradleStorage
 	{
 		return null;
 	}
-	
-	
+
+	@Override
+	protected Collection<String> doGetGroups(BookId bookId) throws IOException, CradleStorageException {
+		return null;
+	}
+
+
 	@Override
 	protected StoredTestEvent doGetTestEvent(StoredTestEventId id, PageId pageId) throws IOException
 	{
