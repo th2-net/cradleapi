@@ -138,6 +138,7 @@ public abstract class CradleStorage
 	protected abstract long doGetFirstSequence(String sessionAlias, Direction direction, BookId bookId)
 			throws IOException, CradleStorageException;
 	protected abstract Collection<String> doGetSessionAliases(BookId bookId) throws IOException, CradleStorageException;
+	protected abstract Collection<String> doGetGroups(BookId bookId) throws IOException, CradleStorageException;
 	
 	
 	protected abstract StoredTestEvent doGetTestEvent(StoredTestEventId id, PageId pageId) throws IOException, CradleStorageException;
@@ -860,6 +861,17 @@ public abstract class CradleStorage
 		getBookCache().getBook(bookId);
 		Collection<String> result = doGetSessionAliases(bookId);
 		logger.debug("Session aliases for book '{}' got", bookId);
+		return result;
+	}
+
+	public final Collection<String> getGroups (BookId bookId) throws IOException, CradleStorageException {
+		logger.debug("Getting groups for book {}", bookId);
+
+		getBookCache().getBook(bookId);
+		Collection<String> result = doGetGroups(bookId);
+
+		logger.debug("Groups for book {} received", bookId);
+
 		return result;
 	}
 	
