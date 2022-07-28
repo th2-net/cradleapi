@@ -26,5 +26,5 @@ public interface EventBatchMaxLengthOperator {
     EventBatchMaxLengthEntity updateMaxLength(UUID uuid, LocalDate startDate, long maxBatchLength, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
     @Select
-    EventBatchMaxLengthEntity getMaxLength (UUID uuid, LocalDate localDate, LocalTime startTime, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+    EventBatchMaxLengthEntity getMaxLength (UUID uuid, LocalDate localDate, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

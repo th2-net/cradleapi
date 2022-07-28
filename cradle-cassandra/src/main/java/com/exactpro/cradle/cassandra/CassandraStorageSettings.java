@@ -42,6 +42,7 @@ public class CassandraStorageSettings
 	public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
 	public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1;
 	public static final int DEFAULT_EVENT_BATCH_LENGTH_CACHE_SIZE = 5000;
+	public static final long DEFAULT_EVENT_BATCH_LENGTH_MILLIS = 5000;
 
 	private final String keyspace;
 	private String messagesTableName,
@@ -63,6 +64,7 @@ public class CassandraStorageSettings
 			maxTestEventBatchSize;
 
 	private int eventBatchLengthCacheSize;
+	private long eventBatchLengthMillis;
 
 	public CassandraStorageSettings(String keyspace, NetworkTopologyStrategy networkTopologyStrategy,
 			long timeout, ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel)
@@ -85,6 +87,7 @@ public class CassandraStorageSettings
 		this.maxMessageBatchSize = DEFAULT_MAX_MESSAGE_BATCH_SIZE;
 		this.maxTestEventBatchSize = DEFAULT_MAX_EVENT_BATCH_SIZE;
 		this.eventBatchLengthCacheSize = DEFAULT_EVENT_BATCH_LENGTH_CACHE_SIZE;
+		this.eventBatchLengthMillis = DEFAULT_EVENT_BATCH_LENGTH_MILLIS;
 	}
 
 	public CassandraStorageSettings(String keyspace, NetworkTopologyStrategy networkTopology)
@@ -280,5 +283,13 @@ public class CassandraStorageSettings
 
 	public void setEventBatchLengthCacheSize(int eventBatchLengthCacheSize) {
 		this.eventBatchLengthCacheSize = eventBatchLengthCacheSize;
+	}
+
+	public long getEventBatchLengthMillis() {
+		return eventBatchLengthMillis;
+	}
+
+	public void setEventBatchLengthMillis(long eventBatchLengthMillis) {
+		this.eventBatchLengthMillis = eventBatchLengthMillis;
 	}
 }

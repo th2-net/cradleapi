@@ -23,19 +23,37 @@ import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventConverte
 import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 import com.exactpro.cradle.testevents.StoredTestEventWrapper;
 import com.exactpro.cradle.utils.CradleStorageException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Instant;
 
 public class TestEventsDataIterator extends ConvertingPagedIterator<StoredTestEventWrapper, TestEventEntity>
 {
+	private Logger logger = LoggerFactory.getLogger(TestEventsDataIterator.class);
+
 	private final CradleObjectsFactory objectsFactory;
+	private final Instant actualFrom;
 
 	public TestEventsDataIterator(MappedAsyncPagingIterable<TestEventEntity> rows,
 			PagingSupplies pagingSupplies, TestEventConverter converter,
-			CradleObjectsFactory objectsFactory, String queryInfo)
+			CradleObjectsFactory objectsFactory, Instant actualFrom, String queryInfo)
 	{
 		super(rows, pagingSupplies, converter, queryInfo);
 		this.objectsFactory = objectsFactory;
+		this.actualFrom = actualFrom;
+	}
+
+	@Override
+	public StoredTestEventWrapper next() {
+		StoredTestEventWrapper rtn = super.next();
+		while (hasNext() && rtn.getStartTimestamp().isBefore(actualFrom)) {
+			logger.debug("Skipping event with start timestamp {}, actual request was from {}", rtn.getStartTimestamp(), actualFrom);
+			rtn = super.next();
+		}
+
+		return rtn;
 	}
 
 	@Override
