@@ -91,6 +91,8 @@ public class CassandraCradleStorage extends CradleStorage
 
 	private IntervalsWorker intervalsWorker;
 
+	private EventBatchLengthCache eventBatchLengthCache;
+
 	public CassandraCradleStorage(CassandraConnection connection, CassandraStorageSettings settings)
 	{
 		CassandraConnectionSettings conSettings = connection.getSettings();
@@ -168,6 +170,12 @@ public class CassandraCradleStorage extends CradleStorage
 					new IntervalSupplies(ops.getIntervalOperator(), ops.getIntervalConverter(), pagingSupplies);
 			intervalsWorker =
 					new CassandraIntervalsWorker(semaphore, instanceUuid, writeAttrs, readAttrs, intervalSupplies);
+
+			eventBatchLengthCache = new EventBatchLengthCache(ops.getEventBatchMaxLengthOperator(),
+					readAttrs,
+					writeAttrs,
+					settings.getEventBatchLengthCacheSize());
+
 			return instanceUuid.toString();
 		}
 		catch (IOException e)
@@ -275,11 +283,21 @@ public class CassandraCradleStorage extends CradleStorage
 		List<CompletableFuture<Void>> futures = new ArrayList<>();
 		try
 		{
-			futures.add(storeTimeEvent(new DetailedTestEventEntity(event, instanceUuid)));
+			DetailedTestEventEntity detailedEntity = new DetailedTestEventEntity(event, instanceUuid);
+			try {
+				eventBatchLengthCache.updateMaxLength(
+						new EventBatchLengthCache.CacheKey(instanceUuid, detailedEntity.getStoredDate()),
+						Duration.between(detailedEntity.getStartTime(), detailedEntity.getEndTime()).toMillis());
+			} catch (CradleStorageException e) {
+				logger.error("Could not update max length for event batch with date {}", detailedEntity.getStoredDate());
+				throw new CradleStorageException("Could not update max length for event batch", e);
+			}
+
+			futures.add(storeTimeEvent(detailedEntity));
 			futures.add(storeDateTime(new DateTimeEventEntity(event, instanceUuid)));
 			futures.add(storeChildrenDates(new ChildrenDatesEventEntity(event, instanceUuid)));
 		}
-		catch (IOException e)
+		catch (IOException | CradleStorageException e)
 		{
 			CompletableFuture<Void> error = new CompletableFuture<>();
 			error.completeExceptionally(e);
