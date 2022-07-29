@@ -62,7 +62,7 @@ public class CassandraOperators
 		timeTestEventOperator = dataMapper.timeTestEventOperator(settings.getKeyspace(), settings.getTimeTestEventsTableName());
 		testEventChildrenDatesOperator = dataMapper.testEventChildrenDatesOperator(settings.getKeyspace(), settings.getTestEventsChildrenDatesTableName());
 		intervalOperator = dataMapper.intervalOperator(settings.getKeyspace(), settings.getIntervalsTableName());
-		eventBatchMaxLengthOperator = dataMapper.eventBatchMaxLengthOperator(settings.getKeyspace(), settings.getIntervalsTableName());
+		eventBatchMaxLengthOperator = dataMapper.eventBatchMaxLengthOperator(settings.getKeyspace(), settings.getEventBatchMaxLengthsTableName());
 
 
 		messageBatchConverter = dataMapper.detailedMessageBatchConverter();

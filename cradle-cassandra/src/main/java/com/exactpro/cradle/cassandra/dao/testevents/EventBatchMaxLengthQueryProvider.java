@@ -9,6 +9,7 @@ import com.datastax.oss.driver.api.querybuilder.insert.Insert;
 
 import java.time.LocalDate;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
@@ -26,7 +27,7 @@ public class EventBatchMaxLengthQueryProvider{
 
 
 
-    EventBatchMaxLengthEntity writeMaxLength (UUID uuid, LocalDate startDate, long maxBatchLength, Function<BoundStatementBuilder, BoundStatementBuilder> attributes) {
+    CompletableFuture<EventBatchMaxLengthEntity> writeMaxLength (UUID uuid, LocalDate startDate, long maxBatchLength, Function<BoundStatementBuilder, BoundStatementBuilder> attributes) {
 
         BoundStatement insertStatement = getInsertBoundStatement(uuid, startDate, maxBatchLength, attributes);
         BoundStatement updateStatement = getUpdateBoundStatement(uuid, startDate, maxBatchLength, attributes);
@@ -36,17 +37,19 @@ public class EventBatchMaxLengthQueryProvider{
         batchStatement.add(insertStatement);
         batchStatement.add(updateStatement);
 
-        var iterable = session.execute(batchStatement).map(helper::get);
+        return session.executeAsync(batchStatement).toCompletableFuture()
+                .thenApply(r -> r.map(helper::get))
+                .thenApply(asyncPagingIterable -> {
+                    EventBatchMaxLengthEntity entity = null;
 
-        EventBatchMaxLengthEntity entity = null;
+                    for (EventBatchMaxLengthEntity el : asyncPagingIterable.currentPage()) {
+                        if (entity == null || entity.getMaxBatchLength() < el.getMaxBatchLength()) {
+                            entity = el;
+                        }
+                    }
 
-        for (EventBatchMaxLengthEntity el : iterable) {
-            if (entity == null || entity.getMaxBatchLength() < el.getMaxBatchLength()) {
-                entity = el;
-            }
-        }
-
-        return entity;
+                    return entity;
+                });
     }
 
     private BoundStatement getInsertBoundStatement(UUID uuid, LocalDate startDate, long maxBatchLength, Function<BoundStatementBuilder, BoundStatementBuilder> attributes) {

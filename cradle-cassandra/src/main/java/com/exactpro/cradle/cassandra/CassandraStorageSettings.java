@@ -35,7 +35,9 @@ public class CassandraStorageSettings
 			ROOT_TEST_EVENTS_TABLE_DEFAULT_NAME = "root_test_events",
 			TEST_EVENTS_CHILDREN_TABLE_DEFAULT_NAME = "test_events_children",
 			TEST_EVENTS_CHILDREN_DATES_TABLE_DEFAULT_NAME = "test_events_children_dates",
-			INTERVALS_TABLE_DEFAULT_NAME = "intervals";
+			INTERVALS_TABLE_DEFAULT_NAME = "intervals",
+			EVENT_BATCH_MAX_LENGTH_TABLE_DEFAULT_NAME = "event_batch_max_lengths";
+
 	public static final long DEFAULT_TIMEOUT = 5000,
 			DEFAULT_MAX_MESSAGE_BATCH_SIZE = StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE,
 			DEFAULT_MAX_EVENT_BATCH_SIZE = StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE;
@@ -54,7 +56,8 @@ public class CassandraStorageSettings
 			testEventsChildrenTableName,
 			testEventsChildrenDatesTableName,
 			timeIntervalsTableName,
-			intervalsTableName;
+			intervalsTableName,
+			eventBatchMaxLengthsTableName;
 	private final NetworkTopologyStrategy networkTopologyStrategy;
 	private long timeout;
 	private ConsistencyLevel writeConsistencyLevel,
@@ -78,6 +81,7 @@ public class CassandraStorageSettings
 		this.testEventsChildrenTableName = TEST_EVENTS_CHILDREN_TABLE_DEFAULT_NAME;
 		this.testEventsChildrenDatesTableName = TEST_EVENTS_CHILDREN_DATES_TABLE_DEFAULT_NAME;
 		this.intervalsTableName = INTERVALS_TABLE_DEFAULT_NAME;
+		this.eventBatchMaxLengthsTableName = EVENT_BATCH_MAX_LENGTH_TABLE_DEFAULT_NAME;
 		this.keyspace = keyspace;
 		this.networkTopologyStrategy = networkTopologyStrategy;
 		this.timeout = timeout;
@@ -291,5 +295,13 @@ public class CassandraStorageSettings
 
 	public void setEventBatchLengthMillis(long eventBatchLengthMillis) {
 		this.eventBatchLengthMillis = eventBatchLengthMillis;
+	}
+
+	public String getEventBatchMaxLengthsTableName() {
+		return eventBatchMaxLengthsTableName;
+	}
+
+	public void setEventBatchMaxLengthsTableName(String eventBatchMaxLengthsTableName) {
+		this.eventBatchMaxLengthsTableName = eventBatchMaxLengthsTableName;
 	}
 }

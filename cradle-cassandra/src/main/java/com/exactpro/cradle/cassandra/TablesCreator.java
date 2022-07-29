@@ -56,6 +56,8 @@ public class TablesCreator
 		createTestEventsChildrenDatesTable();
 		createTimeTestEventsTable();
 		createIntervalsTable();
+		createEventBatchMaxLengthsTable();
+
 		createIndexes();
 	}
 
@@ -250,6 +252,22 @@ public class TablesCreator
 				.withColumn(INTERVAL_LAST_UPDATE_TIME, DataTypes.TIME)
 				.withColumn(RECOVERY_STATE_JSON, DataTypes.TEXT)
 				.withColumn(INTERVAL_PROCESSED, DataTypes.BOOLEAN);
+
+		exec.executeQuery(create.asCql(), true);
+		logger.info("Table '{}' has been created", tableName);
+	}
+
+	public void createEventBatchMaxLengthsTable () throws IOException {
+		String tableName = settings.getEventBatchMaxLengthsTableName();
+
+		if (isTableExists(tableName)) {
+			return;
+		}
+
+		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
+				.withPartitionKey(START_DATE, DataTypes.DATE)
+				.withColumn(MAX_BATCH_LENGTH, DataTypes.BIGINT);
 
 		exec.executeQuery(create.asCql(), true);
 		logger.info("Table '{}' has been created", tableName);

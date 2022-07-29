@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 public class EventBatchLengthCache {
@@ -56,15 +56,18 @@ public class EventBatchLengthCache {
         this.defaultBatchLengthMillis = defaultBatchLengthMillis;
     }
 
-    public long updateMaxLength (CacheKey key, long length) throws CradleStorageException {
-        long cachedLength;
-        try {
-            cachedLength = lengthsCache.get(key, () -> operator.writeMaxLength(key.getUuid(), key.getDate(), length, writeAttrs).getMaxBatchLength());
-        } catch (ExecutionException e) {
-            throw new CradleStorageException("Could not update batch length ", e);
+    public CompletableFuture<Void> updateMaxLength (CacheKey key, long length) throws CradleStorageException {
+        Long cached = lengthsCache.getIfPresent(key);
+
+        if (cached != null && cached > length) {
+            return CompletableFuture.completedFuture(null);
         }
 
-        return cachedLength;
+        return operator.writeMaxLength(key.getUuid(), key.getDate(), length, writeAttrs)
+                .thenApply(el -> {
+                    lengthsCache.put(key, el.getMaxBatchLength());
+                    return null;
+                });
     }
 
     public long getMaxLength (CacheKey key) {

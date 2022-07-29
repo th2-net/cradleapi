@@ -7,13 +7,14 @@ import com.datastax.oss.driver.api.mapper.annotations.Select;
 
 import java.time.LocalDate;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 @Dao
 public interface EventBatchMaxLengthOperator {
 
     @QueryProvider(providerClass = EventBatchMaxLengthQueryProvider.class, entityHelpers = EventBatchMaxLengthEntity.class)
-    EventBatchMaxLengthEntity writeMaxLength (UUID uuid, LocalDate startDate, long maxBatchLength, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+    CompletableFuture<EventBatchMaxLengthEntity> writeMaxLength (UUID uuid, LocalDate startDate, long maxBatchLength, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
     @Select
     EventBatchMaxLengthEntity getMaxLength (UUID uuid, LocalDate localDate, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }
