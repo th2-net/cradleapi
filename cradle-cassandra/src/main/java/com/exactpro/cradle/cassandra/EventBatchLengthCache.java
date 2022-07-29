@@ -16,7 +16,7 @@ import java.util.function.Function;
 
 public class EventBatchLengthCache {
 
-    private Logger logger = LoggerFactory.getLogger(EventBatchLengthCache.class);
+    private final Logger logger = LoggerFactory.getLogger(EventBatchLengthCache.class);
 
     public static class CacheKey {
         private final UUID uuid;
@@ -38,9 +38,9 @@ public class EventBatchLengthCache {
 
     private final Cache<CacheKey, Long> lengthsCache;
     private final EventBatchMaxLengthOperator operator;
-    Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
-    Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs;
-    long defaultBatchLengthMillis;
+    private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
+    private final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs;
+    private final long defaultBatchLengthMillis;
 
 
     public EventBatchLengthCache(
@@ -64,13 +64,7 @@ public class EventBatchLengthCache {
             throw new CradleStorageException("Could not update batch length ", e);
         }
 
-        long newMaxLength = length;
-        if (cachedLength < length) {
-            newMaxLength = operator.updateMaxLength(key.getUuid(), key.getDate(), length, writeAttrs).getMaxBatchLength();
-            lengthsCache.put(key, newMaxLength);
-        }
-
-        return newMaxLength;
+        return cachedLength;
     }
 
     public long getMaxLength (CacheKey key) {
