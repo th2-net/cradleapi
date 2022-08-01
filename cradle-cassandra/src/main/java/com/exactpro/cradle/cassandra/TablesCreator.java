@@ -56,7 +56,7 @@ public class TablesCreator
 		createTestEventsChildrenDatesTable();
 		createTimeTestEventsTable();
 		createIntervalsTable();
-		createEventBatchMaxLengthsTable();
+		createEventBatchMaxDurationsTable();
 
 		createIndexes();
 	}
@@ -257,8 +257,8 @@ public class TablesCreator
 		logger.info("Table '{}' has been created", tableName);
 	}
 
-	public void createEventBatchMaxLengthsTable () throws IOException {
-		String tableName = settings.getEventBatchMaxLengthsTableName();
+	public void createEventBatchMaxDurationsTable() throws IOException {
+		String tableName = settings.getEventBatchMaxDurationsTableName();
 
 		if (isTableExists(tableName)) {
 			return;
@@ -267,7 +267,7 @@ public class TablesCreator
 		CreateTable create = SchemaBuilder.createTable(settings.getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(INSTANCE_ID, DataTypes.UUID)
 				.withPartitionKey(START_DATE, DataTypes.DATE)
-				.withColumn(MAX_BATCH_LENGTH, DataTypes.BIGINT);
+				.withColumn(MAX_BATCH_DURATION, DataTypes.BIGINT);
 
 		exec.executeQuery(create.asCql(), true);
 		logger.info("Table '{}' has been created", tableName);

@@ -36,15 +36,15 @@ public class CassandraStorageSettings
 			TEST_EVENTS_CHILDREN_TABLE_DEFAULT_NAME = "test_events_children",
 			TEST_EVENTS_CHILDREN_DATES_TABLE_DEFAULT_NAME = "test_events_children_dates",
 			INTERVALS_TABLE_DEFAULT_NAME = "intervals",
-			EVENT_BATCH_MAX_LENGTH_TABLE_DEFAULT_NAME = "event_batch_max_lengths";
+			EVENT_BATCH_MAX_DURATION_TABLE_DEFAULT_NAME = "event_batch_max_durations";
 
 	public static final long DEFAULT_TIMEOUT = 5000,
 			DEFAULT_MAX_MESSAGE_BATCH_SIZE = StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE,
 			DEFAULT_MAX_EVENT_BATCH_SIZE = StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE;
 	public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
 	public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1;
-	public static final int DEFAULT_EVENT_BATCH_LENGTH_CACHE_SIZE = 5000;
-	public static final long DEFAULT_EVENT_BATCH_LENGTH_MILLIS = 5000;
+	public static final int DEFAULT_EVENT_BATCH_DURATION_CACHE_SIZE = 5000;
+	public static final long DEFAULT_EVENT_BATCH_DURATION_MILLIS = 5000;
 
 	private final String keyspace;
 	private String messagesTableName,
@@ -57,7 +57,7 @@ public class CassandraStorageSettings
 			testEventsChildrenDatesTableName,
 			timeIntervalsTableName,
 			intervalsTableName,
-			eventBatchMaxLengthsTableName;
+			eventBatchMaxDurationsTableName;
 	private final NetworkTopologyStrategy networkTopologyStrategy;
 	private long timeout;
 	private ConsistencyLevel writeConsistencyLevel,
@@ -66,8 +66,8 @@ public class CassandraStorageSettings
 	private long maxMessageBatchSize,
 			maxTestEventBatchSize;
 
-	private int eventBatchLengthCacheSize;
-	private long eventBatchLengthMillis;
+	private int eventBatchDurationCacheSize;
+	private long eventBatchDurationMillis;
 
 	public CassandraStorageSettings(String keyspace, NetworkTopologyStrategy networkTopologyStrategy,
 			long timeout, ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel)
@@ -81,7 +81,7 @@ public class CassandraStorageSettings
 		this.testEventsChildrenTableName = TEST_EVENTS_CHILDREN_TABLE_DEFAULT_NAME;
 		this.testEventsChildrenDatesTableName = TEST_EVENTS_CHILDREN_DATES_TABLE_DEFAULT_NAME;
 		this.intervalsTableName = INTERVALS_TABLE_DEFAULT_NAME;
-		this.eventBatchMaxLengthsTableName = EVENT_BATCH_MAX_LENGTH_TABLE_DEFAULT_NAME;
+		this.eventBatchMaxDurationsTableName = EVENT_BATCH_MAX_DURATION_TABLE_DEFAULT_NAME;
 		this.keyspace = keyspace;
 		this.networkTopologyStrategy = networkTopologyStrategy;
 		this.timeout = timeout;
@@ -90,8 +90,8 @@ public class CassandraStorageSettings
 		this.keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
 		this.maxMessageBatchSize = DEFAULT_MAX_MESSAGE_BATCH_SIZE;
 		this.maxTestEventBatchSize = DEFAULT_MAX_EVENT_BATCH_SIZE;
-		this.eventBatchLengthCacheSize = DEFAULT_EVENT_BATCH_LENGTH_CACHE_SIZE;
-		this.eventBatchLengthMillis = DEFAULT_EVENT_BATCH_LENGTH_MILLIS;
+		this.eventBatchDurationCacheSize = DEFAULT_EVENT_BATCH_DURATION_CACHE_SIZE;
+		this.eventBatchDurationMillis = DEFAULT_EVENT_BATCH_DURATION_MILLIS;
 	}
 
 	public CassandraStorageSettings(String keyspace, NetworkTopologyStrategy networkTopology)
@@ -281,27 +281,27 @@ public class CassandraStorageSettings
 		this.maxTestEventBatchSize = maxTestEventBatchSize;
 	}
 
-	public int getEventBatchLengthCacheSize() {
-		return eventBatchLengthCacheSize;
+	public int getEventBatchDurationCacheSize() {
+		return eventBatchDurationCacheSize;
 	}
 
-	public void setEventBatchLengthCacheSize(int eventBatchLengthCacheSize) {
-		this.eventBatchLengthCacheSize = eventBatchLengthCacheSize;
+	public void setEventBatchDurationCacheSize(int eventBatchDurationCacheSize) {
+		this.eventBatchDurationCacheSize = eventBatchDurationCacheSize;
 	}
 
-	public long getEventBatchLengthMillis() {
-		return eventBatchLengthMillis;
+	public long getEventBatchDurationMillis() {
+		return eventBatchDurationMillis;
 	}
 
-	public void setEventBatchLengthMillis(long eventBatchLengthMillis) {
-		this.eventBatchLengthMillis = eventBatchLengthMillis;
+	public void setEventBatchDurationMillis(long eventBatchDurationMillis) {
+		this.eventBatchDurationMillis = eventBatchDurationMillis;
 	}
 
-	public String getEventBatchMaxLengthsTableName() {
-		return eventBatchMaxLengthsTableName;
+	public String getEventBatchMaxDurationsTableName() {
+		return eventBatchMaxDurationsTableName;
 	}
 
-	public void setEventBatchMaxLengthsTableName(String eventBatchMaxLengthsTableName) {
-		this.eventBatchMaxLengthsTableName = eventBatchMaxLengthsTableName;
+	public void setEventBatchMaxDurationsTableName(String eventBatchMaxDurationsTableName) {
+		this.eventBatchMaxDurationsTableName = eventBatchMaxDurationsTableName;
 	}
 }

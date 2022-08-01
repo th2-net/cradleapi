@@ -1,18 +1,16 @@
 package com.exactpro.cradle.cassandra.dao.testevents;
 
-import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.UUID;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 
 @Entity
-public class EventBatchMaxLengthEntity {
+public class EventBatchMaxDurationEntity {
 
     @PartitionKey(0)
     @CqlName(INSTANCE_ID)
@@ -22,17 +20,17 @@ public class EventBatchMaxLengthEntity {
     @CqlName(START_DATE)
     private LocalDate startDate;
 
-    @CqlName(MAX_BATCH_LENGTH)
-    private long maxBatchLength;
+    @CqlName(MAX_BATCH_DURATION)
+    private long maxBatchDuration;
 
-    public EventBatchMaxLengthEntity() {
+    public EventBatchMaxDurationEntity() {
 
     }
 
-    public EventBatchMaxLengthEntity(UUID instanceId, LocalDate startDate, long maxBatchLength) {
+    public EventBatchMaxDurationEntity(UUID instanceId, LocalDate startDate, long maxBatchDuration) {
         this.instanceId = instanceId;
         this.startDate = startDate;
-        this.maxBatchLength = maxBatchLength;
+        this.maxBatchDuration = maxBatchDuration;
     }
 
     public UUID getInstanceId() {
@@ -51,11 +49,11 @@ public class EventBatchMaxLengthEntity {
         this.startDate = startDate;
     }
 
-    public long getMaxBatchLength() {
-        return maxBatchLength;
+    public long getMaxBatchDuration() {
+        return maxBatchDuration;
     }
 
-    public void setMaxBatchLength(long maxBatchLength) {
-        this.maxBatchLength = maxBatchLength;
+    public void setMaxBatchDuration(long maxBatchDuration) {
+        this.maxBatchDuration = maxBatchDuration;
     }
 }

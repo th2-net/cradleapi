@@ -27,7 +27,7 @@ import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
 import com.exactpro.cradle.cassandra.dao.messages.converters.DetailedMessageBatchConverter;
 import com.exactpro.cradle.cassandra.dao.messages.converters.TimeMessageConverter;
-import com.exactpro.cradle.cassandra.dao.testevents.EventBatchMaxLengthOperator;
+import com.exactpro.cradle.cassandra.dao.testevents.EventBatchMaxDurationOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenDatesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventOperator;
@@ -75,5 +75,5 @@ public interface CassandraDataMapper
 	@DaoFactory
 	IntervalConverter intervalConverter();
 	@DaoFactory
-	EventBatchMaxLengthOperator  eventBatchMaxLengthOperator(@DaoKeyspace String keyspace, @DaoTable String eventBatchMaxLengthTable);
+    EventBatchMaxDurationOperator eventBatchMaxLengthOperator(@DaoKeyspace String keyspace, @DaoTable String eventBatchMaxLengthTable);
 }

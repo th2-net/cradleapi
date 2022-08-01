@@ -24,7 +24,7 @@ import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
 import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
 import com.exactpro.cradle.cassandra.dao.messages.converters.DetailedMessageBatchConverter;
 import com.exactpro.cradle.cassandra.dao.messages.converters.TimeMessageConverter;
-import com.exactpro.cradle.cassandra.dao.testevents.EventBatchMaxLengthOperator;
+import com.exactpro.cradle.cassandra.dao.testevents.EventBatchMaxDurationOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenDatesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventOperator;
@@ -51,7 +51,7 @@ public class CassandraOperators
 	private final DateTimeEventEntityConverter dateTimeEventEntityConverter;
 	private final DateEventEntityConverter dateEventEntityConverter;
 
-	private final EventBatchMaxLengthOperator eventBatchMaxLengthOperator;
+	private final EventBatchMaxDurationOperator eventBatchMaxDurationOperator;
 
 	public CassandraOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings)
 	{
@@ -62,7 +62,7 @@ public class CassandraOperators
 		timeTestEventOperator = dataMapper.timeTestEventOperator(settings.getKeyspace(), settings.getTimeTestEventsTableName());
 		testEventChildrenDatesOperator = dataMapper.testEventChildrenDatesOperator(settings.getKeyspace(), settings.getTestEventsChildrenDatesTableName());
 		intervalOperator = dataMapper.intervalOperator(settings.getKeyspace(), settings.getIntervalsTableName());
-		eventBatchMaxLengthOperator = dataMapper.eventBatchMaxLengthOperator(settings.getKeyspace(), settings.getEventBatchMaxLengthsTableName());
+		eventBatchMaxDurationOperator = dataMapper.eventBatchMaxLengthOperator(settings.getKeyspace(), settings.getEventBatchMaxDurationsTableName());
 
 
 		messageBatchConverter = dataMapper.detailedMessageBatchConverter();
@@ -148,7 +148,7 @@ public class CassandraOperators
 		return dateEventEntityConverter;
 	}
 
-	public EventBatchMaxLengthOperator getEventBatchMaxLengthOperator() {
-		return eventBatchMaxLengthOperator;
+	public EventBatchMaxDurationOperator getEventBatchMaxLengthOperator() {
+		return eventBatchMaxDurationOperator;
 	}
 }

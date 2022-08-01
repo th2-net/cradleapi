@@ -91,7 +91,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 	private IntervalsWorker intervalsWorker;
 
-	private EventBatchLengthCache eventBatchLengthCache;
+	private EventBatchDurationCache eventBatchDurationCache;
 
 	public CassandraCradleStorage(CassandraConnection connection, CassandraStorageSettings settings)
 	{
@@ -171,11 +171,11 @@ public class CassandraCradleStorage extends CradleStorage
 			intervalsWorker =
 					new CassandraIntervalsWorker(semaphore, instanceUuid, writeAttrs, readAttrs, intervalSupplies);
 
-			eventBatchLengthCache = new EventBatchLengthCache(ops.getEventBatchMaxLengthOperator(),
+			eventBatchDurationCache = new EventBatchDurationCache(ops.getEventBatchMaxLengthOperator(),
 					readAttrs,
 					writeAttrs,
-					settings.getEventBatchLengthCacheSize(),
-					settings.getEventBatchLengthMillis());
+					settings.getEventBatchDurationCacheSize(),
+					settings.getEventBatchDurationMillis());
 
 			return instanceUuid.toString();
 		}
@@ -285,16 +285,18 @@ public class CassandraCradleStorage extends CradleStorage
 		try
 		{
 			DetailedTestEventEntity detailedEntity = new DetailedTestEventEntity(event, instanceUuid);
+			CompletableFuture<Void> updateMaxDuration;
 			try {
-				eventBatchLengthCache.updateMaxLength(
-						new EventBatchLengthCache.CacheKey(instanceUuid, detailedEntity.getStoredDate()),
+				updateMaxDuration =  eventBatchDurationCache.updateMaxDuration(
+						new EventBatchDurationCache.CacheKey(instanceUuid, detailedEntity.getStartDate()),
 						Duration.between(detailedEntity.getStartTime(), detailedEntity.getEndTime()).toMillis());
 			} catch (CradleStorageException e) {
-				logger.error("Could not update max length for event batch with date {}", detailedEntity.getStoredDate());
+				logger.error("Could not update max length for event batch with date {}", detailedEntity.getStartDate());
 				throw new CradleStorageException("Could not update max length for event batch", e);
 			}
 
 			futures.add(storeTimeEvent(detailedEntity));
+			futures.add(updateMaxDuration);
 			futures.add(storeDateTime(new DateTimeEventEntity(event, instanceUuid)));
 			futures.add(storeChildrenDates(new ChildrenDatesEventEntity(event, instanceUuid)));
 		}
@@ -668,10 +670,10 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsAsync(StoredTestEventId parentId,
 			Instant from, Instant to) throws CradleStorageException
 	{
-		long maxBatchLengthMillis = eventBatchLengthCache.getMaxLength(
-				new EventBatchLengthCache.CacheKey(instanceUuid, LocalDateTime.ofInstant(from, TIMEZONE_OFFSET).toLocalDate()));
+		long maxBatchDurationMillis = eventBatchDurationCache.getMaxDuration(
+				new EventBatchDurationCache.CacheKey(instanceUuid, LocalDateTime.ofInstant(from, TIMEZONE_OFFSET).toLocalDate()));
 
-		TestEventsQueryParams params = new TestEventsQueryParams(parentId, from, to, maxBatchLengthMillis);
+		TestEventsQueryParams params = new TestEventsQueryParams(parentId, from, to, maxBatchDurationMillis);
 		String queryInfo = String.format("get %s from range %s..%s",
 				parentId == null ? "root" : "child test events of '" + parentId + "'", from, to);
 
@@ -827,10 +829,10 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsMetadataAsync(
 			StoredTestEventId parentId, Instant from, Instant to) throws CradleStorageException
 	{
-		long maxBatchLengthMillis = eventBatchLengthCache.getMaxLength(
-				new EventBatchLengthCache.CacheKey(instanceUuid, LocalDateTime.ofInstant(from, TIMEZONE_OFFSET).toLocalDate()));
+		long maxBatchDurationMillis = eventBatchDurationCache.getMaxDuration(
+				new EventBatchDurationCache.CacheKey(instanceUuid, LocalDateTime.ofInstant(from, TIMEZONE_OFFSET).toLocalDate()));
 
-		TestEventsQueryParams params = new TestEventsQueryParams(parentId, from, to, maxBatchLengthMillis);
+		TestEventsQueryParams params = new TestEventsQueryParams(parentId, from, to, maxBatchDurationMillis);
 		String queryInfo = String.format("get %s from range %s..%s",
 				parentId == null ? "root" : "child test events' metadata of '" + parentId + "'", from, to);
 
@@ -890,11 +892,11 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsAsync(Instant from, Instant to)
 			throws CradleStorageException
 	{
-		long maxBatchLengthMillis = eventBatchLengthCache.getMaxLength(
-				new EventBatchLengthCache.CacheKey(instanceUuid, LocalDateTime.ofInstant(from, TIMEZONE_OFFSET).toLocalDate()));
+		long maxBatchDurationMillis = eventBatchDurationCache.getMaxDuration(
+				new EventBatchDurationCache.CacheKey(instanceUuid, LocalDateTime.ofInstant(from, TIMEZONE_OFFSET).toLocalDate()));
 
 
-		TestEventsQueryParams params = new TestEventsQueryParams(from, to, maxBatchLengthMillis);
+		TestEventsQueryParams params = new TestEventsQueryParams(from, to, maxBatchDurationMillis);
 		String queryInfo = String.format("get test events from range %s..%s", from, to);
 
 		return selectExecutor.executeMultiRowResultQuery(
@@ -909,11 +911,11 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsMetadataAsync(Instant from,
 			Instant to) throws CradleStorageException
 	{
-		long maxBatchLengthMillis = eventBatchLengthCache.getMaxLength(
-				new EventBatchLengthCache.CacheKey(instanceUuid, LocalDateTime.ofInstant(from, TIMEZONE_OFFSET).toLocalDate()));
+		long maxBatchDurationMillis = eventBatchDurationCache.getMaxDuration(
+				new EventBatchDurationCache.CacheKey(instanceUuid, LocalDateTime.ofInstant(from, TIMEZONE_OFFSET).toLocalDate()));
 
 
-		TestEventsQueryParams params = new TestEventsQueryParams(from, to, maxBatchLengthMillis);
+		TestEventsQueryParams params = new TestEventsQueryParams(from, to, maxBatchDurationMillis);
 		String queryInfo = String.format("get test events' metadata from range %s..%s", from, to);
 
 		return selectExecutor.executeMultiRowResultQuery(() ->
