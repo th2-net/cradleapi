@@ -68,7 +68,7 @@ public class EventBatchDurationCache {
         }
 
         return operator.writeMaxDuration(key.getUuid(), key.getDate(), duration, writeAttrs)
-                .thenAcceptAsync((res) -> operator.updateMaxDuration(key.getUuid(), key.getDate(), duration, writeAttrs));
+                .thenAcceptAsync((res) -> operator.updateMaxDuration(key.getUuid(), key.getDate(), duration, duration, writeAttrs));
     }
 
     public long getMaxDuration(CacheKey key) {

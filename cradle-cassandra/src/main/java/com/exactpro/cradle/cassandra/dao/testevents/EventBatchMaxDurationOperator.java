@@ -24,8 +24,8 @@ public interface EventBatchMaxDurationOperator {
 
     @Query("UPDATE ${qualifiedTableId} SET " + MAX_BATCH_DURATION + "= :duration "
             + "WHERE " + INSTANCE_ID + "=:uuid AND " + START_DATE + "= :startDate "
-            + "IF " + MAX_BATCH_DURATION + "<:duration")
-    void updateMaxDuration(UUID uuid, LocalDate startDate, Long duration, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+            + "IF " + MAX_BATCH_DURATION + "<:maxDuration")
+    void updateMaxDuration(UUID uuid, LocalDate startDate, Long duration, Long maxDuration, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
     @Select
    EventBatchMaxDurationEntity getMaxDuration(UUID uuid, LocalDate localDate, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
