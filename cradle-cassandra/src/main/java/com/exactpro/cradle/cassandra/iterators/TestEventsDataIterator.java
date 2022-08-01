@@ -35,6 +35,7 @@ public class TestEventsDataIterator extends ConvertingPagedIterator<StoredTestEv
 
 	private final CradleObjectsFactory objectsFactory;
 	private final Instant actualFrom;
+	private StoredTestEventWrapper preFetchedElement;
 
 	public TestEventsDataIterator(MappedAsyncPagingIterable<TestEventEntity> rows,
 			PagingSupplies pagingSupplies, TestEventConverter converter,
@@ -45,15 +46,48 @@ public class TestEventsDataIterator extends ConvertingPagedIterator<StoredTestEv
 		this.actualFrom = actualFrom;
 	}
 
-	@Override
-	public StoredTestEventWrapper next() {
-		StoredTestEventWrapper rtn = super.next();
-		while (hasNext() && rtn.getStartTimestamp().isBefore(actualFrom)) {
-			logger.debug("Skipping event with start timestamp {}, actual request was from {}", rtn.getStartTimestamp(), actualFrom);
-			rtn = super.next();
+
+	private boolean skipToValid() {
+		if (!super.hasNext()) {
+			return false;
 		}
 
-		return rtn;
+		StoredTestEventWrapper nextEl = super.next();
+
+		while (super.hasNext() && nextEl.getStartTimestamp().isBefore(actualFrom)) {
+			logger.debug("Skipping event with start timestamp {}, actual request was from {}", nextEl.getStartTimestamp(), actualFrom);
+			nextEl = super.next();
+		}
+
+		if (nextEl.getStartTimestamp().isBefore(actualFrom)) {
+			return false;
+		}
+
+		preFetchedElement = nextEl;
+
+		return true;
+	}
+
+	@Override
+	public boolean hasNext() {
+		if (preFetchedElement != null) {
+			return true;
+		}
+
+		return skipToValid();
+	}
+
+	@Override
+	public StoredTestEventWrapper next() {
+		if (hasNext()) {
+			StoredTestEventWrapper rtn = preFetchedElement;
+			preFetchedElement = null;
+
+			return rtn;
+		}
+
+		logger.debug("No more elements while calling \"next()\"");
+		return null;
 	}
 
 	@Override
