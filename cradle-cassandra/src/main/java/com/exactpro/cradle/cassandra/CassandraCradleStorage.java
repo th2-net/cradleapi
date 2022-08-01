@@ -1220,7 +1220,7 @@ public class CassandraCradleStorage extends CradleStorage
 			var adjusted = LocalDateTime.ofInstant(from.minusMillis(adjustMillis), TIMEZONE_OFFSET);
 
 			// Adjustment took us to previous partition, get start of current partition
-			if (!original.equals(adjusted)) {
+			if (!original.toLocalDate().equals(adjusted.toLocalDate())) {
 				adjusted = original.toLocalDate().atStartOfDay();
 			}
 
