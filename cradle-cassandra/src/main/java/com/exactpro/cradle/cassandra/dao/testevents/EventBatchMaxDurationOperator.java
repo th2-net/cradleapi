@@ -17,12 +17,12 @@ public interface EventBatchMaxDurationOperator {
 
 
     @Query("INSERT into ${qualifiedTableId} (" + INSTANCE_ID + ", " + START_DATE + ", " + MAX_BATCH_DURATION + ") "
-            + "VALUES (:uuid, :startDate, :maxBatchDuration) "
+            + "VALUES (:uuid, :startDate, :duration) "
             + "IF NOT EXISTS")
-    CompletableFuture<Void> writeMaxDuration(UUID uuid, LocalDate startDate, long maxBatchDuration, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+    CompletableFuture<Void> writeMaxDuration(UUID uuid, LocalDate startDate, long duration, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 
-    @Query("UPDATE ${qualifiedTableId} SET " + MAX_BATCH_DURATION + "= :maxBatchDuration "
+    @Query("UPDATE ${qualifiedTableId} SET " + MAX_BATCH_DURATION + "= :duration "
             + "WHERE " + INSTANCE_ID + "=:uuid AND " + START_DATE + "= :startDate "
             + "IF " + MAX_BATCH_DURATION + "<:duration")
     void updateMaxDuration(UUID uuid, LocalDate startDate, Long duration, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
