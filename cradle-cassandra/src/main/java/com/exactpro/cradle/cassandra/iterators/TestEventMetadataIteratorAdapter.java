@@ -22,6 +22,7 @@ import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventMetadata
 import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 import com.exactpro.cradle.testevents.StoredTestEventMetadata;
 
+import java.time.Instant;
 import java.util.Iterator;
 
 public class TestEventMetadataIteratorAdapter implements Iterable<StoredTestEventMetadata>
@@ -30,21 +31,23 @@ public class TestEventMetadataIteratorAdapter implements Iterable<StoredTestEven
 	private final PagingSupplies pagingSupplies;
 	private final TestEventMetadataConverter converter;
 	private final String queryInfo;
+	private final Instant actualFrom;
 
 	public TestEventMetadataIteratorAdapter(
 			MappedAsyncPagingIterable<TestEventMetadataEntity> rows,
 			PagingSupplies pagingSupplies,
-			TestEventMetadataConverter converter, String queryInfo)
+			TestEventMetadataConverter converter, Instant actualFrom, String queryInfo)
 	{
 		this.rows = rows;
 		this.pagingSupplies = pagingSupplies;
 		this.converter = converter;
+		this.actualFrom = actualFrom;
 		this.queryInfo = queryInfo;
 	}
 
 	@Override
 	public Iterator<StoredTestEventMetadata> iterator()
 	{
-		return new TestEventsMetadataIterator(rows, pagingSupplies, converter, queryInfo);
+		return new TestEventsMetadataIterator(rows, pagingSupplies, converter, actualFrom, queryInfo);
 	}
 }

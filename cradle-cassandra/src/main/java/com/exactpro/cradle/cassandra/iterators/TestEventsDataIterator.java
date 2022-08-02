@@ -47,7 +47,6 @@ public class TestEventsDataIterator extends ConvertingPagedIterator<StoredTestEv
 		this.actualFrom = actualFrom;
 	}
 
-
 	private boolean skipToValid() {
 		if (!super.hasNext()) {
 			return false;
