@@ -26,6 +26,7 @@ import com.exactpro.cradle.cassandra.dao.messages.TimeMessageOperator;
 import com.exactpro.cradle.cassandra.dao.messages.converters.DetailedMessageBatchConverter;
 import com.exactpro.cradle.cassandra.dao.messages.converters.GroupedMessageBatchConverter;
 import com.exactpro.cradle.cassandra.dao.messages.converters.TimeMessageConverter;
+import com.exactpro.cradle.cassandra.dao.testevents.EventBatchMaxDurationOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventChildrenDatesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.TimeTestEventOperator;
@@ -36,7 +37,7 @@ import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventMetadata
 
 public class CassandraOperators
 {
-	private final MessageBatchOperator messageBatchOperator, 
+	private final MessageBatchOperator messageBatchOperator,
 			processedMessageBatchOperator;
 	private final GroupedMessageBatchOperator groupedMessageBatchOperator;
 	private final TimeMessageOperator timeMessageOperator;
@@ -44,6 +45,8 @@ public class CassandraOperators
 	private final TimeTestEventOperator timeTestEventOperator;
 	private final TestEventChildrenDatesOperator testEventChildrenDatesOperator;
 	private final IntervalOperator intervalOperator;
+	private final EventBatchMaxDurationOperator eventBatchMaxDurationOperator;
+
 	private final DetailedMessageBatchConverter messageBatchConverter;
 	private final GroupedMessageBatchConverter groupedMessageBatchConverter;
 	private final TestEventConverter testEventConverter;
@@ -74,6 +77,7 @@ public class CassandraOperators
 		timeMessageConverter = dataMapper.timeMessageConverter();
 		dateTimeEventEntityConverter = dataMapper.dateTimeEventEntityConverter();
 		dateEventEntityConverter = dataMapper.dateEventEntityConverter();
+		eventBatchMaxDurationOperator = dataMapper.eventBatchMaxDurationOperator(settings.getKeyspace(), settings.getEventBatchMaxDurationsTableName());
 	}
 
 	public MessageBatchOperator getMessageBatchOperator()
@@ -157,5 +161,9 @@ public class CassandraOperators
 	public DateEventEntityConverter getDateEventEntityConverter()
 	{
 		return dateEventEntityConverter;
+	}
+
+	public EventBatchMaxDurationOperator getEventBatchMaxDurationOperator() {
+		return eventBatchMaxDurationOperator;
 	}
 }
