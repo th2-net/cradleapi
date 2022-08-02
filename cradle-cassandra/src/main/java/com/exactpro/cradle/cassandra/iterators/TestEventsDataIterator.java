@@ -28,10 +28,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.NoSuchElementException;
 
 public class TestEventsDataIterator extends ConvertingPagedIterator<StoredTestEventWrapper, TestEventEntity>
 {
-	private Logger logger = LoggerFactory.getLogger(TestEventsDataIterator.class);
+	private final Logger logger = LoggerFactory.getLogger(TestEventsDataIterator.class);
 
 	private final CradleObjectsFactory objectsFactory;
 	private final Instant actualFrom;
@@ -54,12 +55,12 @@ public class TestEventsDataIterator extends ConvertingPagedIterator<StoredTestEv
 
 		StoredTestEventWrapper nextEl = super.next();
 
-		while (super.hasNext() && nextEl.getStartTimestamp().isBefore(actualFrom)) {
-			logger.debug("Skipping event with start timestamp {}, actual request was from {}", nextEl.getStartTimestamp(), actualFrom);
+		while (super.hasNext() && nextEl.getEndTimestamp().isBefore(actualFrom)) {
+			logger.trace("Skipping event with start timestamp {}, actual request was from {}", nextEl.getStartTimestamp(), actualFrom);
 			nextEl = super.next();
 		}
 
-		if (nextEl.getStartTimestamp().isBefore(actualFrom)) {
+		if (nextEl.getEndTimestamp().isBefore(actualFrom)) {
 			return false;
 		}
 
@@ -86,8 +87,7 @@ public class TestEventsDataIterator extends ConvertingPagedIterator<StoredTestEv
 			return rtn;
 		}
 
-		logger.debug("No more elements while calling \"next()\"");
-		return null;
+		throw new NoSuchElementException("There are no more elements in iterator");
 	}
 
 	@Override
