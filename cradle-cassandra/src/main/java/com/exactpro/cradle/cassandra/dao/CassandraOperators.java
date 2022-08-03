@@ -17,6 +17,7 @@
 package com.exactpro.cradle.cassandra.dao;
 
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
+import com.exactpro.cradle.cassandra.EventBatchDurationCache;
 import com.exactpro.cradle.cassandra.dao.books.*;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageSession;
@@ -51,6 +52,7 @@ public class CassandraOperators {
     private final MessageStatisticsOperator messageStatisticsOperator;
     private final EntityStatisticsOperator entityStatisticsOperator;
     private final SessionStatisticsOperator sessionStatisticsOperator;
+    private final EventBatchMaxDurationOperator eventBatchMaxDurationOperator;
 
     private final SessionEntityConverter sessionEntityConverter;
     private final ScopeEntityConverter scopeEntityConverter;
@@ -72,6 +74,7 @@ public class CassandraOperators {
     private final LimitedCache<GroupEntity> groupCache;
     private final LimitedCache<PageGroupEntity> pageGroupCache;
     private final LimitedCache<SessionStatisticsEntity> sessionStatisticsCache;
+    private EventBatchDurationCache eventBatchDurationCache;
 
     public CassandraOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings) {
 
@@ -93,6 +96,7 @@ public class CassandraOperators {
         messageStatisticsOperator = dataMapper.messageStatisticsOperator(keyspace, MessageStatisticsEntity.TABLE_NAME);
         entityStatisticsOperator = dataMapper.entityStatisticsOperator(keyspace, EntityStatisticsEntity.TABLE_NAME);
         sessionStatisticsOperator = dataMapper.sessionStatisticsOperator(keyspace, SessionStatisticsEntity.TABLE_NAME);
+        eventBatchMaxDurationOperator = dataMapper.eventBatchMaxDurationOperator(keyspace, EventBatchMaxDurationEntity.TABLE_NAME);
 
         intervalOperator = dataMapper.intervalOperator(keyspace, IntervalEntity.TABLE_NAME);
 
@@ -116,6 +120,7 @@ public class CassandraOperators {
         scopesCache = new LimitedCache<>(settings.getScopesCacheSize());
         pageScopesCache = new LimitedCache<>(settings.getPageScopesCacheSize());
         sessionStatisticsCache = new LimitedCache<>(settings.getSessionStatisticsCacheSize());
+        eventBatchDurationCache = new EventBatchDurationCache(eventBatchMaxDurationOperator, settings.getEventBatchDurationCacheSize(), settings.getEventBatchDurationMillis());
     }
 
     public BookOperator getBookOperator() {
@@ -172,6 +177,10 @@ public class CassandraOperators {
 
     public SessionStatisticsOperator getSessionStatisticsOperator() {
         return sessionStatisticsOperator;
+    }
+
+    public EventBatchMaxDurationOperator getEventBatchMaxDurationOperator() {
+        return eventBatchMaxDurationOperator;
     }
 
     public SessionEntityConverter getSessionEntityConverter() {
@@ -256,5 +265,9 @@ public class CassandraOperators {
 
     public LimitedCache<PageGroupEntity> getPageGroupCache() {
         return pageGroupCache;
+    }
+
+    public EventBatchDurationCache getEventBatchDurationCache() {
+        return eventBatchDurationCache;
     }
 }

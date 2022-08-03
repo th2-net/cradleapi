@@ -22,7 +22,7 @@ import com.exactpro.cradle.cassandra.connection.NetworkTopologyStrategy;
 import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
 
 public class CassandraStorageSettings {
-    public static final String SCHEMA_VERSION = "5.1.0";
+    public static final String SCHEMA_VERSION = "5.2.0";
     public static final long DEFAULT_TIMEOUT = 5000;
     public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
     public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1,
@@ -36,9 +36,13 @@ public class CassandraStorageSettings {
             DEFAULT_PAGE_SCOPES_CACHE_SIZE = 100,
             DEFAULT_SESSION_STATISTICS_CACHE_SIZE = 10_000,
             DEFAULT_GROUPS_CACHE_SIZE = 10_000,
+            DEFAULT_EVENT_BATCH_DURATION_CACHE_SIZE = 5_000,
             DEFAULT_PAGE_GROUPS_CACHE_SIZE = 10_000,
             DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS = 1000;
-	public static final long DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS = 60000;
+	public static final long DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS = 60000,
+            DEFAULT_EVENT_BATCH_DURATION_MILLIS = 5_000;
+
+
 
     private final NetworkTopologyStrategy networkTopologyStrategy;
     private final long timeout;
@@ -61,11 +65,12 @@ public class CassandraStorageSettings {
             sessionStatisticsCacheSize,
             pageGroupsCacheSize,
             groupsCacheSize,
+            eventBatchDurationCacheSize,
             counterPersistenceInterval;
 
     private SelectExecutionPolicy multiRowResultExecutionPolicy, singleRowResultExecutionPolicy;
 
-	private long bookRefreshIntervalMillis;
+	private long bookRefreshIntervalMillis, eventBatchDurationMillis;
 
     public CassandraStorageSettings() {
         this(null, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
@@ -101,6 +106,8 @@ public class CassandraStorageSettings {
         this.sessionStatisticsCacheSize = DEFAULT_SESSION_STATISTICS_CACHE_SIZE;
         this.pageGroupsCacheSize = DEFAULT_PAGE_GROUPS_CACHE_SIZE;
         this.groupsCacheSize = DEFAULT_GROUPS_CACHE_SIZE;
+        this.eventBatchDurationCacheSize = DEFAULT_EVENT_BATCH_DURATION_CACHE_SIZE;
+        this.eventBatchDurationMillis = DEFAULT_EVENT_BATCH_DURATION_MILLIS;
     }
 
     public CassandraStorageSettings(CassandraStorageSettings settings) {
@@ -131,6 +138,8 @@ public class CassandraStorageSettings {
         this.sessionStatisticsCacheSize = settings.getSessionStatisticsCacheSize();
         this.counterPersistenceInterval = settings.getCounterPersistenceInterval();
 		this.bookRefreshIntervalMillis = settings.getBookRefreshIntervalMillis();
+        this.eventBatchDurationMillis = settings.getEventBatchDurationMillis();
+        this.eventBatchDurationCacheSize = settings.getEventBatchDurationCacheSize();
     }
 
 
@@ -318,4 +327,21 @@ public class CassandraStorageSettings {
 	public void setBookRefreshIntervalMillis(long bookRefreshIntervalMillis) {
 		this.bookRefreshIntervalMillis = bookRefreshIntervalMillis;
 	}
+
+    public long getEventBatchDurationMillis() {
+        return eventBatchDurationMillis;
+    }
+
+    public void setEventBatchDurationMillis(long eventBatchDurationMillis) {
+        this.eventBatchDurationMillis = eventBatchDurationMillis;
+    }
+
+    public int getEventBatchDurationCacheSize() {
+        return eventBatchDurationCacheSize;
+    }
+
+    public void setEventBatchDurationCacheSize(int eventBatchDurationCacheSize) {
+        this.eventBatchDurationCacheSize = eventBatchDurationCacheSize;
+    }
+
 }
