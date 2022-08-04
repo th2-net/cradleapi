@@ -154,7 +154,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 			since `createNextFilter` just passes timestamps from previous to next filters
 		 */
 		long duration = eventBatchDurationCache.getMaxDuration(new EventBatchDurationCache.CacheKey(filter.getBookId().getName(), filter.getPageId().getName(), filter.getScope()), readAttrs);
-		FilterForGreater<Instant> newFrom = new FilterForGreater<>(filter.getStartTimestampFrom().getValue().minusMillis(duration));
+		FilterForGreater<Instant> newFrom = FilterForGreater.forGreater(filter.getStartTimestampFrom().getValue().minusMillis(duration));
 
 		String parentId = getParentIdString(filter);
 		return new CassandraTestEventFilter(
