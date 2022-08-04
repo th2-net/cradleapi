@@ -79,7 +79,7 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 		createEntityStatistics();
 
 		createSessionStatistics();
-
+		createEventBatchMaxDurations();
 	}
 
 	@Override

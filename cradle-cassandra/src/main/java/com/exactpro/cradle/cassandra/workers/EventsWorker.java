@@ -110,7 +110,7 @@ public class EventsWorker extends Worker
 						getOperators().getEventBatchDurationCache()
 								.updateMaxDuration(
 										new EventBatchDurationCache.CacheKey(entity.getBook(), entity.getPage(), entity.getScope()),
-										Duration.between(entity.getEndTimestamp(), entity.getStartTimestamp()).toMillis(),
+										Duration.between(entity.getStartTimestamp(), entity.getEndTimestamp()).toMillis(),
 										writeAttrs);
 					} catch (CradleStorageException e) {
 						logger.error("Exception while updating max duration {}", e.getMessage());

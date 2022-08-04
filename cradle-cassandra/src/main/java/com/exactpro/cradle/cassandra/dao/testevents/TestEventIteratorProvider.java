@@ -88,13 +88,13 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 		this.firstPage = (order == Order.DIRECT) ? pageFrom : pageTo;
 		this.lastPage = (order == Order.DIRECT) ? pageTo : pageFrom;
 
+		this.eventBatchDurationCache = eventBatchDurationCache;
+		this.actualFrom = actualFrom;
+
 		this.readAttrs = readAttrs;
 		this.limit = filter.getLimit();
 		this.returned = new AtomicInteger();
 		this.cassandraFilter = createInitialFilter(filter);
-
-		this.eventBatchDurationCache = eventBatchDurationCache;
-		this.actualFrom = actualFrom;
 	}
 
 
