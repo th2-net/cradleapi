@@ -264,10 +264,14 @@ public class CassandraCradleStorage extends CradleStorage
 		removeSessionData(pageId);
 		removeGroupData(pageId);
 		removeTestEventData(pageId);
+		removePageDurations(pageId);
 		removeEntityStatistics(pageId);
 		removePageData(page);
 	}
-	
+
+	private void removePageDurations (PageId pageId) {
+		operators.getEventBatchDurationCache().removePageDurations(pageId);
+	}
 	
 	@Override
 	protected void doStoreMessageBatch(MessageBatchToStore batch, PageInfo page) throws IOException

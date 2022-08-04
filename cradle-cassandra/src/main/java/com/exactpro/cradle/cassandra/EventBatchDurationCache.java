@@ -18,12 +18,15 @@ package com.exactpro.cradle.cassandra;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.shaded.guava.common.cache.Cache;
 import com.datastax.oss.driver.shaded.guava.common.cache.CacheBuilder;
+import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.testevents.EventBatchMaxDurationOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.EventBatchMaxDurationEntity;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
@@ -112,5 +115,25 @@ public class EventBatchDurationCache {
         }
 
         return entity.getMaxBatchDuration();
+    }
+
+    public void removePageDurations (PageId pageId) {
+        List<CacheKey> keysToRemove = new ArrayList<>();
+
+        synchronized (durationsCache) {
+            for (CacheKey key : durationsCache.asMap().keySet()) {
+                if (key.getPage().equals(pageId.getName())) {
+                    keysToRemove.add(key);
+                }
+            }
+
+            durationsCache.invalidateAll(keysToRemove);
+        }
+
+        logger.trace("{} EventBatchMaxDurationEntity will be removed from database", keysToRemove.size());
+
+        for (CacheKey key : keysToRemove) {
+            operator.removeMaxDurations(key.getBook(), key.getPage(), key.getScope());
+        }
     }
 }

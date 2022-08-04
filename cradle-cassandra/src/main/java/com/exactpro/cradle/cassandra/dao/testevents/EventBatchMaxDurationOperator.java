@@ -35,6 +35,9 @@ public interface EventBatchMaxDurationOperator {
             + "IF " + MAX_BATCH_DURATION + "<:maxDuration")
     void updateMaxDuration(String book, String page, String scope, Long duration, Long maxDuration, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
+
+    @Delete(entityClass = EventBatchMaxDurationEntity.class)
+    CompletableFuture<Void> removeMaxDurations (String book, String page, String scope);
     @Select
     EventBatchMaxDurationEntity getMaxDuration(String book, String page, String scope, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }
