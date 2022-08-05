@@ -782,7 +782,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsAsync(StoredTestEventId parentId,
 			Instant from, Instant to) throws CradleStorageException
 	{
-		TestEventsQueryParams params = getAdjustedQueryParams(parentId, from, to);
+		TestEventsQueryParams params = getAdjustedQueryParams(parentId, from, to, Order.DIRECT);
 
 		String queryInfo = String.format("get %s from range %s..%s",
 				parentId == null ? "root" : "child test events of '" + parentId + "'", from, to);
@@ -941,7 +941,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsMetadataAsync(
 			StoredTestEventId parentId, Instant from, Instant to) throws CradleStorageException
 	{
-		TestEventsQueryParams params = getAdjustedQueryParams(parentId, from, to);
+		TestEventsQueryParams params = getAdjustedQueryParams(parentId, from, to, Order.DIRECT);
 
 		String queryInfo = String.format("get %s from range %s..%s",
 				parentId == null ? "root" : "child test events' metadata of '" + parentId + "'", from, to);
@@ -1003,7 +1003,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsAsync(Instant from, Instant to)
 			throws CradleStorageException
 	{
-		TestEventsQueryParams params = getAdjustedQueryParams(null, from, to);
+		TestEventsQueryParams params = getAdjustedQueryParams(null, from, to, Order.DIRECT);
 		String queryInfo = String.format("get test events from range %s..%s", from, to);
 
 		return selectExecutor.executeMultiRowResultQuery(
@@ -1018,7 +1018,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsMetadataAsync(Instant from,
 			Instant to) throws CradleStorageException
 	{
-		TestEventsQueryParams params = getAdjustedQueryParams(null, from, to);
+		TestEventsQueryParams params = getAdjustedQueryParams(null, from, to, Order.DIRECT);
 		String queryInfo = String.format("get test events' metadata from range %s..%s", from, to);
 
 		return selectExecutor.executeMultiRowResultQuery(() ->
@@ -1036,6 +1036,62 @@ public class CassandraCradleStorage extends CradleStorage
 								pagingSupplies,
 								ops.getTestEventMetadataConverter(),
 								from, queryInfo));
+	}
+
+	@Override
+	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsAsync(Instant from, Instant to, Order order) throws CradleStorageException {
+		TestEventsQueryParams params = getAdjustedQueryParams(null, from, to, order);
+
+		String queryInfo = String.format("get test events from range %s..%s, ordered by %s", from, to, order.toString());
+
+		return selectExecutor.executeMultiRowResultQuery(
+						() -> ops.getTimeTestEventOperator().getTestEvents(instanceUuid,
+								params.getFromDate(),
+								params.getFromTime(),
+								null,
+								params.getToTime(),
+								order,
+								readAttrs),
+						ops.getTestEventConverter(), queryInfo)
+				.thenApply(entity -> new TestEventDataIteratorAdapter(entity, objectsFactory, pagingSupplies,
+						ops.getTestEventConverter(), from, queryInfo));
+	}
+
+	@Override
+	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsMetadataAsync(Instant from, Instant to, Order order) throws CradleStorageException {
+		TestEventsQueryParams params = getAdjustedQueryParams(null, from, to, order);
+		String queryInfo = String.format("get test events' metadata from range %s..%s, ordered by %s", from, to , order.toString());
+
+		return selectExecutor.executeMultiRowResultQuery(() ->
+								ops.getTimeTestEventOperator().getTestEventsMetadata(
+										instanceUuid,
+										params.getFromDate(),
+										params.getFromTime(),
+										null,
+										params.getToTime(),
+										order,
+										readAttrs),
+						ops.getTestEventMetadataConverter(), queryInfo)
+				.thenApply(entity -> new TestEventMetadataIteratorAdapter(entity, pagingSupplies,
+						ops.getTestEventMetadataConverter(), from, queryInfo));
+	}
+
+	@Override
+	protected Iterable<StoredTestEventWrapper> doGetTestEvents(Instant from, Instant to, Order order) throws CradleStorageException {
+		try {
+			return doGetTestEventsAsync(from, to, order).get();
+		} catch (InterruptedException | ExecutionException e) {
+			throw  new CradleStorageException("Exception while getting test events", e);
+		}
+	}
+
+	@Override
+	protected Iterable<StoredTestEventMetadata> doGetTestEventsMetadata(Instant from, Instant to, Order order) throws CradleStorageException {
+		try {
+			return doGetTestEventsMetadataAsync(from, to, order).get();
+		} catch (InterruptedException | ExecutionException e) {
+			throw  new CradleStorageException("Exception while getting test events", e);
+		}
 	}
 
 
@@ -1086,12 +1142,12 @@ public class CassandraCradleStorage extends CradleStorage
 		Get max batch length for current partition,
 		adjusts query params accordingly
 	 */
-	private TestEventsQueryParams getAdjustedQueryParams (StoredTestEventId parentId, Instant from, Instant to) throws CradleStorageException {
+	private TestEventsQueryParams getAdjustedQueryParams (StoredTestEventId parentId, Instant from, Instant to, Order order) throws CradleStorageException {
 		long maxBatchDurationMillis = eventBatchDurationCache.getMaxDuration(
 				new EventBatchDurationCache.CacheKey(instanceUuid, LocalDateTime.ofInstant(from, TIMEZONE_OFFSET).toLocalDate()));
 
 
-		return new TestEventsQueryParams(parentId, from, to, maxBatchDurationMillis);
+		return new TestEventsQueryParams(parentId, from, to, maxBatchDurationMillis, order);
 	}
 
 	@Override
@@ -1346,10 +1402,10 @@ public class CassandraCradleStorage extends CradleStorage
 			this (null, fromId, from, to, order, 0);
 		}
 
-		public TestEventsQueryParams(StoredTestEventId parentId, Instant from, Instant to, Long adjustMillis)
+		public TestEventsQueryParams(StoredTestEventId parentId, Instant from, Instant to, Long adjustMillis, Order order)
 				throws CradleStorageException
 		{
-			this (parentId, null, from, to, Order.DIRECT, adjustMillis);
+			this (parentId, null, from, to, order, adjustMillis);
 		}
 
 		public TestEventsQueryParams(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to)
