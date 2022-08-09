@@ -28,16 +28,26 @@ public interface EventBatchMaxDurationOperator {
 
 
     @Insert(ifNotExists = true)
-    CompletableFuture<Void> writeMaxDuration (EventBatchMaxDurationEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+    CompletableFuture<Void> writeMaxDuration (EventBatchMaxDurationEntity entity,
+                                              Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-    @Query("UPDATE ${qualifiedTableId} SET " + MAX_BATCH_DURATION + "= :duration "
-            + "WHERE " + FIELD_BOOK + "=:book AND " + FIELD_PAGE + "=:page AND " + SCOPE + "= :scope "
-            + "IF " + MAX_BATCH_DURATION + "<:maxDuration")
-    void updateMaxDuration(String book, String page, String scope, Long duration, Long maxDuration, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+    @Query( "UPDATE ${qualifiedTableId} " +
+            "SET "   + FIELD_MAX_BATCH_DURATION + " = :duration " +
+            "WHERE " +
+                FIELD_BOOK + " =:book AND " +
+                FIELD_PAGE + " =:page AND " +
+                FIELD_SCOPE + " = :scope " +
+            "IF " + FIELD_MAX_BATCH_DURATION + " <:maxDuration")
+    void updateMaxDuration(String book, String page, String scope, Long duration, Long maxDuration,
+                           Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 
     @Delete(entityClass = EventBatchMaxDurationEntity.class)
     CompletableFuture<Void> removeMaxDurations (String book, String page, String scope);
+
+
     @Select
-    EventBatchMaxDurationEntity getMaxDuration(String book, String page, String scope, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+    EventBatchMaxDurationEntity getMaxDuration(String book, String page, String scope,
+                                               Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

@@ -38,7 +38,6 @@ import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.crypto.Data;
 import java.io.IOException;
 import java.util.function.Supplier;
 
@@ -331,8 +330,8 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(EventBatchMaxDurationEntity.FIELD_BOOK, DataTypes.TEXT)
 				.withPartitionKey(EventBatchMaxDurationEntity.FIELD_PAGE, DataTypes.TEXT)
-				.withPartitionKey(EventBatchMaxDurationEntity.SCOPE, DataTypes.TEXT)
-				.withColumn(EventBatchMaxDurationEntity.MAX_BATCH_DURATION, DataTypes.BIGINT));
+				.withPartitionKey(EventBatchMaxDurationEntity.FIELD_SCOPE, DataTypes.TEXT)
+				.withColumn(EventBatchMaxDurationEntity.FIELD_MAX_BATCH_DURATION, DataTypes.BIGINT));
 	}
 
 	@Override

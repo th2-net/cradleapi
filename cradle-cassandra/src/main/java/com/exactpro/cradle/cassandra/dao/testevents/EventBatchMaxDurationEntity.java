@@ -26,8 +26,8 @@ public class EventBatchMaxDurationEntity {
 
     public static final String FIELD_BOOK = "book";
     public static final String FIELD_PAGE = "page";
-    public static final String SCOPE = "scope";
-    public static final String MAX_BATCH_DURATION = "max_batch_duration";
+    public static final String FIELD_SCOPE = "scope";
+    public static final String FIELD_MAX_BATCH_DURATION = "max_batch_duration";
 
     @PartitionKey(1)
     @CqlName(FIELD_BOOK)
@@ -38,11 +38,12 @@ public class EventBatchMaxDurationEntity {
     private String page;
 
 
+    // TODO: should not scope be clustering key?
     @PartitionKey(3)
-    @CqlName(SCOPE)
+    @CqlName(FIELD_SCOPE)
     private String scope;
 
-    @CqlName(MAX_BATCH_DURATION)
+    @CqlName(FIELD_MAX_BATCH_DURATION)
     private long maxBatchDuration;
 
     public EventBatchMaxDurationEntity(String book, String page, String scope, long maxBatchDuration) {

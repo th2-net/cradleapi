@@ -72,6 +72,8 @@ public class EventBatchDurationCache {
         this.defaultBatchDurationMillis = defaultBatchDurationMillis;
     }
 
+    // TODO: move out all operations that are not necessary for maintaining duration
+
     public CompletableFuture<Void> updateMaxDuration(CacheKey key, long duration, Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs) throws CradleStorageException {
         synchronized (durationsCache) {
             Long cached = durationsCache.getIfPresent(key);
@@ -118,6 +120,8 @@ public class EventBatchDurationCache {
     }
 
     public void removePageDurations (PageId pageId) {
+        //TODO: this method will be able to delete durations for only scopes that are present in cache.
+        // this is wrong as cradle admin tool will have empty cache
         List<CacheKey> keysToRemove = new ArrayList<>();
 
         synchronized (durationsCache) {
