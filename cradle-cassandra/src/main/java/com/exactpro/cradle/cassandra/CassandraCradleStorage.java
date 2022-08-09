@@ -1203,8 +1203,11 @@ public class CassandraCradleStorage extends CradleStorage
 
 	private void removeEntityStatistics(PageId pageId) {
 		String book = pageId.getBookId().getName();
-		for (FrameType ft : FrameType.values())
+		for (FrameType ft : FrameType.values()) {
 			operators.getEntityStatisticsOperator().remove(book, pageId.getName(), EntityType.MESSAGE.getValue(),
 					ft.getValue(), writeAttrs);
+			operators.getEntityStatisticsOperator().remove(book, pageId.getName(), EntityType.EVENT.getValue(),
+					ft.getValue(), writeAttrs);
+		}
 	}
 }
