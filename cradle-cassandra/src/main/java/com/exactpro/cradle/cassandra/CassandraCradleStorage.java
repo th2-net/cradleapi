@@ -1147,6 +1147,7 @@ public class CassandraCradleStorage extends CradleStorage
 		PageGroupsOperator pageGroupsOperator = operators.getPageGroupsOperator();
 		GroupedMessageBatchOperator groupMessageOp = operators.getGroupedMessageBatchOperator();
 		SessionStatisticsOperator sessionStatisticsOp = operators.getSessionStatisticsOperator();
+		MessageStatisticsOperator messageStatisticsOp = operators.getMessageStatisticsOperator();
 
 		PagingIterable<PageGroupEntity> entities = pageGroupsOperator.get(book, page, readAttrs);
 		for (PageGroupEntity entity : entities) {
@@ -1155,6 +1156,14 @@ public class CassandraCradleStorage extends CradleStorage
 
 			// Remove group statistics
 			for (FrameType ft : FrameType.values()) {
+				messageStatisticsOp.remove(
+						book,
+						page,
+						entity.getGroup(),
+						"",
+						ft.getValue(),
+						writeAttrs);
+
 				sessionStatisticsOp.remove(
 						book,
 						page,
