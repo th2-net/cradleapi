@@ -107,7 +107,7 @@ public class EventsWorker extends Worker
 		return op.write(entity, writeAttrs)
 				.thenAccept(result -> {
 					try {
-						getOperators().getEventBatchDurationCache()
+						getOperators().getEventBatchDurationWorker()
 								.updateMaxDuration(
 										new EventBatchDurationCache.CacheKey(entity.getBook(), entity.getPage(), entity.getScope()),
 										Duration.between(entity.getStartTimestamp(), entity.getEndTimestamp()).toMillis(),
@@ -177,7 +177,7 @@ public class EventsWorker extends Worker
 	{
 		TestEventIteratorProvider provider = new TestEventIteratorProvider("get test events filtered by "+filter, 
 				filter, getOperators(), book, composingService, selectQueryExecutor,
-				getOperators().getEventBatchDurationCache(),
+				getOperators().getEventBatchDurationWorker(),
 				composeReadAttrs(filter.getFetchParameters()),
 				filter.getStartTimestampFrom().getValue());
 		return provider.nextIterator()

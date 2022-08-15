@@ -18,6 +18,7 @@ package com.exactpro.cradle.cassandra.dao;
 
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.EventBatchDurationCache;
+import com.exactpro.cradle.cassandra.EventBatchDurationWorker;
 import com.exactpro.cradle.cassandra.dao.books.*;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageSession;
@@ -74,7 +75,7 @@ public class CassandraOperators {
     private final LimitedCache<GroupEntity> groupCache;
     private final LimitedCache<PageGroupEntity> pageGroupCache;
     private final LimitedCache<SessionStatisticsEntity> sessionStatisticsCache;
-    private EventBatchDurationCache eventBatchDurationCache;
+    private final EventBatchDurationWorker eventBatchDurationWorker;
 
     public CassandraOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings) {
 
@@ -120,7 +121,10 @@ public class CassandraOperators {
         scopesCache = new LimitedCache<>(settings.getScopesCacheSize());
         pageScopesCache = new LimitedCache<>(settings.getPageScopesCacheSize());
         sessionStatisticsCache = new LimitedCache<>(settings.getSessionStatisticsCacheSize());
-        eventBatchDurationCache = new EventBatchDurationCache(eventBatchMaxDurationOperator, settings.getEventBatchDurationCacheSize(), settings.getEventBatchDurationMillis());
+        eventBatchDurationWorker = new EventBatchDurationWorker(
+                new EventBatchDurationCache(settings.getEventBatchDurationCacheSize()),
+                getEventBatchMaxDurationOperator(),
+                settings.getEventBatchDurationMillis());
     }
 
     public BookOperator getBookOperator() {
@@ -267,7 +271,7 @@ public class CassandraOperators {
         return pageGroupCache;
     }
 
-    public EventBatchDurationCache getEventBatchDurationCache() {
-        return eventBatchDurationCache;
+    public EventBatchDurationWorker getEventBatchDurationWorker() {
+        return eventBatchDurationWorker;
     }
 }

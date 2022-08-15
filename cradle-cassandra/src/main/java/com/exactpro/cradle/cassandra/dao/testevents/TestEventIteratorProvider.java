@@ -22,6 +22,7 @@ import com.exactpro.cradle.Order;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.EventBatchDurationCache;
+import com.exactpro.cradle.cassandra.EventBatchDurationWorker;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
 import com.exactpro.cradle.cassandra.iterators.SkippingConvertingPagedIterator;
@@ -66,12 +67,12 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 	private final int limit;
 	private final AtomicInteger returned;
 	private CassandraTestEventFilter cassandraFilter;
-	private final EventBatchDurationCache eventBatchDurationCache;
+	private final EventBatchDurationWorker eventBatchDurationWorker;
 	private final Instant actualFrom;
 	
 	public TestEventIteratorProvider(String requestInfo, TestEventFilter filter, CassandraOperators operators, BookInfo book,
 									 ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
-									 EventBatchDurationCache eventBatchDurationCache,
+									 EventBatchDurationWorker eventBatchDurationWorker,
 									 Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs,
 									 Instant actualFrom) {
 		super(requestInfo);
@@ -88,7 +89,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 		this.firstPage = (order == Order.DIRECT) ? pageFrom : pageTo;
 		this.lastPage = (order == Order.DIRECT) ? pageTo : pageFrom;
 
-		this.eventBatchDurationCache = eventBatchDurationCache;
+		this.eventBatchDurationWorker = eventBatchDurationWorker;
 		this.actualFrom = actualFrom;
 
 		this.readAttrs = readAttrs;
@@ -153,7 +154,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 			Only initial filter needs to be adjusted with max duration,
 			since `createNextFilter` just passes timestamps from previous to next filters
 		 */
-		long duration = eventBatchDurationCache.getMaxDuration(new EventBatchDurationCache.CacheKey(filter.getBookId().getName(), filter.getPageId().getName(), filter.getScope()), readAttrs);
+		long duration = eventBatchDurationWorker.getMaxDuration(new EventBatchDurationCache.CacheKey(filter.getBookId().getName(), filter.getPageId().getName(), filter.getScope()), readAttrs);
 		FilterForGreater<Instant> newFrom = FilterForGreater.forGreater(filter.getStartTimestampFrom().getValue().minusMillis(duration));
 
 		String parentId = getParentIdString(filter);

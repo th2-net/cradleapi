@@ -270,7 +270,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	private void removePageDurations (PageId pageId) {
-		operators.getEventBatchDurationCache().removePageDurations(pageId);
+		operators.getEventBatchDurationWorker().removePageDurations(pageId);
 	}
 	
 	@Override
