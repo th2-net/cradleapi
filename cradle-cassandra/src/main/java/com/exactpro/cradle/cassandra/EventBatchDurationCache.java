@@ -72,8 +72,6 @@ public class EventBatchDurationCache {
         this.defaultBatchDurationMillis = defaultBatchDurationMillis;
     }
 
-    // TODO: move out all operations that are not necessary for maintaining duration
-
     public CompletableFuture<Void> updateMaxDuration(CacheKey key, long duration, Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs) throws CradleStorageException {
         synchronized (durationsCache) {
             Long cached = durationsCache.getIfPresent(key);
@@ -90,20 +88,24 @@ public class EventBatchDurationCache {
                 .thenAcceptAsync((res) -> operator.updateMaxDuration(key.getBook(), key.getPage(), key.getScope(), duration, duration, writeAttrs))
                 .whenComplete((rtn, e) -> {
                     if (e != null) {
-                        synchronized (durationsCache) {
-                            Long cached = durationsCache.getIfPresent(key);
-
-                            if (cached != null) {
-                                // cache might be updated by other threads, need to check again
-                                if (cached > duration) {
-                                    return;
-                                }
-                            }
-
-                            durationsCache.put(key, duration);
-                        }
+                        updateCache(key, duration);
                     }
                 });
+    }
+
+    private void updateCache(CacheKey key, long duration) {
+        synchronized (durationsCache) {
+            Long cached = durationsCache.getIfPresent(key);
+
+            if (cached != null) {
+                // cache might be updated by other threads, need to check again
+                if (cached > duration) {
+                    return;
+                }
+            }
+
+            durationsCache.put(key, duration);
+        }
     }
 
     public long getMaxDuration(CacheKey key, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) {
@@ -120,10 +122,9 @@ public class EventBatchDurationCache {
     }
 
     public void removePageDurations (PageId pageId) {
-        //TODO: this method will be able to delete durations for only scopes that are present in cache.
-        // this is wrong as cradle admin tool will have empty cache
         List<CacheKey> keysToRemove = new ArrayList<>();
 
+        // Remove from cache
         synchronized (durationsCache) {
             for (CacheKey key : durationsCache.asMap().keySet()) {
                 if (key.getPage().equals(pageId.getName())) {
@@ -134,10 +135,8 @@ public class EventBatchDurationCache {
             durationsCache.invalidateAll(keysToRemove);
         }
 
+        // Remove from database
         logger.trace("{} EventBatchMaxDurationEntity will be removed from database", keysToRemove.size());
-
-        for (CacheKey key : keysToRemove) {
-            operator.removeMaxDurations(key.getBook(), key.getPage(), key.getScope());
-        }
+        operator.removeMaxDurations(pageId.getBookId().getName(), pageId.getName());
     }
 }

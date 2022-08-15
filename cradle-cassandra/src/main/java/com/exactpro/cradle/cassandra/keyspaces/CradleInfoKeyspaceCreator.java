@@ -330,7 +330,7 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(EventBatchMaxDurationEntity.FIELD_BOOK, DataTypes.TEXT)
 				.withPartitionKey(EventBatchMaxDurationEntity.FIELD_PAGE, DataTypes.TEXT)
-				.withPartitionKey(EventBatchMaxDurationEntity.FIELD_SCOPE, DataTypes.TEXT)
+				.withClusteringColumn(EventBatchMaxDurationEntity.FIELD_SCOPE, DataTypes.TEXT)
 				.withColumn(EventBatchMaxDurationEntity.FIELD_MAX_BATCH_DURATION, DataTypes.BIGINT));
 	}
 

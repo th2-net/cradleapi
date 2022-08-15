@@ -38,8 +38,7 @@ public class EventBatchMaxDurationEntity {
     private String page;
 
 
-    // TODO: should not scope be clustering key?
-    @PartitionKey(3)
+    @ClusteringColumn
     @CqlName(FIELD_SCOPE)
     private String scope;
 

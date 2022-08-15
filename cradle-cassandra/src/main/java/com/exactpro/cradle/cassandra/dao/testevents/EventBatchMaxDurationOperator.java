@@ -44,7 +44,7 @@ public interface EventBatchMaxDurationOperator {
 
 
     @Delete(entityClass = EventBatchMaxDurationEntity.class)
-    CompletableFuture<Void> removeMaxDurations (String book, String page, String scope);
+    CompletableFuture<Void> removeMaxDurations (String book, String page);
 
 
     @Select
