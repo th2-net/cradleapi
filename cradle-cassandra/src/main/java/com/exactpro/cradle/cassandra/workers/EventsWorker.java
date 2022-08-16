@@ -26,6 +26,7 @@ import java.util.zip.DataFormatException;
 
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.EventBatchDurationCache;
+import com.exactpro.cradle.cassandra.EventBatchDurationWorker;
 import com.exactpro.cradle.cassandra.counters.BookStatisticsRecordsCaches;
 import com.exactpro.cradle.cassandra.counters.EntityStatisticsCollector;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
@@ -62,10 +63,13 @@ public class EventsWorker extends Worker
 			.help("Stored test events").labelNames(BOOK_ID, SCOPE).register();
 
 	private final EntityStatisticsCollector entityStatisticsCollector;
-	public EventsWorker(WorkerSupplies workerSupplies, EntityStatisticsCollector entityStatisticsCollector)
+	private final EventBatchDurationWorker durationWorker;
+
+	public EventsWorker(WorkerSupplies workerSupplies, EntityStatisticsCollector entityStatisticsCollector, EventBatchDurationWorker durationWorker)
 	{
 		super(workerSupplies);
 		this.entityStatisticsCollector = entityStatisticsCollector;
+		this.durationWorker = durationWorker;
 	}
 
 	public static StoredTestEvent mapTestEventEntity(PageId pageId, TestEventEntity entity)
@@ -107,8 +111,7 @@ public class EventsWorker extends Worker
 		return op.write(entity, writeAttrs)
 				.thenAccept(result -> {
 					try {
-						getOperators().getEventBatchDurationWorker()
-								.updateMaxDuration(
+						durationWorker.updateMaxDuration(
 										new EventBatchDurationCache.CacheKey(entity.getBook(), entity.getPage(), entity.getScope()),
 										Duration.between(entity.getStartTimestamp(), entity.getEndTimestamp()).toMillis(),
 										writeAttrs);
@@ -177,7 +180,7 @@ public class EventsWorker extends Worker
 	{
 		TestEventIteratorProvider provider = new TestEventIteratorProvider("get test events filtered by "+filter, 
 				filter, getOperators(), book, composingService, selectQueryExecutor,
-				getOperators().getEventBatchDurationWorker(),
+				durationWorker,
 				composeReadAttrs(filter.getFetchParameters()),
 				filter.getStartTimestampFrom().getValue());
 		return provider.nextIterator()

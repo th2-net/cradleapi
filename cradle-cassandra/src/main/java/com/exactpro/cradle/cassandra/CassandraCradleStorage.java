@@ -91,6 +91,7 @@ public class CassandraCradleStorage extends CradleStorage
 	private MessagesWorker messagesWorker;
 	private BookCache bookCache;
 	private StatisticsWorker statisticsWorker;
+	private EventBatchDurationWorker eventBatchDurationWorker;
 
 
 	public CassandraCradleStorage(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings, 
@@ -149,10 +150,14 @@ public class CassandraCradleStorage extends CradleStorage
 			bookManager = new BookManager(getBookCache(), settings.getBookRefreshIntervalMillis());
 			bookManager.start();
 
+			eventBatchDurationWorker = new EventBatchDurationWorker(
+					new EventBatchDurationCache(settings.getEventBatchDurationCacheSize()),
+					operators.getEventBatchMaxDurationOperator(),
+					settings.getEventBatchDurationMillis());
 
 			WorkerSupplies ws = new WorkerSupplies(settings, operators, composingService, bookCache, selectExecutor, writeAttrs, readAttrs);
 			statisticsWorker = new StatisticsWorker(ws, settings.getCounterPersistenceInterval());
-			eventsWorker = new EventsWorker(ws, statisticsWorker);
+			eventsWorker = new EventsWorker(ws, statisticsWorker, eventBatchDurationWorker);
 			messagesWorker = new MessagesWorker(ws, statisticsWorker, statisticsWorker);
 			statisticsWorker.start();
 		}
@@ -270,7 +275,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	private void removePageDurations (PageId pageId) {
-		operators.getEventBatchDurationWorker().removePageDurations(pageId);
+		eventBatchDurationWorker.removePageDurations(pageId);
 	}
 	
 	@Override

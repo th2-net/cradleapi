@@ -75,7 +75,6 @@ public class CassandraOperators {
     private final LimitedCache<GroupEntity> groupCache;
     private final LimitedCache<PageGroupEntity> pageGroupCache;
     private final LimitedCache<SessionStatisticsEntity> sessionStatisticsCache;
-    private final EventBatchDurationWorker eventBatchDurationWorker;
 
     public CassandraOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings) {
 
@@ -121,10 +120,6 @@ public class CassandraOperators {
         scopesCache = new LimitedCache<>(settings.getScopesCacheSize());
         pageScopesCache = new LimitedCache<>(settings.getPageScopesCacheSize());
         sessionStatisticsCache = new LimitedCache<>(settings.getSessionStatisticsCacheSize());
-        eventBatchDurationWorker = new EventBatchDurationWorker(
-                new EventBatchDurationCache(settings.getEventBatchDurationCacheSize()),
-                getEventBatchMaxDurationOperator(),
-                settings.getEventBatchDurationMillis());
     }
 
     public BookOperator getBookOperator() {
@@ -269,9 +264,5 @@ public class CassandraOperators {
 
     public LimitedCache<PageGroupEntity> getPageGroupCache() {
         return pageGroupCache;
-    }
-
-    public EventBatchDurationWorker getEventBatchDurationWorker() {
-        return eventBatchDurationWorker;
     }
 }
