@@ -17,6 +17,8 @@
 package com.exactpro.cradle.cassandra.dao;
 
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
+import com.exactpro.cradle.cassandra.EventBatchDurationCache;
+import com.exactpro.cradle.cassandra.EventBatchDurationWorker;
 import com.exactpro.cradle.cassandra.dao.books.*;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageSession;
@@ -51,6 +53,7 @@ public class CassandraOperators {
     private final MessageStatisticsOperator messageStatisticsOperator;
     private final EntityStatisticsOperator entityStatisticsOperator;
     private final SessionStatisticsOperator sessionStatisticsOperator;
+    private final EventBatchMaxDurationOperator eventBatchMaxDurationOperator;
 
     private final SessionEntityConverter sessionEntityConverter;
     private final ScopeEntityConverter scopeEntityConverter;
@@ -93,6 +96,7 @@ public class CassandraOperators {
         messageStatisticsOperator = dataMapper.messageStatisticsOperator(keyspace, MessageStatisticsEntity.TABLE_NAME);
         entityStatisticsOperator = dataMapper.entityStatisticsOperator(keyspace, EntityStatisticsEntity.TABLE_NAME);
         sessionStatisticsOperator = dataMapper.sessionStatisticsOperator(keyspace, SessionStatisticsEntity.TABLE_NAME);
+        eventBatchMaxDurationOperator = dataMapper.eventBatchMaxDurationOperator(keyspace, EventBatchMaxDurationEntity.TABLE_NAME);
 
         intervalOperator = dataMapper.intervalOperator(keyspace, IntervalEntity.TABLE_NAME);
 
@@ -172,6 +176,10 @@ public class CassandraOperators {
 
     public SessionStatisticsOperator getSessionStatisticsOperator() {
         return sessionStatisticsOperator;
+    }
+
+    public EventBatchMaxDurationOperator getEventBatchMaxDurationOperator() {
+        return eventBatchMaxDurationOperator;
     }
 
     public SessionEntityConverter getSessionEntityConverter() {

@@ -17,6 +17,7 @@
 package com.exactpro.cradle.cassandra.workers;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -24,6 +25,8 @@ import java.util.concurrent.CompletionException;
 import java.util.zip.DataFormatException;
 
 import com.exactpro.cradle.*;
+import com.exactpro.cradle.cassandra.EventBatchDurationCache;
+import com.exactpro.cradle.cassandra.EventBatchDurationWorker;
 import com.exactpro.cradle.cassandra.counters.BookStatisticsRecordsCaches;
 import com.exactpro.cradle.cassandra.counters.EntityStatisticsCollector;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
@@ -60,10 +63,13 @@ public class EventsWorker extends Worker
 			.help("Stored test events").labelNames(BOOK_ID, SCOPE).register();
 
 	private final EntityStatisticsCollector entityStatisticsCollector;
-	public EventsWorker(WorkerSupplies workerSupplies, EntityStatisticsCollector entityStatisticsCollector)
+	private final EventBatchDurationWorker durationWorker;
+
+	public EventsWorker(WorkerSupplies workerSupplies, EntityStatisticsCollector entityStatisticsCollector, EventBatchDurationWorker durationWorker)
 	{
 		super(workerSupplies);
 		this.entityStatisticsCollector = entityStatisticsCollector;
+		this.durationWorker = durationWorker;
 	}
 
 	public static StoredTestEvent mapTestEventEntity(PageId pageId, TestEventEntity entity)
@@ -103,6 +109,16 @@ public class EventsWorker extends Worker
 		List<SerializedEntityMetadata> meta = entity.getSerializedEventMetadata();
 		BookStatisticsRecordsCaches.EntityKey key = new BookStatisticsRecordsCaches.EntityKey(entity.getPage(), EntityType.EVENT);
 		return op.write(entity, writeAttrs)
+				.thenAccept(result -> {
+					try {
+						durationWorker.updateMaxDuration(
+										new EventBatchDurationCache.CacheKey(entity.getBook(), entity.getPage(), entity.getScope()),
+										Duration.between(entity.getStartTimestamp(), entity.getEndTimestamp()).toMillis(),
+										writeAttrs);
+					} catch (CradleStorageException e) {
+						logger.error("Exception while updating max duration {}", e.getMessage());
+					}
+				})
 				.thenAccept(result -> entityStatisticsCollector.updateEntityBatchStatistics(bookId, key, meta))
 				.thenAcceptAsync(result -> updateEventWriteMetrics(entity, bookId));
 	}
@@ -164,7 +180,9 @@ public class EventsWorker extends Worker
 	{
 		TestEventIteratorProvider provider = new TestEventIteratorProvider("get test events filtered by "+filter, 
 				filter, getOperators(), book, composingService, selectQueryExecutor,
-				composeReadAttrs(filter.getFetchParameters()));
+				durationWorker,
+				composeReadAttrs(filter.getFetchParameters()),
+				filter.getStartTimestampFrom().getValue());
 		return provider.nextIterator()
 				.thenApply(r -> new CassandraCradleResultSet<>(r, provider));
 	}

@@ -29,6 +29,7 @@ import com.exactpro.cradle.cassandra.dao.books.PageNameEntity;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalEntity;
 import com.exactpro.cradle.cassandra.dao.labels.LabelEntity;
 import com.exactpro.cradle.cassandra.dao.messages.*;
+import com.exactpro.cradle.cassandra.dao.testevents.EventBatchMaxDurationEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.PageScopeEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
@@ -77,7 +78,7 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 		createEntityStatistics();
 
 		createSessionStatistics();
-
+		createEventBatchMaxDurations();
 	}
 
 	@Override
@@ -322,6 +323,15 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 				.withPartitionKey(SessionStatisticsEntity.FIELD_FRAME_TYPE, DataTypes.TINYINT)
 				.withClusteringColumn(SessionStatisticsEntity.FIELD_FRAME_START, DataTypes.TIMESTAMP)
 				.withClusteringColumn(SessionStatisticsEntity.FIELD_SESSION, DataTypes.TEXT));
+	}
+
+	private void createEventBatchMaxDurations () throws IOException {
+		String tableName = EventBatchMaxDurationEntity.TABLE_NAME;
+		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
+				.withPartitionKey(EventBatchMaxDurationEntity.FIELD_BOOK, DataTypes.TEXT)
+				.withPartitionKey(EventBatchMaxDurationEntity.FIELD_PAGE, DataTypes.TEXT)
+				.withClusteringColumn(EventBatchMaxDurationEntity.FIELD_SCOPE, DataTypes.TEXT)
+				.withColumn(EventBatchMaxDurationEntity.FIELD_MAX_BATCH_DURATION, DataTypes.BIGINT));
 	}
 
 	@Override
