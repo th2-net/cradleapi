@@ -10,6 +10,7 @@ configurations.all {
 dependencies {
 	compile project(":cradle-core")
 
+	implementation 'com.exactpro.th2:task-utils:0.1.0'
 	annotationProcessor "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
 
 	implementation "com.datastax.oss:java-driver-core:${driver_version}"
