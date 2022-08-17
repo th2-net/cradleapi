@@ -24,10 +24,10 @@ import com.exactpro.cradle.cassandra.counters.*;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.SessionStatisticsEntity;
 import com.exactpro.cradle.cassandra.dao.SessionStatisticsOperator;
-import com.exactpro.cradle.utils.FutureTracker;
 import com.exactpro.cradle.cassandra.utils.LimitedCache;
 import com.exactpro.cradle.counters.Counter;
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
+import com.exactpro.th2.taskutils.FutureTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
