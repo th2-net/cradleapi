@@ -19,6 +19,7 @@ package com.exactpro.cradle.cassandra.dao.messages;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.exactpro.cradle.BookInfo;
+import com.exactpro.cradle.Order;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
@@ -146,19 +147,60 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 
 	protected CassandraStoredMessageFilter createInitialFilter(MessageFilter filter)
 	{
-		return new CassandraStoredMessageFilter(firstPage.getId().getBookId().getName(),firstPage.getId().getName(), filter.getSessionAlias(),
-				filter.getDirection().getLabel(), leftBoundFilter, rightBoundFilter, filter.getSequence(), filter.getLimit());
+		if (filter.getOrder() == Order.DIRECT) {
+			return new CassandraStoredMessageFilter(
+					firstPage.getId().getBookId().getName(),
+					firstPage.getId().getName(),
+					filter.getSessionAlias(),
+					filter.getDirection().getLabel(),
+					leftBoundFilter,
+					rightBoundFilter,
+					filter.getSequence(),
+					filter.getLimit(),
+					filter.getOrder());
+		} else {
+			return new CassandraStoredMessageFilter(
+					lastPage.getId().getBookId().getName(),
+					lastPage.getId().getName(),
+					filter.getSessionAlias(),
+					filter.getDirection().getLabel(),
+					leftBoundFilter,
+					rightBoundFilter,
+					filter.getSequence(),
+					filter.getLimit(),
+					filter.getOrder());
+		}
+
+
 	}
 
 	protected CassandraStoredMessageFilter createNextFilter(CassandraStoredMessageFilter prevFilter, int updatedLimit)
 	{
-		PageInfo prevPage = book.getPage(new PageId(book.getId(), prevFilter.getPage()));
-		if (prevPage.equals(lastPage))
-			return null;
+		PageInfo oldPage = book.getPage(new PageId(book.getId(), prevFilter.getPage()));
+		PageInfo newPage;
 
-		PageInfo nextPage = book.getNextPage(prevPage.getStarted());
+		if (filter.getOrder() == Order.DIRECT) {
+			if (oldPage.equals(lastPage))
+				return null;
 
-		return new CassandraStoredMessageFilter(nextPage.getId().getBookId().getName(), nextPage.getId().getName(), prevFilter.getSessionAlias(),
-				prevFilter.getDirection(), leftBoundFilter, rightBoundFilter, prevFilter.getSequence(), updatedLimit);
+			newPage = book.getNextPage(oldPage.getStarted());
+		} else {
+			if (oldPage.equals(firstPage)) {
+				return null;
+			}
+
+			newPage = book.getPreviousPage(oldPage.getStarted());
+		}
+
+		return new CassandraStoredMessageFilter(
+				newPage.getId().getBookId().getName(),
+				newPage.getId().getName(),
+				prevFilter.getSessionAlias(),
+				prevFilter.getDirection(),
+				leftBoundFilter,
+				rightBoundFilter,
+				prevFilter.getSequence(),
+				updatedLimit,
+				filter.getOrder());
 	}
 }
