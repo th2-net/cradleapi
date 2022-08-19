@@ -195,4 +195,15 @@ public class StoredTestEventMetadata implements StoredTestEvent
 	{
 		this.batchMetadataBytes = batchMetadataBytes;
 	}
+
+	public Instant getMaxStartTimestamp () {
+		Instant maxStart = getStartTimestamp();
+		for (BatchedStoredTestEventMetadata event : batchMetadata.getTestEvents()) {
+			if (maxStart == null || maxStart.isBefore(event.getStartTimestamp())) {
+				maxStart = event.getStartTimestamp();
+			}
+		}
+
+		return maxStart;
+	}
 }
