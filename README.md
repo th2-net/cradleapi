@@ -103,7 +103,7 @@ gBatch.addMessage(new MessageToStoreBuilder()
 storage.storeGroupedMessageBatch(gBatch, groupName);
 
 //Reading grouped messages by filter
-storage.getGroupedMessageBatches("first_group", now.minusSeconds(3600), now)
+storage.getGroupedMessageBatches(groupName, now.minusSeconds(3600), now)
 
 
 //Writing a test event
