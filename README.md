@@ -1,4 +1,4 @@
-# cradleapi (3.1.0)
+# cradleapi (3.2.3)
 
 ## Overview
 
@@ -37,7 +37,7 @@ repositories {
 To use Cradle API, add the following dependency to your project:
 ```
 dependencies {
-	implementation 'com.exactpro.th2:cradle-cassandra:3.0.0'
+	implementation 'com.exactpro.th2:cradle-cassandra:3.2.3'
 	...
 }
 ```
@@ -127,6 +127,14 @@ Direction is "first" or "second" depending on endpoint that generated the messag
 Message index is a number, incremented for each new message within the same stream and direction.
 
 I.e. if for the stream name="stream1" and direction="first" the last message index was 10, the next message index for this stream name and direction is expected to be 11. It can be different, but greater than 10.
+
+
+`3.2` version of cradle has different handling of messages. Concept of messages were changed, **Grouped Message Batch** was introduced.
+
+Unlike previous message batches, grouped message batch does not need to have same `stream_name`:`direction`. Purpose of grouped messages is to generate large group from small short-lived sessions for sake of efficiency.
+
+Since `stream_name`:`direction` can be different for messages inside the **Grouped Batch**, batch doesn't have id anymore.
+
 
 Messages can have metadata as a set of key-value string pairs, providing additional details about the message. Metadata cannot be used in any search requests or filtering.
 
