@@ -147,6 +147,7 @@ Unlike previous message batches, grouped message batch does not need to have sam
 
 Since `stream_name`:`direction` can be different for messages inside the **Grouped Batch**, batch doesn't have id anymore.
 
+Please note that traditional message store/extraction has been **deprecated**.
 
 Messages can have metadata as a set of key-value string pairs, providing additional details about the message. Metadata cannot be used in any search requests or filtering.
 
