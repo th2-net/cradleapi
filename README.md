@@ -1,4 +1,4 @@
-# cradleapi (3.1.0)
+# cradleapi (3.2.3)
 
 ## Overview
 
@@ -37,7 +37,7 @@ repositories {
 To use Cradle API, add the following dependency to your project:
 ```
 dependencies {
-	implementation 'com.exactpro.th2:cradle-cassandra:3.0.0'
+	implementation 'com.exactpro.th2:cradle-cassandra:3.2.3'
 	...
 }
 ```
@@ -73,26 +73,38 @@ CradleStorage storage = manager.getStorage();
 
 Once initialized, `CradleStorage` can be used to write/read data:
 ```java
-String streamName = "stream1";
+String group_name = "first_group";
 Direction direction = Direction.FIRST;
 Instant now = Instant.now();
 long index = now.toEpochMilli();
 
-//Writing a message
-StoredMessageBatch batch = new StoredMessageBatch();
-batch.addMessage(new MessageToStoreBuilder().streamName(streamName).direction(direction).index(index).timestamp(now)
-		.content("Message1".getBytes()).build());
-storage.storeMessageBatch(batch);
+//Writing grouped messages (operations on usual messages has been deprecated from 3.2)
+String groupName = "group_name";
+String firstStream = "first_stream";
+String secondStream = "second_stream";
+Instant now = Instant.now();
 
-//Reading messages by filter
-StoredMessageFilter filter = new StoredMessageFilterBuilder()
-		.streamName().isEqualTo(streamName)
-		.direction().isEqualTo(direction)
-		.limit(100)
-		.build();
-for (StoredMessage msg : storage.getMessages(filter)) {
-	System.out.println(msg.getId()+" - "+msg.getTimestamp());
-}
+var gBatch = new StoredGroupMessageBatch();
+gBatch.addMessage(new MessageToStoreBuilder()
+    .streamName(firstStream)
+    .direction(Direction.FIRST)
+    .index(1L)
+    .timestamp(now)
+    .content("Test Content 1".getBytes(StandardCharsets.UTF_8))
+    .build());
+gBatch.addMessage(new MessageToStoreBuilder()
+    .streamName(secondStream)
+    .direction(Direction.SECOND)
+    .index(1L)
+    .timestamp(now)
+    .content("Test Content 2".getBytes(StandardCharsets.UTF_8))
+    .build());
+
+storage.storeGroupedMessageBatch(gBatch, groupName);
+
+//Reading grouped messages by filter
+storage.getGroupedMessageBatches(groupName, now.minusSeconds(3600), now)
+
 
 //Writing a test event
 TestEventToStore event = new TestEventToStoreBuilder().id(new StoredTestEventId(UUID.randomUUID().toString()))
@@ -127,6 +139,15 @@ Direction is "first" or "second" depending on endpoint that generated the messag
 Message index is a number, incremented for each new message within the same stream and direction.
 
 I.e. if for the stream name="stream1" and direction="first" the last message index was 10, the next message index for this stream name and direction is expected to be 11. It can be different, but greater than 10.
+
+
+`3.2` version of cradle has different handling of messages. Concept of messages were changed, **Grouped Message Batch** was introduced.
+
+Unlike previous message batches, grouped message batch does not need to have same `stream_name`:`direction`. Purpose of grouped messages is to generate large group from small short-lived sessions for sake of efficiency.
+
+Since `stream_name`:`direction` can be different for messages inside the **Grouped Batch**, batch doesn't have id anymore.
+
+Please note that traditional message store/extraction has been **deprecated**.
 
 Messages can have metadata as a set of key-value string pairs, providing additional details about the message. Metadata cannot be used in any search requests or filtering.
 
