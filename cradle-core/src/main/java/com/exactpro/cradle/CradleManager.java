@@ -35,9 +35,10 @@ public abstract class CradleManager
 	 * Creates {@link CradleStorage} object to work with Cradle
 	 * @param maxMessageBatchSize maximum size of {@link StoredMessageBatch} (in bytes) allowed for {@link CradleStorage} while writing data
 	 * @param maxTestEventBatchSize maximum size of {@link StoredTestEventBatch} (in bytes) allowed for {@link CradleStorage} while writing data
+	 * @param eventBatchDurationMillis default duration for test event batch duration, used when no duration data was available for particular test event partition
 	 * @return instance of CradleStorage to read/write data
 	 */
-	protected abstract CradleStorage createStorage(long maxMessageBatchSize, long maxTestEventBatchSize);
+	protected abstract CradleStorage createStorage(long maxMessageBatchSize, long maxTestEventBatchSize, long eventBatchDurationMillis);
 	
 	
 	/**
@@ -46,11 +47,12 @@ public abstract class CradleManager
 	 * @param prepareStorage flag that indicates if underlying storage on disk can be created or its structure can be updated, if needed
 	 * @param maxMessageBatchSize maximum size of {@link StoredMessageBatch} (in bytes) allowed for {@link CradleStorage} while writing data
 	 * @param maxTestEventBatchSize maximum size of {@link StoredTestEventBatch} (in bytes) allowed for {@link CradleStorage} while writing data
+	 * @param eventBatchDurationMillis default duration for test event batch duration, used when no duration data was available for particular test event partition
 	 * @throws CradleStorageException if access to Cradle storage cannot be established
 	 */
-	public void init(String instanceName, boolean prepareStorage, long maxMessageBatchSize, long maxTestEventBatchSize) throws CradleStorageException
+	public void init(String instanceName, boolean prepareStorage, long maxMessageBatchSize, long maxTestEventBatchSize, long eventBatchDurationMillis) throws CradleStorageException
 	{
-		initStart(instanceName, prepareStorage, maxMessageBatchSize, maxTestEventBatchSize);
+		initStart(instanceName, prepareStorage, maxMessageBatchSize, maxTestEventBatchSize, eventBatchDurationMillis);
 		initFinish();
 	}
 	
@@ -62,7 +64,7 @@ public abstract class CradleManager
 	 */
 	public void init(String instanceName, boolean prepareStorage) throws CradleStorageException
 	{
-		initStart(instanceName, prepareStorage, StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE, StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE);
+		initStart(instanceName, prepareStorage, StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE, StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE, 0);
 		initFinish();
 	}
 	
@@ -74,7 +76,7 @@ public abstract class CradleManager
 	 */
 	public void init(String instanceName) throws CradleStorageException
 	{
-		initStart(instanceName, false, StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE, StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE);
+		initStart(instanceName, false, StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE, StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE, 0);
 		initFinish();
 	}
 	
@@ -95,11 +97,12 @@ public abstract class CradleManager
 	 * @param prepareStorage flag that indicates if underlying storage on disk can be created or its structure can be updated, if needed
 	 * @param maxMessageBatchSize maximum size of {@link StoredMessageBatch} (in bytes) allowed for {@link CradleStorage} while writing data
 	 * @param maxTestEventBatchSize maximum size of {@link StoredTestEventBatch} (in bytes) allowed for {@link CradleStorage} while writing data
+	 * @param eventBatchDurationMillis default duration for test event batch duration, used when no duration data was available for particular test event partition
 	 * @throws CradleStorageException if access to Cradle storage cannot be established
 	 */
-	public void initStart(String instanceName, boolean prepareStorage, long maxMessageBatchSize, long maxTestEventBatchSize) throws CradleStorageException
+	public void initStart(String instanceName, boolean prepareStorage, long maxMessageBatchSize, long maxTestEventBatchSize, long eventBatchDurationMillis) throws CradleStorageException
 	{
-		storage = createStorage(maxMessageBatchSize, maxTestEventBatchSize);
+		storage = createStorage(maxMessageBatchSize, maxTestEventBatchSize, eventBatchDurationMillis);
 		if (storage != null)
 			storage.init(instanceName, prepareStorage);
 	}
@@ -112,7 +115,7 @@ public abstract class CradleManager
 	 */
 	public void initStart(String instanceName, boolean prepareStorage) throws CradleStorageException
 	{
-		initStart(instanceName, prepareStorage, StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE, StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE);
+		initStart(instanceName, prepareStorage, StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE, StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE, 0);
 	}
 	
 	/**
@@ -123,7 +126,7 @@ public abstract class CradleManager
 	 */
 	public void initStart(String instanceName) throws CradleStorageException
 	{
-		initStart(instanceName, false, StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE, StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE);
+		initStart(instanceName, false, StoredMessageBatch.DEFAULT_MAX_BATCH_SIZE, StoredTestEventBatch.DEFAULT_MAX_BATCH_SIZE, 0);
 	}
 	
 	/**
