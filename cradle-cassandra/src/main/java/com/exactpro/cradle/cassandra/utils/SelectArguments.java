@@ -57,7 +57,8 @@ public class SelectArguments {
         return includeContent == arguments.includeContent
                 && idFromPresents == arguments.idFromPresents
                 && parentIdPresents == arguments.parentIdPresents
-                && orderPresents == arguments.orderPresents;
+                && orderPresents == arguments.orderPresents
+                && order == arguments.order;
     }
 
     @Override
