@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
+import com.datastax.oss.driver.api.core.session.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,7 +110,14 @@ public class PagedIterator<E> implements Iterator<E>
 		
 		ExecutionInfo ei = rows.getExecutionInfo();
 		ByteBuffer newState = ei.getPagingState();
-		Statement<?> stmt = ei.getStatement().copy(newState);
+		Request request = ei.getRequest();
+
+		if (!(request instanceof Statement)) {
+			logger.error("Execution info didn't return Statement");
+			return null;
+		}
+
+		Statement<?> stmt = ((Statement<?>) request).copy(newState);
 		
 		//Page size can be smaller than max size if RetryingSelectExecutor reduced it, so policy may restore it back
 		stmt = RetryUtils.applyPolicyVerdict(stmt, pagingSupplies.getExecPolicy().onNextPage(stmt, queryInfo));
@@ -125,7 +133,13 @@ public class PagedIterator<E> implements Iterator<E>
 			}
 			catch (Exception e)
 			{
-				stmt = ei.getStatement().copy(newState).setPageSize(stmt.getPageSize()).setConsistencyLevel(stmt.getConsistencyLevel());
+				Request req = ei.getRequest();
+				if (!(req instanceof Statement)) {
+					logger.error("Execution info didn't return Statement");
+					return null;
+				}
+
+				stmt = ((Statement<?>) request).copy(newState).setPageSize(stmt.getPageSize()).setConsistencyLevel(stmt.getConsistencyLevel());
 				stmt = RetryUtils.applyPolicyVerdict(stmt, pagingSupplies.getExecPolicy().onError(stmt, queryInfo, e, retryCount));
 				retryCount++;
 				logger.debug("Retrying next page request ({}) for '{}' with page size {} and CL {} after error: '{}'", 
