@@ -17,6 +17,7 @@
 package com.exactpro.cradle.cassandra.retries;
 
 import com.datastax.oss.driver.api.core.*;
+import com.datastax.oss.driver.api.core.cql.ExecutionInfo;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.api.core.session.Request;
@@ -80,6 +81,16 @@ public class SelectQueryExecutor
 				});
 	}
 
+	private Statement<?> getStatement(ExecutionInfo executionInfo, String queryInfo)
+	{
+		Request request = executionInfo.getRequest();
+		if (!(request instanceof Statement<?>))
+			throw new IllegalStateException(
+					"The request for query '" + queryInfo + "' has unsupported type '" + request.getClass() +
+							"' but required '"+Statement.class+"'");
+		return (Statement<?>) request;
+	}
+
 	private Statement<?> handleErrorAndGetStatement(Throwable error, CompletableFuture<?> f,
 			SelectExecutionPolicy execPolicy, String queryInfo, int retryCount)
 	{
@@ -91,14 +102,7 @@ public class SelectQueryExecutor
 			return null;
 		}
 
-		Request request = driverError.getExecutionInfo().getRequest();
-		if (!(request instanceof Statement)) {
-			logger.error("Execution info didn't return Statement");
-			f.completeExceptionally(new CradleStorageException("Execution info didn't return Statement"));
-			return null;
-		}
-
-		Statement<?> stmt = (Statement<?>) request;
+		Statement<?> stmt = getStatement(driverError.getExecutionInfo(), queryInfo);
 		try
 		{
 			return RetryUtils.applyPolicyVerdict(stmt, execPolicy.onError(stmt, queryInfo, error, retryCount));

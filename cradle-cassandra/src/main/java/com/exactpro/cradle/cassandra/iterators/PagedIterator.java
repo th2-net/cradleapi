@@ -86,8 +86,17 @@ public class PagedIterator<E> implements Iterator<E>
 		logger.trace("Getting next data row for '{}'", queryInfo);
 		return rowsIterator.next();
 	}
-	
-	
+
+	private Statement<?> getStatement(ExecutionInfo executionInfo, String queryInfo)
+	{
+		Request request = executionInfo.getRequest();
+		if (!(request instanceof Statement<?>))
+			throw new IllegalStateException(
+					"The request for query '" + queryInfo + "' has unsupported type '" + request.getClass() +
+							"' but required '"+Statement.class+"'");
+		return (Statement<?>) request;
+	}
+
 	private Iterator<E> fetchNextIterator() throws IllegalStateException, InterruptedException, ExecutionException, CannotRetryException
 	{
 		if (rows.hasMorePages())
@@ -110,14 +119,8 @@ public class PagedIterator<E> implements Iterator<E>
 		
 		ExecutionInfo ei = rows.getExecutionInfo();
 		ByteBuffer newState = ei.getPagingState();
-		Request request = ei.getRequest();
 
-		if (!(request instanceof Statement)) {
-			logger.error("Execution info didn't return Statement");
-			return null;
-		}
-
-		Statement<?> stmt = ((Statement<?>) request).copy(newState);
+		Statement<?> stmt = getStatement(ei, queryInfo).copy(newState);
 		
 		//Page size can be smaller than max size if RetryingSelectExecutor reduced it, so policy may restore it back
 		stmt = RetryUtils.applyPolicyVerdict(stmt, pagingSupplies.getExecPolicy().onNextPage(stmt, queryInfo));
@@ -133,13 +136,7 @@ public class PagedIterator<E> implements Iterator<E>
 			}
 			catch (Exception e)
 			{
-				Request req = ei.getRequest();
-				if (!(req instanceof Statement)) {
-					logger.error("Execution info didn't return Statement");
-					return null;
-				}
-
-				stmt = ((Statement<?>) request).copy(newState).setPageSize(stmt.getPageSize()).setConsistencyLevel(stmt.getConsistencyLevel());
+				stmt = getStatement(ei, queryInfo).copy(newState).setPageSize(stmt.getPageSize()).setConsistencyLevel(stmt.getConsistencyLevel());
 				stmt = RetryUtils.applyPolicyVerdict(stmt, pagingSupplies.getExecPolicy().onError(stmt, queryInfo, e, retryCount));
 				retryCount++;
 				logger.debug("Retrying next page request ({}) for '{}' with page size {} and CL {} after error: '{}'", 
