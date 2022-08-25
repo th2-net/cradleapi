@@ -710,21 +710,25 @@ public class CassandraCradleStorage extends CradleStorage
 
 
 	private<T> CompletableFuture<T> getEventTimestampAndThenCompose(StoredTestEventId fromId, Callback<Instant, CompletableFuture<T>> callback) {
+		String queryInfo = "Getting event timestamp for id " + fromId.toString();
 
-		return new AsyncOperator<DateTimeEventEntity>(semaphore)
-				.getFuture(() -> ops.getTestEventOperator().get(instanceUuid, fromId.getId(), readAttrs))
+		return selectExecutor.executeSingleRowResultQuery(
+				() -> ops.getTestEventOperator().get(
+						instanceUuid,
+						fromId.getId(),
+						readAttrs),
+				ops.getDateTimeEventEntityConverter(), queryInfo)
 				.thenCompose(eventDateTime -> {
+					if (eventDateTime == null)
+						return CompletableFuture.completedFuture(null);
+					Instant from = eventDateTime.getStartTimestamp();
 
-							if (eventDateTime == null)
-								return CompletableFuture.completedFuture(null);
-							Instant from = eventDateTime.getStartTimestamp();
-
-							try {
-								return callback.call(from);
-							} catch (Exception e) {
-								throw new CompletionException(e);
-							}
-						});
+					try {
+						return callback.call(from);
+					} catch (Exception e) {
+						throw new CompletionException(e);
+					}
+				});
 	}
 
 	@Override
