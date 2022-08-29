@@ -21,31 +21,36 @@ import com.exactpro.cradle.Order;
 import java.util.Objects;
 
 public class SelectArguments {
-    private boolean includeContent;
-    private String idFrom;
-    private String parentId;
-    private Order order;
+    private final boolean includeContent;
+    private final String idFrom;
+    private final String parentId;
+    private final String idTo;
+    private final Order order;
     private boolean idFromPresents;
+    private boolean idToPresents;
     private boolean parentIdPresents;
-    private boolean orderPresents;
-    public SelectArguments(boolean includeContent, String idFrom, String parentId, Order order){
+    public SelectArguments(boolean includeContent, String idFrom, String idTo, String parentId, Order order){
         this.includeContent = includeContent;
         this.idFrom = idFrom;
         if(idFrom != null){
             idFromPresents = true;
+        }
+        this.idTo = idTo;
+        if (idTo != null) {
+            idToPresents = true;
         }
         this.parentId = parentId;
         if(parentId != null){
             parentIdPresents = true;
         }
         this.order = order;
-        if(order != null){
-            orderPresents = true;
-        }
     }
 
     public boolean getIncludeContent() { return includeContent; }
     public String getIdFrom() { return idFrom; }
+    public String getIdTo() {
+        return idTo;
+    }
     public String getParentId() { return parentId; }
     public Order getOrder() { return order; }
 
@@ -57,12 +62,11 @@ public class SelectArguments {
         return includeContent == arguments.includeContent
                 && idFromPresents == arguments.idFromPresents
                 && parentIdPresents == arguments.parentIdPresents
-                && orderPresents == arguments.orderPresents
                 && order == arguments.order;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(includeContent, idFromPresents, parentIdPresents, orderPresents);
+        return Objects.hash(includeContent, idFromPresents, parentIdPresents, order);
     }
 }

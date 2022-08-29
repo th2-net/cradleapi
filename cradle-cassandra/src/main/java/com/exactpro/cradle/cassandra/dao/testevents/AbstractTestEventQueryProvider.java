@@ -82,7 +82,7 @@ public abstract class AbstractTestEventQueryProvider<V> {
     }
 
 
-    private Select addConditions(Select select, String idFrom, String parentId, Order order) {
+    private Select addConditions(Select select, String idFrom, String idTo, String parentId, Order order) {
         select = select
                 .whereColumn(INSTANCE_ID).isEqualTo(bindMarker(INSTANCE_ID))
                 .whereColumn(START_DATE).isEqualTo(bindMarker(START_DATE));
@@ -90,13 +90,17 @@ public abstract class AbstractTestEventQueryProvider<V> {
         if (idFrom == null)
             select = select.whereColumn(START_TIME).isGreaterThanOrEqualTo(bindMarker(START_TIME + "_FROM"));
         else
-            select = select.whereColumns(START_TIME, ID).isGreaterThanOrEqualTo(tuple(bindMarker(START_TIME + "_FROM"), bindMarker(ID)));
+            select = select.whereColumns(START_TIME, ID + "_FROM").isGreaterThanOrEqualTo(tuple(bindMarker(START_TIME + "_FROM"), bindMarker(ID)));
+
+        if (idTo == null)
+            select = select.whereColumn(START_TIME).isLessThan(bindMarker(START_TIME + "_TO"));
+        else
+            select = select.whereColumns(START_TIME, ID + "_TO").isLessThanOrEqualTo(tuple(bindMarker(START_TIME + "_FROM"), bindMarker(ID)));
+
 
 
         if (parentId != null)
             select = select.whereColumn(PARENT_ID).isEqualTo(bindMarker(PARENT_ID));
-
-        select = select.whereColumn(START_TIME).isLessThan(bindMarker(START_TIME + "_TO"));
 
         if (order != null && parentId == null) {
             ClusteringOrder orderBy = order.equals(Order.DIRECT) ? ClusteringOrder.ASC : ClusteringOrder.DESC;
@@ -108,11 +112,11 @@ public abstract class AbstractTestEventQueryProvider<V> {
     }
 
 
-    public PreparedStatement getPreparedStatement(boolean includeContent, String idFrom, String parentId, Order order){
-        SelectArguments arguments = new SelectArguments(includeContent, idFrom, parentId, order);
+    public PreparedStatement getPreparedStatement(boolean includeContent, String idFrom, String idTo, String parentId, Order order){
+        SelectArguments arguments = new SelectArguments(includeContent, idFrom, idTo, parentId, order);
         PreparedStatement preparedStatement = statementCache.computeIfAbsent(arguments, key -> {
              Select select = selectStart(key.getIncludeContent());
-             select = addConditions(select, key.getIdFrom(), key.getParentId(), key.getOrder());
+             select = addConditions(select, key.getIdFrom(), key.getIdTo(), key.getParentId(), key.getOrder());
              return session.prepare(select.build());
         });
         return preparedStatement;
@@ -124,6 +128,7 @@ public abstract class AbstractTestEventQueryProvider<V> {
             LocalDate startDate,
             LocalTime timeFrom,
             String idFrom,
+            String idTo,
             LocalTime timeTo,
             String parentId,
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
@@ -137,7 +142,10 @@ public abstract class AbstractTestEventQueryProvider<V> {
                             .setLocalTime(START_TIME + "_TO", timeTo);
 
         if (idFrom != null)
-            builder = builder.setString(ID, idFrom);
+            builder = builder.setString(ID + "_FROM", idFrom);
+
+        if (idTo != null)
+            builder = builder.setString(ID + "_TO", idTo);
 
         if (parentId != null)
             builder = builder.setString(PARENT_ID, parentId);
