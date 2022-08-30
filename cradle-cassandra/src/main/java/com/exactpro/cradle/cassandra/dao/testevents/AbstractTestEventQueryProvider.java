@@ -90,12 +90,12 @@ public abstract class AbstractTestEventQueryProvider<V> {
         if (idFrom == null)
             select = select.whereColumn(START_TIME).isGreaterThanOrEqualTo(bindMarker(START_TIME + "_FROM"));
         else
-            select = select.whereColumns(START_TIME, ID + "_FROM").isGreaterThanOrEqualTo(tuple(bindMarker(START_TIME + "_FROM"), bindMarker(ID)));
+            select = select.whereColumns(START_TIME, ID).isGreaterThanOrEqualTo(tuple(bindMarker(START_TIME + "_FROM"), bindMarker(ID + "_FROM")));
 
         if (idTo == null)
             select = select.whereColumn(START_TIME).isLessThan(bindMarker(START_TIME + "_TO"));
         else
-            select = select.whereColumns(START_TIME, ID + "_TO").isLessThanOrEqualTo(tuple(bindMarker(START_TIME + "_FROM"), bindMarker(ID)));
+            select = select.whereColumns(START_TIME, ID).isLessThanOrEqualTo(tuple(bindMarker(START_TIME + "_TO"), bindMarker(ID + "_TO")));
 
 
 
