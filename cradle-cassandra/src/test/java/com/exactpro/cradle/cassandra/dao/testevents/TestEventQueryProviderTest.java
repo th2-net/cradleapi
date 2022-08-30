@@ -61,18 +61,18 @@ public class TestEventQueryProviderTest {
 
         queryProvider = new AbstractTestEventQueryProvider<>(mapperContext, entityHelper) {
             @Override
-            public PreparedStatement getPreparedStatement(boolean includeContent, String idFrom, String parentId, Order order) {
-                return super.getPreparedStatement(includeContent, idFrom, parentId, order);
+            public PreparedStatement getPreparedStatement(boolean includeContent, String idFrom, String idTo, String parentId, Order order) {
+                return super.getPreparedStatement(includeContent, idFrom, idTo, parentId, order);
             }
         };
     }
 
     @Test
     void cachingWithNulls(){
-        PreparedStatement preparedStatement1 = queryProvider.getPreparedStatement(false, null, null, null);
+        PreparedStatement preparedStatement1 = queryProvider.getPreparedStatement(false, null, null, null, null);
         verify(session, times(1)).prepare(any(SimpleStatement.class));
 
-        PreparedStatement preparedStatement2 = queryProvider.getPreparedStatement(false, null, null, null);
+        PreparedStatement preparedStatement2 = queryProvider.getPreparedStatement(false, null, null, null, null);
         verify(session, times(1)).prepare(any(SimpleStatement.class));
 
         assertEquals(preparedStatement1, preparedStatement2);
@@ -80,10 +80,10 @@ public class TestEventQueryProviderTest {
 
     @Test
     void cachingJustIncludeContent(){
-        PreparedStatement preparedStatement1 = queryProvider.getPreparedStatement(true, null, null, null);
+        PreparedStatement preparedStatement1 = queryProvider.getPreparedStatement(true, null, null, null, null);
         verify(session, times(1)).prepare(any(SimpleStatement.class));
 
-        PreparedStatement preparedStatement2 = queryProvider.getPreparedStatement(true, null, null, null);
+        PreparedStatement preparedStatement2 = queryProvider.getPreparedStatement(true, null, null,  null, null);
         verify(session, times(1)).prepare(any(SimpleStatement.class));
 
         assertEquals(preparedStatement1, preparedStatement2);
@@ -91,10 +91,10 @@ public class TestEventQueryProviderTest {
 
     @Test
     void cachingWithDifferentIdFroms(){
-        PreparedStatement preparedStatement1 = queryProvider.getPreparedStatement(true, "idFrom1", null, null);
+        PreparedStatement preparedStatement1 = queryProvider.getPreparedStatement(true, "idFrom1", null, null, null);
         verify(session, times(1)).prepare(any(SimpleStatement.class));
 
-        PreparedStatement preparedStatement2 = queryProvider.getPreparedStatement(true, "idFrom2", null, null);
+        PreparedStatement preparedStatement2 = queryProvider.getPreparedStatement(true, "idFrom2", null, null, null);
         verify(session, times(1)).prepare(any(SimpleStatement.class));
 
         assertEquals(preparedStatement1, preparedStatement2);
@@ -102,10 +102,10 @@ public class TestEventQueryProviderTest {
 
     @Test
     void cachingWithDifferentNullArguements(){
-        PreparedStatement preparedStatement1 = queryProvider.getPreparedStatement(true, "idFrom", "parentId", null);
+        PreparedStatement preparedStatement1 = queryProvider.getPreparedStatement(true, "idFrom", null, "parentId", null);
         verify(session, times(1)).prepare(any(SimpleStatement.class));
 
-        PreparedStatement preparedStatement2 = queryProvider.getPreparedStatement(true, "idFrom", null, null);
+        PreparedStatement preparedStatement2 = queryProvider.getPreparedStatement(true, "idFrom", null, null, null);
         verify(session, times(2)).prepare(any(SimpleStatement.class));
 
         assertNotEquals(preparedStatement1, preparedStatement2);
