@@ -27,7 +27,6 @@ import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.Order;
-import com.exactpro.cradle.cassandra.utils.SelectArguments;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -46,13 +45,9 @@ public abstract class AbstractTestEventQueryProvider<V> {
     private final CqlSession session;
     private final EntityHelper<V> helper;
 
-    private final Map<SelectArguments, PreparedStatement> statementCache;
-
-
     public AbstractTestEventQueryProvider(MapperContext context, EntityHelper<V> helper) {
         this.session = context.getSession();
         this.helper = helper;
-        statementCache = new ConcurrentHashMap<>();
     }
 
 
@@ -113,13 +108,9 @@ public abstract class AbstractTestEventQueryProvider<V> {
 
 
     public PreparedStatement getPreparedStatement(boolean includeContent, String idFrom, String idTo, String parentId, Order order){
-        SelectArguments arguments = new SelectArguments(includeContent, idFrom, idTo, parentId, order);
-        PreparedStatement preparedStatement = statementCache.computeIfAbsent(arguments, key -> {
-             Select select = selectStart(key.getIncludeContent());
-             select = addConditions(select, key.getIdFrom(), key.getIdTo(), key.getParentId(), key.getOrder());
-             return session.prepare(select.build());
-        });
-        return preparedStatement;
+        Select select = selectStart(includeContent);
+        select = addConditions(select, idFrom, idTo, parentId, order);
+        return session.prepare(select.build());
     }
 
     protected BoundStatement bindParameters(
