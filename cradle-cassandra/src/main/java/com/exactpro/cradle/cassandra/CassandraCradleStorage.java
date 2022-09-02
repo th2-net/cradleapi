@@ -788,7 +788,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 		return getEventTimestampAndThenCompose(fromId, from -> {
 
-				TestEventsQueryParams params = new TestEventsQueryParams(fromId, from, to, 0, Order.DIRECT);
+				TestEventsQueryParams params = new TestEventsQueryParams(null, fromId, from, to, Order.DIRECT, 0);
 				String queryInfo = String.format("get test events' metadata starting with id %s from range %s..%s", fromId, from, to);
 
 				return selectExecutor.executeMultiRowResultQuery(() ->
@@ -1266,11 +1266,11 @@ public class CassandraCradleStorage extends CradleStorage
     adjusts query params accordingly
  	*/
 	private TestEventsQueryParams getAdjustedQueryParams (StoredTestEventId parentId, Instant from, Instant to, Order order) throws CradleStorageException {
-		long maxBatchDurationMillis = eventBatchDurationCache.getMaxDuration(
+		long maxBatchDurationMillis = eventBatchDurationWorker.getMaxDuration(
 				new EventBatchDurationCache.CacheKey(instanceUuid, LocalDateTime.ofInstant(from, TIMEZONE_OFFSET).toLocalDate()));
 
 
-		return new TestEventsQueryParams(parentId, from, to, maxBatchDurationMillis, order);
+		return new TestEventsQueryParams(parentId, null, from, to, order, maxBatchDurationMillis);
 	}
 
 
