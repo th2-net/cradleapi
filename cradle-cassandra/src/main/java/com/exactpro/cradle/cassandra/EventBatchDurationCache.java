@@ -52,66 +52,28 @@ public class EventBatchDurationCache {
     }
 
     private final Cache<CacheKey, Long> durationsCache;
-    private final EventBatchMaxDurationOperator operator;
-    private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
-    private final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs;
-    private final long defaultBatchDurationMillis;
 
-
-    public EventBatchDurationCache(
-            EventBatchMaxDurationOperator operator,
-            Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs,
-            Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
-            int limit,
-            long defaultBatchDurationMillis) {
-        this.operator = operator;
-        this.readAttrs = readAttrs;
-        this.writeAttrs = writeAttrs;
+    public EventBatchDurationCache(int limit) {
         this.durationsCache = CacheBuilder.newBuilder().maximumSize(limit).build();
-        this.defaultBatchDurationMillis = defaultBatchDurationMillis;
     }
 
-    public CompletableFuture<Void> updateMaxDuration(CacheKey key, long duration) throws CradleStorageException {
+    public Long getMaxDuration (CacheKey cacheKey) {
+        synchronized (durationsCache) {
+            return durationsCache.getIfPresent(cacheKey);
+        }
+    }
+
+    public void updateCache(CacheKey key, long duration) {
         synchronized (durationsCache) {
             Long cached = durationsCache.getIfPresent(key);
 
             if (cached != null) {
                 if (cached > duration) {
-                    return CompletableFuture.completedFuture(null);
+                    return;
                 }
             }
+
+            durationsCache.put(key, duration);
         }
-
-
-        return operator.writeMaxDuration(key.getUuid(), key.getDate(), duration, writeAttrs)
-                .thenAcceptAsync((res) -> operator.updateMaxDuration(key.getUuid(), key.getDate(), duration, duration, writeAttrs))
-                .whenComplete((rtn, e) -> {
-                    if (e != null) {
-                        synchronized (durationsCache) {
-                            Long cached = durationsCache.getIfPresent(key);
-
-                            if (cached != null) {
-                                // cache might be updated by other threads, need to check again
-                                if (cached > duration) {
-                                    return;
-                                }
-                            }
-
-                            durationsCache.put(key, duration);
-                        }
-                    }
-                });
-    }
-
-    public long getMaxDuration(CacheKey key) {
-        EventBatchMaxDurationEntity entity = operator.getMaxDuration(key.getUuid(), key.getDate(), readAttrs);
-
-        if (entity == null) {
-            logger.trace("Could not get max duration for key ({}, {}), returning default value", key.getUuid(), key.getDate());
-
-            return defaultBatchDurationMillis;
-        }
-
-        return entity.getMaxBatchDuration();
     }
 }

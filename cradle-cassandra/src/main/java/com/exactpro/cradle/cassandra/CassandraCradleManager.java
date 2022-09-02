@@ -32,15 +32,15 @@ public class CassandraCradleManager extends CradleManager
 	}
 
 	@Override
-	protected CradleStorage createStorage(long maxMessageBatchSize, long maxTestEventBatchSize)
+	protected CradleStorage createStorage(long maxMessageBatchSize, long maxTestEventBatchSize, long eventBatchDurationMillis)
 	{
 		CassandraConnectionSettings settings = connection.getSettings();
-		CassandraStorageSettings storageSettings = createStorageSettings(settings, maxMessageBatchSize, maxTestEventBatchSize);
+		CassandraStorageSettings storageSettings = createStorageSettings(settings, maxMessageBatchSize, maxTestEventBatchSize, eventBatchDurationMillis);
 		
 		return new CassandraCradleStorage(connection, storageSettings);
 	}
 	
-	protected CassandraStorageSettings createStorageSettings(CassandraConnectionSettings connectionSettings, long maxMessageBatchSize, long maxTestEventBatchSize)
+	protected CassandraStorageSettings createStorageSettings(CassandraConnectionSettings connectionSettings, long maxMessageBatchSize, long maxTestEventBatchSize, long eventBatchDurationMillis)
 	{
 		CassandraStorageSettings result = new CassandraStorageSettings(connectionSettings.getKeyspace(),
 				connectionSettings.getNetworkTopologyStrategy(),
@@ -51,6 +51,10 @@ public class CassandraCradleManager extends CradleManager
 			result.setMaxMessageBatchSize(maxMessageBatchSize);
 		if (maxTestEventBatchSize > 0)
 			result.setMaxTestEventBatchSize(maxTestEventBatchSize);
+		if (eventBatchDurationMillis > 0) {
+			result.setEventBatchDurationMillis(eventBatchDurationMillis);
+		}
+
 		return result;
 	}
 }

@@ -146,7 +146,7 @@ public abstract class AbstractTestEventQueryProvider<V> {
 
     protected CompletableFuture<MappedAsyncPagingIterable<V>> execute(BoundStatement statement) {
         return session.executeAsync(statement)
-                .thenApply(r -> r.map(helper::get))
+                .thenApply(r -> r.map(source -> helper.get(source, false)))
                 .toCompletableFuture();
     }
 }

@@ -91,7 +91,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 	private IntervalsWorker intervalsWorker;
 
-	private EventBatchDurationCache eventBatchDurationCache;
+	private EventBatchDurationWorker eventBatchDurationWorker;
 
 	public CassandraCradleStorage(CassandraConnection connection, CassandraStorageSettings settings)
 	{
@@ -171,10 +171,11 @@ public class CassandraCradleStorage extends CradleStorage
 			intervalsWorker =
 					new CassandraIntervalsWorker(semaphore, instanceUuid, writeAttrs, readAttrs, intervalSupplies);
 
-			eventBatchDurationCache = new EventBatchDurationCache(ops.getEventBatchMaxLengthOperator(),
+			eventBatchDurationWorker = new EventBatchDurationWorker(
+					new EventBatchDurationCache(settings.getEventBatchDurationCacheSize()),
+					ops.getEventBatchMaxLengthOperator(),
 					readAttrs,
 					writeAttrs,
-					settings.getEventBatchDurationCacheSize(),
 					settings.getEventBatchDurationMillis());
 
 			return instanceUuid.toString();
@@ -285,11 +286,15 @@ public class CassandraCradleStorage extends CradleStorage
 		try
 		{
 			DetailedTestEventEntity detailedEntity = new DetailedTestEventEntity(event, instanceUuid);
-			CompletableFuture<Void> updateMaxDuration;
+			CompletableFuture<Void> updateMaxDuration = CompletableFuture.completedFuture(null);
 			try {
-				updateMaxDuration =  eventBatchDurationCache.updateMaxDuration(
-						new EventBatchDurationCache.CacheKey(instanceUuid, detailedEntity.getStartDate()),
-						Duration.between(detailedEntity.getStartTime(), detailedEntity.getEndTime()).toMillis());
+				// if possible extract and store duration for this batch
+				if (detailedEntity.getStartTime() != null && detailedEntity.getEndTime() != null) {
+					updateMaxDuration =  eventBatchDurationWorker.updateMaxDuration(
+							new EventBatchDurationCache.CacheKey(instanceUuid, detailedEntity.getStartDate()),
+							Duration.between(detailedEntity.getStartTime(), detailedEntity.getEndTime()).toMillis());
+				}
+
 			} catch (CradleStorageException e) {
 				logger.error("Could not update max length for event batch with date {}", detailedEntity.getStartDate());
 				throw new CradleStorageException("Could not update max length for event batch", e);
@@ -786,7 +791,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 		return getEventTimestampAndThenCompose(fromId, from -> {
 
-				TestEventsQueryParams params = new TestEventsQueryParams(fromId, from, to, 0, Order.DIRECT);
+				TestEventsQueryParams params = new TestEventsQueryParams(null, fromId, from, to, Order.DIRECT, 0);
 				String queryInfo = String.format("get test events' metadata starting with id %s from range %s..%s", fromId, from, to);
 
 				return selectExecutor.executeMultiRowResultQuery(() ->
@@ -1411,11 +1416,11 @@ public class CassandraCradleStorage extends CradleStorage
     adjusts query params accordingly
  	*/
 	private TestEventsQueryParams getAdjustedQueryParams (StoredTestEventId parentId, Instant from, Instant to, Order order) throws CradleStorageException {
-		long maxBatchDurationMillis = eventBatchDurationCache.getMaxDuration(
+		long maxBatchDurationMillis = eventBatchDurationWorker.getMaxDuration(
 				new EventBatchDurationCache.CacheKey(instanceUuid, LocalDateTime.ofInstant(from, TIMEZONE_OFFSET).toLocalDate()));
 
 
-		return new TestEventsQueryParams(parentId, from, to, maxBatchDurationMillis, order);
+		return new TestEventsQueryParams(parentId, null, from, to, order, maxBatchDurationMillis);
 	}
 
 
@@ -1454,10 +1459,15 @@ public class CassandraCradleStorage extends CradleStorage
 			this (null, fromId, null, from, to, order, 0);
 		}
 
-		public TestEventsQueryParams(StoredTestEventId parentId, Instant from, Instant to, long adjustMillis, Order order)
+		public TestEventsQueryParams(StoredTestEventId parentId, Instant from, Instant to, long adjustMillis)
 				throws CradleStorageException
 		{
-			this (parentId, null, null, from, to, order, adjustMillis);
+			this (parentId, null, from, to, Order.DIRECT, adjustMillis);
+		}
+
+		public TestEventsQueryParams(Instant from, Instant to, long adjustMillis) throws CradleStorageException
+		{
+			this(null, from, to, adjustMillis);
 		}
 
 		private void checkTimeBoundaries(LocalDateTime fromDateTime, LocalDateTime toDateTime, Instant originalFrom,

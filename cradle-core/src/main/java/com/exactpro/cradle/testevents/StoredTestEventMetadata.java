@@ -20,9 +20,13 @@ import java.io.IOException;
 import java.time.Instant;
 
 import com.exactpro.cradle.utils.TestEventUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StoredTestEventMetadata implements StoredTestEvent
 {
+	private final Logger logger = LoggerFactory.getLogger(StoredTestEventMetadata.class);
+
 	private StoredTestEventId id;
 	private String name,
 			type;
@@ -194,5 +198,21 @@ public class StoredTestEventMetadata implements StoredTestEvent
 	public void setBatchMetadataBytes(byte[] batchMetadataBytes)
 	{
 		this.batchMetadataBytes = batchMetadataBytes;
+	}
+
+	public Instant getMaxStartTimestamp () {
+		Instant maxStart = getStartTimestamp();
+
+		try {
+			for (BatchedStoredTestEventMetadata event : getBatchMetadata().getTestEvents()) {
+				if (maxStart == null || maxStart.isBefore(event.getStartTimestamp())) {
+					maxStart = event.getStartTimestamp();
+				}
+			}
+		} catch (IOException e) {
+			logger.warn("Could not get max timestamp from batch metadata: " + e.getMessage());
+		}
+
+		return maxStart;
 	}
 }
