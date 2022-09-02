@@ -18,6 +18,7 @@ package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookInfo;
+import com.exactpro.cradle.Order;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
@@ -54,11 +55,16 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 	private final int limit;
 	private final AtomicInteger returned;
 	protected CassandraGroupedMessageFilter cassandraFilter;
-	
+	private final Order order;
+
 	public GroupedMessageIteratorProvider(String requestInfo,
-										  GroupedMessageFilter filter, CassandraOperators operators, BookInfo book,
-										  ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
-										  Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException
+										  GroupedMessageFilter filter,
+										  CassandraOperators operators,
+										  BookInfo book,
+										  ExecutorService composingService,
+										  SelectQueryExecutor selectQueryExecutor,
+										  Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs,
+										  Order order) throws CradleStorageException
 	{
 
 		super(requestInfo);
@@ -74,13 +80,22 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 		// TODO: Get message batch before *from* timestamp
 		this.firstPage = FilterUtils.findFirstPage(filter.getPageId(), filter.getFrom(), book);
 		this.lastPage = FilterUtils.findLastPage(filter.getPageId(), filter.getTo(), book);
+		this.order = order;
+
+		// Filter should be initialized last as it might use above initialized properties
 		this.cassandraFilter = createInitialFilter(filter);
 	}
 
 	private CassandraGroupedMessageFilter createInitialFilter(GroupedMessageFilter filter)
 	{
-		return new CassandraGroupedMessageFilter(book.getId().getName(), firstPage.getId().getName(),
-				filter.getGroupName(), filter.getFrom(), filter.getTo(), filter.getLimit());
+		return new CassandraGroupedMessageFilter(
+				book.getId().getName(),
+				firstPage.getId().getName(),
+				filter.getGroupName(),
+				filter.getFrom(),
+				filter.getTo(),
+				order,
+				filter.getLimit());
 	}
 
 	protected CassandraGroupedMessageFilter createNextFilter(CassandraGroupedMessageFilter prevFilter, int updatedLimit)
@@ -91,8 +106,14 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 
 		PageInfo nextPage = book.getNextPage(prevPage.getStarted());
 
-		return new CassandraGroupedMessageFilter(book.getId().getName(), nextPage.getId().getName(),
-				prevFilter.getGroupName(), prevFilter.getMessageTimeFrom(), prevFilter.getMessageTimeTo(), updatedLimit);
+		return new CassandraGroupedMessageFilter(
+				book.getId().getName(),
+				nextPage.getId().getName(),
+				prevFilter.getGroupName(),
+				prevFilter.getMessageTimeFrom(),
+				prevFilter.getMessageTimeTo(),
+				order,
+				updatedLimit);
 	}
 
 	@Override
