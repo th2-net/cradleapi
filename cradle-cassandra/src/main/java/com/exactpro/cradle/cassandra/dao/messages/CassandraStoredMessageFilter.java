@@ -17,8 +17,10 @@
 package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
+import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.querybuilder.relation.MultiColumnRelationBuilder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
+import com.exactpro.cradle.Order;
 import com.exactpro.cradle.cassandra.dao.CassandraFilter;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
 import com.exactpro.cradle.filters.ComparisonOperation;
@@ -49,6 +51,8 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 
 	private final Integer limit;
 
+	private final Order order;
+
 	public CassandraStoredMessageFilter(String book, String page, String sessionAlias, String direction,
 										FilterForGreater<Instant> messageTimeFrom, FilterForLess<Instant> messageTimeTo,
 										FilterForAny<Long> sequence)
@@ -61,11 +65,12 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 		this.messageTimeTo = messageTimeTo;
 		this.sequence = sequence;
 		this.limit = 0;
+		this.order = Order.DIRECT;
 	}
 
 	public CassandraStoredMessageFilter(String book, String page, String sessionAlias, String direction,
 										FilterForGreater<Instant> messageTimeFrom, FilterForLess<Instant> messageTimeTo,
-										FilterForAny<Long> sequence, int limit)
+										FilterForAny<Long> sequence, int limit, Order order)
 	{
 		this.book = book;
 		this.page = page;
@@ -75,6 +80,7 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 		this.messageTimeTo = messageTimeTo;
 		this.sequence = sequence;
 		this.limit = limit;
+		this.order = order;
 	}
 
 	@Override
@@ -94,6 +100,11 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 				select = FilterUtils.timestampFilterToWhere(messageTimeFrom.getOperation(), select, FIELD_FIRST_MESSAGE_DATE, FIELD_FIRST_MESSAGE_TIME, DATE_FROM, TIME_FROM);
 			if (messageTimeTo != null)
 				select = FilterUtils.timestampFilterToWhere(messageTimeTo.getOperation(), select, FIELD_FIRST_MESSAGE_DATE, FIELD_FIRST_MESSAGE_TIME, DATE_TO, TIME_TO);
+
+			ClusteringOrder orderBy = (order == Order.DIRECT) ? ClusteringOrder.ASC : ClusteringOrder.DESC;
+			select = select.orderBy(FIELD_FIRST_MESSAGE_DATE, orderBy)
+					.orderBy(FIELD_FIRST_MESSAGE_TIME, orderBy)
+					.orderBy(FIELD_SEQUENCE, orderBy);
 		}
 
 		if (limit != 0) {
