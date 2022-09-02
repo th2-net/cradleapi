@@ -91,6 +91,8 @@ public class CassandraCradleStorage extends CradleStorage
 
 	private IntervalsWorker intervalsWorker;
 
+	private EventBatchDurationWorker eventBatchDurationWorker;
+
 	public CassandraCradleStorage(CassandraConnection connection, CassandraStorageSettings settings)
 	{
 		CassandraConnectionSettings conSettings = connection.getSettings();
@@ -168,6 +170,14 @@ public class CassandraCradleStorage extends CradleStorage
 					new IntervalSupplies(ops.getIntervalOperator(), ops.getIntervalConverter(), pagingSupplies);
 			intervalsWorker =
 					new CassandraIntervalsWorker(semaphore, instanceUuid, writeAttrs, readAttrs, intervalSupplies);
+
+			eventBatchDurationWorker = new EventBatchDurationWorker(
+					new EventBatchDurationCache(settings.getEventBatchDurationCacheSize()),
+					ops.getEventBatchMaxLengthOperator(),
+					readAttrs,
+					writeAttrs,
+					settings.getEventBatchDurationMillis());
+
 			return instanceUuid.toString();
 		}
 		catch (IOException e)
@@ -275,11 +285,27 @@ public class CassandraCradleStorage extends CradleStorage
 		List<CompletableFuture<Void>> futures = new ArrayList<>();
 		try
 		{
-			futures.add(storeTimeEvent(new DetailedTestEventEntity(event, instanceUuid)));
+			DetailedTestEventEntity detailedEntity = new DetailedTestEventEntity(event, instanceUuid);
+			CompletableFuture<Void> updateMaxDuration = CompletableFuture.completedFuture(null);
+			try {
+				// if possible extract and store duration for this batch
+				if (detailedEntity.getStartTime() != null && detailedEntity.getEndTime() != null) {
+					updateMaxDuration =  eventBatchDurationWorker.updateMaxDuration(
+							new EventBatchDurationCache.CacheKey(instanceUuid, detailedEntity.getStartDate()),
+							Duration.between(detailedEntity.getStartTime(), detailedEntity.getEndTime()).toMillis());
+				}
+
+			} catch (CradleStorageException e) {
+				logger.error("Could not update max length for event batch with date {}", detailedEntity.getStartDate());
+				throw new CradleStorageException("Could not update max length for event batch", e);
+			}
+
+			futures.add(storeTimeEvent(detailedEntity));
+			futures.add(updateMaxDuration);
 			futures.add(storeDateTime(new DateTimeEventEntity(event, instanceUuid)));
 			futures.add(storeChildrenDates(new ChildrenDatesEventEntity(event, instanceUuid)));
 		}
-		catch (IOException e)
+		catch (IOException | CradleStorageException e)
 		{
 			CompletableFuture<Void> error = new CompletableFuture<>();
 			error.completeExceptionally(e);
@@ -649,7 +675,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsAsync(StoredTestEventId parentId,
 			Instant from, Instant to) throws CradleStorageException
 	{
-		TestEventsQueryParams params = new TestEventsQueryParams(parentId, from, to);
+		TestEventsQueryParams params = getAdjustedQueryParams(parentId, from, to);
 		String queryInfo = String.format("get %s from range %s..%s",
 				parentId == null ? "root" : "child test events of '" + parentId + "'", from, to);
 
@@ -664,7 +690,7 @@ public class CassandraCradleStorage extends CradleStorage
 								readAttrs),
 						ops.getTestEventConverter(), queryInfo)
 				.thenApply(r -> new TestEventDataIteratorAdapter(r, objectsFactory, pagingSupplies,
-						ops.getTestEventConverter(), queryInfo));
+						ops.getTestEventConverter(), from, queryInfo));
 	}
 
 	@Override
@@ -725,7 +751,7 @@ public class CassandraCradleStorage extends CradleStorage
 												readAttrs),
 								ops.getTestEventConverter(), queryInfo)
 								.thenApply(r -> new TestEventDataIteratorAdapter(r, objectsFactory, pagingSupplies,
-										ops.getTestEventConverter(), queryInfo));
+										ops.getTestEventConverter(), from, queryInfo));
 
 		});
 	}
@@ -735,7 +761,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 		return getEventTimestampAndThenCompose(fromId, from -> {
 
-				TestEventsQueryParams params = new TestEventsQueryParams(parentId, fromId, from, to, null);
+				TestEventsQueryParams params = new TestEventsQueryParams(parentId, fromId, from, to, null, 0);
 				String queryInfo = String.format("get test events starting with id %s and parentId %s from range %s..%s", fromId, parentId, from, to);
 
 				return selectExecutor.executeMultiRowResultQuery(() ->
@@ -749,7 +775,7 @@ public class CassandraCradleStorage extends CradleStorage
 												readAttrs),
 										ops.getTestEventConverter(), queryInfo)
 									.thenApply(r -> new TestEventDataIteratorAdapter(r, objectsFactory, pagingSupplies,
-												ops.getTestEventConverter(), queryInfo));
+												ops.getTestEventConverter(), from, queryInfo));
 		});
 	}
 
@@ -758,7 +784,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 		return getEventTimestampAndThenCompose(fromId, from -> {
 
-				TestEventsQueryParams params = new TestEventsQueryParams(fromId, from, to);
+				TestEventsQueryParams params = new TestEventsQueryParams(fromId, from, to, 0);
 				String queryInfo = String.format("get test events' metadata starting with id %s from range %s..%s", fromId, from, to);
 
 				return selectExecutor.executeMultiRowResultQuery(() ->
@@ -773,6 +799,7 @@ public class CassandraCradleStorage extends CradleStorage
 								ops.getTestEventMetadataConverter(), queryInfo)
 								.thenApply(r -> new TestEventMetadataIteratorAdapter(r, pagingSupplies,
 										ops.getTestEventMetadataConverter(),
+										from,
 										queryInfo));
 		});
 	}
@@ -782,7 +809,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 		return getEventTimestampAndThenCompose(fromId, from -> {
 
-				TestEventsQueryParams params = new TestEventsQueryParams(parentId, fromId, from, to, null);
+				TestEventsQueryParams params = new TestEventsQueryParams(parentId, fromId, from, to, null, 0);
 				String queryInfo = String.format("get test events' metadata starting with id %s and parentId %s from range %s..%s", fromId, parentId, from, to);
 
 				return selectExecutor.executeMultiRowResultQuery(() ->
@@ -797,6 +824,7 @@ public class CassandraCradleStorage extends CradleStorage
 								ops.getTestEventMetadataConverter(), queryInfo)
 						.thenApply(r -> new TestEventMetadataIteratorAdapter(r, pagingSupplies,
 						ops.getTestEventMetadataConverter(),
+						from,
 						queryInfo));
 		});
 	}
@@ -805,7 +833,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsMetadataAsync(
 			StoredTestEventId parentId, Instant from, Instant to) throws CradleStorageException
 	{
-		TestEventsQueryParams params = new TestEventsQueryParams(parentId, from, to);
+		TestEventsQueryParams params = getAdjustedQueryParams(parentId, from, to);
 		String queryInfo = String.format("get %s from range %s..%s",
 				parentId == null ? "root" : "child test events' metadata of '" + parentId + "'", from, to);
 
@@ -821,6 +849,7 @@ public class CassandraCradleStorage extends CradleStorage
 						ops.getTestEventMetadataConverter(), queryInfo)
 				.thenApply(r -> new TestEventMetadataIteratorAdapter(r, pagingSupplies,
 						ops.getTestEventMetadataConverter(),
+						from,
 						queryInfo));
 	}
 
@@ -865,7 +894,8 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsAsync(Instant from, Instant to)
 			throws CradleStorageException
 	{
-		TestEventsQueryParams params = new TestEventsQueryParams(from, to);
+		TestEventsQueryParams params = getAdjustedQueryParams(null, from, to);
+
 		String queryInfo = String.format("get test events from range %s..%s", from, to);
 
 		return selectExecutor.executeMultiRowResultQuery(
@@ -873,14 +903,15 @@ public class CassandraCradleStorage extends CradleStorage
 						params.getFromDate(), params.getFromTime(), params.getToTime(), readAttrs),
 				ops.getTestEventConverter(), queryInfo)
 				.thenApply(entity -> new TestEventDataIteratorAdapter(entity, objectsFactory, pagingSupplies,
-						ops.getTestEventConverter(), queryInfo));
+						ops.getTestEventConverter(), from, queryInfo));
 	}
 
 	@Override
 	protected CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsMetadataAsync(Instant from,
 			Instant to) throws CradleStorageException
 	{
-		TestEventsQueryParams params = new TestEventsQueryParams(from, to);
+
+		TestEventsQueryParams params = getAdjustedQueryParams(null, from, to);
 		String queryInfo = String.format("get test events' metadata from range %s..%s", from, to);
 
 		return selectExecutor.executeMultiRowResultQuery(() ->
@@ -894,7 +925,7 @@ public class CassandraCradleStorage extends CradleStorage
 								readAttrs),
 						ops.getTestEventMetadataConverter(), queryInfo)
 				.thenApply(entity -> new TestEventMetadataIteratorAdapter(entity, pagingSupplies,
-						ops.getTestEventMetadataConverter(), queryInfo));
+						ops.getTestEventMetadataConverter(), from, queryInfo));
 	}
 
 
@@ -1171,6 +1202,19 @@ public class CassandraCradleStorage extends CradleStorage
 		R call(T param) throws Exception;
 	}
 
+	/*
+    Get max batch length for current partition,
+    adjusts query params accordingly
+ 	*/
+	private TestEventsQueryParams getAdjustedQueryParams (StoredTestEventId parentId, Instant from, Instant to) throws CradleStorageException {
+		long maxBatchDurationMillis = eventBatchDurationWorker.getMaxDuration(
+				new EventBatchDurationCache.CacheKey(instanceUuid, LocalDateTime.ofInstant(from, TIMEZONE_OFFSET).toLocalDate()));
+
+
+		return new TestEventsQueryParams(parentId, from, to, maxBatchDurationMillis);
+	}
+
+
 	private static class TestEventsQueryParams
 	{
 		private final LocalDateTime fromDateTime, toDateTime;
@@ -1178,10 +1222,18 @@ public class CassandraCradleStorage extends CradleStorage
 		private final String fromId;
 		private final Order order;
 
-		public TestEventsQueryParams(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to, Order order)
+		public TestEventsQueryParams(StoredTestEventId parentId, StoredTestEventId fromId, Instant from, Instant to, Order order, long adjustMillis)
 				throws CradleStorageException
 		{
-			this.fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET);
+			var original = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET);
+			var adjusted = LocalDateTime.ofInstant(from.minusMillis(adjustMillis), TIMEZONE_OFFSET);
+
+			// Adjustment took us to previous partition, get start of current partition
+			if (!original.toLocalDate().equals(adjusted.toLocalDate())) {
+				adjusted = original.toLocalDate().atStartOfDay();
+			}
+
+			this.fromDateTime = adjusted;
 			this.toDateTime = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
 			this.parentId = (parentId == null) ? ROOT_EVENT_PARENT_ID : parentId.toString();
 			this.fromId = (fromId == null) ? null : fromId.getId();
@@ -1193,18 +1245,18 @@ public class CassandraCradleStorage extends CradleStorage
 		public TestEventsQueryParams(StoredTestEventId fromId, Instant from, Instant to, Order order)
 				throws CradleStorageException
 		{
-			this (null, fromId, from, to, order);
+			this (null, fromId, from, to, order, 0);
 		}
 
-		public TestEventsQueryParams(StoredTestEventId parentId, Instant from, Instant to)
+		public TestEventsQueryParams(StoredTestEventId parentId, Instant from, Instant to, long adjustMillis)
 				throws CradleStorageException
 		{
-			this (parentId, null, from, to, Order.DIRECT);
+			this (parentId, null, from, to, Order.DIRECT, adjustMillis);
 		}
 
-		public TestEventsQueryParams(Instant from, Instant to) throws CradleStorageException
+		public TestEventsQueryParams(Instant from, Instant to, long adjustMillis) throws CradleStorageException
 		{
-			this(null, from, to);
+			this(null, from, to, adjustMillis);
 		}
 
 		private void checkTimeBoundaries(LocalDateTime fromDateTime, LocalDateTime toDateTime, Instant originalFrom,

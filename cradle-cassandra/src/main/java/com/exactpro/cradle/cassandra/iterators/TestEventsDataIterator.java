@@ -23,19 +23,70 @@ import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventConverte
 import com.exactpro.cradle.cassandra.retries.PagingSupplies;
 import com.exactpro.cradle.testevents.StoredTestEventWrapper;
 import com.exactpro.cradle.utils.CradleStorageException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.util.NoSuchElementException;
 
 public class TestEventsDataIterator extends ConvertingPagedIterator<StoredTestEventWrapper, TestEventEntity>
 {
+	private final Logger logger = LoggerFactory.getLogger(TestEventsDataIterator.class);
+
 	private final CradleObjectsFactory objectsFactory;
+	private final Instant actualFrom;
+	private StoredTestEventWrapper preFetchedElement;
 
 	public TestEventsDataIterator(MappedAsyncPagingIterable<TestEventEntity> rows,
 			PagingSupplies pagingSupplies, TestEventConverter converter,
-			CradleObjectsFactory objectsFactory, String queryInfo)
+			CradleObjectsFactory objectsFactory, Instant actualFrom, String queryInfo)
 	{
 		super(rows, pagingSupplies, converter, queryInfo);
 		this.objectsFactory = objectsFactory;
+		this.actualFrom = actualFrom;
+	}
+
+	private boolean skipToValid() {
+		if (!super.hasNext()) {
+			return false;
+		}
+
+		StoredTestEventWrapper nextEl = super.next();
+
+		while (super.hasNext() && nextEl.getMaxStartTimestamp().isBefore(actualFrom)) {
+			logger.trace("Skipping event with start timestamp {}, actual request was from {}", nextEl.getStartTimestamp(), actualFrom);
+			nextEl = super.next();
+		}
+
+		if (nextEl.getMaxStartTimestamp().isBefore(actualFrom)) {
+			return false;
+		}
+
+		preFetchedElement = nextEl;
+
+		return true;
+	}
+
+	@Override
+	public boolean hasNext() {
+		if (preFetchedElement != null) {
+			return true;
+		}
+
+		return skipToValid();
+	}
+
+	@Override
+	public StoredTestEventWrapper next() {
+		if (hasNext()) {
+			StoredTestEventWrapper rtn = preFetchedElement;
+			preFetchedElement = null;
+
+			return rtn;
+		}
+
+		throw new NoSuchElementException("There are no more elements in iterator");
 	}
 
 	@Override

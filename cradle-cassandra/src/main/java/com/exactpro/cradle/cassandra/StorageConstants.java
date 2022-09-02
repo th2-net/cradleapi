@@ -70,5 +70,6 @@ public class StorageConstants
 			PARENT_ID = "parent_id",
 
 			INDEX_NAME_POSTFIX = "_idx",
-			ROOT_EVENT_PARENT_ID = "";
+			ROOT_EVENT_PARENT_ID = "",
+			MAX_BATCH_DURATION = "max_batch_duration";
 }
