@@ -113,7 +113,7 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
 					// Updated limit should be smaller, since we already got entities from previous batch
 					cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(),0));
-					return new ConvertingPagedIterator<>(resultSet, selectQueryExecutor, limit, returned,
+					return new ConvertingPagedIterator<>(resultSet, selectQueryExecutor, 0, new AtomicInteger(),
 							entity -> MessagesWorker.mapGroupedMessageBatchEntity(pageId, entity), converter::getEntity,
 							"fetch next page of message batches");
 				}, composingService)
