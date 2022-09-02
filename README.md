@@ -1,4 +1,4 @@
-# Cradle API (3.1.1)
+# Cradle API (3.1.3)
 
 ## Overview
 
@@ -37,7 +37,7 @@ repositories {
 To use Cradle API, add the following dependency to your project:
 ```
 dependencies {
-	implementation 'com.exactpro.th2:cradle-cassandra:3.1.1'
+	implementation 'com.exactpro.th2:cradle-cassandra:3.1.3'
 	...
 }
 ```
@@ -141,6 +141,17 @@ Events in a batch can have a reference only to the parent of the batch or other 
 Test events have mandatory parameters that are verified when storing an event. These are: id, name (for non-batch events), start timestamp.
 
 ## Release notes
+
+### 3.1.3 (This version requires migration from previous versions)
+
++ Fixed Unicode string serialization bugs
++ Fixed semaphore handling bug causing deadlock on heavy loads
++ Fixed log4j dependency declarations
++ Datastax Cassandra driver updated to 4.14.1
++ Added multiple API methods to get events from/to specific event id, added data retrieval ordering
++ Tracking event-batch maximum duration to handle overlapping batches on event retrieval. 
+Additional table event_batch_max_durations was introduced. This was necessary to correctly return batches that 
+has event for given start date
 
 ### 3.1.1 (This version requires migration from previous versions)
 
