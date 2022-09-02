@@ -23,14 +23,9 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.mapper.MapperContext;
 import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
 import com.exactpro.cradle.Order;
-
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
 
 import static org.mockito.Mockito.*;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotEquals;
 
 
 public class TestEventQueryProviderTest {

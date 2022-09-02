@@ -30,10 +30,8 @@ import com.exactpro.cradle.Order;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
