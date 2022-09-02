@@ -17,7 +17,9 @@
 package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
+import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
+import com.exactpro.cradle.Order;
 import com.exactpro.cradle.cassandra.dao.CassandraFilter;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
 import com.exactpro.cradle.filters.FilterForGreater;
@@ -34,20 +36,22 @@ public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMes
     private final Integer limit;
     private final FilterForGreater<Instant> messageTimeFrom;
     private final FilterForLess<Instant> messageTimeTo;
+    private final Order order;
 
-    public CassandraGroupedMessageFilter(String book, String page, String groupName,
-                                         FilterForGreater<Instant> messageTimeFrom, FilterForLess<Instant> messageTimeTo, int limit) {
+    public CassandraGroupedMessageFilter(String book,
+                                         String page,
+                                         String groupName,
+                                         FilterForGreater<Instant> messageTimeFrom,
+                                         FilterForLess<Instant> messageTimeTo,
+                                         Order order,
+                                         int limit) {
         this.book = book;
         this.page = page;
         this.groupName = groupName;
         this.messageTimeFrom = messageTimeFrom;
         this.messageTimeTo = messageTimeTo;
+        this.order = order;
         this.limit = limit;
-    }
-
-    public CassandraGroupedMessageFilter(String book, String page, String groupName,
-                                         FilterForGreater<Instant> messageTimeFrom, FilterForLess<Instant> messageTimeTo) {
-        this(book, page, groupName, messageTimeFrom, messageTimeTo, 0);
     }
 
     @Override
@@ -64,6 +68,14 @@ public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMes
 
         if (limit != 0) {
             select.limit(limit);
+        }
+
+        if (this.order == null || this.order == Order.DIRECT) {
+            select = select.orderBy(FIELD_FIRST_MESSAGE_DATE, ClusteringOrder.ASC)
+                    .orderBy(FIELD_FIRST_MESSAGE_TIME, ClusteringOrder.ASC);
+        } else {
+            select = select.orderBy(FIELD_FIRST_MESSAGE_DATE, ClusteringOrder.DESC)
+                    .orderBy(FIELD_FIRST_MESSAGE_TIME, ClusteringOrder.DESC);
         }
 
         return select;

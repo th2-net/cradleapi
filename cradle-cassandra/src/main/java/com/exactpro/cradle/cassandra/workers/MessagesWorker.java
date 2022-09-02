@@ -147,7 +147,7 @@ public class MessagesWorker extends Worker
 		GroupedMessageIteratorProvider provider =
 				new GroupedMessageIteratorProvider("get messages batches filtered by " + filter, filter,
 						getOperators(), book, composingService, selectQueryExecutor,
-						composeReadAttrs(filter.getFetchParameters()));
+						composeReadAttrs(filter.getFetchParameters()), filter.getOrder());
 		return provider.nextIterator()
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, provider), composingService);
 	}
