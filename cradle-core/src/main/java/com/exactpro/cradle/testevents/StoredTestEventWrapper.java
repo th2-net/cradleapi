@@ -94,4 +94,23 @@ public class StoredTestEventWrapper
 			return (StoredTestEventBatch)eventData;
 		return null;
 	}
+
+	public Instant getMaxStartTimestamp () {
+		if (isSingle()) {
+			return asSingle().getStartTimestamp();
+		}
+
+		// It's a batch, no need to check
+
+		StoredTestEventBatch batch = asBatch();
+
+		Instant maxStart = getStartTimestamp();
+		for (BatchedStoredTestEvent event : batch.getTestEvents()) {
+			if (maxStart == null || maxStart.isBefore(event.getStartTimestamp())) {
+				maxStart = event.getStartTimestamp();
+			}
+		}
+
+		return maxStart;
+	}
 }
