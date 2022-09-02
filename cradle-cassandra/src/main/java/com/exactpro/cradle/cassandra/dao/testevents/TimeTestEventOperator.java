@@ -47,6 +47,7 @@ public interface TimeTestEventOperator {
 			LocalDate startDate,
 			LocalTime timeFrom,
 			String idFrom,
+			String idTo,
 			LocalTime timeTo,
 			String parentId,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
@@ -57,6 +58,7 @@ public interface TimeTestEventOperator {
 			LocalDate startDate,
 			LocalTime timeFrom,
 			String idFrom,
+			String idTo,
 			LocalTime timeTo,
 			Order order,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
@@ -68,6 +70,7 @@ public interface TimeTestEventOperator {
 			LocalDate startDate,
 			LocalTime timeFrom,
 			String idFrom,
+			String idTo,
 			LocalTime timeTo,
 			String parentId,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
@@ -78,6 +81,7 @@ public interface TimeTestEventOperator {
 			LocalDate startDate,
 			LocalTime timeFrom,
 			String idFrom,
+			String idTo,
 			LocalTime timeTo,
 			Order order,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);

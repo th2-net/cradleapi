@@ -23,14 +23,9 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.mapper.MapperContext;
 import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
 import com.exactpro.cradle.Order;
-
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
 
 import static org.mockito.Mockito.*;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotEquals;
 
 
 public class TestEventQueryProviderTest {
@@ -61,54 +56,9 @@ public class TestEventQueryProviderTest {
 
         queryProvider = new AbstractTestEventQueryProvider<>(mapperContext, entityHelper) {
             @Override
-            public PreparedStatement getPreparedStatement(boolean includeContent, String idFrom, String parentId, Order order) {
-                return super.getPreparedStatement(includeContent, idFrom, parentId, order);
+            public PreparedStatement getPreparedStatement(boolean includeContent, String idFrom, String idTo, String parentId, Order order) {
+                return super.getPreparedStatement(includeContent, idFrom, idTo, parentId, order);
             }
         };
     }
-
-    @Test
-    void cachingWithNulls(){
-        PreparedStatement preparedStatement1 = queryProvider.getPreparedStatement(false, null, null, null);
-        verify(session, times(1)).prepare(any(SimpleStatement.class));
-
-        PreparedStatement preparedStatement2 = queryProvider.getPreparedStatement(false, null, null, null);
-        verify(session, times(1)).prepare(any(SimpleStatement.class));
-
-        assertEquals(preparedStatement1, preparedStatement2);
-    }
-
-    @Test
-    void cachingJustIncludeContent(){
-        PreparedStatement preparedStatement1 = queryProvider.getPreparedStatement(true, null, null, null);
-        verify(session, times(1)).prepare(any(SimpleStatement.class));
-
-        PreparedStatement preparedStatement2 = queryProvider.getPreparedStatement(true, null, null, null);
-        verify(session, times(1)).prepare(any(SimpleStatement.class));
-
-        assertEquals(preparedStatement1, preparedStatement2);
-    }
-
-    @Test
-    void cachingWithDifferentIdFroms(){
-        PreparedStatement preparedStatement1 = queryProvider.getPreparedStatement(true, "idFrom1", null, null);
-        verify(session, times(1)).prepare(any(SimpleStatement.class));
-
-        PreparedStatement preparedStatement2 = queryProvider.getPreparedStatement(true, "idFrom2", null, null);
-        verify(session, times(1)).prepare(any(SimpleStatement.class));
-
-        assertEquals(preparedStatement1, preparedStatement2);
-    }
-
-    @Test
-    void cachingWithDifferentNullArguements(){
-        PreparedStatement preparedStatement1 = queryProvider.getPreparedStatement(true, "idFrom", "parentId", null);
-        verify(session, times(1)).prepare(any(SimpleStatement.class));
-
-        PreparedStatement preparedStatement2 = queryProvider.getPreparedStatement(true, "idFrom", null, null);
-        verify(session, times(2)).prepare(any(SimpleStatement.class));
-
-        assertNotEquals(preparedStatement1, preparedStatement2);
-    }
-
 }

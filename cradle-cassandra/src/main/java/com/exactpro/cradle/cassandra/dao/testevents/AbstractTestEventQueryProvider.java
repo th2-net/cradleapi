@@ -27,14 +27,11 @@ import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.Order;
-import com.exactpro.cradle.cassandra.utils.SelectArguments;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
@@ -46,13 +43,9 @@ public abstract class AbstractTestEventQueryProvider<V> {
     private final CqlSession session;
     private final EntityHelper<V> helper;
 
-    private final Map<SelectArguments, PreparedStatement> statementCache;
-
-
     public AbstractTestEventQueryProvider(MapperContext context, EntityHelper<V> helper) {
         this.session = context.getSession();
         this.helper = helper;
-        statementCache = new ConcurrentHashMap<>();
     }
 
 
@@ -82,7 +75,7 @@ public abstract class AbstractTestEventQueryProvider<V> {
     }
 
 
-    private Select addConditions(Select select, String idFrom, String parentId, Order order) {
+    private Select addConditions(Select select, String idFrom, String idTo, String parentId, Order order) {
         select = select
                 .whereColumn(INSTANCE_ID).isEqualTo(bindMarker(INSTANCE_ID))
                 .whereColumn(START_DATE).isEqualTo(bindMarker(START_DATE));
@@ -90,13 +83,17 @@ public abstract class AbstractTestEventQueryProvider<V> {
         if (idFrom == null)
             select = select.whereColumn(START_TIME).isGreaterThanOrEqualTo(bindMarker(START_TIME + "_FROM"));
         else
-            select = select.whereColumns(START_TIME, ID).isGreaterThanOrEqualTo(tuple(bindMarker(START_TIME + "_FROM"), bindMarker(ID)));
+            select = select.whereColumns(START_TIME, ID).isGreaterThanOrEqualTo(tuple(bindMarker(START_TIME + "_FROM"), bindMarker(ID + "_FROM")));
+
+        if (idTo == null)
+            select = select.whereColumn(START_TIME).isLessThan(bindMarker(START_TIME + "_TO"));
+        else
+            select = select.whereColumns(START_TIME, ID).isLessThanOrEqualTo(tuple(bindMarker(START_TIME + "_TO"), bindMarker(ID + "_TO")));
+
 
 
         if (parentId != null)
             select = select.whereColumn(PARENT_ID).isEqualTo(bindMarker(PARENT_ID));
-
-        select = select.whereColumn(START_TIME).isLessThan(bindMarker(START_TIME + "_TO"));
 
         if (order != null && parentId == null) {
             ClusteringOrder orderBy = order.equals(Order.DIRECT) ? ClusteringOrder.ASC : ClusteringOrder.DESC;
@@ -108,14 +105,10 @@ public abstract class AbstractTestEventQueryProvider<V> {
     }
 
 
-    public PreparedStatement getPreparedStatement(boolean includeContent, String idFrom, String parentId, Order order){
-        SelectArguments arguments = new SelectArguments(includeContent, idFrom, parentId, order);
-        PreparedStatement preparedStatement = statementCache.computeIfAbsent(arguments, key -> {
-             Select select = selectStart(key.getIncludeContent());
-             select = addConditions(select, key.getIdFrom(), key.getParentId(), key.getOrder());
-             return session.prepare(select.build());
-        });
-        return preparedStatement;
+    public PreparedStatement getPreparedStatement(boolean includeContent, String idFrom, String idTo, String parentId, Order order){
+        Select select = selectStart(includeContent);
+        select = addConditions(select, idFrom, idTo, parentId, order);
+        return session.prepare(select.build());
     }
 
     protected BoundStatement bindParameters(
@@ -124,6 +117,7 @@ public abstract class AbstractTestEventQueryProvider<V> {
             LocalDate startDate,
             LocalTime timeFrom,
             String idFrom,
+            String idTo,
             LocalTime timeTo,
             String parentId,
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
@@ -137,7 +131,10 @@ public abstract class AbstractTestEventQueryProvider<V> {
                             .setLocalTime(START_TIME + "_TO", timeTo);
 
         if (idFrom != null)
-            builder = builder.setString(ID, idFrom);
+            builder = builder.setString(ID + "_FROM", idFrom);
+
+        if (idTo != null)
+            builder = builder.setString(ID + "_TO", idTo);
 
         if (parentId != null)
             builder = builder.setString(PARENT_ID, parentId);

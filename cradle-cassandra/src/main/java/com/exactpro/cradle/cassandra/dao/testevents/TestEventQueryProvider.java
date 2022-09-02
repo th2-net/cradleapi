@@ -43,18 +43,20 @@ public class TestEventQueryProvider extends AbstractTestEventQueryProvider<TestE
             LocalDate startDate,
             LocalTime timeFrom,
             String idFrom,
+            String idTo,
             LocalTime timeTo,
             Order order,
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 
     {
-        PreparedStatement preparedStatement = getPreparedStatement(true, idFrom, null, order);
+        PreparedStatement preparedStatement = getPreparedStatement(true, idFrom,  idTo,null, order);
 
         BoundStatement statement = bindParameters(  preparedStatement,
                 instanceId,
                 startDate,
                 timeFrom,
                 idFrom,
+                idTo,
                 timeTo,
                 null,
                 attributes);
@@ -67,18 +69,20 @@ public class TestEventQueryProvider extends AbstractTestEventQueryProvider<TestE
             LocalDate startDate,
             LocalTime timeFrom,
             String idFrom,
+            String idTo,
             LocalTime timeTo,
             String parentId,
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 
     {
-        PreparedStatement preparedStatement = getPreparedStatement(true, idFrom, parentId, null);
+        PreparedStatement preparedStatement = getPreparedStatement(true, idFrom, idTo, parentId, null);
 
         BoundStatement statement = bindParameters(  preparedStatement,
                 instanceId,
                 startDate,
                 timeFrom,
                 idFrom,
+                idTo,
                 timeTo,
                 parentId,
                 attributes);
