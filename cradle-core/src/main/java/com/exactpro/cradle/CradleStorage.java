@@ -155,6 +155,20 @@ public abstract class CradleStorage
 	protected abstract CompletableFuture<StoredGroupMessageBatch> doGetLastMessageBatchForGroupAsync(String group) throws CradleStorageException;
 	protected abstract StoredGroupMessageBatch doGetLastMessageBatchForGroup(String group) throws CradleStorageException;
 
+	protected abstract CompletableFuture<Iterable<StoredTestEventWrapper>> doGetTestEventsAsync(Instant from,
+																								Instant to,
+																								Order order) throws CradleStorageException;
+	protected abstract CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsMetadataAsync(Instant from,
+																										 Instant to,
+																										 Order order) throws CradleStorageException;
+	protected abstract Iterable<StoredTestEventWrapper> doGetTestEvents(Instant from,
+																		Instant to,
+																		Order order) throws CradleStorageException;
+	protected abstract Iterable<StoredTestEventMetadata> doGetTestEventsMetadata(Instant from,
+																				 Instant to,
+																				 Order order) throws CradleStorageException;
+
+
 	/**
 	 * Initializes storage, i.e. creates needed connections and gets ready to write data marked with given instance
 	 * name. Storage on disk is created/updated if this is allowed with prepareStorage flag
@@ -1228,6 +1242,65 @@ public abstract class CradleStorage
 		logger.debug("List of dates of root test events got");
 		return result;
 	}
+
+	/**
+	 *
+	 * @param from interval start
+	 * @param to interval end
+	 * @param order sorting order of result
+	 * @return async iterable containing test events in this interval
+	 * @throws CradleStorageException
+	 */
+	public CompletableFuture<Iterable<StoredTestEventWrapper>> getTestEventsAsync(Instant from,
+																				  Instant to,
+																				  Order order) throws CradleStorageException {
+		return doGetTestEventsAsync(from, to, order);
+	}
+
+	/**
+	 *
+	 * @param from interval start
+	 * @param to interval end
+	 * @param order sorting order of result
+	 * @return async iterable containing test events' metadata in this interval
+	 * @throws CradleStorageException
+	 */
+	public CompletableFuture<Iterable<StoredTestEventMetadata>> getTestEventsMetadataAsync(Instant from,
+																						   Instant to,
+																						   Order order) throws CradleStorageException {
+		return doGetTestEventsMetadataAsync(from, to, order);
+	}
+
+	/**
+	 *
+	 * @param from interval start
+	 * @param to interval end
+	 * @param order sorting order of result
+	 * @return iterable containing test events in this interval
+	 * @throws CradleStorageException
+	 */
+	public Iterable<StoredTestEventWrapper> getTestEvents(Instant from,
+														  Instant to,
+														  Order order) throws CradleStorageException {
+		return doGetTestEvents(from, to, order);
+	}
+
+	/**
+	 *
+	 * @param from interval start
+	 * @param to interval end
+	 * @param order sorting order of result
+	 * @return iterable containing test events' metadata in this interval
+	 * @throws CradleStorageException
+	 */
+	public Iterable<StoredTestEventMetadata> getTestEventsMetadata(Instant from,
+																   Instant to,
+																   Order order) throws CradleStorageException {
+		return doGetTestEventsMetadata(from, to, order);
+	}
+
+
+
 
 	/**
 	 * Obtains collection of dates when children of given test event started
