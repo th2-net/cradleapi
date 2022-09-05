@@ -167,10 +167,6 @@ public class MessagesWorker extends Worker
 			MessageBatchOperator mbOperator, String sessionAlias, String direction, LocalDate messageDate,
 			LocalTime messageTime, long sequence, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
 	{
-		// Message batch can't contain messages from different dates. This is a business requirement.
-		// Therefore, when current page has different start date, search in previous pages doesn't make sense
-		if (page == null || TimeUtils.toLocalTimestamp(page.getStarted()).toLocalDate().isBefore(messageDate))
-			return CompletableFuture.completedFuture(null);
 		String queryInfo = format("get nearest time and sequence before %s for page '%s'",
 				TimeUtils.toInstant(messageDate, messageTime), page.getId().getName());
 		return selectQueryExecutor.executeSingleRowResultQuery(
@@ -180,10 +176,8 @@ public class MessagesWorker extends Worker
 				{
 					if (row != null)
 						return CompletableFuture.completedFuture(row);
-					// We continue searching in previous pages
-					PageInfo previousPage = bookInfo.getPreviousPage(page.getStarted());
-					return getNearestTimeAndSequenceBefore(bookInfo, previousPage, mbOperator, sessionAlias, direction,
-							messageDate, messageTime, sequence, readAttrs);
+
+					return CompletableFuture.completedFuture(null);
 				}, composingService);
 	}
 
