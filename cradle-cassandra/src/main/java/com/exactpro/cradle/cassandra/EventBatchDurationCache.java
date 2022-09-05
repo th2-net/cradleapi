@@ -15,19 +15,13 @@
  */
 package com.exactpro.cradle.cassandra;
 
-import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.shaded.guava.common.cache.Cache;
 import com.datastax.oss.driver.shaded.guava.common.cache.CacheBuilder;
-import com.exactpro.cradle.cassandra.dao.testevents.EventBatchMaxDurationOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.EventBatchMaxDurationEntity;
-import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 
 public class EventBatchDurationCache {
 
