@@ -46,6 +46,7 @@ public abstract class CradleManager
 	 * @param prepareStorage flag that indicates if underlying storage on disk can be created or its structure can be updated, if needed
 	 * @param maxMessageBatchSize maximum size of {@link StoredMessageBatch} (in bytes) allowed for {@link CradleStorage} while writing data
 	 * @param maxTestEventBatchSize maximum size of {@link StoredTestEventBatch} (in bytes) allowed for {@link CradleStorage} while writing data
+	 * @param eventBatchDurationMillis default duration for test event batch duration, used when no duration data was available for particular test event partition
 	 * @throws CradleStorageException if access to Cradle storage cannot be established
 	 */
 	public void init(String instanceName, boolean prepareStorage, long maxMessageBatchSize, long maxTestEventBatchSize, long eventBatchDurationMillis) throws CradleStorageException
@@ -109,6 +110,7 @@ public abstract class CradleManager
 	 * @param prepareStorage flag that indicates if underlying storage on disk can be created or its structure can be updated, if needed
 	 * @param maxMessageBatchSize maximum size of {@link StoredMessageBatch} (in bytes) allowed for {@link CradleStorage} while writing data
 	 * @param maxTestEventBatchSize maximum size of {@link StoredTestEventBatch} (in bytes) allowed for {@link CradleStorage} while writing data
+	 * @param eventBatchDurationMillis default duration for test event batch duration, used when no duration data was available for particular test event partition
 	 * @throws CradleStorageException if access to Cradle storage cannot be established
 	 */
 	public void initStart(String instanceName, boolean prepareStorage, long maxMessageBatchSize, long maxTestEventBatchSize, long eventBatchDurationMillis) throws CradleStorageException
