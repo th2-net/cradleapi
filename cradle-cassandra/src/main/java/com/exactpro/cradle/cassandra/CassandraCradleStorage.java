@@ -1143,12 +1143,12 @@ public class CassandraCradleStorage extends CradleStorage
 		Get max batch length for current partition,
 		adjusts query params accordingly
 	 */
-	private TestEventsQueryParams getAdjustedQueryParams (StoredTestEventId parentId, Instant from, Instant to) throws CradleStorageException {
+	private TestEventsQueryParams getAdjustedQueryParams (StoredTestEventId parentId, Instant from, Instant to, Order order) throws CradleStorageException {
 		long maxBatchDurationMillis = eventBatchDurationWorker.getMaxDuration(
 				new EventBatchDurationCache.CacheKey(instanceUuid, LocalDateTime.ofInstant(from, TIMEZONE_OFFSET).toLocalDate()));
 
 
-		return new TestEventsQueryParams(parentId, from, to, maxBatchDurationMillis);
+		return new TestEventsQueryParams(parentId, from, to, maxBatchDurationMillis, order);
 	}
 
 	@Override
