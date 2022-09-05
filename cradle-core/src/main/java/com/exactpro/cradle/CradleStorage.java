@@ -152,6 +152,8 @@ public abstract class CradleStorage
 			throws CradleStorageException;
 	protected abstract CompletableFuture<Iterable<StoredTestEventMetadata>> doGetTestEventsMetadataAsync(Instant from,
 			Instant to) throws CradleStorageException;
+	protected abstract CompletableFuture<StoredGroupMessageBatch> doGetLastMessageBatchForGroupAsync(String group) throws CradleStorageException;
+	protected abstract StoredGroupMessageBatch doGetLastMessageBatchForGroup(String group) throws CradleStorageException;
 
 	/**
 	 * Initializes storage, i.e. creates needed connections and gets ready to write data marked with given instance
@@ -1240,6 +1242,26 @@ public abstract class CradleStorage
 		Collection<Instant> result = doGetTestEventsDates(parentId);
 		logger.debug("List of dates of test event '{}' children got", parentId);
 		return result;
+	}
+
+	/**
+	 * Gets the last grouped message batch in this group asynchronously
+	 * @param group name of the group
+	 * @return
+	 * @throws CradleStorageException in case error happened while extracting data
+	 */
+	public final CompletableFuture<StoredGroupMessageBatch> getLastMessageBatchForGroupAsync (String group) throws CradleStorageException {
+		return doGetLastMessageBatchForGroupAsync(group);
+	}
+
+	/**
+	 * Gets the last grouped message batch in this group
+	 * @param group name of the group
+	 * @return
+	 * @throws CradleStorageException in case error happened while extracting data
+	 */
+	public final StoredGroupMessageBatch getLastMessageBatchForGroup (String group) throws CradleStorageException {
+		return doGetLastMessageBatchForGroup(group);
 	}
 	
 	

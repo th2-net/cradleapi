@@ -40,7 +40,12 @@ public interface GroupedMessageBatchOperator
 	CompletableFuture<MappedAsyncPagingIterable<GroupedMessageBatchEntity>> getByTimeRange(UUID instanceId,
 			String groupName, LocalDate dateFrom, LocalTime timeFrom, LocalDate dateTo,
 			LocalTime timeTo, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
+
+	@Query("SELECT * FROM ${qualifiedTableId} WHERE "
+			+INSTANCE_ID+"=:instanceId AND "+ STREAM_GROUP +"=:groupName"+
+			" ORDER BY " + MESSAGE_DATE + " DESC, " + MESSAGE_TIME + " DESC LIMIT 1")
+	CompletableFuture<GroupedMessageBatchEntity> getLastMessageBatch (UUID instanceId, String groupName);
+
 	@Insert
 	CompletableFuture<Void> writeMessageBatch(GroupedMessageBatchEntity message,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);

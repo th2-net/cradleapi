@@ -1096,6 +1096,34 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
+	protected CompletableFuture<StoredGroupMessageBatch> doGetLastMessageBatchForGroupAsync(String group) throws CradleStorageException {
+		String queryInfo = String.format("Getting last message in group %s", group);
+
+		return selectExecutor.executeSingleRowResultQuery(
+				() -> ops.getGroupedMessageBatchOperator().getLastMessageBatch(instanceUuid, group),
+				ops.getGroupedMessageBatchConverter(), queryInfo)
+				.thenApplyAsync(groupedMessageBatchEntity -> {
+					try {
+						return groupedMessageBatchEntity.toStoredGroupMessageBatch();
+					} catch (IOException | CradleStorageException e) {
+						logger.error("Error occurred while converting entity to StoredMessageBatch", e);
+						return null;
+					}
+				});
+	}
+
+	@Override
+	protected StoredGroupMessageBatch doGetLastMessageBatchForGroup(String group) throws CradleStorageException {
+		String queryInfo = String.format("Getting last message in group %s", group);
+		try {
+			return doGetLastMessageBatchForGroupAsync(group).get();
+		} catch (InterruptedException | ExecutionException e) {
+			logger.error("Error occurred executing {}", queryInfo);
+			return null;
+		}
+	}
+
+	@Override
 	public CradleObjectsFactory getObjectsFactory()
 	{
 		return objectsFactory;
