@@ -91,7 +91,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 	private IntervalsWorker intervalsWorker;
 
-	private EventBatchDurationCache eventBatchDurationCache;
+	private EventBatchDurationWorker eventBatchDurationWorker;
 
 	public CassandraCradleStorage(CassandraConnection connection, CassandraStorageSettings settings)
 	{
@@ -171,10 +171,11 @@ public class CassandraCradleStorage extends CradleStorage
 			intervalsWorker =
 					new CassandraIntervalsWorker(semaphore, instanceUuid, writeAttrs, readAttrs, intervalSupplies);
 
-			eventBatchDurationCache = new EventBatchDurationCache(ops.getEventBatchMaxDurationOperator(),
+			eventBatchDurationWorker = new EventBatchDurationWorker(
+					new EventBatchDurationCache(settings.getEventBatchDurationCacheSize()),
+					ops.getEventBatchMaxDurationOperator(),
 					readAttrs,
 					writeAttrs,
-					settings.getEventBatchDurationCacheSize(),
 					settings.getEventBatchDurationMillis());
 
 			return instanceUuid.toString();
@@ -361,7 +362,7 @@ public class CassandraCradleStorage extends CradleStorage
 			DetailedTestEventEntity detailedEntity = new DetailedTestEventEntity(event, instanceUuid);
 			CompletableFuture<Void> updateMaxDuration;
 			try {
-				updateMaxDuration =  eventBatchDurationCache.updateMaxDuration(
+				updateMaxDuration =  eventBatchDurationWorker.updateMaxDuration(
 						new EventBatchDurationCache.CacheKey(instanceUuid, detailedEntity.getStartDate()),
 						Duration.between(detailedEntity.getStartTime(), detailedEntity.getEndTime()).toMillis());
 			} catch (CradleStorageException e) {
@@ -1142,12 +1143,40 @@ public class CassandraCradleStorage extends CradleStorage
 		Get max batch length for current partition,
 		adjusts query params accordingly
 	 */
-	private TestEventsQueryParams getAdjustedQueryParams (StoredTestEventId parentId, Instant from, Instant to, Order order) throws CradleStorageException {
-		long maxBatchDurationMillis = eventBatchDurationCache.getMaxDuration(
+	private TestEventsQueryParams getAdjustedQueryParams (StoredTestEventId parentId, Instant from, Instant to) throws CradleStorageException {
+		long maxBatchDurationMillis = eventBatchDurationWorker.getMaxDuration(
 				new EventBatchDurationCache.CacheKey(instanceUuid, LocalDateTime.ofInstant(from, TIMEZONE_OFFSET).toLocalDate()));
 
 
-		return new TestEventsQueryParams(parentId, from, to, maxBatchDurationMillis, order);
+		return new TestEventsQueryParams(parentId, from, to, maxBatchDurationMillis);
+	}
+
+	@Override
+	protected CompletableFuture<StoredGroupMessageBatch> doGetLastMessageBatchForGroupAsync(String group) throws CradleStorageException {
+		String queryInfo = String.format("Getting last message in group %s", group);
+
+		return selectExecutor.executeSingleRowResultQuery(
+				() -> ops.getGroupedMessageBatchOperator().getLastMessageBatch(instanceUuid, group),
+				ops.getGroupedMessageBatchConverter(), queryInfo)
+				.thenApplyAsync(groupedMessageBatchEntity -> {
+					try {
+						return groupedMessageBatchEntity.toStoredGroupMessageBatch();
+					} catch (IOException | CradleStorageException e) {
+						logger.error("Error occurred while converting entity to StoredMessageBatch", e);
+						return null;
+					}
+				});
+	}
+
+	@Override
+	protected StoredGroupMessageBatch doGetLastMessageBatchForGroup(String group) throws CradleStorageException {
+		String queryInfo = String.format("Getting last message in group %s", group);
+		try {
+			return doGetLastMessageBatchForGroupAsync(group).get();
+		} catch (InterruptedException | ExecutionException e) {
+			logger.error("Error occurred executing {}", queryInfo);
+			return null;
+		}
 	}
 
 	@Override

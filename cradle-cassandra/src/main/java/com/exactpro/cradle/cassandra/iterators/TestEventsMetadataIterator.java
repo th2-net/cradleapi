@@ -53,12 +53,12 @@ public class TestEventsMetadataIterator extends ConvertingPagedIterator<StoredTe
 
 		StoredTestEventMetadata nextEl = super.next();
 
-		while (super.hasNext() && nextEl.getEndTimestamp().isBefore(actualFrom)) {
+		while (super.hasNext() && nextEl.getMaxStartTimestamp().isBefore(actualFrom)) {
 			logger.trace("Skipping event with start timestamp {}, actual request was from {}", nextEl.getStartTimestamp(), actualFrom);
 			nextEl = super.next();
 		}
 
-		if (nextEl.getEndTimestamp().isBefore(actualFrom)) {
+		if (nextEl.getMaxStartTimestamp().isBefore(actualFrom)) {
 			return false;
 		}
 
