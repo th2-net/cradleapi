@@ -154,7 +154,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 			Only initial filter needs to be adjusted with max duration,
 			since `createNextFilter` just passes timestamps from previous to next filters
 		 */
-		long duration = eventBatchDurationWorker.getMaxDuration(new EventBatchDurationCache.CacheKey(filter.getBookId().getName(), filter.getPageId().getName(), filter.getScope()), readAttrs);
+		long duration = eventBatchDurationWorker.getMaxDuration(new EventBatchDurationCache.CacheKey(filter.getBookId().getName(), firstPage.getId().getName(), filter.getScope()), readAttrs);
 		FilterForGreater<Instant> newFrom = FilterForGreater.forGreater(filter.getStartTimestampFrom().getValue().minusMillis(duration));
 
 		String parentId = getParentIdString(filter);
