@@ -43,19 +43,21 @@ public class TestEventMetadataQueryProvider extends AbstractTestEventQueryProvid
             LocalDate startDate,
             LocalTime timeFrom,
             String idFrom,
+            String idTo,
             LocalTime timeTo,
             Order order,
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 
     {
         Select select = selectStart(false);
-        select = addConditions(select, idFrom, null, order);
+        select = addConditions(select, idFrom, idTo, null, order);
 
         BoundStatement statement = bindParameters(  select,
                 instanceId,
                 startDate,
                 timeFrom,
                 idFrom,
+                idTo,
                 timeTo,
                 null,
                 attributes);
@@ -68,19 +70,21 @@ public class TestEventMetadataQueryProvider extends AbstractTestEventQueryProvid
             LocalDate startDate,
             LocalTime timeFrom,
             String idFrom,
+            String idTo,
             LocalTime timeTo,
             String parentId,
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
 
     {
         Select select = selectStart(false);
-        select = addConditions(select, idFrom, parentId, null);
+        select = addConditions(select, idFrom, idTo, parentId, null);
 
         BoundStatement statement = bindParameters(  select,
                 instanceId,
                 startDate,
                 timeFrom,
                 idFrom,
+                idTo,
                 timeTo,
                 parentId,
                 attributes);
