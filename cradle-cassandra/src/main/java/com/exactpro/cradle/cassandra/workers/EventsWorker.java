@@ -111,10 +111,13 @@ public class EventsWorker extends Worker
 		return op.write(entity, writeAttrs)
 				.thenAccept(result -> {
 					try {
-						durationWorker.updateMaxDuration(
-										new EventBatchDurationCache.CacheKey(entity.getBook(), entity.getPage(), entity.getScope()),
-										Duration.between(entity.getStartTimestamp(), entity.getEndTimestamp()).toMillis(),
-										writeAttrs);
+
+						if (entity.getStartTimestamp() != null && entity.getEndTimestamp() != null) {
+							durationWorker.updateMaxDuration(
+									new EventBatchDurationCache.CacheKey(entity.getBook(), entity.getPage(), entity.getScope()),
+									Duration.between(entity.getStartTimestamp(), entity.getEndTimestamp()).toMillis(),
+									writeAttrs);
+						}
 					} catch (CradleStorageException e) {
 						logger.error("Exception while updating max duration {}", e.getMessage());
 					}
@@ -182,7 +185,7 @@ public class EventsWorker extends Worker
 				filter, getOperators(), book, composingService, selectQueryExecutor,
 				durationWorker,
 				composeReadAttrs(filter.getFetchParameters()),
-				filter.getStartTimestampFrom().getValue());
+				filter.getStartTimestampFrom() != null ? filter.getStartTimestampFrom().getValue() : book.getPage(filter.getPageId()).getStarted());
 		return provider.nextIterator()
 				.thenApply(r -> new CassandraCradleResultSet<>(r, provider));
 	}
