@@ -175,4 +175,15 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 		Set<StoredMessageId> result = messages.get(eventId);
 		return result != null ? result : Collections.emptySet();
 	}
+
+	@Override
+	public Instant getLastStartTimestamp() {
+		Instant lastStartTimestamp = getStartTimestamp();
+
+		for (BatchedStoredTestEvent el : getTestEvents()) {
+			lastStartTimestamp = lastStartTimestamp.isBefore(el.getStartTimestamp()) ? lastStartTimestamp : el.getStartTimestamp();
+		}
+
+		return getStartTimestamp();
+	}
 }

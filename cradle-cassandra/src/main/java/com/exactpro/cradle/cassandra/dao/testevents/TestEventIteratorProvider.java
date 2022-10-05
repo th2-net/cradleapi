@@ -143,7 +143,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 							entity -> mapTestEventEntity(pageId, entity),
 							entityConverter::getEntity,
 							// This skip function checks if batch interval crosses requested filter interval
-							entity -> entity.getEndTimestamp() == null || entity.getEndTimestamp().isBefore(actualFrom),
+							convertedEntity -> convertedEntity.getLastStartTimestamp().isBefore(actualFrom),
 							getRequestInfo());
 				}, composingService);
 	}
