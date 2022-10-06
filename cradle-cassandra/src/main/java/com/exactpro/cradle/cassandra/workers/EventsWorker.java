@@ -112,11 +112,16 @@ public class EventsWorker extends Worker
 		return op.write(entity, writeAttrs)
 				.thenAccept(result -> {
 					try {
-
-						if (entity.getStartTimestamp() != null && entity.getEndTimestamp() != null) {
+						Instant lastStartTimestamp = entity.getStartTimestamp();
+						for (var el : entity.getSerializedEventMetadata()) {
+							if (el.getTimestamp() != null && el.getTimestamp().isBefore(lastStartTimestamp)) {
+								lastStartTimestamp = el.getTimestamp();
+							}
+						}
+						if (entity.getStartTimestamp() != null) {
 							durationWorker.updateMaxDuration(
 									new EventBatchDurationCache.CacheKey(entity.getBook(), entity.getPage(), entity.getScope()),
-									Duration.between(entity.getStartTimestamp(), entity.getEndTimestamp()).toMillis(),
+									Duration.between(entity.getStartTimestamp(), lastStartTimestamp).toMillis(),
 									writeAttrs);
 						}
 					} catch (CradleStorageException e) {
