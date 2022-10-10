@@ -129,56 +129,6 @@ public class TestEventEntity extends CradleEntity {
 	public TestEventEntity() {
 	}
 
-	public TestEventEntity(TestEventToStore event, PageId pageId, int maxUncompressedSize) throws IOException
-	{
-		logger.debug("Creating entity from test event '{}'", event.getId());
-
-		SerializedEntityData serializedEventData = TestEventUtils.getTestEventContent(event);
-
-		byte[] content = serializedEventData.getSerializedData();
-		boolean compressed;
-		if (content != null && content.length > maxUncompressedSize)
-		{
-			logger.trace("Compressing content of test event '{}'", event.getId());
-			content = CompressionUtils.compressData(content);
-			compressed = true;
-		}
-		else
-			compressed = false;
-		
-		byte[] messages = TestEventUtils.serializeLinkedMessageIds(event);
-		
-		StoredTestEventId parentId = event.getParentId();
-		LocalDateTime start = TimeUtils.toLocalTimestamp(event.getStartTimestamp());
-
-		setBook(pageId.getBookId().getName());
-		setPage(pageId.getName());
-		setScope(event.getScope());
-		setStartTimestamp(start);
-		setId(event.getId().getId());
-		
-		setSuccess(event.isSuccess());
-		setRoot(parentId == null);
-		setEventBatch(event.isBatch());
-		setName(event.getName());
-		setType(event.getType());
-		setParentId(parentId != null ? parentId.toString() : "");  //Empty string for absent parentId allows using index to get root events
-		if (event.isBatch())
-			setEventCount(event.asBatch().getTestEventsCount());
-		setEndTimestamp(event.getEndTimestamp());
-		
-		if (messages != null)
-			setMessages(ByteBuffer.wrap(messages));
-		
-		setCompressed(compressed);
-		//TODO: this.setLabels(event.getLabels());
-		if (content != null)
-			setContent(ByteBuffer.wrap(content));
-
-		setSerializedEventMetadata(serializedEventData.getSerializedEntityMetadata());
-	}
-
-
 	public String getBook()
 	{
 		return book;
@@ -236,34 +186,6 @@ public class TestEventEntity extends CradleEntity {
 	{
 		return TimeUtils.toInstant(getStartDate(), getStartTime());
 	}
-	
-	@Transient
-	public void setStartTimestamp(Instant timestamp)
-	{
-		if (timestamp != null)
-			setStartTimestamp(TimeUtils.toLocalTimestamp(timestamp));
-		else
-		{
-			setStartDate(null);
-			setStartTime(null);
-		}
-	}
-	
-	@Transient
-	public void setStartTimestamp(LocalDateTime timestamp)
-	{
-		if (timestamp != null)
-		{
-			setStartDate(timestamp.toLocalDate());
-			setStartTime(timestamp.toLocalTime());
-		}
-		else
-		{
-			setStartDate(null);
-			setStartTime(null);
-		}
-	}
-	
 	
 	public String getId()
 	{
@@ -372,27 +294,11 @@ public class TestEventEntity extends CradleEntity {
 	{
 		this.endTime = endTime;
 	}
-	
+
 	@Transient
 	public Instant getEndTimestamp()
 	{
 		return TimeUtils.toInstant(getEndDate(), getEndTime());
-	}
-	
-	@Transient
-	public void setEndTimestamp(Instant timestamp)
-	{
-		if (timestamp != null)
-		{
-			LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
-			setEndDate(ldt.toLocalDate());
-			setEndTime(ldt.toLocalTime());
-		}
-		else
-		{
-			setEndDate(null);
-			setEndTime(null);
-		}
 	}
 
 	public Instant getRecDate() {
@@ -412,7 +318,6 @@ public class TestEventEntity extends CradleEntity {
 	public void setSerializedEventMetadata(List<SerializedEntityMetadata> serializedEventMetadata) {
 		this.serializedEventMetadata = serializedEventMetadata;
 	}
-
 
 	public ByteBuffer getMessages()
 	{

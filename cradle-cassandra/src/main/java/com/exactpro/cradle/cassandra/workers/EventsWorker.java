@@ -29,6 +29,7 @@ import com.exactpro.cradle.cassandra.EventBatchDurationCache;
 import com.exactpro.cradle.cassandra.EventBatchDurationWorker;
 import com.exactpro.cradle.cassandra.counters.BookStatisticsRecordsCaches;
 import com.exactpro.cradle.cassandra.counters.EntityStatisticsCollector;
+import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
 import com.exactpro.cradle.utils.CradleIdException;
@@ -40,11 +41,6 @@ import org.slf4j.LoggerFactory;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
-import com.exactpro.cradle.cassandra.dao.testevents.PageScopeEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.ScopeEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventIteratorProvider;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
@@ -100,7 +96,9 @@ public class EventsWorker extends Worker
 
 	public TestEventEntity createEntity(TestEventToStore event, PageId pageId) throws IOException
 	{
-		return new TestEventEntity(event, pageId, settings.getMaxUncompressedTestEventSize());
+		return TestEventEntityBuilder.builder()
+				.fromEventToStore(event, pageId, settings.getMaxUncompressedTestEventSize())
+				.build();
 	}
 	
 	public CompletableFuture<Void> storeEntity(TestEventEntity entity, BookId bookId)
