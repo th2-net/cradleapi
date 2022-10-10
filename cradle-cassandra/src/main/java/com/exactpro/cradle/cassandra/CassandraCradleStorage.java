@@ -50,11 +50,13 @@ import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
+import com.exactpro.cradle.serialization.SerializedEntityMetadata;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.TestEventUtils;
 import com.exactpro.cradle.utils.TimeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -385,16 +387,17 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		PageId pageId = page.getId();
 		BookId bookId = pageId.getBookId();
+		List<SerializedEntityMetadata> meta = TestEventUtils.getTestEventContent(event).getSerializedEntityMetadata();
 		try
 		{
 			TestEventEntity entity = eventsWorker.createEntity(event, pageId);
-			eventsWorker.storeEntity(entity, bookId).get();
+			eventsWorker.storeEntity(entity, bookId, meta).get();
 			eventsWorker.storeScope(event).get();
 			eventsWorker.storePageScope(event, pageId).get();
 		}
 		catch (Exception e)
 		{
-			throw new IOException("Error while storing test event "+event.getId(), e);
+			throw new IOException("Error while storing test event " + event.getId(), e);
 		}
 	}
 
@@ -403,6 +406,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		PageId pageId = page.getId();
 		BookId bookId = pageId.getBookId();
+		List<SerializedEntityMetadata> meta = TestEventUtils.getTestEventContent(event).getSerializedEntityMetadata();
 		return CompletableFuture.supplyAsync(() -> {
 					try
 					{
@@ -413,7 +417,7 @@ public class CassandraCradleStorage extends CradleStorage
 						throw new CompletionException(e);
 					}
 				}, composingService)
-				.thenComposeAsync(entity -> eventsWorker.storeEntity(entity, bookId), composingService)
+				.thenComposeAsync(entity -> eventsWorker.storeEntity(entity, bookId, meta), composingService)
 				.thenComposeAsync((r) -> eventsWorker.storeScope(event), composingService)
 				.thenComposeAsync((r) -> eventsWorker.storePageScope(event, pageId), composingService)
 				.thenAccept(NOOP);

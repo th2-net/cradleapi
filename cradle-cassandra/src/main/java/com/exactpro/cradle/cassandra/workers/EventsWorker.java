@@ -72,7 +72,7 @@ public class EventsWorker extends Worker
 	{
 		try
 		{
-			StoredTestEvent testEvent = entity.toStoredTestEvent(pageId);
+			StoredTestEvent testEvent = TestEventEntityUtils.toStoredTestEvent(entity, pageId);
 			updateEventReadMetrics(testEvent);
 			return testEvent;
 		}
@@ -96,22 +96,21 @@ public class EventsWorker extends Worker
 
 	public TestEventEntity createEntity(TestEventToStore event, PageId pageId) throws IOException
 	{
-		return TestEventEntityBuilder.builder()
+		return TestEventEntity.TestEventEntityBuilder.builder()
 				.fromEventToStore(event, pageId, settings.getMaxUncompressedTestEventSize())
 				.build();
 	}
 	
-	public CompletableFuture<Void> storeEntity(TestEventEntity entity, BookId bookId)
+	public CompletableFuture<Void> storeEntity(TestEventEntity entity, BookId bookId, List<SerializedEntityMetadata> meta)
 	{
 		TestEventOperator op = getOperators().getTestEventOperator();
-		List<SerializedEntityMetadata> meta = entity.getSerializedEventMetadata();
 		BookStatisticsRecordsCaches.EntityKey key = new BookStatisticsRecordsCaches.EntityKey(entity.getPage(), EntityType.EVENT);
 		return op.write(entity, writeAttrs)
 				.thenAccept(result -> {
 					try {
 						durationWorker.updateMaxDuration(
 										new EventBatchDurationCache.CacheKey(entity.getBook(), entity.getPage(), entity.getScope()),
-										Duration.between(entity.getStartTimestamp(), entity.getEndTimestamp()).toMillis(),
+										Duration.between(TestEventEntityUtils.getStartTimestamp(entity), TestEventEntityUtils.getEndTimestamp(entity)).toMillis(),
 										writeAttrs);
 					} catch (CradleStorageException e) {
 						logger.error("Exception while updating max duration {}", e.getMessage());
@@ -165,7 +164,7 @@ public class EventsWorker extends Worker
 					
 					try
 					{
-						return entity.toStoredTestEvent(pageId);
+						return TestEventEntityUtils.toStoredTestEvent(entity, pageId);
 					}
 					catch (Exception e)
 					{

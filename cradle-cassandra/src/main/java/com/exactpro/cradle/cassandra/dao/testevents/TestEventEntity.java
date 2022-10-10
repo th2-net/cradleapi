@@ -46,9 +46,9 @@ import java.util.zip.DataFormatException;
  */
 @Entity
 @CqlName(TestEventEntity.TABLE_NAME)
+@PropertyStrategy(mutable = false)
 public class TestEventEntity extends CradleEntity {
 	public static final String TABLE_NAME = "test_events";
-	private static final Logger logger = LoggerFactory.getLogger(TestEventEntity.class);
 
 	public static final String FIELD_BOOK = "book";
 	public static final String FIELD_PAGE = "page";
@@ -124,9 +124,31 @@ public class TestEventEntity extends CradleEntity {
 	@CqlName(FIELD_REC_DATE)
 	private Instant recDate;
 
-	private List<SerializedEntityMetadata> serializedEventMetadata;
-
 	public TestEventEntity() {
+	}
+
+	public TestEventEntity(String book, String page, String scope, LocalDate startDate, LocalTime startTime, String id, String name, String type, boolean success, boolean root, String parentId, boolean eventBatch, int eventCount, LocalDate endDate, LocalTime endTime, Instant recDate, ByteBuffer messages, boolean compressed, Set<String> labels, ByteBuffer content) {
+		setCompressed(compressed);
+		setLabels(labels);
+		setContent(content);
+
+		this.book = book;
+		this.page = page;
+		this.scope = scope;
+		this.startDate = startDate;
+		this.startTime = startTime;
+		this.id = id;
+		this.name = name;
+		this.type = type;
+		this.success = success;
+		this.root = root;
+		this.parentId = parentId;
+		this.eventBatch = eventBatch;
+		this.eventCount = eventCount;
+		this.endDate = endDate;
+		this.endTime = endTime;
+		this.messages = messages;
+		this.recDate = recDate;
 	}
 
 	public String getBook()
@@ -134,21 +156,10 @@ public class TestEventEntity extends CradleEntity {
 		return book;
 	}
 
-	public void setBook(String book)
-	{
-		this.book = book;
-	}
-
 	public String getPage()
 	{
 		return page;
 	}
-	
-	public void setPage(String page)
-	{
-		this.page = page;
-	}
-	
 	
 	public String getScope()
 	{
@@ -165,26 +176,10 @@ public class TestEventEntity extends CradleEntity {
 	{
 		return startDate;
 	}
-	
-	public void setStartDate(LocalDate startDate)
-	{
-		this.startDate = startDate;
-	}	
-	
+
 	public LocalTime getStartTime()
 	{
 		return startTime;
-	}
-	
-	public void setStartTime(LocalTime startTime)
-	{
-		this.startTime = startTime;
-	}
-	
-	@Transient
-	public Instant getStartTimestamp()
-	{
-		return TimeUtils.toInstant(getStartDate(), getStartTime());
 	}
 	
 	public String getId()
@@ -192,131 +187,53 @@ public class TestEventEntity extends CradleEntity {
 		return id;
 	}
 	
-	public void setId(String id)
-	{
-		this.id = id;
-	}
-	
-	
 	public String getName()
 	{
 		return name;
 	}
 	
-	public void setName(String name)
-	{
-		this.name = name;
-	}
-	
-	
 	public String getType()
 	{
 		return type;
 	}
-	
-	public void setType(String type)
-	{
-		this.type = type;
-	}
-	
-	
+
 	public boolean isSuccess()
 	{
 		return success;
 	}
 	
-	public void setSuccess(boolean success)
-	{
-		this.success = success;
-	}
-	
-
 	public boolean isRoot()
 	{
 		return root;
 	}
-	
-	public void setRoot(boolean root)
-	{
-		this.root = root;
-	}
-	
 
 	public String getParentId()
 	{
 		return parentId;
 	}
-	
-	public void setParentId(String parentId)
-	{
-		this.parentId = parentId;
-	}
-	
-	
+
 	public boolean isEventBatch()
 	{
 		return eventBatch;
 	}
-	
-	public void setEventBatch(boolean eventBatch)
-	{
-		this.eventBatch = eventBatch;
-	}
-	
-	
+
 	public int getEventCount()
 	{
 		return eventCount;
 	}
-	
-	public void setEventCount(int eventCount)
-	{
-		this.eventCount = eventCount;
-	}
-	
-	
+
 	public LocalDate getEndDate()
 	{
 		return endDate;
 	}
-	
-	public void setEndDate(LocalDate endDate)
-	{
-		this.endDate = endDate;
-	}
-	
+
 	public LocalTime getEndTime()
 	{
 		return endTime;
 	}
-	
-	public void setEndTime(LocalTime endTime)
-	{
-		this.endTime = endTime;
-	}
-
-	@Transient
-	public Instant getEndTimestamp()
-	{
-		return TimeUtils.toInstant(getEndDate(), getEndTime());
-	}
 
 	public Instant getRecDate() {
 		return recDate;
-	}
-
-	public void setRecDate(Instant recDate) {
-		this.recDate = recDate;
-	}
-
-	@Transient
-	public List<SerializedEntityMetadata> getSerializedEventMetadata() {
-		return serializedEventMetadata;
-	}
-
-	@Transient
-	public void setSerializedEventMetadata(List<SerializedEntityMetadata> serializedEventMetadata) {
-		this.serializedEventMetadata = serializedEventMetadata;
 	}
 
 	public ByteBuffer getMessages()
@@ -329,81 +246,214 @@ public class TestEventEntity extends CradleEntity {
 		this.messages = messages;
 	}
 	
+	public static class TestEventEntityBuilder {
 	
-	public StoredTestEvent toStoredTestEvent(PageId pageId) 
-			throws IOException, CradleStorageException, DataFormatException, CradleIdException
-	{
-		StoredTestEventId eventId = createId(pageId.getBookId());
-		logger.trace("Creating test event '{}' from entity", eventId);
+		private static final Logger logger = LoggerFactory.getLogger(TestEventEntityBuilder.class);
 		
-		byte[] content = restoreContent(eventId);
-		return isEventBatch() ? toStoredTestEventBatch(pageId, eventId, content) : toStoredTestEventSingle(pageId, eventId, content);
-	}
-	
-	
-	private StoredTestEventId createId(BookId bookId)
-	{
-		return new StoredTestEventId(bookId, getScope(), getStartTimestamp(), getId());
-	}
-	
-	private StoredTestEventId createParentId() throws CradleIdException
-	{
-		return StringUtils.isEmpty(getParentId()) ? null : StoredTestEventId.fromString(getParentId());
-	}
-	
-	
-	private byte[] restoreContent(StoredTestEventId eventId) throws IOException, DataFormatException
-	{
-		ByteBuffer content = getContent();
-		if (content == null)
-			return null;
-		
-		byte[] result = content.array();
-		if (isCompressed())
-		{
-			logger.trace("Decompressing content of test event '{}'", eventId);
-			return CompressionUtils.decompressData(result);
+		private TestEventEntity entity;
+		public  TestEventEntityBuilder () {
+			this.entity = new TestEventEntity();
 		}
-		return result;
-	}
-	
-	private Set<StoredMessageId> restoreMessages(BookId bookId) 
-			throws IOException, DataFormatException, CradleIdException
-	{
-		ByteBuffer messages = getMessages();
-		if (messages == null)
-			return null;
-		
-		byte[] result = messages.array();
-		return TestEventUtils.deserializeLinkedMessageIds(result, bookId);
-	}
-	
-	private Map<StoredTestEventId, Set<StoredMessageId>> restoreBatchMessages(BookId bookId) 
-			throws IOException, DataFormatException, CradleIdException
-	{
-		ByteBuffer messages = getMessages();
-		if (messages == null)
-			return null;
-		
-		byte[] result = messages.array();
-		return TestEventUtils.deserializeBatchLinkedMessageIds(result, bookId);
-	}
 	
 	
-	private StoredTestEventSingle toStoredTestEventSingle(PageId pageId, StoredTestEventId eventId, byte[] content) 
-			throws IOException, CradleStorageException, DataFormatException, CradleIdException
-	{
-		Set<StoredMessageId> messages = restoreMessages(pageId.getBookId());
-		return new StoredTestEventSingle(eventId, getName(), getType(), createParentId(),
-				getEndTimestamp(), isSuccess(), content, messages, pageId, null, recDate);
-	}
 	
-	private StoredTestEventBatch toStoredTestEventBatch(PageId pageId, StoredTestEventId eventId, byte[] content) 
-			throws IOException, CradleStorageException, DataFormatException, CradleIdException
-	{
-		Collection<BatchedStoredTestEvent> children = TestEventUtils.deserializeTestEvents(content, eventId);
-		Map<StoredTestEventId, Set<StoredMessageId>> messages = restoreBatchMessages(pageId.getBookId());
-		return new StoredTestEventBatch(eventId, getName(), getType(), createParentId(),
-				children, messages, pageId, null, recDate);
+		public TestEventEntityBuilder setBook(String book) {
+			entity.book = book;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setPage(String page) {
+			entity.page = page;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setScope(String scope) {
+			entity.scope = scope;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setStartDate(LocalDate startDate) {
+			entity.startDate = startDate;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setStartTime(LocalTime startTime) {
+			entity.startTime = startTime;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setId(String id) {
+			entity.id = id;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setName(String name) {
+			entity.name = name;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setType(String type) {
+			entity.type = type;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setSuccess(boolean success) {
+			entity.success = success;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setRoot(boolean root) {
+			entity.root = root;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setParentId(String parentId) {
+			entity.parentId = parentId;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setEventBatch(boolean eventBatch) {
+			entity.eventBatch = eventBatch;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setEventCount(int eventCount) {
+			entity.eventCount = eventCount;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setEndDate(LocalDate endDate) {
+			entity.endDate = endDate;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setEndTime(LocalTime endTime) {
+			entity.endTime = endTime;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setMessages(ByteBuffer messages) {
+			entity.messages = messages;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setRecDate(Instant recDate) {
+			entity.recDate = recDate;
+			return this;
+		}
+
+		public TestEventEntity build () {
+			TestEventEntity rtn = entity;
+			entity = new TestEventEntity();
+			return rtn;
+		}
+	
+		public TestEventEntityBuilder setStartTimestamp(Instant timestamp)
+		{
+			if (timestamp != null)
+				setStartTimestamp(TimeUtils.toLocalTimestamp(timestamp));
+			else
+			{
+				setStartDate(null);
+				setStartTime(null);
+			}
+	
+			return this;
+		}
+	
+		public TestEventEntityBuilder setStartTimestamp(LocalDateTime timestamp)
+		{
+			if (timestamp != null)
+			{
+				setStartDate(timestamp.toLocalDate());
+				setStartTime(timestamp.toLocalTime());
+			}
+			else
+			{
+				setStartDate(null);
+				setStartTime(null);
+			}
+	
+			return this;
+		}
+	
+		public void setEndTimestamp(Instant timestamp)
+		{
+			if (timestamp != null)
+			{
+				LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
+				setEndDate(ldt.toLocalDate());
+				setEndTime(ldt.toLocalTime());
+			}
+			else
+			{
+				setEndDate(null);
+				setEndTime(null);
+			}
+		}
+	
+		public TestEventEntityBuilder setCompressed (boolean compressed) {
+			entity.setCompressed(compressed);
+	
+			return this;
+		}
+	
+		public TestEventEntityBuilder setContent (ByteBuffer content) {
+			entity.setContent(content);
+	
+			return this;
+		}
+	
+		public TestEventEntityBuilder fromEventToStore (TestEventToStore event, PageId pageId, int maxUncompressedSize) throws IOException {
+			logger.debug("Creating entity from test event '{}'", event.getId());
+	
+			SerializedEntityData serializedEventData = TestEventUtils.getTestEventContent(event);
+
+			byte[] content = serializedEventData.getSerializedData();
+			boolean compressed;
+			if (content != null && content.length > maxUncompressedSize)
+			{
+				logger.trace("Compressing content of test event '{}'", event.getId());
+				content = CompressionUtils.compressData(content);
+				compressed = true;
+			}
+			else
+				compressed = false;
+	
+			byte[] messages = TestEventUtils.serializeLinkedMessageIds(event);
+	
+			StoredTestEventId parentId = event.getParentId();
+			LocalDateTime start = TimeUtils.toLocalTimestamp(event.getStartTimestamp());
+	
+			setBook(pageId.getBookId().getName());
+			setPage(pageId.getName());
+			setScope(event.getScope());
+			setStartTimestamp(start);
+			setId(event.getId().getId());
+	
+			setSuccess(event.isSuccess());
+			setRoot(parentId == null);
+			setEventBatch(event.isBatch());
+			setName(event.getName());
+			setType(event.getType());
+			setParentId(parentId != null ? parentId.toString() : "");  //Empty string for absent parentId allows using index to get root events
+			if (event.isBatch())
+				setEventCount(event.asBatch().getTestEventsCount());
+			setEndTimestamp(event.getEndTimestamp());
+	
+			if (messages != null)
+				setMessages(ByteBuffer.wrap(messages));
+	
+			setCompressed(compressed);
+			//TODO: this.setLabels(event.getLabels());
+			if (content != null)
+				setContent(ByteBuffer.wrap(content));
+	
+			return this;
+		}
+	
+		public static TestEventEntityBuilder builder () {
+			return new TestEventEntityBuilder();
+		}
 	}
 }
