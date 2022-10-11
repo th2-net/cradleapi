@@ -91,6 +91,7 @@ public class EventBatchDurationCache {
                 }
             }
 
+            logger.trace("Updating cache");
             durationsCache.put(key, duration);
         }
     }

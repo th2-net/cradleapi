@@ -41,7 +41,7 @@ public class EventBatchDurationWorker {
         return operator.writeMaxDuration(new EventBatchMaxDurationEntity(key.getBook(), key.getPage(), key.getScope(), duration), writeAttrs)
                 .thenAcceptAsync((res) -> operator.updateMaxDuration(key.getBook(), key.getPage(), key.getScope(), duration, duration, writeAttrs))
                 .whenComplete((rtn, e) -> {
-                    if (e != null) {
+                    if (e == null) {
                         cache.updateCache(key, duration);
                     }
                 });
