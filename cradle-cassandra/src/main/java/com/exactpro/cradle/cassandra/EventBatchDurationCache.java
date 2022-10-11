@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -49,6 +50,19 @@ public class EventBatchDurationCache {
         public LocalDate getDate() {
             return date;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof CacheKey)) return false;
+            CacheKey key = (CacheKey) o;
+            return getUuid().equals(key.getUuid()) && getDate().equals(key.getDate());
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(getUuid(), getDate());
+        }
     }
 
     private final Cache<CacheKey, Long> durationsCache;
@@ -68,6 +82,8 @@ public class EventBatchDurationCache {
             Long cached = durationsCache.getIfPresent(key);
 
             if (cached != null) {
+                logger.trace("Checking against cached duration");
+
                 if (cached > duration) {
                     return;
                 }
