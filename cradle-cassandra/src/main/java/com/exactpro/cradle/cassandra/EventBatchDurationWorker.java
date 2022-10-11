@@ -62,7 +62,7 @@ public class EventBatchDurationWorker {
         return operator.writeMaxDuration(key.getUuid(), key.getDate(), duration, writeAttrs)
                 .thenAcceptAsync((res) -> operator.updateMaxDuration(key.getUuid(), key.getDate(), duration, duration, writeAttrs))
                 .whenComplete((rtn, e) -> {
-                    if (e != null) {
+                    if (e == null) {
                         cache.updateCache(key, duration);
                     }
                 });
