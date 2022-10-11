@@ -23,8 +23,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class EventBatchDurationCache {
+
+    private static final Logger logger = LoggerFactory.getLogger(EventBatchDurationCache.class);
 
     public static class CacheKey {
         private final String book;
@@ -48,6 +51,19 @@ public class EventBatchDurationCache {
         public String getScope() {
             return scope;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof CacheKey)) return false;
+            CacheKey key = (CacheKey) o;
+            return getBook().equals(key.getBook()) && getPage().equals(key.getPage()) && getScope().equals(key.getScope());
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(getBook(), getPage(), getScope());
+        }
     }
 
     private final Cache<CacheKey, Long> durationsCache;
@@ -68,6 +84,8 @@ public class EventBatchDurationCache {
             Long cached = durationsCache.getIfPresent(key);
 
             if (cached != null) {
+                logger.trace("Checking against cached value");
+
                 if (cached > duration) {
                     return;
                 }
