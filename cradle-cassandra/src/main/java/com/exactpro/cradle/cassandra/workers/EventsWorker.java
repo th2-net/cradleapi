@@ -114,7 +114,7 @@ public class EventsWorker extends Worker
 					try {
 						Instant lastStartTimestamp = entity.getStartTimestamp();
 						for (SerializedEntityMetadata el : entity.getSerializedEventMetadata()) {
-							if (el.getTimestamp() != null && el.getTimestamp().isBefore(lastStartTimestamp)) {
+							if (el.getTimestamp() != null && lastStartTimestamp.isBefore(el.getTimestamp())) {
 								lastStartTimestamp = el.getTimestamp();
 							}
 						}
