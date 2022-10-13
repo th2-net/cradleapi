@@ -22,6 +22,8 @@ import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.LocalDate;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
@@ -50,49 +52,55 @@ public class EventBatchDurationWorker {
         this.defaultBatchDurationMillis = defaultBatchDurationMillis;
     }
 
-    public CompletableFuture<Void> updateMaxDuration(EventBatchDurationCache.CacheKey key, long duration) throws CradleStorageException {
+    public CompletableFuture<Void> updateMaxDuration(UUID instanceId, LocalDate date, long duration) throws CradleStorageException {
+
+        EventBatchDurationCache.CacheKey key = new EventBatchDurationCache.CacheKey(instanceId, date);
         Long cachedDuration = cache.getMaxDuration(key);
-        var entity = new EventBatchMaxDurationEntity(key.getUuid(), key.getDate(), duration);
+        var entity = new EventBatchMaxDurationEntity(key.uuid, key.date, duration);
         CompletableFuture<Void> completedFuture = CompletableFuture.completedFuture(null);
 
         if (cachedDuration != null) {
             if (cachedDuration < duration) {
+                // we have already persisted some duration before as we have some value in cache,
+                // so we can just update the record in the database
                 return operator.updateMaxDuration(entity, duration, writeAttrs)
-                        .whenComplete((res, e) -> {
-                            if (e == null && res) {
+                        .whenComplete((updated, e) -> {
+                            if (e == null && updated) {
                                 cache.updateCache(key, duration);
                             }
-                        })
-                        .thenCompose(e -> completedFuture);
+                        }).thenCompose(res -> completedFuture);
             } else {
                 return completedFuture;
             }
         }
 
+        // we don't have any duration cached, so we don't know if record exists in database
+        // first try to insert and if no success then try to update
         return operator.writeMaxDuration(entity, writeAttrs)
-                .thenCompose((res) -> CompletableFuture.supplyAsync(() -> {
-                    if (!res) {
+                .thenCompose((inserted) -> CompletableFuture.supplyAsync(() -> {
+                    if (!inserted) {
                         try {
                             return operator.updateMaxDuration(entity, duration, writeAttrs).get();
                         } catch (InterruptedException | ExecutionException e) {
-                            logger.warn("Could not update max duration for ({}, {})" ,entity.getInstanceId(), entity.getStartDate());
+                            logger.warn("Could not update max duration for ({}, {})", entity.getInstanceId(), entity.getStartDate());
                         }
                     }
 
                     return true;
                 }))
-            .whenComplete((r, e) -> {
-                if (e == null && r) {
+            .whenComplete((updated, e) -> {
+                if (e == null && updated) {
                     cache.updateCache(key, duration);
                 }
             }).thenCompose(e -> completedFuture);
     }
 
-    public long getMaxDuration(EventBatchDurationCache.CacheKey key) {
-        EventBatchMaxDurationEntity entity = operator.getMaxDuration(key.getUuid(), key.getDate(), readAttrs);
+    public long getMaxDuration(UUID instanceId, LocalDate date) {
+        EventBatchDurationCache.CacheKey key = new EventBatchDurationCache.CacheKey(instanceId, date);
+        EventBatchMaxDurationEntity entity = operator.getMaxDuration(key.uuid, key.date, readAttrs);
 
         if (entity == null) {
-            logger.trace("Could not get max duration for key ({}, {}), returning default value", key.getUuid(), key.getDate());
+            logger.trace("Could not get max duration for key ({}, {}), returning default value", key.uuid, key.date);
 
             return defaultBatchDurationMillis;
         }

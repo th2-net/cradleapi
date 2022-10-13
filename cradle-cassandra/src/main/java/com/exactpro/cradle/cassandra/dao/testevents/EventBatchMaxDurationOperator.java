@@ -38,5 +38,5 @@ public interface EventBatchMaxDurationOperator {
                                                  Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
     @Select
-   EventBatchMaxDurationEntity getMaxDuration(UUID uuid, LocalDate localDate, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+    EventBatchMaxDurationEntity getMaxDuration(UUID uuid, LocalDate localDate, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }
