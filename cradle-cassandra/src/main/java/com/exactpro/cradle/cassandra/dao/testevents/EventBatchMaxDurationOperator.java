@@ -16,25 +16,27 @@
 package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.datastax.oss.driver.api.mapper.annotations.*;
+import com.datastax.oss.driver.api.mapper.annotations.Dao;
+import com.datastax.oss.driver.api.mapper.annotations.Insert;
+import com.datastax.oss.driver.api.mapper.annotations.Select;
+import com.datastax.oss.driver.api.mapper.annotations.Update;
 
 import java.time.LocalDate;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
+import static com.exactpro.cradle.cassandra.StorageConstants.MAX_BATCH_DURATION;
 
 @Dao
 public interface EventBatchMaxDurationOperator {
 
 
     @Insert(ifNotExists = true)
-    CompletableFuture<Boolean> writeMaxDuration (EventBatchMaxDurationEntity entity,
+    Boolean writeMaxDuration (EventBatchMaxDurationEntity entity,
                                                  Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
     @Update(customIfClause = MAX_BATCH_DURATION + "<:maxDuration")
-    CompletableFuture<Boolean> updateMaxDuration(EventBatchMaxDurationEntity entity, Long maxDuration,
+    Boolean updateMaxDuration(EventBatchMaxDurationEntity entity, Long maxDuration,
                                                  Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
     @Select
