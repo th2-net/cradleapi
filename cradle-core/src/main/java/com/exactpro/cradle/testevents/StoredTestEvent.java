@@ -123,4 +123,6 @@ public abstract class StoredTestEvent implements TestEvent
 	{
 		return (StoredTestEventBatch)this;
 	}
+
+	public abstract Instant getLastStartTimestamp();
 }
