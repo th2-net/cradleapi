@@ -181,7 +181,7 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 		Instant lastStartTimestamp = getStartTimestamp();
 
 		for (BatchedStoredTestEvent el : getTestEvents()) {
-			lastStartTimestamp = lastStartTimestamp.isBefore(el.getStartTimestamp()) ? lastStartTimestamp : el.getStartTimestamp();
+			lastStartTimestamp = lastStartTimestamp.isBefore(el.getStartTimestamp()) ? el.getStartTimestamp() : lastStartTimestamp;
 		}
 
 		return getStartTimestamp();
