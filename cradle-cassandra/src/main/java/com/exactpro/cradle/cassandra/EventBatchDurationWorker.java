@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 public class EventBatchDurationWorker {
@@ -51,21 +52,40 @@ public class EventBatchDurationWorker {
 
     public CompletableFuture<Void> updateMaxDuration(EventBatchDurationCache.CacheKey key, long duration) throws CradleStorageException {
         Long cachedDuration = cache.getMaxDuration(key);
+        var entity = new EventBatchMaxDurationEntity(key.getUuid(), key.getDate(), duration);
+        CompletableFuture<Void> completedFuture = CompletableFuture.completedFuture(null);
 
         if (cachedDuration != null) {
-            if (cachedDuration > duration) {
-                return CompletableFuture.completedFuture(null);
+            if (cachedDuration < duration) {
+                return operator.updateMaxDuration(entity, duration, writeAttrs)
+                        .whenComplete((res, e) -> {
+                            if (e == null && res) {
+                                cache.updateCache(key, duration);
+                            }
+                        })
+                        .thenCompose(e -> completedFuture);
+            } else {
+                return completedFuture;
             }
         }
 
-
-        return operator.writeMaxDuration(key.getUuid(), key.getDate(), duration, writeAttrs)
-                .thenAcceptAsync((res) -> operator.updateMaxDuration(key.getUuid(), key.getDate(), duration, duration, writeAttrs))
-                .whenComplete((rtn, e) -> {
-                    if (e == null) {
-                        cache.updateCache(key, duration);
+        return operator.writeMaxDuration(entity, writeAttrs)
+                .thenCompose((res) -> CompletableFuture.supplyAsync(() -> {
+                    if (!res) {
+                        try {
+                            return operator.updateMaxDuration(entity, duration, writeAttrs).get();
+                        } catch (InterruptedException | ExecutionException e) {
+                            logger.warn("Could not update max duration for ({}, {})" ,entity.getInstanceId(), entity.getStartDate());
+                        }
                     }
-                });
+
+                    return true;
+                }))
+            .whenComplete((r, e) -> {
+                if (e == null && r) {
+                    cache.updateCache(key, duration);
+                }
+            }).thenCompose(e -> completedFuture);
     }
 
     public long getMaxDuration(EventBatchDurationCache.CacheKey key) {
