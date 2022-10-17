@@ -40,15 +40,15 @@ public class SkippingConvertingPagedIterator<R, E> implements Iterator<R>
 	private final int limit;
 	private final AtomicInteger returned;
 	private final Function<E, R> converter;
-	private E preFetchedElement;
-	private final Function<E, Boolean> skipFunction;
+	private R preFetchedElement;
+	private final Function<R, Boolean> skipFunction;
 
 	public SkippingConvertingPagedIterator(MappedAsyncPagingIterable<E> rows,
 										   SelectQueryExecutor selectExecutor,
 										   int limit,
 										   AtomicInteger returned,
 										   Function<E, R> converter, Function<Row, E> mapper,
-										   Function<E, Boolean> skipFunction,
+										   Function<R, Boolean> skipFunction,
 										   String queryInfo)
 	{
 		this.it = new PagedIterator<>(rows, selectExecutor, mapper, queryInfo);
@@ -63,11 +63,11 @@ public class SkippingConvertingPagedIterator<R, E> implements Iterator<R>
 			return false;
 		}
 
-		E nextEl = it.next();
+		R nextEl = converter.apply(it.next());
 
 		while (it.hasNext() && skipFunction.apply(nextEl)) {
 			logger.trace("Skipping element");
-			nextEl = it.next();
+			nextEl = converter.apply(it.next());
 		}
 
 		// If this is true, it means that it.hasNext() is false, it has no more elements
@@ -87,12 +87,12 @@ public class SkippingConvertingPagedIterator<R, E> implements Iterator<R>
 		}
 
 		if (hasNext()) {
-			E rtn = preFetchedElement;
+			R rtn = preFetchedElement;
 			preFetchedElement = null;
 
 			returned.incrementAndGet();
 
-			return converter.apply(rtn);
+			return rtn;
 		}
 
 		throw new NoSuchElementException("There are no more elements in iterator");
