@@ -17,29 +17,16 @@
 package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.datastax.oss.driver.api.mapper.annotations.*;
-import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.CradleEntity;
-import com.exactpro.cradle.messages.StoredMessageId;
-import com.exactpro.cradle.serialization.SerializedEntityData;
-import com.exactpro.cradle.serialization.SerializedEntityMetadata;
 import com.exactpro.cradle.testevents.*;
 import com.exactpro.cradle.utils.*;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.zip.DataFormatException;
 
 /**
  * Contains data of {@link StoredTestEvent} to write to or to obtain from Cassandra
@@ -247,8 +234,6 @@ public class TestEventEntity extends CradleEntity {
 	}
 	
 	public static class TestEventEntityBuilder {
-	
-		private static final Logger logger = LoggerFactory.getLogger(TestEventEntityBuilder.class);
 		
 		private TestEventEntity entity;
 		public  TestEventEntityBuilder () {
@@ -400,55 +385,7 @@ public class TestEventEntity extends CradleEntity {
 	
 		public TestEventEntityBuilder setContent (ByteBuffer content) {
 			entity.setContent(content);
-	
-			return this;
-		}
-	
-		public TestEventEntityBuilder fromEventToStore (TestEventToStore event, PageId pageId, int maxUncompressedSize) throws IOException {
-			logger.debug("Creating entity from test event '{}'", event.getId());
-	
-			SerializedEntityData serializedEventData = TestEventUtils.getTestEventContent(event);
 
-			byte[] content = serializedEventData.getSerializedData();
-			boolean compressed;
-			if (content != null && content.length > maxUncompressedSize)
-			{
-				logger.trace("Compressing content of test event '{}'", event.getId());
-				content = CompressionUtils.compressData(content);
-				compressed = true;
-			}
-			else
-				compressed = false;
-	
-			byte[] messages = TestEventUtils.serializeLinkedMessageIds(event);
-	
-			StoredTestEventId parentId = event.getParentId();
-			LocalDateTime start = TimeUtils.toLocalTimestamp(event.getStartTimestamp());
-	
-			setBook(pageId.getBookId().getName());
-			setPage(pageId.getName());
-			setScope(event.getScope());
-			setStartTimestamp(start);
-			setId(event.getId().getId());
-	
-			setSuccess(event.isSuccess());
-			setRoot(parentId == null);
-			setEventBatch(event.isBatch());
-			setName(event.getName());
-			setType(event.getType());
-			setParentId(parentId != null ? parentId.toString() : "");  //Empty string for absent parentId allows using index to get root events
-			if (event.isBatch())
-				setEventCount(event.asBatch().getTestEventsCount());
-			setEndTimestamp(event.getEndTimestamp());
-	
-			if (messages != null)
-				setMessages(ByteBuffer.wrap(messages));
-	
-			setCompressed(compressed);
-			//TODO: this.setLabels(event.getLabels());
-			if (content != null)
-				setContent(ByteBuffer.wrap(content));
-	
 			return this;
 		}
 	

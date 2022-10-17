@@ -3,6 +3,7 @@ package com.exactpro.cradle.cassandra.dao.testevents;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.serialization.SerializedEntityData;
 import com.exactpro.cradle.testevents.*;
 import com.exactpro.cradle.utils.*;
 import org.apache.commons.lang3.StringUtils;
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -105,5 +107,55 @@ public class TestEventEntityUtils {
     public static Instant getStartTimestamp(TestEventEntity entity)
     {
         return TimeUtils.toInstant(entity.getStartDate(), entity.getStartTime());
+    }
+
+    public static TestEventEntity fromEventToStore (TestEventToStore event, PageId pageId, int maxUncompressedSize) throws IOException {
+        TestEventEntity.TestEventEntityBuilder builder = TestEventEntity.TestEventEntityBuilder.builder();
+
+        logger.debug("Creating entity from test event '{}'", event.getId());
+
+        SerializedEntityData serializedEventData = TestEventUtils.getTestEventContent(event);
+
+        byte[] content = serializedEventData.getSerializedData();
+        boolean compressed;
+        if (content != null && content.length > maxUncompressedSize)
+        {
+            logger.trace("Compressing content of test event '{}'", event.getId());
+            content = CompressionUtils.compressData(content);
+            compressed = true;
+        }
+        else
+            compressed = false;
+
+        byte[] messages = TestEventUtils.serializeLinkedMessageIds(event);
+
+        StoredTestEventId parentId = event.getParentId();
+        LocalDateTime start = TimeUtils.toLocalTimestamp(event.getStartTimestamp());
+
+        builder.setBook(pageId.getBookId().getName());
+        builder.setPage(pageId.getName());
+        builder.setScope(event.getScope());
+        builder.setStartTimestamp(start);
+        builder.setId(event.getId().getId());
+
+        builder.setSuccess(event.isSuccess());
+        builder.setRoot(parentId == null);
+        builder.setEventBatch(event.isBatch());
+        builder.setName(event.getName());
+        builder.setType(event.getType());
+        builder.setParentId(parentId != null ? parentId.toString() : "");  //Empty string for absent parentId allows using index to get root events
+        if (event.isBatch())
+            builder.setEventCount(event.asBatch().getTestEventsCount());
+        builder.setEndTimestamp(event.getEndTimestamp());
+
+        if (messages != null)
+            builder.setMessages(ByteBuffer.wrap(messages));
+
+        builder.setCompressed(compressed);
+        //TODO: this.setLabels(event.getLabels());
+        if (content != null)
+            builder.setContent(ByteBuffer.wrap(content));
+
+        return builder.build();
     }
 }

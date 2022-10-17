@@ -96,9 +96,7 @@ public class EventsWorker extends Worker
 
 	public TestEventEntity createEntity(TestEventToStore event, PageId pageId) throws IOException
 	{
-		return TestEventEntity.TestEventEntityBuilder.builder()
-				.fromEventToStore(event, pageId, settings.getMaxUncompressedTestEventSize())
-				.build();
+		return TestEventEntityUtils.fromEventToStore(event, pageId, settings.getMaxUncompressedTestEventSize());
 	}
 	
 	public CompletableFuture<Void> storeEntity(TestEventEntity entity, BookId bookId, List<SerializedEntityMetadata> meta)

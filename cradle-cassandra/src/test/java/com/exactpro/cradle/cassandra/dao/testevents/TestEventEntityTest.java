@@ -93,9 +93,7 @@ public class TestEventEntityTest
 	@Test(dataProvider = "events")
 	public void eventEntity(TestEventToStore event) throws CradleStorageException, IOException, DataFormatException, CradleIdException
 	{
-		TestEventEntity entity = TestEventEntity.TestEventEntityBuilder.builder()
-				.fromEventToStore(event, page, 2000)
-				.build();
+		TestEventEntity entity = TestEventEntityUtils.fromEventToStore(event, page, 2000);
 		StoredTestEvent newEvent = TestEventEntityUtils.toStoredTestEvent(entity, page);
 		
 		RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
