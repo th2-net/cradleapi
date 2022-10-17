@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 public class EventBatchDurationWorker {
@@ -29,22 +30,27 @@ public class EventBatchDurationWorker {
         this.defaultBatchDurationMillis = defaultBatchDurationMillis;
     }
 
-    public CompletableFuture<Void> updateMaxDuration(EventBatchDurationCache.CacheKey key, long duration, Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs) throws CradleStorageException {
+    public void updateMaxDuration(EventBatchDurationCache.CacheKey key, long duration, Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs) throws CradleStorageException {
         Long cachedDuration = cache.getMaxDuration(key);
+        var entity = new EventBatchMaxDurationEntity(key.getBook(), key.getPage(), key.getScope(), duration);
 
         if (cachedDuration != null) {
-            if (cachedDuration > duration) {
-                return CompletableFuture.completedFuture(null);
+            if (cachedDuration < duration) {
+                // we have already persisted some duration before as we have some value in cache,
+                // so we can just update the record in the database
+                operator.updateMaxDuration(entity, duration, writeAttrs);
+                cache.updateCache(key, duration);
+                return;
             }
+        } else {
+            // we don't have any duration cached, so we don't know if record exists in database
+            // first try to insert and if no success then try to update
+            boolean inserted = operator.writeMaxDuration(entity, writeAttrs);
+            if (!inserted) {
+                operator.updateMaxDuration(entity, duration, writeAttrs);
+            }
+            cache.updateCache(key, duration);
         }
-
-        return operator.writeMaxDuration(new EventBatchMaxDurationEntity(key.getBook(), key.getPage(), key.getScope(), duration), writeAttrs)
-                .thenAcceptAsync((res) -> operator.updateMaxDuration(key.getBook(), key.getPage(), key.getScope(), duration, duration, writeAttrs))
-                .whenComplete((rtn, e) -> {
-                    if (e == null) {
-                        cache.updateCache(key, duration);
-                    }
-                });
     }
 
     public void removePageDurations (PageId pageId) {

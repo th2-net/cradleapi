@@ -28,18 +28,11 @@ public interface EventBatchMaxDurationOperator {
 
 
     @Insert(ifNotExists = true)
-    CompletableFuture<Void> writeMaxDuration (EventBatchMaxDurationEntity entity,
+    Boolean writeMaxDuration (EventBatchMaxDurationEntity entity,
                                               Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-
-    @Query( "UPDATE ${qualifiedTableId} " +
-            "SET "   + FIELD_MAX_BATCH_DURATION + " = :duration " +
-            "WHERE " +
-                FIELD_BOOK + " =:book AND " +
-                FIELD_PAGE + " =:page AND " +
-                FIELD_SCOPE + " = :scope " +
-            "IF " + FIELD_MAX_BATCH_DURATION + " <:maxDuration")
-    void updateMaxDuration(String book, String page, String scope, Long duration, Long maxDuration,
+    @Update(customIfClause = FIELD_MAX_BATCH_DURATION + " <:maxDuration")
+    Boolean updateMaxDuration(EventBatchMaxDurationEntity entity, Long maxDuration,
                            Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 

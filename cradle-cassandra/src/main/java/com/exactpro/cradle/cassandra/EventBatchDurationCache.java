@@ -84,7 +84,7 @@ public class EventBatchDurationCache {
             Long cached = durationsCache.getIfPresent(key);
 
             if (cached != null) {
-                logger.trace("Checking against cached value");
+                logger.trace("Checking against cached duration");
 
                 if (cached > duration) {
                     return;
