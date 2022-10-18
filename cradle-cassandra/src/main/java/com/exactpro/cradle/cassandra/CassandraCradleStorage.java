@@ -297,7 +297,7 @@ public class CassandraCradleStorage extends CradleStorage
 			CompletableFuture<Void> updateMaxDuration = CompletableFuture.completedFuture(null);
 			try {
 				// if possible extract and store duration for this batch
-				if (entity.getStartTime() != null && entity.getEndTime() != null) {
+				if (wrapper.getStartTimestamp() != null && wrapper.getMaxStartTimestamp() != null) {
 					updateMaxDuration =  eventBatchDurationWorker.updateMaxDuration(
 														instanceUuid,
 														entity.getStartDate(),
