@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.zip.DataFormatException;
 
 import com.exactpro.cradle.*;
@@ -110,7 +111,7 @@ public class EventsWorker extends Worker
 		List<SerializedEntityMetadata> meta = entity.getSerializedEventMetadata();
 		BookStatisticsRecordsCaches.EntityKey key = new BookStatisticsRecordsCaches.EntityKey(entity.getPage(), EntityType.EVENT);
 		return op.write(entity, writeAttrs)
-				.thenAccept(result -> {
+				.thenAcceptAsync(result -> {
 					try {
 						Instant lastStartTimestamp = entity.getStartTimestamp();
 						for (SerializedEntityMetadata el : entity.getSerializedEventMetadata()) {
@@ -119,10 +120,10 @@ public class EventsWorker extends Worker
 							}
 						}
 						if (entity.getStartTimestamp() != null) {
-							durationWorker.updateMaxDuration(
-									new EventBatchDurationCache.CacheKey(entity.getBook(), entity.getPage(), entity.getScope()),
-									Duration.between(entity.getStartTimestamp(), lastStartTimestamp).toMillis(),
-									writeAttrs);
+								durationWorker.updateMaxDuration(
+										new EventBatchDurationCache.CacheKey(entity.getBook(), entity.getPage(), entity.getScope()),
+										Duration.between(entity.getStartTimestamp(), lastStartTimestamp).toMillis(),
+										writeAttrs);
 						}
 					} catch (CradleStorageException e) {
 						logger.error("Exception while updating max duration {}", e.getMessage());
