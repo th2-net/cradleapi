@@ -17,15 +17,11 @@ package com.exactpro.cradle.perftest.test
 
 import com.exactpro.cradle.CradleStorage
 
-abstract class PerformanceTest {
+abstract class PerformanceTest : AutoCloseable {
 
     abstract fun execute(storage: CradleStorage, settings: MessageGroupSettings)
 
     companion object {
-        fun measure(func: () -> Unit): Long {
-            val startTime = System.nanoTime()
-            func.invoke()
-            return System.nanoTime() - startTime
-        }
+
     }
 }

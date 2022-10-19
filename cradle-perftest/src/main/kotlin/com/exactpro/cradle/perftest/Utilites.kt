@@ -13,16 +13,17 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package com.exactpro.cradle.perftest.test
 
-data class MessageGroupSettings(
-    val groupName: String = "group",
-    val numberOfMessages: Long = 1_000_000,
-    val numberOfStreams: Int = 1,
-    val messageSize: Int = 256,
-    val batchSize: Int = 1024 * 1024 / (messageSize + 64),
-    val timeShiftNanos: Long = 1L,
-    val startTime: Long = System.nanoTime()
-) {
-    val batchesToProcess = numberOfMessages / messageSize
+package com.exactpro.cradle.perftest
+
+import java.time.Instant
+
+const val NANOS_IN_SEC = 1_000_000_000
+
+fun Long.toInstant(): Instant = Instant.ofEpochSecond(this / NANOS_IN_SEC, this % NANOS_IN_SEC)
+
+fun measure(func: () -> Unit): Long {
+    val startTime = System.nanoTime()
+    func.invoke()
+    return System.nanoTime() - startTime
 }

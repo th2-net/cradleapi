@@ -22,9 +22,11 @@ import com.exactpro.cradle.cassandra.connection.CassandraConnection
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings
 import com.exactpro.cradle.perftest.cassandra.Connector
 import com.exactpro.cradle.perftest.test.MessageGroupSettings
+import com.exactpro.cradle.perftest.test.impl.MessageGroupGetTest
 import com.exactpro.cradle.perftest.test.impl.MessageGroupStoreTest
 import mu.KotlinLogging
 import org.testcontainers.containers.CassandraContainer
+import org.testcontainers.containers.output.OutputFrame
 import org.testcontainers.containers.output.OutputFrame.OutputType.END
 import org.testcontainers.containers.output.OutputFrame.OutputType.STDERR
 import org.testcontainers.containers.output.OutputFrame.OutputType.STDOUT
@@ -34,6 +36,8 @@ class Main {
     companion object {
         private val LOGGER = KotlinLogging.logger { }
         private const val KEY_SPACE = "key_space"
+        private const val RESOURCE_MEMORY_GB = 4L
+        private const val RESOURCE_CPU = 4L
 
         @JvmStatic
         fun main(args: Array<String>) {
@@ -43,10 +47,16 @@ class Main {
             CassandraContainer<Nothing>("cassandra:3.11.13").apply {
                 withLogConsumer {
                     when (it.type) {
-                        STDOUT -> LOGGER.info { "Cassandra stdout log: ${it.utf8String}" }
-                        STDERR -> LOGGER.error { "Cassandra stderr log: ${it.utf8String}" }
-                        END -> LOGGER.info { "Cassandra end of log stream: ${it.utf8String}" }
-                        else -> LOGGER.info { "Cassandra log: ${it.utf8String}" }
+                        STDOUT -> LOGGER.info { "Cassandra stdout log: ${it.message}" }
+                        STDERR -> LOGGER.error { "Cassandra stderr log: ${it.message}" }
+                        END -> LOGGER.info { "Cassandra end of log stream: ${it.message}" }
+                        else -> LOGGER.info { "Cassandra log: ${it.message}" }
+                    }
+                }
+                withCreateContainerCmdModifier { cmd ->
+                    cmd.hostConfig?.apply {
+                        withMemory(RESOURCE_MEMORY_GB * 1024 * 1024 * 1024)
+                        withCpuCount(RESOURCE_CPU)
                     }
                 }
             }.use { cassandra ->
@@ -86,8 +96,15 @@ class Main {
                                 (1_024 * 1_024).toLong()
                             )
 
+                            val testSettings = MessageGroupSettings()
                             MessageGroupStoreTest().use {
-                                it.execute(manager.storage, MessageGroupSettings())
+                                it.execute(manager.storage, testSettings)
+                            }
+
+                            MessageGroupGetTest().use {
+                                for(i in 1..5) {
+                                    it.execute(manager.storage, testSettings)
+                                }
                             }
 
                         } finally {
@@ -98,8 +115,9 @@ class Main {
                     }
                     LOGGER.info("Finished performance tests")
                 }
-
         }
 
+        private val OutputFrame.message: String
+            get() = utf8String.removeSuffix("\n")
     }
 }
