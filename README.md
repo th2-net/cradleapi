@@ -49,38 +49,62 @@ The main classes are `CradleManager` and `CradleStorage`.
 `CradleManager` initializes Cradle API to work with particular database and provides access to `CradleStorage` object bound to that database.
 
 Cradle API uses DataStax Java driver to connect to Cassandra. To manage the additional driver settings you can put application.conf file
-into the root directory of your project. The structure of this file is described in https://github.com/datastax/java-driver/blob/4.0.1/core/src/main/resources/reference.conf
+into the root directory of your project. The structure of this file is described in https://github.com/datastax/java-driver/blob/4.x/core/src/main/resources/reference.conf
 
 Example of Cradle API initialization to work with Cassandra:
 ```java
-CassandraConnectionSettings settings = new CassandraConnectionSettings("datacenter1", "cassandra-host", 9042, "cassandra-keyspace");
-settings.setUsername("cassandra-username");
-settings.setPassword("cassandra-password");
+CassandraConnectionSettings connectionSettings = new CassandraConnectionSettings(CASSANDRA_HOST, CASSANDRA_PORT, DATACENTER);
+connectionSettings.setUsername(CASSANDRA_USERNAME);
+connectionSettings.setPassword(CASSANDRA_PASSWORD);
 
-CassandraConnection connection = new CassandraConnection(settings);
+CassandraStorageSettings storageSettings = new CassandraStorageSettings();
+storageSettings.setKeyspace(CASSANDRA_KEYSPACE);
+storageSettings.setResultPageSize(FETCH_PAGE_SIZE);
 
-CradleManager manager = new CassandraCradleManager(connection);
-manager.init("instance1");
-
+CradleManager manager = new CassandraCradleManager(connectionSettings, storageSettings, true);
 CradleStorage storage = manager.getStorage();
+
+// Operations on cradle can be performed using storage object.
+Collection<BookInfo> books = storage.getBooks();
+
+// After completing work with cradle you should close manager
+manager.close();
 ```
 
 `CassandraConnectionSettings` object is used to define Cassandra host to connect to, username and password to use and other connection settings.
 
-`CassandraCradleManager` will establish the connection when `init()` method is called. Parameter of `init()` method ("instance1") is a name of Cradle instance to use when writing/reading data. It is used to divide data within one database (in case of Cassandra, within one Cassandra keyspace). So, if multiple applications/services need to work with the same data in Cradle, they should use the same instance name.
+`CassandraCradleManager` will establish the connection when constructed.
 
 Once initialized, `CradleStorage` can be used to write/read data:
 ```java
-String streamName = "stream1";
+String bookName = "new_test_book";
+String groupName = "group1";
 Direction direction = Direction.FIRST;
-Instant now = Instant.now();
-long index = now.toEpochMilli();
+long seq = 4588290;
 
-//Writing a message
-StoredMessageBatch batch = new StoredMessageBatch();
-batch.addMessage(new MessageToStoreBuilder().streamName(streamName).direction(direction).index(index).timestamp(now)
-		.content("Message1".getBytes()).build());
-storage.storeMessageBatch(batch);
+// Writing a message batch
+// Messages in the batch must be from the same book, session alias and direction can be mixed
+MessageToStore m1 = new MessageToStoreBuilder()
+                        .bookId(new BookId(bookName))
+                        .sessionAlias("session1")
+                        .direction(Direction.FIRST)
+                        .timestamp(Instant.now())
+                        .sequence(4588290)
+                        .content("Message from code example".getBytes(StandardCharsets.UTF_8))
+                        .build();
+MessageToStore m2 = new MessageToStoreBuilder()
+                        .bookId(new BookId(bookName))
+                        .sessionAlias("session2")
+                        .direction(Direction.SECOND)
+                        .timestamp(Instant.now())
+                        .sequence(29098023)
+                        .content("Yet another message from code example".getBytes(StandardCharsets.UTF_8))
+                        .build();
+
+GroupedMessageBatchToStore batch = storage.getEntitiesFactory().groupedMessageBatch(groupName);
+batch.addMessage(m1);
+batch.addMessage(m2);
+storage.storeGroupedMessageBatch(batch);
 
 //Reading messages by filter
 StoredMessageFilter filter = new StoredMessageFilterBuilder()
