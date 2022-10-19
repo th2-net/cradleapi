@@ -50,22 +50,31 @@ public class EventBatchDurationWorker {
     }
 
     public CompletableFuture<Void> updateMaxDuration(EventBatchDurationCache.CacheKey key, long duration) throws CradleStorageException {
-        Long cachedDuration = cache.getMaxDuration(key);
+        return CompletableFuture.supplyAsync(() -> {
 
-        if (cachedDuration != null) {
-            if (cachedDuration > duration) {
-                return CompletableFuture.completedFuture(null);
+            Long cachedDuration = cache.getMaxDuration(key);
+            var entity = new EventBatchMaxDurationEntity(key.getUuid(), key.getDate(), duration);
+
+            if (cachedDuration != null) {
+                if (cachedDuration < duration) {
+                    // we have already persisted some duration before as we have some value in cache,
+                    // so we can just update the record in the database
+                    operator.updateMaxDuration(entity, duration, writeAttrs);
+                    cache.updateCache(key, duration);
+                    return null;
+                }
+            } else {
+                // we don't have any duration cached, so we don't know if record exists in database
+                // first try to insert and if no success then try to update
+                boolean inserted = operator.writeMaxDuration(entity, writeAttrs);
+                if (!inserted) {
+                    operator.updateMaxDuration(entity, duration, writeAttrs);
+                }
+                cache.updateCache(key, duration);
             }
-        }
 
-
-        return operator.writeMaxDuration(key.getUuid(), key.getDate(), duration, writeAttrs)
-                .thenAcceptAsync((res) -> operator.updateMaxDuration(key.getUuid(), key.getDate(), duration, duration, writeAttrs))
-                .whenComplete((rtn, e) -> {
-                    if (e == null) {
-                        cache.updateCache(key, duration);
-                    }
-                });
+            return null;
+        });
     }
 
     public long getMaxDuration(EventBatchDurationCache.CacheKey key) {

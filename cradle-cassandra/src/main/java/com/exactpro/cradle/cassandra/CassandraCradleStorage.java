@@ -360,11 +360,15 @@ public class CassandraCradleStorage extends CradleStorage
 		try
 		{
 			DetailedTestEventEntity detailedEntity = new DetailedTestEventEntity(event, instanceUuid);
-			CompletableFuture<Void> updateMaxDuration;
+			CompletableFuture<Void> updateMaxDuration = CompletableFuture.completedFuture(null);
+			var wrapper = detailedEntity.toStoredTestEventWrapper();
 			try {
-				updateMaxDuration =  eventBatchDurationWorker.updateMaxDuration(
-						new EventBatchDurationCache.CacheKey(instanceUuid, detailedEntity.getStartDate()),
-						Duration.between(detailedEntity.getStartTime(), detailedEntity.getEndTime()).toMillis());
+				if (wrapper.getStartTimestamp() != null && wrapper.getMaxStartTimestamp() != null) {
+					updateMaxDuration =  eventBatchDurationWorker.updateMaxDuration(
+							new EventBatchDurationCache.CacheKey(instanceUuid,
+									detailedEntity.getStartDate()),
+							Duration.between(wrapper.getStartTimestamp(), wrapper.getMaxStartTimestamp()).toMillis());
+				}
 			} catch (CradleStorageException e) {
 				logger.error("Could not update max length for event batch with date {}", detailedEntity.getStartDate());
 				throw new CradleStorageException("Could not update max length for event batch", e);
