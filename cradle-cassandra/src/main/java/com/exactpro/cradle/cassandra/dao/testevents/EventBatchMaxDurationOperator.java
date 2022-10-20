@@ -20,7 +20,6 @@ import com.datastax.oss.driver.api.mapper.annotations.*;
 
 import java.time.LocalDate;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
