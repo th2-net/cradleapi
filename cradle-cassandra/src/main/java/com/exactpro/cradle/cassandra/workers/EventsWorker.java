@@ -35,6 +35,7 @@ import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityCo
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
 import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.TestEventUtils;
 import io.prometheus.client.Counter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,15 +104,20 @@ public class EventsWorker extends Worker
 	public CompletableFuture<Void> storeEntity(TestEventEntity entity, BookId bookId, List<SerializedEntityMetadata> meta)
 	{
 		TestEventOperator op = getOperators().getTestEventOperator();
-		List<SerializedEntityMetadata> meta = entity.getSerializedEventMetadata();
 		BookStatisticsRecordsCaches.EntityKey key = new BookStatisticsRecordsCaches.EntityKey(entity.getPage(), EntityType.EVENT);
 		return op.write(entity, writeAttrs)
 				.thenAccept(result -> {
 					try {
-						Instant lastStartTimestamp = entity.getStartTimestamp();
+						Instant firstTimestamp = meta.get(0).getTimestamp();
+						Instant lastStartTimestamp = meta.get(0).getTimestamp();
 						for (SerializedEntityMetadata el : meta) {
-							if (el.getTimestamp() != null && lastStartTimestamp.isBefore(el.getTimestamp())) {
-								lastStartTimestamp = el.getTimestamp();
+							if (el.getTimestamp() != null) {
+								if (firstTimestamp.isAfter(el.getTimestamp())) {
+									firstTimestamp = el.getTimestamp();
+								}
+								if (lastStartTimestamp.isBefore(el.getTimestamp())) {
+									lastStartTimestamp = el.getTimestamp();
+								}
 							}
 						}
 
