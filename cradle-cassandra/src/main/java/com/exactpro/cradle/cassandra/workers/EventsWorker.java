@@ -23,7 +23,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
 import java.util.zip.DataFormatException;
 
 import com.exactpro.cradle.*;
