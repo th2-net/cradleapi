@@ -83,4 +83,9 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 	{
 		return content;
 	}
+
+	@Override
+	public Instant getLastStartTimestamp() {
+		return getStartTimestamp();
+	}
 }

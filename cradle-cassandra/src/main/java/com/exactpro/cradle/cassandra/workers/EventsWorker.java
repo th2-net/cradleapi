@@ -18,6 +18,7 @@ package com.exactpro.cradle.cassandra.workers;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -102,14 +103,22 @@ public class EventsWorker extends Worker
 	public CompletableFuture<Void> storeEntity(TestEventEntity entity, BookId bookId, List<SerializedEntityMetadata> meta)
 	{
 		TestEventOperator op = getOperators().getTestEventOperator();
+		List<SerializedEntityMetadata> meta = entity.getSerializedEventMetadata();
 		BookStatisticsRecordsCaches.EntityKey key = new BookStatisticsRecordsCaches.EntityKey(entity.getPage(), EntityType.EVENT);
 		return op.write(entity, writeAttrs)
 				.thenAccept(result -> {
 					try {
+						Instant lastStartTimestamp = entity.getStartTimestamp();
+						for (SerializedEntityMetadata el : meta) {
+							if (el.getTimestamp() != null && lastStartTimestamp.isBefore(el.getTimestamp())) {
+								lastStartTimestamp = el.getTimestamp();
+							}
+						}
+
 						durationWorker.updateMaxDuration(
-										new EventBatchDurationCache.CacheKey(entity.getBook(), entity.getPage(), entity.getScope()),
-										Duration.between(TestEventEntityUtils.getStartTimestamp(entity), TestEventEntityUtils.getEndTimestamp(entity)).toMillis(),
-										writeAttrs);
+								new EventBatchDurationCache.CacheKey(entity.getBook(), entity.getPage(), entity.getScope()),
+								Duration.between(TestEventEntityUtils.getStartTimestamp(entity), lastStartTimestamp).toMillis(),
+								writeAttrs);
 					} catch (CradleStorageException e) {
 						logger.error("Exception while updating max duration {}", e.getMessage());
 					}
@@ -173,11 +182,23 @@ public class EventsWorker extends Worker
 	
 	public CompletableFuture<CradleResultSet<StoredTestEvent>> getTestEvents(TestEventFilter filter, BookInfo book)
 	{
-		TestEventIteratorProvider provider = new TestEventIteratorProvider("get test events filtered by "+filter, 
+		Instant startTimestamp;
+
+		if (filter.getStartTimestampFrom() == null) {
+			if (filter.getPageId() == null) {
+				startTimestamp = book.getFirstPage().getStarted();
+			} else {
+				startTimestamp = book.getPage(filter.getPageId()).getStarted();
+			}
+		} else {
+			startTimestamp = filter.getStartTimestampFrom().getValue();
+		}
+
+		TestEventIteratorProvider provider = new TestEventIteratorProvider("get test events filtered by "+filter,
 				filter, getOperators(), book, composingService, selectQueryExecutor,
 				durationWorker,
 				composeReadAttrs(filter.getFetchParameters()),
-				filter.getStartTimestampFrom().getValue());
+				startTimestamp);
 		return provider.nextIterator()
 				.thenApply(r -> new CassandraCradleResultSet<>(r, provider));
 	}
