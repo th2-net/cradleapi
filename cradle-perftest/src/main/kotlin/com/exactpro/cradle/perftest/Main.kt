@@ -27,7 +27,6 @@ import com.exactpro.cradle.perftest.test.Results
 import com.exactpro.cradle.perftest.test.impl.GetGroupParallelTest
 import com.exactpro.cradle.perftest.test.impl.GetGroupSplitIntervalTest
 import com.exactpro.cradle.perftest.test.impl.GetMessageGroupTest
-import com.exactpro.cradle.perftest.test.impl.StoreMessageGroupTest
 import mu.KotlinLogging
 import org.testcontainers.containers.BindMode
 import org.testcontainers.containers.CassandraContainer
@@ -39,10 +38,9 @@ import java.nio.file.Paths
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
-import java.time.temporal.ChronoField
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.createDirectories
-import kotlin.io.path.exists
+import kotlin.io.path.writeText
 
 class Main {
 
@@ -50,6 +48,9 @@ class Main {
         private val LOGGER = KotlinLogging.logger { }
 
         private const val CASSANDRA_VERSION = "3.11.13"
+
+        private val REPORT_FILE = Paths.get("report.csv")
+        private const val NUMBER_OF_CYCLES = 5
         private const val CRADLE_GROUP_A = "group_a"
         private const val CRADLE_GROUP_B = "group_b"
         private const val CRADLE_GROUP_C = "group_c"
@@ -96,40 +97,48 @@ class Main {
                         val manager = cassandra.createCradleManager(prepareStorage = false)
                         val results = Results()
                         try {
-//                        println(manager.storage.getGroupedMessageBatches(
-//                            CRADLE_GROUP_A,
-//                            ZonedDateTime.now(ZoneOffset.UTC).withHour(0).toInstant(),
-//                            ZonedDateTime.now(ZoneOffset.UTC).withHour(23).toInstant()
-//                        ).asSequence()
-//                            .map(StoredGroupMessageBatch::getMessageCount)
-//                            .sum())
+                            countData(manager)
 
                             val groupNames =
                                 listOf(CRADLE_GROUP_A, CRADLE_GROUP_B, CRADLE_GROUP_C, CRADLE_GROUP_D, CRADLE_GROUP_E)
                             val testSettings = MessageGroupSettings(startTime = 1666329437 * 1_000_000_000L)
 //                            StoreMessageGroupTest(results).execute(manager.storage, testSettings, groupNames)
 
-                            with(GetMessageGroupTest(results)) {
-                                groupNames.forEach { group ->
-                                    execute(manager.storage, testSettings, group)
+                            for (i in 1..NUMBER_OF_CYCLES) {
+                                with(GetMessageGroupTest(results)) {
+                                    groupNames.forEach { group ->
+                                        results.separate()
+                                        execute(manager.storage, testSettings, group)
+                                    }
                                 }
                             }
-//
-//                            with(GetGroupSplitIntervalTest(results)) {
-//                                groupNames.forEach { group ->
-//                                    execute(manager.storage, testSettings, group)
-//                                }
-//                            }
-//
-                            with(GetGroupParallelTest(results)) {
-                                execute(manager.storage, testSettings, listOf(CRADLE_GROUP_A, CRADLE_GROUP_B))
-                                execute(manager.storage, testSettings, listOf(CRADLE_GROUP_C, CRADLE_GROUP_D))
-                                execute(manager.storage, testSettings, listOf(CRADLE_GROUP_E, CRADLE_GROUP_A))
-                                execute(manager.storage, testSettings, listOf(CRADLE_GROUP_B, CRADLE_GROUP_C))
-                                execute(manager.storage, testSettings, listOf(CRADLE_GROUP_D, CRADLE_GROUP_E))
+
+                            for (i in 1..NUMBER_OF_CYCLES) {
+                                with(GetGroupSplitIntervalTest(results)) {
+                                    groupNames.forEach { group ->
+                                        results.separate()
+                                        execute(manager.storage, testSettings, group)
+                                    }
+                                }
+                            }
+
+                            for (i in 1..NUMBER_OF_CYCLES) {
+                                with(GetGroupParallelTest(results)) {
+                                    results.separate()
+                                    execute(manager.storage, testSettings, listOf(CRADLE_GROUP_A, CRADLE_GROUP_B))
+                                    results.separate()
+                                    execute(manager.storage, testSettings, listOf(CRADLE_GROUP_C, CRADLE_GROUP_D))
+                                    results.separate()
+                                    execute(manager.storage, testSettings, listOf(CRADLE_GROUP_E, CRADLE_GROUP_A))
+                                    results.separate()
+                                    execute(manager.storage, testSettings, listOf(CRADLE_GROUP_B, CRADLE_GROUP_C))
+                                    results.separate()
+                                    execute(manager.storage, testSettings, listOf(CRADLE_GROUP_D, CRADLE_GROUP_E))
+                                }
                             }
                         } finally {
                             manager.dispose()
+                            REPORT_FILE.writeText(results.toString())
                             LOGGER.info { results }
                         }
                     } catch (e: Exception) {
@@ -140,6 +149,23 @@ class Main {
                 }
                 LOGGER.info("Finished performance tests")
             }
+        }
+
+        private fun countData(
+            manager: CradleManager,
+            group: String = CRADLE_GROUP_A,
+            from: Instant = ZonedDateTime.of(2022, 10, 21, 0, 0, 0, 0, ZoneOffset.UTC).toInstant(),
+            to: Instant = ZonedDateTime.of(2022, 10, 21, 23, 59, 59, 999_999_999, ZoneOffset.UTC).toInstant()
+        ) {
+            println(
+                manager.storage.getGroupedMessageBatches(
+                    group,
+                    from,
+                    to
+                ).asSequence()
+                    .map(StoredGroupMessageBatch::getMessageCount)
+                    .sum()
+            )
         }
 
         private fun CassandraContainer<*>.initDBSchema() {

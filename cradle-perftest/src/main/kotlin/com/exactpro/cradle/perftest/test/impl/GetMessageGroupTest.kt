@@ -23,6 +23,7 @@ import com.exactpro.cradle.perftest.test.MessageGroupSettings
 import com.exactpro.cradle.perftest.test.Results
 import com.exactpro.cradle.perftest.toInstant
 import com.exactpro.cradle.perftest.toSec
+import java.util.concurrent.atomic.AtomicLong
 
 class GetMessageGroupTest(private val results: Results) {
 
@@ -39,38 +40,46 @@ class GetMessageGroupTest(private val results: Results) {
             to = to
         ))
 
-        var respond: Iterable<StoredGroupMessageBatch>? = null
-        val getIterableDuration = measure {
-            respond = RetryContainer("Getting group message batch iterable") {
-                storage.getGroupedMessageBatches(group, from, to)
-            }.result()
-        }.also { (duration, _) ->
-            results.add(Results.Row(
-                "Got cradle iterator for group $group",
-                duration = duration.toSec()
-            ))
-        }.duration
+        val numberOfMessage = AtomicLong(0L)
 
-        var numberOfMessage = 0
-        val iterateDuration = measure {
-            numberOfMessage = requireNotNull(respond)
-                .sumOf(StoredGroupMessageBatch::getMessageCount)
-        }.also { (duration, _) ->
-            results.add(Results.Row(
-                "Average SELECT",
-                group = group,
-                throughput = numberOfMessage / duration.toSec(),
-                duration = duration.toSec(),
-                messages = numberOfMessage.toLong()
-            ))
-        }.duration
+        measure {
+            val respond = measure {
+                RetryContainer("Getting group message batch iterable") {
+                    storage.getGroupedMessageBatches(group, from, to)
+                }.result()
+            }.also { (duration, _) ->
+                results.add(
+                    Results.Row(
+                        "Got cradle iterator for group $group",
+                        duration = duration.toSec()
+                    )
+                )
+            }.result
 
-        results.add(Results.Row(
-            "Average GET RESULTS",
-            group = group,
-            throughput = numberOfMessage / (getIterableDuration + iterateDuration).toSec(),
-            duration = (getIterableDuration + iterateDuration).toSec(),
-            messages = numberOfMessage.toLong()
-        ))
+            numberOfMessage.addAndGet(measure {
+                requireNotNull(respond)
+                    .sumOf(StoredGroupMessageBatch::getMessageCount)
+            }.also { (duration, sum) ->
+                results.add(
+                    Results.Row(
+                        "Average SELECT",
+                        group = group,
+                        throughput = sum / duration.toSec(),
+                        duration = duration.toSec(),
+                        messages = sum.toLong()
+                    )
+                )
+            }.result.toLong())
+        }.also { (duration, _) ->
+            results.add(
+                Results.Row(
+                    "Average GET RESULTS",
+                    group = group,
+                    throughput = numberOfMessage.get() / duration.toSec(),
+                    duration = duration.toSec(),
+                    messages = numberOfMessage.toLong()
+                )
+            )
+        }
     }
 }

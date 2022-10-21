@@ -32,6 +32,10 @@ class Results {
         LOGGER.info { row }
     }
 
+    fun separate() {
+        list.add(EMPTY_RAW)
+    }
+
     override fun toString(): String = lock.withLock {
         StringBuilder().appendLine("comment, group, throughput, duration, batches, messages, from, to").apply {
             list.forEach {
@@ -54,5 +58,6 @@ class Results {
     companion object {
         private val LOGGER = KotlinLogging.logger { }
         private val NUMBER_FORMAT = DecimalFormat("############.###")
+        private val EMPTY_RAW = Row("---")
     }
 }

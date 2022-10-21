@@ -44,66 +44,69 @@ class GetGroupSplitIntervalTest(private val results: Results) {
         )
 
         val numberOfMessage = AtomicLong(0L)
-        val totalDuration = AtomicLong(0L)
+//        val totalDuration = AtomicLong(0L)
 
-        val iterableFutureList: List<CompletableFuture<Iterable<StoredGroupMessageBatch>>> =
-            (0 until splitFactor).asSequence()
-                .map { iteration ->
-                    CompletableFuture.supplyAsync {
-                        val intervalFrom = (from + (step * iteration)).toInstant()
-                        val intervalTo = (from + (step * (iteration + 1))).toInstant()
-                        measure {
-                            RetryContainer("Getting group message batch iterable (iteration $iteration)") {
-                                storage.getGroupedMessageBatches(
-                                    group,
-                                    intervalFrom,
-                                    intervalTo,
+        measure {
+            val iterableFutureList: List<CompletableFuture<Iterable<StoredGroupMessageBatch>>> =
+                (0 until splitFactor).asSequence()
+                    .map { iteration ->
+                        CompletableFuture.supplyAsync {
+                            val intervalFrom = (from + (step * iteration)).toInstant()
+                            val intervalTo = (from + (step * (iteration + 1))).toInstant()
+                            measure {
+                                RetryContainer("Getting group message batch iterable (iteration $iteration)") {
+                                    storage.getGroupedMessageBatches(
+                                        group,
+                                        intervalFrom,
+                                        intervalTo,
+                                    )
+                                }.result()
+                            }.also { (duration, _) ->
+                                results.add(
+                                    Results.Row(
+                                        "Got cradle iterator (iteration $iteration)",
+                                        group = group,
+                                        duration = duration.toSec(),
+                                        from = intervalFrom,
+                                        to = intervalTo
+                                    )
                                 )
-                            }.result()
-                        }.also { (duration, _) ->
-                            results.add(
-                                Results.Row(
-                                    "Got cradle iterator (iteration $iteration)",
-                                    group = group,
-                                    duration = duration.toSec(),
-                                    from = intervalFrom,
-                                    to = intervalTo
-                                )
+//                                totalDuration.addAndGet(duration)
+                            }.result
+                        }
+                    }.toList()
+
+            iterableFutureList.asSequence()
+                .map(CompletableFuture<Iterable<StoredGroupMessageBatch>>::get)
+                .forEachIndexed { index, respond ->
+                    measure {
+                        requireNotNull(respond)
+                            .sumOf(StoredGroupMessageBatch::getMessageCount)
+                    }.also { (duration, sum) ->
+                        results.add(
+                            Results.Row(
+                                "Average SELECT (iteration $index)",
+                                group = group,
+                                throughput = sum / duration.toSec(),
+                                duration = duration.toSec(),
+                                messages = sum.toLong()
                             )
-                            totalDuration.addAndGet(duration)
-                        }.result
-                    }
-                }.toList()
-
-        iterableFutureList.asSequence()
-            .map(CompletableFuture<Iterable<StoredGroupMessageBatch>>::get)
-            .forEachIndexed { index, respond ->
-                measure {
-                    requireNotNull(respond)
-                        .sumOf(StoredGroupMessageBatch::getMessageCount)
-                }.also { (duration, sum) ->
-                    results.add(
-                        Results.Row(
-                            "Average SELECT (iteration $index)",
-                            group = group,
-                            throughput = sum / duration.toSec(),
-                            duration = duration.toSec(),
-                            messages = sum.toLong()
                         )
-                    )
-                    numberOfMessage.addAndGet(sum.toLong())
-                    totalDuration.addAndGet(duration)
+                        numberOfMessage.addAndGet(sum.toLong())
+//                        totalDuration.addAndGet(duration)
+                    }
                 }
-            }
-
-        results.add(
-            Results.Row(
-                "Average GET RESULTS",
-                group = group,
-                throughput = numberOfMessage.get() / totalDuration.get().toSec(),
-                duration = totalDuration.get().toSec(),
-                messages = numberOfMessage.toLong()
+        }.also { (duration, _) ->
+            results.add(
+                Results.Row(
+                    "Average GET RESULTS",
+                    group = group,
+                    throughput = numberOfMessage.get() / duration.toSec(),
+                    duration = duration.toSec(),
+                    messages = numberOfMessage.toLong()
+                )
             )
-        )
+        }
+
     }
 }

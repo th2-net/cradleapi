@@ -44,61 +44,64 @@ class GetGroupParallelTest(private val results: Results) {
         )
 
         val numberOfMessage = AtomicLong(0L)
-        val totalDuration = AtomicLong(0L)
+//        val totalDuration = AtomicLong(0L)
 
-        val iterableFutureList: List<CompletableFuture<Iterable<StoredGroupMessageBatch>>> =
-            groupNames.asSequence()
-                .map { group ->
+        measure {
+            val iterableFutureList: List<CompletableFuture<Iterable<StoredGroupMessageBatch>>> =
+                groupNames.asSequence()
+                    .map { group ->
+                        CompletableFuture.supplyAsync {
+                            measure {
+                                RetryContainer("Getting group message batch iterable (group $group)") {
+                                    storage.getGroupedMessageBatches(
+                                        group,
+                                        from,
+                                        to,
+                                    )
+                                }.result()
+                            }.also { (duration, _) ->
+                                results.add(
+                                    Results.Row(
+                                        "Got cradle iterator for group $group",
+                                        duration = duration.toSec()
+                                    )
+                                )
+//                                totalDuration.addAndGet(duration)
+                            }.result
+                        }
+                    }.toList()
+
+            iterableFutureList.asSequence()
+                .map(CompletableFuture<Iterable<StoredGroupMessageBatch>>::get)
+                .mapIndexed { index, respond ->
                     CompletableFuture.supplyAsync {
                         measure {
-                            RetryContainer("Getting group message batch iterable (group $group)") {
-                                storage.getGroupedMessageBatches(
-                                    group,
-                                    from,
-                                    to,
-                                )
-                            }.result()
-                        }.also { (duration, _) ->
+                            requireNotNull(respond)
+                                .sumOf(StoredGroupMessageBatch::getMessageCount)
+                        }.also { (duration, sum) ->
                             results.add(
                                 Results.Row(
-                                    "Got cradle iterator for group $group",
-                                    duration = duration.toSec()
+                                    "Average SELECT (iteration $index)",
+                                    throughput = sum / duration.toSec(),
+                                    duration = duration.toSec(),
+                                    messages = numberOfMessage.toLong()
                                 )
                             )
-                            totalDuration.addAndGet(duration)
-                        }.result
+                            numberOfMessage.addAndGet(sum.toLong())
+//                            totalDuration.addAndGet(duration)
+                        }
                     }
-                }.toList()
-
-        iterableFutureList.asSequence()
-            .map(CompletableFuture<Iterable<StoredGroupMessageBatch>>::get)
-            .mapIndexed { index, respond ->
-                CompletableFuture.supplyAsync {
-                    measure {
-                        requireNotNull(respond)
-                            .sumOf(StoredGroupMessageBatch::getMessageCount)
-                    }.also { (duration, sum) ->
-                        results.add(
-                            Results.Row(
-                                "Average SELECT (iteration $index)",
-                                throughput = sum / duration.toSec(),
-                                duration = duration.toSec(),
-                                messages = numberOfMessage.toLong()
-                            )
-                        )
-                        numberOfMessage.addAndGet(sum.toLong())
-                        totalDuration.addAndGet(duration)
-                    }
-                }
-            }.forEach(CompletableFuture<*>::get)
-
-        results.add(
-            Results.Row(
-                "Average GET RESULTS",
-                throughput = numberOfMessage.get() / totalDuration.get().toSec(),
-                duration = totalDuration.get().toSec(),
-                messages = numberOfMessage.toLong()
+                }.forEach(CompletableFuture<*>::get)
+        }.also { (duration, _) ->
+            results.add(
+                Results.Row(
+                    "Average GET RESULTS",
+                    throughput = numberOfMessage.get() / duration.toSec(),
+                    duration = duration.toSec(),
+                    messages = numberOfMessage.toLong()
+                )
             )
-        )
+        }
+
     }
 }
