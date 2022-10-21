@@ -35,7 +35,10 @@ import com.exactpro.cradle.cassandra.dao.intervals.CassandraIntervalsWorker;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalSupplies;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.messages.converters.TimeMessageConverter;
-import com.exactpro.cradle.cassandra.dao.testevents.*;
+import com.exactpro.cradle.cassandra.dao.testevents.ChildrenDatesEventEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.DateEventEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.DateTimeEventEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.DetailedTestEventEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.DateEventEntityConverter;
 import com.exactpro.cradle.cassandra.iterators.*;
 import com.exactpro.cradle.cassandra.retries.*;
@@ -46,13 +49,16 @@ import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageFilter;
 import com.exactpro.cradle.messages.StoredMessageId;
-import com.exactpro.cradle.testevents.*;
+import com.exactpro.cradle.testevents.StoredTestEvent;
+import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.StoredTestEventMetadata;
+import com.exactpro.cradle.testevents.StoredTestEventWrapper;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.MessageUtils;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.io.*;
+
+import java.io.IOException;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -61,7 +67,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
-import static com.exactpro.cradle.cassandra.CassandraStorageSettings.*;
+import static com.exactpro.cradle.cassandra.CassandraStorageSettings.INSTANCES_TABLE_DEFAULT_NAME;
 import static com.exactpro.cradle.cassandra.StorageConstants.*;
 import static java.lang.String.format;
 
@@ -285,22 +291,24 @@ public class CassandraCradleStorage extends CradleStorage
 		List<CompletableFuture<Void>> futures = new ArrayList<>();
 		try
 		{
-			DetailedTestEventEntity detailedEntity = new DetailedTestEventEntity(event, instanceUuid);
+			DetailedTestEventEntity entity = new DetailedTestEventEntity(event, instanceUuid);
+			var wrapper = entity.toStoredTestEventWrapper();
+
 			CompletableFuture<Void> updateMaxDuration = CompletableFuture.completedFuture(null);
 			try {
 				// if possible extract and store duration for this batch
-				if (detailedEntity.getStartTime() != null && detailedEntity.getEndTime() != null) {
+				if (wrapper.getStartTimestamp() != null && wrapper.getMaxStartTimestamp() != null) {
 					updateMaxDuration =  eventBatchDurationWorker.updateMaxDuration(
-							new EventBatchDurationCache.CacheKey(instanceUuid, detailedEntity.getStartDate()),
-							Duration.between(detailedEntity.getStartTime(), detailedEntity.getEndTime()).toMillis());
+														instanceUuid,
+														entity.getStartDate(),
+														Duration.between(wrapper.getStartTimestamp(), wrapper.getMaxStartTimestamp()).toMillis());
 				}
-
 			} catch (CradleStorageException e) {
-				logger.error("Could not update max length for event batch with date {}", detailedEntity.getStartDate());
+				logger.error("Could not update max length for event batch with date {}", entity.getStartDate());
 				throw new CradleStorageException("Could not update max length for event batch", e);
 			}
 
-			futures.add(storeTimeEvent(detailedEntity));
+			futures.add(storeTimeEvent(entity));
 			futures.add(updateMaxDuration);
 			futures.add(storeDateTime(new DateTimeEventEntity(event, instanceUuid)));
 			futures.add(storeChildrenDates(new ChildrenDatesEventEntity(event, instanceUuid)));
@@ -1416,10 +1424,7 @@ public class CassandraCradleStorage extends CradleStorage
     adjusts query params accordingly
  	*/
 	private TestEventsQueryParams getAdjustedQueryParams (StoredTestEventId parentId, Instant from, Instant to, Order order) throws CradleStorageException {
-		long maxBatchDurationMillis = eventBatchDurationWorker.getMaxDuration(
-				new EventBatchDurationCache.CacheKey(instanceUuid, LocalDateTime.ofInstant(from, TIMEZONE_OFFSET).toLocalDate()));
-
-
+		long maxBatchDurationMillis = eventBatchDurationWorker.getMaxDuration(instanceUuid, LocalDateTime.ofInstant(from, TIMEZONE_OFFSET).toLocalDate());
 		return new TestEventsQueryParams(parentId, null, null, from, to, order, maxBatchDurationMillis);
 	}
 

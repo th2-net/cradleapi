@@ -17,31 +17,28 @@ package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
-import com.datastax.oss.driver.api.mapper.annotations.Query;
+import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Select;
+import com.datastax.oss.driver.api.mapper.annotations.Update;
 
 import java.time.LocalDate;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.cassandra.StorageConstants.*;
+import static com.exactpro.cradle.cassandra.StorageConstants.MAX_BATCH_DURATION;
 
 @Dao
 public interface EventBatchMaxDurationOperator {
 
 
-    @Query("INSERT into ${qualifiedTableId} (" + INSTANCE_ID + ", " + START_DATE + ", " + MAX_BATCH_DURATION + ") "
-            + "VALUES (:uuid, :startDate, :duration) "
-            + "IF NOT EXISTS")
-    CompletableFuture<Void> writeMaxDuration(UUID uuid, LocalDate startDate, long duration, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+    @Insert(ifNotExists = true)
+    Boolean writeMaxDuration (EventBatchMaxDurationEntity entity,
+                                                 Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
-
-    @Query("UPDATE ${qualifiedTableId} SET " + MAX_BATCH_DURATION + "= :duration "
-            + "WHERE " + INSTANCE_ID + "=:uuid AND " + START_DATE + "= :startDate "
-            + "IF " + MAX_BATCH_DURATION + "<:maxDuration")
-    void updateMaxDuration(UUID uuid, LocalDate startDate, Long duration, Long maxDuration, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+    @Update(customIfClause = MAX_BATCH_DURATION + "<:maxDuration")
+    Boolean updateMaxDuration(EventBatchMaxDurationEntity entity, Long maxDuration,
+                                                 Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
     @Select
-   EventBatchMaxDurationEntity getMaxDuration(UUID uuid, LocalDate localDate, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+    EventBatchMaxDurationEntity getMaxDuration(UUID uuid, LocalDate localDate, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }
