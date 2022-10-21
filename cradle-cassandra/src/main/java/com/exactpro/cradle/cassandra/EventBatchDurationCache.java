@@ -104,7 +104,7 @@ public class EventBatchDurationCache {
         // Remove from cache
         synchronized (durationsCache) {
             for (CacheKey key : durationsCache.asMap().keySet()) {
-                if (key.getPage().equals(pageId.getName())) {
+                if (key.getBook().equals(pageId.getBookId().getName())&& key.getPage().equals(pageId.getName())) {
                     keysToRemove.add(key);
                 }
             }
