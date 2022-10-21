@@ -22,8 +22,12 @@ const val NANOS_IN_SEC = 1_000_000_000
 
 fun Long.toInstant(): Instant = Instant.ofEpochSecond(this / NANOS_IN_SEC, this % NANOS_IN_SEC)
 
-fun measure(func: () -> Unit): Long {
+fun Long.toSec(): Double = toDouble() / NANOS_IN_SEC
+
+fun <T> measure(func: () -> T): MeasureResult<T> {
     val startTime = System.nanoTime()
-    func.invoke()
-    return System.nanoTime() - startTime
+    val result = func.invoke()
+    return MeasureResult(System.nanoTime() - startTime, result)
 }
+
+data class MeasureResult<T>(val duration: Long, val result: T)

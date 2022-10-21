@@ -16,13 +16,13 @@
 package com.exactpro.cradle.perftest.test
 
 data class MessageGroupSettings(
-    val groupName: String = "group",
-    val numberOfMessages: Long = 1_000_000,
+    private val numberOfMessages: Long = 1_000_000,
     val numberOfStreams: Int = 1,
     val messageSize: Int = 256,
     val batchSize: Int = 1024 * 1024 / (messageSize + 64),
-    val timeShiftNanos: Long = 1L,
-    val startTime: Long = System.nanoTime()
+    val timeShiftNanos: Long = 1_000_000_000L,
+    val startTime: Long = System.currentTimeMillis() * 1_000_000L
 ) {
     val batchesToProcess = numberOfMessages / messageSize
+    val messagesToProcess = batchesToProcess * messageSize
 }

@@ -19,21 +19,33 @@ package com.exactpro.cradle.perftest.test.impl
 import mu.KotlinLogging
 import java.util.concurrent.CompletableFuture
 
-class RetryContainer<T> (
+class AsyncRetryContainer<T> (
     private val comment: String,
-    private val func: () -> T
+    private val func: () -> CompletableFuture<T>
 ) {
+    private val future = func.invoke()
+
     fun result(): T {
-        var respond: T? = null
+        var currentFuture = future
         var counter = 0
-        while (respond == null) {
-            try {
-                respond = func.invoke()
-            } catch (e: Exception) {
-                LOGGER.warn("Try to execute '$comment' again, attempt ${++counter}")
-            }
+        while (!currentFuture.isSuccess()) {
+           currentFuture = func.invoke()
+            LOGGER.warn("Try to execute '$comment' again, attempt ${++counter}")
         }
-        return respond
+        return currentFuture.get()
+    }
+
+    private fun CompletableFuture<T>.isSuccess(): Boolean {
+        try {
+            get()
+            return true
+        } catch (e: InterruptedException) {
+            LOGGER.error(e) { "Async storing failure" }
+            Thread.currentThread().interrupt()
+        } catch (e: Exception) {
+            LOGGER.error(e) { "Async storing failure" }
+        }
+        return false
     }
 
     companion object {

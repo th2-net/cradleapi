@@ -20,11 +20,11 @@ import com.exactpro.cradle.CradleStorage
 import com.exactpro.cradle.Direction
 import com.exactpro.cradle.messages.MessageToStoreBuilder
 import com.exactpro.cradle.messages.StoredGroupMessageBatch
-import com.exactpro.cradle.perftest.NANOS_IN_SEC
 import com.exactpro.cradle.perftest.measure
 import com.exactpro.cradle.perftest.test.MessageGroupSettings
-import com.exactpro.cradle.perftest.test.PerformanceTest
+import com.exactpro.cradle.perftest.test.Results
 import com.exactpro.cradle.perftest.toInstant
+import com.exactpro.cradle.perftest.toSec
 import mu.KotlinLogging
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ConcurrentHashMap
@@ -32,40 +32,52 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.random.Random
 
-class MessageGroupStoreTest(
+class StoreMessageGroupTest(
+    private val results: Results,
     private val parallelism: Int = 5
-) : PerformanceTest(), AutoCloseable {
+) {
 
-
-    override fun execute(storage: CradleStorage, settings: MessageGroupSettings) {
+    fun execute(storage: CradleStorage, settings: MessageGroupSettings, groupNames: List<String>) {
         measure {
-            LOGGER.info {
-                "Execute message group batch store, batches to store ${settings.batchesToProcess}, message to store ${settings.batchesToProcess * settings.batchSize}, settings $settings"
-            }
+            results.add(
+                Results.Row(
+                    "Execute message group batch store",
+                    group = groupNames.toString(),
+                    batches = settings.batchesToProcess,
+                    messages = settings.messagesToProcess,
+                )
+            )
 
-            val queue = ArrayBlockingQueue<RetryContainer<Void>>(parallelism)
+            val queue = ArrayBlockingQueue<AsyncRetryContainer<Void>>(parallelism)
             val dryer = Drier(queue).apply { start() }
+            var counter = 0
 
             generator(storage, settings)
                 .take(settings.batchesToProcess.toInt())
                 .forEach { groupMessageBatch ->
-                    queue.put(RetryContainer {
-                        storage.storeGroupedMessageBatchAsync(groupMessageBatch, settings.groupName)
-                    })
+                    LOGGER.debug { "The ${++counter} batch stores ${groupMessageBatch.print()}" }
+                    groupNames.forEach { group ->
+                        queue.put(AsyncRetryContainer("Storing message group batch $group") {
+                            storage.storeGroupedMessageBatchAsync(groupMessageBatch, group)
+                        })
+                    }
                 }
 
             dryer.disable()
             dryer.join()
-        }.also { duration ->
-            LOGGER.info { "Average INSERT ${(settings.numberOfMessages.toDouble() / duration) * NANOS_IN_SEC}, settings $settings" }
+        }.also { (duration, _) ->
+            results.add(Results.Row(
+                "Average INSERT",
+                throughput = settings.messagesToProcess * groupNames.size / duration.toSec(),
+                duration = duration.toSec(),
+                batches = settings.batchesToProcess * groupNames.size,
+                messages = settings.messagesToProcess * groupNames.size
+            ))
         }
     }
 
-    override fun close() {
-    }
-
     private class Drier(
-        private val queue: ArrayBlockingQueue<RetryContainer<Void>>
+        private val queue: ArrayBlockingQueue<AsyncRetryContainer<Void>>
     ) : Thread() {
 
         @Volatile
@@ -103,6 +115,8 @@ class MessageGroupStoreTest(
         private val LOGGER = KotlinLogging.logger { }
         private val RANDOM = Random(1)
         private val SEQUENCE_COUNTER = ConcurrentHashMap<StreamId, AtomicLong>()
+
+        fun StoredGroupMessageBatch.print() = "$sessionGroup $firstTimestamp - $lastTimestamp"
 
         fun generator(storage: CradleStorage, messageGroupSettings: MessageGroupSettings): Sequence<StoredGroupMessageBatch> {
             val sessionAliases = (1..messageGroupSettings.numberOfStreams).map { "session_$it" }.toList()
