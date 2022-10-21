@@ -84,12 +84,10 @@ public class EventBatchDurationWorker {
 
 
     public long getMaxDuration(UUID instanceId, LocalDate date) {
-        EventBatchDurationCache.CacheKey key = new EventBatchDurationCache.CacheKey(instanceId, date);
-        EventBatchMaxDurationEntity entity = operator.getMaxDuration(key.uuid, key.date, readAttrs);
+        EventBatchMaxDurationEntity entity = operator.getMaxDuration(instanceId, date, readAttrs);
 
         if (entity == null) {
-            logger.trace("Could not get max duration for key ({}, {}), returning default value", key.uuid, key.date);
-
+            logger.trace("Could not get max duration for key ({}, {}), returning default value", instanceId, date);
             return defaultBatchDurationMillis;
         }
 

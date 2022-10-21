@@ -17,16 +17,12 @@ package com.exactpro.cradle.cassandra;
 
 import com.datastax.oss.driver.shaded.guava.common.cache.Cache;
 import com.datastax.oss.driver.shaded.guava.common.cache.CacheBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.util.Objects;
 import java.util.UUID;
 
 public class EventBatchDurationCache {
-    private final Logger logger = LoggerFactory.getLogger(EventBatchDurationCache.class);
-
     private final Cache<CacheKey, Long> cache;
 
     public EventBatchDurationCache(int limit) {
@@ -42,16 +38,11 @@ public class EventBatchDurationCache {
     public void updateCache(CacheKey key, long duration) {
         synchronized (cache) {
             Long cached = cache.getIfPresent(key);
-
             if (cached != null) {
-                logger.trace("Checking against cached duration");
-
                 if (cached > duration) {
                     return;
                 }
             }
-
-            logger.trace("Updating cache");
             cache.put(key, duration);
         }
     }
