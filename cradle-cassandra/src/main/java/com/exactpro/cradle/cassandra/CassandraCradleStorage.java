@@ -364,9 +364,7 @@ public class CassandraCradleStorage extends CradleStorage
 			var wrapper = detailedEntity.toStoredTestEventWrapper();
 			try {
 				if (wrapper.getStartTimestamp() != null && wrapper.getMaxStartTimestamp() != null) {
-					updateMaxDuration =  eventBatchDurationWorker.updateMaxDuration(
-							new EventBatchDurationCache.CacheKey(instanceUuid,
-									detailedEntity.getStartDate()),
+					updateMaxDuration =  eventBatchDurationWorker.updateMaxDuration(instanceUuid, detailedEntity.getStartDate(),
 							Duration.between(wrapper.getStartTimestamp(), wrapper.getMaxStartTimestamp()).toMillis());
 				}
 			} catch (CradleStorageException e) {
@@ -1302,8 +1300,7 @@ public class CassandraCradleStorage extends CradleStorage
 		adjusts query params accordingly
 	 */
 	private TestEventsQueryParams getAdjustedQueryParams (StoredTestEventId parentId, Instant from, Instant to, Order order) throws CradleStorageException {
-		long maxBatchDurationMillis = eventBatchDurationWorker.getMaxDuration(
-				new EventBatchDurationCache.CacheKey(instanceUuid, LocalDateTime.ofInstant(from, TIMEZONE_OFFSET).toLocalDate()));
+		long maxBatchDurationMillis = eventBatchDurationWorker.getMaxDuration(instanceUuid, LocalDateTime.ofInstant(from, TIMEZONE_OFFSET).toLocalDate());
 
 
 		return new TestEventsQueryParams(parentId, from, to, maxBatchDurationMillis, order);

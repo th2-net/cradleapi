@@ -37,25 +37,17 @@ public class EventBatchDurationCache {
             this.date = date;
         }
 
-        public UUID getUuid() {
-            return uuid;
-        }
-
-        public LocalDate getDate() {
-            return date;
-        }
-
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (!(o instanceof CacheKey)) return false;
             CacheKey key = (CacheKey) o;
-            return Objects.equals(getUuid(), key.getUuid()) && Objects.equals(getDate(), key.getDate());
+            return Objects.equals(uuid, key.uuid) && Objects.equals(date, key.date);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(getUuid(), getDate());
+            return Objects.hash(uuid, date);
         }
     }
 
