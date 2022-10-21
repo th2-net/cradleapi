@@ -28,9 +28,8 @@ public class EventBatchDurationWorker {
     }
 
     public void updateMaxDuration(String book, String page, String scope, long duration, Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs) throws CradleStorageException {
-        EventBatchDurationCache.CacheKey key = new EventBatchDurationCache.CacheKey(book, page, scope);
         EventBatchMaxDurationEntity entity = new EventBatchMaxDurationEntity(book, page, scope, duration);
-        Long cachedDuration = cache.getMaxDuration(key);
+        Long cachedDuration = cache.getMaxDuration(book, page, scope);
 
 
         if (cachedDuration != null) {
@@ -38,7 +37,7 @@ public class EventBatchDurationWorker {
                 // we have already persisted some duration before as we have some value in cache,
                 // so we can just update the record in the database
                 operator.updateMaxDuration(entity, duration, writeAttrs);
-                cache.updateCache(key, duration);
+                cache.updateCache(book, page, scope, duration);
             }
         } else {
             // we don't have any duration cached, so we don't know if record exists in database
@@ -47,7 +46,7 @@ public class EventBatchDurationWorker {
             if (!inserted) {
                 operator.updateMaxDuration(entity, duration, writeAttrs);
             }
-            cache.updateCache(key, duration);
+            cache.updateCache(book, page, scope, duration);
         }
     }
 
