@@ -26,7 +26,6 @@ import java.util.concurrent.CompletionException;
 import java.util.zip.DataFormatException;
 
 import com.exactpro.cradle.*;
-import com.exactpro.cradle.cassandra.EventBatchDurationCache;
 import com.exactpro.cradle.cassandra.EventBatchDurationWorker;
 import com.exactpro.cradle.cassandra.counters.BookStatisticsRecordsCaches;
 import com.exactpro.cradle.cassandra.counters.EntityStatisticsCollector;
@@ -119,8 +118,7 @@ public class EventsWorker extends Worker
 							}
 						}
 						if (entity.getStartTimestamp() != null) {
-								durationWorker.updateMaxDuration(
-										new EventBatchDurationCache.CacheKey(entity.getBook(), entity.getPage(), entity.getScope()),
+								durationWorker.updateMaxDuration(entity.getBook(), entity.getPage(), entity.getScope(),
 										Duration.between(entity.getStartTimestamp(), lastStartTimestamp).toMillis(),
 										writeAttrs);
 						}

@@ -8,7 +8,6 @@ import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
@@ -28,9 +27,11 @@ public class EventBatchDurationWorker {
         this.defaultBatchDurationMillis = defaultBatchDurationMillis;
     }
 
-    public void updateMaxDuration(EventBatchDurationCache.CacheKey key, long duration, Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs) throws CradleStorageException {
+    public void updateMaxDuration(String book, String page, String scope, long duration, Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs) throws CradleStorageException {
+        EventBatchDurationCache.CacheKey key = new EventBatchDurationCache.CacheKey(book, page, scope);
+        EventBatchMaxDurationEntity entity = new EventBatchMaxDurationEntity(book, page, scope, duration);
         Long cachedDuration = cache.getMaxDuration(key);
-        var entity = new EventBatchMaxDurationEntity(key.getBook(), key.getPage(), key.getScope(), duration);
+
 
         if (cachedDuration != null) {
             if (cachedDuration < duration) {
@@ -38,7 +39,6 @@ public class EventBatchDurationWorker {
                 // so we can just update the record in the database
                 operator.updateMaxDuration(entity, duration, writeAttrs);
                 cache.updateCache(key, duration);
-                return;
             }
         } else {
             // we don't have any duration cached, so we don't know if record exists in database
@@ -52,22 +52,20 @@ public class EventBatchDurationWorker {
     }
 
     public void removePageDurations (PageId pageId) {
-        List<EventBatchDurationCache.CacheKey> keysToRemove = new ArrayList<>();
-
         // Remove from cache
-        cache.removePageDurations(pageId);
+        List<EventBatchDurationCache.CacheKey> keysToRemove = cache.removePageDurations(pageId);
 
         // Remove from database
         logger.trace("{} EventBatchMaxDurationEntity will be removed from database", keysToRemove.size());
         operator.removeMaxDurations(pageId.getBookId().getName(), pageId.getName());
     }
 
-    public long getMaxDuration(EventBatchDurationCache.CacheKey key, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) {
-        EventBatchMaxDurationEntity entity = operator.getMaxDuration(key.getBook(), key.getPage(), key.getScope(), readAttrs);
+    public long getMaxDuration(String book, String page, String scope, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) {
+        EventBatchMaxDurationEntity entity = operator.getMaxDuration(book, page, scope, readAttrs);
 
         if (entity == null) {
             logger.trace("Could not get max duration for key ({}, {}, {}), returning default value",
-                    key.getBook(), key.getPage(), key.getScope());
+                    book, page, scope);
 
             return defaultBatchDurationMillis;
         }
