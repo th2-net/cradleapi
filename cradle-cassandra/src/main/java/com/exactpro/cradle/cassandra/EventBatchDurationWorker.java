@@ -53,9 +53,7 @@ public class EventBatchDurationWorker {
 
     public CompletableFuture<Void> updateMaxDuration(UUID uuid, LocalDate date, long duration) throws CradleStorageException {
         return CompletableFuture.supplyAsync(() -> {
-            EventBatchDurationCache.CacheKey key = new EventBatchDurationCache.CacheKey(uuid, date);
-
-            Long cachedDuration = cache.getMaxDuration(key);
+            Long cachedDuration = cache.getMaxDuration(uuid, date);
             var entity = new EventBatchMaxDurationEntity(uuid, date, duration);
 
             if (cachedDuration != null) {
@@ -63,7 +61,7 @@ public class EventBatchDurationWorker {
                     // we have already persisted some duration before as we have some value in cache,
                     // so we can just update the record in the database
                     operator.updateMaxDuration(entity, duration, writeAttrs);
-                    cache.updateCache(key, duration);
+                    cache.updateCache(uuid, date, duration);
                     return null;
                 }
             } else {
@@ -73,7 +71,7 @@ public class EventBatchDurationWorker {
                 if (!inserted) {
                     operator.updateMaxDuration(entity, duration, writeAttrs);
                 }
-                cache.updateCache(key, duration);
+                cache.updateCache(uuid, date, duration);
             }
 
             return null;

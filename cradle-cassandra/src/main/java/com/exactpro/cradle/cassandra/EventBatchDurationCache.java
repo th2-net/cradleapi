@@ -57,13 +57,15 @@ public class EventBatchDurationCache {
         this.durationsCache = CacheBuilder.newBuilder().maximumSize(limit).build();
     }
 
-    public Long getMaxDuration (CacheKey cacheKey) {
+    public Long getMaxDuration (UUID uuid, LocalDate date) {
+        CacheKey key = new CacheKey(uuid, date);
         synchronized (durationsCache) {
-            return durationsCache.getIfPresent(cacheKey);
+            return durationsCache.getIfPresent(key);
         }
     }
 
-    public void updateCache(CacheKey key, long duration) {
+    public void updateCache(UUID uuid, LocalDate date, long duration) {
+        CacheKey key = new CacheKey(uuid, date);
         synchronized (durationsCache) {
             Long cached = durationsCache.getIfPresent(key);
 
