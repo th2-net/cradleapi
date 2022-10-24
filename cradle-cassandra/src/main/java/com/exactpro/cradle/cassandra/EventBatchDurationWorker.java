@@ -52,10 +52,10 @@ public class EventBatchDurationWorker {
 
     public void removePageDurations (PageId pageId) {
         // Remove from cache
-        List<EventBatchDurationCache.CacheKey> keysToRemove = cache.removePageDurations(pageId);
+        int invalidatedCnt = cache.removePageDurations(pageId);
 
         // Remove from database
-        logger.trace("{} EventBatchMaxDurationEntity will be removed from database", keysToRemove.size());
+        logger.trace("{} EventBatchMaxDurationEntity will be removed from database", invalidatedCnt);
         operator.removeMaxDurations(pageId.getBookId().getName(), pageId.getName());
     }
 

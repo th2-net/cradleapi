@@ -81,7 +81,7 @@ public class EventBatchDurationCache {
 
 
 
-    public List<CacheKey> removePageDurations (PageId pageId) {
+    public int removePageDurations (PageId pageId) {
         List<CacheKey> keysToRemove = new ArrayList<>();
 
         // Remove from cache
@@ -95,6 +95,6 @@ public class EventBatchDurationCache {
             durationsCache.invalidateAll(keysToRemove);
         }
 
-        return keysToRemove;
+        return keysToRemove.size();
     }
 }
