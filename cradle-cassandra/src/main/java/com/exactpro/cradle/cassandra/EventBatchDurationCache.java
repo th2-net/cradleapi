@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
+import java.util.Objects;
 import java.util.UUID;
 
 public class EventBatchDurationCache {
@@ -36,12 +37,17 @@ public class EventBatchDurationCache {
             this.date = date;
         }
 
-        public UUID getUuid() {
-            return uuid;
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof CacheKey)) return false;
+            CacheKey key = (CacheKey) o;
+            return Objects.equals(uuid, key.uuid) && Objects.equals(date, key.date);
         }
 
-        public LocalDate getDate() {
-            return date;
+        @Override
+        public int hashCode() {
+            return Objects.hash(uuid, date);
         }
     }
 
@@ -51,22 +57,26 @@ public class EventBatchDurationCache {
         this.durationsCache = CacheBuilder.newBuilder().maximumSize(limit).build();
     }
 
-    public Long getMaxDuration (CacheKey cacheKey) {
+    public Long getMaxDuration (UUID uuid, LocalDate date) {
+        CacheKey key = new CacheKey(uuid, date);
         synchronized (durationsCache) {
-            return durationsCache.getIfPresent(cacheKey);
+            return durationsCache.getIfPresent(key);
         }
     }
 
-    public void updateCache(CacheKey key, long duration) {
+    public void updateCache(UUID uuid, LocalDate date, long duration) {
+        CacheKey key = new CacheKey(uuid, date);
         synchronized (durationsCache) {
             Long cached = durationsCache.getIfPresent(key);
 
             if (cached != null) {
+                logger.trace("Checking against cached value");
                 if (cached > duration) {
                     return;
                 }
             }
 
+            logger.trace("Updating cache");
             durationsCache.put(key, duration);
         }
     }
