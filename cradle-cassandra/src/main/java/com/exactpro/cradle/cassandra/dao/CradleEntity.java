@@ -38,7 +38,9 @@ public abstract class CradleEntity
 	@CqlName(FIELD_CONTENT)
 	private ByteBuffer content;
 	
-	
+
+	//TODO: make this class immutable, this should be done after all subclasses are immutable
+
 	public boolean isCompressed()
 	{
 		return compressed;
