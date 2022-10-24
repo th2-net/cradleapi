@@ -35,7 +35,6 @@ import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityCo
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
 import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.TestEventUtils;
 import io.prometheus.client.Counter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,7 +108,7 @@ public class EventsWorker extends Worker
 				.thenAccept(result -> {
 					try {
 						Instant firstTimestamp = meta.get(0).getTimestamp();
-						Instant lastStartTimestamp = meta.get(0).getTimestamp();
+						Instant lastStartTimestamp = firstTimestamp;
 						for (SerializedEntityMetadata el : meta) {
 							if (el.getTimestamp() != null) {
 								if (firstTimestamp.isAfter(el.getTimestamp())) {

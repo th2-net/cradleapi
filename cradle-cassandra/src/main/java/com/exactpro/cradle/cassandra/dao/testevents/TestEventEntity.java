@@ -153,12 +153,6 @@ public class TestEventEntity extends CradleEntity {
 		return scope;
 	}
 	
-	public void setScope(String scope)
-	{
-		this.scope = scope;
-	}
-	
-	
 	public LocalDate getStartDate()
 	{
 		return startDate;
@@ -226,11 +220,6 @@ public class TestEventEntity extends CradleEntity {
 	public ByteBuffer getMessages()
 	{
 		return messages;
-	}
-	
-	public void setMessages(ByteBuffer messages)
-	{
-		this.messages = messages;
 	}
 	
 	public static class TestEventEntityBuilder {
