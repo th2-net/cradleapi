@@ -77,7 +77,7 @@ public class MessagesWorker extends Worker
 	{
 		try
 		{
-			StoredMessageBatch batch = entity.toStoredMessageBatch(pageId);
+			StoredMessageBatch batch = MessageBatchEntityUtils.toStoredMessageBatch(entity, pageId);
 			updateMessageReadMetrics(batch);
 			return batch;
 		}
@@ -247,7 +247,7 @@ public class MessagesWorker extends Worker
 
 	public MessageBatchEntity createMessageBatchEntity(MessageBatchToStore batch, PageId pageId) throws IOException
 	{
-		return new MessageBatchEntity(batch, pageId, settings.getMaxUncompressedMessageBatchSize());
+		return MessageBatchEntityUtils.fromMessageBatch(batch, pageId, settings.getMaxUncompressedMessageBatchSize());
 	}
 	
 	public GroupedMessageBatchEntity createGroupedMessageBatchEntity(GroupedMessageBatchToStore batch, PageId pageId)
@@ -328,10 +328,9 @@ public class MessagesWorker extends Worker
 		return operators.getSessionsOperator().write(new SessionEntity(bookId.toString(), batch.getSessionAlias()), writeAttrs);
 	}
 
-	public CompletableFuture<Void> storeMessageBatch(MessageBatchEntity entity, BookId bookId)
+	public CompletableFuture<Void> storeMessageBatch(MessageBatchEntity entity, BookId bookId, List<SerializedEntityMetadata> meta)
 	{
 		MessageBatchOperator mbOperator = getOperators().getMessageBatchOperator();
-		List<SerializedEntityMetadata> meta = entity.getSerializedMessageMetadata();
 
 		return mbOperator.write(entity, writeAttrs)
 				.thenAccept(result -> messageStatisticsCollector.updateMessageBatchStatistics(bookId, entity.getPage(), entity.getSessionAlias(), entity.getDirection(), meta))

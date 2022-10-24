@@ -55,6 +55,7 @@ import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.MessageUtils;
 import com.exactpro.cradle.utils.TimeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -287,7 +288,7 @@ public class CassandraCradleStorage extends CradleStorage
 		try
 		{
 			MessageBatchEntity entity = messagesWorker.createMessageBatchEntity(batch, pageId);
-			messagesWorker.storeMessageBatch(entity, bookId).get();
+			messagesWorker.storeMessageBatch(entity, bookId, MessageUtils.getMessageBatchContent(batch).getSerializedEntityMetadata()).get();
 			messagesWorker.storeSession(batch).get();
 			messagesWorker.storePageSession(batch, pageId).get();
 		}
@@ -311,7 +312,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 			for (MessageBatchToStore b: batch.getSessionMessageBatches()) {
 				MessageBatchEntity e = messagesWorker.createMessageBatchEntity(b, pageId);
-				messagesWorker.storeMessageBatch(e, bookId).get();
+				messagesWorker.storeMessageBatch(e, bookId, MessageUtils.getMessageBatchContent(b).getSerializedEntityMetadata()).get();
 				messagesWorker.storeSession(b).get();
 				messagesWorker.storePageSession(b, pageId).get();
 			}
@@ -339,7 +340,7 @@ public class CassandraCradleStorage extends CradleStorage
 						throw new CompletionException(e);
 					}
 				}, composingService)
-				.thenComposeAsync(entity -> messagesWorker.storeMessageBatch(entity, bookId), composingService)
+				.thenComposeAsync(entity -> messagesWorker.storeMessageBatch(entity, bookId, MessageUtils.getMessageBatchContent(batch).getSerializedEntityMetadata()), composingService)
 				.thenComposeAsync(r -> messagesWorker.storeSession(batch), composingService)
 				.thenComposeAsync(r -> messagesWorker.storePageSession(batch, pageId), composingService)
 				.thenAccept(NOOP);
@@ -368,7 +369,7 @@ public class CassandraCradleStorage extends CradleStorage
 		for (MessageBatchToStore b: batch.getSessionMessageBatches()) {
 			future = future.thenComposeAsync(ignored -> {
 				try {
-					return messagesWorker.storeMessageBatch(messagesWorker.createMessageBatchEntity(b, pageId), bookId);
+					return messagesWorker.storeMessageBatch(messagesWorker.createMessageBatchEntity(b, pageId), bookId, MessageUtils.getMessageBatchContent(b).getSerializedEntityMetadata());
 				} catch (IOException e) {
 					throw new CompletionException(e);
 				}

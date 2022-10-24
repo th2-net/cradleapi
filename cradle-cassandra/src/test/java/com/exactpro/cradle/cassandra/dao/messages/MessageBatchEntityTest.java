@@ -48,8 +48,8 @@ public class MessageBatchEntityTest
 				.build(), 200);
 		StoredMessageBatch storedBatch = new StoredMessageBatch(batch.getMessages(), pageId, null);
 		
-		MessageBatchEntity entity = new MessageBatchEntity(batch, pageId, 2000);
-		StoredMessageBatch batchFromEntity = entity.toStoredMessageBatch(pageId);
+		MessageBatchEntity entity = MessageBatchEntityUtils.fromMessageBatch(batch, pageId, 2000);
+		StoredMessageBatch batchFromEntity = MessageBatchEntityUtils.toStoredMessageBatch(entity, pageId);
 
 		RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
 
