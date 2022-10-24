@@ -21,7 +21,6 @@ import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.Order;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.PageInfo;
-import com.exactpro.cradle.cassandra.EventBatchDurationCache;
 import com.exactpro.cradle.cassandra.EventBatchDurationWorker;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
@@ -154,7 +153,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 			Only initial filter needs to be adjusted with max duration,
 			since `createNextFilter` just passes timestamps from previous to next filters
 		 */
-		long duration = eventBatchDurationWorker.getMaxDuration(new EventBatchDurationCache.CacheKey(filter.getBookId().getName(), firstPage.getId().getName(), filter.getScope()), readAttrs);
+		long duration = eventBatchDurationWorker.getMaxDuration(filter.getBookId().getName(), firstPage.getId().getName(), filter.getScope(), readAttrs);
 		FilterForGreater<Instant> newFrom = FilterForGreater.forGreater(actualFrom.minusMillis(duration));
 
 		String parentId = getParentIdString(filter);

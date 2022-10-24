@@ -18,11 +18,10 @@ package com.exactpro.cradle.cassandra;
 import com.datastax.oss.driver.shaded.guava.common.cache.Cache;
 import com.datastax.oss.driver.shaded.guava.common.cache.CacheBuilder;
 import com.exactpro.cradle.PageId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class EventBatchDurationCache {
 
@@ -37,16 +36,17 @@ public class EventBatchDurationCache {
             this.scope = scope;
         }
 
-        public String getBook() {
-            return book;
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof CacheKey)) return false;
+            CacheKey key = (CacheKey) o;
+            return book.equals(key.book) && page.equals(key.page) && scope.equals(key.scope);
         }
 
-        public String getPage() {
-            return page;
-        }
-
-        public String getScope() {
-            return scope;
+        @Override
+        public int hashCode() {
+            return Objects.hash(book, page, scope);
         }
     }
 
@@ -57,13 +57,15 @@ public class EventBatchDurationCache {
         this.durationsCache = CacheBuilder.newBuilder().maximumSize(limit).build();
     }
 
-    public Long getMaxDuration (CacheKey cacheKey) {
+    public Long getMaxDuration (String book, String page, String scope) {
+        CacheKey key = new CacheKey(book, page, scope);
         synchronized (durationsCache) {
-            return durationsCache.getIfPresent(cacheKey);
+            return durationsCache.getIfPresent(key);
         }
     }
 
-    public void updateCache(CacheKey key, long duration) {
+    public void updateCache(String book, String page, String scope, long duration) {
+        CacheKey key = new CacheKey(book, page, scope);
         synchronized (durationsCache) {
             Long cached = durationsCache.getIfPresent(key);
 
@@ -79,18 +81,20 @@ public class EventBatchDurationCache {
 
 
 
-    public void removePageDurations (PageId pageId) {
+    public int removePageDurations (PageId pageId) {
         List<CacheKey> keysToRemove = new ArrayList<>();
 
         // Remove from cache
         synchronized (durationsCache) {
             for (CacheKey key : durationsCache.asMap().keySet()) {
-                if (key.getPage().equals(pageId.getName())) {
+                if (key.book.equals(pageId.getBookId().getName())&& key.page.equals(pageId.getName())) {
                     keysToRemove.add(key);
                 }
             }
 
             durationsCache.invalidateAll(keysToRemove);
         }
+
+        return keysToRemove.size();
     }
 }

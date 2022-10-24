@@ -26,7 +26,6 @@ import java.util.concurrent.CompletionException;
 import java.util.zip.DataFormatException;
 
 import com.exactpro.cradle.*;
-import com.exactpro.cradle.cassandra.EventBatchDurationCache;
 import com.exactpro.cradle.cassandra.EventBatchDurationWorker;
 import com.exactpro.cradle.cassandra.counters.BookStatisticsRecordsCaches;
 import com.exactpro.cradle.cassandra.counters.EntityStatisticsCollector;
@@ -105,7 +104,7 @@ public class EventsWorker extends Worker
 		TestEventOperator op = getOperators().getTestEventOperator();
 		BookStatisticsRecordsCaches.EntityKey key = new BookStatisticsRecordsCaches.EntityKey(entity.getPage(), EntityType.EVENT);
 		return op.write(entity, writeAttrs)
-				.thenAccept(result -> {
+				.thenAcceptAsync(result -> {
 					try {
 						Instant firstTimestamp = meta.get(0).getTimestamp();
 						Instant lastStartTimestamp = firstTimestamp;
@@ -119,10 +118,8 @@ public class EventsWorker extends Worker
 								}
 							}
 						}
-
-						durationWorker.updateMaxDuration(
-								new EventBatchDurationCache.CacheKey(entity.getBook(), entity.getPage(), entity.getScope()),
-								Duration.between(TestEventEntityUtils.getStartTimestamp(entity), lastStartTimestamp).toMillis(),
+						durationWorker.updateMaxDuration(entity.getBook(), entity.getPage(), entity.getScope(),
+								Duration.between(firstTimestamp, lastStartTimestamp).toMillis(),
 								writeAttrs);
 					} catch (CradleStorageException e) {
 						logger.error("Exception while updating max duration {}", e.getMessage());
