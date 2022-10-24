@@ -84,7 +84,7 @@ class GetGroupParallelTest(private val results: Results) {
                                     "Average SELECT (iteration $index)",
                                     throughput = sum / duration.toSec(),
                                     duration = duration.toSec(),
-                                    messages = numberOfMessage.toLong()
+                                    messages = sum.toLong()
                                 )
                             )
                             numberOfMessage.addAndGet(sum.toLong())
