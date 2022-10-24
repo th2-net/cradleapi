@@ -118,11 +118,9 @@ public class EventsWorker extends Worker
 								}
 							}
 						}
-						if (entity.getStartTimestamp() != null) {
-								durationWorker.updateMaxDuration(entity.getBook(), entity.getPage(), entity.getScope(),
-										Duration.between(firstTimestamp, lastStartTimestamp).toMillis(),
-										writeAttrs);
-						}
+						durationWorker.updateMaxDuration(entity.getBook(), entity.getPage(), entity.getScope(),
+								Duration.between(firstTimestamp, lastStartTimestamp).toMillis(),
+								writeAttrs);
 					} catch (CradleStorageException e) {
 						logger.error("Exception while updating max duration {}", e.getMessage());
 					}
