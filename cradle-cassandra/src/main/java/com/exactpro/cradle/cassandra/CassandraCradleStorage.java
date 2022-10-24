@@ -56,6 +56,7 @@ import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.MessageUtils;
 import com.exactpro.cradle.utils.TestEventUtils;
 import com.exactpro.cradle.utils.TimeUtils;
 import org.apache.commons.lang3.StringUtils;
