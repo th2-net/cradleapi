@@ -21,6 +21,7 @@ import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.MessageUtils;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.testng.annotations.Test;
@@ -47,8 +48,9 @@ public class MessageBatchEntityTest
 				.metadata("key_test", "value_test")
 				.build(), 200);
 		StoredMessageBatch storedBatch = new StoredMessageBatch(batch.getMessages(), pageId, null);
-		
-		MessageBatchEntity entity = MessageBatchEntityUtils.fromMessageBatch(batch, pageId, 2000);
+
+		var serializedData = MessageUtils.getMessageBatchContent(batch);
+		MessageBatchEntity entity = MessageBatchEntityUtils.fromMessageBatch(batch, serializedData, pageId, 2000);
 		StoredMessageBatch batchFromEntity = MessageBatchEntityUtils.toStoredMessageBatch(entity, pageId);
 
 		RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();

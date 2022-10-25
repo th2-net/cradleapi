@@ -50,14 +50,12 @@ import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
-import com.exactpro.cradle.serialization.SerializedEntityMetadata;
+import com.exactpro.cradle.cassandra.dao.EntityWithSerializedData;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.MessageUtils;
-import com.exactpro.cradle.utils.TestEventUtils;
 import com.exactpro.cradle.utils.TimeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -289,8 +287,11 @@ public class CassandraCradleStorage extends CradleStorage
 
 		try
 		{
-			MessageBatchEntity entity = messagesWorker.createMessageBatchEntity(batch, pageId);
-			messagesWorker.storeMessageBatch(entity, bookId, MessageUtils.getMessageBatchContent(batch).getSerializedEntityMetadata()).get();
+			EntityWithSerializedData<MessageBatchEntity> entityWithSerializedData = messagesWorker.createMessageBatchEntityWithSerializedData(batch, pageId);
+			messagesWorker.storeMessageBatch(
+					entityWithSerializedData.getEntity(),
+					bookId,
+					entityWithSerializedData.getSerializedEntityData().getSerializedEntityMetadata()).get();
 			messagesWorker.storeSession(batch).get();
 			messagesWorker.storePageSession(batch, pageId).get();
 		}
@@ -313,8 +314,11 @@ public class CassandraCradleStorage extends CradleStorage
 			messagesWorker.storeGroupedMessageBatch(entity, bookId).get();
 
 			for (MessageBatchToStore b: batch.getSessionMessageBatches()) {
-				MessageBatchEntity e = messagesWorker.createMessageBatchEntity(b, pageId);
-				messagesWorker.storeMessageBatch(e, bookId, MessageUtils.getMessageBatchContent(b).getSerializedEntityMetadata()).get();
+				EntityWithSerializedData<MessageBatchEntity> entityWithSerializedData = messagesWorker.createMessageBatchEntityWithSerializedData(b, pageId);
+				messagesWorker.storeMessageBatch(
+						entityWithSerializedData.getEntity(),
+						bookId,
+						entityWithSerializedData.getSerializedEntityData().getSerializedEntityMetadata()).get();
 				messagesWorker.storeSession(b).get();
 				messagesWorker.storePageSession(b, pageId).get();
 			}
@@ -335,14 +339,17 @@ public class CassandraCradleStorage extends CradleStorage
 				{
 					try
 					{
-						return messagesWorker.createMessageBatchEntity(batch, pageId);
+						return messagesWorker.createMessageBatchEntityWithSerializedData(batch, pageId);
 					}
 					catch (IOException e)
 					{
 						throw new CompletionException(e);
 					}
 				}, composingService)
-				.thenComposeAsync(entity -> messagesWorker.storeMessageBatch(entity, bookId, MessageUtils.getMessageBatchContent(batch).getSerializedEntityMetadata()), composingService)
+				.thenComposeAsync(entityEntityWithSerializedData -> messagesWorker.storeMessageBatch(
+						entityEntityWithSerializedData.getEntity(),
+						bookId,
+						entityEntityWithSerializedData.getSerializedEntityData().getSerializedEntityMetadata()), composingService)
 				.thenComposeAsync(r -> messagesWorker.storeSession(batch), composingService)
 				.thenComposeAsync(r -> messagesWorker.storePageSession(batch, pageId), composingService)
 				.thenAccept(NOOP);
@@ -371,7 +378,11 @@ public class CassandraCradleStorage extends CradleStorage
 		for (MessageBatchToStore b: batch.getSessionMessageBatches()) {
 			future = future.thenComposeAsync(ignored -> {
 				try {
-					return messagesWorker.storeMessageBatch(messagesWorker.createMessageBatchEntity(b, pageId), bookId, MessageUtils.getMessageBatchContent(b).getSerializedEntityMetadata());
+					EntityWithSerializedData<MessageBatchEntity> entityWithSerializedData = messagesWorker.createMessageBatchEntityWithSerializedData(b, pageId);
+					return messagesWorker.storeMessageBatch(
+							entityWithSerializedData.getEntity(),
+							bookId,
+							entityWithSerializedData.getSerializedEntityData().getSerializedEntityMetadata());
 				} catch (IOException e) {
 					throw new CompletionException(e);
 				}
@@ -388,11 +399,13 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		PageId pageId = page.getId();
 		BookId bookId = pageId.getBookId();
-		List<SerializedEntityMetadata> meta = TestEventUtils.getTestEventContent(event).getSerializedEntityMetadata();
 		try
 		{
-			TestEventEntity entity = eventsWorker.createEntity(event, pageId);
-			eventsWorker.storeEntity(entity, bookId, meta).get();
+			EntityWithSerializedData<TestEventEntity> entityWithSerializedData = eventsWorker.createEntityWithSerializedData(event, pageId);
+			eventsWorker.storeEntity(
+					entityWithSerializedData.getEntity(),
+					bookId,
+					entityWithSerializedData.getSerializedEntityData().getSerializedEntityMetadata()).get();
 			eventsWorker.storeScope(event).get();
 			eventsWorker.storePageScope(event, pageId).get();
 		}
@@ -407,18 +420,22 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		PageId pageId = page.getId();
 		BookId bookId = pageId.getBookId();
-		List<SerializedEntityMetadata> meta = TestEventUtils.getTestEventContent(event).getSerializedEntityMetadata();
 		return CompletableFuture.supplyAsync(() -> {
 					try
 					{
-						return eventsWorker.createEntity(event, pageId);
+						return eventsWorker.createEntityWithSerializedData(event, pageId);
 					}
 					catch (IOException e)
 					{
 						throw new CompletionException(e);
 					}
 				}, composingService)
-				.thenComposeAsync(entity -> eventsWorker.storeEntity(entity, bookId, meta), composingService)
+				.thenComposeAsync(entity ->
+						eventsWorker.storeEntity(
+								entity.getEntity(),
+								bookId,
+								entity.getSerializedEntityData().getSerializedEntityMetadata()),
+						composingService)
 				.thenComposeAsync((r) -> eventsWorker.storeScope(event), composingService)
 				.thenComposeAsync((r) -> eventsWorker.storePageScope(event, pageId), composingService)
 				.thenAccept(NOOP);

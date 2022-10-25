@@ -22,6 +22,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.zip.DataFormatException;
 
+import com.exactpro.cradle.serialization.SerializedEntityData;
+import com.exactpro.cradle.utils.TestEventUtils;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.testng.annotations.DataProvider;
@@ -93,7 +95,8 @@ public class TestEventEntityTest
 	@Test(dataProvider = "events")
 	public void eventEntity(TestEventToStore event) throws CradleStorageException, IOException, DataFormatException, CradleIdException
 	{
-		TestEventEntity entity = TestEventEntityUtils.fromEventToStore(event, page, 2000);
+		SerializedEntityData serializedEntityData = TestEventUtils.getTestEventContent(event);
+		TestEventEntity entity = TestEventEntityUtils.fromEventToStore(event, serializedEntityData,  page, 2000);
 		StoredTestEvent newEvent = TestEventEntityUtils.toStoredTestEvent(entity, page);
 		
 		RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();

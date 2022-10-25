@@ -39,12 +39,10 @@ public class MessageBatchEntityUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(MessageBatchEntityUtils.class);
 
-    public static MessageBatchEntity fromMessageBatch(MessageBatch batch, PageId pageId, int maxUncompressedSize) throws IOException
+    public static MessageBatchEntity fromMessageBatch(MessageBatch batch, SerializedEntityData serializedEntityData, PageId pageId, int maxUncompressedSize) throws IOException
     {
         logger.debug("Creating entity from message batch '{}'", batch.getId());
         MessageBatchEntity.MessageBatchEntityBuilder builder = MessageBatchEntity.MessageBatchEntityBuilder.builder();
-
-        SerializedEntityData serializedEntityData = MessageUtils.serializeMessages(batch.getMessages());
 
         byte[] batchContent = serializedEntityData.getSerializedData();
         boolean compressed = batchContent.length > maxUncompressedSize;
