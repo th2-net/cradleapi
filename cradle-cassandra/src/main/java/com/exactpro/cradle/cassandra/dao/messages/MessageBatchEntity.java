@@ -19,12 +19,12 @@ package com.exactpro.cradle.cassandra.dao.messages;
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.exactpro.cradle.cassandra.dao.CradleEntity;
 import com.exactpro.cradle.messages.MessageBatch;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.exactpro.cradle.utils.TimeUtils;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Set;
 
@@ -257,6 +257,24 @@ public class MessageBatchEntity extends CradleEntity
 
 		public MessageBatchEntityBuilder setContent(ByteBuffer content) {
 			entity.setContent(content);
+			return this;
+		}
+
+		public MessageBatchEntityBuilder setLastMessageTimestamp(MessageBatchEntity.MessageBatchEntityBuilder builder, Instant timestamp)
+		{
+			LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
+			setLastMessageDate(ldt.toLocalDate());
+			setLastMessageTime(ldt.toLocalTime());
+
+			return this;
+		}
+
+		public MessageBatchEntityBuilder setFirstMessageTimestamp(MessageBatchEntity.MessageBatchEntityBuilder builder, Instant timestamp)
+		{
+			LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
+			setFirstMessageDate(ldt.toLocalDate());
+			setFirstMessageTime(ldt.toLocalTime());
+
 			return this;
 		}
 

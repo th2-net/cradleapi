@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.zip.DataFormatException;
@@ -67,8 +66,8 @@ public class MessageBatchEntityUtils {
         //Last sequence is used in the getLastSequenceQuery, that returns last chunk
         builder.setLastSequence(batch.getLastMessage().getSequence());
 
-        setFirstMessageTimestamp(builder, batch.getFirstTimestamp());
-        setLastMessageTimestamp(builder, batch.getLastTimestamp());
+        builder.setFirstMessageTimestamp(builder, batch.getFirstTimestamp());
+        builder.setLastMessageTimestamp(builder, batch.getLastTimestamp());
         builder.setMessageCount(batch.getMessageCount());
 
         builder.setCompressed(compressed);
@@ -76,30 +75,6 @@ public class MessageBatchEntityUtils {
         builder.setContent(ByteBuffer.wrap(batchContent));
 
         return builder.build();
-    }
-
-    private static void setLastMessageTimestamp(MessageBatchEntity.MessageBatchEntityBuilder builder, Instant timestamp)
-    {
-        LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
-        builder.setLastMessageDate(ldt.toLocalDate());
-        builder.setLastMessageTime(ldt.toLocalTime());
-    }
-
-    private static void setFirstMessageTimestamp(MessageBatchEntity.MessageBatchEntityBuilder builder, Instant timestamp)
-    {
-        LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
-        builder.setFirstMessageDate(ldt.toLocalDate());
-        builder.setFirstMessageTime(ldt.toLocalTime());
-    }
-
-    public static Instant getFirstMessageTimestamp(MessageBatchEntity entity)
-    {
-        return TimeUtils.toInstant(entity.getFirstMessageDate(), entity.getFirstMessageTime());
-    }
-
-    public static Instant getLastMessageTimestamp(MessageBatchEntity entity)
-    {
-        return TimeUtils.toInstant(entity.getLastMessageDate(), entity.getLastMessageTime());
     }
 
     public static StoredMessageBatch toStoredMessageBatch(MessageBatchEntity entity, PageId pageId)
