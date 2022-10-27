@@ -13,15 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.exactpro.cradle.cassandra.dao.messages;
+package com.exactpro.cradle.cassandra.utils;
 
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.PageId;
-import com.exactpro.cradle.messages.MessageBatch;
-import com.exactpro.cradle.messages.StoredMessage;
-import com.exactpro.cradle.messages.StoredMessageBatch;
-import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.cassandra.dao.SerializedEntity;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
+import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.serialization.SerializedEntityData;
 import com.exactpro.cradle.utils.CompressionUtils;
 import com.exactpro.cradle.utils.MessageUtils;
@@ -35,19 +34,20 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.zip.DataFormatException;
 
-public class MessageBatchEntityUtils {
+public class MessageBatchUtils {
+    private static final Logger logger = LoggerFactory.getLogger(MessageBatchUtils.class);
 
-    private static final Logger logger = LoggerFactory.getLogger(MessageBatchEntityUtils.class);
-
-    public static MessageBatchEntity fromMessageBatch(MessageBatch batch, SerializedEntityData serializedEntityData, PageId pageId, int maxUncompressedSize) throws IOException
+    public static SerializedEntity<MessageBatchEntity> toSerializedEntity(MessageBatchToStore batch,
+                                                                          PageId pageId,
+                                                                          int maxUncompressedSize) throws IOException
     {
         logger.debug("Creating entity from message batch '{}'", batch.getId());
         MessageBatchEntity.MessageBatchEntityBuilder builder = MessageBatchEntity.MessageBatchEntityBuilder.builder();
 
+        SerializedEntityData serializedEntityData = MessageUtils.serializeMessages(batch.getMessages());
         byte[] batchContent = serializedEntityData.getSerializedData();
         boolean compressed = batchContent.length > maxUncompressedSize;
-        if (compressed)
-        {
+        if (compressed) {
             logger.trace("Compressing content of message batch '{}'", batch.getId());
             batchContent = CompressionUtils.compressData(batchContent);
         }
@@ -72,11 +72,12 @@ public class MessageBatchEntityUtils {
         //TODO: setLabels(batch.getLabels());
         builder.setContent(ByteBuffer.wrap(batchContent));
 
-        return builder.build();
+        return new SerializedEntity<>(serializedEntityData, builder.build());
     }
 
+
     public static StoredMessageBatch toStoredMessageBatch(MessageBatchEntity entity, PageId pageId)
-            throws DataFormatException, IOException
+                                                                throws DataFormatException, IOException
     {
         StoredMessageId batchId = createId(entity, pageId.getBookId());
         logger.debug("Creating message batch '{}' from entity", batchId);
@@ -86,22 +87,25 @@ public class MessageBatchEntityUtils {
         return new StoredMessageBatch(storedMessages, pageId, entity.getRecDate());
     }
 
-    public static StoredMessageId createId(MessageBatchEntity entity, BookId bookId)
-    {
-        return new StoredMessageId(bookId, entity.getSessionAlias(), Direction.byLabel(entity.getDirection()),
-                TimeUtils.toInstant(entity.getFirstMessageDate(), entity.getFirstMessageTime()), entity.getSequence());
+
+    private static StoredMessageId createId(MessageBatchEntity entity, BookId bookId) {
+        return new StoredMessageId(bookId,
+                                    entity.getSessionAlias(),
+                                    Direction.byLabel(entity.getDirection()),
+                                    TimeUtils.toInstant(entity.getFirstMessageDate(), entity.getFirstMessageTime()),
+                                    entity.getSequence());
     }
 
+
     private static byte[] restoreContent(MessageBatchEntity entity, StoredMessageId messageBatchId)
-            throws DataFormatException, IOException
+                                                                throws DataFormatException, IOException
     {
         ByteBuffer content = entity.getContent();
         if (content == null)
             return null;
 
         byte[] result = content.array();
-        if (entity.isCompressed())
-        {
+        if (entity.isCompressed()) {
             logger.trace("Decompressing content of message batch '{}'", messageBatchId);
             return CompressionUtils.decompressData(result);
         }

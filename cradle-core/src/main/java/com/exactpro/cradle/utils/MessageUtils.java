@@ -18,7 +18,6 @@ package com.exactpro.cradle.utils;
 
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.messages.CradleMessage;
-import com.exactpro.cradle.messages.MessageBatchToStore;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.serialization.MessageCommonParams;
@@ -27,8 +26,6 @@ import com.exactpro.cradle.serialization.MessageSerializer;
 import com.exactpro.cradle.serialization.SerializedEntityData;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -38,8 +35,7 @@ import java.util.zip.DataFormatException;
 
 public class MessageUtils
 {
-	private static final Logger logger = LoggerFactory.getLogger(MessageUtils.class);
-	
+
 	private static final MessageSerializer serializer = new MessageSerializer();
 	private static final MessageDeserializer deserializer = new MessageDeserializer();
 
@@ -62,21 +58,6 @@ public class MessageUtils
 			throw new CradleStorageException("Message must have a timestamp");
 		if (ArrayUtils.isEmpty(message.getContent()))
 			throw new CradleStorageException("Message must have content");
-	}
-
-	/**
-	 * Returns content of given message batch as bytes
-	 * @param message whose content to get
-	 * @return {@link SerializedEntityData} containing message content.
-	 */
-	public static SerializedEntityData getMessageBatchContent(MessageBatchToStore message)
-	{
-		try {
-			return serializeMessages(message.getMessages());
-		} catch (IOException e) {
-			logger.error("Could not extract SerializedEntityData from MessageBatchToStore: {}", e.getMessage());
-			throw new RuntimeException(e);
-		}
 	}
 
 	/**

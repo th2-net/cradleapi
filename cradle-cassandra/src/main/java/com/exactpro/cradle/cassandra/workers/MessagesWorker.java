@@ -23,17 +23,16 @@ import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.counters.MessageStatisticsCollector;
 import com.exactpro.cradle.cassandra.counters.SessionStatisticsCollector;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
-import com.exactpro.cradle.cassandra.dao.EntityWithSerializedData;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageSession;
 import com.exactpro.cradle.cassandra.dao.cache.CachedSession;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.messages.converters.MessageBatchEntityConverter;
 import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
+import com.exactpro.cradle.cassandra.utils.MessageBatchUtils;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
 import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.MessageUtils;
 import com.exactpro.cradle.utils.TimeUtils;
 import io.prometheus.client.Counter;
 import org.slf4j.Logger;
@@ -79,7 +78,7 @@ public class MessagesWorker extends Worker
 	{
 		try
 		{
-			StoredMessageBatch batch = MessageBatchEntityUtils.toStoredMessageBatch(entity, pageId);
+			StoredMessageBatch batch = MessageBatchUtils.toStoredMessageBatch(entity, pageId);
 			updateMessageReadMetrics(batch);
 			return batch;
 		}
@@ -247,13 +246,6 @@ public class MessagesWorker extends Worker
 				}, composingService);
 	}
 
-	public EntityWithSerializedData<MessageBatchEntity> createMessageBatchEntityWithSerializedData(MessageBatchToStore batch, PageId pageId) throws IOException
-	{
-		var serializedData = MessageUtils.getMessageBatchContent(batch);
-		var entity = MessageBatchEntityUtils.fromMessageBatch(batch, serializedData, pageId, settings.getMaxUncompressedMessageBatchSize());
-		return new EntityWithSerializedData<>(serializedData, entity);
-	}
-	
 	public GroupedMessageBatchEntity createGroupedMessageBatchEntity(GroupedMessageBatchToStore batch, PageId pageId)
 			throws IOException
 	{
@@ -332,14 +324,33 @@ public class MessagesWorker extends Worker
 		return operators.getSessionsOperator().write(new SessionEntity(bookId.toString(), batch.getSessionAlias()), writeAttrs);
 	}
 
-	public CompletableFuture<Void> storeMessageBatch(MessageBatchEntity entity, BookId bookId, List<SerializedEntityMetadata> meta)
-	{
+	public CompletableFuture<Void> storeMessageBatch(MessageBatchToStore batch, PageId pageId) {
+		BookId bookId = pageId.getBookId();
 		MessageBatchOperator mbOperator = getOperators().getMessageBatchOperator();
 
-		return mbOperator.write(entity, writeAttrs)
-				.thenAccept(result -> messageStatisticsCollector.updateMessageBatchStatistics(bookId, entity.getPage(), entity.getSessionAlias(), entity.getDirection(), meta))
-				.thenAcceptAsync(result -> sessionStatisticsCollector.updateSessionStatistics(bookId, entity.getPage(), SessionRecordType.SESSION, entity.getSessionAlias(), meta))
-				.thenAcceptAsync(result -> updateMessageWriteMetrics(entity, bookId), composingService);
+		return CompletableFuture.supplyAsync(() -> {
+			try {
+				return MessageBatchUtils.toSerializedEntity(batch, pageId, settings.getMaxUncompressedMessageBatchSize());
+			} catch (Exception e) {
+				throw new CompletionException(e);
+			}
+		}).thenComposeAsync(serializedEntity -> {
+			MessageBatchEntity entity = serializedEntity.getEntity();
+			List<SerializedEntityMetadata> meta = serializedEntity.getSerializedEntityData().getSerializedEntityMetadata();
+
+			return mbOperator.write(entity, writeAttrs)
+					.thenRunAsync(() -> messageStatisticsCollector.updateMessageBatchStatistics(bookId,
+																								entity.getPage(),
+																								entity.getSessionAlias(),
+																								entity.getDirection(),
+																								meta), composingService)
+					.thenRunAsync(() -> sessionStatisticsCollector.updateSessionStatistics(bookId,
+																							entity.getPage(),
+																							SessionRecordType.SESSION,
+																							entity.getSessionAlias(),
+																							meta), composingService)
+					.thenRunAsync(() -> updateMessageWriteMetrics(entity, bookId), composingService);
+		});
 	}
 
 	public CompletableFuture<GroupedMessageBatchEntity> storeGroupedMessageBatch(GroupedMessageBatchEntity entity, BookId bookId)

@@ -32,7 +32,7 @@ import com.exactpro.cradle.cassandra.counters.EntityStatisticsCollector;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
 import com.exactpro.cradle.serialization.SerializedEntityData;
-import com.exactpro.cradle.cassandra.dao.EntityWithSerializedData;
+import com.exactpro.cradle.cassandra.dao.SerializedEntity;
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
 import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -97,12 +97,12 @@ public class EventsWorker extends Worker
 				.inc(entity.isEventBatch() ? entity.getEventCount() : 1);
 	}
 
-	public EntityWithSerializedData<TestEventEntity> createEntityWithSerializedData(TestEventToStore event, PageId pageId) throws IOException
+	public SerializedEntity<TestEventEntity> createEntityWithSerializedData(TestEventToStore event, PageId pageId) throws IOException
 	{
 		SerializedEntityData serializedEntityData =  TestEventUtils.getTestEventContent(event);
 		TestEventEntity entity = TestEventEntityUtils.fromEventToStore(event, serializedEntityData, pageId,  settings.getMaxUncompressedTestEventSize());
 
-		return new EntityWithSerializedData<>(serializedEntityData, entity);
+		return new SerializedEntity<>(serializedEntityData, entity);
 	}
 	
 	public CompletableFuture<Void> storeEntity(TestEventEntity entity, BookId bookId, List<SerializedEntityMetadata> meta)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,6 @@ import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
-import com.exactpro.cradle.cassandra.dao.EntityWithSerializedData;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventFilter;
@@ -280,24 +279,14 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected void doStoreMessageBatch(MessageBatchToStore batch, PageInfo page) throws IOException
-	{
+	protected void doStoreMessageBatch(MessageBatchToStore batch, PageInfo page) throws IOException {
 		PageId pageId = page.getId();
-		BookId bookId = pageId.getBookId();
-
-		try
-		{
-			EntityWithSerializedData<MessageBatchEntity> entityWithSerializedData = messagesWorker.createMessageBatchEntityWithSerializedData(batch, pageId);
-			messagesWorker.storeMessageBatch(
-					entityWithSerializedData.getEntity(),
-					bookId,
-					entityWithSerializedData.getSerializedEntityData().getSerializedEntityMetadata()).get();
+		try {
+			messagesWorker.storeMessageBatch(batch, pageId).get();
 			messagesWorker.storeSession(batch).get();
 			messagesWorker.storePageSession(batch, pageId).get();
-		}
-		catch (Exception e)
-		{
-			throw new IOException("Error while storing message batch "+batch.getId(), e);
+		} catch (Exception e) {
+			throw new IOException("Exception while storing message batch " + batch.getId(), e);
 		}
 	}
 
@@ -314,11 +303,7 @@ public class CassandraCradleStorage extends CradleStorage
 			messagesWorker.storeGroupedMessageBatch(entity, bookId).get();
 
 			for (MessageBatchToStore b: batch.getSessionMessageBatches()) {
-				EntityWithSerializedData<MessageBatchEntity> entityWithSerializedData = messagesWorker.createMessageBatchEntityWithSerializedData(b, pageId);
-				messagesWorker.storeMessageBatch(
-						entityWithSerializedData.getEntity(),
-						bookId,
-						entityWithSerializedData.getSerializedEntityData().getSerializedEntityMetadata()).get();
+				messagesWorker.storeMessageBatch(b, pageId).get();
 				messagesWorker.storeSession(b).get();
 				messagesWorker.storePageSession(b, pageId).get();
 			}
@@ -330,29 +315,11 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Void> doStoreMessageBatchAsync(MessageBatchToStore batch, PageInfo page)
-	{
+	protected CompletableFuture<Void> doStoreMessageBatchAsync(MessageBatchToStore batch, PageInfo page) {
 		PageId pageId = page.getId();
-		BookId bookId = pageId.getBookId();
-
-		return CompletableFuture.supplyAsync(() ->
-				{
-					try
-					{
-						return messagesWorker.createMessageBatchEntityWithSerializedData(batch, pageId);
-					}
-					catch (IOException e)
-					{
-						throw new CompletionException(e);
-					}
-				}, composingService)
-				.thenComposeAsync(entityEntityWithSerializedData -> messagesWorker.storeMessageBatch(
-						entityEntityWithSerializedData.getEntity(),
-						bookId,
-						entityEntityWithSerializedData.getSerializedEntityData().getSerializedEntityMetadata()), composingService)
-				.thenComposeAsync(r -> messagesWorker.storeSession(batch), composingService)
-				.thenComposeAsync(r -> messagesWorker.storePageSession(batch, pageId), composingService)
-				.thenAccept(NOOP);
+		return messagesWorker.storeMessageBatch(batch, pageId)
+				.thenRunAsync(() -> messagesWorker.storeSession(batch), composingService)
+				.thenRunAsync(() -> messagesWorker.storePageSession(batch, pageId), composingService);
 	}
 
 	@Override
@@ -376,20 +343,9 @@ public class CassandraCradleStorage extends CradleStorage
 
 		// store individual session message batches
 		for (MessageBatchToStore b: batch.getSessionMessageBatches()) {
-			future = future.thenComposeAsync(ignored -> {
-				try {
-					EntityWithSerializedData<MessageBatchEntity> entityWithSerializedData = messagesWorker.createMessageBatchEntityWithSerializedData(b, pageId);
-					return messagesWorker.storeMessageBatch(
-							entityWithSerializedData.getEntity(),
-							bookId,
-							entityWithSerializedData.getSerializedEntityData().getSerializedEntityMetadata());
-				} catch (IOException e) {
-					throw new CompletionException(e);
-				}
-			}, composingService)
-				.thenComposeAsync(r -> messagesWorker.storeSession(b), composingService)
-				.thenComposeAsync(r -> messagesWorker.storePageSession(b, pageId), composingService)
-				.thenAccept(NOOP);
+			future = future.thenRunAsync(() -> messagesWorker.storeMessageBatch(b, pageId), composingService)
+						.thenRunAsync(() -> messagesWorker.storeSession(b), composingService)
+						.thenRunAsync(() -> messagesWorker.storePageSession(b, pageId), composingService);
 		}
 		return future;
 	}
@@ -401,11 +357,11 @@ public class CassandraCradleStorage extends CradleStorage
 		BookId bookId = pageId.getBookId();
 		try
 		{
-			EntityWithSerializedData<TestEventEntity> entityWithSerializedData = eventsWorker.createEntityWithSerializedData(event, pageId);
+			SerializedEntity<TestEventEntity> serializedEntity = eventsWorker.createEntityWithSerializedData(event, pageId);
 			eventsWorker.storeEntity(
-					entityWithSerializedData.getEntity(),
+					serializedEntity.getEntity(),
 					bookId,
-					entityWithSerializedData.getSerializedEntityData().getSerializedEntityMetadata()).get();
+					serializedEntity.getSerializedEntityData().getSerializedEntityMetadata()).get();
 			eventsWorker.storeScope(event).get();
 			eventsWorker.storePageScope(event, pageId).get();
 		}
