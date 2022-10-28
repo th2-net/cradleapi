@@ -79,51 +79,82 @@ Once initialized, `CradleStorage` can be used to write/read data:
 ```java
 String bookName = "new_test_book";
 String groupName = "group1";
+String scopeName = "scope1";
 Direction direction = Direction.FIRST;
 long seq = 4588290;
+BookId bookId = new BookId(bookName);
 
 // Writing a message batch
 // Messages in the batch must be from the same book, session alias and direction can be mixed
-MessageToStore m1 = new MessageToStoreBuilder()
-                        .bookId(new BookId(bookName))
-                        .sessionAlias("session1")
-                        .direction(Direction.FIRST)
-                        .timestamp(Instant.now())
-                        .sequence(4588290)
-                        .content("Message from code example".getBytes(StandardCharsets.UTF_8))
-                        .build();
-MessageToStore m2 = new MessageToStoreBuilder()
-                        .bookId(new BookId(bookName))
-                        .sessionAlias("session2")
-                        .direction(Direction.SECOND)
-                        .timestamp(Instant.now())
-                        .sequence(29098023)
-                        .content("Yet another message from code example".getBytes(StandardCharsets.UTF_8))
-                        .build();
+MessageToStore message1 = new MessageToStoreBuilder()
+                .bookId(bookId)
+                .sessionAlias("session1")
+                .direction(Direction.FIRST)
+                .timestamp(Instant.now())
+                .sequence(4588290)
+                .content("Message from code example".getBytes(StandardCharsets.UTF_8))
+                .build();
+MessageToStore message2 = new MessageToStoreBuilder()
+                .bookId(bookId)
+                .sessionAlias("session2")
+                .direction(Direction.SECOND)
+                .timestamp(Instant.now())
+                .sequence(29098023)
+                .content("Yet another message from code example".getBytes(StandardCharsets.UTF_8))
+                .build();
 
-GroupedMessageBatchToStore batch = storage.getEntitiesFactory().groupedMessageBatch(groupName);
-batch.addMessage(m1);
-batch.addMessage(m2);
-storage.storeGroupedMessageBatch(batch);
+GroupedMessageBatchToStore messageBatch = storage.getEntitiesFactory().groupedMessageBatch(groupName);
+messageBatch.addMessage(message1);
+messageBatch.addMessage(message2);
+storage.storeGroupedMessageBatch(messageBatch);
+
 
 //Reading messages by filter
-StoredMessageFilter filter = new StoredMessageFilterBuilder()
-		.streamName().isEqualTo(streamName)
-		.direction().isEqualTo(direction)
-		.limit(100)
-		.build();
-for (StoredMessage msg : storage.getMessages(filter)) {
-	System.out.println(msg.getId()+" - "+msg.getTimestamp());
+MessageFilter messageFilter = new MessageFilterBuilder()
+                .bookId(bookId)
+                .sessionAlias("session1")
+                .direction(Direction.FIRST)
+                .limit(100)
+                .build();
+for (StoredMessage msg : storage.getMessages(messageFilter).asIterable()) {
+    System.out.println(msg.getId() + " - " + msg.getTimestamp());
 }
 
-//Writing a test event
-TestEventToStore event = new TestEventToStoreBuilder().id(new StoredTestEventId(UUID.randomUUID().toString()))
-		.name("Test event 1").startTimestamp(now).content("Test content".getBytes()).build();
-storage.storeTestEvent(StoredTestEvent.newStoredTestEventSingle(event));
+//Writing a test event batch
+TestEventBatchToStore eventBatch = storage.getEntitiesFactory().testEventBatchBuilder()
+                .id(bookId, scopeName, Instant.now(), UUID.randomUUID().toString())
+                .name("Parent Event")
+                .build();
+        
+TestEventSingleToStore event1 = new TestEventSingleToStoreBuilder()
+                .id(bookId, scopeName, Instant.now(), UUID.randomUUID().toString())
+                .name("Test event 1")
+                .content("Test event from code example".getBytes(StandardCharsets.UTF_8))
+                .success(true)
+                .type("main")
+                .build();
+TestEventSingleToStore event2 = new TestEventSingleToStoreBuilder()
+                .id(bookId, scopeName, Instant.now(), UUID.randomUUID().toString())
+                .name("Test event 2")
+                .content("Test event from code example".getBytes(StandardCharsets.UTF_8))
+                .success(false)
+                .type("main")
+                .build();
 
-//Reading a test event
-StoredTestEventWrapper storedEvent = storage.getTestEvent(event.getId());
-System.out.println(storedEvent.getName()+" - "+storedEvent.getStartTimestamp());
+eventBatch.addTestEvent(event1);
+eventBatch.addTestEvent(event2);
+storage.storeTestEvent(eventBatch);
+
+//Reading a test event batches
+TestEventFilter eventFilter = new TestEventFilterBuilder()
+                .bookId(bookId)
+                .scope(scopeName)
+                .startTimestampTo().isLessThanOrEqualTo(Instant.now())
+                .limit(100)
+                .build();
+for (StoredTestEvent evt : storage.getTestEvents(eventFilter).asIterable()) {
+    System.out.println(evt.getId()+" - "+evt.asBatch().getStartTimestamp());
+}
 ```
 
 # Data in Cradle
