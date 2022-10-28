@@ -97,14 +97,6 @@ public class EventsWorker extends Worker
 				.inc(entity.isEventBatch() ? entity.getEventCount() : 1);
 	}
 
-	public SerializedEntity<TestEventEntity> createEntityWithSerializedData(TestEventToStore event, PageId pageId) throws IOException
-	{
-		SerializedEntityData serializedEntityData =  TestEventUtils.getTestEventContent(event);
-		TestEventEntity entity = TestEventEntityUtils.fromEventToStore(event, serializedEntityData, pageId,  settings.getMaxUncompressedTestEventSize());
-
-		return new SerializedEntity<>(serializedEntityData, entity);
-	}
-	
 	public CompletableFuture<Void> storeEntity(TestEventEntity entity, BookId bookId, List<SerializedEntityMetadata> meta)
 	{
 		TestEventOperator op = getOperators().getTestEventOperator();

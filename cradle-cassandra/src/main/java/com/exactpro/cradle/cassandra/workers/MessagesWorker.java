@@ -28,7 +28,7 @@ import com.exactpro.cradle.cassandra.dao.cache.CachedSession;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.messages.converters.MessageBatchEntityConverter;
 import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
-import com.exactpro.cradle.cassandra.utils.MessageBatchUtils;
+import com.exactpro.cradle.cassandra.utils.MessageBatchEntityUtils;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
@@ -78,7 +78,7 @@ public class MessagesWorker extends Worker
 	{
 		try
 		{
-			StoredMessageBatch batch = MessageBatchUtils.toStoredMessageBatch(entity, pageId);
+			StoredMessageBatch batch = MessageBatchEntityUtils.toStoredMessageBatch(entity, pageId);
 			updateMessageReadMetrics(batch);
 			return batch;
 		}
@@ -330,7 +330,7 @@ public class MessagesWorker extends Worker
 
 		return CompletableFuture.supplyAsync(() -> {
 			try {
-				return MessageBatchUtils.toSerializedEntity(batch, pageId, settings.getMaxUncompressedMessageBatchSize());
+				return MessageBatchEntityUtils.toSerializedEntity(batch, pageId, settings.getMaxUncompressedMessageBatchSize());
 			} catch (Exception e) {
 				throw new CompletionException(e);
 			}

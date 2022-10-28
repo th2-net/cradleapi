@@ -351,13 +351,12 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected void doStoreTestEvent(TestEventToStore event, PageInfo page) throws IOException, CradleStorageException
-	{
+	protected void doStoreTestEvent(TestEventToStore event, PageInfo page) throws IOException {
 		PageId pageId = page.getId();
 		BookId bookId = pageId.getBookId();
 		try
 		{
-			SerializedEntity<TestEventEntity> serializedEntity = eventsWorker.createEntityWithSerializedData(event, pageId);
+			SerializedEntity<TestEventEntity> serializedEntity = TestEventEntityUtils.fromEventToStore (event, pageId,  settings.getMaxUncompressedTestEventSize());
 			eventsWorker.storeEntity(
 					serializedEntity.getEntity(),
 					bookId,
@@ -379,7 +378,7 @@ public class CassandraCradleStorage extends CradleStorage
 		return CompletableFuture.supplyAsync(() -> {
 					try
 					{
-						return eventsWorker.createEntityWithSerializedData(event, pageId);
+						return  TestEventEntityUtils.fromEventToStore (event, pageId,  settings.getMaxUncompressedTestEventSize());
 					}
 					catch (IOException e)
 					{

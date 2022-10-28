@@ -2,6 +2,7 @@ package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.PageId;
+import com.exactpro.cradle.cassandra.dao.SerializedEntity;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.serialization.SerializedEntityData;
 import com.exactpro.cradle.testevents.*;
@@ -109,12 +110,15 @@ public class TestEventEntityUtils {
         return TimeUtils.toInstant(entity.getStartDate(), entity.getStartTime());
     }
 
-    public static TestEventEntity fromEventToStore (TestEventToStore event, SerializedEntityData serializedEventData, PageId pageId, int maxUncompressedSize) throws IOException {
+    public static SerializedEntity<TestEventEntity> fromEventToStore (TestEventToStore event,
+                                                     PageId pageId,
+                                                     int maxUncompressedSize) throws IOException {
         TestEventEntity.TestEventEntityBuilder builder = TestEventEntity.TestEventEntityBuilder.builder();
 
         logger.debug("Creating entity from test event '{}'", event.getId());
 
-        byte[] content = serializedEventData.getSerializedData();
+        SerializedEntityData serializedEntityData = TestEventUtils.getTestEventContent(event);
+        byte[] content = serializedEntityData.getSerializedData();
         boolean compressed;
         if (content != null && content.length > maxUncompressedSize)
         {
@@ -154,6 +158,6 @@ public class TestEventEntityUtils {
         if (content != null)
             builder.setContent(ByteBuffer.wrap(content));
 
-        return builder.build();
+        return new SerializedEntity<>(serializedEntityData, builder.build());
     }
 }

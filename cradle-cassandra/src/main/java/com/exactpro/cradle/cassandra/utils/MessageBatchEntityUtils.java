@@ -34,8 +34,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.zip.DataFormatException;
 
-public class MessageBatchUtils {
-    private static final Logger logger = LoggerFactory.getLogger(MessageBatchUtils.class);
+public class MessageBatchEntityUtils {
+    private static final Logger logger = LoggerFactory.getLogger(MessageBatchEntityUtils.class);
 
     public static SerializedEntity<MessageBatchEntity> toSerializedEntity(MessageBatchToStore batch,
                                                                           PageId pageId,
