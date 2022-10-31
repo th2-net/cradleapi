@@ -353,14 +353,9 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected void doStoreTestEvent(TestEventToStore event, PageInfo page) throws IOException {
 		PageId pageId = page.getId();
-		BookId bookId = pageId.getBookId();
 		try
 		{
-			SerializedEntity<TestEventEntity> serializedEntity = TestEventEntityUtils.fromEventToStore (event, pageId,  settings.getMaxUncompressedTestEventSize());
-			eventsWorker.storeEntity(
-					serializedEntity.getEntity(),
-					bookId,
-					serializedEntity.getSerializedEntityData().getSerializedEntityMetadata()).get();
+			eventsWorker.storeEvent(event, pageId);
 			eventsWorker.storeScope(event).get();
 			eventsWorker.storePageScope(event, pageId).get();
 		}
@@ -371,29 +366,12 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Void> doStoreTestEventAsync(TestEventToStore event, PageInfo page) throws IOException, CradleStorageException
-	{
+	protected CompletableFuture<Void> doStoreTestEventAsync(TestEventToStore event, PageInfo page) throws IOException, CradleStorageException {
 		PageId pageId = page.getId();
-		BookId bookId = pageId.getBookId();
-		return CompletableFuture.supplyAsync(() -> {
-					try
-					{
-						return  TestEventEntityUtils.fromEventToStore (event, pageId,  settings.getMaxUncompressedTestEventSize());
-					}
-					catch (IOException e)
-					{
-						throw new CompletionException(e);
-					}
-				}, composingService)
-				.thenComposeAsync(entity ->
-						eventsWorker.storeEntity(
-								entity.getEntity(),
-								bookId,
-								entity.getSerializedEntityData().getSerializedEntityMetadata()),
-						composingService)
-				.thenComposeAsync((r) -> eventsWorker.storeScope(event), composingService)
-				.thenComposeAsync((r) -> eventsWorker.storePageScope(event, pageId), composingService)
-				.thenAccept(NOOP);
+
+		return eventsWorker.storeEvent(event, pageId)
+				.thenRunAsync(() -> eventsWorker.storeScope(event), composingService)
+				.thenRunAsync(() -> eventsWorker.storePageScope(event, pageId), composingService);
 	}
 
 	@Override

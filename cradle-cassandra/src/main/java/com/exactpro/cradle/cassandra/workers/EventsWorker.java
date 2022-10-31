@@ -31,12 +31,9 @@ import com.exactpro.cradle.cassandra.counters.BookStatisticsRecordsCaches;
 import com.exactpro.cradle.cassandra.counters.EntityStatisticsCollector;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
-import com.exactpro.cradle.serialization.SerializedEntityData;
-import com.exactpro.cradle.cassandra.dao.SerializedEntity;
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
 import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.TestEventUtils;
 import io.prometheus.client.Counter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,34 +94,46 @@ public class EventsWorker extends Worker
 				.inc(entity.isEventBatch() ? entity.getEventCount() : 1);
 	}
 
-	public CompletableFuture<Void> storeEntity(TestEventEntity entity, BookId bookId, List<SerializedEntityMetadata> meta)
+	public CompletableFuture<Void> storeEvent(TestEventToStore event, PageId pageId)
 	{
 		TestEventOperator op = getOperators().getTestEventOperator();
-		BookStatisticsRecordsCaches.EntityKey key = new BookStatisticsRecordsCaches.EntityKey(entity.getPage(), EntityType.EVENT);
-		return op.write(entity, writeAttrs)
-				.thenAcceptAsync(result -> {
-					try {
-						Instant firstTimestamp = meta.get(0).getTimestamp();
-						Instant lastStartTimestamp = firstTimestamp;
-						for (SerializedEntityMetadata el : meta) {
-							if (el.getTimestamp() != null) {
-								if (firstTimestamp.isAfter(el.getTimestamp())) {
-									firstTimestamp = el.getTimestamp();
-								}
-								if (lastStartTimestamp.isBefore(el.getTimestamp())) {
-									lastStartTimestamp = el.getTimestamp();
+		BookStatisticsRecordsCaches.EntityKey key = new BookStatisticsRecordsCaches.EntityKey(pageId.getName(), EntityType.EVENT);
+
+		return CompletableFuture.supplyAsync(() -> {
+			try {
+				return TestEventEntityUtils.toSerializedEntity(event, pageId, settings.getMaxUncompressedMessageBatchSize());
+			} catch (Exception e) {
+				throw new CompletionException(e);
+			}
+		}).thenComposeAsync(serializedEntity -> {
+			TestEventEntity entity = serializedEntity.getEntity();
+			List<SerializedEntityMetadata> meta = serializedEntity.getSerializedEntityData().getSerializedEntityMetadata();
+
+			return op.write(entity, writeAttrs)
+					.thenAcceptAsync(result -> {
+						try {
+							Instant firstTimestamp = meta.get(0).getTimestamp();
+							Instant lastStartTimestamp = firstTimestamp;
+							for (SerializedEntityMetadata el : meta) {
+								if (el.getTimestamp() != null) {
+									if (firstTimestamp.isAfter(el.getTimestamp())) {
+										firstTimestamp = el.getTimestamp();
+									}
+									if (lastStartTimestamp.isBefore(el.getTimestamp())) {
+										lastStartTimestamp = el.getTimestamp();
+									}
 								}
 							}
+							durationWorker.updateMaxDuration(pageId.getBookId().getName(), pageId.getName(), entity.getScope(),
+									Duration.between(firstTimestamp, lastStartTimestamp).toMillis(),
+									writeAttrs);
+						} catch (CradleStorageException e) {
+							logger.error("Exception while updating max duration {}", e.getMessage());
 						}
-						durationWorker.updateMaxDuration(entity.getBook(), entity.getPage(), entity.getScope(),
-								Duration.between(firstTimestamp, lastStartTimestamp).toMillis(),
-								writeAttrs);
-					} catch (CradleStorageException e) {
-						logger.error("Exception while updating max duration {}", e.getMessage());
-					}
-				})
-				.thenAccept(result -> entityStatisticsCollector.updateEntityBatchStatistics(bookId, key, meta))
-				.thenAcceptAsync(result -> updateEventWriteMetrics(entity, bookId));
+					})
+					.thenRunAsync(() -> entityStatisticsCollector.updateEntityBatchStatistics(pageId.getBookId(), key, meta))
+					.thenRunAsync(() -> updateEventWriteMetrics(entity, pageId.getBookId()));
+		});
 	}
 	
 	public CompletableFuture<ScopeEntity> storeScope(TestEventToStore event)

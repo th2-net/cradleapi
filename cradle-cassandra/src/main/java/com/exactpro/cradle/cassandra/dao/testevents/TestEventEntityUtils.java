@@ -125,9 +125,9 @@ public class TestEventEntityUtils {
         return TimeUtils.toInstant(entity.getStartDate(), entity.getStartTime());
     }
 
-    public static SerializedEntity<TestEventEntity> fromEventToStore (TestEventToStore event,
-                                                     PageId pageId,
-                                                     int maxUncompressedSize) throws IOException {
+    public static SerializedEntity<TestEventEntity> toSerializedEntity(TestEventToStore event,
+                                                                       PageId pageId,
+                                                                       int maxUncompressedSize) throws IOException {
         TestEventEntity.TestEventEntityBuilder builder = TestEventEntity.TestEventEntityBuilder.builder();
 
         logger.debug("Creating entity from test event '{}'", event.getId());

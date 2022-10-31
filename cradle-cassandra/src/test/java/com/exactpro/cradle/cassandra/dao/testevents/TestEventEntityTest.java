@@ -23,8 +23,6 @@ import java.util.Set;
 import java.util.zip.DataFormatException;
 
 import com.exactpro.cradle.cassandra.dao.SerializedEntity;
-import com.exactpro.cradle.serialization.SerializedEntityData;
-import com.exactpro.cradle.utils.TestEventUtils;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.testng.annotations.DataProvider;
@@ -96,7 +94,7 @@ public class TestEventEntityTest
 	@Test(dataProvider = "events")
 	public void eventEntity(TestEventToStore event) throws CradleStorageException, IOException, DataFormatException, CradleIdException
 	{
-		SerializedEntity<TestEventEntity> serializedEntity = TestEventEntityUtils.fromEventToStore(event,  page, 2000);
+		SerializedEntity<TestEventEntity> serializedEntity = TestEventEntityUtils.toSerializedEntity(event,  page, 2000);
 		TestEventEntity entity = serializedEntity.getEntity();
 		StoredTestEvent newEvent = TestEventEntityUtils.toStoredTestEvent(entity, page);
 		
