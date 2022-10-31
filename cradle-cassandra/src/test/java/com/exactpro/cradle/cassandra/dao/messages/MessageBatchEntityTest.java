@@ -19,7 +19,9 @@ package com.exactpro.cradle.cassandra.dao.messages;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.PageId;
+import com.exactpro.cradle.cassandra.utils.MessageBatchEntityUtils;
 import com.exactpro.cradle.messages.*;
+import com.exactpro.cradle.cassandra.dao.SerializedEntity;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
@@ -47,9 +49,9 @@ public class MessageBatchEntityTest
 				.metadata("key_test", "value_test")
 				.build(), 200);
 		StoredMessageBatch storedBatch = new StoredMessageBatch(batch.getMessages(), pageId, null);
-		
-		MessageBatchEntity entity = new MessageBatchEntity(batch, pageId, 2000);
-		StoredMessageBatch batchFromEntity = entity.toStoredMessageBatch(pageId);
+
+		SerializedEntity<MessageBatchEntity> serializedEntity = MessageBatchEntityUtils.toSerializedEntity(batch, pageId, 2000);
+		StoredMessageBatch batchFromEntity = MessageBatchEntityUtils.toStoredMessageBatch(serializedEntity.getEntity(), pageId);
 
 		RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
 

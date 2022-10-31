@@ -94,39 +94,46 @@ public class EventsWorker extends Worker
 				.inc(entity.isEventBatch() ? entity.getEventCount() : 1);
 	}
 
-	public TestEventEntity createEntity(TestEventToStore event, PageId pageId) throws IOException
-	{
-		return TestEventEntityUtils.fromEventToStore(event, pageId, settings.getMaxUncompressedTestEventSize());
-	}
-	
-	public CompletableFuture<Void> storeEntity(TestEventEntity entity, BookId bookId, List<SerializedEntityMetadata> meta)
+	public CompletableFuture<Void> storeEvent(TestEventToStore event, PageId pageId)
 	{
 		TestEventOperator op = getOperators().getTestEventOperator();
-		BookStatisticsRecordsCaches.EntityKey key = new BookStatisticsRecordsCaches.EntityKey(entity.getPage(), EntityType.EVENT);
-		return op.write(entity, writeAttrs)
-				.thenAcceptAsync(result -> {
-					try {
-						Instant firstTimestamp = meta.get(0).getTimestamp();
-						Instant lastStartTimestamp = firstTimestamp;
-						for (SerializedEntityMetadata el : meta) {
-							if (el.getTimestamp() != null) {
-								if (firstTimestamp.isAfter(el.getTimestamp())) {
-									firstTimestamp = el.getTimestamp();
-								}
-								if (lastStartTimestamp.isBefore(el.getTimestamp())) {
-									lastStartTimestamp = el.getTimestamp();
+		BookStatisticsRecordsCaches.EntityKey key = new BookStatisticsRecordsCaches.EntityKey(pageId.getName(), EntityType.EVENT);
+
+		return CompletableFuture.supplyAsync(() -> {
+			try {
+				return TestEventEntityUtils.toSerializedEntity(event, pageId, settings.getMaxUncompressedMessageBatchSize());
+			} catch (Exception e) {
+				throw new CompletionException(e);
+			}
+		}).thenComposeAsync(serializedEntity -> {
+			TestEventEntity entity = serializedEntity.getEntity();
+			List<SerializedEntityMetadata> meta = serializedEntity.getSerializedEntityData().getSerializedEntityMetadata();
+
+			return op.write(entity, writeAttrs)
+					.thenAcceptAsync(result -> {
+						try {
+							Instant firstTimestamp = meta.get(0).getTimestamp();
+							Instant lastStartTimestamp = firstTimestamp;
+							for (SerializedEntityMetadata el : meta) {
+								if (el.getTimestamp() != null) {
+									if (firstTimestamp.isAfter(el.getTimestamp())) {
+										firstTimestamp = el.getTimestamp();
+									}
+									if (lastStartTimestamp.isBefore(el.getTimestamp())) {
+										lastStartTimestamp = el.getTimestamp();
+									}
 								}
 							}
+							durationWorker.updateMaxDuration(pageId, entity.getScope(),
+									Duration.between(firstTimestamp, lastStartTimestamp).toMillis(),
+									writeAttrs);
+						} catch (CradleStorageException e) {
+							logger.error("Exception while updating max duration {}", e.getMessage());
 						}
-						durationWorker.updateMaxDuration(entity.getBook(), entity.getPage(), entity.getScope(),
-								Duration.between(firstTimestamp, lastStartTimestamp).toMillis(),
-								writeAttrs);
-					} catch (CradleStorageException e) {
-						logger.error("Exception while updating max duration {}", e.getMessage());
-					}
-				})
-				.thenAccept(result -> entityStatisticsCollector.updateEntityBatchStatistics(bookId, key, meta))
-				.thenAcceptAsync(result -> updateEventWriteMetrics(entity, bookId));
+					})
+					.thenRunAsync(() -> entityStatisticsCollector.updateEntityBatchStatistics(pageId.getBookId(), key, meta), composingService)
+					.thenRunAsync(() -> updateEventWriteMetrics(entity, pageId.getBookId()), composingService);
+		});
 	}
 	
 	public CompletableFuture<ScopeEntity> storeScope(TestEventToStore event)

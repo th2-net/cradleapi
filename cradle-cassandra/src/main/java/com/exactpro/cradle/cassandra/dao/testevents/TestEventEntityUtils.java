@@ -1,7 +1,23 @@
+/*
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.PageId;
+import com.exactpro.cradle.cassandra.dao.SerializedEntity;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.serialization.SerializedEntityData;
 import com.exactpro.cradle.testevents.*;
@@ -109,14 +125,15 @@ public class TestEventEntityUtils {
         return TimeUtils.toInstant(entity.getStartDate(), entity.getStartTime());
     }
 
-    public static TestEventEntity fromEventToStore (TestEventToStore event, PageId pageId, int maxUncompressedSize) throws IOException {
+    public static SerializedEntity<TestEventEntity> toSerializedEntity(TestEventToStore event,
+                                                                       PageId pageId,
+                                                                       int maxUncompressedSize) throws IOException {
         TestEventEntity.TestEventEntityBuilder builder = TestEventEntity.TestEventEntityBuilder.builder();
 
         logger.debug("Creating entity from test event '{}'", event.getId());
 
-        SerializedEntityData serializedEventData = TestEventUtils.getTestEventContent(event);
-
-        byte[] content = serializedEventData.getSerializedData();
+        SerializedEntityData serializedEntityData = TestEventUtils.getTestEventContent(event);
+        byte[] content = serializedEntityData.getSerializedData();
         boolean compressed;
         if (content != null && content.length > maxUncompressedSize)
         {
@@ -156,6 +173,6 @@ public class TestEventEntityUtils {
         if (content != null)
             builder.setContent(ByteBuffer.wrap(content));
 
-        return builder.build();
+        return new SerializedEntity<>(serializedEntityData, builder.build());
     }
 }
