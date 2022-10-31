@@ -124,15 +124,15 @@ public class EventsWorker extends Worker
 									}
 								}
 							}
-							durationWorker.updateMaxDuration(pageId.getBookId().getName(), pageId.getName(), entity.getScope(),
+							durationWorker.updateMaxDuration(pageId, entity.getScope(),
 									Duration.between(firstTimestamp, lastStartTimestamp).toMillis(),
 									writeAttrs);
 						} catch (CradleStorageException e) {
 							logger.error("Exception while updating max duration {}", e.getMessage());
 						}
 					})
-					.thenRunAsync(() -> entityStatisticsCollector.updateEntityBatchStatistics(pageId.getBookId(), key, meta))
-					.thenRunAsync(() -> updateEventWriteMetrics(entity, pageId.getBookId()));
+					.thenRunAsync(() -> entityStatisticsCollector.updateEntityBatchStatistics(pageId.getBookId(), key, meta), composingService)
+					.thenRunAsync(() -> updateEventWriteMetrics(entity, pageId.getBookId()), composingService);
 		});
 	}
 	

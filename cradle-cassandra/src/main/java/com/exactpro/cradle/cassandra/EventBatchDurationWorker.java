@@ -26,7 +26,9 @@ public class EventBatchDurationWorker {
         this.defaultBatchDurationMillis = defaultBatchDurationMillis;
     }
 
-    public void updateMaxDuration(String book, String page, String scope, long duration, Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs) throws CradleStorageException {
+    public void updateMaxDuration(PageId pageId, String scope, long duration, Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs) throws CradleStorageException {
+        String book = pageId.getBookId().getName();
+        String page = pageId.getName();
         EventBatchMaxDurationEntity entity = new EventBatchMaxDurationEntity(book, page, scope, duration);
         Long cachedDuration = cache.getMaxDuration(book, page, scope);
 
