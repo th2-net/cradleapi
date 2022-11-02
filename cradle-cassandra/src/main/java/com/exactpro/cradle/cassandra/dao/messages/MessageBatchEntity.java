@@ -176,7 +176,7 @@ public class MessageBatchEntity extends CradleEntity
 		return recDate;
 	}
 
-	public static class MessageBatchEntityBuilder extends CradleEntityBuilder<MessageBatchEntity> {
+	public static class MessageBatchEntityBuilder extends CradleEntityBuilder<MessageBatchEntity, MessageBatchEntityBuilder> {
 
 		private String book;
 		private String page;

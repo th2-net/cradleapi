@@ -220,7 +220,7 @@ public class TestEventEntity extends CradleEntity {
 		return messages;
 	}
 	
-	public static class TestEventEntityBuilder extends CradleEntityBuilder<TestEventEntity> {
+	public static class TestEventEntityBuilder extends CradleEntityBuilder<TestEventEntity, TestEventEntityBuilder> {
 		private String book;
 		private String page;
 		private String scope;

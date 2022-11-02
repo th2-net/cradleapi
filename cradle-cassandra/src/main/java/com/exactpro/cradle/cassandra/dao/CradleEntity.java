@@ -61,7 +61,7 @@ public abstract class CradleEntity
 		return content;
 	}
 
-	public abstract static class CradleEntityBuilder <T extends CradleEntity> {
+	public abstract static class CradleEntityBuilder <T extends CradleEntity, B extends CradleEntityBuilder> {
 		protected boolean compressed;
 		protected Set<String> labels;
 		protected ByteBuffer content;
@@ -69,19 +69,19 @@ public abstract class CradleEntity
 		public CradleEntityBuilder () {
 		}
 
-		public CradleEntityBuilder setCompressed (boolean compressed) {
+		public B setCompressed (boolean compressed) {
 			this.compressed = compressed;
-			return this;
+			return (B) this;
 		}
 
-		public CradleEntityBuilder setLabels (Set<String> labels) {
+		public B setLabels (Set<String> labels) {
 			this.labels = labels;
-			return this;
+			return (B) this;
 		}
 
-		public CradleEntityBuilder setContent (ByteBuffer content) {
+		public B setContent (ByteBuffer content) {
 			this.content = content;
-			return this;
+			return (B) this;
 		}
 
 		public abstract T build ();

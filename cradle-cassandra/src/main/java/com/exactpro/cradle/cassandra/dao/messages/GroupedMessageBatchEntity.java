@@ -123,7 +123,7 @@ public class GroupedMessageBatchEntity extends CradleEntity {
 		return recDate;
 	}
 
-	public static class GroupedMessageBatchEntityBuilder extends CradleEntityBuilder<GroupedMessageBatchEntity> {
+	public static class GroupedMessageBatchEntityBuilder extends CradleEntityBuilder<GroupedMessageBatchEntity, GroupedMessageBatchEntityBuilder> {
 		String book;
 		String page;
 		private String group;
