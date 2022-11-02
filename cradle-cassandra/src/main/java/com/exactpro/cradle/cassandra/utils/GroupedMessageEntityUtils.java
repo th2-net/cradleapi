@@ -41,7 +41,7 @@ public class GroupedMessageEntityUtils {
     public static SerializedEntity<GroupedMessageBatchEntity> toSerializedEntity (GroupedMessageBatchToStore batch, PageId pageId, int maxUncompressedSize)
             throws IOException	{
 
-        GroupedMessageBatchEntity.GroupedMessageBatchEntityBuilder builder = new GroupedMessageBatchEntity.GroupedMessageBatchEntityBuilder();
+        GroupedMessageBatchEntity.GroupedMessageBatchEntityBuilder builder = GroupedMessageBatchEntity.builder();
 
         String group = batch.getGroup();
 

@@ -18,8 +18,7 @@ package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.exactpro.cradle.cassandra.dao.CradleEntity;
-import com.exactpro.cradle.testevents.*;
-import com.exactpro.cradle.utils.*;
+import com.exactpro.cradle.utils.TimeUtils;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -28,9 +27,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Set;
 
-/**
- * Contains data of {@link StoredTestEvent} to write to or to obtain from Cassandra
- */
 @Entity
 @CqlName(TestEventEntity.TABLE_NAME)
 @PropertyStrategy(mutable = false)
@@ -219,7 +215,11 @@ public class TestEventEntity extends CradleEntity {
 	{
 		return messages;
 	}
-	
+
+	public static TestEventEntityBuilder builder () {
+		return new TestEventEntityBuilder();
+	}
+
 	public static class TestEventEntityBuilder extends CradleEntityBuilder<TestEventEntity, TestEventEntityBuilder> {
 		private String book;
 		private String page;
@@ -239,10 +239,8 @@ public class TestEventEntity extends CradleEntity {
 		private ByteBuffer messages;
 		private Instant recDate;
 
-		public  TestEventEntityBuilder () {
+		private  TestEventEntityBuilder () {
 		}
-	
-	
 	
 		public TestEventEntityBuilder setBook(String book) {
 			this.book = book;
@@ -390,10 +388,6 @@ public class TestEventEntity extends CradleEntity {
 			return this;
 		}
 	
-		public static TestEventEntityBuilder builder () {
-			return new TestEventEntityBuilder();
-		}
-
 		public TestEventEntity build () {
 			return new TestEventEntity(
 					book,

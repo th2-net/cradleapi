@@ -128,7 +128,7 @@ public class TestEventEntityUtils {
     public static SerializedEntity<TestEventEntity> toSerializedEntity(TestEventToStore event,
                                                                        PageId pageId,
                                                                        int maxUncompressedSize) throws IOException {
-        TestEventEntity.TestEventEntityBuilder builder = TestEventEntity.TestEventEntityBuilder.builder();
+        TestEventEntity.TestEventEntityBuilder builder = TestEventEntity.builder();
 
         logger.debug("Creating entity from test event '{}'", event.getId());
 

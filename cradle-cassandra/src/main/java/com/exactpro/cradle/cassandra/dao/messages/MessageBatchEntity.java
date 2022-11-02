@@ -18,7 +18,6 @@ package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.exactpro.cradle.cassandra.dao.CradleEntity;
-import com.exactpro.cradle.messages.MessageBatch;
 import com.exactpro.cradle.utils.TimeUtils;
 
 import java.nio.ByteBuffer;
@@ -28,10 +27,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Set;
 
-
-/**
- * Contains all data about {@link MessageBatch} to store in Cassandra
- */
 @Entity
 @CqlName(MessageBatchEntity.TABLE_NAME)
 @PropertyStrategy(mutable = false)
@@ -176,6 +171,10 @@ public class MessageBatchEntity extends CradleEntity
 		return recDate;
 	}
 
+	public static MessageBatchEntityBuilder builder () {
+		return new MessageBatchEntityBuilder();
+	}
+
 	public static class MessageBatchEntityBuilder extends CradleEntityBuilder<MessageBatchEntity, MessageBatchEntityBuilder> {
 
 		private String book;
@@ -191,7 +190,7 @@ public class MessageBatchEntity extends CradleEntity
 		private long lastSequence;
 		private Instant recDate;
 
-		public MessageBatchEntityBuilder () {
+		private MessageBatchEntityBuilder () {
 		}
 
 		public MessageBatchEntityBuilder setBook(String book) {
@@ -269,7 +268,7 @@ public class MessageBatchEntity extends CradleEntity
 			return this;
 		}
 
-		public MessageBatchEntityBuilder setLastMessageTimestamp(MessageBatchEntity.MessageBatchEntityBuilder builder, Instant timestamp)
+		public MessageBatchEntityBuilder setLastMessageTimestamp(Instant timestamp)
 		{
 			LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
 			setLastMessageDate(ldt.toLocalDate());
@@ -278,7 +277,7 @@ public class MessageBatchEntity extends CradleEntity
 			return this;
 		}
 
-		public MessageBatchEntityBuilder setFirstMessageTimestamp(MessageBatchEntity.MessageBatchEntityBuilder builder, Instant timestamp)
+		public MessageBatchEntityBuilder setFirstMessageTimestamp(Instant timestamp)
 		{
 			LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
 			setFirstMessageDate(ldt.toLocalDate());
@@ -304,10 +303,6 @@ public class MessageBatchEntity extends CradleEntity
 					compressed,
 					labels,
 					content);
-		}
-
-		public static MessageBatchEntityBuilder builder () {
-			return new MessageBatchEntityBuilder();
 		}
 	}
 }

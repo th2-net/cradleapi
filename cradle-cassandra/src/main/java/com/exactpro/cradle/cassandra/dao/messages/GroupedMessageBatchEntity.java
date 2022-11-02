@@ -18,8 +18,6 @@ package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.exactpro.cradle.cassandra.dao.CradleEntity;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -32,8 +30,6 @@ import java.util.Set;
 @PropertyStrategy(mutable = false)
 public class GroupedMessageBatchEntity extends CradleEntity {
 	public static final String TABLE_NAME = "grouped_messages";
-
-	private static final Logger logger = LoggerFactory.getLogger(GroupedMessageBatchEntity.class);
 
 	public static final String FIELD_BOOK = "book";
 	public static final String FIELD_PAGE = "page";
@@ -98,29 +94,41 @@ public class GroupedMessageBatchEntity extends CradleEntity {
 	public String getBook()	{
 		return book;
 	}
+
 	public String getPage()	{
 		return page;
 	}
+
 	public String getGroup() {
 		return group;
 	}
+
 	public LocalDate getFirstMessageDate() {
 		return firstMessageDate;
 	}
+
 	public LocalTime getFirstMessageTime() {
 		return firstMessageTime;
 	}
+
 	public LocalDate getLastMessageDate() {
 		return lastMessageDate;
 	}
+
 	public LocalTime getLastMessageTime() {
 		return lastMessageTime;
 	}
+
 	public int getMessageCount() {
 		return messageCount;
 	}
+
 	public Instant getRecDate() {
 		return recDate;
+	}
+
+	public static GroupedMessageBatchEntityBuilder builder() {
+		return new GroupedMessageBatchEntityBuilder();
 	}
 
 	public static class GroupedMessageBatchEntityBuilder extends CradleEntityBuilder<GroupedMessageBatchEntity, GroupedMessageBatchEntityBuilder> {
@@ -134,7 +142,7 @@ public class GroupedMessageBatchEntity extends CradleEntity {
 		private int messageCount;
 		private Instant recDate;
 
-		public GroupedMessageBatchEntityBuilder () {
+		private GroupedMessageBatchEntityBuilder () {
 		}
 
 		public GroupedMessageBatchEntityBuilder setBook (String book) {
