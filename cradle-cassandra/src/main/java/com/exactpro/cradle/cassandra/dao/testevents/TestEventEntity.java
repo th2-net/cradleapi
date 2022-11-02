@@ -30,7 +30,7 @@ import java.util.Set;
 @Entity
 @CqlName(TestEventEntity.TABLE_NAME)
 @PropertyStrategy(mutable = false)
-public class TestEventEntity extends CradleEntity {
+public final class TestEventEntity extends CradleEntity {
 	public static final String TABLE_NAME = "test_events";
 
 	public static final String FIELD_BOOK = "book";

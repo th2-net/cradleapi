@@ -28,7 +28,7 @@ import java.util.Set;
 @Entity
 @CqlName(GroupedMessageBatchEntity.TABLE_NAME)
 @PropertyStrategy(mutable = false)
-public class GroupedMessageBatchEntity extends CradleEntity {
+public final class GroupedMessageBatchEntity extends CradleEntity {
 	public static final String TABLE_NAME = "grouped_messages";
 
 	public static final String FIELD_BOOK = "book";

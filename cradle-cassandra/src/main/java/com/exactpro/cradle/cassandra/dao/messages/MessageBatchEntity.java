@@ -30,8 +30,7 @@ import java.util.Set;
 @Entity
 @CqlName(MessageBatchEntity.TABLE_NAME)
 @PropertyStrategy(mutable = false)
-public class MessageBatchEntity extends CradleEntity
-{
+public final class MessageBatchEntity extends CradleEntity {
 	public static final String TABLE_NAME = "messages";
 
 	public static final String FIELD_BOOK = "book";
