@@ -35,7 +35,7 @@ import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 public class PagedIterator<E> implements Iterator<E> {
 	private final Logger logger = LoggerFactory.getLogger(PagedIterator.class);
 
-	private final MappedAsyncPagingIterable<E> pages;
+	private MappedAsyncPagingIterable<E> paginator;
 	private final SelectQueryExecutor selectQueryExecutor;
 	private final Function<Row, E> mapper;
 	private final String queryInfo;
@@ -43,20 +43,20 @@ public class PagedIterator<E> implements Iterator<E> {
 	private CompletableFuture<MappedAsyncPagingIterable<E>> nextPage;
 
 
-	public PagedIterator(MappedAsyncPagingIterable<E> pages, SelectQueryExecutor selectQueryExecutor,
+	public PagedIterator(MappedAsyncPagingIterable<E> paginator, SelectQueryExecutor selectQueryExecutor,
 						 Function<Row, E> mapper, String queryInfo)
 	{
-		this.pages = pages;
+		this.paginator = paginator;
 		this.selectQueryExecutor = selectQueryExecutor;
 		this.mapper = mapper;
 		this.queryInfo = queryInfo;
-		this.rowsIterator = pages.currentPage().iterator();
+		this.rowsIterator = paginator.currentPage().iterator();
 		fetchNextPage();
 	}
 
 	private void fetchNextPage() {
-		if (pages.hasMorePages())
-			nextPage = selectQueryExecutor.fetchNextPage(pages, mapper, queryInfo);
+		if (paginator.hasMorePages())
+			nextPage = selectQueryExecutor.fetchNextPage(paginator, mapper, queryInfo);
 		else
 			nextPage = null;
 	}
@@ -89,9 +89,9 @@ public class PagedIterator<E> implements Iterator<E> {
 
 	private Iterator<E> nextIterator() throws IllegalStateException, InterruptedException, ExecutionException {
 		if (nextPage != null) {
-			MappedAsyncPagingIterable<E> result = nextPage.get();
+			paginator = nextPage.get();
 			fetchNextPage();
-			return result.currentPage().iterator();
+			return paginator.currentPage().iterator();
 		} else {
 			return null;
 		}
