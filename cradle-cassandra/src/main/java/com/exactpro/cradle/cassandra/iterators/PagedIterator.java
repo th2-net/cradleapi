@@ -35,11 +35,11 @@ import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 public class PagedIterator<E> implements Iterator<E> {
 	private final Logger logger = LoggerFactory.getLogger(PagedIterator.class);
 
-	private MappedAsyncPagingIterable<E> pages;
-	private Iterator<E> rowsIterator;
+	private final MappedAsyncPagingIterable<E> pages;
 	private final SelectQueryExecutor selectQueryExecutor;
 	private final Function<Row, E> mapper;
 	private final String queryInfo;
+	private Iterator<E> rowsIterator;
 	private CompletableFuture<MappedAsyncPagingIterable<E>> nextPage;
 
 
@@ -47,10 +47,10 @@ public class PagedIterator<E> implements Iterator<E> {
 						 Function<Row, E> mapper, String queryInfo)
 	{
 		this.pages = pages;
-		this.rowsIterator = pages.currentPage().iterator();
 		this.selectQueryExecutor = selectQueryExecutor;
 		this.mapper = mapper;
 		this.queryInfo = queryInfo;
+		this.rowsIterator = pages.currentPage().iterator();
 		fetchNextPage();
 	}
 
