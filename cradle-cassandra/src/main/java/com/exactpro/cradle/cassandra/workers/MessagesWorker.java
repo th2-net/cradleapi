@@ -348,10 +348,9 @@ public class MessagesWorker extends Worker
 		});
 	}
 
-	public CompletableFuture<Void> storeGroupedMessageBatch(GroupedMessageBatchToStore batchToStore, PageId pageId)
-	{
+	public CompletableFuture<Void> storeGroupedMessageBatch(GroupedMessageBatchToStore batchToStore, PageId pageId) {
+		BookId bookId = pageId.getBookId();
 		GroupedMessageBatchOperator gmbOperator = getOperators().getGroupedMessageBatchOperator();
-
 
 		return CompletableFuture.supplyAsync(() -> {
 			try {
@@ -366,11 +365,19 @@ public class MessagesWorker extends Worker
 			gmbOperator.write(entity, writeAttrs);
 
 			return gmbOperator.write(entity, writeAttrs)
-					.thenRunAsync(() -> storePageGroup(entity), composingService)
-					.thenRunAsync(() -> storeGroup(entity), composingService)
-					.thenRunAsync(() -> messageStatisticsCollector.updateMessageBatchStatistics(pageId.getBookId(), pageId.getName(), entity.getGroup(), "", meta), composingService)
-					.thenRunAsync(() -> sessionStatisticsCollector.updateSessionStatistics(pageId.getBookId(), pageId.getName(), SessionRecordType.SESSION_GROUP, entity.getGroup(), meta), composingService)
-					.thenRunAsync(() -> updateMessageWriteMetrics(entity, pageId.getBookId()), composingService);
+					.thenRunAsync(() -> storePageGroup(entity))
+					.thenRunAsync(() -> storeGroup(entity))
+					.thenRunAsync(() -> messageStatisticsCollector.updateMessageBatchStatistics(bookId,
+																								pageId.getName(),
+																								entity.getGroup(),
+																								"",
+																								meta), composingService)
+					.thenRunAsync(() -> sessionStatisticsCollector.updateSessionStatistics(bookId,
+																							pageId.getName(),
+																							SessionRecordType.SESSION_GROUP,
+																							entity.getGroup(),
+																							meta), composingService)
+					.thenRunAsync(() -> updateMessageWriteMetrics(entity, bookId), composingService);
 		});
 	}
 

@@ -295,7 +295,6 @@ public class CassandraCradleStorage extends CradleStorage
 			throws IOException
 	{
 		PageId pageId = page.getId();
-		BookId bookId = pageId.getBookId();
 
 		try
 		{
