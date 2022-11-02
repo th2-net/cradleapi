@@ -32,66 +32,68 @@ import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
  * Wrapper for asynchronous paging iterable to get entities retrieved from Cassandra
  * @param <E> - class of entities obtained from Cassandra
  */
-public class PagedIterator<E> implements Iterator<E>
-{
+public class PagedIterator<E> implements Iterator<E> {
 	private final Logger logger = LoggerFactory.getLogger(PagedIterator.class);
-	
-	private MappedAsyncPagingIterable<E> rows;
+
+	private MappedAsyncPagingIterable<E> pages;
 	private Iterator<E> rowsIterator;
 	private final SelectQueryExecutor selectQueryExecutor;
 	private final Function<Row, E> mapper;
 	private final String queryInfo;
-	
-	public PagedIterator(MappedAsyncPagingIterable<E> rows, SelectQueryExecutor selectQueryExecutor,
-			Function<Row, E> mapper, String queryInfo)
+	private CompletableFuture<MappedAsyncPagingIterable<E>> nextPage;
+
+
+	public PagedIterator(MappedAsyncPagingIterable<E> pages, SelectQueryExecutor selectQueryExecutor,
+						 Function<Row, E> mapper, String queryInfo)
 	{
-		this.rows = rows;
-		this.rowsIterator = rows.currentPage().iterator();
+		this.pages = pages;
+		this.rowsIterator = pages.currentPage().iterator();
 		this.selectQueryExecutor = selectQueryExecutor;
 		this.mapper = mapper;
 		this.queryInfo = queryInfo;
+		fetchNextPage();
 	}
-	
-	
+
+	private void fetchNextPage() {
+		if (pages.hasMorePages())
+			nextPage = selectQueryExecutor.fetchNextPage(pages, mapper, queryInfo);
+		else
+			nextPage = null;
+	}
+
+
 	@Override
-	public boolean hasNext()
-	{
+	public boolean hasNext() {
 		if (rowsIterator == null)
 			return false;
 
-		if (!rowsIterator.hasNext())
-		{
-			try
-			{
-				rowsIterator = fetchNextIterator();
-			}
-			catch (Exception e)
-			{
+		if (!rowsIterator.hasNext()) {
+			try {
+				rowsIterator = nextIterator();
+			} catch (Exception e) {
 				throw new RuntimeException("Error while getting next page of result", e);
 			}
-			
+
 			if (rowsIterator == null || !rowsIterator.hasNext())
 				return false;
 		}
 		return true;
 	}
-	
+
 	@Override
-	public E next()
-	{
+	public E next()	{
 		logger.trace("Getting next data row");
 		return rowsIterator.next();
 	}
-	
-	
-	private Iterator<E> fetchNextIterator() throws IllegalStateException, InterruptedException, ExecutionException
-	{
-		if (rows.hasMorePages())
-		{
-			//TODO: better to fetch next page in advance, not when current page ended
-			rows = selectQueryExecutor.fetchNextPage(rows, mapper, queryInfo).get();
-			return rows.currentPage().iterator();
+
+
+	private Iterator<E> nextIterator() throws IllegalStateException, InterruptedException, ExecutionException {
+		if (nextPage != null) {
+			MappedAsyncPagingIterable<E> result = nextPage.get();
+			fetchNextPage();
+			return result.currentPage().iterator();
+		} else {
+			return null;
 		}
-		return null;
 	}
 }
