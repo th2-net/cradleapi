@@ -17,30 +17,19 @@
 package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.mapper.annotations.*;
-import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.CradleEntity;
-import com.exactpro.cradle.messages.GroupedMessageBatchToStore;
-import com.exactpro.cradle.messages.StoredGroupedMessageBatch;
-import com.exactpro.cradle.messages.StoredMessage;
-import com.exactpro.cradle.serialization.SerializedEntityData;
-import com.exactpro.cradle.serialization.SerializedEntityMetadata;
-import com.exactpro.cradle.utils.CompressionUtils;
-import com.exactpro.cradle.utils.MessageUtils;
-import com.exactpro.cradle.utils.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.List;
-import java.util.zip.DataFormatException;
+import java.util.Set;
 
 @Entity
 @CqlName(GroupedMessageBatchEntity.TABLE_NAME)
+@PropertyStrategy(mutable = false)
 public class GroupedMessageBatchEntity extends CradleEntity {
 	public static final String TABLE_NAME = "grouped_messages";
 
@@ -56,179 +45,153 @@ public class GroupedMessageBatchEntity extends CradleEntity {
 	public static final String FIELD_MESSAGE_COUNT = "message_count";
 	public static final String  FIELD_REC_DATE = "rec_date";
 
-	public GroupedMessageBatchEntity() {
-	}
-
-	public GroupedMessageBatchEntity(GroupedMessageBatchToStore batch, PageId pageId, int maxUncompressedSize)
-			throws IOException	{
-
-		this.group = batch.getGroup();
-
-		logger.debug("Creating entity from grouped message batch '{}'", group);
-
-		SerializedEntityData serializedEntityData = MessageUtils.serializeMessages(batch.getMessages());
-
-		byte[] batchContent = serializedEntityData.getSerializedData();
-		boolean compressed = batchContent.length > maxUncompressedSize;
-		if (compressed)	{
-			logger.trace("Compressing content of grouped message batch '{}'", group);
-			batchContent = CompressionUtils.compressData(batchContent);
-		}
-
-		setBook(pageId.getBookId().getName());
-		setPage(pageId.getName());
-		setFirstMessageTimestamp(batch.getFirstTimestamp());
-		setLastMessageTimestamp(batch.getLastTimestamp());
-		setMessageCount(batch.getMessageCount());
-
-		setCompressed(compressed);
-		//TODO: setLabels(batch.getLabels());
-		setContent(ByteBuffer.wrap(batchContent));
-		setSerializedMessageMetadata(serializedEntityData.getSerializedEntityMetadata());
-	}
-
 	@PartitionKey(1)
 	@CqlName(FIELD_BOOK)
 	String book;
-	public String getBook()	{
-		return book;
-	}
-
-	public void setBook(String book) {
-		this.book = book;
-	}
 
 	@PartitionKey(2)
 	@CqlName(FIELD_PAGE)
 	String page;
-	public String getPage()	{
-		return page;
-	}
-
-	public void setPage(String page) {
-		this.page = page;
-	}
 
 	@PartitionKey(3)
 	@CqlName(FIELD_ALIAS_GROUP)
 	private String group;
-	public String getGroup() {
-		return group;
-	}
-
-	public void setGroup(String group) {
-		this.group = group;
-	}
 
 	@ClusteringColumn(1)
 	@CqlName(FIELD_FIRST_MESSAGE_DATE)
 	private LocalDate firstMessageDate;
-	public LocalDate getFirstMessageDate() {
-		return firstMessageDate;
-	}
-
-	public void setFirstMessageDate(LocalDate messageDate) {
-		this.firstMessageDate = messageDate;
-	}
 
 	@ClusteringColumn(2)
 	@CqlName(FIELD_FIRST_MESSAGE_TIME)
 	private LocalTime firstMessageTime;
-	public LocalTime getFirstMessageTime() {
-		return firstMessageTime;
-	}
-
-	public void setFirstMessageTime(LocalTime messageTime) {
-		this.firstMessageTime = messageTime;
-	}
-
 
 	@CqlName(FIELD_LAST_MESSAGE_DATE)
 	private LocalDate lastMessageDate;
-	public LocalDate getLastMessageDate() {
-		return lastMessageDate;
-	}
-
-
-	public void setLastMessageDate(LocalDate messageDate) {
-		this.lastMessageDate = messageDate;
-	}
-
 
 	@CqlName(FIELD_LAST_MESSAGE_TIME)
 	private LocalTime lastMessageTime;
-	public LocalTime getLastMessageTime() {
-		return lastMessageTime;
-	}
-
-	public void setLastMessageTime(LocalTime messageTime) {
-		this.lastMessageTime = messageTime;
-	}
 
 	@CqlName(FIELD_MESSAGE_COUNT)
 	private int messageCount;
-	public int getMessageCount() {
-		return messageCount;
-	}
-
-	public void setMessageCount(int messageCount) {
-		this.messageCount = messageCount;
-	}
 
 	@CqlName(FIELD_REC_DATE)
 	private Instant recDate;
+
+	public GroupedMessageBatchEntity() {
+	}
+
+	public GroupedMessageBatchEntity(String book, String page, String group, LocalDate firstMessageDate, LocalTime firstMessageTime, LocalDate lastMessageDate, LocalTime lastMessageTime, int messageCount, Instant recDate, boolean compressed, Set<String> labels, ByteBuffer content) {
+		setCompressed(compressed);
+		setLabels(labels);
+		setContent(content);
+
+		this.book = book;
+		this.page = page;
+		this.group = group;
+		this.firstMessageDate = firstMessageDate;
+		this.firstMessageTime = firstMessageTime;
+		this.lastMessageDate = lastMessageDate;
+		this.lastMessageTime = lastMessageTime;
+		this.messageCount = messageCount;
+		this.recDate = recDate;
+	}
+
+
+	public String getBook()	{
+		return book;
+	}
+	public String getPage()	{
+		return page;
+	}
+	public String getGroup() {
+		return group;
+	}
+	public LocalDate getFirstMessageDate() {
+		return firstMessageDate;
+	}
+	public LocalTime getFirstMessageTime() {
+		return firstMessageTime;
+	}
+	public LocalDate getLastMessageDate() {
+		return lastMessageDate;
+	}
+	public LocalTime getLastMessageTime() {
+		return lastMessageTime;
+	}
+	public int getMessageCount() {
+		return messageCount;
+	}
 	public Instant getRecDate() {
 		return recDate;
 	}
 
-	public void setRecDate(Instant recDate) {
-		this.recDate = recDate;
-	}
+	public static class GroupedMessageBatchEntityBuilder {
+		private GroupedMessageBatchEntity entity;
 
-	@Transient
-	public void setFirstMessageTimestamp(Instant timestamp) {
-		LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
-		setFirstMessageDate(ldt.toLocalDate());
-		setFirstMessageTime(ldt.toLocalTime());
-	}
-
-	@Transient
-	public void setLastMessageTimestamp(Instant timestamp) {
-		LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
-		setLastMessageDate(ldt.toLocalDate());
-		setLastMessageTime(ldt.toLocalTime());
-	}
-
-	private List<SerializedEntityMetadata> serializedMessageMetadata;
-	@Transient
-	public List<SerializedEntityMetadata> getSerializedMessageMetadata() {
-		return serializedMessageMetadata;
-	}
-
-	@Transient
-	public void setSerializedMessageMetadata(List<SerializedEntityMetadata> serializedMessageMetadata) {
-		this.serializedMessageMetadata = serializedMessageMetadata;
-	}
-
-	public StoredGroupedMessageBatch toStoredGroupedMessageBatch(PageId pageId)	throws DataFormatException, IOException
-	{
-		logger.debug("Creating grouped message batch from entity");
-
-		byte[] content = restoreContent(group);
-		List<StoredMessage> storedMessages = MessageUtils.deserializeMessages(content, pageId.getBookId());
-		return new StoredGroupedMessageBatch(group, storedMessages, pageId, recDate);
-	}
-
-	private byte[] restoreContent(String group) throws DataFormatException, IOException {
-		ByteBuffer content = getContent();
-		if (content == null)
-			return null;
-
-		byte[] result = content.array();
-		if (isCompressed()) {
-			logger.trace("Decompressing content of grouped message batch '{}'", group);
-			return CompressionUtils.decompressData(result);
+		public GroupedMessageBatchEntityBuilder () {
+			this.entity = new GroupedMessageBatchEntity();
 		}
-		return result;
+
+		public GroupedMessageBatchEntityBuilder setBook (String book) {
+			entity.book = book;
+			return this;
+		}
+
+		public GroupedMessageBatchEntityBuilder setPage (String page) {
+			entity.page = page;
+			return this;
+		}
+
+		public GroupedMessageBatchEntityBuilder setGroup (String group) {
+			entity.group = group;
+			return this;
+		}
+
+		public GroupedMessageBatchEntityBuilder setFirstMessageDate (LocalDate firstMessageDate) {
+			entity.firstMessageDate = firstMessageDate;
+			return this;
+		}
+
+		public GroupedMessageBatchEntityBuilder setFirstMessageTime (LocalTime firstMessageTime) {
+			entity.firstMessageTime = firstMessageTime;
+			return this;
+		}
+
+		public GroupedMessageBatchEntityBuilder setLastMessageDate (LocalDate lastMessageDate) {
+			entity.lastMessageDate = lastMessageDate;
+			return this;
+		}
+
+		public GroupedMessageBatchEntityBuilder setLastMessageTime (LocalTime lastMessageTime) {
+			entity.lastMessageTime = lastMessageTime;
+			return this;
+		}
+
+		public GroupedMessageBatchEntityBuilder setMessageCount (int messageCount) {
+			entity.messageCount = messageCount;
+			return this;
+		}
+
+		public GroupedMessageBatchEntityBuilder setRecDate (Instant recDate) {
+			entity.recDate = recDate;
+			return this;
+		}
+
+		public GroupedMessageBatchEntityBuilder setCompressed (boolean compressed) {
+			entity.setCompressed(compressed);
+			return this;
+		}
+
+		public GroupedMessageBatchEntityBuilder setContent (ByteBuffer content) {
+			entity.setContent(content);
+			return this;
+		}
+
+		public GroupedMessageBatchEntity build () {
+			GroupedMessageBatchEntity rtn = entity;
+			entity = new GroupedMessageBatchEntity();
+
+			return rtn;
+		}
 	}
 }

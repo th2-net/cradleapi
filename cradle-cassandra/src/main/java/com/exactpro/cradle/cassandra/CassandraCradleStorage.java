@@ -299,8 +299,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 		try
 		{
-			GroupedMessageBatchEntity entity = messagesWorker.createGroupedMessageBatchEntity(batch, pageId);
-			messagesWorker.storeGroupedMessageBatch(entity, bookId).get();
+			messagesWorker.storeGroupedMessageBatch(batch, pageId).get();
 
 			for (MessageBatchToStore b: batch.getSessionMessageBatches()) {
 				messagesWorker.storeMessageBatch(b, pageId).get();
@@ -327,19 +326,8 @@ public class CassandraCradleStorage extends CradleStorage
 			throws CradleStorageException
 	{
 		PageId pageId = page.getId();
-		BookId bookId = pageId.getBookId();
 
-		CompletableFuture<Void> future = CompletableFuture.supplyAsync(() ->
-		{
-			try	{
-				return messagesWorker.createGroupedMessageBatchEntity(batch, pageId);
-			}
-			catch (IOException e) {
-				throw new CompletionException(e);
-			}
-		}, composingService)
-				.thenComposeAsync(entity -> messagesWorker.storeGroupedMessageBatch(entity, bookId))
-				.thenAccept(NOOP);
+		CompletableFuture<Void> future =  messagesWorker.storeGroupedMessageBatch(batch, pageId);
 
 		// store individual session message batches
 		for (MessageBatchToStore b: batch.getSessionMessageBatches()) {
