@@ -81,9 +81,7 @@ public class GroupedMessageBatchEntity extends CradleEntity {
 	}
 
 	public GroupedMessageBatchEntity(String book, String page, String group, LocalDate firstMessageDate, LocalTime firstMessageTime, LocalDate lastMessageDate, LocalTime lastMessageTime, int messageCount, Instant recDate, boolean compressed, Set<String> labels, ByteBuffer content) {
-		setCompressed(compressed);
-		setLabels(labels);
-		setContent(content);
+		super(compressed, labels, content);
 
 		this.book = book;
 		this.page = page;
@@ -127,8 +125,10 @@ public class GroupedMessageBatchEntity extends CradleEntity {
 
 	public static class GroupedMessageBatchEntityBuilder {
 		private GroupedMessageBatchEntity entity;
+		private CradleEntityBuilder parentBuilder;
 
 		public GroupedMessageBatchEntityBuilder () {
+			this.parentBuilder = new CradleEntityBuilder();
 			this.entity = new GroupedMessageBatchEntity();
 		}
 
@@ -178,18 +178,26 @@ public class GroupedMessageBatchEntity extends CradleEntity {
 		}
 
 		public GroupedMessageBatchEntityBuilder setCompressed (boolean compressed) {
-			entity.setCompressed(compressed);
+			parentBuilder.setCompressed(compressed);
+			return this;
+		}
+
+		public GroupedMessageBatchEntityBuilder setLabels (Set<String> labels) {
+			parentBuilder.setLabels(labels);
 			return this;
 		}
 
 		public GroupedMessageBatchEntityBuilder setContent (ByteBuffer content) {
-			entity.setContent(content);
+			parentBuilder.setContent(content);
 			return this;
 		}
 
 		public GroupedMessageBatchEntity build () {
+			parentBuilder.build(entity);
 			GroupedMessageBatchEntity rtn = entity;
+
 			entity = new GroupedMessageBatchEntity();
+			parentBuilder = new CradleEntityBuilder();
 
 			return rtn;
 		}

@@ -101,9 +101,7 @@ public class MessageBatchEntity extends CradleEntity
 	}
 
 	public MessageBatchEntity(String book, String page, String sessionAlias, String direction, LocalDate firstMessageDate, LocalTime firstMessageTime, long sequence, LocalDate lastMessageDate, LocalTime lastMessageTime, int messageCount, long lastSequence, Instant recDate, boolean compressed, Set<String> labels, ByteBuffer content) {
-		setCompressed(compressed);
-		setLabels(labels);
-		setContent(content);
+		super(compressed, labels, content);
 
 		this.book = book;
 		this.page = page;
@@ -180,8 +178,10 @@ public class MessageBatchEntity extends CradleEntity
 
 	public static class MessageBatchEntityBuilder {
 		private MessageBatchEntity entity;
+		private CradleEntityBuilder parentBuilder;
 
 		public MessageBatchEntityBuilder () {
+			this.parentBuilder = new CradleEntityBuilder();
 			this.entity = new MessageBatchEntity();
 		}
 
@@ -246,17 +246,17 @@ public class MessageBatchEntity extends CradleEntity
 		}
 
 		public MessageBatchEntityBuilder setCompressed(boolean compressed) {
-			entity.setCompressed(compressed);
+			parentBuilder.setCompressed(compressed);
 			return this;
 		}
 
 		public MessageBatchEntityBuilder setLabels(Set<String> labels) {
-			entity.setLabels(labels);
+			parentBuilder.setLabels(labels);
 			return this;
 		}
 
 		public MessageBatchEntityBuilder setContent(ByteBuffer content) {
-			entity.setContent(content);
+			parentBuilder.setContent(content);
 			return this;
 		}
 
@@ -279,8 +279,10 @@ public class MessageBatchEntity extends CradleEntity
 		}
 
 		public MessageBatchEntity build() {
+			parentBuilder.build(entity);
 			MessageBatchEntity rtn = entity;
 			entity = new MessageBatchEntity();
+			parentBuilder = new CradleEntityBuilder();
 
 			return rtn;
 		}

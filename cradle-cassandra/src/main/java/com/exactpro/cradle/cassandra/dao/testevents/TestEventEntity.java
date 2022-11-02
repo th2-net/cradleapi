@@ -115,9 +115,7 @@ public class TestEventEntity extends CradleEntity {
 	}
 
 	public TestEventEntity(String book, String page, String scope, LocalDate startDate, LocalTime startTime, String id, String name, String type, boolean success, boolean root, String parentId, boolean eventBatch, int eventCount, LocalDate endDate, LocalTime endTime, Instant recDate, ByteBuffer messages, boolean compressed, Set<String> labels, ByteBuffer content) {
-		setCompressed(compressed);
-		setLabels(labels);
-		setContent(content);
+		super(compressed, labels, content);
 
 		this.book = book;
 		this.page = page;
@@ -225,8 +223,11 @@ public class TestEventEntity extends CradleEntity {
 	public static class TestEventEntityBuilder {
 		
 		private TestEventEntity entity;
+		private CradleEntityBuilder parentBuilder;
+
 		public  TestEventEntityBuilder () {
 			this.entity = new TestEventEntity();
+			this.parentBuilder = new CradleEntityBuilder();
 		}
 	
 	
@@ -315,12 +316,6 @@ public class TestEventEntity extends CradleEntity {
 			entity.recDate = recDate;
 			return this;
 		}
-
-		public TestEventEntity build () {
-			TestEventEntity rtn = entity;
-			entity = new TestEventEntity();
-			return rtn;
-		}
 	
 		public TestEventEntityBuilder setStartTimestamp(Instant timestamp)
 		{
@@ -351,7 +346,7 @@ public class TestEventEntity extends CradleEntity {
 			return this;
 		}
 	
-		public void setEndTimestamp(Instant timestamp)
+		public TestEventEntityBuilder setEndTimestamp(Instant timestamp)
 		{
 			if (timestamp != null)
 			{
@@ -364,22 +359,35 @@ public class TestEventEntity extends CradleEntity {
 				setEndDate(null);
 				setEndTime(null);
 			}
-		}
-	
-		public TestEventEntityBuilder setCompressed (boolean compressed) {
-			entity.setCompressed(compressed);
-	
+
 			return this;
 		}
 	
-		public TestEventEntityBuilder setContent (ByteBuffer content) {
-			entity.setContent(content);
+		public TestEventEntityBuilder setCompressed (boolean compressed) {
+			parentBuilder.setCompressed(compressed);
+			return this;
+		}
 
+		public TestEventEntityBuilder setLabels (Set<String> labels) {
+			parentBuilder.setLabels(labels);
+			return this;
+		}
+
+		public TestEventEntityBuilder setContent (ByteBuffer content) {
+			parentBuilder.setContent(content);
 			return this;
 		}
 	
 		public static TestEventEntityBuilder builder () {
 			return new TestEventEntityBuilder();
+		}
+
+		public TestEventEntity build () {
+			parentBuilder.build(entity);
+			TestEventEntity rtn = entity;
+
+			entity = new TestEventEntity();
+			return rtn;
 		}
 	}
 }
