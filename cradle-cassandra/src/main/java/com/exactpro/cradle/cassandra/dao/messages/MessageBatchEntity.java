@@ -90,11 +90,24 @@ public final class MessageBatchEntity extends CradleEntity {
 	@CqlName(FIELD_REC_DATE)
 	private Instant recDate;
 
-	public MessageBatchEntity()
-	{
+	public MessageBatchEntity()	{
 	}
 
-	public MessageBatchEntity(String book, String page, String sessionAlias, String direction, LocalDate firstMessageDate, LocalTime firstMessageTime, long sequence, LocalDate lastMessageDate, LocalTime lastMessageTime, int messageCount, long lastSequence, Instant recDate, boolean compressed, Set<String> labels, ByteBuffer content) {
+	public MessageBatchEntity(String book,
+							  String page,
+							  String sessionAlias,
+							  String direction,
+							  LocalDate firstMessageDate,
+							  LocalTime firstMessageTime,
+							  long sequence,
+							  LocalDate lastMessageDate,
+							  LocalTime lastMessageTime,
+							  int messageCount,
+							  long lastSequence,
+							  Instant recDate,
+							  boolean compressed,
+							  Set<String> labels, ByteBuffer content)
+	{
 		super(compressed, labels, content);
 
 		this.book = book;
@@ -109,6 +122,25 @@ public final class MessageBatchEntity extends CradleEntity {
 		this.messageCount = messageCount;
 		this.lastSequence = lastSequence;
 		this.recDate = recDate;
+	}
+
+	private static MessageBatchEntity build(MessageBatchEntityBuilder builder) {
+		return new MessageBatchEntity(
+										builder.book,
+										builder.page,
+										builder.sessionAlias,
+										builder.direction,
+										builder.firstMessageDate,
+										builder.firstMessageTime,
+										builder.sequence,
+										builder.lastMessageDate,
+										builder.lastMessageTime,
+										builder.messageCount,
+										builder.lastSequence,
+										builder.recDate,
+										builder.isCompressed(),
+										builder.getLabels(),
+										builder.getContent());
 	}
 
 	public String getBook()
@@ -252,23 +284,7 @@ public final class MessageBatchEntity extends CradleEntity {
 			return this;
 		}
 
-		public MessageBatchEntityBuilder setCompressed(boolean compressed) {
-			this.compressed = compressed;
-			return this;
-		}
-
-		public MessageBatchEntityBuilder setLabels(Set<String> labels) {
-			this.labels = labels;
-			return this;
-		}
-
-		public MessageBatchEntityBuilder setContent(ByteBuffer content) {
-			this.content = content;
-			return this;
-		}
-
-		public MessageBatchEntityBuilder setLastMessageTimestamp(Instant timestamp)
-		{
+		public MessageBatchEntityBuilder setLastMessageTimestamp(Instant timestamp)	{
 			LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
 			setLastMessageDate(ldt.toLocalDate());
 			setLastMessageTime(ldt.toLocalTime());
@@ -276,8 +292,7 @@ public final class MessageBatchEntity extends CradleEntity {
 			return this;
 		}
 
-		public MessageBatchEntityBuilder setFirstMessageTimestamp(Instant timestamp)
-		{
+		public MessageBatchEntityBuilder setFirstMessageTimestamp(Instant timestamp) {
 			LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
 			setFirstMessageDate(ldt.toLocalDate());
 			setFirstMessageTime(ldt.toLocalTime());
@@ -286,22 +301,7 @@ public final class MessageBatchEntity extends CradleEntity {
 		}
 
 		public MessageBatchEntity build() {
-			return new MessageBatchEntity(
-					book,
-					page,
-					sessionAlias,
-					direction,
-					firstMessageDate,
-					firstMessageTime,
-					sequence,
-					lastMessageDate,
-					lastMessageTime,
-					messageCount,
-					lastSequence,
-					recDate,
-					compressed,
-					labels,
-					content);
+			return MessageBatchEntity.build(this);
 		}
 	}
 }

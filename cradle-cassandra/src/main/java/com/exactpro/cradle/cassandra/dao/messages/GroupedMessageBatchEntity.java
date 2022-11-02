@@ -76,7 +76,19 @@ public final class GroupedMessageBatchEntity extends CradleEntity {
 	public GroupedMessageBatchEntity() {
 	}
 
-	public GroupedMessageBatchEntity(String book, String page, String group, LocalDate firstMessageDate, LocalTime firstMessageTime, LocalDate lastMessageDate, LocalTime lastMessageTime, int messageCount, Instant recDate, boolean compressed, Set<String> labels, ByteBuffer content) {
+	public GroupedMessageBatchEntity(String book,
+									 String page,
+									 String group,
+									 LocalDate firstMessageDate,
+									 LocalTime firstMessageTime,
+									 LocalDate lastMessageDate,
+									 LocalTime lastMessageTime,
+									 int messageCount,
+									 Instant recDate,
+									 boolean compressed,
+									 Set<String> labels,
+									 ByteBuffer content)
+	{
 		super(compressed, labels, content);
 
 		this.book = book;
@@ -88,6 +100,22 @@ public final class GroupedMessageBatchEntity extends CradleEntity {
 		this.lastMessageTime = lastMessageTime;
 		this.messageCount = messageCount;
 		this.recDate = recDate;
+	}
+
+	private static GroupedMessageBatchEntity build(GroupedMessageBatchEntityBuilder builder) {
+		return new GroupedMessageBatchEntity(
+												builder.book,
+												builder.page,
+												builder.group,
+												builder.firstMessageDate,
+												builder.firstMessageTime,
+												builder.lastMessageDate,
+												builder.lastMessageTime,
+												builder.messageCount,
+												builder.recDate,
+												builder.isCompressed(),
+												builder.getLabels(),
+												builder.getContent());
 	}
 
 
@@ -206,19 +234,7 @@ public final class GroupedMessageBatchEntity extends CradleEntity {
 		}
 
 		public GroupedMessageBatchEntity build () {
-			return new GroupedMessageBatchEntity(
-					book,
-					page,
-					group,
-					firstMessageDate,
-					firstMessageTime,
-					lastMessageDate,
-					lastMessageTime,
-					messageCount,
-					recDate,
-					compressed,
-					labels,
-					content);
+			return GroupedMessageBatchEntity.build(this);
 		}
 	}
 }

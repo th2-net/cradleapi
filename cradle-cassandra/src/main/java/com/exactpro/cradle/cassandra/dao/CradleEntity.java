@@ -62,9 +62,9 @@ public abstract class CradleEntity
 	}
 
 	public abstract static class CradleEntityBuilder <T extends CradleEntity, B extends CradleEntityBuilder> {
-		protected boolean compressed;
-		protected Set<String> labels;
-		protected ByteBuffer content;
+		private boolean compressed;
+		private Set<String> labels;
+		private ByteBuffer content;
 
 		public CradleEntityBuilder () {
 		}
@@ -82,6 +82,18 @@ public abstract class CradleEntity
 		public B setContent (ByteBuffer content) {
 			this.content = content;
 			return (B) this;
+		}
+
+		public boolean isCompressed() {
+			return compressed;
+		}
+
+		public Set<String> getLabels() {
+			return labels;
+		}
+
+		public ByteBuffer getContent() {
+			return content;
 		}
 
 		public abstract T build ();
