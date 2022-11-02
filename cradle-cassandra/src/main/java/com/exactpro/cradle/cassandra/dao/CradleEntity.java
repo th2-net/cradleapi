@@ -61,13 +61,12 @@ public abstract class CradleEntity
 		return content;
 	}
 
-	public static class CradleEntityBuilder {
-		private boolean compressed;
-		private Set<String> labels;
-		private ByteBuffer content;
+	public abstract static class CradleEntityBuilder <T extends CradleEntity> {
+		protected boolean compressed;
+		protected Set<String> labels;
+		protected ByteBuffer content;
 
 		public CradleEntityBuilder () {
-
 		}
 
 		public CradleEntityBuilder setCompressed (boolean compressed) {
@@ -85,12 +84,6 @@ public abstract class CradleEntity
 			return this;
 		}
 
-		public CradleEntity build (CradleEntity entity) {
-			entity.compressed = compressed;
-			entity.labels = labels;
-			entity.content = content;
-
-			return  entity;
-		}
+		public abstract T build ();
 	}
 }

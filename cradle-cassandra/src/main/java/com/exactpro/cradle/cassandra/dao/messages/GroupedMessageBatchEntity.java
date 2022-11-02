@@ -123,83 +123,94 @@ public class GroupedMessageBatchEntity extends CradleEntity {
 		return recDate;
 	}
 
-	public static class GroupedMessageBatchEntityBuilder {
-		private GroupedMessageBatchEntity entity;
-		private CradleEntityBuilder parentBuilder;
+	public static class GroupedMessageBatchEntityBuilder extends CradleEntityBuilder<GroupedMessageBatchEntity> {
+		String book;
+		String page;
+		private String group;
+		private LocalDate firstMessageDate;
+		private LocalTime firstMessageTime;
+		private LocalDate lastMessageDate;
+		private LocalTime lastMessageTime;
+		private int messageCount;
+		private Instant recDate;
 
 		public GroupedMessageBatchEntityBuilder () {
-			this.parentBuilder = new CradleEntityBuilder();
-			this.entity = new GroupedMessageBatchEntity();
 		}
 
 		public GroupedMessageBatchEntityBuilder setBook (String book) {
-			entity.book = book;
+			this.book = book;
 			return this;
 		}
 
 		public GroupedMessageBatchEntityBuilder setPage (String page) {
-			entity.page = page;
+			this.page = page;
 			return this;
 		}
 
 		public GroupedMessageBatchEntityBuilder setGroup (String group) {
-			entity.group = group;
+			this.group = group;
 			return this;
 		}
 
 		public GroupedMessageBatchEntityBuilder setFirstMessageDate (LocalDate firstMessageDate) {
-			entity.firstMessageDate = firstMessageDate;
+			this.firstMessageDate = firstMessageDate;
 			return this;
 		}
 
 		public GroupedMessageBatchEntityBuilder setFirstMessageTime (LocalTime firstMessageTime) {
-			entity.firstMessageTime = firstMessageTime;
+			this.firstMessageTime = firstMessageTime;
 			return this;
 		}
 
 		public GroupedMessageBatchEntityBuilder setLastMessageDate (LocalDate lastMessageDate) {
-			entity.lastMessageDate = lastMessageDate;
+			this.lastMessageDate = lastMessageDate;
 			return this;
 		}
 
 		public GroupedMessageBatchEntityBuilder setLastMessageTime (LocalTime lastMessageTime) {
-			entity.lastMessageTime = lastMessageTime;
+			this.lastMessageTime = lastMessageTime;
 			return this;
 		}
 
 		public GroupedMessageBatchEntityBuilder setMessageCount (int messageCount) {
-			entity.messageCount = messageCount;
+			this.messageCount = messageCount;
 			return this;
 		}
 
 		public GroupedMessageBatchEntityBuilder setRecDate (Instant recDate) {
-			entity.recDate = recDate;
+			this.recDate = recDate;
 			return this;
 		}
 
 		public GroupedMessageBatchEntityBuilder setCompressed (boolean compressed) {
-			parentBuilder.setCompressed(compressed);
+			super.setCompressed(compressed);
 			return this;
 		}
 
 		public GroupedMessageBatchEntityBuilder setLabels (Set<String> labels) {
-			parentBuilder.setLabels(labels);
+			super.setLabels(labels);
 			return this;
 		}
 
 		public GroupedMessageBatchEntityBuilder setContent (ByteBuffer content) {
-			parentBuilder.setContent(content);
+			super.setContent(content);
 			return this;
 		}
 
 		public GroupedMessageBatchEntity build () {
-			parentBuilder.build(entity);
-			GroupedMessageBatchEntity rtn = entity;
-
-			entity = new GroupedMessageBatchEntity();
-			parentBuilder = new CradleEntityBuilder();
-
-			return rtn;
+			return new GroupedMessageBatchEntity(
+					book,
+					page,
+					group,
+					firstMessageDate,
+					firstMessageTime,
+					lastMessageDate,
+					lastMessageTime,
+					messageCount,
+					recDate,
+					compressed,
+					labels,
+					content);
 		}
 	}
 }

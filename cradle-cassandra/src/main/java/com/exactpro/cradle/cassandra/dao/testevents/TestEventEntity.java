@@ -220,100 +220,112 @@ public class TestEventEntity extends CradleEntity {
 		return messages;
 	}
 	
-	public static class TestEventEntityBuilder {
-		
-		private TestEventEntity entity;
-		private CradleEntityBuilder parentBuilder;
+	public static class TestEventEntityBuilder extends CradleEntityBuilder<TestEventEntity> {
+		private String book;
+		private String page;
+		private String scope;
+		private LocalDate startDate;
+		private LocalTime startTime;
+		private String id;
+		private String name;
+		private String type;
+		private boolean success;
+		private boolean root;
+		private String parentId;
+		private boolean eventBatch;
+		private int eventCount;
+		private LocalDate endDate;
+		private LocalTime endTime;
+		private ByteBuffer messages;
+		private Instant recDate;
 
 		public  TestEventEntityBuilder () {
-			this.entity = new TestEventEntity();
-			this.parentBuilder = new CradleEntityBuilder();
 		}
 	
 	
 	
 		public TestEventEntityBuilder setBook(String book) {
-			entity.book = book;
+			this.book = book;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setPage(String page) {
-			entity.page = page;
+			this.page = page;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setScope(String scope) {
-			entity.scope = scope;
+			this.scope = scope;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setStartDate(LocalDate startDate) {
-			entity.startDate = startDate;
+			this.startDate = startDate;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setStartTime(LocalTime startTime) {
-			entity.startTime = startTime;
+			this.startTime = startTime;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setId(String id) {
-			entity.id = id;
+			this.id = id;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setName(String name) {
-			entity.name = name;
+			this.name = name;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setType(String type) {
-			entity.type = type;
+			this.type = type;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setSuccess(boolean success) {
-			entity.success = success;
+			this.success = success;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setRoot(boolean root) {
-			entity.root = root;
+			this.root = root;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setParentId(String parentId) {
-			entity.parentId = parentId;
+			this.parentId = parentId;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setEventBatch(boolean eventBatch) {
-			entity.eventBatch = eventBatch;
+			this.eventBatch = eventBatch;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setEventCount(int eventCount) {
-			entity.eventCount = eventCount;
+			this.eventCount = eventCount;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setEndDate(LocalDate endDate) {
-			entity.endDate = endDate;
+			this.endDate = endDate;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setEndTime(LocalTime endTime) {
-			entity.endTime = endTime;
+			this.endTime = endTime;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setMessages(ByteBuffer messages) {
-			entity.messages = messages;
+			this.messages = messages;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setRecDate(Instant recDate) {
-			entity.recDate = recDate;
+			this.recDate = recDate;
 			return this;
 		}
 	
@@ -364,17 +376,17 @@ public class TestEventEntity extends CradleEntity {
 		}
 	
 		public TestEventEntityBuilder setCompressed (boolean compressed) {
-			parentBuilder.setCompressed(compressed);
+			this.compressed = compressed;
 			return this;
 		}
 
 		public TestEventEntityBuilder setLabels (Set<String> labels) {
-			parentBuilder.setLabels(labels);
+			this.labels = labels;
 			return this;
 		}
 
 		public TestEventEntityBuilder setContent (ByteBuffer content) {
-			parentBuilder.setContent(content);
+			this.content = content;
 			return this;
 		}
 	
@@ -383,11 +395,27 @@ public class TestEventEntity extends CradleEntity {
 		}
 
 		public TestEventEntity build () {
-			parentBuilder.build(entity);
-			TestEventEntity rtn = entity;
-
-			entity = new TestEventEntity();
-			return rtn;
+			return new TestEventEntity(
+					book,
+					page,
+					scope,
+					startDate,
+					startTime,
+					id,
+					name,
+					type,
+					success,
+					root,
+					parentId,
+					eventBatch,
+					eventCount,
+					endDate,
+					endTime,
+					recDate,
+					messages,
+					compressed,
+					labels,
+					content);
 		}
 	}
 }

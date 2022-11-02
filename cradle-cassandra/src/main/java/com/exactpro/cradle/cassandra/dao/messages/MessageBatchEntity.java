@@ -176,87 +176,96 @@ public class MessageBatchEntity extends CradleEntity
 		return recDate;
 	}
 
-	public static class MessageBatchEntityBuilder {
-		private MessageBatchEntity entity;
-		private CradleEntityBuilder parentBuilder;
+	public static class MessageBatchEntityBuilder extends CradleEntityBuilder<MessageBatchEntity> {
+
+		private String book;
+		private String page;
+		private String sessionAlias;
+		private String direction;
+		private LocalDate firstMessageDate;
+		private LocalTime firstMessageTime;
+		private long sequence;
+		private LocalDate lastMessageDate;
+		private LocalTime lastMessageTime;
+		private int messageCount;
+		private long lastSequence;
+		private Instant recDate;
 
 		public MessageBatchEntityBuilder () {
-			this.parentBuilder = new CradleEntityBuilder();
-			this.entity = new MessageBatchEntity();
 		}
 
 		public MessageBatchEntityBuilder setBook(String book) {
-			entity.book = book;
+			this.book = book;
 			return this;
 		}
 
 		public MessageBatchEntityBuilder setPage(String page) {
-			entity.page = page;
+			this.page = page;
 			return this;
 		}
 
 		public MessageBatchEntityBuilder setSessionAlias(String sessionAlias) {
-			entity.sessionAlias = sessionAlias;
+			this.sessionAlias = sessionAlias;
 			return this;
 		}
 
 		public MessageBatchEntityBuilder setDirection(String direction) {
-			entity.direction = direction;
+			this.direction = direction;
 			return this;
 		}
 
 		public MessageBatchEntityBuilder setFirstMessageDate(LocalDate firstMessageDate) {
-			entity.firstMessageDate = firstMessageDate;
+			this.firstMessageDate = firstMessageDate;
 			return this;
 		}
 
 		public MessageBatchEntityBuilder setFirstMessageTime(LocalTime firstMessageTime) {
-			entity.firstMessageTime = firstMessageTime;
+			this.firstMessageTime = firstMessageTime;
 			return this;
 		}
 
 		public MessageBatchEntityBuilder setSequence(long sequence) {
-			entity.sequence = sequence;
+			this.sequence = sequence;
 			return this;
 		}
 
 		public MessageBatchEntityBuilder setLastMessageDate(LocalDate lastMessageDate) {
-			entity.lastMessageDate = lastMessageDate;
+			this.lastMessageDate = lastMessageDate;
 			return this;
 		}
 
 		public MessageBatchEntityBuilder setLastMessageTime(LocalTime lastMessageTime) {
-			entity.lastMessageTime = lastMessageTime;
+			this.lastMessageTime = lastMessageTime;
 			return this;
 		}
 
 		public MessageBatchEntityBuilder setMessageCount(int messageCount) {
-			entity.messageCount = messageCount;
+			this.messageCount = messageCount;
 			return this;
 		}
 
 		public MessageBatchEntityBuilder setLastSequence(long lastSequence) {
-			entity.lastSequence = lastSequence;
+			this.lastSequence = lastSequence;
 			return this;
 		}
 
 		public MessageBatchEntityBuilder setRecDate(Instant recDate) {
-			entity.recDate = recDate;
+			this.recDate = recDate;
 			return this;
 		}
 
 		public MessageBatchEntityBuilder setCompressed(boolean compressed) {
-			parentBuilder.setCompressed(compressed);
+			this.compressed = compressed;
 			return this;
 		}
 
 		public MessageBatchEntityBuilder setLabels(Set<String> labels) {
-			parentBuilder.setLabels(labels);
+			this.labels = labels;
 			return this;
 		}
 
 		public MessageBatchEntityBuilder setContent(ByteBuffer content) {
-			parentBuilder.setContent(content);
+			this.content = content;
 			return this;
 		}
 
@@ -279,12 +288,22 @@ public class MessageBatchEntity extends CradleEntity
 		}
 
 		public MessageBatchEntity build() {
-			parentBuilder.build(entity);
-			MessageBatchEntity rtn = entity;
-			entity = new MessageBatchEntity();
-			parentBuilder = new CradleEntityBuilder();
-
-			return rtn;
+			return new MessageBatchEntity(
+					book,
+					page,
+					sessionAlias,
+					direction,
+					firstMessageDate,
+					firstMessageTime,
+					sequence,
+					lastMessageDate,
+					lastMessageTime,
+					messageCount,
+					lastSequence,
+					recDate,
+					compressed,
+					labels,
+					content);
 		}
 
 		public static MessageBatchEntityBuilder builder () {
