@@ -42,33 +42,37 @@ public class PagedIterator<E> implements Iterator<E> {
 	private Iterator<E> rowsIterator;
 	private CompletableFuture<MappedAsyncPagingIterable<E>> nextPage;
 
+	private int cnt;
 
 	public PagedIterator(MappedAsyncPagingIterable<E> paginator, SelectQueryExecutor selectQueryExecutor,
 						 Function<Row, E> mapper, String queryInfo)
 	{
+		logger.debug("init(): creating iterator");
 		this.paginator = paginator;
 		this.selectQueryExecutor = selectQueryExecutor;
 		this.mapper = mapper;
 		this.queryInfo = queryInfo;
 		this.rowsIterator = paginator.currentPage().iterator();
 		fetchNextPage();
+		logger.debug("init(): iterator created");
 	}
 
 	private void fetchNextPage() {
-		logger.debug("prefetching next page");
+		logger.debug("fetchNextPage(): enter");
 		if (paginator.hasMorePages()) {
-			logger.debug("has more pages, prefetching");
+			logger.debug("fetchNextPage(): has more pages, prefetching");
 			nextPage = selectQueryExecutor.fetchNextPage(paginator, mapper, queryInfo)
 					.whenComplete((r, e) -> {
 						if (e != null) {
-							logger.error("Exception fetching next page", e);
+							logger.error("fetchNextPage(): Exception fetching next page", e);
 						} else
-							logger.debug("page prefetching complete", e);
+							logger.debug("fetchNextPage(): page prefetching complete", e);
 					});
 		} else {
-			logger.debug("no more pages to prefetch");
+			logger.debug("fetchNextPage(): no more pages to prefetch");
 			nextPage = null;
 		}
+		logger.debug("fetchNextPage(): exit");
 	}
 
 
@@ -93,19 +97,20 @@ public class PagedIterator<E> implements Iterator<E> {
 	@Override
 	public E next()	{
 		logger.trace("Getting next data row");
+		cnt++;
 		return rowsIterator.next();
 	}
 
 
 	private Iterator<E> nextIterator() throws IllegalStateException, InterruptedException, ExecutionException {
-		logger.debug("changing page");
+		logger.debug("nextIterator(): changing page after {} rows fetched", cnt);
 		if (nextPage != null) {
 			paginator = nextPage.get();
 			fetchNextPage();
-			logger.debug("page changed");
+			logger.debug("nextIterator(): page changed");
 			return paginator.currentPage().iterator();
 		} else {
-			logger.debug("no page to change to");
+			logger.debug("nextIterator(): no page to change to");
 			return null;
 		}
 	}
