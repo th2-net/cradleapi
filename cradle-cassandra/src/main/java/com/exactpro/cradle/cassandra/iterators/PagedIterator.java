@@ -55,10 +55,20 @@ public class PagedIterator<E> implements Iterator<E> {
 	}
 
 	private void fetchNextPage() {
-		if (paginator.hasMorePages())
-			nextPage = selectQueryExecutor.fetchNextPage(paginator, mapper, queryInfo);
-		else
+		logger.debug("prefetching next page");
+		if (paginator.hasMorePages()) {
+			logger.debug("has more pages, prefetching");
+			nextPage = selectQueryExecutor.fetchNextPage(paginator, mapper, queryInfo)
+					.whenComplete((r, e) -> {
+						if (e != null) {
+							logger.error("Exception fetching next page", e);
+						} else
+							logger.debug("page prefetching complete", e);
+					});
+		} else {
+			logger.debug("no more pages to prefetch");
 			nextPage = null;
+		}
 	}
 
 
@@ -88,11 +98,14 @@ public class PagedIterator<E> implements Iterator<E> {
 
 
 	private Iterator<E> nextIterator() throws IllegalStateException, InterruptedException, ExecutionException {
+		logger.debug("changing page");
 		if (nextPage != null) {
 			paginator = nextPage.get();
 			fetchNextPage();
+			logger.debug("page changed");
 			return paginator.currentPage().iterator();
 		} else {
+			logger.debug("no page to change to");
 			return null;
 		}
 	}
