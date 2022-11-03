@@ -3,6 +3,8 @@ package com.exactpro.cradle.cassandra.dao.messages;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.PageId;
+import com.exactpro.cradle.cassandra.dao.SerializedEntity;
+import com.exactpro.cradle.cassandra.utils.GroupedMessageEntityUtils;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.assertj.core.api.Assertions;
@@ -34,10 +36,10 @@ public class GroupedMessageBatchEntityTest {
                 .build();
         batch.addMessage(message);
 
-        GroupedMessageBatchEntity entity = new GroupedMessageBatchEntity(batch, pageId, 10_000);
+        SerializedEntity<GroupedMessageBatchEntity> serializedEntity = GroupedMessageEntityUtils.toSerializedEntity(batch, pageId, 10_000);
 
         StoredGroupedMessageBatch storedBatch = new StoredGroupedMessageBatch(group, batch.getMessages(), pageId, null);
-        StoredGroupedMessageBatch batchFromEntity = entity.toStoredGroupedMessageBatch(pageId);
+        StoredGroupedMessageBatch batchFromEntity = GroupedMessageEntityUtils.toStoredGroupedMessageBatch(serializedEntity.getEntity(), pageId);
         RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
 
         Assertions.assertThat(storedBatch).usingRecursiveComparison(config).isEqualTo(batchFromEntity);

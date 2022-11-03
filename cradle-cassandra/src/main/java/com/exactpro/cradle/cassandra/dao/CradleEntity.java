@@ -37,39 +37,65 @@ public abstract class CradleEntity
 	private Set<String> labels;
 	@CqlName(FIELD_CONTENT)
 	private ByteBuffer content;
-	
 
-	//TODO: make this class immutable, this should be done after all subclasses are immutable
+	public CradleEntity () {
+	}
 
-	public boolean isCompressed()
-	{
+	public CradleEntity (boolean compressed, Set<String> labels, ByteBuffer content) {
+		this.compressed = compressed;
+		this.labels = labels;
+		this.content = content;
+	}
+
+
+	public boolean isCompressed() {
 		return compressed;
 	}
 	
-	public void setCompressed(boolean compressed)
-	{
-		this.compressed = compressed;
-	}
-	
-	
-	public Set<String> getLabels()
-	{
+	public Set<String> getLabels() {
 		return labels;
 	}
-	
-	public void setLabels(Set<String> labels)
-	{
-		this.labels = labels;
-	}
-	
 	
 	public ByteBuffer getContent()
 	{
 		return content;
 	}
-	
-	public void setContent(ByteBuffer content)
-	{
-		this.content = content;
+
+	public abstract static class CradleEntityBuilder <T extends CradleEntity, B extends CradleEntityBuilder> {
+		private boolean compressed;
+		private Set<String> labels;
+		private ByteBuffer content;
+
+		public CradleEntityBuilder () {
+		}
+
+		public B setCompressed (boolean compressed) {
+			this.compressed = compressed;
+			return (B) this;
+		}
+
+		public B setLabels (Set<String> labels) {
+			this.labels = labels;
+			return (B) this;
+		}
+
+		public B setContent (ByteBuffer content) {
+			this.content = content;
+			return (B) this;
+		}
+
+		public boolean isCompressed() {
+			return compressed;
+		}
+
+		public Set<String> getLabels() {
+			return labels;
+		}
+
+		public ByteBuffer getContent() {
+			return content;
+		}
+
+		public abstract T build ();
 	}
 }

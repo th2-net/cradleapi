@@ -18,8 +18,7 @@ package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.exactpro.cradle.cassandra.dao.CradleEntity;
-import com.exactpro.cradle.testevents.*;
-import com.exactpro.cradle.utils.*;
+import com.exactpro.cradle.utils.TimeUtils;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -28,13 +27,10 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Set;
 
-/**
- * Contains data of {@link StoredTestEvent} to write to or to obtain from Cassandra
- */
 @Entity
 @CqlName(TestEventEntity.TABLE_NAME)
 @PropertyStrategy(mutable = false)
-public class TestEventEntity extends CradleEntity {
+public final class TestEventEntity extends CradleEntity {
 	public static final String TABLE_NAME = "test_events";
 
 	public static final String FIELD_BOOK = "book";
@@ -114,10 +110,27 @@ public class TestEventEntity extends CradleEntity {
 	public TestEventEntity() {
 	}
 
-	public TestEventEntity(String book, String page, String scope, LocalDate startDate, LocalTime startTime, String id, String name, String type, boolean success, boolean root, String parentId, boolean eventBatch, int eventCount, LocalDate endDate, LocalTime endTime, Instant recDate, ByteBuffer messages, boolean compressed, Set<String> labels, ByteBuffer content) {
-		setCompressed(compressed);
-		setLabels(labels);
-		setContent(content);
+	public TestEventEntity(String book,
+						   String page,
+						   String scope,
+						   LocalDate startDate,
+						   LocalTime startTime,
+						   String id,
+						   String name,
+						   String type,
+						   boolean success,
+						   boolean root,
+						   String parentId,
+						   boolean eventBatch,
+						   int eventCount,
+						   LocalDate endDate,
+						   LocalTime endTime,
+						   Instant recDate,
+						   ByteBuffer messages,
+						   boolean compressed,
+						   Set<String> labels, ByteBuffer content)
+	{
+		super(compressed, labels, content);
 
 		this.book = book;
 		this.page = page;
@@ -136,6 +149,30 @@ public class TestEventEntity extends CradleEntity {
 		this.endTime = endTime;
 		this.messages = messages;
 		this.recDate = recDate;
+	}
+
+	private static TestEventEntity build(TestEventEntityBuilder builder) {
+		return new TestEventEntity(
+									builder.book,
+									builder.page,
+									builder.scope,
+									builder.startDate,
+									builder.startTime,
+									builder.id,
+									builder.name,
+									builder.type,
+									builder.success,
+									builder.root,
+									builder.parentId,
+									builder.eventBatch,
+									builder.eventCount,
+									builder.endDate,
+									builder.endTime,
+									builder.recDate,
+									builder.messages,
+									builder.isCompressed(),
+									builder.getLabels(),
+									builder.getContent());
 	}
 
 	public String getBook()
@@ -221,113 +258,122 @@ public class TestEventEntity extends CradleEntity {
 	{
 		return messages;
 	}
-	
-	public static class TestEventEntityBuilder {
-		
-		private TestEventEntity entity;
-		public  TestEventEntityBuilder () {
-			this.entity = new TestEventEntity();
+
+	public static TestEventEntityBuilder builder () {
+		return new TestEventEntityBuilder();
+	}
+
+	public static class TestEventEntityBuilder extends CradleEntityBuilder<TestEventEntity, TestEventEntityBuilder> {
+		private String book;
+		private String page;
+		private String scope;
+		private LocalDate startDate;
+		private LocalTime startTime;
+		private String id;
+		private String name;
+		private String type;
+		private boolean success;
+		private boolean root;
+		private String parentId;
+		private boolean eventBatch;
+		private int eventCount;
+		private LocalDate endDate;
+		private LocalTime endTime;
+		private ByteBuffer messages;
+		private Instant recDate;
+
+		private  TestEventEntityBuilder () {
 		}
 	
-	
-	
 		public TestEventEntityBuilder setBook(String book) {
-			entity.book = book;
+			this.book = book;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setPage(String page) {
-			entity.page = page;
+			this.page = page;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setScope(String scope) {
-			entity.scope = scope;
+			this.scope = scope;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setStartDate(LocalDate startDate) {
-			entity.startDate = startDate;
+			this.startDate = startDate;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setStartTime(LocalTime startTime) {
-			entity.startTime = startTime;
+			this.startTime = startTime;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setId(String id) {
-			entity.id = id;
+			this.id = id;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setName(String name) {
-			entity.name = name;
+			this.name = name;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setType(String type) {
-			entity.type = type;
+			this.type = type;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setSuccess(boolean success) {
-			entity.success = success;
+			this.success = success;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setRoot(boolean root) {
-			entity.root = root;
+			this.root = root;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setParentId(String parentId) {
-			entity.parentId = parentId;
+			this.parentId = parentId;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setEventBatch(boolean eventBatch) {
-			entity.eventBatch = eventBatch;
+			this.eventBatch = eventBatch;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setEventCount(int eventCount) {
-			entity.eventCount = eventCount;
+			this.eventCount = eventCount;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setEndDate(LocalDate endDate) {
-			entity.endDate = endDate;
+			this.endDate = endDate;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setEndTime(LocalTime endTime) {
-			entity.endTime = endTime;
+			this.endTime = endTime;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setMessages(ByteBuffer messages) {
-			entity.messages = messages;
+			this.messages = messages;
 			return this;
 		}
 	
 		public TestEventEntityBuilder setRecDate(Instant recDate) {
-			entity.recDate = recDate;
+			this.recDate = recDate;
 			return this;
 		}
-
-		public TestEventEntity build () {
-			TestEventEntity rtn = entity;
-			entity = new TestEventEntity();
-			return rtn;
-		}
 	
-		public TestEventEntityBuilder setStartTimestamp(Instant timestamp)
-		{
-			if (timestamp != null)
+		public TestEventEntityBuilder setStartTimestamp(Instant timestamp) {
+			if (timestamp != null) {
 				setStartTimestamp(TimeUtils.toLocalTimestamp(timestamp));
-			else
-			{
+			} else {
 				setStartDate(null);
 				setStartTime(null);
 			}
@@ -335,15 +381,11 @@ public class TestEventEntity extends CradleEntity {
 			return this;
 		}
 	
-		public TestEventEntityBuilder setStartTimestamp(LocalDateTime timestamp)
-		{
-			if (timestamp != null)
-			{
+		public TestEventEntityBuilder setStartTimestamp(LocalDateTime timestamp) {
+			if (timestamp != null) {
 				setStartDate(timestamp.toLocalDate());
 				setStartTime(timestamp.toLocalTime());
-			}
-			else
-			{
+			} else {
 				setStartDate(null);
 				setStartTime(null);
 			}
@@ -351,35 +393,22 @@ public class TestEventEntity extends CradleEntity {
 			return this;
 		}
 	
-		public void setEndTimestamp(Instant timestamp)
-		{
-			if (timestamp != null)
-			{
+		public TestEventEntityBuilder setEndTimestamp(Instant timestamp) {
+			if (timestamp != null) {
 				LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
 				setEndDate(ldt.toLocalDate());
 				setEndTime(ldt.toLocalTime());
-			}
-			else
-			{
+			} else {
 				setEndDate(null);
 				setEndTime(null);
 			}
-		}
-	
-		public TestEventEntityBuilder setCompressed (boolean compressed) {
-			entity.setCompressed(compressed);
-	
-			return this;
-		}
-	
-		public TestEventEntityBuilder setContent (ByteBuffer content) {
-			entity.setContent(content);
 
 			return this;
 		}
 	
-		public static TestEventEntityBuilder builder () {
-			return new TestEventEntityBuilder();
+
+		public TestEventEntity build () {
+			return TestEventEntity.build(this);
 		}
 	}
 }

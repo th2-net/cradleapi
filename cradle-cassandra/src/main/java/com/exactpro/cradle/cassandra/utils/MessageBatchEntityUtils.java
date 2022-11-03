@@ -42,7 +42,7 @@ public class MessageBatchEntityUtils {
                                                                           int maxUncompressedSize) throws IOException
     {
         logger.debug("Creating entity from message batch '{}'", batch.getId());
-        MessageBatchEntity.MessageBatchEntityBuilder builder = MessageBatchEntity.MessageBatchEntityBuilder.builder();
+        MessageBatchEntity.MessageBatchEntityBuilder builder = MessageBatchEntity.builder();
 
         SerializedEntityData serializedEntityData = MessageUtils.serializeMessages(batch.getMessages());
         byte[] batchContent = serializedEntityData.getSerializedData();
@@ -64,8 +64,8 @@ public class MessageBatchEntityUtils {
         //Last sequence is used in the getLastSequenceQuery, that returns last chunk
         builder.setLastSequence(batch.getLastMessage().getSequence());
 
-        builder.setFirstMessageTimestamp(builder, batch.getFirstTimestamp());
-        builder.setLastMessageTimestamp(builder, batch.getLastTimestamp());
+        builder.setFirstMessageTimestamp(batch.getFirstTimestamp());
+        builder.setLastMessageTimestamp(batch.getLastTimestamp());
         builder.setMessageCount(batch.getMessageCount());
 
         builder.setCompressed(compressed);
