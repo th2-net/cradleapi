@@ -25,6 +25,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
@@ -261,6 +262,54 @@ public final class TestEventEntity extends CradleEntity {
 
 	public static TestEventEntityBuilder builder () {
 		return new TestEventEntityBuilder();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof TestEventEntity)) return false;
+		if (!super.equals(o)) return false;
+
+		TestEventEntity event = (TestEventEntity) o;
+		return isSuccess() == event.isSuccess()
+				&& isRoot() == event.isRoot()
+				&& isEventBatch() == event.isEventBatch()
+				&& getEventCount() == event.getEventCount()
+				&& getBook().equals(event.getBook())
+				&& getPage().equals(event.getPage())
+				&& getScope().equals(event.getScope())
+				&& getStartDate().equals(event.getStartDate())
+				&& getStartTime().equals(event.getStartTime())
+				&& getId().equals(event.getId())
+				&& Objects.equals(getName(), event.getName())
+				&& Objects.equals(getType(), event.getType())
+				&& Objects.equals(getParentId(), event.getParentId())
+				&& Objects.equals(getEndDate(), event.getEndDate())
+				&& Objects.equals(getEndTime(), event.getEndTime())
+				&& Objects.equals(getMessages(), event.getMessages())
+				&& Objects.equals(getRecDate(), event.getRecDate());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(),
+				getBook(),
+				getPage(),
+				getScope(),
+				getStartDate(),
+				getStartTime(),
+				getId(),
+				getName(),
+				getType(),
+				isSuccess(),
+				isRoot(),
+				getParentId(),
+				isEventBatch(),
+				getEventCount(),
+				getEndDate(),
+				getEndTime(),
+				getMessages(),
+				getRecDate());
 	}
 
 	public static class TestEventEntityBuilder extends CradleEntityBuilder<TestEventEntity, TestEventEntityBuilder> {

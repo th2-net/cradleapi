@@ -25,6 +25,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
@@ -204,6 +205,44 @@ public final class MessageBatchEntity extends CradleEntity {
 
 	public static MessageBatchEntityBuilder builder () {
 		return new MessageBatchEntityBuilder();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof MessageBatchEntity)) return false;
+		if (!super.equals(o)) return false;
+
+		MessageBatchEntity that = (MessageBatchEntity) o;
+		return getSequence() == that.getSequence()
+				&& getMessageCount() == that.getMessageCount()
+				&& getLastSequence() == that.getLastSequence()
+				&& getBook().equals(that.getBook())
+				&& getPage().equals(that.getPage())
+				&& getSessionAlias().equals(that.getSessionAlias())
+				&& getDirection().equals(that.getDirection())
+				&& getFirstMessageDate().equals(that.getFirstMessageDate())
+				&& getFirstMessageTime().equals(that.getFirstMessageTime())
+				&& Objects.equals(getLastMessageDate(), that.getLastMessageDate())
+				&& Objects.equals(getLastMessageTime(), that.getLastMessageTime())
+				&& Objects.equals(getRecDate(), that.getRecDate());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(),
+				getBook(),
+				getPage(),
+				getSessionAlias(),
+				getDirection(),
+				getFirstMessageDate(),
+				getFirstMessageTime(),
+				getSequence(),
+				getLastMessageDate(),
+				getLastMessageTime(),
+				getMessageCount(),
+				getLastSequence(),
+				getRecDate());
 	}
 
 	public static class MessageBatchEntityBuilder extends CradleEntityBuilder<MessageBatchEntity, MessageBatchEntityBuilder> {

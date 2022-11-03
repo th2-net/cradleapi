@@ -18,6 +18,7 @@ package com.exactpro.cradle.cassandra.dao;
 
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.Set;
 
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
@@ -59,6 +60,19 @@ public abstract class CradleEntity
 	public ByteBuffer getContent()
 	{
 		return content;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof CradleEntity)) return false;
+		CradleEntity that = (CradleEntity) o;
+		return isCompressed() == that.isCompressed() && Objects.equals(getLabels(), that.getLabels()) && Objects.equals(getContent(), that.getContent());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(isCompressed(), getLabels(), getContent());
 	}
 
 	public abstract static class CradleEntityBuilder <T extends CradleEntity, B extends CradleEntityBuilder> {

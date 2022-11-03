@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
@@ -157,6 +158,38 @@ public final class GroupedMessageBatchEntity extends CradleEntity {
 
 	public static GroupedMessageBatchEntityBuilder builder() {
 		return new GroupedMessageBatchEntityBuilder();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof GroupedMessageBatchEntity)) return false;
+		if (!super.equals(o)) return false;
+
+		GroupedMessageBatchEntity entity = (GroupedMessageBatchEntity) o;
+		return getMessageCount() == entity.getMessageCount()
+				&& getBook().equals(entity.getBook())
+				&& getPage().equals(entity.getPage())
+				&& getGroup().equals(entity.getGroup())
+				&& Objects.equals(getFirstMessageDate(), entity.getFirstMessageDate())
+				&& Objects.equals(getFirstMessageTime(), entity.getFirstMessageTime())
+				&& Objects.equals(getLastMessageDate(), entity.getLastMessageDate())
+				&& Objects.equals(getLastMessageTime(), entity.getLastMessageTime())
+				&& Objects.equals(getRecDate(), entity.getRecDate());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(),
+				getBook(),
+				getPage(),
+				getGroup(),
+				getFirstMessageDate(),
+				getFirstMessageTime(),
+				getLastMessageDate(),
+				getLastMessageTime(),
+				getMessageCount(),
+				getRecDate());
 	}
 
 	public static class GroupedMessageBatchEntityBuilder extends CradleEntityBuilder<GroupedMessageBatchEntity, GroupedMessageBatchEntityBuilder> {
