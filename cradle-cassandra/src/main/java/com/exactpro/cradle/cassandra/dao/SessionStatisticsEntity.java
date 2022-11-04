@@ -1,15 +1,13 @@
 package com.exactpro.cradle.cassandra.dao;
 
-import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
-import com.datastax.oss.driver.api.mapper.annotations.CqlName;
-import com.datastax.oss.driver.api.mapper.annotations.Entity;
-import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import com.datastax.oss.driver.api.mapper.annotations.*;
 
 import java.time.Instant;
 import java.util.Objects;
 
 @Entity
 @CqlName(SessionStatisticsEntity.TABLE_NAME)
+@PropertyStrategy(mutable = false)
 public class SessionStatisticsEntity {
     public static final String TABLE_NAME = "session_statistics";
 
@@ -20,15 +18,29 @@ public class SessionStatisticsEntity {
     public static final String FIELD_FRAME_START = "frame_start";
     public static final String FIELD_SESSION = "session";
 
-    private String book;
-    private String page;
-    private Byte recordType;
-    private Byte frameType;
-    private Instant frameStart;
-    private String session;
+    @PartitionKey(1)
+    @CqlName(FIELD_BOOK)
+    private final String book;
 
-    public SessionStatisticsEntity() {
-    }
+    @PartitionKey(2)
+    @CqlName(FIELD_PAGE)
+    private final String page;
+
+    @PartitionKey(3)
+    @CqlName(FIELD_RECORD_TYPE)
+    private final Byte recordType;
+
+    @PartitionKey(4)
+    @CqlName(FIELD_FRAME_TYPE)
+    private final Byte frameType;
+
+    @ClusteringColumn(1)
+    @CqlName(FIELD_FRAME_START)
+    private final Instant frameStart;
+
+    @ClusteringColumn(2)
+    @CqlName(FIELD_SESSION)
+    private final String session;
 
     public SessionStatisticsEntity(String book, String page, Byte recordType, Byte frameType, Instant frameStart, String session) {
         this.book = book;
@@ -39,64 +51,23 @@ public class SessionStatisticsEntity {
         this.session = session;
     }
 
-    @PartitionKey(1)
-    @CqlName(FIELD_BOOK)
     public String getBook() {
         return book;
     }
-
-    public void setBook(String book) {
-        this.book = book;
-    }
-
-    @PartitionKey(2)
-    @CqlName(FIELD_PAGE)
     public String getPage() {
         return page;
     }
-
-    public void setPage(String page) {
-        this.page = page;
-    }
-
-    @PartitionKey(3)
-    @CqlName(FIELD_RECORD_TYPE)
     public Byte getRecordType() {
         return recordType;
     }
-
-    public void setRecordType(Byte recordType) {
-        this.recordType = recordType;
-    }
-
-    @PartitionKey(4)
-    @CqlName(FIELD_FRAME_TYPE)
     public Byte getFrameType() {
         return frameType;
     }
-
-    public void setFrameType(Byte frameType) {
-        this.frameType = frameType;
-    }
-
-    @ClusteringColumn(1)
-    @CqlName(FIELD_FRAME_START)
     public Instant getFrameStart() {
         return frameStart;
     }
-
-    public void setFrameStart(Instant frameStart) {
-        this.frameStart = frameStart;
-    }
-
-    @ClusteringColumn(2)
-    @CqlName(FIELD_SESSION)
     public String getSession() {
         return session;
-    }
-
-    public void setSession(String session) {
-        this.session = session;
     }
 
     @Override
@@ -106,17 +77,23 @@ public class SessionStatisticsEntity {
         if (o == null || getClass() != o.getClass())
             return false;
         SessionStatisticsEntity that = (SessionStatisticsEntity) o;
-        return Objects.equals(book, that.book) &&
-                Objects.equals(page, that.page) &&
-                Objects.equals(recordType, that.recordType) &&
-                Objects.equals(frameType, that.frameType) &&
-                Objects.equals(frameStart, that.frameStart) &&
-                Objects.equals(session, that.session);
+
+        return Objects.equals(getBook(), that.getBook()) &&
+                Objects.equals(getPage(), that.getPage()) &&
+                Objects.equals(getRecordType(), that.getRecordType()) &&
+                Objects.equals(getFrameType(), that.getFrameType()) &&
+                Objects.equals(getFrameStart(), that.getFrameStart()) &&
+                Objects.equals(getSession(), that.getSession());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(book, page, recordType, frameType, frameStart, session);
+        return Objects.hash(getBook(),
+                getPage(),
+                getRecordType(),
+                getFrameType(),
+                getFrameStart(),
+                getSession());
     }
 
     @Override

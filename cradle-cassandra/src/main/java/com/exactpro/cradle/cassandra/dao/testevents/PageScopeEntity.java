@@ -16,13 +16,13 @@
 
 package com.exactpro.cradle.cassandra.dao.testevents;
 
-import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
-import com.datastax.oss.driver.api.mapper.annotations.CqlName;
-import com.datastax.oss.driver.api.mapper.annotations.Entity;
-import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import com.datastax.oss.driver.api.mapper.annotations.*;
+
+import java.util.Objects;
 
 @Entity
 @CqlName(PageScopeEntity.TABLE_NAME)
+@PropertyStrategy(mutable = false)
 public class PageScopeEntity {
 	public static final String TABLE_NAME = "page_scopes";
 
@@ -32,19 +32,16 @@ public class PageScopeEntity {
 
 	@PartitionKey(0)
 	@CqlName(FIELD_BOOK)
-	private String book;
+	private final String book;
 
 	@PartitionKey(1)
 	@CqlName(FIELD_PAGE)
-	private String page;
+	private final String page;
 
 	@ClusteringColumn(0)
 	@CqlName(FIELD_SCOPE)
-	private String scope;
+	private final String scope;
 	
-	public PageScopeEntity() {
-	}
-
 	public PageScopeEntity(String book, String page, String scope) {
 		this.book = book;
 		this.page = page;
@@ -54,24 +51,26 @@ public class PageScopeEntity {
 	public String getBook() {
 		return book;
 	}
-
-	public void setBook(String book) {
-		this.book = book;
-	}
-
 	public String getPage() {
 		return page;
 	}
-	
-	public void setPage(String page) {
-		this.page = page;
-	}
-
 	public String getScope() {
 		return scope;
 	}
-	
-	public void setScope(String scope) {
-		this.scope = scope;
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof PageScopeEntity)) return false;
+		PageScopeEntity that = (PageScopeEntity) o;
+
+		return Objects.equals(getBook(), that.getBook())
+				&& Objects.equals(getPage(), that.getPage())
+				&& Objects.equals(getScope(), that.getScope());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(getBook(), getPage(), getScope());
 	}
 }

@@ -16,15 +16,15 @@
 
 package com.exactpro.cradle.cassandra.dao.messages;
 
-import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
-import com.datastax.oss.driver.api.mapper.annotations.CqlName;
-import com.datastax.oss.driver.api.mapper.annotations.Entity;
-import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.messages.StoredMessageId;
 
+import java.util.Objects;
+
 @Entity
 @CqlName(PageSessionEntity.TABLE_NAME)
+@PropertyStrategy(mutable = false)
 public class PageSessionEntity {
 	public static final String TABLE_NAME = "page_sessions";
 
@@ -35,59 +35,61 @@ public class PageSessionEntity {
 
 	@PartitionKey(0)
 	@CqlName(FIELD_BOOK)
-	private String book;
+	private final String book;
 
 	@PartitionKey(1)
 	@CqlName(FIELD_PAGE)
-	private String page;
+	private final String page;
 
 	@ClusteringColumn(0)
 	@CqlName(FIELD_SESSION_ALIAS)
-	private String sessionAlias;
+	private final String sessionAlias;
 
 	@ClusteringColumn(1)
 	@CqlName(FIELD_DIRECTION)
-	private String direction;
+	private final String direction;
 
-	public PageSessionEntity() {
+	public PageSessionEntity(String book, String page, String sessionAlias, String direction) {
+		this.book = book;
+		this.page = page;
+		this.sessionAlias = sessionAlias;
+		this.direction = direction;
 	}
-	
+
 	public PageSessionEntity(StoredMessageId messageId, PageId pageId) {
-		setBook(messageId.getBookId().getName());
-		setPage(pageId.getName());
-		setSessionAlias(messageId.getSessionAlias());
-		setDirection(messageId.getDirection().getLabel());
+		this.book = messageId.getBookId().getName();
+		this.page = pageId.getName();
+		this.sessionAlias = messageId.getSessionAlias();
+		this.direction = messageId.getDirection().getLabel();
 	}
 
 	public String getBook()	{
 		return book;
 	}
-
-	public void setBook(String book) {
-		this.book = book;
-	}
-
 	public String getPage() {
 		return page;
 	}
-
-	public void setPage(String page) {
-		this.page = page;
-	}
-
 	public String getSessionAlias()	{
 		return sessionAlias;
 	}
-
-	public void setSessionAlias(String sessionAlias) {
-		this.sessionAlias = sessionAlias;
-	}
-
 	public String getDirection() {
 		return direction;
 	}
 
-	public void setDirection(String direction) {
-		this.direction = direction;
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof PageSessionEntity)) return false;
+		PageSessionEntity that = (PageSessionEntity) o;
+
+		return Objects.equals(getBook(), that.getBook())
+				&& Objects.equals(getPage(), that.getPage())
+				&& Objects.equals(getSessionAlias(), that.getSessionAlias())
+				&& Objects.equals(getDirection(), that.getDirection());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(getBook(), getPage(), getSessionAlias(), getDirection());
 	}
 }

@@ -16,10 +16,7 @@
 
 package com.exactpro.cradle.cassandra.dao.books;
 
-import com.datastax.oss.driver.api.mapper.annotations.CqlName;
-import com.datastax.oss.driver.api.mapper.annotations.Entity;
-import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
-import com.datastax.oss.driver.api.mapper.annotations.Transient;
+import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.utils.TimeUtils;
 
@@ -27,9 +24,11 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Objects;
 
 @Entity
 @CqlName(PageNameEntity.TABLE_NAME)
+@PropertyStrategy(mutable = false)
 public class PageNameEntity {
 	public static final String TABLE_NAME = "page_names";
 
@@ -44,31 +43,37 @@ public class PageNameEntity {
 
 	@PartitionKey(0)
 	@CqlName(FIELD_BOOK)
-	private String book;
+	private final String book;
 	
 	@PartitionKey(1)
 	@CqlName(FIELD_NAME)
-	private String name;
+	private final String name;
 	
 	@CqlName(FIELD_START_DATE)
-	private LocalDate startDate;
+	private final LocalDate startDate;
 	
 	@CqlName(FIELD_START_TIME)
-	private LocalTime startTime;
+	private final LocalTime startTime;
 	
 	@CqlName(FIELD_COMMENT)
-	private String comment;
+	private final String comment;
 	
 	@CqlName(FIELD_END_DATE)
-	private LocalDate endDate;
+	private final LocalDate endDate;
 	
 	@CqlName(FIELD_END_TIME)
-	private LocalTime endTime;
-	
-	
-	public PageNameEntity()	{
+	private final LocalTime endTime;
+
+	public PageNameEntity(String book, String name, LocalDate startDate, LocalTime startTime, String comment, LocalDate endDate, LocalTime endTime) {
+		this.book = book;
+		this.name = name;
+		this.startDate = startDate;
+		this.startTime = startTime;
+		this.comment = comment;
+		this.endDate = endDate;
+		this.endTime = endTime;
 	}
-	
+
 	public PageNameEntity(String book, String name, Instant started, String comment, Instant ended)	{
 		LocalDateTime startedLdt = TimeUtils.toLocalTimestamp(started);
 		
@@ -82,6 +87,9 @@ public class PageNameEntity {
 			LocalDateTime endedLdt = TimeUtils.toLocalTimestamp(ended);
 			this.endDate = endedLdt.toLocalDate();
 			this.endTime = endedLdt.toLocalTime();
+		} else {
+			this.endDate = null;
+			this.endTime = null;
 		}
 	}
 	
@@ -93,87 +101,48 @@ public class PageNameEntity {
 	public String getBook()	{
 		return book;
 	}
-	
-	public void setBook(String book) {
-		this.book = book;
-	}
-	
 	public String getName() {
 		return name;
 	}
-	
-	public void setName(String name) {
-		this.name = name;
-	}
-
 	public LocalDate getStartDate()	{
 		return startDate;
 	}
-	
-	public void setStartDate(LocalDate startDate) {
-		this.startDate = startDate;
-	}
-	
 	public LocalTime getStartTime() {
 		return startTime;
 	}
-	
-	public void setStartTime(LocalTime startTime) {
-		this.startTime = startTime;
-	}
-	
-	@Transient
-	public Instant getStartTimestamp() {
-		return TimeUtils.fromLocalTimestamp(LocalDateTime.of(getStartDate(), getStartTime()));
-	}
-	
-	@Transient
-	public void setStartTimestamp(Instant timestamp) {
-		LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
-		setStartDate(ldt.toLocalDate());
-		setStartTime(ldt.toLocalTime());
-	}
-	
 	public String getComment() {
 		return comment;
 	}
-	
-	public void setComment(String comment) {
-		this.comment = comment;
-	}
-
 	public LocalDate getEndDate() {
 		return endDate;
 	}
-	
-	public void setEndDate(LocalDate endDate) {
-		this.endDate = endDate;
-	}
-	
 	public LocalTime getEndTime() {
 		return endTime;
 	}
-	
-	public void setEndTime(LocalTime endTime) {
-		this.endTime = endTime;
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof PageNameEntity)) return false;
+		PageNameEntity that = (PageNameEntity) o;
+
+		return Objects.equals(getBook(), that.getBook())
+				&& Objects.equals(getName(), that.getName())
+				&& Objects.equals(getStartDate(), that.getStartDate())
+				&& Objects.equals(getStartTime(), that.getStartTime())
+				&& Objects.equals(getComment(), that.getComment())
+				&& Objects.equals(getEndDate(), that.getEndDate())
+				&& Objects.equals(getEndTime(), that.getEndTime());
 	}
-	
-	@Transient
-	public Instant getEndTimestamp() {
-		LocalDate ed = getEndDate();
-		LocalTime et = getEndTime();
-		return ed == null || et == null ? null : TimeUtils.fromLocalTimestamp(LocalDateTime.of(ed, et));
-	}
-	
-	@Transient
-	public void setEndTimestamp(Instant timestamp) {
-		if (timestamp == null) {
-			setEndDate(null);
-			setEndTime(null);
-		} else {
-			LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
-			setEndDate(ldt.toLocalDate());
-			setEndTime(ldt.toLocalTime());
-		}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(getBook(),
+				getName(),
+				getStartDate(),
+				getStartTime(),
+				getComment(),
+				getEndDate(),
+				getEndTime());
 	}
 }

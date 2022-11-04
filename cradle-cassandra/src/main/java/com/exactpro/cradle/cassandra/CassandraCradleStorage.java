@@ -924,12 +924,27 @@ public class CassandraCradleStorage extends CradleStorage
 		if (pageEntity == null || !pageEntity.getName().equals(pageNameEntity.getName()))
 			throw new CradleStorageException(String.format("Inconsistent data for page \"%s\" in book %s", pageName, bookId.getName()));
 
-		pageNameEntity.setComment(comment);
-		pageEntity.setComment(comment);
-		pageEntity.setUpdated(Instant.now());
+		PageEntity updatedPageEntity = new PageEntity(pageEntity.getBook(),
+				pageEntity.getStartDate(),
+				pageEntity.getStartTime(),
+				pageEntity.getName(),
+				comment,
+				pageEntity.getEndDate(),
+				pageEntity.getEndTime(),
+				Instant.now(),
+				pageEntity.getRemoved());
+
+		PageNameEntity updatedPageNameEntity = new PageNameEntity(pageNameEntity.getBook(),
+				pageNameEntity.getName(),
+				pageNameEntity.getStartDate(),
+				pageNameEntity.getStartTime(),
+				comment,
+				pageNameEntity.getEndDate(),
+				pageNameEntity.getEndTime());
+
 		try {
-			pageNameOperator.update(pageNameEntity, readAttrs);
-			pageOperator.update(pageEntity, readAttrs);
+			pageNameOperator.update(updatedPageNameEntity, readAttrs);
+			pageOperator.update(updatedPageEntity, readAttrs);
 		} catch (Exception e) {
 			throw new CradleStorageException(String.format("Failed to update page comment, this might result in broken state, try again. %s", e.getCause()));
 		}
@@ -954,14 +969,29 @@ public class CassandraCradleStorage extends CradleStorage
 		if (pageEntity == null || !pageEntity.getName().equals(pageNameEntity.getName()))
 			throw new CradleStorageException(String.format("Inconsistent data for page \"%s\" in book %s", oldPageName, bookId.getName()));
 
-		pageEntity.setName(newPageName);
-		pageEntity.setUpdated(Instant.now());
-		pageNameEntity.setName(newPageName);
+		PageEntity updatedPageEntity = new PageEntity(pageEntity.getBook(),
+				pageEntity.getStartDate(),
+				pageEntity.getStartTime(),
+				newPageName,
+				pageEntity.getComment(),
+				pageEntity.getEndDate(),
+				pageEntity.getEndTime(),
+				Instant.now(),
+				pageEntity.getRemoved());
+
+		PageNameEntity newPageNameEntity = new PageNameEntity(pageNameEntity.getBook(),
+				newPageName,
+				pageNameEntity.getStartDate(),
+				pageNameEntity.getStartTime(),
+				pageNameEntity.getComment(),
+				pageNameEntity.getEndDate(),
+				pageNameEntity.getEndTime());
+
 		pageNameOperator.remove(bookId.getName(), oldPageName, readAttrs);
 
 		try {
-			pageNameOperator.writeNew(pageNameEntity, readAttrs);
-			pageOperator.update(pageEntity, readAttrs);
+			pageNameOperator.writeNew(newPageNameEntity, readAttrs);
+			pageOperator.update(updatedPageEntity, readAttrs);
 		} catch (Exception e) {
 			throw new CradleStorageException(String.format("Failed to update page name, this might result in broken state, try again. %s", e.getCause()));
 		}

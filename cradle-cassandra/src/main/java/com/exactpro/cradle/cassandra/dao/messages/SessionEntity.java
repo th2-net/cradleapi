@@ -16,13 +16,13 @@
 
 package com.exactpro.cradle.cassandra.dao.messages;
 
-import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
-import com.datastax.oss.driver.api.mapper.annotations.CqlName;
-import com.datastax.oss.driver.api.mapper.annotations.Entity;
-import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import com.datastax.oss.driver.api.mapper.annotations.*;
+
+import java.util.Objects;
 
 @Entity
 @CqlName(SessionEntity.TABLE_NAME)
+@PropertyStrategy(mutable = false)
 public class SessionEntity {
 	public static final String TABLE_NAME = "sessions";
 
@@ -30,14 +30,11 @@ public class SessionEntity {
 	public static final String FIELD_SESSION_ALIAS = "session_alias";
 	@PartitionKey(0)
 	@CqlName(FIELD_BOOK)
-	private String book;
+	private final String book;
 
 	@ClusteringColumn(0)
 	@CqlName(FIELD_SESSION_ALIAS)
-	private String sessionAlias;
-
-	public SessionEntity() {
-	}
+	private final String sessionAlias;
 
 	public SessionEntity(String book, String sessionAlias) {
 		this.book = book;
@@ -47,16 +44,22 @@ public class SessionEntity {
 	public String getBook()	{
 		return book;
 	}
-	
-	public void setBook(String book) {
-		this.book = book;
-	}
-
 	public String getSessionAlias()	{
 		return sessionAlias;
 	}
 
-	public void setSessionAlias(String sessionAlias) {
-		this.sessionAlias = sessionAlias;
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof SessionEntity)) return false;
+		SessionEntity that = (SessionEntity) o;
+
+		return Objects.equals(getBook(), that.getBook())
+				&& Objects.equals(getSessionAlias(), that.getSessionAlias());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(getBook(), getSessionAlias());
 	}
 }

@@ -50,49 +50,46 @@ public final class MessageBatchEntity extends CradleEntity {
 
 	@PartitionKey(1)
 	@CqlName(FIELD_BOOK)
-	private String book;
+	private final String book;
 
 	@PartitionKey(2)
 	@CqlName(FIELD_PAGE)
-	private String page;
+	private final String page;
 
 	@PartitionKey(3)
 	@CqlName(FIELD_SESSION_ALIAS)
-	private String sessionAlias;
+	private final String sessionAlias;
 
 	@PartitionKey(4)
 	@CqlName(FIELD_DIRECTION)
-	private String direction;
+	private final String direction;
 
 	@ClusteringColumn(1)
 	@CqlName(FIELD_FIRST_MESSAGE_DATE)
-	private LocalDate firstMessageDate;
+	private final LocalDate firstMessageDate;
 
 	@ClusteringColumn(2)
 	@CqlName(FIELD_FIRST_MESSAGE_TIME)
-	private LocalTime firstMessageTime;
+	private final LocalTime firstMessageTime;
 
 	@ClusteringColumn(3)
 	@CqlName(FIELD_SEQUENCE)
-	private long sequence;
+	private final long sequence;
 
 	@CqlName(FIELD_LAST_MESSAGE_DATE)
-	private LocalDate lastMessageDate;
+	private final LocalDate lastMessageDate;
 
 	@CqlName(FIELD_LAST_MESSAGE_TIME)
-	private LocalTime lastMessageTime;
+	private final LocalTime lastMessageTime;
 
 	@CqlName(FIELD_MESSAGE_COUNT)
-	private int messageCount;
+	private final int messageCount;
 
 	@CqlName(FIELD_LAST_SEQUENCE)
-	private long lastSequence;
+	private final long lastSequence;
 
 	@CqlName(FIELD_REC_DATE)
-	private Instant recDate;
-
-	public MessageBatchEntity()	{
-	}
+	private final Instant recDate;
 
 	public MessageBatchEntity(String book,
 							  String page,
@@ -212,17 +209,17 @@ public final class MessageBatchEntity extends CradleEntity {
 		if (this == o) return true;
 		if (!(o instanceof MessageBatchEntity)) return false;
 		if (!super.equals(o)) return false;
-
 		MessageBatchEntity that = (MessageBatchEntity) o;
+
 		return getSequence() == that.getSequence()
 				&& getMessageCount() == that.getMessageCount()
 				&& getLastSequence() == that.getLastSequence()
-				&& getBook().equals(that.getBook())
-				&& getPage().equals(that.getPage())
-				&& getSessionAlias().equals(that.getSessionAlias())
-				&& getDirection().equals(that.getDirection())
-				&& getFirstMessageDate().equals(that.getFirstMessageDate())
-				&& getFirstMessageTime().equals(that.getFirstMessageTime())
+				&& Objects.equals(getBook(), that.getBook())
+				&& Objects.equals(getPage(), that.getPage())
+				&& Objects.equals(getSessionAlias(), that.getSessionAlias())
+				&& Objects.equals(getDirection(), that.getDirection())
+				&& Objects.equals(getFirstMessageDate(), that.getFirstMessageDate())
+				&& Objects.equals(getFirstMessageTime(), that.getFirstMessageTime())
 				&& Objects.equals(getLastMessageDate(), that.getLastMessageDate())
 				&& Objects.equals(getLastMessageTime(), that.getLastMessageTime())
 				&& Objects.equals(getRecDate(), that.getRecDate());

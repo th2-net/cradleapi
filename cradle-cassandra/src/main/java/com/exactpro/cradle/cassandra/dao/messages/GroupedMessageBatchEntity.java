@@ -44,38 +44,35 @@ public final class GroupedMessageBatchEntity extends CradleEntity {
 
 	@PartitionKey(1)
 	@CqlName(FIELD_BOOK)
-	String book;
+	private final String book;
 
 	@PartitionKey(2)
 	@CqlName(FIELD_PAGE)
-	String page;
+	private final String page;
 
 	@PartitionKey(3)
 	@CqlName(FIELD_ALIAS_GROUP)
-	private String group;
+	private final String group;
 
 	@ClusteringColumn(1)
 	@CqlName(FIELD_FIRST_MESSAGE_DATE)
-	private LocalDate firstMessageDate;
+	private final LocalDate firstMessageDate;
 
 	@ClusteringColumn(2)
 	@CqlName(FIELD_FIRST_MESSAGE_TIME)
-	private LocalTime firstMessageTime;
+	private final LocalTime firstMessageTime;
 
 	@CqlName(FIELD_LAST_MESSAGE_DATE)
-	private LocalDate lastMessageDate;
+	private final LocalDate lastMessageDate;
 
 	@CqlName(FIELD_LAST_MESSAGE_TIME)
-	private LocalTime lastMessageTime;
+	private final LocalTime lastMessageTime;
 
 	@CqlName(FIELD_MESSAGE_COUNT)
-	private int messageCount;
+	private final int messageCount;
 
 	@CqlName(FIELD_REC_DATE)
-	private Instant recDate;
-
-	public GroupedMessageBatchEntity() {
-	}
+	private final Instant recDate;
 
 	public GroupedMessageBatchEntity(String book,
 									 String page,
@@ -165,12 +162,12 @@ public final class GroupedMessageBatchEntity extends CradleEntity {
 		if (this == o) return true;
 		if (!(o instanceof GroupedMessageBatchEntity)) return false;
 		if (!super.equals(o)) return false;
-
 		GroupedMessageBatchEntity entity = (GroupedMessageBatchEntity) o;
+
 		return getMessageCount() == entity.getMessageCount()
-				&& getBook().equals(entity.getBook())
-				&& getPage().equals(entity.getPage())
-				&& getGroup().equals(entity.getGroup())
+				&& Objects.equals(getBook(), entity.getBook())
+				&& Objects.equals(getPage(), entity.getPage())
+				&& Objects.equals(getGroup(), entity.getGroup())
 				&& Objects.equals(getFirstMessageDate(), entity.getFirstMessageDate())
 				&& Objects.equals(getFirstMessageTime(), entity.getFirstMessageTime())
 				&& Objects.equals(getLastMessageDate(), entity.getLastMessageDate())

@@ -16,13 +16,13 @@
 
 package com.exactpro.cradle.cassandra.dao.labels;
 
-import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
-import com.datastax.oss.driver.api.mapper.annotations.CqlName;
-import com.datastax.oss.driver.api.mapper.annotations.Entity;
-import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import com.datastax.oss.driver.api.mapper.annotations.*;
+
+import java.util.Objects;
 
 @Entity
 @CqlName(LabelEntity.TABLE_NAME)
+@PropertyStrategy(mutable = false)
 public class LabelEntity {
     public static final String TABLE_NAME = "labels";
 
@@ -32,46 +32,45 @@ public class LabelEntity {
 
     @PartitionKey(0)
     @CqlName(FIELD_BOOK)
-    private String book;
+    private final String book;
 
     @PartitionKey(1)
     @CqlName(FIELD_PAGE)
-    private String page;
+    private final String page;
 
     @ClusteringColumn(1)
     @CqlName(FIELD_NAME)
-    private String name;
-
-    public LabelEntity(){
-    }
+    private final String name;
 
     public LabelEntity(String book, String page, String name) {
-        setBook(book);
-        setPage(page);
-        setName(name);
+        this.book = book;
+        this.page = page;
+        this.name = name;
     }
 
     public String getBook() {
         return book;
     }
-
-    public void setBook(String book) {
-        this.book = book;
-    }
-
     public String getPage() {
         return page;
     }
-
-    public void setPage(String page) {
-        this.page = page;
-    }
-
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof LabelEntity)) return false;
+        LabelEntity that = (LabelEntity) o;
+
+        return Objects.equals(getBook(), that.getBook())
+                && Objects.equals(getPage(), that.getPage())
+                && Objects.equals(getName(), that.getName());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getBook(), getPage(), getName());
     }
 }
