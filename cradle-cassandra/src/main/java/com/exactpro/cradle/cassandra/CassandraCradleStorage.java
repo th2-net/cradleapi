@@ -201,13 +201,14 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected void doAddBook(BookToAdd newBook, BookId bookId) throws IOException
+	protected void doAddBook(BookToAdd book, BookId bookId) throws IOException
 	{
-		BookEntity bookEntity = new BookEntity(newBook, settings.getSchemaVersion());
+
+		BookEntity entity = new BookEntity(book.getName(), book.getFullName(), book.getDesc(), book.getCreated(), settings.getSchemaVersion());
 		try
 		{
-			if (!operators.getBookOperator().write(bookEntity, writeAttrs).wasApplied())
-				throw new IOException("Query to insert book '"+bookEntity.getName()+"' was not applied. Probably, book already exists");
+			if (!operators.getBookOperator().write(entity, writeAttrs).wasApplied())
+				throw new IOException("Query to insert book '"+entity.getName()+"' was not applied. Probably, book already exists");
 		}
 		catch (IOException e)
 		{

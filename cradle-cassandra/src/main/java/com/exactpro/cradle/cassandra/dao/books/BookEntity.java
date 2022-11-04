@@ -20,14 +20,8 @@ import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.datastax.oss.driver.api.mapper.annotations.PropertyStrategy;
-import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.BookInfo;
-import com.exactpro.cradle.BookToAdd;
-import com.exactpro.cradle.PageInfo;
-import com.exactpro.cradle.utils.CradleStorageException;
 
 import java.time.Instant;
-import java.util.Collection;
 import java.util.Objects;
 
 /**
@@ -61,14 +55,6 @@ public class BookEntity {
     @CqlName(FIELD_SCHEMA_VERSION)
     private final String schemaVersion;
 
-    public BookEntity(BookToAdd book, String schemaVersion) {
-        this.name = book.getName();
-        this.fullName = book.getFullName();
-        this.desc = book.getDesc();
-        this.created = book.getCreated();
-        this.schemaVersion = schemaVersion;
-    }
-
     public BookEntity(String name, String fullName, String desc, Instant created, String schemaVersion) {
         this.name = name;
         this.fullName = fullName;
@@ -91,10 +77,6 @@ public class BookEntity {
     }
     public String getSchemaVersion() {
         return schemaVersion;
-    }
-
-    public BookInfo toBookInfo(Collection<PageInfo> pages) throws CradleStorageException {
-        return new BookInfo(new BookId(name), fullName, desc, created, pages);
     }
 
     @Override
