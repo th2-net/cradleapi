@@ -42,37 +42,49 @@ public class PagedIterator<E> implements Iterator<E> {
 	private Iterator<E> rowsIterator;
 	private CompletableFuture<MappedAsyncPagingIterable<E>> nextPage;
 
-	private int cnt;
+	private final String id;
+	private final int hash;
 
 	public PagedIterator(MappedAsyncPagingIterable<E> paginator, SelectQueryExecutor selectQueryExecutor,
 						 Function<Row, E> mapper, String queryInfo)
 	{
-		logger.debug("init(): creating iterator");
+		this.hash = System.identityHashCode(this);
+		this.id = Long.toHexString(hash);
+		String prefix = String.format("init: [%s]", id);
+
+		logger.trace("{} creating iterator", prefix);
+
 		this.paginator = paginator;
 		this.selectQueryExecutor = selectQueryExecutor;
 		this.mapper = mapper;
 		this.queryInfo = queryInfo;
 		this.rowsIterator = paginator.currentPage().iterator();
 		fetchNextPage();
-		logger.debug("init(): iterator created");
+
+		logger.trace("{} iterator created", prefix);
 	}
 
+	private int fetchCalls;
 	private void fetchNextPage() {
-		logger.debug("fetchNextPage(): enter");
+		fetchCalls++;
+		final String prefix = String.format("fetchNextPage: [%s-%d]", id, fetchCalls);
+		logger.trace("{} enter", prefix);
+
 		if (paginator.hasMorePages()) {
-			logger.debug("fetchNextPage(): has more pages, prefetching");
+			logger.trace("{} prefetching", prefix);
 			nextPage = selectQueryExecutor.fetchNextPage(paginator, mapper, queryInfo)
 					.whenComplete((r, e) -> {
 						if (e != null) {
-							logger.error("fetchNextPage(): Exception fetching next page", e);
+							logger.error("{} Exception fetching next page", prefix, e);
 						} else
-							logger.debug("fetchNextPage(): page prefetching complete", e);
+							logger.trace("{} page prefetching complete", prefix, e);
 					});
 		} else {
-			logger.debug("fetchNextPage(): no more pages to prefetch");
+			logger.trace("{} no more pages to prefetch", prefix);
 			nextPage = null;
 		}
-		logger.debug("fetchNextPage(): exit");
+
+		logger.trace("{} exit", prefix);
 	}
 
 
@@ -85,7 +97,7 @@ public class PagedIterator<E> implements Iterator<E> {
 			try {
 				rowsIterator = nextIterator();
 			} catch (Exception e) {
-				throw new RuntimeException("Error while getting next page of result", e);
+				throw new RuntimeException(String.format("Exception getting next page [%s])", id), e);
 			}
 
 			if (rowsIterator == null || !rowsIterator.hasNext())
@@ -94,24 +106,35 @@ public class PagedIterator<E> implements Iterator<E> {
 		return true;
 	}
 
+
+	private int rowsFetched;
 	@Override
 	public E next()	{
-		logger.trace("Getting next data row");
-		cnt++;
+		rowsFetched++;
 		return rowsIterator.next();
 	}
 
 
+	private int nextCalls;
 	private Iterator<E> nextIterator() throws IllegalStateException, InterruptedException, ExecutionException {
-		logger.debug("nextIterator(): changing page after {} rows fetched", cnt);
+		nextCalls++;
+		final String prefix = String.format("nextIterator: [%s-%d]", id, nextCalls);
+		logger.trace("{} changing page after {} rows fetched", prefix, rowsFetched);
+
 		if (nextPage != null) {
 			paginator = nextPage.get();
 			fetchNextPage();
-			logger.debug("nextIterator(): page changed");
+			logger.trace("{} page changed", prefix);
 			return paginator.currentPage().iterator();
 		} else {
-			logger.debug("nextIterator(): no page to change to");
+			logger.trace("{} no page to change to", prefix);
 			return null;
 		}
+	}
+
+
+	@Override
+	public int hashCode() {
+		return hash;
 	}
 }
