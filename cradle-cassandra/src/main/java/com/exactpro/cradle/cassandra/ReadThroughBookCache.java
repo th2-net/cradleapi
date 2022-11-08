@@ -91,14 +91,14 @@ public class ReadThroughBookCache implements BookCache {
                     bookEntity.getSchemaVersion()));
         }
 
-        return processBookEntity(bookEntity);
+        return toBookInfo(bookEntity);
     }
 
-    private BookInfo processBookEntity (BookEntity entity) throws CradleStorageException {
+    private BookInfo toBookInfo(BookEntity entity) throws CradleStorageException {
         BookId bookId = new BookId(entity.getName());
         Collection<PageInfo> pages = loadPageInfo(bookId, false);
 
-        return entity.toBookInfo(pages);
+        return new BookInfo(new BookId(entity.getName()), entity.getFullName(), entity.getDesc(), entity.getCreated(), pages);
     }
 
     @Override

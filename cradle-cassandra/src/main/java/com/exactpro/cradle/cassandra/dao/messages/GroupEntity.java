@@ -16,13 +16,13 @@
 
 package com.exactpro.cradle.cassandra.dao.messages;
 
-import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
-import com.datastax.oss.driver.api.mapper.annotations.CqlName;
-import com.datastax.oss.driver.api.mapper.annotations.Entity;
-import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import com.datastax.oss.driver.api.mapper.annotations.*;
+
+import java.util.Objects;
 
 @Entity
 @CqlName(GroupEntity.TABLE_NAME)
+@PropertyStrategy(mutable = false)
 public class GroupEntity {
 	public static final String TABLE_NAME = "groups";
 
@@ -30,14 +30,11 @@ public class GroupEntity {
 	public static final String FIELD_GROUP = "group";
 	@PartitionKey(0)
 	@CqlName(FIELD_BOOK)
-	private String book;
+	private final String book;
 
 	@ClusteringColumn(0)
 	@CqlName(FIELD_GROUP)
-	private String group;
-
-	public GroupEntity() {
-	}
+	private final String group;
 
 	public GroupEntity(String book, String group) {
 		this.book = book;
@@ -48,15 +45,21 @@ public class GroupEntity {
 		return book;
 	}
 	
-	public void setBook(String book) {
-		this.book = book;
-	}
-
 	public String getGroup() {
 		return group;
 	}
 
-	public void setGroup(String group) {
-		this.group = group;
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof GroupEntity)) return false;
+		GroupEntity entity = (GroupEntity) o;
+
+		return Objects.equals(getBook(), entity.getBook()) && Objects.equals(getGroup(), entity.getGroup());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(getBook(), getGroup());
 	}
 }

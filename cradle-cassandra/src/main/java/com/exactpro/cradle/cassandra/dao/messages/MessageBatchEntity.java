@@ -25,6 +25,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
@@ -49,49 +50,46 @@ public final class MessageBatchEntity extends CradleEntity {
 
 	@PartitionKey(1)
 	@CqlName(FIELD_BOOK)
-	private String book;
+	private final String book;
 
 	@PartitionKey(2)
 	@CqlName(FIELD_PAGE)
-	private String page;
+	private final String page;
 
 	@PartitionKey(3)
 	@CqlName(FIELD_SESSION_ALIAS)
-	private String sessionAlias;
+	private final String sessionAlias;
 
 	@PartitionKey(4)
 	@CqlName(FIELD_DIRECTION)
-	private String direction;
+	private final String direction;
 
 	@ClusteringColumn(1)
 	@CqlName(FIELD_FIRST_MESSAGE_DATE)
-	private LocalDate firstMessageDate;
+	private final LocalDate firstMessageDate;
 
 	@ClusteringColumn(2)
 	@CqlName(FIELD_FIRST_MESSAGE_TIME)
-	private LocalTime firstMessageTime;
+	private final LocalTime firstMessageTime;
 
 	@ClusteringColumn(3)
 	@CqlName(FIELD_SEQUENCE)
-	private long sequence;
+	private final long sequence;
 
 	@CqlName(FIELD_LAST_MESSAGE_DATE)
-	private LocalDate lastMessageDate;
+	private final LocalDate lastMessageDate;
 
 	@CqlName(FIELD_LAST_MESSAGE_TIME)
-	private LocalTime lastMessageTime;
+	private final LocalTime lastMessageTime;
 
 	@CqlName(FIELD_MESSAGE_COUNT)
-	private int messageCount;
+	private final int messageCount;
 
 	@CqlName(FIELD_LAST_SEQUENCE)
-	private long lastSequence;
+	private final long lastSequence;
 
 	@CqlName(FIELD_REC_DATE)
-	private Instant recDate;
-
-	public MessageBatchEntity()	{
-	}
+	private final Instant recDate;
 
 	public MessageBatchEntity(String book,
 							  String page,
@@ -204,6 +202,44 @@ public final class MessageBatchEntity extends CradleEntity {
 
 	public static MessageBatchEntityBuilder builder () {
 		return new MessageBatchEntityBuilder();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof MessageBatchEntity)) return false;
+		if (!super.equals(o)) return false;
+		MessageBatchEntity that = (MessageBatchEntity) o;
+
+		return getSequence() == that.getSequence()
+				&& getMessageCount() == that.getMessageCount()
+				&& getLastSequence() == that.getLastSequence()
+				&& Objects.equals(getBook(), that.getBook())
+				&& Objects.equals(getPage(), that.getPage())
+				&& Objects.equals(getSessionAlias(), that.getSessionAlias())
+				&& Objects.equals(getDirection(), that.getDirection())
+				&& Objects.equals(getFirstMessageDate(), that.getFirstMessageDate())
+				&& Objects.equals(getFirstMessageTime(), that.getFirstMessageTime())
+				&& Objects.equals(getLastMessageDate(), that.getLastMessageDate())
+				&& Objects.equals(getLastMessageTime(), that.getLastMessageTime())
+				&& Objects.equals(getRecDate(), that.getRecDate());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(),
+				getBook(),
+				getPage(),
+				getSessionAlias(),
+				getDirection(),
+				getFirstMessageDate(),
+				getFirstMessageTime(),
+				getSequence(),
+				getLastMessageDate(),
+				getLastMessageTime(),
+				getMessageCount(),
+				getLastSequence(),
+				getRecDate());
 	}
 
 	public static class MessageBatchEntityBuilder extends CradleEntityBuilder<MessageBatchEntity, MessageBatchEntityBuilder> {

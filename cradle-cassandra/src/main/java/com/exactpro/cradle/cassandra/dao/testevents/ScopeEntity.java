@@ -17,13 +17,13 @@
 package com.exactpro.cradle.cassandra.dao.testevents;
 
 
-import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
-import com.datastax.oss.driver.api.mapper.annotations.CqlName;
-import com.datastax.oss.driver.api.mapper.annotations.Entity;
-import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import com.datastax.oss.driver.api.mapper.annotations.*;
+
+import java.util.Objects;
 
 @Entity
 @CqlName(ScopeEntity.TABLE_NAME)
+@PropertyStrategy(mutable = false)
 public class ScopeEntity {
 	public static final String TABLE_NAME = "scopes";
 
@@ -32,15 +32,12 @@ public class ScopeEntity {
 
 	@PartitionKey(0)
 	@CqlName(FIELD_BOOK)
-	private String book;
+	private final String book;
 	
 	@ClusteringColumn(0)
 	@CqlName(FIELD_SCOPE)
-	private String scope;
-	
-	public ScopeEntity() {
-	}
-	
+	private final String scope;
+
 	public ScopeEntity(String book, String scope) {
 		this.book = book;
 		this.scope = scope;
@@ -49,16 +46,22 @@ public class ScopeEntity {
 	public String getBook() {
 		return book;
 	}
-	
-	public void setBook(String book) {
-		this.book = book;
-	}
-
 	public String getScope() {
 		return scope;
 	}
-	
-	public void setScope(String scope) {
-		this.scope = scope;
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof ScopeEntity)) return false;
+		ScopeEntity that = (ScopeEntity) o;
+
+		return Objects.equals(getBook(), that.getBook())
+				&& Objects.equals(getScope(), that.getScope());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(getBook(), getScope());
 	}
 }

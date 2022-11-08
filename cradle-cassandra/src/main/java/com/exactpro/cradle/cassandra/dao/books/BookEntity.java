@@ -19,20 +19,17 @@ package com.exactpro.cradle.cassandra.dao.books;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
-import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.BookInfo;
-import com.exactpro.cradle.BookToAdd;
-import com.exactpro.cradle.PageInfo;
-import com.exactpro.cradle.utils.CradleStorageException;
+import com.datastax.oss.driver.api.mapper.annotations.PropertyStrategy;
 
 import java.time.Instant;
-import java.util.Collection;
+import java.util.Objects;
 
 /**
  * Contains information about book as stored in "cradle" keyspace
  */
 @Entity
 @CqlName(BookEntity.TABLE_NAME)
+@PropertyStrategy(mutable = false)
 public class BookEntity {
 	public static final String TABLE_NAME = "books";
 
@@ -44,77 +41,63 @@ public class BookEntity {
 
     @PartitionKey(0)
     @CqlName(FIELD_NAME)
-    private String name;
+    private final String name;
 
     @CqlName(FIELD_FULLNAME)
-    private String fullName;
+    private final String fullName;
 
     @CqlName(FIELD_DESCRIPTION)
-    private String desc;
+    private final String desc;
 
     @CqlName(FIELD_CREATED)
-    private Instant created;
+    private final Instant created;
 
     @CqlName(FIELD_SCHEMA_VERSION)
-    private String schemaVersion;
+    private final String schemaVersion;
 
-    public BookEntity() {
-    }
-
-    public BookEntity(BookToAdd book, String schemaVersion) {
-        this.name = book.getName();
-        this.fullName = book.getFullName();
-        this.desc = book.getDesc();
-        this.created = book.getCreated();
+    public BookEntity(String name, String fullName, String desc, Instant created, String schemaVersion) {
+        this.name = name;
+        this.fullName = fullName;
+        this.desc = desc;
+        this.created = created;
         this.schemaVersion = schemaVersion;
     }
-
 
     public String getName() {
         return name;
     }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public String getFullName() {
         return fullName;
     }
-
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
-
     public String getDesc() {
         return desc;
     }
-
-    public void setDesc(String desc) {
-        this.desc = desc;
-    }
-
-
     public Instant getCreated() {
         return created;
     }
-
-    public void setCreated(Instant created) {
-        this.created = created;
-    }
-
-
     public String getSchemaVersion() {
         return schemaVersion;
     }
 
-    public void setSchemaVersion(String schemaVersion) {
-        this.schemaVersion = schemaVersion;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof BookEntity)) return false;
+        BookEntity that = (BookEntity) o;
+
+        return Objects.equals(getName(), that.getName())
+                && Objects.equals(getFullName(), that.getFullName())
+                && Objects.equals(getDesc(), that.getDesc())
+                && Objects.equals(getCreated(), that.getCreated())
+                && Objects.equals(getSchemaVersion(), that.getSchemaVersion());
     }
 
-
-    public BookInfo toBookInfo(Collection<PageInfo> pages) throws CradleStorageException {
-        return new BookInfo(new BookId(name), fullName, desc, created, pages);
+    @Override
+    public int hashCode() {
+        return Objects.hash(getName(),
+                getFullName(),
+                getDesc(),
+                getCreated(),
+                getSchemaVersion());
     }
-
 }

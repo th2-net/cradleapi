@@ -15,18 +15,17 @@
  */
 package com.exactpro.cradle.cassandra.dao;
 
-import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
-import com.datastax.oss.driver.api.mapper.annotations.CqlName;
-import com.datastax.oss.driver.api.mapper.annotations.Entity;
-import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.exactpro.cradle.counters.Counter;
 import com.exactpro.cradle.counters.CounterSample;
 import com.exactpro.cradle.FrameType;
 
 import java.time.Instant;
+import java.util.Objects;
 
 @Entity
 @CqlName(MessageStatisticsEntity.TABLE_NAME)
+@PropertyStrategy(mutable = false)
 public class MessageStatisticsEntity {
     public static final String TABLE_NAME = "message_statistics";
 
@@ -39,97 +38,101 @@ public class MessageStatisticsEntity {
     public static final String FIELD_ENTITY_COUNT = "entity_count";
     public static final String FIELD_ENTITY_SIZE = "entity_size";
 
-    private String book;
-    private String page;
-    private String sessionAlias;
-    private String direction;
-    private Byte frameType;
-    private Instant frameStart;
-    private Long entityCount;
-    private Long entitySize;
+    @PartitionKey(0)
+    @CqlName(FIELD_BOOK)
+    private final String book;
 
-    public MessageStatisticsEntity() {
+    @PartitionKey(1)
+    @CqlName(FIELD_PAGE)
+    private final String page;
+
+    @PartitionKey(2)
+    @CqlName(FIELD_SESSION_ALIAS)
+    private final String sessionAlias;
+
+    @PartitionKey(3)
+    @CqlName(FIELD_DIRECTION)
+    private final String direction;
+
+    @PartitionKey(4)
+    @CqlName(FIELD_FRAME_TYPE)
+    private final Byte frameType;
+
+    @ClusteringColumn(5)
+    @CqlName(FIELD_FRAME_START)
+    private final Instant frameStart;
+
+    @CqlName(FIELD_ENTITY_COUNT)
+    private final Long entityCount;
+
+    @CqlName(FIELD_ENTITY_SIZE)
+    private final Long entitySize;
+
+    public MessageStatisticsEntity(String book, String page, String sessionAlias, String direction, Byte frameType, Instant frameStart, Long entityCount, Long entitySize) {
+        this.book = book;
+        this.page = page;
+        this.sessionAlias = sessionAlias;
+        this.direction = direction;
+        this.frameType = frameType;
+        this.frameStart = frameStart;
+        this.entityCount = entityCount;
+        this.entitySize = entitySize;
     }
 
     public CounterSample toCounterSample () {
         return new CounterSample(FrameType.from(frameType), frameStart, new Counter(entityCount, entitySize));
     }
 
-    @PartitionKey(0)
-    @CqlName(FIELD_BOOK)
     public String getBook() {
         return book;
     }
-
-    public void setBook(String book) {
-        this.book = book;
-    }
-
-    @PartitionKey(1)
-    @CqlName(FIELD_PAGE)
     public String getPage() {
         return page;
     }
-
-    public void setPage(String page) {
-        this.page = page;
-    }
-
-    @PartitionKey(2)
-    @CqlName(FIELD_SESSION_ALIAS)
     public String getSessionAlias() {
         return sessionAlias;
     }
-
-    public void setSessionAlias(String sessionAlias) {
-        this.sessionAlias = sessionAlias;
-    }
-
-    @PartitionKey(3)
-    @CqlName(FIELD_DIRECTION)
     public String getDirection() {
         return direction;
     }
-
-    public void setDirection(String direction) {
-        this.direction = direction;
-    }
-
-    @PartitionKey(4)
-    @CqlName(FIELD_FRAME_TYPE)
     public Byte getFrameType() {
         return frameType;
     }
-
-    public void setFrameType(Byte frameType) {
-        this.frameType = frameType;
-    }
-
-    @ClusteringColumn(5)
-    @CqlName(FIELD_FRAME_START)
     public Instant getFrameStart() {
         return frameStart;
     }
-
-    public void setFrameStart(Instant frameStart) {
-        this.frameStart = frameStart;
-    }
-
-    @CqlName(FIELD_ENTITY_COUNT)
     public Long getEntityCount() {
         return entityCount;
     }
-
-    public void setEntityCount(Long entityCount) {
-        this.entityCount = entityCount;
-    }
-
-    @CqlName(FIELD_ENTITY_SIZE)
     public Long getEntitySize() {
         return entitySize;
     }
 
-    public void setEntitySize(Long entitySize) {
-        this.entitySize = entitySize;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof MessageStatisticsEntity)) return false;
+        MessageStatisticsEntity that = (MessageStatisticsEntity) o;
+
+        return Objects.equals(getBook(), that.getBook())
+                && Objects.equals(getPage(), that.getPage())
+                && Objects.equals(getSessionAlias(), that.getSessionAlias())
+                && Objects.equals(getDirection(), that.getDirection())
+                && Objects.equals(getFrameType(), that.getFrameType())
+                && Objects.equals(getFrameStart(), that.getFrameStart())
+                && Objects.equals(getEntityCount(), that.getEntityCount())
+                && Objects.equals(getEntitySize(), that.getEntitySize());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getBook(),
+                getPage(),
+                getSessionAlias(),
+                getDirection(),
+                getFrameType(),
+                getFrameStart(),
+                getEntityCount(),
+                getEntitySize());
     }
 }

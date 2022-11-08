@@ -25,6 +25,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
@@ -53,62 +54,59 @@ public final class TestEventEntity extends CradleEntity {
 
 	@PartitionKey(1)
 	@CqlName(FIELD_BOOK)
-	private String book;
+	private final String book;
 
 	@PartitionKey(2)
 	@CqlName(FIELD_PAGE)
-	private String page;
+	private final String page;
 
 	@PartitionKey(3)
 	@CqlName(FIELD_SCOPE)
-	private String scope;
+	private final String scope;
 	
 	@ClusteringColumn(1)
 	@CqlName(FIELD_START_DATE)
-	private LocalDate startDate;
+	private final LocalDate startDate;
 	
 	@ClusteringColumn(2)
 	@CqlName(FIELD_START_TIME)
-	private LocalTime startTime;
+	private final LocalTime startTime;
 	
 	@ClusteringColumn(3)
 	@CqlName(FIELD_ID)
-	private String id;
+	private final String id;
 	
 	@CqlName(FIELD_NAME)
-	private String name;
+	private final String name;
 	
 	@CqlName(FIELD_TYPE)
-	private String type;
+	private final String type;
 	
 	@CqlName(FIELD_SUCCESS)
-	private boolean success;
+	private final boolean success;
 	
 	@CqlName(FIELD_ROOT)
-	private boolean root;
+	private final boolean root;
 	
 	@CqlName(FIELD_PARENT_ID)
-	private String parentId;
+	private final String parentId;
 
 	@CqlName(FIELD_EVENT_BATCH)
-	private boolean eventBatch;
+	private final boolean eventBatch;
 	
 	@CqlName(FIELD_EVENT_COUNT)
-	private int eventCount;
+	private final int eventCount;
 	
 	@CqlName(FIELD_END_DATE)
-	private LocalDate endDate;
+	private final LocalDate endDate;
 	@CqlName(FIELD_END_TIME)
-	private LocalTime endTime;
+	private final LocalTime endTime;
 	
 	@CqlName(FIELD_MESSAGES)
-	private ByteBuffer messages;
+	private final ByteBuffer messages;
 
 	@CqlName(FIELD_REC_DATE)
-	private Instant recDate;
-
-	public TestEventEntity() {
-	}
+	private final Instant recDate;
 
 	public TestEventEntity(String book,
 						   String page,
@@ -261,6 +259,54 @@ public final class TestEventEntity extends CradleEntity {
 
 	public static TestEventEntityBuilder builder () {
 		return new TestEventEntityBuilder();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof TestEventEntity)) return false;
+		if (!super.equals(o)) return false;
+		TestEventEntity event = (TestEventEntity) o;
+
+		return isSuccess() == event.isSuccess()
+				&& isRoot() == event.isRoot()
+				&& isEventBatch() == event.isEventBatch()
+				&& getEventCount() == event.getEventCount()
+				&& Objects.equals(getBook(), event.getBook())
+				&& Objects.equals(getPage(), event.getPage())
+				&& Objects.equals(getScope(), event.getScope())
+				&& Objects.equals(getStartDate(), event.getStartDate())
+				&& Objects.equals(getStartTime(), event.getStartTime())
+				&& Objects.equals(getId(), event.getId())
+				&& Objects.equals(getName(), event.getName())
+				&& Objects.equals(getType(), event.getType())
+				&& Objects.equals(getParentId(), event.getParentId())
+				&& Objects.equals(getEndDate(), event.getEndDate())
+				&& Objects.equals(getEndTime(), event.getEndTime())
+				&& Objects.equals(getMessages(), event.getMessages())
+				&& Objects.equals(getRecDate(), event.getRecDate());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(),
+				getBook(),
+				getPage(),
+				getScope(),
+				getStartDate(),
+				getStartTime(),
+				getId(),
+				getName(),
+				getType(),
+				isSuccess(),
+				isRoot(),
+				getParentId(),
+				isEventBatch(),
+				getEventCount(),
+				getEndDate(),
+				getEndTime(),
+				getMessages(),
+				getRecDate());
 	}
 
 	public static class TestEventEntityBuilder extends CradleEntityBuilder<TestEventEntity, TestEventEntityBuilder> {
