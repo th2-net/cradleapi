@@ -25,7 +25,6 @@ import com.datastax.oss.driver.api.core.cql.ExecutionInfo;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.api.core.session.Request;
-import com.datastax.oss.driver.internal.core.AsyncPagingIterableWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +66,7 @@ public class SelectQueryExecutor
 			Supplier<CompletableFuture<AsyncResultSet>> query, Function<Row, T> mapper, String queryInfo)
 	{
 		return executeMappedMultiRowResultQuery(
-				() -> query.get().thenApplyAsync(rs -> new AsyncPagingIterableWrapper<>(rs, mapper), composingService),
+				() -> query.get().thenApplyAsync(rs -> rs.map(mapper), composingService),
 				mapper, queryInfo);
 	}
 
@@ -94,7 +93,7 @@ public class SelectQueryExecutor
 
 		CompletableFuture<MappedAsyncPagingIterable<T>> f = new CompletableFuture<>();
 		session.executeAsync(stmt)
-				.thenApplyAsync(rs -> new AsyncPagingIterableWrapper<Row, T>(rs, mapper), composingService)
+				.thenApplyAsync(rs -> rs.map(mapper), composingService)
 				.whenCompleteAsync(
 						(retryResult, retryError) -> onCompleteMulti(retryResult, retryError, f, mapper, queryInfo,
 								0), composingService);
@@ -192,7 +191,7 @@ public class SelectQueryExecutor
 									retryCount + 1, queryInfo, stmt.getConsistencyLevel(), delay, error.getMessage()),
 							CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS))
 					.thenComposeAsync(r -> session.executeAsync(stmt), composingService)
-					.thenApplyAsync(row -> new AsyncPagingIterableWrapper<>(row, mapper), composingService)
+					.thenApplyAsync(row -> row.map(mapper), composingService)
 					.whenCompleteAsync(
 							(retryResult, retryError) -> onCompleteMulti(retryResult, retryError, f, mapper, queryInfo,
 									retryCount + 1), composingService);
