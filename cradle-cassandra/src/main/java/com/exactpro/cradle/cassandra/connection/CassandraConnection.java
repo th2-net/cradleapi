@@ -20,28 +20,17 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 
 import java.net.InetSocketAddress;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.function.Supplier;
 
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
-import com.datastax.oss.driver.internal.core.config.typesafe.DefaultDriverConfigLoader;
-import com.datastax.oss.driver.internal.core.config.typesafe.DefaultProgrammaticDriverConfigLoaderBuilder;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 import org.apache.commons.lang3.StringUtils;
 
 import static com.exactpro.cradle.cassandra.CassandraStorageSettings.DEFAULT_TIMEOUT;
 
 public class CassandraConnection
 {
-	public static final String DRIVER_CONFIG_FILE_NAME = "application.conf";
-	private static final Path DRIVER_CONFIG = Paths.get(System.getProperty("user.dir"), DRIVER_CONFIG_FILE_NAME);
-	
 	private final CassandraConnectionSettings settings;
 	private volatile CqlSession session;
 	private volatile Instant started,
@@ -77,15 +66,7 @@ public class CassandraConnection
 
 	private DriverConfigLoader getConfigLoader()
 	{
-		Supplier<Config> fallBackSupplier = () -> {
-			Config config = ConfigFactory.defaultApplication();
-			if (Files.exists(DRIVER_CONFIG))
-				config = config.withFallback(ConfigFactory.parseFileAnySyntax(DRIVER_CONFIG.toFile()));
-			return config.withFallback(ConfigFactory.defaultReference()).resolve();
-		};
-
-		return new DefaultProgrammaticDriverConfigLoaderBuilder(fallBackSupplier, DefaultDriverConfigLoader.DEFAULT_ROOT_PATH)
-				//Set the init-query timeout the same as for the select query
+		return DriverConfigLoader.programmaticBuilder()
 				.withDuration(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, Duration.ofMillis(timeout))
 				.build();
 	}
