@@ -15,65 +15,60 @@
  */
 package com.exactpro.cradle.cassandra;
 
-import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.shaded.guava.common.cache.Cache;
 import com.datastax.oss.driver.shaded.guava.common.cache.CacheBuilder;
-import com.exactpro.cradle.cassandra.dao.testevents.EventBatchMaxDurationOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.EventBatchMaxDurationEntity;
-import com.exactpro.cradle.utils.CradleStorageException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
+import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 
 public class EventBatchDurationCache {
-
-    private final Logger logger = LoggerFactory.getLogger(EventBatchDurationCache.class);
-
-    public static class CacheKey {
-        private final UUID uuid;
-        private final LocalDate date;
-
-        public  CacheKey (UUID uuid, LocalDate date) {
-            this.uuid = uuid;
-            this.date = date;
-        }
-
-        public UUID getUuid() {
-            return uuid;
-        }
-
-        public LocalDate getDate() {
-            return date;
-        }
-    }
-
-    private final Cache<CacheKey, Long> durationsCache;
+    private final Cache<CacheKey, Long> cache;
 
     public EventBatchDurationCache(int limit) {
-        this.durationsCache = CacheBuilder.newBuilder().maximumSize(limit).build();
+        this.cache = CacheBuilder.newBuilder().maximumSize(limit).build();
     }
 
     public Long getMaxDuration (CacheKey cacheKey) {
-        synchronized (durationsCache) {
-            return durationsCache.getIfPresent(cacheKey);
+        synchronized (cache) {
+            return cache.getIfPresent(cacheKey);
         }
     }
 
     public void updateCache(CacheKey key, long duration) {
-        synchronized (durationsCache) {
-            Long cached = durationsCache.getIfPresent(key);
-
+        synchronized (cache) {
+            Long cached = cache.getIfPresent(key);
             if (cached != null) {
                 if (cached > duration) {
                     return;
                 }
             }
+            cache.put(key, duration);
+        }
+    }
 
-            durationsCache.put(key, duration);
+    public static class CacheKey {
+        public final UUID uuid;
+        public final LocalDate date;
+
+        public CacheKey (UUID uuid, LocalDate date) {
+            this.uuid = uuid;
+            this.date = date;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (!(o instanceof CacheKey))
+                return false;
+            CacheKey key = (CacheKey) o;
+            return uuid.equals(key.uuid) && date.equals(key.date);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(uuid, date);
         }
     }
 }
