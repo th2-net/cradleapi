@@ -18,7 +18,6 @@ package com.exactpro.cradle.cassandra.workers;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
-import com.datastax.oss.driver.internal.core.util.concurrent.CompletableFutures;
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.counters.MessageStatisticsCollector;
 import com.exactpro.cradle.cassandra.counters.SessionStatisticsCollector;
@@ -194,7 +193,7 @@ public class MessagesWorker extends Worker
 		}
 		catch (CradleStorageException e)
 		{
-			return CompletableFutures.failedFuture(e);
+			return CompletableFuture.failedFuture(e);
 		}
 
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(id.getTimestamp());
