@@ -24,7 +24,7 @@ import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.EventBatchDurationWorker;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
-import com.exactpro.cradle.cassandra.iterators.SkippingConvertingPagedIterator;
+import com.exactpro.cradle.cassandra.iterators.FilteringConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
@@ -134,15 +134,15 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
 					cassandraFilter = createNextFilter(cassandraFilter);
 
-					return new SkippingConvertingPagedIterator<>(
+					return new FilteringConvertingPagedIterator<>(
 							resultSet,
 							selectQueryExecutor,
 							limit,
 							returned,
 							entity -> mapTestEventEntity(pageId, entity),
 							entityConverter::getEntity,
-							// This skip function checks if batch interval crosses requested filter interval
-							convertedEntity -> convertedEntity.getLastStartTimestamp().isBefore(actualFrom),
+							// This filter function checks if batch interval crosses requested filter interval
+							convertedEntity -> !convertedEntity.getLastStartTimestamp().isBefore(actualFrom),
 							getRequestInfo());
 				}, composingService);
 	}
