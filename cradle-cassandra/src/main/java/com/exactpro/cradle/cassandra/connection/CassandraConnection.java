@@ -66,6 +66,7 @@ public class CassandraConnection
 
 	private DriverConfigLoader getConfigLoader()
 	{
+		//Set the init-query timeout the same as for the select query
 		return DriverConfigLoader.programmaticBuilder()
 				.withDuration(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, Duration.ofMillis(timeout))
 				.build();
