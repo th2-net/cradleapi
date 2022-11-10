@@ -26,36 +26,36 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
 	Following iterator accepts additional skipFunction which is being
  	evaluated while getting next elements from underlying iterator
  	skipped elements do not get counted.
  */
-public class SkippingConvertingPagedIterator<R, E> implements Iterator<R>
-{
-	private static final Logger logger = LoggerFactory.getLogger(SkippingConvertingPagedIterator.class);
+public class FilteringConvertingPagedIterator<R, E> implements Iterator<R> {
+	private static final Logger logger = LoggerFactory.getLogger(FilteringConvertingPagedIterator.class);
 
 	private final PagedIterator<E> it;
 	private final int limit;
 	private final AtomicInteger returned;
 	private final Function<E, R> converter;
 	private R preFetchedElement;
-	private final Function<R, Boolean> skipFunction;
+	private final Predicate<R> filter;
 
-	public SkippingConvertingPagedIterator(MappedAsyncPagingIterable<E> rows,
-										   SelectQueryExecutor selectExecutor,
-										   int limit,
-										   AtomicInteger returned,
-										   Function<E, R> converter, Function<Row, E> mapper,
-										   Function<R, Boolean> skipFunction,
-										   String queryInfo)
+	public FilteringConvertingPagedIterator(MappedAsyncPagingIterable<E> rows,
+											SelectQueryExecutor selectExecutor,
+											int limit,
+											AtomicInteger returned,
+											Function<E, R> converter, Function<Row, E> mapper,
+											Predicate<R> filter,
+											String queryInfo)
 	{
 		this.it = new PagedIterator<>(rows, selectExecutor, mapper, queryInfo);
 		this.limit = limit;
 		this.returned = returned;
 		this.converter = converter;
-		this.skipFunction = skipFunction;
+		this.filter = filter;
 	}
 
 	private boolean skipToValid() {
@@ -65,18 +65,17 @@ public class SkippingConvertingPagedIterator<R, E> implements Iterator<R>
 
 		R nextEl = converter.apply(it.next());
 
-		while (it.hasNext() && skipFunction.apply(nextEl)) {
+		while (it.hasNext() && !filter.test(nextEl)) {
 			logger.trace("Skipping element");
 			nextEl = converter.apply(it.next());
 		}
 
 		// If this is true, it means that it.hasNext() is false, it has no more elements
-		if (skipFunction.apply(nextEl)) {
+		if (!filter.test(nextEl)) {
 			return false;
 		}
 
 		preFetchedElement = nextEl;
-
 		return true;
 	}
 
@@ -91,7 +90,6 @@ public class SkippingConvertingPagedIterator<R, E> implements Iterator<R>
 			preFetchedElement = null;
 
 			returned.incrementAndGet();
-
 			return rtn;
 		}
 
@@ -100,8 +98,7 @@ public class SkippingConvertingPagedIterator<R, E> implements Iterator<R>
 
 
 	@Override
-	public boolean hasNext()
-	{
+	public boolean hasNext() {
 		if (preFetchedElement != null) {
 			return true;
 		}
@@ -109,8 +106,6 @@ public class SkippingConvertingPagedIterator<R, E> implements Iterator<R>
 		if (!(limit <= 0 || returned.get() < limit) && it.hasNext()) {
 			return false;
 		}
-
-
 
 		return skipToValid();
 	}
