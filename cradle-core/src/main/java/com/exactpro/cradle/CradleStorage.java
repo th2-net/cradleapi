@@ -16,32 +16,33 @@
 
 package com.exactpro.cradle;
 
-import java.io.IOException;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 import com.exactpro.cradle.counters.Counter;
 import com.exactpro.cradle.counters.CounterSample;
 import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.filters.AbstractFilter;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
-import com.exactpro.cradle.utils.BookPagesNamesChecker;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.resultset.EmptyResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.TestEventToStore;
+import com.exactpro.cradle.utils.BookPagesNamesChecker;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Storage which holds information about all data sent or received and test events.
@@ -477,13 +478,16 @@ public abstract class CradleStorage
 	public final void storeGroupedMessageBatch(GroupedMessageBatchToStore batch)
 			throws CradleStorageException, IOException
 	{
-		BookId bookId = batch.getBookId();
-		Instant ts = batch.getFirstTimestamp();
-		String id = String.format("{}:{}", bookId, ts);
-		logger.debug("Storing message batch {} grouped by {}", id, batch.getGroup());
-		PageInfo page = findPage(bookId, ts);
-		doStoreGroupedMessageBatch(batch, page);
-		logger.debug("Message batch {} grouped by {} has been stored", id, batch.getGroup());
+		String groupName = batch.getGroup();
+		String id = String.format("{}:{}", batch.getBookId(), batch.getFirstTimestamp());
+		logger.debug("Storing message batch {} grouped by {}", id, groupName);
+
+		var batches = paginateBatch(batch);
+		for (var b : batches) {
+			doStoreGroupedMessageBatch(b.getKey(), b.getValue());
+		}
+
+		logger.debug("Message batch {} grouped by {} has been stored", id, groupName);
 	}
 	
 	
@@ -511,26 +515,81 @@ public abstract class CradleStorage
 		return result;
 	}
 
+
+	List<Pair<GroupedMessageBatchToStore, PageInfo>> paginateBatch(GroupedMessageBatchToStore batch) throws CradleStorageException {
+
+		BookId bookId = batch.getBookId();
+		PageInfo lastPage = findPage(bookId, batch.getFirstTimestamp());
+		List<Pair<StoredMessage, PageInfo>> messagePages = new ArrayList<>();
+
+		// check if pages for every message are the same
+		boolean singlePageBatch = true;
+		for (var message : batch.getMessages()) {
+			Instant ts = message.getTimestamp();
+			if (!lastPage.isValidFor(ts)) {
+				lastPage = findPage(bookId, ts);
+				singlePageBatch = false;
+			}
+			messagePages.add(Pair.of(message, lastPage));
+		}
+
+		if (singlePageBatch) {
+			return List.of(Pair.of(batch, lastPage));
+		}
+
+		// decompose batch into single page batches
+		lastPage = null;
+		Pair<GroupedMessageBatchToStore, PageInfo> currentBatch = null;
+		List<Pair<GroupedMessageBatchToStore, PageInfo>> result = new ArrayList<>();
+		for (var p : messagePages) {
+			if (lastPage == null || !lastPage.equals(p.getValue())) {
+				currentBatch = Pair.of(entitiesFactory.groupedMessageBatch(batch.getGroup()), p.getValue());
+				result.add(currentBatch);
+				lastPage = p.getValue();
+			}
+			StoredMessage message = p.getKey();
+			MessageToStoreBuilder builder = MessageToStore.builder()
+					.id(message.getId())
+					.protocol(message.getProtocol())
+					.content(message.getContent());
+
+			if (message.getMetadata() != null)
+				message.getMetadata().toMap().forEach(builder::metadata);
+			currentBatch.getKey().addMessage(builder.build());
+		}
+		return result;
+	}
+
 	/**
 	 * Asynchronously writes data about given message batch to current page grouped by provided group name
 	 * @param batch data to write
 	 * @return future to get know if storing was successful
 	 * @throws CradleStorageException if given parameters are invalid
-	 * @throws IOException if data writing failed
 	 */
 	public final CompletableFuture<Void> storeGroupedMessageBatchAsync(GroupedMessageBatchToStore batch)
-			throws CradleStorageException, IOException
+			throws CradleStorageException
 	{
 		String groupName = batch.getGroup();
 		if (groupName == null)
 			throw new CradleStorageException("'groupName' is required parameter and can not be null");
 		
-		BookId bookId = batch.getBookId();
-		Instant ts = batch.getFirstTimestamp();
-		String id = String.format("{}:{}", bookId, ts);
-		logger.debug("Storing message batch {} grouped by {} asynchronously", id, ts, groupName);
-		PageInfo page = findPage(bookId, ts);
-		CompletableFuture<Void> result = doStoreGroupedMessageBatchAsync(batch, page);
+		String id = String.format("{}:{}", batch.getBookId(), batch.getFirstTimestamp());
+		logger.debug("Storing message batch {} grouped by {} asynchronously", id, groupName);
+
+		var batches = paginateBatch(batch);
+
+		CompletableFuture<Void>[] futures = new CompletableFuture[batches.size()];
+		int i = 0;
+		for (var b : batches) {
+			futures[i++] = CompletableFuture.runAsync(() -> {
+				try {
+					doStoreGroupedMessageBatchAsync(b.getKey(), b.getValue());
+				} catch (Exception e) {
+					throw new CompletionException(e);
+				}
+			});
+		}
+		CompletableFuture<Void> result = CompletableFuture.allOf(futures);
 		result.whenCompleteAsync((r, error) -> {
 			if (error != null)
 				logger.error("Error while storing message batch "+id+" grouped by "+groupName+" asynchronously", error);

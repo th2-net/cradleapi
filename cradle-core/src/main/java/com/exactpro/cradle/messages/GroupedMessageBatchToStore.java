@@ -96,17 +96,15 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 					"Message timestamp (" + TimeUtils.toLocalTimestamp(message.getTimestamp()) +
 							") is greater than current timestamp (" + TimeUtils.toLocalTimestamp(now) + ")");
 
-		long messageSeq = 0;
-		if (bookId == null) {
+		long messageSeq;
+		if (bookId == null) { 		// first message in the batch
 			bookId = message.getBookId();
 			if (bookId == null)
 				throw new CradleStorageException("BookId for the message not set (" + message.getId() + ")");
-			long i = message.getSequence();
-			if (i < 0)
-				throw new CradleStorageException("Sequence number for first message in batch cannot be negative");
+			messageSeq = message.getSequence();
+			verifySequence(messageSeq);
 
 			batchDate = TimeUtils.toLocalTimestamp(message.getTimestamp()).toLocalDate();
-			messageSeq = i;
 		} else {
 			if (!bookId.equals(message.getBookId()))
 				throw new CradleStorageException("Batch contains messages of book '" + bookId + "', "
@@ -118,29 +116,34 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 
 			StoredMessage lastMessage = lastMessages.get(sessionKey);
 			if (lastMessage != null) {
-				if (lastMessage.getTimestamp().isAfter(message.getTimestamp()))
+				if (lastMessage.getTimestamp().isAfter(message.getTimestamp())) {
 					throw new CradleStorageException(String.format(
-							"Message timestamp should not be before %s, but in your message it is %s",
-							lastMessage.getTimestamp(),
-							message.getTimestamp()
-					));
+												"Message timestamp should not be before %s, but in your message it is %s",
+												lastMessage.getTimestamp(),
+												message.getTimestamp()
+										));
+				}
 
-				if (message.getSequence() > 0) { //I.e. message sequence is set
-
+				if (message.getSequence() > 0) { // i.e. message sequence is set
 					messageSeq = message.getSequence();
-					if (messageSeq <= lastMessage.getSequence())
+					if (messageSeq <= lastMessage.getSequence()) {
 						throw new CradleStorageException(String.format(
-								"Sequence number should be greater than %d for the batch to contain sequenced messages, but in your message it is %d",
-								lastMessage.getSequence(),
-								messageSeq
-						));
-					if (messageSeq != lastMessage.getSequence() + 1)
+												"Sequence number should be greater than %d for the batch to contain sequenced messages, but in your message it is %d",
+												lastMessage.getSequence(),
+												messageSeq
+										));
+					}
+					if (messageSeq != lastMessage.getSequence() + 1) {
 						logger.warn(String.format(
 								"Expected sequence number %d for the batch to contain strictly sequenced messages, but in your message it is %d",
 								lastMessage.getSequence() + 1,
 								messageSeq));
+					}
 				} else
 					messageSeq = lastMessage.getSequence() + 1;
+			} else {
+				messageSeq = message.getSequence();
+				verifySequence(messageSeq);
 			}
 		}
 
@@ -154,7 +157,12 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 		return msg;
 	}
 
-  /**
+	private static void verifySequence(long messageSeq) throws CradleStorageException {
+		if (messageSeq < 0)
+			throw new CradleStorageException("Sequence number for first message in batch cannot be negative");
+	}
+
+	/**
    *
    * @param batch the batch to add to the current one.
    *              The batch to add must contain message with same group name as the current one.
@@ -211,13 +219,13 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 					message.getTimestamp(),
 					message.getSequence());
 
-			MessageToStore batchedMessage = MessageToStore.builder()
+			MessageToStoreBuilder builder = MessageToStore.builder()
 					.id(msgId)
 					.protocol(message.getProtocol())
-					.content(message.getContent())
-					.build();
+					.content(message.getContent());
 
-			batch.addMessage(batchedMessage);
+			message.getMetadata().toMap().forEach(builder::metadata);
+			batch.addMessage(builder.build());
 		}
 
 		return batches.values();
