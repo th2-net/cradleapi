@@ -317,8 +317,9 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Void> doStoreMessageBatchAsync(MessageBatchToStore batch, PageInfo page) {
 		PageId pageId = page.getId();
 		return messagesWorker.storeMessageBatch(batch, pageId)
-				.thenRunAsync(() -> messagesWorker.storeSession(batch), composingService)
-				.thenRunAsync(() -> messagesWorker.storePageSession(batch, pageId), composingService);
+				.thenComposeAsync((unused) -> messagesWorker.storeSession(batch), composingService)
+				.thenComposeAsync((unused) -> messagesWorker.storePageSession(batch, pageId), composingService)
+				.thenAccept(NOOP);
 	}
 
 	@Override
@@ -331,9 +332,10 @@ public class CassandraCradleStorage extends CradleStorage
 
 		// store individual session message batches
 		for (MessageBatchToStore b: batch.getSessionMessageBatches()) {
-			future = future.thenRunAsync(() -> messagesWorker.storeMessageBatch(b, pageId), composingService)
-						.thenRunAsync(() -> messagesWorker.storeSession(b), composingService)
-						.thenRunAsync(() -> messagesWorker.storePageSession(b, pageId), composingService);
+			future = future.thenComposeAsync((unused) -> messagesWorker.storeMessageBatch(b, pageId), composingService)
+							.thenComposeAsync((unused) -> messagesWorker.storeSession(b), composingService)
+							.thenComposeAsync((unused) -> messagesWorker.storePageSession(b, pageId), composingService)
+							.thenAccept(NOOP);
 		}
 		return future;
 	}
@@ -358,8 +360,9 @@ public class CassandraCradleStorage extends CradleStorage
 		PageId pageId = page.getId();
 
 		return eventsWorker.storeEvent(event, pageId)
-				.thenRunAsync(() -> eventsWorker.storeScope(event), composingService)
-				.thenRunAsync(() -> eventsWorker.storePageScope(event, pageId), composingService);
+				.thenComposeAsync((unused) -> eventsWorker.storeScope(event), composingService)
+				.thenComposeAsync((unused) -> eventsWorker.storePageScope(event, pageId), composingService)
+				.thenAccept((unused) -> {});
 	}
 
 	@Override

@@ -40,7 +40,6 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -479,7 +478,7 @@ public abstract class CradleStorage
 			throws CradleStorageException, IOException
 	{
 		String groupName = batch.getGroup();
-		String id = String.format("{}:{}", batch.getBookId(), batch.getFirstTimestamp());
+		String id = String.format("%s:%s", batch.getBookId(), batch.getFirstTimestamp().toString());
 		logger.debug("Storing message batch {} grouped by {}", id, groupName);
 
 		var batches = paginateBatch(batch);
@@ -572,8 +571,8 @@ public abstract class CradleStorage
 		String groupName = batch.getGroup();
 		if (groupName == null)
 			throw new CradleStorageException("'groupName' is required parameter and can not be null");
-		
-		String id = String.format("{}:{}", batch.getBookId(), batch.getFirstTimestamp());
+
+		String id = String.format("%s:%s", batch.getBookId(), batch.getFirstTimestamp().toString());
 		logger.debug("Storing message batch {} grouped by {} asynchronously", id, groupName);
 
 		var batches = paginateBatch(batch);
@@ -581,13 +580,11 @@ public abstract class CradleStorage
 		CompletableFuture<Void>[] futures = new CompletableFuture[batches.size()];
 		int i = 0;
 		for (var b : batches) {
-			futures[i++] = CompletableFuture.runAsync(() -> {
-				try {
-					doStoreGroupedMessageBatchAsync(b.getKey(), b.getValue());
-				} catch (Exception e) {
-					throw new CompletionException(e);
-				}
-			});
+			try {
+				futures[i++] = doStoreGroupedMessageBatchAsync(b.getKey(), b.getValue());
+			} catch (Exception e) {
+				futures[i++] = CompletableFuture.failedFuture(e);
+			}
 		}
 		CompletableFuture<Void> result = CompletableFuture.allOf(futures);
 		result.whenCompleteAsync((r, error) -> {

@@ -364,8 +364,8 @@ public class MessagesWorker extends Worker
 			gmbOperator.write(entity, writeAttrs);
 
 			return gmbOperator.write(entity, writeAttrs)
-					.thenRunAsync(() -> storePageGroup(entity))
-					.thenRunAsync(() -> storeGroup(entity))
+					.thenComposeAsync((unused) -> storePageGroup(entity))
+					.thenComposeAsync((unused) -> storeGroup(entity))
 					.thenRunAsync(() -> messageStatisticsCollector.updateMessageBatchStatistics(bookId,
 																								pageId.getName(),
 																								entity.getGroup(),
