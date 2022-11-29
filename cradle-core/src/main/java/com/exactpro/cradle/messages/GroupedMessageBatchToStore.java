@@ -224,7 +224,8 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 					.protocol(message.getProtocol())
 					.content(message.getContent());
 
-			message.getMetadata().toMap().forEach(builder::metadata);
+			if (message.getMetadata() != null)
+				message.getMetadata().toMap().forEach(builder::metadata);
 			batch.addMessage(builder.build());
 		}
 
