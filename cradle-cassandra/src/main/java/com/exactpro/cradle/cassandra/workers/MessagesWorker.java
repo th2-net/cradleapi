@@ -361,8 +361,6 @@ public class MessagesWorker extends Worker
 			GroupedMessageBatchEntity entity = serializedEntity.getEntity();
 			List<SerializedEntityMetadata> meta = serializedEntity.getSerializedEntityData().getSerializedEntityMetadata();
 
-			gmbOperator.write(entity, writeAttrs);
-
 			return gmbOperator.write(entity, writeAttrs)
 					.thenComposeAsync((unused) -> storePageGroup(entity))
 					.thenComposeAsync((unused) -> storeGroup(entity))
