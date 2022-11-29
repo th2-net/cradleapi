@@ -108,7 +108,7 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 		}
 
 		if (limit != 0) {
-			select.limit(limit);
+			select = select.limit(limit);
 		}
 
 		return select;
