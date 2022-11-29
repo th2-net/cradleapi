@@ -362,7 +362,7 @@ public class CassandraCradleStorage extends CradleStorage
 		return eventsWorker.storeEvent(event, pageId)
 				.thenComposeAsync((unused) -> eventsWorker.storeScope(event), composingService)
 				.thenComposeAsync((unused) -> eventsWorker.storePageScope(event, pageId), composingService)
-				.thenAccept((unused) -> {});
+				.thenAccept(NOOP);
 	}
 
 	@Override
