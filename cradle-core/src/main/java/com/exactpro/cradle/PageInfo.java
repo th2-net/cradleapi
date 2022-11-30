@@ -85,6 +85,11 @@ public class PageInfo
 		return page == null ? null : new PageInfo(page.getId(), page.getStarted(), endTimestamp, page.getComment(), page.getUpdated(), page.getRemoved());
 	}
 
+	public boolean isValidFor(Instant timestamp) {
+	    return (started == null || !started.isAfter(timestamp)) &&
+				(ended == null || ended.isAfter(timestamp));
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
