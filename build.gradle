@@ -6,6 +6,7 @@ plugins {
 ext {
 	slf4j_version = '1.7.26'
 	jackson_version = '2.9.7'
+	common_api_version = '0.0.1-th2-1436-init-3574652642-d3de09f-SNAPSHOT'
 
 	sharedDir = file("${project.rootDir}/shared")
 }
@@ -23,7 +24,10 @@ subprojects {
 
 	repositories {
 		mavenCentral()
-
+		maven {
+			name 'Sonatype_snapshots'
+			url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
+		}
 		configurations.all {
 			resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
 			resolutionStrategy.cacheDynamicVersionsFor 0, 'seconds'

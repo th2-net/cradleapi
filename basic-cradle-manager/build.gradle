@@ -1,0 +1,18 @@
+plugins {
+    id 'java-library'
+}
+
+group 'com.exactpro.th2'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile project(":cradle-core")
+
+    annotationProcessor 'com.google.auto.service:auto-service:1.0.1'
+    compileOnly 'com.google.auto.service:auto-service:1.0.1'
+
+    compile "com.exactpro.th2:common-api-j:${common_api_version}"
+}

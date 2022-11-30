@@ -1,10 +1,13 @@
 dependencies {
+	compile project(":cradle-manager-api")
+
 	compile "org.slf4j:slf4j-api:${slf4j_version}"
 	compile "org.slf4j:slf4j-log4j12:${slf4j_version}"
 	compile "com.fasterxml.jackson.core:jackson-databind:${jackson_version}"
 	compile "commons-io:commons-io:2.5"
 	compile "org.apache.commons:commons-lang3:3.8.1"
-	
+	compile "com.exactpro.th2:common-api-j:${common_api_version}"
+
 	testCompile 'org.testng:testng:7.1.0'
 }
 

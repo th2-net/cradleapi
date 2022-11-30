@@ -1,6 +1,12 @@
 include 'cradle-core'
 include 'cradle-cassandra'
+include 'basic-cradle-manager'
+include 'full-cradle-manager'
+include 'cradle-manager-api'
 
 // Defined names will be used for jar and artifact names
 project(':cradle-core').name = 'cradle-core'
 project(':cradle-cassandra').name = 'cradle-cassandra'
+project(':basic-cradle-manager').name = 'basic-cradle-manager'
+project(':full-cradle-manager').name = 'full-cradle-manager'
+project(':cradle-manager-api').name = 'cradle-manager-api'
