@@ -605,7 +605,7 @@ public abstract class CradleStorage
 		batch.getTestEvents().forEach((e) -> {
 			if (!page.isValidFor(e.getStartTimestamp())) {
 				StoredTestEventId id = e.getId();
-				idMappings.put(id, new StoredTestEventId(id.getBookId(), id.getScope(), page.getEnded(), id.getId()));
+				idMappings.put(id, new StoredTestEventId(id.getBookId(), id.getScope(), page.getEnded().minusNanos(1), id.getId()));
 			}
 		});
 

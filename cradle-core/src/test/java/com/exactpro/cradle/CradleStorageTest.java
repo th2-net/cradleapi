@@ -278,13 +278,14 @@ public class CradleStorageTest
 
 		TestEventBatchToStore alignedBatch = (TestEventBatchToStore) storage.alignEventTimestampsToPage(batch, storage.findPage(BOOK_ID, e1.getStartTimestamp()));
 		verifyEventBatch(alignedBatch, batch);
+		Instant end = PAGE2_START.minusNanos(1);
 		verifyTestEvent(alignedBatch, batch, "evt-1", null);
 		verifyTestEvent(alignedBatch, batch, "evt-2", null);
-		verifyTestEvent(alignedBatch, batch, "evt-3", PAGE2_START);
-		verifyTestEvent(alignedBatch, batch, "evt-4", PAGE2_START);
-		verifyTestEvent(alignedBatch, batch, "evt-5", PAGE2_START);
-		verifyTestEvent(alignedBatch, batch, "evt-6", PAGE2_START);
-		verifyTestEvent(alignedBatch, batch, "evt-7", PAGE2_START);
+		verifyTestEvent(alignedBatch, batch, "evt-3", end);
+		verifyTestEvent(alignedBatch, batch, "evt-4", end);
+		verifyTestEvent(alignedBatch, batch, "evt-5", end);
+		verifyTestEvent(alignedBatch, batch, "evt-6", end);
+		verifyTestEvent(alignedBatch, batch, "evt-7", end);
 	}
 
 
