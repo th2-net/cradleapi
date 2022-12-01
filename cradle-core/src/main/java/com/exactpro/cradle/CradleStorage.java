@@ -612,7 +612,7 @@ public abstract class CradleStorage
 		if (idMappings.isEmpty())
 			return event;
 
-		logger.debug("Batch contains events from different pages, aligning event timestamps to first event's page's end ({})", event.getId());
+		logger.warn("Batch contains events from different pages, aligning event timestamps to first event's page's end ({})", event.getId());
 
 		TestEventBatchToStore newBatch = entitiesFactory.testEventBatch(event.getId(), event.getName(), event.getParentId());
 		newBatch.setType(event.getType());
