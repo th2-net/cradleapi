@@ -20,7 +20,7 @@ import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.books.BookEntity;
 import com.exactpro.cradle.cassandra.dao.books.PageEntity;
-import com.exactpro.cradle.exception.BookNotFoundException;
+import com.exactpro.cradle.errors.BookNotFoundException;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

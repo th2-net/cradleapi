@@ -19,7 +19,7 @@ package com.exactpro.cradle;
 import com.exactpro.cradle.counters.Counter;
 import com.exactpro.cradle.counters.CounterSample;
 import com.exactpro.cradle.counters.Interval;
-import com.exactpro.cradle.exception.PageNotFoundException;
+import com.exactpro.cradle.errors.PageNotFoundException;
 import com.exactpro.cradle.filters.AbstractFilter;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
