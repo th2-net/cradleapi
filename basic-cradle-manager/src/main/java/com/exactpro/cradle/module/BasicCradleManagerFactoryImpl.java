@@ -16,13 +16,17 @@
 package com.exactpro.cradle.module;
 
 import com.exactpro.cradle.CradleManager;
+import com.exactpro.cradle.config.CradleConfidentialConfiguration;
+import com.exactpro.cradle.config.CradleNonConfidentialConfiguration;
 import com.exactpro.th2.common.ConfigurationProvider;
 import com.exactpro.th2.common.Module;
 import com.exactpro.th2.common.ModuleFactory;
 import com.google.auto.service.AutoService;
 
+import static com.exactpro.cradle.module.CradleManagerModule.loadConfiguration;
+
 @AutoService(ModuleFactory.class)
-public class DummyCradleManagerFactoryImpl implements ModuleFactory {
+public class BasicCradleManagerFactoryImpl implements ModuleFactory {
     @Override
     public Class<? extends Module> getModuleType() {
         return CradleManager.class;
@@ -30,8 +34,13 @@ public class DummyCradleManagerFactoryImpl implements ModuleFactory {
 
     @Override
     public Module create(ConfigurationProvider configurationProvider) {
-        DummyCradleManager dummyCradleManager = new DummyCradleManager();
-        dummyCradleManager.initConfigurationProvider(configurationProvider);
-        return dummyCradleManager;
+        BasicCradleManager basicCradleManager = new BasicCradleManager();
+        CradleConfidentialConfiguration confidentialConfiguration =
+                loadConfiguration(configurationProvider, CradleConfidentialConfiguration.class);
+        CradleNonConfidentialConfiguration nonConfidentialConfiguration =
+                loadConfiguration(configurationProvider, CradleNonConfidentialConfiguration.class);
+
+        basicCradleManager.initConfigurations(confidentialConfiguration, nonConfidentialConfiguration);
+        return basicCradleManager;
     }
 }

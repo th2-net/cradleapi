@@ -23,29 +23,39 @@ import com.exactpro.th2.common.schema.configuration.Configuration;
 
 public abstract class CradleManagerModule implements Module {
 
-    private ConfigurationProvider configurationProvider;
-
     private static final String CRADLE_CONFIDENTIAL_ID = "cradle_confidential";
     private static final String CRADLE_NON_CONFIDENTIAL_ID = "cradle_non_confidential";
 
+    private CradleConfidentialConfiguration confidentialConfiguration;
+    private CradleNonConfidentialConfiguration nonConfidentialConfiguration;
+
     @SuppressWarnings("unchecked")
-    public static  <C extends Configuration> C loadConfiguration(ConfigurationProvider configurationProvider, Class<C> aClass) {
+    public static <C extends Configuration> C loadConfiguration(ConfigurationProvider configurationProvider, Class<C> aClass) {
         if (aClass.equals(CradleConfidentialConfiguration.class)) {
             return (C) configurationProvider.loadConfiguration(CRADLE_CONFIDENTIAL_ID, CradleConfidentialConfiguration.class);
         } else if (aClass.equals(CradleNonConfidentialConfiguration.class)) {
             return (C) configurationProvider.loadConfiguration(CRADLE_NON_CONFIDENTIAL_ID, CradleNonConfidentialConfiguration.class);
         } else {
-            throw new IllegalArgumentException("CradleManager doesn't support " + aClass);
+            throw new IllegalArgumentException("CradleManager doesn't support the " + aClass + " configuration class");
         }
     }
 
+    @SuppressWarnings("unchecked")
     public <C extends Configuration> C loadConfiguration(Class<C> aClass) {
-        return loadConfiguration(configurationProvider, aClass);
-    }
+        if (aClass.equals(CradleConfidentialConfiguration.class)) {
+            return (C) confidentialConfiguration;
+        } else if (aClass.equals(CradleNonConfidentialConfiguration.class)) {
+            return (C) nonConfidentialConfiguration;
+        } else {
+            throw new IllegalArgumentException("CradleManager doesn't support the " + aClass + " configuration class");
+        }    }
 
-    public void initConfigurationProvider(ConfigurationProvider configurationProvider) {
-        if (this.configurationProvider == null) {
-            this.configurationProvider = configurationProvider;
+    public void initConfigurations(CradleConfidentialConfiguration confidentialConfiguration, CradleNonConfidentialConfiguration nonConfidentialConfiguration) {
+        if (this.confidentialConfiguration == null) {
+            this.confidentialConfiguration = confidentialConfiguration;
+        }
+        if (this.nonConfidentialConfiguration == null) {
+            this.nonConfidentialConfiguration = nonConfidentialConfiguration;
         }
     }
 }

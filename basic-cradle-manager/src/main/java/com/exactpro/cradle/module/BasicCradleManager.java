@@ -18,7 +18,7 @@ package com.exactpro.cradle.module;
 import com.exactpro.cradle.CradleManager;
 import com.exactpro.cradle.CradleStorage;
 
-public class DummyCradleManager extends CradleManager {
+public class BasicCradleManager extends CradleManager {
     @Override
     protected CradleStorage createStorage(long maxMessageBatchSize, long maxTestEventBatchSize) {
         throw new UnsupportedOperationException("This implementation doesn't support operations. Use FullCradleManager instead");

@@ -69,7 +69,7 @@ public class FullCradleManagerFactoryImpl implements ModuleFactory {
             }
 
             CradleManager manager = new CassandraCradleManager(new CassandraConnection(cassandraConnectionSettings));
-            manager.initConfigurationProvider(configurationProvider);
+            manager.initConfigurations(confidentialConfiguration, nonConfidentialConfiguration);
             manager.init(
                     defaultIfBlank(confidentialConfiguration.getCradleInstanceName(), DEFAULT_CRADLE_INSTANCE_NAME),
                     nonConfidentialConfiguration.getPrepareStorage(),
