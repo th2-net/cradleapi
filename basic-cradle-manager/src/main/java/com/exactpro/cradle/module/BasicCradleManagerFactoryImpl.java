@@ -34,13 +34,11 @@ public class BasicCradleManagerFactoryImpl implements ModuleFactory {
 
     @Override
     public Module create(ConfigurationProvider configurationProvider) {
-        BasicCradleManager basicCradleManager = new BasicCradleManager();
         CradleConfidentialConfiguration confidentialConfiguration =
                 loadConfiguration(configurationProvider, CradleConfidentialConfiguration.class);
         CradleNonConfidentialConfiguration nonConfidentialConfiguration =
                 loadConfiguration(configurationProvider, CradleNonConfidentialConfiguration.class);
 
-        basicCradleManager.initConfigurations(confidentialConfiguration, nonConfidentialConfiguration);
-        return basicCradleManager;
+        return new BasicCradleManager(confidentialConfiguration, nonConfidentialConfiguration);
     }
 }

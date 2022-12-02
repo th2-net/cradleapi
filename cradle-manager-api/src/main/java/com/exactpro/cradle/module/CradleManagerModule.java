@@ -21,13 +21,20 @@ import com.exactpro.th2.common.ConfigurationProvider;
 import com.exactpro.th2.common.Module;
 import com.exactpro.th2.common.schema.configuration.Configuration;
 
+import java.util.Objects;
+
 public abstract class CradleManagerModule implements Module {
 
     private static final String CRADLE_CONFIDENTIAL_ID = "cradle_confidential";
     private static final String CRADLE_NON_CONFIDENTIAL_ID = "cradle_non_confidential";
 
-    private CradleConfidentialConfiguration confidentialConfiguration;
-    private CradleNonConfidentialConfiguration nonConfidentialConfiguration;
+    private final CradleConfidentialConfiguration confidentialConfiguration;
+    private final CradleNonConfidentialConfiguration nonConfidentialConfiguration;
+
+    public CradleManagerModule(CradleConfidentialConfiguration confidentialConfiguration, CradleNonConfidentialConfiguration nonConfidentialConfiguration) {
+        this.confidentialConfiguration = confidentialConfiguration;
+        this.nonConfidentialConfiguration = nonConfidentialConfiguration;
+    }
 
     @SuppressWarnings("unchecked")
     public static <C extends Configuration> C loadConfiguration(ConfigurationProvider configurationProvider, Class<C> aClass) {
@@ -42,20 +49,12 @@ public abstract class CradleManagerModule implements Module {
 
     @SuppressWarnings("unchecked")
     public <C extends Configuration> C loadConfiguration(Class<C> aClass) {
-        if (aClass.equals(CradleConfidentialConfiguration.class)) {
+        if (Objects.equals(aClass, CradleConfidentialConfiguration.class)) {
             return (C) confidentialConfiguration;
-        } else if (aClass.equals(CradleNonConfidentialConfiguration.class)) {
+        } else if (Objects.equals(aClass, CradleNonConfidentialConfiguration.class)) {
             return (C) nonConfidentialConfiguration;
         } else {
             throw new IllegalArgumentException("CradleManager doesn't support the " + aClass + " configuration class");
-        }    }
-
-    public void initConfigurations(CradleConfidentialConfiguration confidentialConfiguration, CradleNonConfidentialConfiguration nonConfidentialConfiguration) {
-        if (this.confidentialConfiguration == null) {
-            this.confidentialConfiguration = confidentialConfiguration;
-        }
-        if (this.nonConfidentialConfiguration == null) {
-            this.nonConfidentialConfiguration = nonConfidentialConfiguration;
         }
     }
 }

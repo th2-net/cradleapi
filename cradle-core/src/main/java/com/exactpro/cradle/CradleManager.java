@@ -15,6 +15,8 @@
 
 package com.exactpro.cradle;
 
+import com.exactpro.cradle.config.CradleConfidentialConfiguration;
+import com.exactpro.cradle.config.CradleNonConfidentialConfiguration;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.module.CradleManagerModule;
 import com.exactpro.cradle.testevents.StoredTestEventBatch;
@@ -27,8 +29,10 @@ public abstract class CradleManager extends CradleManagerModule
 {
 	private CradleStorage storage;
 	
-	public CradleManager()
+	public CradleManager(CradleConfidentialConfiguration confidentialConfiguration,
+						 CradleNonConfidentialConfiguration nonConfidentialConfiguration)
 	{
+		super(confidentialConfiguration, nonConfidentialConfiguration);
 	}
 	
 	/**

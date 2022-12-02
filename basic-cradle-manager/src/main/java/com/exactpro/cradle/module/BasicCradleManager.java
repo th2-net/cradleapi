@@ -17,8 +17,14 @@ package com.exactpro.cradle.module;
 
 import com.exactpro.cradle.CradleManager;
 import com.exactpro.cradle.CradleStorage;
+import com.exactpro.cradle.config.CradleConfidentialConfiguration;
+import com.exactpro.cradle.config.CradleNonConfidentialConfiguration;
 
 public class BasicCradleManager extends CradleManager {
+    public BasicCradleManager(CradleConfidentialConfiguration confidentialConfiguration, CradleNonConfidentialConfiguration nonConfidentialConfiguration) {
+        super(confidentialConfiguration, nonConfidentialConfiguration);
+    }
+
     @Override
     protected CradleStorage createStorage(long maxMessageBatchSize, long maxTestEventBatchSize) {
         throw new UnsupportedOperationException("This implementation doesn't support operations. Use FullCradleManager instead");

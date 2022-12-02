@@ -68,8 +68,8 @@ public class FullCradleManagerFactoryImpl implements ModuleFactory {
                 cassandraConnectionSettings.setResultPageSize(nonConfidentialConfiguration.getPageSize().intValue());
             }
 
-            CradleManager manager = new CassandraCradleManager(new CassandraConnection(cassandraConnectionSettings));
-            manager.initConfigurations(confidentialConfiguration, nonConfidentialConfiguration);
+            CradleManager manager = new CassandraCradleManager(new CassandraConnection(cassandraConnectionSettings),
+                    confidentialConfiguration, nonConfidentialConfiguration);
             manager.init(
                     defaultIfBlank(confidentialConfiguration.getCradleInstanceName(), DEFAULT_CRADLE_INSTANCE_NAME),
                     nonConfidentialConfiguration.getPrepareStorage(),

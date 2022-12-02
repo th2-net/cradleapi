@@ -1,6 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
- *
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,11 +15,22 @@
 
 package com.exactpro.cradle;
 
+import com.exactpro.cradle.config.CradleConfidentialConfiguration;
+import com.exactpro.cradle.config.CradleNonConfidentialConfiguration;
+
 /**
  * Default implementation of CradleManager that does nothing and works like a stub.
  */
 public class DefaultCradleManager extends CradleManager
 {
+	public DefaultCradleManager(CradleConfidentialConfiguration confidentialConfiguration, CradleNonConfidentialConfiguration nonConfidentialConfiguration) {
+		super(confidentialConfiguration, nonConfidentialConfiguration);
+	}
+
+	public DefaultCradleManager() {
+		super(null, null);
+	}
+
 	@Override
 	protected CradleStorage createStorage(long maxMessageBatchSize, long maxTestEventBatchSize)
 	{
