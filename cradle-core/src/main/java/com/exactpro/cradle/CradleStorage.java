@@ -19,6 +19,7 @@ package com.exactpro.cradle;
 import com.exactpro.cradle.counters.Counter;
 import com.exactpro.cradle.counters.CounterSample;
 import com.exactpro.cradle.counters.Interval;
+import com.exactpro.cradle.errors.PageNotFoundException;
 import com.exactpro.cradle.filters.AbstractFilter;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
@@ -1387,10 +1388,10 @@ public abstract class CradleStorage
 		BookInfo book = getBookCache().getBook(bookId);
 		Instant now = Instant.now();
 		if (timestamp.isAfter(now))
-			throw new CradleStorageException("Timestamp "+timestamp+" is from future, now is "+now);
+			throw new PageNotFoundException(String.format("Timestamp %s is from future, now is %s", timestamp, now));
 		PageInfo page = book.findPage(timestamp);
 		if (page == null || (page.getEnded() != null && !timestamp.isBefore(page.getEnded())))  //If page.getEnded().equals(timestamp), timestamp is outside of page
-			throw new CradleStorageException("Book '"+bookId+"' has no page for timestamp "+timestamp);
+			throw new PageNotFoundException(String.format("Book '%s' has no page for timestamp %s", bookId, timestamp));
 		return page;
 	}
 
