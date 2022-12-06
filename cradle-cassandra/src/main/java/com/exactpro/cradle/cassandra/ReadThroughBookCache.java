@@ -20,6 +20,7 @@ import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.books.BookEntity;
 import com.exactpro.cradle.cassandra.dao.books.PageEntity;
+import com.exactpro.cradle.errors.BookNotFoundException;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,14 +51,18 @@ public class ReadThroughBookCache implements BookCache {
         this.schemaVersion = schemaVersion;
     }
 
-    public BookInfo getBook (BookId bookId) throws CradleStorageException {
-        return books.computeIfAbsent(bookId, bookId1 -> {
-            try {
-                return loadBook(bookId1);
-            } catch (CradleStorageException e) {
-               throw new RuntimeException(String.format("Could not load book named %s", bookId1.getName()), e);
-            }
-        });
+    public BookInfo getBook (BookId bookId) throws BookNotFoundException {
+        try {
+            return books.computeIfAbsent(bookId, bookId1 -> {
+                try {
+                    return loadBook(bookId1);
+                } catch (CradleStorageException e) {
+                    throw new RuntimeException(String.format("Could not load book named %s", bookId1.getName()), e);
+                }
+            });
+        } catch (RuntimeException e) {
+            throw new BookNotFoundException(String.format("Could not load book named %s", bookId.getName()), e);
+        }
     }
 
     @Override
