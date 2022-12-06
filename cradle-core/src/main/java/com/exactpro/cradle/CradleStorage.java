@@ -580,11 +580,13 @@ public abstract class CradleStorage
 		CompletableFuture<Void>[] futures = new CompletableFuture[batches.size()];
 		int i = 0;
 		for (var b : batches) {
+			CompletableFuture<Void> future;
 			try {
-				futures[i++] = doStoreGroupedMessageBatchAsync(b.getKey(), b.getValue());
+				future = doStoreGroupedMessageBatchAsync(b.getKey(), b.getValue());
 			} catch (Exception e) {
-				futures[i++] = CompletableFuture.failedFuture(e);
+				future = CompletableFuture.failedFuture(e);
 			}
+			futures[i++] = future;
 		}
 		CompletableFuture<Void> result = CompletableFuture.allOf(futures);
 		result.whenCompleteAsync((r, error) -> {
