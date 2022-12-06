@@ -38,14 +38,13 @@ public interface IntervalOperator {
     @Query( "SELECT * FROM ${qualifiedTableId} " +
             "WHERE " +
                 FIELD_BOOK + " =:book AND " +
-                FIELD_PAGE + " =:page AND " +
                 FIELD_INTERVAL_START_DATE +" =:intervalStartDate AND " +
                 FIELD_CRAWLER_NAME + " =:crawlerName AND " +
                 FIELD_CRAWLER_VERSION + " =:crawlerVersion AND " +
                 FIELD_CRAWLER_TYPE + " =:crawlerType AND " +
                 FIELD_INTERVAL_START_TIME + " >=:intervalStartTime AND " +
                 FIELD_INTERVAL_START_TIME +"<=:intervalEndTime")
-    CompletableFuture<MappedAsyncPagingIterable<IntervalEntity>> getIntervals(String book, String page,
+    CompletableFuture<MappedAsyncPagingIterable<IntervalEntity>> getIntervals(String book,
                         LocalDate intervalStartDate, LocalTime intervalStartTime, LocalTime intervalEndTime,
                         String crawlerName, String crawlerVersion, String crawlerType,
                         Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
@@ -57,7 +56,6 @@ public interface IntervalOperator {
 
             "WHERE " +
                 FIELD_BOOK + " =:book AND " +
-                FIELD_PAGE + " =:page AND " +
                 FIELD_INTERVAL_START_DATE +" =:intervalStartDate AND " +
                 FIELD_CRAWLER_NAME + " =:crawlerName AND " +
                 FIELD_CRAWLER_VERSION +" =:crawlerVersion AND " +
@@ -65,7 +63,7 @@ public interface IntervalOperator {
                 FIELD_INTERVAL_START_TIME + " =:intervalStartTime IF " +
                 FIELD_INTERVAL_LAST_UPDATE_TIME + " =:previousLastUpdateTime AND " +
                 FIELD_INTERVAL_LAST_UPDATE_DATE + " =:previousLastUpdateDate")
-    CompletableFuture<AsyncResultSet> setIntervalLastUpdateTimeAndDate(String book, String page,
+    CompletableFuture<AsyncResultSet> setIntervalLastUpdateTimeAndDate(String book,
                                         LocalDate intervalStartDate, LocalTime intervalStartTime,
                                         LocalTime lastUpdateTime, LocalDate lastUpdateDate, LocalTime previousLastUpdateTime,
                                         LocalDate previousLastUpdateDate, String crawlerName, String crawlerVersion,
@@ -81,7 +79,6 @@ public interface IntervalOperator {
 
             "WHERE " +
                 FIELD_BOOK + " =:book AND " +
-                FIELD_PAGE + " =:page AND " +
                 FIELD_INTERVAL_START_DATE + " =:intervalDate AND " +
                 FIELD_CRAWLER_NAME + " =:crawlerName AND " +
                 FIELD_CRAWLER_VERSION + " =:crawlerVersion AND " +
@@ -90,7 +87,7 @@ public interface IntervalOperator {
                 FIELD_RECOVERY_STATE_JSON + " =:previousRecoveryStateJson AND " +
                 FIELD_INTERVAL_LAST_UPDATE_TIME + " =:previousLastUpdateTime AND " +
                 FIELD_INTERVAL_LAST_UPDATE_DATE + " =:previousLastUpdateDate")
-    CompletableFuture<AsyncResultSet> updateRecoveryState(String book, String page, LocalDate intervalDate, LocalTime intervalStartTime, LocalTime lastUpdateTime, LocalDate lastUpdateDate, String recoveryStateJson, String previousRecoveryStateJson, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerName, String crawlerVersion, String crawlerType, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+    CompletableFuture<AsyncResultSet> updateRecoveryState(String book, LocalDate intervalDate, LocalTime intervalStartTime, LocalTime lastUpdateTime, LocalDate lastUpdateDate, String recoveryStateJson, String previousRecoveryStateJson, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerName, String crawlerVersion, String crawlerType, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 
 
@@ -102,7 +99,6 @@ public interface IntervalOperator {
 
             "WHERE " +
                 FIELD_BOOK + " =:book AND " +
-                FIELD_PAGE + " =:page AND " +
                 FIELD_INTERVAL_START_DATE + " =:intervalDate AND " +
                 FIELD_CRAWLER_NAME + " =:crawlerName AND " +
                 FIELD_CRAWLER_VERSION + " =:crawlerVersion AND " +
@@ -111,5 +107,5 @@ public interface IntervalOperator {
                 FIELD_INTERVAL_PROCESSED + " =:previousProcessed AND " +
                 FIELD_INTERVAL_LAST_UPDATE_TIME + " =:previousLastUpdateTime AND " +
                 FIELD_INTERVAL_LAST_UPDATE_DATE + " =:previousLastUpdateDate")
-    CompletableFuture<AsyncResultSet> setIntervalProcessed(String book, String page, LocalDate intervalDate, LocalTime intervalStartTime, LocalTime lastUpdateTime, LocalDate lastUpdateDate, boolean processed, boolean previousProcessed, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerName, String crawlerVersion, String crawlerType, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+    CompletableFuture<AsyncResultSet> setIntervalProcessed(String book, LocalDate intervalDate, LocalTime intervalStartTime, LocalTime lastUpdateTime, LocalDate lastUpdateDate, boolean processed, boolean previousProcessed, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerName, String crawlerVersion, String crawlerType, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

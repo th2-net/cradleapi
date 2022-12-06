@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle.intervals;
 
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 import java.io.IOException;
@@ -30,14 +31,14 @@ public interface IntervalsWorker
      * @return true if interval was stored, false otherwise
      * @throws IOException if data writing failed
      */
-    boolean storeInterval(Interval interval) throws IOException;
+    boolean storeInterval(BookId bookId, Interval interval) throws IOException;
 
     /**
      * Asynchronously writes to storage interval
      * @param interval stored interval
      * @return future to get know if storing was successful
      */
-    CompletableFuture<Boolean> storeIntervalAsync(Interval interval);
+    CompletableFuture<Boolean> storeIntervalAsync(BookId bookId, Interval interval);
 
     /**
      * Obtains iterable of intervals with startTime greater than or equal to "from" and less than or equal to "to".
@@ -51,7 +52,7 @@ public interface IntervalsWorker
      * @return iterable of intervals
      * @throws IOException   if something went wrong
      */
-    Iterable<Interval> getIntervalsPerDay(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException;
+    Iterable<Interval> getIntervalsPerDay(BookId bookId, Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException;
 
     /**
      * Asynchronously obtains iterable of intervals with startTime greater than or equal to "from" and less than or equal to "to". Intervals must be within one day
@@ -63,7 +64,7 @@ public interface IntervalsWorker
      * @return future to get know if obtaining was successful
      * @throws CradleStorageException if given parameters are invalid
      */
-    CompletableFuture<Iterable<Interval>> getIntervalsPerDayAsync(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws CradleStorageException;
+    CompletableFuture<Iterable<Interval>> getIntervalsPerDayAsync(BookId bookId, Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws CradleStorageException;
 
     /**
      * Obtains iterable of intervals with startTime greater than or equal to "from" and less than or equal to "to"
@@ -76,7 +77,7 @@ public interface IntervalsWorker
      * @return iterable of intervals
      * @throws IOException if something went wrong
      */
-    Iterable<Interval> getIntervals(Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException;
+    Iterable<Interval> getIntervals(BookId bookId, Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException;
 
     /**
      * Sets last update time and last update date of interval.
@@ -89,7 +90,7 @@ public interface IntervalsWorker
      * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      * @throws IOException   if something went wrong
      */
-    Interval setIntervalLastUpdateTimeAndDate(Interval interval, Instant newLastUpdateTime) throws IOException;
+    Interval setIntervalLastUpdateTimeAndDate(BookId bookId, Interval interval, Instant newLastUpdateTime) throws IOException;
 
     /**
      * Asynchronously sets last update time and last update date of interval.
@@ -99,7 +100,7 @@ public interface IntervalsWorker
      * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
      * If it was not successful throws an {@link java.util.concurrent.ExecutionException} with cause {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      */
-    CompletableFuture<Interval> setIntervalLastUpdateTimeAndDateAsync(Interval interval, Instant newLastUpdateTime);
+    CompletableFuture<Interval> setIntervalLastUpdateTimeAndDateAsync(BookId bookId, Interval interval, Instant newLastUpdateTime);
 
     /**
      * Updates RecoveryState, also sets lastUpdateTime and lastUpdateDate as current time and date
@@ -112,7 +113,7 @@ public interface IntervalsWorker
      * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      * @throws IOException   if something went wrong
      */
-    Interval updateRecoveryState(Interval interval, String recoveryState) throws IOException;
+    Interval updateRecoveryState(BookId bookId, Interval interval, String recoveryState) throws IOException;
 
     /**
      * Asynchronously updates RecoveryState, also sets lastUpdateTime and lastUpdateDate as current time and date
@@ -126,7 +127,7 @@ public interface IntervalsWorker
      * If it was not successful throws an {@link java.util.concurrent.ExecutionException} with cause
      * {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      */
-    CompletableFuture<Interval> updateRecoveryStateAsync(Interval interval, String recoveryState);
+    CompletableFuture<Interval> updateRecoveryStateAsync(BookId bookId, Interval interval, String recoveryState);
 
     /**
      * Sets flag that indicates if interval was processed completely, also sets lastUpdateTime and lastUpdateDate as current time and date
@@ -137,7 +138,7 @@ public interface IntervalsWorker
      * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      * @throws IOException   if something went wrong
      */
-    Interval setIntervalProcessed(Interval interval, boolean processed) throws IOException;
+    Interval setIntervalProcessed(BookId bookId, Interval interval, boolean processed) throws IOException;
 
     /**
      * Asynchronously sets flag that indicates if interval was processed completely, also sets lastUpdateTime and lastUpdateDate as current time and date
@@ -147,5 +148,5 @@ public interface IntervalsWorker
      * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
      * If it was not successful throws an {@link java.util.concurrent.ExecutionException} with cause {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      */
-    CompletableFuture<Interval> setIntervalProcessedAsync(Interval interval, boolean processed);
+    CompletableFuture<Interval> setIntervalProcessedAsync(BookId bookId, Interval interval, boolean processed);
 }

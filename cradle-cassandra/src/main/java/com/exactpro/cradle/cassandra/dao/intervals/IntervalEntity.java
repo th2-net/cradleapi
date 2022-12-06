@@ -33,7 +33,6 @@ public class IntervalEntity {
     public static final ZoneOffset TIMEZONE_OFFSET = ZoneOffset.UTC;
 
     public static final String FIELD_BOOK = "book";
-    public static final String FIELD_PAGE = "page";
     public static final String FIELD_INTERVAL_START_DATE = "interval_start_date";
     public static final String FIELD_CRAWLER_NAME = "crawler_name";
     public static final String FIELD_CRAWLER_VERSION = "crawler_version";
@@ -51,10 +50,6 @@ public class IntervalEntity {
     private final String book;
 
     @PartitionKey(2)
-    @CqlName(FIELD_PAGE)
-    private final String page;
-
-    @PartitionKey(3)
     @CqlName(FIELD_INTERVAL_START_DATE)
     private final LocalDate startDate;
 
@@ -92,9 +87,8 @@ public class IntervalEntity {
     @CqlName(FIELD_INTERVAL_PROCESSED)
     private final boolean processed;
 
-    public IntervalEntity(String book, String page, LocalDate startDate, String crawlerName, String crawlerVersion, String crawlerType, LocalTime startTime, LocalTime endTime, LocalDate lastUpdateDate, LocalDate endDate, LocalTime lastUpdateTime, String recoveryState, boolean processed) {
+    public IntervalEntity(String book, LocalDate startDate, String crawlerName, String crawlerVersion, String crawlerType, LocalTime startTime, LocalTime endTime, LocalDate lastUpdateDate, LocalDate endDate, LocalTime lastUpdateTime, String recoveryState, boolean processed) {
         this.book = book;
-        this.page = page;
         this.startDate = startDate;
         this.crawlerName = crawlerName;
         this.crawlerVersion = crawlerVersion;
@@ -116,7 +110,6 @@ public class IntervalEntity {
         this.lastUpdateTime = LocalTime.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET));
         this.lastUpdateDate = LocalDate.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET));
         this.recoveryState = interval.getRecoveryState();
-        this.page = pageId.getName();
         this.book = pageId.getBookId().getName();
         this.crawlerName = interval.getCrawlerName();
         this.crawlerVersion = interval.getCrawlerVersion();
@@ -126,9 +119,6 @@ public class IntervalEntity {
 
     public String getBook() {
         return book;
-    }
-    public String getPage() {
-        return page;
     }
     public LocalDate getStartDate() {
         return startDate;
@@ -181,7 +171,6 @@ public class IntervalEntity {
 
         return isProcessed() == that.isProcessed()
                 && Objects.equals(getBook(), that.getBook())
-                && Objects.equals(getPage(), that.getPage())
                 && Objects.equals(getStartDate(), that.getStartDate())
                 && Objects.equals(getCrawlerName(), that.getCrawlerName())
                 && Objects.equals(getCrawlerVersion(), that.getCrawlerVersion())
@@ -197,7 +186,6 @@ public class IntervalEntity {
     @Override
     public int hashCode() {
         return Objects.hash(getBook(),
-                getPage(),
                 getStartDate(),
                 getCrawlerName(),
                 getCrawlerVersion(),
