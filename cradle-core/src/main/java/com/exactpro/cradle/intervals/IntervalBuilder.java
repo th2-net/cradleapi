@@ -47,7 +47,7 @@ public class IntervalBuilder
         return this;
     }
 
-    public IntervalBuilder recoveryState(RecoveryState recoveryState)
+    public IntervalBuilder recoveryState(String recoveryState)
     {
         initIfNeeded();
         interval.setRecoveryState(recoveryState);

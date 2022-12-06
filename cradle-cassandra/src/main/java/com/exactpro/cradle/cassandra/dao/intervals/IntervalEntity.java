@@ -19,7 +19,6 @@ package com.exactpro.cradle.cassandra.dao.intervals;
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.intervals.Interval;
-import com.exactpro.cradle.intervals.RecoveryState;
 
 import java.io.IOException;
 import java.time.*;
@@ -88,12 +87,12 @@ public class IntervalEntity {
     private final LocalTime lastUpdateTime;
 
     @CqlName(FIELD_RECOVERY_STATE_JSON)
-    private final String recoveryStateJson;
+    private final String recoveryState;
 
     @CqlName(FIELD_INTERVAL_PROCESSED)
     private final boolean processed;
 
-    public IntervalEntity(String book, String page, LocalDate startDate, String crawlerName, String crawlerVersion, String crawlerType, LocalTime startTime, LocalTime endTime, LocalDate lastUpdateDate, LocalDate endDate, LocalTime lastUpdateTime, String recoveryStateJson, boolean processed) {
+    public IntervalEntity(String book, String page, LocalDate startDate, String crawlerName, String crawlerVersion, String crawlerType, LocalTime startTime, LocalTime endTime, LocalDate lastUpdateDate, LocalDate endDate, LocalTime lastUpdateTime, String recoveryState, boolean processed) {
         this.book = book;
         this.page = page;
         this.startDate = startDate;
@@ -105,7 +104,7 @@ public class IntervalEntity {
         this.endTime = endTime;
         this.lastUpdateDate = lastUpdateDate;
         this.lastUpdateTime = lastUpdateTime;
-        this.recoveryStateJson = recoveryStateJson;
+        this.recoveryState = recoveryState;
         this.processed = processed;
     }
 
@@ -116,7 +115,7 @@ public class IntervalEntity {
         this.endDate = LocalDate.from(interval.getEndTime().atOffset(TIMEZONE_OFFSET));
         this.lastUpdateTime = LocalTime.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET));
         this.lastUpdateDate = LocalDate.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET));
-        this.recoveryStateJson = interval.getRecoveryState().convertToJson();
+        this.recoveryState = interval.getRecoveryState();
         this.page = pageId.getName();
         this.book = pageId.getBookId().getName();
         this.crawlerName = interval.getCrawlerName();
@@ -149,8 +148,8 @@ public class IntervalEntity {
     public LocalTime getLastUpdateTime() {
         return lastUpdateTime;
     }
-    public String getRecoveryStateJson() {
-        return recoveryStateJson;
+    public String getRecoveryState() {
+        return recoveryState;
     }
     public String getCrawlerName() {
         return crawlerName;
@@ -168,7 +167,7 @@ public class IntervalEntity {
     public Interval asInterval() throws IOException {
         return Interval.builder().startTime(Instant.from(LocalDateTime.of(startDate, startTime).atOffset(TIMEZONE_OFFSET)))
                 .endTime(Instant.from(LocalDateTime.of(endDate, endTime).atOffset(TIMEZONE_OFFSET)))
-                .recoveryState(RecoveryState.getMAPPER().readValue(recoveryStateJson, RecoveryState.class))
+                .recoveryState(recoveryState)
                 .lastUpdateTime(Instant.from(LocalDateTime.of(lastUpdateDate, lastUpdateTime).atOffset(TIMEZONE_OFFSET)))
                 .crawlerName(crawlerName).crawlerVersion(crawlerVersion).crawlerType(crawlerType)
                 .processed(processed).build();
@@ -192,7 +191,7 @@ public class IntervalEntity {
                 && Objects.equals(getEndTime(), that.getEndTime())
                 && Objects.equals(getLastUpdateDate(), that.getLastUpdateDate())
                 && Objects.equals(getLastUpdateTime(), that.getLastUpdateTime())
-                && Objects.equals(getRecoveryStateJson(), that.getRecoveryStateJson());
+                && Objects.equals(getRecoveryState(), that.getRecoveryState());
     }
 
     @Override
@@ -208,7 +207,7 @@ public class IntervalEntity {
                 getEndTime(),
                 getLastUpdateDate(),
                 getLastUpdateTime(),
-                getRecoveryStateJson(),
+                getRecoveryState(),
                 isProcessed());
     }
 }

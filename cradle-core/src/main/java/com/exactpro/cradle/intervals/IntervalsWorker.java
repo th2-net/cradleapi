@@ -112,7 +112,7 @@ public interface IntervalsWorker
      * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      * @throws IOException   if something went wrong
      */
-    Interval updateRecoveryState(Interval interval, RecoveryState recoveryState) throws IOException;
+    Interval updateRecoveryState(Interval interval, String recoveryState) throws IOException;
 
     /**
      * Asynchronously updates RecoveryState, also sets lastUpdateTime and lastUpdateDate as current time and date
@@ -126,7 +126,7 @@ public interface IntervalsWorker
      * If it was not successful throws an {@link java.util.concurrent.ExecutionException} with cause
      * {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      */
-    CompletableFuture<Interval> updateRecoveryStateAsync(Interval interval, RecoveryState recoveryState);
+    CompletableFuture<Interval> updateRecoveryStateAsync(Interval interval, String recoveryState);
 
     /**
      * Sets flag that indicates if interval was processed completely, also sets lastUpdateTime and lastUpdateDate as current time and date

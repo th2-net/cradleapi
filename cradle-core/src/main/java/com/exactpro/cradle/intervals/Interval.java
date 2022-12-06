@@ -24,7 +24,7 @@ import java.util.Objects;
 public class Interval {
     private LocalDateTime startDateTime;
     private LocalDateTime endDateTime;
-    private RecoveryState recoveryState;
+    private String recoveryState;
     private LocalDateTime lastUpdateDateTime;
     private String crawlerName;
     private String crawlerVersion;
@@ -43,9 +43,9 @@ public class Interval {
 
     public void setEndTime(Instant endTime) { this.endDateTime = LocalDateTime.ofInstant(endTime, TIMEZONE_OFFSET); }
 
-    public RecoveryState getRecoveryState() { return recoveryState; }
+    public String getRecoveryState() { return recoveryState; }
 
-    public void setRecoveryState(RecoveryState recoveryState) { this.recoveryState = recoveryState; }
+    public void setRecoveryState(String recoveryState) { this.recoveryState = recoveryState; }
 
     public Instant getLastUpdateDateTime() { return lastUpdateDateTime.toInstant(TIMEZONE_OFFSET); }
 
@@ -67,7 +67,7 @@ public class Interval {
 
     public void setProcessed(boolean processed) { this.processed = processed; }
 
-    public static Interval copyWith(Interval original, RecoveryState recoveryState, LocalDateTime lastUpdateDateTime, boolean processed) {
+    public static Interval copyWith(Interval original, String recoveryState, LocalDateTime lastUpdateDateTime, boolean processed) {
         Objects.requireNonNull(lastUpdateDateTime, "'lastUpdateDateTime' parameter");
         Interval interval = new Interval();
         interval.setStartTime(original.getStartTime());
@@ -82,7 +82,7 @@ public class Interval {
         return interval;
     }
 
-    public static Interval copyWith(Interval original, RecoveryState recoveryState, Instant lastUpdateDateTime, boolean processed) {
+    public static Interval copyWith(Interval original, String recoveryState, Instant lastUpdateDateTime, boolean processed) {
         return copyWith(original, recoveryState, LocalDateTime.ofInstant(lastUpdateDateTime, TIMEZONE_OFFSET), processed);
     }
 
