@@ -22,7 +22,7 @@ import com.exactpro.cradle.cassandra.connection.NetworkTopologyStrategy;
 import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
 
 public class CassandraStorageSettings {
-    public static final String SCHEMA_VERSION = "5.2.0";
+    public static final String SCHEMA_VERSION = "5.3.0";
     public static final long DEFAULT_TIMEOUT = 5000;
     public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
     public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1,

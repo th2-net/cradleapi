@@ -25,13 +25,15 @@ import java.util.concurrent.CompletableFuture;
 
 public interface IntervalsWorker
 {
+    // TODO: update javadocs
+
     /**
      * Writes to storage interval
      * @param interval data to write
      * @return true if interval was stored, false otherwise
      * @throws IOException if data writing failed
      */
-    boolean storeInterval(BookId bookId, Interval interval) throws IOException;
+    boolean storeInterval(BookId bookId, Interval interval) throws IOException, CradleStorageException;
 
     /**
      * Asynchronously writes to storage interval
@@ -52,7 +54,7 @@ public interface IntervalsWorker
      * @return iterable of intervals
      * @throws IOException   if something went wrong
      */
-    Iterable<Interval> getIntervalsPerDay(BookId bookId, Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException;
+    Iterable<Interval> getIntervalsPerDay(BookId bookId, Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException, CradleStorageException;
 
     /**
      * Asynchronously obtains iterable of intervals with startTime greater than or equal to "from" and less than or equal to "to". Intervals must be within one day
@@ -77,7 +79,7 @@ public interface IntervalsWorker
      * @return iterable of intervals
      * @throws IOException if something went wrong
      */
-    Iterable<Interval> getIntervals(BookId bookId, Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException;
+    Iterable<Interval> getIntervals(BookId bookId, Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException, CradleStorageException;
 
     /**
      * Sets last update time and last update date of interval.
@@ -90,7 +92,7 @@ public interface IntervalsWorker
      * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      * @throws IOException   if something went wrong
      */
-    Interval setIntervalLastUpdateTimeAndDate(BookId bookId, Interval interval, Instant newLastUpdateTime) throws IOException;
+    Interval setIntervalLastUpdateTimeAndDate(BookId bookId, Interval interval, Instant newLastUpdateTime) throws IOException, CradleStorageException;
 
     /**
      * Asynchronously sets last update time and last update date of interval.
@@ -113,7 +115,7 @@ public interface IntervalsWorker
      * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      * @throws IOException   if something went wrong
      */
-    Interval updateRecoveryState(BookId bookId, Interval interval, String recoveryState) throws IOException;
+    Interval updateRecoveryState(BookId bookId, Interval interval, String recoveryState) throws IOException, CradleStorageException;
 
     /**
      * Asynchronously updates RecoveryState, also sets lastUpdateTime and lastUpdateDate as current time and date
@@ -138,7 +140,7 @@ public interface IntervalsWorker
      * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      * @throws IOException   if something went wrong
      */
-    Interval setIntervalProcessed(BookId bookId, Interval interval, boolean processed) throws IOException;
+    Interval setIntervalProcessed(BookId bookId, Interval interval, boolean processed) throws IOException, CradleStorageException;
 
     /**
      * Asynchronously sets flag that indicates if interval was processed completely, also sets lastUpdateTime and lastUpdateDate as current time and date

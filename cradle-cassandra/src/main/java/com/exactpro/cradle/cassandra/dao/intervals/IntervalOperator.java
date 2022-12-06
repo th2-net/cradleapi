@@ -32,7 +32,7 @@ import static com.exactpro.cradle.cassandra.dao.intervals.IntervalEntity.*;
 @Dao
 public interface IntervalOperator {
     @Insert(ifNotExists = true)
-    CompletableFuture<AsyncResultSet> writeInterval(IntervalEntity IntervalEntity, Function<BoundStatementBuilder,
+    CompletableFuture<Boolean> writeInterval(IntervalEntity IntervalEntity, Function<BoundStatementBuilder,
                                                             BoundStatementBuilder> attributes);
 
     @Query( "SELECT * FROM ${qualifiedTableId} " +
@@ -87,7 +87,7 @@ public interface IntervalOperator {
                 FIELD_RECOVERY_STATE_JSON + " =:previousRecoveryStateJson AND " +
                 FIELD_INTERVAL_LAST_UPDATE_TIME + " =:previousLastUpdateTime AND " +
                 FIELD_INTERVAL_LAST_UPDATE_DATE + " =:previousLastUpdateDate")
-    CompletableFuture<AsyncResultSet> updateRecoveryState(String book, LocalDate intervalDate, LocalTime intervalStartTime, LocalTime lastUpdateTime, LocalDate lastUpdateDate, String recoveryStateJson, String previousRecoveryStateJson, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerName, String crawlerVersion, String crawlerType, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+    CompletableFuture<AsyncResultSet> updateRecoveryState(String book, LocalDate intervalDate, LocalTime intervalStartTime, LocalTime lastUpdateTime, LocalDate lastUpdateDate, String recoveryStore, String previousRecoveryState, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerName, String crawlerVersion, String crawlerType, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 
 
