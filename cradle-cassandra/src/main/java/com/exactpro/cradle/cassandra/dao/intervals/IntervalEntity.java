@@ -104,21 +104,6 @@ public class IntervalEntity {
         this.processed = processed;
     }
 
-    public IntervalEntity(Interval interval, PageId pageId) {
-        this.startTime = LocalTime.from(interval.getStartTime().atOffset(TIMEZONE_OFFSET));
-        this.endTime = LocalTime.from(interval.getEndTime().atOffset(TIMEZONE_OFFSET));
-        this.startDate = LocalDate.from(interval.getStartTime().atOffset(TIMEZONE_OFFSET));
-        this.endDate = LocalDate.from(interval.getEndTime().atOffset(TIMEZONE_OFFSET));
-        this.lastUpdateTime = LocalTime.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET));
-        this.lastUpdateDate = LocalDate.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET));
-        this.recoveryState = interval.getRecoveryState();
-        this.book = pageId.getBookId().getName();
-        this.crawlerName = interval.getCrawlerName();
-        this.crawlerVersion = interval.getCrawlerVersion();
-        this.crawlerType = interval.getCrawlerType();
-        this.processed = interval.isProcessed();
-    }
-
     public String getBook() {
         return book;
     }
@@ -159,10 +144,10 @@ public class IntervalEntity {
     public Interval asInterval() throws IOException {
         return Interval.builder()
                 .setBookId(new BookId(book))
-                .setStartDateTime(LocalDateTime.from(LocalDateTime.of(startDate, startTime).atOffset(TIMEZONE_OFFSET)))
-                .setEndDateTime(LocalDateTime.from((LocalDateTime.of(endDate, endTime).atOffset(TIMEZONE_OFFSET))))
+                .setStart(LocalDateTime.of(startDate, startTime).atOffset(TIMEZONE_OFFSET).toInstant())
+                .setEnd(LocalDateTime.of(endDate, endTime).atOffset(TIMEZONE_OFFSET).toInstant())
+                .setLastUpdate(LocalDateTime.of(lastUpdateDate, lastUpdateTime).atOffset(TIMEZONE_OFFSET).toInstant())
                 .setRecoveryState(recoveryState)
-                .setLastUpdateDateTime(LocalDateTime.from(LocalDateTime.of(lastUpdateDate, lastUpdateTime).atOffset(TIMEZONE_OFFSET)))
                 .setCrawlerName(crawlerName)
                 .setCrawlerVersion(crawlerVersion)
                 .setCrawlerType(crawlerType)
