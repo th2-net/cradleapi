@@ -77,7 +77,23 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
                 interval.getCrawlerType(),
                 bookId);
 
-        IntervalEntity intervalEntity = null;
+        IntervalEntity.IntervalEntityBuilder builder = IntervalEntity.builder()
+                .setBook(bookId.getName())
+                .setStartDate(LocalDate.ofInstant(interval.getStartTime(), TIMEZONE_OFFSET))
+                .setStartTime(LocalTime.ofInstant(interval.getStartTime(), TIMEZONE_OFFSET))
+                .setCrawlerName(interval.getCrawlerName())
+                .setCrawlerType(interval.getCrawlerType())
+                .setCrawlerVersion(interval.getCrawlerVersion())
+                .setEndDate(LocalDate.ofInstant(interval.getEndTime(), TIMEZONE_OFFSET))
+                .setEndTime(LocalTime.ofInstant(interval.getEndTime(), TIMEZONE_OFFSET))
+                .setLastUpdateDate(LocalDate.ofInstant(interval.getLastUpdateDateTime(), TIMEZONE_OFFSET))
+                .setLastUpdateTime(LocalTime.ofInstant(interval.getLastUpdateDateTime(), TIMEZONE_OFFSET))
+                .setRecoveryState(interval.getRecoveryState())
+                .setProcessed(interval.isProcessed());
+
+
+
+        IntervalEntity intervalEntity = builder.build();
         
         logger.debug(queryInfo);
 

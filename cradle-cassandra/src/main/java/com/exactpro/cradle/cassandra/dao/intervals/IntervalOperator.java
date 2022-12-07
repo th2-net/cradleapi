@@ -60,7 +60,8 @@ public interface IntervalOperator {
                 FIELD_CRAWLER_NAME + " =:crawlerName AND " +
                 FIELD_CRAWLER_VERSION +" =:crawlerVersion AND " +
                 FIELD_CRAWLER_TYPE + " =:crawlerType AND " +
-                FIELD_INTERVAL_START_TIME + " =:intervalStartTime IF " +
+                FIELD_INTERVAL_START_TIME + " =:intervalStartTime" +
+            " IF " +
                 FIELD_INTERVAL_LAST_UPDATE_TIME + " =:previousLastUpdateTime AND " +
                 FIELD_INTERVAL_LAST_UPDATE_DATE + " =:previousLastUpdateDate")
     CompletableFuture<AsyncResultSet> setIntervalLastUpdateTimeAndDate(String book,
@@ -83,7 +84,8 @@ public interface IntervalOperator {
                 FIELD_CRAWLER_NAME + " =:crawlerName AND " +
                 FIELD_CRAWLER_VERSION + " =:crawlerVersion AND " +
                 FIELD_CRAWLER_TYPE + " =:crawlerType AND " +
-                FIELD_INTERVAL_START_TIME + " =:intervalStartTime IF " +
+                FIELD_INTERVAL_START_TIME + " =:intervalStartTime" +
+            " IF " +
                 FIELD_RECOVERY_STATE_JSON + " =:previousRecoveryStateJson AND " +
                 FIELD_INTERVAL_LAST_UPDATE_TIME + " =:previousLastUpdateTime AND " +
                 FIELD_INTERVAL_LAST_UPDATE_DATE + " =:previousLastUpdateDate")
@@ -103,7 +105,8 @@ public interface IntervalOperator {
                 FIELD_CRAWLER_NAME + " =:crawlerName AND " +
                 FIELD_CRAWLER_VERSION + " =:crawlerVersion AND " +
                 FIELD_CRAWLER_TYPE + " =:crawlerType AND " +
-                FIELD_INTERVAL_START_TIME + " =:intervalStartTime IF " +
+                FIELD_INTERVAL_START_TIME + " =:intervalStartTime" +
+            " IF " +
                 FIELD_INTERVAL_PROCESSED + " =:previousProcessed AND " +
                 FIELD_INTERVAL_LAST_UPDATE_TIME + " =:previousLastUpdateTime AND " +
                 FIELD_INTERVAL_LAST_UPDATE_DATE + " =:previousLastUpdateDate")

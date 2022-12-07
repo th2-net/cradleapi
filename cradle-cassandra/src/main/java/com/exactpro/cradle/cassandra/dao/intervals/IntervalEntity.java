@@ -19,6 +19,7 @@ package com.exactpro.cradle.cassandra.dao.intervals;
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.intervals.Interval;
+import jnr.ffi.annotations.In;
 
 import java.io.IOException;
 import java.time.*;
@@ -197,5 +198,109 @@ public class IntervalEntity {
                 getLastUpdateTime(),
                 getRecoveryState(),
                 isProcessed());
+    }
+
+    private static IntervalEntity build (IntervalEntityBuilder builder) {
+        return new IntervalEntity(
+                builder.book,
+                builder.startDate,
+                builder.crawlerName,
+                builder.crawlerVersion,
+                builder.crawlerType,
+                builder.startTime,
+                builder.endTime,
+                builder.lastUpdateDate,
+                builder.endDate,
+                builder.lastUpdateTime,
+                builder.recoveryState,
+                builder.processed);
+    }
+
+    public static IntervalEntityBuilder builder () {
+        return new IntervalEntityBuilder();
+    }
+
+    public static class IntervalEntityBuilder {
+
+        private String book;
+        private LocalDate startDate;
+        private String crawlerName;
+        private String crawlerVersion;
+        private String crawlerType;
+        private LocalTime startTime;
+        private LocalDate endDate;
+        private LocalTime endTime;
+        private LocalDate lastUpdateDate;
+        private LocalTime lastUpdateTime;
+        private String recoveryState;
+        private boolean processed;
+
+        private IntervalEntityBuilder () {
+        }
+
+        public IntervalEntityBuilder setBook (String book) {
+            this.book = book;
+            return this;
+        }
+
+        public IntervalEntityBuilder setStartDate (LocalDate startDate) {
+            this.startDate = startDate;
+            return this;
+        }
+
+        public IntervalEntityBuilder setCrawlerName (String crawlerName) {
+            this.crawlerName = crawlerName;
+            return this;
+        }
+
+        public IntervalEntityBuilder setCrawlerVersion (String crawlerVersion) {
+            this.crawlerVersion = crawlerVersion;
+            return this;
+        }
+
+        public IntervalEntityBuilder setCrawlerType (String crawlerType) {
+            this.crawlerType = crawlerType;
+            return this;
+        }
+
+        public IntervalEntityBuilder setStartTime (LocalTime startTime) {
+            this.startTime = startTime;
+            return this;
+        }
+
+        public IntervalEntityBuilder setEndDate (LocalDate endDate) {
+            this.endDate = endDate;
+            return this;
+        }
+
+        public IntervalEntityBuilder setEndTime (LocalTime endTime) {
+            this.endTime = endTime;
+            return this;
+        }
+
+        public IntervalEntityBuilder setLastUpdateDate (LocalDate lastUpdateDate) {
+            this.lastUpdateDate = lastUpdateDate;
+            return this;
+        }
+
+        public IntervalEntityBuilder setLastUpdateTime (LocalTime lastUpdateTime) {
+            this.lastUpdateTime = lastUpdateTime;
+            return this;
+        }
+
+        public IntervalEntityBuilder setRecoveryState (String recoveryState) {
+            this.recoveryState = recoveryState;
+            return this;
+        }
+
+        public IntervalEntityBuilder setProcessed (boolean processed) {
+            this.processed = processed;
+            return this;
+        }
+
+        public IntervalEntity build () {
+            return IntervalEntity.build(this);
+        }
+
     }
 }
