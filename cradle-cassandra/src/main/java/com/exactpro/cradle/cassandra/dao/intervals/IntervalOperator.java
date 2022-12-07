@@ -74,7 +74,7 @@ public interface IntervalOperator {
 
     @Query( "UPDATE ${qualifiedTableId} " +
             "SET " +
-                FIELD_RECOVERY_STATE_JSON + " =:recoveryStateJson, " +
+                FIELD_RECOVERY_STATE_JSON + " =:recoveryState, " +
                 FIELD_INTERVAL_LAST_UPDATE_TIME + " =:lastUpdateTime, " +
                 FIELD_INTERVAL_LAST_UPDATE_DATE + " =:lastUpdateDate " +
 
@@ -86,10 +86,10 @@ public interface IntervalOperator {
                 FIELD_CRAWLER_TYPE + " =:crawlerType AND " +
                 FIELD_INTERVAL_START_TIME + " =:intervalStartTime" +
             " IF " +
-                FIELD_RECOVERY_STATE_JSON + " =:previousRecoveryStateJson AND " +
+                FIELD_RECOVERY_STATE_JSON + " =:previousRecoveryState AND " +
                 FIELD_INTERVAL_LAST_UPDATE_TIME + " =:previousLastUpdateTime AND " +
                 FIELD_INTERVAL_LAST_UPDATE_DATE + " =:previousLastUpdateDate")
-    CompletableFuture<AsyncResultSet> updateRecoveryState(String book, LocalDate intervalDate, LocalTime intervalStartTime, LocalTime lastUpdateTime, LocalDate lastUpdateDate, String recoveryStore, String previousRecoveryState, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerName, String crawlerVersion, String crawlerType, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+    CompletableFuture<AsyncResultSet> updateRecoveryState(String book, LocalDate intervalDate, LocalTime intervalStartTime, LocalTime lastUpdateTime, LocalDate lastUpdateDate, String recoveryState, String previousRecoveryState, LocalTime previousLastUpdateTime, LocalDate previousLastUpdateDate, String crawlerName, String crawlerVersion, String crawlerType, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 
 

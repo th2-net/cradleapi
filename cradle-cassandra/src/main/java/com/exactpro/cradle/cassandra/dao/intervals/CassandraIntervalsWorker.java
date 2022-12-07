@@ -5,6 +5,7 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.shaded.guava.common.collect.Iterables;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.cassandra.EntityConverter;
+import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.workers.Worker;
 import com.exactpro.cradle.cassandra.workers.WorkerSupplies;
 import com.exactpro.cradle.intervals.Interval;
@@ -21,9 +22,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.dao.intervals.IntervalEntity.TIMEZONE_OFFSET;
@@ -52,8 +53,15 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
         }
     }
 
-    private Iterable<Interval> mapEntityToIntervalIterable (MappedAsyncPagingIterable<IntervalEntity> iterable) {
-        return (Iterable<Interval>) iterable.map(this::mapEntityToInterval);
+    private Iterable<Interval> getIntervalsIterator(MappedAsyncPagingIterable<IntervalEntity> iterable, String queryInfo) {
+        return () -> new ConvertingPagedIterator<>(
+                iterable,
+                selectQueryExecutor,
+                0,
+                new AtomicInteger(0),
+                this::mapEntityToInterval,
+                converter::getEntity,
+                "123");
     }
 
     @Override
@@ -102,11 +110,16 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
 
     @Override
     public Iterable<Interval> getIntervalsPerDay(BookId bookId, Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException, CradleStorageException {
-        String queryInfo = String.format("Getting intervals for crawler %s:%s between timestamps %s-%s in book %s",
+        LocalDate date = LocalDate.ofInstant(from, TIMEZONE_OFFSET);
+        LocalTime fromTime = LocalTime.ofInstant(from, TIMEZONE_OFFSET);
+        LocalTime toTime = LocalTime.ofInstant(to, TIMEZONE_OFFSET);
+
+        String queryInfo = String.format("Getting intervals for crawler %s:%s for day %s between times %s-%s in book %s",
                 crawlerName,
                 crawlerType,
-                from,
-                to,
+                date,
+                fromTime,
+                toTime,
                 bookId);
 
         try {
@@ -135,7 +148,7 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
                 () -> operator.getIntervals(bookId.getName(), date, fromTime, toTime, crawlerName, crawlerVersion, crawlerType, readAttrs),
                 converter::getEntity,
                 queryInfo)
-                .thenApplyAsync(this::mapEntityToIntervalIterable);
+                .thenApplyAsync((result) ->  getIntervalsIterator(result, queryInfo));
     }
 
     @Override
@@ -221,7 +234,7 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
                         () -> operator.getIntervals(bookId.getName(), date, fromTime, toTime, crawlerName, crawlerVersion, crawlerType, readAttrs),
                         converter::getEntity,
                         queryInfo)
-                .thenApplyAsync(this::mapEntityToIntervalIterable);
+                .thenApplyAsync((result) ->  getIntervalsIterator(result, queryInfo));
     }
 
     @Override
@@ -315,7 +328,7 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
                 oldUpdateTime, oldUpdateDate,
                 interval.getCrawlerName(),
                 interval.getCrawlerVersion(),
-                interval.getCrawlerVersion(), writeAttrs).thenApply((result) -> {
+                interval.getCrawlerType(), writeAttrs).thenApply((result) -> {
                     if (!result.wasApplied()) {
                         throw new UpdateNotAppliedException("Update wasn't applied for : " + queryInfo);
                     }

@@ -115,7 +115,9 @@ public class Interval {
     }
 
     public static IntervalBuilder builder (Interval original) {
-        return builder().setStart(original.start)
+        return builder()
+                .setBookId(original.bookId)
+                .setStart(original.start)
                 .setEnd(original.end)
                 .setLastUpdate(original.lastUpdate)
                 .setCrawlerName(original.crawlerName)
@@ -123,6 +125,36 @@ public class Interval {
                 .setCrawlerType(original.crawlerType)
                 .setRecoveryState(original.recoveryState)
                 .setProcessed(original.processed);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Interval)) return false;
+        Interval interval = (Interval) o;
+        return isProcessed() == interval.isProcessed()
+                && getBookId().equals(interval.getBookId())
+                && Objects.equals(getStart(), interval.getStart())
+                && Objects.equals(getEnd(), interval.getEnd())
+                && getLastUpdate().equals(interval.getLastUpdate())
+                && Objects.equals(getRecoveryState(), interval.getRecoveryState())
+                && Objects.equals(getCrawlerName(), interval.getCrawlerName())
+                && Objects.equals(getCrawlerVersion(), interval.getCrawlerVersion())
+                && Objects.equals(getCrawlerType(), interval.getCrawlerType());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                getBookId(),
+                getStart(),
+                getEnd(),
+                getLastUpdate(),
+                getRecoveryState(),
+                getCrawlerName(),
+                getCrawlerVersion(),
+                getCrawlerType(),
+                isProcessed());
     }
 
     public static class IntervalBuilder {
