@@ -33,14 +33,14 @@ public interface IntervalsWorker
      * @return true if interval was stored, false otherwise
      * @throws IOException if data writing failed
      */
-    boolean storeInterval(BookId bookId, Interval interval) throws IOException, CradleStorageException;
+    boolean storeInterval(Interval interval) throws IOException, CradleStorageException;
 
     /**
      * Asynchronously writes to storage interval
      * @param interval stored interval
      * @return future to get know if storing was successful
      */
-    CompletableFuture<Boolean> storeIntervalAsync(BookId bookId, Interval interval);
+    CompletableFuture<Boolean> storeIntervalAsync(Interval interval);
 
     /**
      * Obtains iterable of intervals with startTime greater than or equal to "from" and less than or equal to "to".
@@ -92,7 +92,7 @@ public interface IntervalsWorker
      * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      * @throws IOException   if something went wrong
      */
-    Interval setIntervalLastUpdateTimeAndDate(BookId bookId, Interval interval, Instant newLastUpdateTime) throws IOException, CradleStorageException;
+    Interval setIntervalLastUpdateTimeAndDate(Interval interval, Instant newLastUpdateTime) throws IOException, CradleStorageException;
 
     /**
      * Asynchronously sets last update time and last update date of interval.
@@ -102,7 +102,7 @@ public interface IntervalsWorker
      * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
      * If it was not successful throws an {@link java.util.concurrent.ExecutionException} with cause {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      */
-    CompletableFuture<Interval> setIntervalLastUpdateTimeAndDateAsync(BookId bookId, Interval interval, Instant newLastUpdateTime);
+    CompletableFuture<Interval> setIntervalLastUpdateTimeAndDateAsync(Interval interval, Instant newLastUpdateTime);
 
     /**
      * Updates RecoveryState, also sets lastUpdateTime and lastUpdateDate as current time and date
@@ -115,7 +115,7 @@ public interface IntervalsWorker
      * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      * @throws IOException   if something went wrong
      */
-    Interval updateRecoveryState(BookId bookId, Interval interval, String recoveryState) throws IOException, CradleStorageException;
+    Interval updateRecoveryState(Interval interval, String recoveryState) throws IOException, CradleStorageException;
 
     /**
      * Asynchronously updates RecoveryState, also sets lastUpdateTime and lastUpdateDate as current time and date
@@ -129,7 +129,7 @@ public interface IntervalsWorker
      * If it was not successful throws an {@link java.util.concurrent.ExecutionException} with cause
      * {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      */
-    CompletableFuture<Interval> updateRecoveryStateAsync(BookId bookId, Interval interval, String recoveryState);
+    CompletableFuture<Interval> updateRecoveryStateAsync(Interval interval, String recoveryState);
 
     /**
      * Sets flag that indicates if interval was processed completely, also sets lastUpdateTime and lastUpdateDate as current time and date
@@ -140,7 +140,7 @@ public interface IntervalsWorker
      * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      * @throws IOException   if something went wrong
      */
-    Interval setIntervalProcessed(BookId bookId, Interval interval, boolean processed) throws IOException, CradleStorageException;
+    Interval setIntervalProcessed(Interval interval, boolean processed) throws IOException, CradleStorageException;
 
     /**
      * Asynchronously sets flag that indicates if interval was processed completely, also sets lastUpdateTime and lastUpdateDate as current time and date
@@ -150,5 +150,5 @@ public interface IntervalsWorker
      * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
      * If it was not successful throws an {@link java.util.concurrent.ExecutionException} with cause {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
      */
-    CompletableFuture<Interval> setIntervalProcessedAsync(BookId bookId, Interval interval, boolean processed);
+    CompletableFuture<Interval> setIntervalProcessedAsync(Interval interval, boolean processed);
 }

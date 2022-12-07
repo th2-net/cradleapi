@@ -17,6 +17,7 @@
 package com.exactpro.cradle.cassandra.dao.intervals;
 
 import com.datastax.oss.driver.api.mapper.annotations.*;
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.intervals.Interval;
 import jnr.ffi.annotations.In;
@@ -156,12 +157,17 @@ public class IntervalEntity {
     }
 
     public Interval asInterval() throws IOException {
-        return Interval.builder().startTime(Instant.from(LocalDateTime.of(startDate, startTime).atOffset(TIMEZONE_OFFSET)))
-                .endTime(Instant.from(LocalDateTime.of(endDate, endTime).atOffset(TIMEZONE_OFFSET)))
-                .recoveryState(recoveryState)
-                .lastUpdateTime(Instant.from(LocalDateTime.of(lastUpdateDate, lastUpdateTime).atOffset(TIMEZONE_OFFSET)))
-                .crawlerName(crawlerName).crawlerVersion(crawlerVersion).crawlerType(crawlerType)
-                .processed(processed).build();
+        return Interval.builder()
+                .setBookId(new BookId(book))
+                .setStartDateTime(LocalDateTime.from(LocalDateTime.of(startDate, startTime).atOffset(TIMEZONE_OFFSET)))
+                .setEndDateTime(LocalDateTime.from((LocalDateTime.of(endDate, endTime).atOffset(TIMEZONE_OFFSET))))
+                .setRecoveryState(recoveryState)
+                .setLastUpdateDateTime(LocalDateTime.from(LocalDateTime.of(lastUpdateDate, lastUpdateTime).atOffset(TIMEZONE_OFFSET)))
+                .setCrawlerName(crawlerName)
+                .setCrawlerVersion(crawlerVersion)
+                .setCrawlerType(crawlerType)
+                .setProcessed(processed)
+                .build();
     }
 
     @Override
@@ -301,6 +307,5 @@ public class IntervalEntity {
         public IntervalEntity build () {
             return IntervalEntity.build(this);
         }
-
     }
 }

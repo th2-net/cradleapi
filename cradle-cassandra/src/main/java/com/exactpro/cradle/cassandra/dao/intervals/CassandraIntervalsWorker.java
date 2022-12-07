@@ -5,7 +5,6 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.shaded.guava.common.collect.Iterables;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.cassandra.EntityConverter;
-import com.exactpro.cradle.cassandra.dao.messages.MappedIterator;
 import com.exactpro.cradle.cassandra.workers.Worker;
 import com.exactpro.cradle.cassandra.workers.WorkerSupplies;
 import com.exactpro.cradle.intervals.Interval;
@@ -22,6 +21,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
@@ -57,13 +57,13 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
     }
 
     @Override
-    public boolean storeInterval(BookId bookId, Interval interval) throws IOException, CradleStorageException {
+    public boolean storeInterval(Interval interval) throws IOException, CradleStorageException {
         String queryInfo = String.format("Storing interval for crawler %s:%s in  book %s",
                 interval.getCrawlerName(),
                 interval.getCrawlerType(),
-                bookId);
+                interval.getBookId());
         try {
-            return storeIntervalAsync(bookId, interval).get();
+            return storeIntervalAsync(interval).get();
         } catch (InterruptedException | ExecutionException e) {
             logger.error("Exception while {}", queryInfo);
             throw new CradleStorageException(queryInfo, e);
@@ -71,14 +71,14 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
     }
 
     @Override
-    public CompletableFuture<Boolean> storeIntervalAsync(BookId bookId, Interval interval) {
+    public CompletableFuture<Boolean> storeIntervalAsync(Interval interval) {
         String queryInfo = String.format("Storing interval for crawler %s:%s in book %s",
                 interval.getCrawlerName(),
                 interval.getCrawlerType(),
-                bookId);
+                interval.getBookId());
 
         IntervalEntity.IntervalEntityBuilder builder = IntervalEntity.builder()
-                .setBook(bookId.getName())
+                .setBook(interval.getBookId().getName())
                 .setStartDate(LocalDate.ofInstant(interval.getStartTime(), TIMEZONE_OFFSET))
                 .setStartTime(LocalTime.ofInstant(interval.getStartTime(), TIMEZONE_OFFSET))
                 .setCrawlerName(interval.getCrawlerName())
@@ -225,14 +225,14 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
     }
 
     @Override
-    public Interval setIntervalLastUpdateTimeAndDate(BookId bookId, Interval interval, Instant newLastUpdateTime) throws IOException, CradleStorageException {
+    public Interval setIntervalLastUpdateTimeAndDate(Interval interval, Instant newLastUpdateTime) throws IOException, CradleStorageException {
         String queryInfo = String.format("Setting last update date and time as %s for interval %s in book %s",
                 newLastUpdateTime,
                 interval,
-                bookId);
+                interval.getBookId());
 
         try {
-            return setIntervalLastUpdateTimeAndDateAsync(bookId, interval, newLastUpdateTime).get();
+            return setIntervalLastUpdateTimeAndDateAsync(interval, newLastUpdateTime).get();
         } catch (InterruptedException | ExecutionException e) {
             logger.error("Exception while {}", queryInfo);
             throw new CradleStorageException(queryInfo, e);
@@ -240,11 +240,11 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
     }
 
     @Override
-    public CompletableFuture<Interval> setIntervalLastUpdateTimeAndDateAsync(BookId bookId, Interval interval, Instant newLastUpdateTime) {
+    public CompletableFuture<Interval> setIntervalLastUpdateTimeAndDateAsync(Interval interval, Instant newLastUpdateTime) {
         String queryInfo = String.format("Setting last update date and time as %s for interval %s in book %s",
                 newLastUpdateTime,
                 interval,
-                bookId);
+                interval.getBookId());
 
         logger.debug(queryInfo);
 
@@ -260,7 +260,7 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
         LocalTime oldUpdateTime = LocalTime.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET));
 
         return operator.setIntervalLastUpdateTimeAndDate(
-                bookId.getName(),
+                interval.getBookId().getName(),
                 startDate, startTime,
                 newTime, newDate,
                 oldUpdateTime, oldUpdateDate,
@@ -271,19 +271,19 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
                         throw new UpdateNotAppliedException("Update wasn't applied for : " + queryInfo);
                     }
 
-                    return Interval.copyWith(interval, interval.getRecoveryState(), dateTime, interval.isProcessed());
+                    return copyWith(interval, interval.getRecoveryState(), dateTime, interval.isProcessed());
         });
     }
 
     @Override
-    public Interval updateRecoveryState(BookId bookId, Interval interval, String recoveryState) throws IOException, CradleStorageException {
+    public Interval updateRecoveryState(Interval interval, String recoveryState) throws IOException, CradleStorageException {
         String queryInfo = String.format("Updating recoveryState to %s for interval %s in book %s",
                 recoveryState,
                 interval,
-                bookId);
+                interval.getBookId());
 
         try {
-            return updateRecoveryStateAsync(bookId, interval, recoveryState).get();
+            return updateRecoveryStateAsync(interval, recoveryState).get();
         } catch (InterruptedException | ExecutionException e) {
             logger.error("Exception while {}", queryInfo);
             throw new CradleStorageException(queryInfo, e);
@@ -291,11 +291,11 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
     }
 
     @Override
-    public CompletableFuture<Interval> updateRecoveryStateAsync(BookId bookId, Interval interval, String recoveryState) {
+    public CompletableFuture<Interval> updateRecoveryStateAsync(Interval interval, String recoveryState) {
         String queryInfo = String.format("Updating recoveryState to %s for interval %s in book %s",
                 recoveryState,
                 interval,
-                bookId);
+                interval.getBookId());
 
         LocalDateTime newLastUpdateDateTime = LocalDateTime.ofInstant(Instant.now(), TIMEZONE_OFFSET);
 
@@ -308,7 +308,7 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
         LocalDate oldUpdateDate = LocalDate.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET));
         LocalTime oldUpdateTime = LocalTime.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET));
 
-        return operator.updateRecoveryState(bookId.getName(),
+        return operator.updateRecoveryState(interval.getBookId().getName(),
                 startDate, startTime,
                 newLastUpdateTime, newLastUpdateDate,
                 recoveryState, interval.getRecoveryState(),
@@ -320,20 +320,20 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
                         throw new UpdateNotAppliedException("Update wasn't applied for : " + queryInfo);
                     }
 
-                return Interval.copyWith(interval, recoveryState, newLastUpdateDateTime, interval.isProcessed());
+                return copyWith(interval, recoveryState, newLastUpdateDateTime, interval.isProcessed());
         });
 
     }
 
     @Override
-    public Interval setIntervalProcessed(BookId bookId, Interval interval, boolean processed) throws IOException, CradleStorageException {
+    public Interval setIntervalProcessed(Interval interval, boolean processed) throws IOException, CradleStorageException {
         String queryInfo = String.format("Updating processed to %s for interval %s in book %s",
                 processed,
                 interval,
-                bookId);
+                interval.getBookId());
 
         try {
-            return setIntervalProcessedAsync(bookId, interval, processed).get();
+            return setIntervalProcessedAsync(interval, processed).get();
         } catch (InterruptedException | ExecutionException e) {
             logger.error("Exception while {}", queryInfo);
             throw new CradleStorageException(queryInfo, e);
@@ -341,11 +341,11 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
     }
 
     @Override
-    public CompletableFuture<Interval> setIntervalProcessedAsync(BookId bookId, Interval interval, boolean processed) {
+    public CompletableFuture<Interval> setIntervalProcessedAsync(Interval interval, boolean processed) {
         String queryInfo = String.format("Updating processed to %s for interval %s in book %s",
                 processed,
                 interval,
-                bookId);
+                interval.getBookId());
 
         LocalDateTime newLastUpdateDateTime = LocalDateTime.ofInstant(Instant.now(), TIMEZONE_OFFSET);
 
@@ -359,7 +359,7 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
         LocalDate oldUpdateDate = LocalDate.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET));
         LocalTime oldUpdateTime = LocalTime.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET));
 
-        return operator.setIntervalProcessed(bookId.getName(),
+        return operator.setIntervalProcessed(interval.getBookId().getName(),
                 startDate, startTime,
                 newLastUpdateTime, newLastUpdateDate,
                 processed, interval.isProcessed(),
@@ -372,7 +372,7 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
                         throw new UpdateNotAppliedException("Update wasn't applied for : " + queryInfo);
                     }
 
-                    return Interval.copyWith(interval, interval.getRecoveryState(), newLastUpdateDateTime, processed);
+                    return copyWith(interval, interval.getRecoveryState(), newLastUpdateDateTime, processed);
                     });
     }
 
@@ -381,5 +381,15 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
                 toDate = toDateTime.toLocalDate();
         if (!fromDate.equals(toDate))
             throw new CradleStorageException("Left and right boundaries should be of the same date, but got '"+fromDateTime+"' and '"+toDateTime+"'");
+    }
+
+    private static Interval copyWith(Interval original, String recoveryState, LocalDateTime lastUpdateDateTime, boolean processed) {
+        Interval.IntervalBuilder builder = Interval.builder(original);
+
+        builder.setRecoveryState(recoveryState);
+        builder.setLastUpdateDateTime(lastUpdateDateTime);
+        builder.setProcessed(processed);
+
+        return builder.build();
     }
 }
