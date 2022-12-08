@@ -232,10 +232,9 @@ public abstract class CradleStorage
 	
 	/**
 	 * IntervalsWorker is used to work with Crawler intervals
-	 * @param pageId page to get worker for
 	 * @return instance of IntervalsWorker
 	 */
-	public abstract IntervalsWorker getIntervalsWorker(PageId pageId);
+	public abstract IntervalsWorker getIntervalsWorker();
 	
 	
 	/**

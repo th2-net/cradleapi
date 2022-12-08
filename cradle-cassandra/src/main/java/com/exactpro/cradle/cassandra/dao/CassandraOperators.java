@@ -17,8 +17,6 @@
 package com.exactpro.cradle.cassandra.dao;
 
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
-import com.exactpro.cradle.cassandra.EventBatchDurationCache;
-import com.exactpro.cradle.cassandra.EventBatchDurationWorker;
 import com.exactpro.cradle.cassandra.dao.books.*;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageSession;
@@ -26,6 +24,7 @@ import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
 import com.exactpro.cradle.cassandra.dao.cache.CachedSession;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalEntity;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
+import com.exactpro.cradle.cassandra.dao.intervals.converters.IntervalEntityConverter;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.messages.converters.*;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
@@ -67,6 +66,7 @@ public class CassandraOperators {
     private final SessionStatisticsEntityConverter sessionStatisticsEntityConverter;
     private final GroupEntityConverter groupEntityConverter;
     private final PageGroupEntityConverter pageGroupEntityConverter;
+    private final IntervalEntityConverter intervalEntityConverter;
 
     private final LimitedCache<CachedSession> sessionsCache;
     private final LimitedCache<CachedPageSession> pageSessionsCache;
@@ -112,6 +112,7 @@ public class CassandraOperators {
         messageStatisticsEntityConverter = dataMapper.messageStatisticsEntityConverter();
         entityStatisticsEntityConverter = dataMapper.entityStatisticsEntityConverter();
         sessionStatisticsEntityConverter = dataMapper.sessionStatisticsEntityConverter();
+        intervalEntityConverter = dataMapper.intervalEntityConverter();
 
         sessionsCache = new LimitedCache<>(settings.getSessionsCacheSize());
         pageSessionsCache = new LimitedCache<>(settings.getPageSessionsCacheSize());
@@ -256,6 +257,10 @@ public class CassandraOperators {
 
     public PageGroupEntityConverter getPageGroupEntityConverter() {
         return pageGroupEntityConverter;
+    }
+
+    public IntervalEntityConverter getIntervalEntityConverter() {
+        return intervalEntityConverter;
     }
 
     public LimitedCache<GroupEntity> getGroupCache() {

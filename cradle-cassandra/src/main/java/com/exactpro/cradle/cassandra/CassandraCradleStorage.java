@@ -27,6 +27,7 @@ import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
 import com.exactpro.cradle.cassandra.counters.FrameInterval;
 import com.exactpro.cradle.cassandra.dao.*;
 import com.exactpro.cradle.cassandra.dao.books.*;
+import com.exactpro.cradle.cassandra.dao.intervals.CassandraIntervalsWorker;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
@@ -92,6 +93,7 @@ public class CassandraCradleStorage extends CradleStorage
 	private BookCache bookCache;
 	private StatisticsWorker statisticsWorker;
 	private EventBatchDurationWorker eventBatchDurationWorker;
+	private IntervalsWorker intervalsWorker;
 
 
 	public CassandraCradleStorage(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings, 
@@ -160,6 +162,7 @@ public class CassandraCradleStorage extends CradleStorage
 			eventsWorker = new EventsWorker(ws, statisticsWorker, eventBatchDurationWorker);
 			messagesWorker = new MessagesWorker(ws, statisticsWorker, statisticsWorker);
 			statisticsWorker.start();
+			intervalsWorker = new CassandraIntervalsWorker(ws);
 		}
 		catch (Exception e)
 		{
@@ -1004,9 +1007,9 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	public IntervalsWorker getIntervalsWorker(PageId pageId)
+	public IntervalsWorker getIntervalsWorker()
 	{
-		return null; //TODO: implement
+		return intervalsWorker;
 	}
 	
 	

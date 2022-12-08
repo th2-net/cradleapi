@@ -272,7 +272,6 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 		String tableName = IntervalEntity.TABLE_NAME;
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(IntervalEntity.FIELD_BOOK, DataTypes.TEXT)
-				.withPartitionKey(IntervalEntity.FIELD_PAGE, DataTypes.TEXT)
 				.withPartitionKey(IntervalEntity.FIELD_INTERVAL_START_DATE, DataTypes.DATE)
 				.withClusteringColumn(IntervalEntity.FIELD_CRAWLER_NAME, DataTypes.TEXT)
 				.withClusteringColumn(IntervalEntity.FIELD_CRAWLER_VERSION, DataTypes.TEXT)

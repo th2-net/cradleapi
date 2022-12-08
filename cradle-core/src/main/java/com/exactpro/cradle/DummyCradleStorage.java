@@ -393,7 +393,7 @@ public class DummyCradleStorage extends CradleStorage
 	}
 
 	@Override
-	public IntervalsWorker getIntervalsWorker(PageId pageId)
+	public IntervalsWorker getIntervalsWorker()
 	{
 		return null;
 	}

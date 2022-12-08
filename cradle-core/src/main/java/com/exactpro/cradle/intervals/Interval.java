@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,92 +16,204 @@
 
 package com.exactpro.cradle.intervals;
 
-import com.exactpro.cradle.utils.CompressionUtils;
+import com.exactpro.cradle.BookId;
 
 import java.time.*;
 import java.util.Objects;
 
 public class Interval {
-    private LocalDateTime startDateTime;
-    private LocalDateTime endDateTime;
-    private RecoveryState recoveryState;
-    private LocalDateTime lastUpdateDateTime;
-    private String crawlerName;
-    private String crawlerVersion;
-    private String crawlerType;
-    private boolean processed;
 
-    public static final ZoneOffset TIMEZONE_OFFSET = ZoneOffset.UTC;
+    private final BookId bookId;
+    private final Instant start;
+    private final Instant end;
+    private final Instant lastUpdate;
+    private final String recoveryState;
+    private final String crawlerName;
+    private final String crawlerVersion;
+    private final String crawlerType;
+    private final boolean processed;
 
-    public static IntervalBuilder builder() { return new IntervalBuilder(); }
+    private Interval(BookId bookId,
+                     Instant start,
+                     Instant end,
+                     String recoveryState,
+                     Instant lastUpdate,
+                     String crawlerName,
+                     String crawlerVersion,
+                     String crawlerType,
+                     boolean processed) {
+        this.bookId = bookId;
+        this.start = start;
+        this.end = end;
+        this.recoveryState = recoveryState;
+        this.lastUpdate = lastUpdate;
+        this.crawlerName = crawlerName;
+        this.crawlerVersion = crawlerVersion;
+        this.crawlerType = crawlerType;
+        this.processed = processed;
+    }
 
-    public Instant getStartTime() { return startDateTime.toInstant(TIMEZONE_OFFSET); }
+    public BookId getBookId() {
+        return bookId;
+    }
 
-    public void setStartTime(Instant startTime) { this.startDateTime = LocalDateTime.ofInstant(startTime, TIMEZONE_OFFSET); }
+    public Instant getStart() {
+        return start;
+    }
 
-    public Instant getEndTime() { return endDateTime.toInstant(TIMEZONE_OFFSET); }
+    public Instant getEnd() {
+        return end;
+    }
 
-    public void setEndTime(Instant endTime) { this.endDateTime = LocalDateTime.ofInstant(endTime, TIMEZONE_OFFSET); }
+    public Instant getLastUpdate() {
+        return lastUpdate;
+    }
 
-    public RecoveryState getRecoveryState() { return recoveryState; }
-
-    public void setRecoveryState(RecoveryState recoveryState) { this.recoveryState = recoveryState; }
-
-    public Instant getLastUpdateDateTime() { return lastUpdateDateTime.toInstant(TIMEZONE_OFFSET); }
-
-    public void setLastUpdateDateTime(Instant lastUpdateTime) { this.lastUpdateDateTime = LocalDateTime.ofInstant(lastUpdateTime, TIMEZONE_OFFSET); }
+    public String getRecoveryState() { return recoveryState; }
 
     public String getCrawlerName() { return crawlerName; }
 
-    public void setCrawlerName(String crawlerName) { this.crawlerName = crawlerName; }
-
     public String getCrawlerVersion() { return crawlerVersion; }
-
-    public void setCrawlerVersion(String crawlerVersion) { this.crawlerVersion = crawlerVersion; }
 
     public String getCrawlerType() { return crawlerType; }
 
-    public void setCrawlerType(String crawlerType) { this.crawlerType = crawlerType; }
-
     public boolean isProcessed() { return processed; }
 
-    public void setProcessed(boolean processed) { this.processed = processed; }
-
-    public static Interval copyWith(Interval original, RecoveryState recoveryState, LocalDateTime lastUpdateDateTime, boolean processed) {
-        Objects.requireNonNull(lastUpdateDateTime, "'lastUpdateDateTime' parameter");
-        Interval interval = new Interval();
-        interval.setStartTime(original.getStartTime());
-        interval.setEndTime(original.getEndTime());
-        interval.setCrawlerName(original.getCrawlerName());
-        interval.setCrawlerVersion(original.getCrawlerVersion());
-        interval.setCrawlerType(original.getCrawlerType());
-
-        interval.setRecoveryState(recoveryState);
-        interval.lastUpdateDateTime = lastUpdateDateTime;
-        interval.setProcessed(processed);
-        return interval;
+    @Override
+    public String toString() {
+        return "Interval{" +
+                "bookId=" + bookId +
+                ", start=" + start +
+                ", end=" + end +
+                ", lastUpdate=" + lastUpdate +
+                ", recoveryState='" + recoveryState + '\'' +
+                ", crawlerName='" + crawlerName + '\'' +
+                ", crawlerVersion='" + crawlerVersion + '\'' +
+                ", crawlerType='" + crawlerType + '\'' +
+                ", processed=" + processed +
+                '}';
     }
 
-    public static Interval copyWith(Interval original, RecoveryState recoveryState, Instant lastUpdateDateTime, boolean processed) {
-        return copyWith(original, recoveryState, LocalDateTime.ofInstant(lastUpdateDateTime, TIMEZONE_OFFSET), processed);
+    public static IntervalBuilder builder () {
+        return new IntervalBuilder();
+    }
+
+    public static IntervalBuilder builder (Interval original) {
+        return builder()
+                .setBookId(original.bookId)
+                .setStart(original.start)
+                .setEnd(original.end)
+                .setLastUpdate(original.lastUpdate)
+                .setCrawlerName(original.crawlerName)
+                .setCrawlerVersion(original.crawlerVersion)
+                .setCrawlerType(original.crawlerType)
+                .setRecoveryState(original.recoveryState)
+                .setProcessed(original.processed);
     }
 
     @Override
-    public String toString()
-    {
-        return new StringBuilder()
-                .append("Interval{").append(CompressionUtils.EOL)
-                .append("startDate=").append(startDateTime.toLocalDate()).append(",").append(CompressionUtils.EOL)
-                .append("startTime=").append(startDateTime.toLocalTime()).append(",").append(CompressionUtils.EOL)
-                .append("endDate=").append(endDateTime.toLocalDate()).append(",").append(CompressionUtils.EOL)
-                .append("endTime=").append(endDateTime.toLocalTime()).append(",").append(CompressionUtils.EOL)
-                .append("lastUpdateDate=").append(lastUpdateDateTime.toLocalDate()).append(",").append(CompressionUtils.EOL)
-                .append("lastUpdateTime=").append(lastUpdateDateTime.toLocalTime()).append(",").append(CompressionUtils.EOL)
-                .append("crawlerName=").append(crawlerName).append(",").append(CompressionUtils.EOL)
-                .append("crawlerVersion=").append(crawlerVersion).append(",").append(CompressionUtils.EOL)
-                .append("crawlerType=").append(crawlerType).append(",").append(CompressionUtils.EOL)
-                .append("processed=").append(processed).append(",").append(CompressionUtils.EOL)
-                .append(recoveryState.toString()).append(CompressionUtils.EOL)
-                .append("}").toString();
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Interval)) return false;
+        Interval interval = (Interval) o;
+        return isProcessed() == interval.isProcessed()
+                && getBookId().equals(interval.getBookId())
+                && Objects.equals(getStart(), interval.getStart())
+                && Objects.equals(getEnd(), interval.getEnd())
+                && getLastUpdate().equals(interval.getLastUpdate())
+                && Objects.equals(getRecoveryState(), interval.getRecoveryState())
+                && Objects.equals(getCrawlerName(), interval.getCrawlerName())
+                && Objects.equals(getCrawlerVersion(), interval.getCrawlerVersion())
+                && Objects.equals(getCrawlerType(), interval.getCrawlerType());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                getBookId(),
+                getStart(),
+                getEnd(),
+                getLastUpdate(),
+                getRecoveryState(),
+                getCrawlerName(),
+                getCrawlerVersion(),
+                getCrawlerType(),
+                isProcessed());
+    }
+
+    public static class IntervalBuilder {
+        private BookId bookId;
+        private Instant start;
+        private Instant end;
+        private String recoveryState;
+        private Instant lastUpdate;
+        private String crawlerName;
+        private String crawlerVersion;
+        private String crawlerType;
+        private boolean processed;
+
+        private IntervalBuilder () {
+        }
+
+        public IntervalBuilder setBookId (BookId bookId) {
+            this.bookId = bookId;
+            return this;
+        }
+
+        public IntervalBuilder setStart (Instant start) {
+            this.start = start;
+            return this;
+        }
+
+        public IntervalBuilder setEnd (Instant end) {
+            this.end = end;
+            return this;
+        }
+
+        public IntervalBuilder setLastUpdate (Instant lastUpdate) {
+            this.lastUpdate = lastUpdate;
+            return this;
+        }
+
+        public IntervalBuilder setRecoveryState (String recoveryState) {
+            this.recoveryState = recoveryState;
+            return this;
+        }
+
+        public IntervalBuilder setCrawlerName (String crawlerName) {
+            this.crawlerName = crawlerName;
+            return this;
+        }
+
+        public IntervalBuilder setCrawlerVersion (String crawlerVersion) {
+            this.crawlerVersion = crawlerVersion;
+            return this;
+        }
+
+        public IntervalBuilder setCrawlerType (String crawlerType) {
+            this.crawlerType = crawlerType;
+            return this;
+        }
+
+        public IntervalBuilder setProcessed (boolean processed) {
+            this.processed = processed;
+            return this;
+        }
+
+        public Interval build () {
+            Objects.requireNonNull(bookId, "'bookId' parameter");
+            Objects.requireNonNull(lastUpdate, "'lastUpdateDate' parameter");
+
+            return new Interval(
+                    bookId,
+                    start,
+                    end,
+                    recoveryState,
+                    lastUpdate,
+                    crawlerName,
+                    crawlerVersion,
+                    crawlerType,
+                    processed);
+        }
     }
 }
