@@ -94,19 +94,6 @@ public class Interval {
                 '}';
     }
 
-    private static Interval build (IntervalBuilder builder) {
-        return new Interval(
-                builder.bookId,
-                builder.start,
-                builder.end,
-                builder.recoveryState,
-                builder.lastUpdate,
-                builder.crawlerName,
-                builder.crawlerVersion,
-                builder.crawlerType,
-                builder.processed);
-    }
-
     public static IntervalBuilder builder () {
         return new IntervalBuilder();
     }
@@ -217,7 +204,16 @@ public class Interval {
             Objects.requireNonNull(bookId, "'bookId' parameter");
             Objects.requireNonNull(lastUpdate, "'lastUpdateDate' parameter");
 
-            return Interval.build(this);
+            return new Interval(
+                    bookId,
+                    start,
+                    end,
+                    recoveryState,
+                    lastUpdate,
+                    crawlerName,
+                    crawlerVersion,
+                    crawlerType,
+                    processed);
         }
     }
 }
