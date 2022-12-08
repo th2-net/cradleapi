@@ -60,9 +60,23 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
         this.writeAttrs = workerSupplies.getWriteAttrs();
     }
 
+    public static Interval entityToInterval(IntervalEntity entity) throws IOException {
+        return Interval.builder()
+                .setBookId(new BookId(entity.getBook()))
+                .setStart(LocalDateTime.of(entity.getStartDate(), entity.getStartTime()).atOffset(TIMEZONE_OFFSET).toInstant())
+                .setEnd(LocalDateTime.of(entity.getEndDate(), entity.getEndTime()).atOffset(TIMEZONE_OFFSET).toInstant())
+                .setLastUpdate(LocalDateTime.of(entity.getLastUpdateDate(), entity.getLastUpdateTime()).atOffset(TIMEZONE_OFFSET).toInstant())
+                .setRecoveryState(entity.getRecoveryState())
+                .setCrawlerName(entity.getCrawlerName())
+                .setCrawlerVersion(entity.getCrawlerVersion())
+                .setCrawlerType(entity.getCrawlerType())
+                .setProcessed(entity.isProcessed())
+                .build();
+    }
+
     private Interval mapEntityToInterval (IntervalEntity entity) {
         try {
-            return entity.asInterval();
+            return entityToInterval(entity);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

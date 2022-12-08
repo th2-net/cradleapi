@@ -17,15 +17,9 @@
 package com.exactpro.cradle.cassandra.dao.intervals;
 
 import com.datastax.oss.driver.api.mapper.annotations.*;
-import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.intervals.Interval;
 
-import java.io.IOException;
 import java.time.*;
 import java.util.Objects;
-
-import static com.exactpro.cradle.CradleStorage.TIMEZONE_OFFSET;
-
 
 @Entity
 @CqlName(IntervalEntity.TABLE_NAME)
@@ -140,20 +134,6 @@ public class IntervalEntity {
         return processed;
     }
 
-    public Interval asInterval() throws IOException {
-        return Interval.builder()
-                .setBookId(new BookId(book))
-                .setStart(LocalDateTime.of(startDate, startTime).atOffset(TIMEZONE_OFFSET).toInstant())
-                .setEnd(LocalDateTime.of(endDate, endTime).atOffset(TIMEZONE_OFFSET).toInstant())
-                .setLastUpdate(LocalDateTime.of(lastUpdateDate, lastUpdateTime).atOffset(TIMEZONE_OFFSET).toInstant())
-                .setRecoveryState(recoveryState)
-                .setCrawlerName(crawlerName)
-                .setCrawlerVersion(crawlerVersion)
-                .setCrawlerType(crawlerType)
-                .setProcessed(processed)
-                .build();
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -188,22 +168,6 @@ public class IntervalEntity {
                 getLastUpdateTime(),
                 getRecoveryState(),
                 isProcessed());
-    }
-
-    private static IntervalEntity build (IntervalEntityBuilder builder) {
-        return new IntervalEntity(
-                builder.book,
-                builder.startDate,
-                builder.crawlerName,
-                builder.crawlerVersion,
-                builder.crawlerType,
-                builder.startTime,
-                builder.endTime,
-                builder.lastUpdateDate,
-                builder.endDate,
-                builder.lastUpdateTime,
-                builder.recoveryState,
-                builder.processed);
     }
 
     public static IntervalEntityBuilder builder () {
@@ -289,7 +253,19 @@ public class IntervalEntity {
         }
 
         public IntervalEntity build () {
-            return IntervalEntity.build(this);
+            return new IntervalEntity(
+                    book,
+                    startDate,
+                    crawlerName,
+                    crawlerVersion,
+                    crawlerType,
+                    startTime,
+                    endTime,
+                    lastUpdateDate,
+                    endDate,
+                    lastUpdateTime,
+                    recoveryState,
+                    processed);
         }
     }
 }
