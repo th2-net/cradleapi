@@ -90,7 +90,7 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
                 new AtomicInteger(0),
                 this::mapEntityToInterval,
                 converter::getEntity,
-                "123");
+                queryInfo);
     }
 
     @Override
