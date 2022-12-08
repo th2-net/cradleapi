@@ -24,13 +24,14 @@ import java.io.IOException;
 import java.time.*;
 import java.util.Objects;
 
+import static com.exactpro.cradle.CradleStorage.TIMEZONE_OFFSET;
+
 
 @Entity
 @CqlName(IntervalEntity.TABLE_NAME)
 @PropertyStrategy(mutable = false)
 public class IntervalEntity {
     public static final String TABLE_NAME = "intervals";
-    public static final ZoneOffset TIMEZONE_OFFSET = ZoneOffset.UTC;
 
     public static final String FIELD_BOOK = "book";
     public static final String FIELD_INTERVAL_START_DATE = "interval_start_date";

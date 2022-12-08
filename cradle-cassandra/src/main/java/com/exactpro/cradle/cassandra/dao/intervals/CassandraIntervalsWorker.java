@@ -42,7 +42,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.cassandra.dao.intervals.IntervalEntity.TIMEZONE_OFFSET;
+import static com.exactpro.cradle.CradleStorage.TIMEZONE_OFFSET;
 
 public class CassandraIntervalsWorker extends Worker implements IntervalsWorker {
 
