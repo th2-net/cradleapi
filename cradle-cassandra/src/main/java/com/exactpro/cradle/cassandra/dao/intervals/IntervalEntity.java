@@ -18,9 +18,7 @@ package com.exactpro.cradle.cassandra.dao.intervals;
 
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.intervals.Interval;
-import jnr.ffi.annotations.In;
 
 import java.io.IOException;
 import java.time.*;

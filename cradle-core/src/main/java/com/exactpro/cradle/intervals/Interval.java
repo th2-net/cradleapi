@@ -17,7 +17,6 @@
 package com.exactpro.cradle.intervals;
 
 import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.utils.CompressionUtils;
 
 import java.time.*;
 import java.util.Objects;
