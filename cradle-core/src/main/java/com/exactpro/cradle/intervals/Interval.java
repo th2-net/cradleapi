@@ -33,8 +33,6 @@ public class Interval {
     private final String crawlerType;
     private final boolean processed;
 
-    public static final ZoneOffset TIMEZONE_OFFSET = ZoneOffset.UTC;
-
     private Interval(BookId bookId,
                      Instant start,
                      Instant end,
@@ -167,7 +165,7 @@ public class Interval {
         private String crawlerType;
         private boolean processed;
 
-        public IntervalBuilder () {
+        private IntervalBuilder () {
         }
 
         public IntervalBuilder setBookId (BookId bookId) {

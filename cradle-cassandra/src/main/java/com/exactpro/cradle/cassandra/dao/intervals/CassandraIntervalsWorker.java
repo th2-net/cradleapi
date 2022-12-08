@@ -80,7 +80,7 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
     }
 
     @Override
-    public boolean storeInterval(Interval interval) throws IOException, CradleStorageException {
+    public boolean storeInterval(Interval interval) throws CradleStorageException {
         String queryInfo = String.format("Storing interval for crawler %s:%s in  book %s",
                 interval.getCrawlerName(),
                 interval.getCrawlerType(),
@@ -124,7 +124,7 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
     }
 
     @Override
-    public Iterable<Interval> getIntervalsPerDay(BookId bookId, Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException, CradleStorageException {
+    public Iterable<Interval> getIntervalsPerDay(BookId bookId, Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws CradleStorageException {
         LocalDate date = LocalDate.ofInstant(from, TIMEZONE_OFFSET);
         LocalTime fromTime = LocalTime.ofInstant(from, TIMEZONE_OFFSET);
         LocalTime toTime = LocalTime.ofInstant(to, TIMEZONE_OFFSET);
@@ -167,7 +167,7 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
     }
 
     @Override
-    public Iterable<Interval> getIntervals(BookId bookId, Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException, CradleStorageException {
+    public Iterable<Interval> getIntervals(BookId bookId, Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws CradleStorageException {
         String queryInfo = String.format("Getting intervals for crawler %s:%s between timestamps %s-%s in book %s",
                 crawlerName,
                 crawlerType,
@@ -177,36 +177,41 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
 
         logger.debug(queryInfo);
 
-        LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET),
-                toDateTime = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
+        try {
+            LocalDateTime fromDateTime = LocalDateTime.ofInstant(from, TIMEZONE_OFFSET),
+                    toDateTime = LocalDateTime.ofInstant(to, TIMEZONE_OFFSET);
 
-        Iterable<Interval> result = new ArrayList<>();
+            Iterable<Interval> result = new ArrayList<>();
 
-        if (fromDateTime.toLocalDate().compareTo(toDateTime.toLocalDate()) == 0)
-        {
-            return getIntervalsPerDay(bookId, from, to, crawlerName, crawlerVersion, crawlerType);
+            if (fromDateTime.toLocalDate().compareTo(toDateTime.toLocalDate()) == 0)
+            {
+                return getIntervalsPerDay(bookId, from, to, crawlerName, crawlerVersion, crawlerType);
+            }
+
+            LocalDateTime point = fromDateTime;
+
+            while (point.isBefore(toDateTime))
+            {
+                point = LocalDateTime.of(fromDateTime.toLocalDate(), LocalTime.MAX);
+
+                if (point.isAfter(toDateTime))
+                    point = toDateTime;
+
+                Iterable<Interval> intervals = getIntervalsPerDay(bookId, fromDateTime, point, crawlerName, crawlerVersion, crawlerType);
+
+                fromDateTime = fromDateTime.plusDays(1).truncatedTo(ChronoUnit.DAYS);
+
+                result = Iterables.concat(result, intervals);
+            }
+
+            return result;
+        } catch (CradleStorageException e) {
+            logger.error("Error while {}", queryInfo);
+            throw e;
         }
-
-        LocalDateTime point = fromDateTime;
-
-        while (point.isBefore(toDateTime))
-        {
-            point = LocalDateTime.of(fromDateTime.toLocalDate(), LocalTime.MAX);
-
-            if (point.isAfter(toDateTime))
-                point = toDateTime;
-
-            Iterable<Interval> intervals = getIntervalsPerDay(bookId, fromDateTime, point, crawlerName, crawlerVersion, crawlerType);
-
-            fromDateTime = fromDateTime.plusDays(1).truncatedTo(ChronoUnit.DAYS);
-
-            result = Iterables.concat(result, intervals);
-        }
-
-        return result;
     }
 
-    private Iterable<Interval> getIntervalsPerDay(BookId bookId, LocalDateTime from, LocalDateTime to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException, CradleStorageException {
+    private Iterable<Interval> getIntervalsPerDay(BookId bookId, LocalDateTime from, LocalDateTime to, String crawlerName, String crawlerVersion, String crawlerType) throws CradleStorageException {
         LocalTime fromTime = from.toLocalTime();
         LocalTime toTime = to.toLocalTime();
         LocalDate date = from.toLocalDate();
@@ -253,7 +258,7 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
     }
 
     @Override
-    public Interval setIntervalLastUpdateTimeAndDate(Interval interval, Instant newLastUpdateTime) throws IOException, CradleStorageException {
+    public Interval setIntervalLastUpdateTimeAndDate(Interval interval, Instant newLastUpdateTime) throws CradleStorageException {
         String queryInfo = String.format("Setting last update date and time as %s for interval %s in book %s",
                 newLastUpdateTime,
                 interval,
@@ -304,7 +309,7 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
     }
 
     @Override
-    public Interval updateRecoveryState(Interval interval, String recoveryState) throws IOException, CradleStorageException {
+    public Interval updateRecoveryState(Interval interval, String recoveryState) throws CradleStorageException {
         String queryInfo = String.format("Updating recoveryState to %s for interval %s in book %s",
                 recoveryState,
                 interval,
@@ -354,7 +359,7 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
     }
 
     @Override
-    public Interval setIntervalProcessed(Interval interval, boolean processed) throws IOException, CradleStorageException {
+    public Interval setIntervalProcessed(Interval interval, boolean processed) throws CradleStorageException {
         String queryInfo = String.format("Updating processed to %s for interval %s in book %s",
                 processed,
                 interval,

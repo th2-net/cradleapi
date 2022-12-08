@@ -19,21 +19,18 @@ package com.exactpro.cradle.intervals;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.utils.CradleStorageException;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 
 public interface IntervalsWorker
 {
-    // TODO: update javadocs
-
     /**
      * Writes to storage interval
      * @param interval data to write
      * @return true if interval was stored, false otherwise
-     * @throws IOException if data writing failed
+     * @throws CradleStorageException if data writing failed
      */
-    boolean storeInterval(Interval interval) throws IOException, CradleStorageException;
+    boolean storeInterval(Interval interval) throws CradleStorageException;
 
     /**
      * Asynchronously writes to storage interval
@@ -46,18 +43,21 @@ public interface IntervalsWorker
      * Obtains iterable of intervals with startTime greater than or equal to "from" and less than or equal to "to".
      * Intervals must be within one day
      *
+     * @param bookId         book where this interval belongs
      * @param from           time from which intervals are searched
      * @param to             time to which intervals are searched
      * @param crawlerName    name of Crawler
      * @param crawlerVersion version of Crawler
      * @param crawlerType    type of Crawler
      * @return iterable of intervals
-     * @throws IOException   if something went wrong
+     * @throws CradleStorageException   if something went wrong
      */
-    Iterable<Interval> getIntervalsPerDay(BookId bookId, Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException, CradleStorageException;
+    Iterable<Interval> getIntervalsPerDay(BookId bookId, Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws CradleStorageException;
 
     /**
      * Asynchronously obtains iterable of intervals with startTime greater than or equal to "from" and less than or equal to "to". Intervals must be within one day
+     *
+     * @param bookId book where this interval belongs
      * @param from time from which intervals are searched
      * @param to time to which intervals are searched
      * @param crawlerName name of Crawler
@@ -71,15 +71,16 @@ public interface IntervalsWorker
     /**
      * Obtains iterable of intervals with startTime greater than or equal to "from" and less than or equal to "to"
      *
+     * @param bookId         book where this interval belongs
      * @param from           time from which intervals are searched
      * @param to             time to which intervals are searched
      * @param crawlerName    name of Crawler
      * @param crawlerVersion version of Crawler
      * @param crawlerType    type of Crawler
      * @return iterable of intervals
-     * @throws IOException if something went wrong
+     * @throws CradleStorageException if something went wrong
      */
-    Iterable<Interval> getIntervals(BookId bookId, Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws IOException, CradleStorageException;
+    Iterable<Interval> getIntervals(BookId bookId, Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws CradleStorageException;
 
     /**
      * Sets last update time and last update date of interval.
@@ -90,9 +91,9 @@ public interface IntervalsWorker
      * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and
      * previousLastUpdateDate.
      * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
-     * @throws IOException   if something went wrong
+     * @throws CradleStorageException   if something went wrong
      */
-    Interval setIntervalLastUpdateTimeAndDate(Interval interval, Instant newLastUpdateTime) throws IOException, CradleStorageException;
+    Interval setIntervalLastUpdateTimeAndDate(Interval interval, Instant newLastUpdateTime) throws CradleStorageException;
 
     /**
      * Asynchronously sets last update time and last update date of interval.
@@ -113,9 +114,9 @@ public interface IntervalsWorker
      * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and
      * previousLastUpdateDate.
      * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
-     * @throws IOException   if something went wrong
+     * @throws CradleStorageException   if something went wrong
      */
-    Interval updateRecoveryState(Interval interval, String recoveryState) throws IOException, CradleStorageException;
+    Interval updateRecoveryState(Interval interval, String recoveryState) throws CradleStorageException;
 
     /**
      * Asynchronously updates RecoveryState, also sets lastUpdateTime and lastUpdateDate as current time and date
@@ -138,9 +139,9 @@ public interface IntervalsWorker
      * @return the new instance of {@link Interval} with updated processed. This operation is successful
      * only if lastUpdateTime and lastUpdateDate parameters are the same as previousLastUpdateTime and previousLastUpdateDate.
      * If it was not successful throws an {@link com.exactpro.cradle.utils.UpdateNotAppliedException} exception
-     * @throws IOException   if something went wrong
+     * @throws CradleStorageException   if something went wrong
      */
-    Interval setIntervalProcessed(Interval interval, boolean processed) throws IOException, CradleStorageException;
+    Interval setIntervalProcessed(Interval interval, boolean processed) throws CradleStorageException;
 
     /**
      * Asynchronously sets flag that indicates if interval was processed completely, also sets lastUpdateTime and lastUpdateDate as current time and date
