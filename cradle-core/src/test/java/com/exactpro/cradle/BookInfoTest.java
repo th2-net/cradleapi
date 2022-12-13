@@ -9,9 +9,7 @@ import org.testng.annotations.Test;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 public class BookInfoTest {
 
@@ -29,8 +27,8 @@ public class BookInfoTest {
         List<PageInfo> pages = generateNPages(nOfPages, bookId, bookStart, ChronoUnit.HOURS);
         BookInfo bookInfo = new BookInfo(bookId, null, null, bookStart, pages);
 
-        var expected = pages.subList(2, 8);
-        var actual = bookInfo.getPages(new Interval(bookStart.plus(2, ChronoUnit.HOURS), bookStart.plus(8, ChronoUnit.HOURS).minusMillis(1)));
+        List<PageInfo> expected = pages.subList(2, 8);
+        Collection<PageInfo> actual = bookInfo.getPages(new Interval(bookStart.plus(2, ChronoUnit.HOURS), bookStart.plus(8, ChronoUnit.HOURS).minusMillis(1)));
 
         Assert.assertEquals(actual, expected);
     }
@@ -43,8 +41,8 @@ public class BookInfoTest {
             List<PageInfo> pages = generateNPages(nOfPages, bookId, bookStart, ChronoUnit.HOURS);
             BookInfo bookInfo = new BookInfo(bookId, null, null, bookStart, pages);
 
-            var expected = pages.subList(2, 8);
-            var actual = bookInfo.getPages(
+            List<PageInfo> expected = pages.subList(2, 8);
+            Collection<PageInfo> actual = bookInfo.getPages(
                     new Interval(
                             bookStart.plus(2, ChronoUnit.HOURS).plus(30, ChronoUnit.MINUTES),
                             bookStart.plus(8, ChronoUnit.HOURS).minus(30, ChronoUnit.MINUTES)));
@@ -62,8 +60,8 @@ public class BookInfoTest {
         List<PageInfo> pages = generateNPages(nOfPages, bookId, bookStart, ChronoUnit.HOURS);
         BookInfo bookInfo = new BookInfo(bookId, null, null, bookStart, pages);
 
-        var expected = pages.subList(9, 10);
-        var actual = bookInfo.getPages(
+        List<PageInfo> expected = pages.subList(9, 10);
+        Collection<PageInfo> actual = bookInfo.getPages(
                 new Interval(
                         bookStart.plus(11, ChronoUnit.HOURS),
                         bookStart.plus(12, ChronoUnit.HOURS)));
@@ -71,8 +69,8 @@ public class BookInfoTest {
         Assert.assertEquals(actual, expected);
     }
 
-    @Test(description = "Tests getPages(Interval) when book has missing pages")
-    public void testGetPagesMissingPages() throws CradleStorageException {
+    @Test(description = "Tests getPages(Interval) when book has some removed pages")
+    public void testGetPagesRemovedPages() throws CradleStorageException {
         int nOfPages = 10;
         Instant bookStart = Instant.now().minus(nOfPages, ChronoUnit.HOURS);
         List<PageInfo> pages = generateNPages(nOfPages, bookId, bookStart, ChronoUnit.HOURS);
@@ -86,14 +84,38 @@ public class BookInfoTest {
 
         BookInfo bookInfo = new BookInfo(bookId, null, null, bookStart, bookPages);
 
-        var expected = new ArrayList<>();
+        ArrayList<Object> expected = new ArrayList<>();
         expected.add(pages.get(5));
         expected.add(pages.get(7));
         expected.add(pages.get(9));
-        var actual = bookInfo.getPages(
+        Collection<PageInfo> actual = bookInfo.getPages(
                 new Interval(
                         bookStart.plus(5, ChronoUnit.HOURS).minus(30, ChronoUnit.MINUTES),
                         bookStart.plus(12, ChronoUnit.HOURS)));
+
+        Assert.assertEquals(actual, expected);
+    }
+
+    @Test(description = "Tests getPages(Interval) when book has some removed pages and we're getting pages for empty interval")
+    public void testGetPagesRemovedPagesEmptyInterval() throws CradleStorageException {
+        int nOfPages = 10;
+        Instant bookStart = Instant.now().minus(nOfPages, ChronoUnit.HOURS);
+        List<PageInfo> pages = generateNPages(nOfPages, bookId, bookStart, ChronoUnit.HOURS);
+        List<PageInfo> bookPages = new ArrayList<>(Arrays.asList(
+                pages.get(0),
+                pages.get(1),
+                pages.get(2),
+                pages.get(5),
+                pages.get(7),
+                pages.get(9)));
+
+        BookInfo bookInfo = new BookInfo(bookId, null, null, bookStart, bookPages);
+
+        List<Object> expected = Collections.emptyList();
+        Collection<PageInfo> actual = bookInfo.getPages(
+                new Interval(
+                        bookStart.plus(4, ChronoUnit.HOURS).plus(30, ChronoUnit.MINUTES),
+                        bookStart.plus(5, ChronoUnit.HOURS).minus(15, ChronoUnit.MINUTES)));
 
         Assert.assertEquals(actual, expected);
     }

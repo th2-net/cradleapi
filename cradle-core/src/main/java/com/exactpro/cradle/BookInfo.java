@@ -21,6 +21,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -140,13 +141,14 @@ public class BookInfo
 
 	public Collection<PageInfo> getPages (Interval interval) {
 		Entry<Instant, PageInfo> start = orderedPages.floorEntry(interval.getStart());
-		if (start.getValue().getEnded() != null && start.getValue().getEnded().isBefore(interval.getStart())) {
+		if (!start.getValue().isValidFor(interval.getStart())) {
 			start = orderedPages.ceilingEntry(interval.getStart());
 		}
 
 		Entry<Instant, PageInfo> end = orderedPages.floorEntry(interval.getEnd());
-		if (end	.getValue().getEnded() != null && end.getValue().getEnded().isBefore(interval.getEnd())) {
-			start = orderedPages.ceilingEntry(interval.getStart());
+
+		if (start.getKey().isAfter(end.getKey())) {
+			return Collections.emptyList();
 		}
 
 		return orderedPages.subMap(start.getKey(), true, end.getKey(), true).values();
