@@ -139,16 +139,21 @@ public class BookInfo
 		orderedPages.put(page.getStarted(), page);
 	}
 
+	/*
+		Returns pages inside or crossing with this interval
+		both start and end are included
+	 */
 	public Collection<PageInfo> getPages (Interval interval) {
 		Entry<Instant, PageInfo> start = orderedPages.floorEntry(interval.getStart());
-		if (!start.getValue().isValidFor(interval.getStart())) {
+		if (start == null || !start.getValue().isValidFor(interval.getStart())) {
 			start = orderedPages.ceilingEntry(interval.getStart());
 		}
 
 		Entry<Instant, PageInfo> end = orderedPages.floorEntry(interval.getEnd());
 
-		if (start.getKey().isAfter(end.getKey())) {
+		if (start == null || end == null || start.getKey().isAfter(end.getKey())) {
 			return Collections.emptyList();
+
 		}
 
 		return orderedPages.subMap(start.getKey(), true, end.getKey(), true).values();

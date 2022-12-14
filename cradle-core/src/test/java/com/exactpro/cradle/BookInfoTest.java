@@ -120,6 +120,38 @@ public class BookInfoTest {
         Assert.assertEquals(actual, expected);
     }
 
+    @Test(description = "Tests getPages(Interval) when interval starts before pages and ends during pages")
+    public void testGetPagesBadIntervalStart() throws CradleStorageException {
+        int nOfPages = 10;
+        Instant bookStart = Instant.now().minus(nOfPages, ChronoUnit.HOURS);
+        List<PageInfo> pages = generateNPages(nOfPages, bookId, bookStart, ChronoUnit.HOURS);
+        BookInfo bookInfo = new BookInfo(bookId, null, null, bookStart, pages);
+
+        List<PageInfo> expected = pages.subList(0, 4);
+        Collection<PageInfo> actual = bookInfo.getPages(
+                new Interval(
+                        bookStart.minus(1, ChronoUnit.HOURS),
+                        bookStart.plus(3, ChronoUnit.HOURS)));
+
+        Assert.assertEquals(actual, expected);
+    }
+
+    @Test(description = "Tests getPages(Interval) when interval starts and ends before pages")
+    public void testGetPagesBadInterval() throws CradleStorageException {
+        int nOfPages = 10;
+        Instant bookStart = Instant.now().minus(nOfPages, ChronoUnit.HOURS);
+        List<PageInfo> pages = generateNPages(nOfPages, bookId, bookStart, ChronoUnit.HOURS);
+        BookInfo bookInfo = new BookInfo(bookId, null, null, bookStart, pages);
+
+        List<PageInfo> expected = Collections.emptyList();
+        Collection<PageInfo> actual = bookInfo.getPages(
+                new Interval(
+                        bookStart.minus(3, ChronoUnit.HOURS),
+                        bookStart.minus(1, ChronoUnit.HOURS)));
+
+        Assert.assertEquals(actual, expected);
+    }
+
     private List<PageInfo> generateNPages (int nOfPages, BookId bookId, Instant start, TemporalUnit pageDuration) {
         List<PageInfo> pages = new ArrayList<>();
         for (int i = 0; i < nOfPages-1; i ++) {
