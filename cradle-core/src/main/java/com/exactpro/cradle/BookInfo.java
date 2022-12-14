@@ -21,7 +21,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
+import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
@@ -135,6 +137,26 @@ public class BookInfo
 	{
 		pages.put(page.getId(), page);
 		orderedPages.put(page.getStarted(), page);
+	}
+
+	/*
+		Returns pages inside or crossing with this interval
+		both start and end are included
+	 */
+	public Collection<PageInfo> getPages (Interval interval) {
+		Entry<Instant, PageInfo> start = orderedPages.floorEntry(interval.getStart());
+		if (start == null || !start.getValue().isValidFor(interval.getStart())) {
+			start = orderedPages.ceilingEntry(interval.getStart());
+		}
+
+		Entry<Instant, PageInfo> end = orderedPages.floorEntry(interval.getEnd());
+
+		if (start == null || end == null || start.getKey().isAfter(end.getKey())) {
+			return Collections.emptyList();
+
+		}
+
+		return orderedPages.subMap(start.getKey(), true, end.getKey(), true).values();
 	}
 
 	@Override
