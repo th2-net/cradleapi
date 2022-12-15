@@ -30,6 +30,7 @@ import com.exactpro.cradle.cassandra.dao.books.*;
 import com.exactpro.cradle.cassandra.dao.intervals.CassandraIntervalsWorker;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
+import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
 import com.exactpro.cradle.cassandra.metrics.DriverMetrics;
@@ -62,14 +63,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -1206,5 +1206,41 @@ public class CassandraCradleStorage extends CradleStorage
 			operators.getEntityStatisticsOperator().remove(book, pageId.getName(), EntityType.EVENT.getValue(),
 					ft.getValue(), writeAttrs);
 		}
+	}
+
+	@Override
+	protected Iterator<PageInfo> doGetPages(BookId bookId, Interval interval) {
+		String queryInfo = String.format(
+				"Getting pages for book %s between  %s - %s ",
+				bookId.getName(),
+				interval.getStart(),
+				interval.getEnd());
+
+		PageEntity startPage = operators.getPageOperator()
+				.getPagesForLessOrEqual(
+						bookId.getName(),
+						LocalDate.ofInstant(interval.getStart(), TIMEZONE_OFFSET),
+						LocalTime.ofInstant(interval.getStart(), TIMEZONE_OFFSET),
+						readAttrs).one();
+
+		LocalDate startDate = startPage == null ? LocalDate.MIN : startPage.getStartDate();
+		LocalTime startTime = startPage == null ? LocalTime.MIN : startPage.getStartTime();
+		LocalDate endDate = LocalDate.ofInstant(interval.getEnd(), TIMEZONE_OFFSET);
+		LocalTime endTime = LocalTime.ofInstant(interval.getEnd(), TIMEZONE_OFFSET);
+
+		MappedAsyncPagingIterable<PageEntity> rs = operators.getPageOperator().getPagesForInterval(
+				bookId.getName(),
+				startDate,
+				startTime,
+				endDate,
+				endTime,
+				readAttrs);
+
+		return new ConvertingPagedIterator<>(rs,
+				selectExecutor,
+				0,
+				new AtomicInteger(0),
+				PageEntity::toPageInfo,
+				operators.getPageEntityConverter()::getEntity, queryInfo);
 	}
 }

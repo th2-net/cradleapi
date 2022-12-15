@@ -206,7 +206,7 @@ public abstract class CradleStorage
 
 	protected abstract PageInfo doUpdatePageName (BookId bookId, String pageName, String newPageName) throws CradleStorageException;
 
-
+	protected abstract Iterator<PageInfo> doGetPages (BookId bookId, Interval interval);
 
 	/**
 	 * Initializes internal objects of storage and prepares it to access data, i.e. creates needed connections and facilities.
@@ -1252,6 +1252,17 @@ public abstract class CradleStorage
 		}
 
 		return updatedPageInfo;
+	}
+
+	/**
+	 * Returns pages which intersect or are inside this interval,
+	 * both start and end are inclusive
+	 * @param bookId Identifier for book
+	 * @param interval Time interval
+	 * @return
+	 */
+	public Iterator<PageInfo> getPages(BookId bookId, Interval interval) {
+		return doGetPages(bookId, interval);
 	}
 
 	private void updatePage(PageId pageId, PageInfo updatedPageInfo) throws CradleStorageException {
