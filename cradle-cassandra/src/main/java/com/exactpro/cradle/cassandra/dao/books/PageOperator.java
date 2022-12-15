@@ -69,7 +69,7 @@ public interface PageOperator {
 			+
 			"ORDER BY " +
 			FIELD_START_DATE + " DESC, " +
-			FIELD_START_TIME + " DESC" +
+			FIELD_START_TIME + " DESC " +
 			"LIMIT 1")
 	PagingIterable<PageEntity> getPageForLessOrEqual(String book, LocalDate startDate, LocalTime startTime,
 													 Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
