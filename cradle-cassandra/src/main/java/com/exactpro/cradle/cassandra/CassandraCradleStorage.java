@@ -1217,7 +1217,7 @@ public class CassandraCradleStorage extends CradleStorage
 				interval.getEnd());
 
 		PageEntity startPage = operators.getPageOperator()
-				.getPagesForLessOrEqual(
+				.getPageForLessOrEqual(
 						bookId.getName(),
 						LocalDate.ofInstant(interval.getStart(), TIMEZONE_OFFSET),
 						LocalTime.ofInstant(interval.getStart(), TIMEZONE_OFFSET),

@@ -17,8 +17,6 @@
 package com.exactpro.cradle.cassandra.dao.books;
 
 import static com.exactpro.cradle.cassandra.dao.books.PageEntity.*;
-import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_FIRST_MESSAGE_DATE;
-import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_FIRST_MESSAGE_TIME;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -71,9 +69,10 @@ public interface PageOperator {
 			+
 			"ORDER BY " +
 			FIELD_START_DATE + " DESC, " +
-			FIELD_START_TIME + " DESC")
-	PagingIterable<PageEntity> getPagesForLessOrEqual(String book, LocalDate startDate, LocalTime startTime,
-								   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+			FIELD_START_TIME + " DESC" +
+			"LIMIT 1")
+	PagingIterable<PageEntity> getPageForLessOrEqual(String book, LocalDate startDate, LocalTime startTime,
+													 Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 
 	@Query("SELECT * FROM ${qualifiedTableId} " +
