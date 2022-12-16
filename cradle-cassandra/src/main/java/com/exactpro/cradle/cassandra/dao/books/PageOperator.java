@@ -21,6 +21,7 @@ import static com.exactpro.cradle.cassandra.dao.books.PageEntity.*;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
@@ -81,7 +82,7 @@ public interface PageOperator {
 			"(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") >= (:startDate, :startTime) " +
 			"AND " +
 			"(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") <= (:endDate, :endTime)")
-	MappedAsyncPagingIterable<PageEntity> getPagesForInterval(String book, LocalDate startDate, LocalTime startTime,
-															  LocalDate endDate, LocalTime endTime,
-															  Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<MappedAsyncPagingIterable<PageEntity>> getPagesForInterval(String book, LocalDate startDate, LocalTime startTime,
+																				LocalDate endDate, LocalTime endTime,
+																				Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }

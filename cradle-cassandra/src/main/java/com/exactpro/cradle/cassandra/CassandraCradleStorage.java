@@ -1209,7 +1209,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Iterator<PageInfo> doGetPages(BookId bookId, Interval interval) {
+	protected CompletableFuture<Iterator<PageInfo>> doGetPagesAsync (BookId bookId, Interval interval) {
 		String queryInfo = String.format(
 				"Getting pages for book %s between  %s - %s ",
 				bookId.getName(),
@@ -1228,19 +1228,33 @@ public class CassandraCradleStorage extends CradleStorage
 		LocalDate endDate = LocalDate.ofInstant(interval.getEnd(), TIMEZONE_OFFSET);
 		LocalTime endTime = LocalTime.ofInstant(interval.getEnd(), TIMEZONE_OFFSET);
 
-		MappedAsyncPagingIterable<PageEntity> rs = operators.getPageOperator().getPagesForInterval(
+		return operators.getPageOperator().getPagesForInterval(
 				bookId.getName(),
 				startDate,
 				startTime,
 				endDate,
 				endTime,
-				readAttrs);
+				readAttrs)
+				.thenApply(rs -> new ConvertingPagedIterator<>(rs,
+						selectExecutor,
+						0,
+						new AtomicInteger(0),
+						PageEntity::toPageInfo,
+						(el) -> operators.getPageEntityConverter().getEntity(el), queryInfo));
+	}
 
-		return new ConvertingPagedIterator<>(rs,
-				selectExecutor,
-				0,
-				new AtomicInteger(0),
-				PageEntity::toPageInfo,
-				operators.getPageEntityConverter()::getEntity, queryInfo);
+	@Override
+	protected Iterator<PageInfo> doGetPages(BookId bookId, Interval interval) throws CradleStorageException {
+		String queryInfo = String.format(
+				"Getting pages for book %s between  %s - %s ",
+				bookId.getName(),
+				interval.getStart(),
+				interval.getEnd());
+
+		try {
+			return doGetPagesAsync(bookId, interval).get();
+		} catch (InterruptedException | ExecutionException e) {
+			throw new CradleStorageException("Error while " + queryInfo, e);
+		}
 	}
 }
