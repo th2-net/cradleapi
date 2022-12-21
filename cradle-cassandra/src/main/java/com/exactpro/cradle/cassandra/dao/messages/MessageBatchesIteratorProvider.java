@@ -64,7 +64,7 @@ public class MessageBatchesIteratorProvider extends AbstractMessageIteratorProvi
 				{
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
 					// Updated limit should be smaller, since we already got entities from previous batch
-					cassandraFilter = createNextFilter(cassandraFilter, limit - returned.get());
+					cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(),0));
 					return new ConvertingPagedIterator<>(resultSet, selectQueryExecutor, limit, returned,
 							entity -> mapMessageBatchEntity(pageId, entity), messageBatchEntityConverter::getEntity,
 							"fetch next page of message batches");

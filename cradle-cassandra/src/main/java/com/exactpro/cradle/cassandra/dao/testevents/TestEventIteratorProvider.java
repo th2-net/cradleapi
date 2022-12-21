@@ -132,7 +132,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 		return op.getByFilter(cassandraFilter, selectQueryExecutor, getRequestInfo(), readAttrs)
 				.thenApplyAsync(resultSet -> {
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
-					cassandraFilter = createNextFilter(cassandraFilter, limit - returned.get());
+					cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(),0));
 
 					return new FilteringConvertingPagedIterator<>(
 							resultSet,
