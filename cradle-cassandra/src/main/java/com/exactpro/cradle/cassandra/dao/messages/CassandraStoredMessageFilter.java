@@ -107,7 +107,7 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 					.orderBy(FIELD_SEQUENCE, orderBy);
 		}
 
-		if (limit != 0) {
+		if (limit > 0) {
 			select = select.limit(limit);
 		}
 
