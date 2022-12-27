@@ -91,6 +91,11 @@ public class BookStatisticsRecordsCaches {
             result = 31 * result + recordType.hashCode();
             return result;
         }
+
+        @Override
+        public String toString() {
+            return page + ":" + recordType;
+        }
     }
 
 
@@ -129,6 +134,11 @@ public class BookStatisticsRecordsCaches {
         public int hashCode() {
             return Objects.hash(page, sessionAlias, direction);
         }
+
+        @Override
+        public String toString() {
+            return page + ":" + sessionAlias + ":" + direction;
+        }
     }
 
     public static class EntityKey implements RecordKey {
@@ -153,6 +163,11 @@ public class BookStatisticsRecordsCaches {
         @Override
         public int hashCode() {
             return Objects.hash(page, entityType);
+        }
+
+        @Override
+        public String toString() {
+            return page + ":" + entityType;
         }
     }
 

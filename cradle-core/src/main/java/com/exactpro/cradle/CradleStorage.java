@@ -25,10 +25,7 @@ import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.resultset.EmptyResultSet;
-import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.StoredTestEventId;
-import com.exactpro.cradle.testevents.TestEventFilter;
-import com.exactpro.cradle.testevents.TestEventToStore;
+import com.exactpro.cradle.testevents.*;
 import com.exactpro.cradle.utils.BookPagesNamesChecker;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
@@ -582,11 +579,13 @@ public abstract class CradleStorage
 		CompletableFuture<Void>[] futures = new CompletableFuture[batches.size()];
 		int i = 0;
 		for (var b : batches) {
+			CompletableFuture<Void> future;
 			try {
-				futures[i++] = doStoreGroupedMessageBatchAsync(b.getKey(), b.getValue());
+				future = doStoreGroupedMessageBatchAsync(b.getKey(), b.getValue());
 			} catch (Exception e) {
-				futures[i++] = CompletableFuture.failedFuture(e);
+				future = CompletableFuture.failedFuture(e);
 			}
+			futures[i++] = future;
 		}
 		CompletableFuture<Void> result = CompletableFuture.allOf(futures);
 		result.whenCompleteAsync((r, error) -> {
@@ -599,26 +598,66 @@ public abstract class CradleStorage
 	}
 
 
+	TestEventToStore alignEventTimestampsToPage(TestEventToStore event, PageInfo page) throws CradleStorageException {
+
+		if (!event.isBatch())
+			return event;
+
+		TestEventBatchToStore batch = event.asBatch();
+
+		Map<StoredTestEventId, StoredTestEventId> idMappings = new HashMap<>();
+		batch.getTestEvents().forEach((e) -> {
+			if (!page.isValidFor(e.getStartTimestamp())) {
+				StoredTestEventId id = e.getId();
+				idMappings.put(id, new StoredTestEventId(id.getBookId(), id.getScope(), page.getEnded().minusNanos(1), id.getId()));
+			}
+		});
+
+		if (idMappings.isEmpty())
+			return event;
+
+		logger.warn("Batch contains events from different pages, aligning event timestamps to first event's page's end ({})", event.getId());
+
+		TestEventBatchToStore newBatch = entitiesFactory.testEventBatch(event.getId(), event.getName(), event.getParentId());
+		newBatch.setType(event.getType());
+
+		for (var e : batch.getTestEvents()) {
+			TestEventSingleToStore newEvent = new TestEventSingleToStoreBuilder()
+													.id(idMappings.getOrDefault(e.getId(), e.getId()))
+													.name(e.getName())
+													.parentId(idMappings.getOrDefault(e.getParentId(), e.getParentId()))
+													.type(e.getType())
+													.endTimestamp(e.getEndTimestamp())
+													.success(e.isSuccess())
+													.messages(e.getMessages())
+													.content(e.getContent())
+													.build();
+			newBatch.addTestEvent(newEvent);
+		}
+
+		return newBatch;
+	}
+
 	/**
 	 * Writes data about given test event to current page
 	 * @param event data to write
 	 * @throws IOException if data writing failed
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final void storeTestEvent(TestEventToStore event) throws IOException, CradleStorageException
-	{
+	public final void storeTestEvent(TestEventToStore event) throws IOException, CradleStorageException	{
+
 		StoredTestEventId id = event.getId();
 		logger.debug("Storing test event {}", id);
 		PageInfo page = findPage(id.getBookId(), id.getStartTimestamp());
 		
 		TestEventUtils.validateTestEvent(event);
+		final TestEventToStore alignedEvent = alignEventTimestampsToPage(event, page);
 		
-		doStoreTestEvent(event, page);
+		doStoreTestEvent(alignedEvent, page);
 		logger.debug("Test event {} has been stored", id);
-		if (event.getParentId() != null)
-		{
+		if (alignedEvent.getParentId() != null) {
 			logger.debug("Updating parents of test event {}", id);
-			doUpdateParentTestEvents(event);
+			doUpdateParentTestEvents(alignedEvent);
 			logger.debug("Parents of test event {} have been updated", id);
 		}
 	}
@@ -630,15 +669,16 @@ public abstract class CradleStorage
 	 * @return future to get know if storing was successful
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final CompletableFuture<Void> storeTestEventAsync(TestEventToStore event) throws IOException, CradleStorageException
-	{
+	public final CompletableFuture<Void> storeTestEventAsync(TestEventToStore event) throws IOException, CradleStorageException {
+
 		StoredTestEventId id = event.getId();
 		logger.debug("Storing test event {} asynchronously", id);
 		PageInfo page = findPage(id.getBookId(), id.getStartTimestamp());
 		
 		TestEventUtils.validateTestEvent(event);
+		final TestEventToStore alignedEvent = alignEventTimestampsToPage(event, page);
 		
-		CompletableFuture<Void> result = doStoreTestEventAsync(event, page);
+		CompletableFuture<Void> result = doStoreTestEventAsync(alignedEvent, page);
 		result.whenCompleteAsync((r, error) -> {
 				if (error != null)
 					logger.error("Error while storing test event "+id+" asynchronously", error);
@@ -646,17 +686,17 @@ public abstract class CradleStorage
 					logger.debug("Test event {} has been stored asynchronously", id);
 			}, composingService);
 		
-		if (event.getParentId() == null)
+		if (alignedEvent.getParentId() == null)
 			return result;
 		
 		return result.thenComposeAsync(r -> {
 			logger.debug("Updating parents of test event {} asynchronously", id);
-			CompletableFuture<Void> result2 = doUpdateParentTestEventsAsync(event);
+			CompletableFuture<Void> result2 = doUpdateParentTestEventsAsync(alignedEvent);
 			result2.whenCompleteAsync((r2, error) -> {
 					if (error != null)
 						logger.error("Error while updating parents of test event "+id+" asynchronously", error);
 					else
-						logger.debug("Parents of test event {} have been updated asynchronously", event.getId());
+						logger.debug("Parents of test event {} have been updated asynchronously", alignedEvent.getId());
 				}, composingService);
 			return result2;
 		}, composingService);
