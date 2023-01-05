@@ -21,9 +21,6 @@ allprojects {
 	}
 
 	tasks.register('resolveAndLockAll') {
-		doFirst {
-			println gradle.startParameter.writeDependencyLocks
-		}
 		doLast {
 			configurations.findAll {
 				// Add any custom filtering on the configurations to be resolved
@@ -33,6 +30,8 @@ allprojects {
 	}
 
 }
+
+def lockfilesNames = []
 
 subprojects {
 	apply plugin: 'java-library'
@@ -55,7 +54,17 @@ subprojects {
 		into "./.."
 
 		rename { String filename ->
+			lockfilesNames.add(project.name + '-' + filename)
 			return project.name + '-' + filename
+		}
+		doLast {
+			println lockfilesNames
+			def output = new File('gradle.lockfile')
+			output.write('') // truncate output if needed
+			lockfilesNames.each { f ->
+				def file = new File(f)
+				output << file.text
+			}
 		}
 	}
 	
