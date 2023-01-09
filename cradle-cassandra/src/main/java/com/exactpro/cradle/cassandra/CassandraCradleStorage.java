@@ -976,6 +976,15 @@ public class CassandraCradleStorage extends CradleStorage
 		if (pageEntity == null || !pageEntity.getName().equals(pageNameEntity.getName()))
 			throw new CradleStorageException(String.format("Inconsistent data for page \"%s\" in book %s", oldPageName, bookId.getName()));
 
+		PageInfo pageInfo = pageEntity.toPageInfo();
+		Instant now = Instant.now();
+		if (pageInfo.getStarted().isAfter(now)) {
+			throw new CradleStorageException(
+					String.format("You can only rename pages which start in future: pageStart-%s, now-%s",
+							pageInfo.getStarted(),
+							now));
+		}
+
 		PageEntity updatedPageEntity = new PageEntity(pageEntity.getBook(),
 				pageEntity.getStartDate(),
 				pageEntity.getStartTime(),
