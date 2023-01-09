@@ -100,12 +100,12 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 				select = FilterUtils.timestampFilterToWhere(messageTimeFrom.getOperation(), select, FIELD_FIRST_MESSAGE_DATE, FIELD_FIRST_MESSAGE_TIME, DATE_FROM, TIME_FROM);
 			if (messageTimeTo != null)
 				select = FilterUtils.timestampFilterToWhere(messageTimeTo.getOperation(), select, FIELD_FIRST_MESSAGE_DATE, FIELD_FIRST_MESSAGE_TIME, DATE_TO, TIME_TO);
-
-			ClusteringOrder orderBy = (order == Order.DIRECT) ? ClusteringOrder.ASC : ClusteringOrder.DESC;
-			select = select.orderBy(FIELD_FIRST_MESSAGE_DATE, orderBy)
-					.orderBy(FIELD_FIRST_MESSAGE_TIME, orderBy)
-					.orderBy(FIELD_SEQUENCE, orderBy);
 		}
+
+		ClusteringOrder orderBy = (order == Order.REVERSE) ? ClusteringOrder.DESC : ClusteringOrder.ASC;
+		select = select.orderBy(FIELD_FIRST_MESSAGE_DATE, orderBy)
+				.orderBy(FIELD_FIRST_MESSAGE_TIME, orderBy)
+				.orderBy(FIELD_SEQUENCE, orderBy);
 
 		if (limit > 0) {
 			select = select.limit(limit);
