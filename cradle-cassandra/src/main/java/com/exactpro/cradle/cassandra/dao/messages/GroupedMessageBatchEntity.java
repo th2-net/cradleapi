@@ -252,21 +252,6 @@ public final class GroupedMessageBatchEntity extends CradleEntity {
 			return this;
 		}
 
-		public GroupedMessageBatchEntityBuilder setCompressed (boolean compressed) {
-			super.setCompressed(compressed);
-			return this;
-		}
-
-		public GroupedMessageBatchEntityBuilder setLabels (Set<String> labels) {
-			super.setLabels(labels);
-			return this;
-		}
-
-		public GroupedMessageBatchEntityBuilder setContent (ByteBuffer content) {
-			super.setContent(content);
-			return this;
-		}
-
 		public GroupedMessageBatchEntity build () {
 			return GroupedMessageBatchEntity.build(this);
 		}
