@@ -50,11 +50,14 @@ public class GroupedMessageEntityUtils {
         SerializedEntityData serializedEntityData = MessageUtils.serializeMessages(batch.getMessages());
 
         byte[] batchContent = serializedEntityData.getSerializedData();
+
+        builder.setContentSize(batchContent.length);
         boolean compressed = batchContent.length > maxUncompressedSize;
         if (compressed)	{
             logger.trace("Compressing content of grouped message batch '{}'", group);
             batchContent = CompressionUtils.compressData(batchContent);
         }
+        builder.setCompressedContentSize(batchContent.length);
 
         builder.setGroup(group);
         builder.setBook(pageId.getBookId().getName());

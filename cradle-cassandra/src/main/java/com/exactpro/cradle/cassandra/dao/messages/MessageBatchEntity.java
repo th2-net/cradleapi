@@ -104,9 +104,12 @@ public final class MessageBatchEntity extends CradleEntity {
 							  long lastSequence,
 							  Instant recDate,
 							  boolean compressed,
-							  Set<String> labels, ByteBuffer content)
+							  Set<String> labels,
+							  ByteBuffer content,
+							  Integer contentSize,
+							  Integer compressedContentSize)
 	{
-		super(compressed, labels, content);
+		super(compressed, labels, content, contentSize, compressedContentSize);
 
 		this.book = book;
 		this.page = page;
@@ -138,7 +141,9 @@ public final class MessageBatchEntity extends CradleEntity {
 										builder.recDate,
 										builder.isCompressed(),
 										builder.getLabels(),
-										builder.getContent());
+										builder.getContent(),
+										builder.getContentSize(),
+										builder.getCompressedContentSize());
 	}
 
 	public String getBook()

@@ -126,9 +126,12 @@ public final class TestEventEntity extends CradleEntity {
 						   Instant recDate,
 						   ByteBuffer messages,
 						   boolean compressed,
-						   Set<String> labels, ByteBuffer content)
+						   Set<String> labels,
+						   ByteBuffer content,
+						   Integer contentSize,
+						   Integer compressedContentSize)
 	{
-		super(compressed, labels, content);
+		super(compressed, labels, content, contentSize, compressedContentSize);
 
 		this.book = book;
 		this.page = page;
@@ -170,7 +173,9 @@ public final class TestEventEntity extends CradleEntity {
 									builder.messages,
 									builder.isCompressed(),
 									builder.getLabels(),
-									builder.getContent());
+									builder.getContent(),
+									builder.getContentSize(),
+									builder.getCompressedContentSize());
 	}
 
 	public String getBook()
