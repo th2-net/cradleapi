@@ -978,9 +978,9 @@ public class CassandraCradleStorage extends CradleStorage
 
 		PageInfo pageInfo = pageEntity.toPageInfo();
 		Instant now = Instant.now();
-		if (pageInfo.getStarted().isAfter(now)) {
+		if (pageInfo.getStarted().isBefore(now)) {
 			throw new CradleStorageException(
-					String.format("You can only rename pages which start in future: pageStart-%s, now-%s",
+					String.format("You can only rename pages which start in future: pageStart - %s, now - %s",
 							pageInfo.getStarted(),
 							now));
 		}
