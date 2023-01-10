@@ -167,7 +167,7 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 				.withColumn(MessageBatchEntity.FIELD_CONTENT, DataTypes.BLOB)
 				.withColumn(MessageBatchEntity.FIELD_REC_DATE, DataTypes.TIMESTAMP)
 				.withColumn(MessageBatchEntity.FIELD_CONTENT_SIZE, DataTypes.INT)
-				.withColumn(MessageBatchEntity.FIELD_COMPRESSED_CONTENT_SIZE, DataTypes.INT));
+				.withColumn(MessageBatchEntity.FIELD_UNCOMPRESSED_CONTENT_SIZE, DataTypes.INT));
 	}
 
 	private void createGroupedMessages() throws IOException
@@ -189,7 +189,7 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 				.withColumn(GroupedMessageBatchEntity.FIELD_LABELS, DataTypes.setOf(DataTypes.TEXT))
 				.withColumn(GroupedMessageBatchEntity.FIELD_CONTENT, DataTypes.BLOB)
 				.withColumn(MessageBatchEntity.FIELD_CONTENT_SIZE, DataTypes.INT)
-				.withColumn(MessageBatchEntity.FIELD_COMPRESSED_CONTENT_SIZE, DataTypes.INT));
+				.withColumn(MessageBatchEntity.FIELD_UNCOMPRESSED_CONTENT_SIZE, DataTypes.INT));
 	}
 
 	private void createPageSessions() throws IOException
@@ -247,7 +247,7 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 				.withColumn(TestEventEntity.FIELD_CONTENT, DataTypes.BLOB)
 				.withColumn(TestEventEntity.FIELD_REC_DATE, DataTypes.TIMESTAMP)
 				.withColumn(MessageBatchEntity.FIELD_CONTENT_SIZE, DataTypes.INT)
-				.withColumn(MessageBatchEntity.FIELD_COMPRESSED_CONTENT_SIZE, DataTypes.INT));
+				.withColumn(MessageBatchEntity.FIELD_UNCOMPRESSED_CONTENT_SIZE, DataTypes.INT));
 	}
 
 	private void createPageScopes() throws IOException

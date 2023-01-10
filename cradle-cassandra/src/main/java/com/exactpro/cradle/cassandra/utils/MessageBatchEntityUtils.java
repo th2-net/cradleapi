@@ -47,13 +47,13 @@ public class MessageBatchEntityUtils {
         SerializedEntityData serializedEntityData = MessageUtils.serializeMessages(batch.getMessages());
         byte[] batchContent = serializedEntityData.getSerializedData();
 
-        builder.setContentSize(batchContent.length);
+        builder.setUncompressedContentSize(batchContent.length);
         boolean compressed = batchContent.length > maxUncompressedSize;
         if (compressed) {
             logger.trace("Compressing content of message batch '{}'", batch.getId());
             batchContent = CompressionUtils.compressData(batchContent);
         }
-        builder.setCompressedContentSize(batchContent.length);
+        builder.setContentSize(batchContent.length);
 
         builder.setBook(pageId.getBookId().getName());
         builder.setPage(pageId.getName());

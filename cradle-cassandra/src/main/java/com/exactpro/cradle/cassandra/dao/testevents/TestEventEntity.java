@@ -175,7 +175,7 @@ public final class TestEventEntity extends CradleEntity {
 									builder.getLabels(),
 									builder.getContent(),
 									builder.getContentSize(),
-									builder.getCompressedContentSize());
+									builder.getUncompressedContentSize());
 	}
 
 	public String getBook()

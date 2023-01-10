@@ -137,16 +137,16 @@ public class TestEventEntityUtils {
         boolean compressed = false;
 
         if (content == null) {
+            builder.setUncompressedContentSize(0);
             builder.setContentSize(0);
-            builder.setCompressedContentSize(0);
         } else {
-            builder.setContentSize(content.length);
+            builder.setUncompressedContentSize(content.length);
             if (content.length > maxUncompressedSize) {
                 logger.trace("Compressing content of test event '{}'", event.getId());
                 content = CompressionUtils.compressData(content);
                 compressed = true;
             }
-            builder.setCompressedContentSize(content.length);
+            builder.setContentSize(content.length);
         }
 
         byte[] messages = TestEventUtils.serializeLinkedMessageIds(event);

@@ -117,7 +117,7 @@ public final class GroupedMessageBatchEntity extends CradleEntity {
 												builder.getLabels(),
 												builder.getContent(),
 												builder.getContentSize(),
-												builder.getCompressedContentSize());
+												builder.getUncompressedContentSize());
 	}
 
 

@@ -61,7 +61,7 @@ public class MessageBatchInserter {
                 .setByteBuffer(FIELD_CONTENT, messageBatch.getContent())
                 .setInstant(FIELD_REC_DATE, Instant.now())
                 .setInt(FIELD_CONTENT_SIZE, messageBatch.getContentSize())
-                .setInt(FIELD_COMPRESSED_CONTENT_SIZE, messageBatch.getCompressedContentSize());
+                .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, messageBatch.getUncompressedContentSize());
 
 
         attributes.apply(builder);
