@@ -44,7 +44,8 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 	private final Map<StoredTestEventId, Set<StoredMessageId>> messages;
 	private final Instant endTimestamp;
 	private final boolean success;
-	
+	private Instant lastStartTimestamp;
+
 	public StoredTestEventBatch(StoredTestEventId id, String name, String type, StoredTestEventId parentId,
 			Collection<BatchedStoredTestEvent> batchEvents, 
 			Map<StoredTestEventId, Set<StoredMessageId>> messages, 
@@ -178,12 +179,16 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 
 	@Override
 	public Instant getLastStartTimestamp() {
-		Instant lastStartTimestamp = getStartTimestamp();
+		if (lastStartTimestamp == null) {
+			lastStartTimestamp = getStartTimestamp();
 
-		for (BatchedStoredTestEvent el : getTestEvents()) {
-			lastStartTimestamp = lastStartTimestamp.isBefore(el.getStartTimestamp()) ? el.getStartTimestamp() : lastStartTimestamp;
+			for (BatchedStoredTestEvent el : getTestEvents()) {
+				lastStartTimestamp = lastStartTimestamp.isBefore(el.getStartTimestamp()) ? el.getStartTimestamp() : lastStartTimestamp;
+			}
+
+			return lastStartTimestamp;
 		}
 
-		return getStartTimestamp();
+		return lastStartTimestamp;
 	}
 }
