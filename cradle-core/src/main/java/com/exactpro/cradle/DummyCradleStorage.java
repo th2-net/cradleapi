@@ -18,6 +18,7 @@ package com.exactpro.cradle;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -389,6 +390,16 @@ public class DummyCradleStorage extends CradleStorage
 
 	@Override
 	protected PageInfo doUpdatePageName(BookId bookId, String pageName, String newPageName) throws CradleStorageException {
+		return null;
+	}
+
+	@Override
+	protected Iterator<PageInfo> doGetPages(BookId bookId, Interval interval) {
+		return null;
+	}
+
+	@Override
+	protected CompletableFuture<Iterator<PageInfo>> doGetPagesAsync(BookId bookId, Interval interval) {
 		return null;
 	}
 

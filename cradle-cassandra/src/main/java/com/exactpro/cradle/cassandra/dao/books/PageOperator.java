@@ -21,8 +21,10 @@ import static com.exactpro.cradle.cassandra.dao.books.PageEntity.*;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
@@ -59,4 +61,28 @@ public interface PageOperator {
 				FIELD_START_TIME + "=:startTime")
 	ResultSet remove(String book, LocalDate startDate, LocalTime startTime, Instant removed,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+
+	@Query("SELECT * FROM ${qualifiedTableId} " +
+			"WHERE " +
+			FIELD_BOOK +"=:book AND " +
+			"(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") <= (:startDate, :startTime) "
+			+
+			"ORDER BY " +
+			FIELD_START_DATE + " DESC, " +
+			FIELD_START_TIME + " DESC " +
+			"LIMIT 1")
+	PagingIterable<PageEntity> getPageForLessOrEqual(String book, LocalDate startDate, LocalTime startTime,
+													 Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+
+	@Query("SELECT * FROM ${qualifiedTableId} " +
+			"WHERE " +
+			FIELD_BOOK +"=:book AND " +
+			"(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") >= (:startDate, :startTime) " +
+			"AND " +
+			"(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") <= (:endDate, :endTime)")
+	CompletableFuture<MappedAsyncPagingIterable<PageEntity>> getPagesForInterval(String book, LocalDate startDate, LocalTime startTime,
+																				LocalDate endDate, LocalTime endTime,
+																				Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 }
