@@ -18,6 +18,7 @@ package com.exactpro.cradle.cassandra.dao;
 
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.dao.books.*;
+import com.exactpro.cradle.cassandra.dao.books.converters.PageEntityConverter;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageSession;
 import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
@@ -67,6 +68,7 @@ public class CassandraOperators {
     private final GroupEntityConverter groupEntityConverter;
     private final PageGroupEntityConverter pageGroupEntityConverter;
     private final IntervalEntityConverter intervalEntityConverter;
+    private final PageEntityConverter pageEntityConverter;
 
     private final LimitedCache<CachedSession> sessionsCache;
     private final LimitedCache<CachedPageSession> pageSessionsCache;
@@ -113,6 +115,7 @@ public class CassandraOperators {
         entityStatisticsEntityConverter = dataMapper.entityStatisticsEntityConverter();
         sessionStatisticsEntityConverter = dataMapper.sessionStatisticsEntityConverter();
         intervalEntityConverter = dataMapper.intervalEntityConverter();
+        pageEntityConverter = dataMapper.pageEntityConverter();
 
         sessionsCache = new LimitedCache<>(settings.getSessionsCacheSize());
         pageSessionsCache = new LimitedCache<>(settings.getPageSessionsCacheSize());
@@ -261,6 +264,10 @@ public class CassandraOperators {
 
     public IntervalEntityConverter getIntervalEntityConverter() {
         return intervalEntityConverter;
+    }
+
+    public PageEntityConverter getPageEntityConverter() {
+        return pageEntityConverter;
     }
 
     public LimitedCache<GroupEntity> getGroupCache() {
