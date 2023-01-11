@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package com.exactpro.cradle.cassandra.workers;
 
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.EntityType;
@@ -31,7 +33,9 @@ import com.exactpro.th2.taskutils.FutureTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
@@ -46,12 +50,14 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
     private final long interval;
     private final Map<BookId, BookStatisticsRecordsCaches> bookCounterCaches;
     private final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs;
+    private final Function<BatchStatementBuilder, BatchStatementBuilder> batchWriteAttrs;
     private final boolean isEnabled;
 
     public StatisticsWorker (WorkerSupplies workerSupplies, long persistenceInterval) {
         this.futures = new FutureTracker();
         this.operators = workerSupplies.getOperators();
         this.writeAttrs = workerSupplies.getWriteAttrs();
+        this.batchWriteAttrs = workerSupplies.getBatchWriteAttrs();
         this.interval = persistenceInterval;
         this.bookCounterCaches = new ConcurrentHashMap<>();
         this.isEnabled = (interval != 0);
@@ -259,6 +265,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
             SessionStatisticsOperator op = operators.getSessionStatisticsOperator();
             LimitedCache<SessionStatisticsEntity> cache = operators.getSessionStatisticsCache();
+            List<SessionStatisticsEntity> sessionBatch = new ArrayList<>();
             for (String session : sessions) {
                 SessionStatisticsEntity entity = new SessionStatisticsEntity(
                         bookId.getName(),
@@ -268,19 +275,23 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
                         sessionsRecord.getFrameStart(),
                         session);
                 if (!cache.contains(entity)) {
-                    logger.trace("Persisting {}", entity.toString());
-
-                    CompletableFuture<Void> future = op.write(entity,writeAttrs);
-                    futures.track(future);
-                    future.whenComplete((result, e) -> {
-                        if (e != null)
-                            exceptionHandler.accept(e);
-                        else
-                            cache.store(entity);
-                        });
+                    logger.trace("Batching {}", entity);
+                    sessionBatch.add(entity);
                 } else {
-                    logger.trace("{} found in cache, ignoring", entity.toString());
+                    logger.trace("{} found in cache, ignoring", entity);
                 }
+            }
+
+            if (!sessionBatch.isEmpty()) {
+                logger.trace("Persisting batch of {} records", sessionBatch.size());
+                CompletableFuture<AsyncResultSet> future = op.write(sessionBatch, batchWriteAttrs);
+                futures.track(future);
+                future.whenComplete((result, e) -> {
+                    if (e != null)
+                        exceptionHandler.accept(e);
+                    else
+                        sessionBatch.forEach(cache::store);
+                });
             }
         } catch (Exception e) {
             exceptionHandler.accept(e);

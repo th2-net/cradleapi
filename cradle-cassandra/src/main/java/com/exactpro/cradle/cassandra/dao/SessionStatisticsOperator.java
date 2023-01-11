@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,16 @@
 package com.exactpro.cradle.cassandra.dao;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Delete;
-import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
+import com.datastax.oss.driver.api.mapper.annotations.QueryProvider;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
@@ -31,9 +34,9 @@ import static com.exactpro.cradle.cassandra.dao.SessionStatisticsEntity.*;
 @Dao
 public interface SessionStatisticsOperator {
 
-    @Insert
-    CompletableFuture<Void> write(SessionStatisticsEntity sessionStatisticsEntity,
-                                  Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+    @QueryProvider(providerClass = SessionStatisticsBatchInserter.class, entityHelpers = SessionStatisticsEntity.class, providerMethod = "insert")
+    CompletableFuture<AsyncResultSet> write(Collection<SessionStatisticsEntity> sessionBatch,
+                                            Function<BatchStatementBuilder, BatchStatementBuilder> attributes);
 
     @Query( "SELECT * FROM ${qualifiedTableId} " +
             "WHERE " +
