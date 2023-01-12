@@ -28,6 +28,7 @@ import com.exactpro.cradle.cassandra.iterators.FilteringConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
+import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
 import com.exactpro.cradle.testevents.StoredTestEvent;
@@ -154,7 +155,12 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 			since `createNextFilter` just passes timestamps from previous to next filters
 		 */
 		long duration = eventBatchDurationWorker.getMaxDuration(filter.getBookId().getName(), firstPage.getId().getName(), filter.getScope(), readAttrs);
-		FilterForGreater<Instant> newFrom = FilterForGreater.forGreater(actualFrom.minusMillis(duration));
+		FilterForGreater<Instant> newFrom;
+		if (filter.getStartTimestampFrom().getOperation().equals(ComparisonOperation.GREATER)) {
+			newFrom = FilterForGreater.forGreater(actualFrom.minusMillis(duration));
+		} else {
+			newFrom = FilterForGreater.forGreaterOrEquals(actualFrom.minusMillis(duration));
+		}
 
 		String parentId = getParentIdString(filter);
 		return new CassandraTestEventFilter(
