@@ -134,15 +134,20 @@ public class TestEventEntityUtils {
 
         SerializedEntityData serializedEntityData = TestEventUtils.getTestEventContent(event);
         byte[] content = serializedEntityData.getSerializedData();
-        boolean compressed;
-        if (content != null && content.length > maxUncompressedSize)
-        {
-            logger.trace("Compressing content of test event '{}'", event.getId());
-            content = CompressionUtils.compressData(content);
-            compressed = true;
+        boolean compressed = false;
+
+        if (content == null) {
+            builder.setUncompressedContentSize(0);
+            builder.setContentSize(0);
+        } else {
+            builder.setUncompressedContentSize(content.length);
+            if (content.length > maxUncompressedSize) {
+                logger.trace("Compressing content of test event '{}'", event.getId());
+                content = CompressionUtils.compressData(content);
+                compressed = true;
+            }
+            builder.setContentSize(content.length);
         }
-        else
-            compressed = false;
 
         byte[] messages = TestEventUtils.serializeLinkedMessageIds(event);
 

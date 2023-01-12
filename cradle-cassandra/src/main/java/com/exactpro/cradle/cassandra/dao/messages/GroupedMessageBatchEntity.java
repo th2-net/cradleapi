@@ -85,9 +85,11 @@ public final class GroupedMessageBatchEntity extends CradleEntity {
 									 Instant recDate,
 									 boolean compressed,
 									 Set<String> labels,
-									 ByteBuffer content)
+									 ByteBuffer content,
+									 Integer contentSize,
+									 Integer compressedContentSize)
 	{
-		super(compressed, labels, content);
+		super(compressed, labels, content, contentSize, compressedContentSize);
 
 		this.book = book;
 		this.page = page;
@@ -113,7 +115,9 @@ public final class GroupedMessageBatchEntity extends CradleEntity {
 												builder.recDate,
 												builder.isCompressed(),
 												builder.getLabels(),
-												builder.getContent());
+												builder.getContent(),
+												builder.getContentSize(),
+												builder.getUncompressedContentSize());
 	}
 
 
@@ -245,21 +249,6 @@ public final class GroupedMessageBatchEntity extends CradleEntity {
 
 		public GroupedMessageBatchEntityBuilder setRecDate (Instant recDate) {
 			this.recDate = recDate;
-			return this;
-		}
-
-		public GroupedMessageBatchEntityBuilder setCompressed (boolean compressed) {
-			super.setCompressed(compressed);
-			return this;
-		}
-
-		public GroupedMessageBatchEntityBuilder setLabels (Set<String> labels) {
-			super.setLabels(labels);
-			return this;
-		}
-
-		public GroupedMessageBatchEntityBuilder setContent (ByteBuffer content) {
-			super.setContent(content);
 			return this;
 		}
 
