@@ -34,7 +34,6 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 	private static final Logger logger = LoggerFactory.getLogger(GroupedMessageBatchToStore.class);
 
 	private final int maxBatchSize;
-	private LocalDate batchDate;
 	private final Map<SessionKey, StoredMessage> firstMessages;
 	private final Map<SessionKey, StoredMessage> lastMessages;
 
@@ -104,15 +103,10 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 			messageSeq = message.getSequence();
 			verifySequence(messageSeq);
 
-			batchDate = TimeUtils.toLocalTimestamp(message.getTimestamp()).toLocalDate();
 		} else {
 			if (!bookId.equals(message.getBookId()))
 				throw new CradleStorageException("Batch contains messages of book '" + bookId + "', "
 						+ "but in your message it is '"+message.getBookId()+"'");
-			LocalDate messageDate = TimeUtils.toLocalTimestamp(message.getTimestamp()).toLocalDate();
-			if (!batchDate.equals(messageDate))
-				throw new CradleStorageException("Batch contains messages with date '" + batchDate + "', "
-						+ "but in your message it is '" + messageDate);
 
 			StoredMessage lastMessage = lastMessages.get(sessionKey);
 			if (lastMessage != null) {

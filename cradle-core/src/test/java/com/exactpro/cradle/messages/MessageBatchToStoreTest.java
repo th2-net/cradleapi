@@ -69,9 +69,7 @@ public class MessageBatchToStoreTest
 							new IdData(book, sessionAlias+"X", d, timestamp, seq+1))},             //Different sessions
 					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
 							new IdData(book, sessionAlias, Direction.SECOND, timestamp, seq+1))},  //Different directions
-					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
-							new IdData(book, sessionAlias, Direction.FIRST, timestamp.plus(1, ChronoUnit.DAYS), seq+1))},  //Different date
-					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
+					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq),
 							new IdData(book, sessionAlias, d, timestamp.minusMillis(1), seq))},    //Timestamp is less than previous
 					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
 							new IdData(book, sessionAlias, d, timestamp, seq),                     //Sequence is not incremented
