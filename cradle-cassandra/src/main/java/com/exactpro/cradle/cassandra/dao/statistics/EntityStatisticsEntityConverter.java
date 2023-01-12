@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.exactpro.cradle.cassandra.dao;
+package com.exactpro.cradle.cassandra.dao.statistics;
 
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.exactpro.cradle.cassandra.EntityConverter;
 
 @Dao
-public interface MessageStatisticsEntityConverter extends EntityConverter<MessageStatisticsEntity> {
+public interface EntityStatisticsEntityConverter extends EntityConverter<EntityStatisticsEntity> {
 }

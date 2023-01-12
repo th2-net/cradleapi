@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.cassandra.dao;
+package com.exactpro.cradle.cassandra.dao.statistics;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.*;
@@ -27,7 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
-import static com.exactpro.cradle.cassandra.dao.EntityStatisticsEntity.*;
+import static com.exactpro.cradle.cassandra.dao.statistics.EntityStatisticsEntity.*;
 
 
 public class EntityStatisticsBatchInserter {

@@ -24,9 +24,9 @@ import com.exactpro.cradle.FrameType;
 import com.exactpro.cradle.SessionRecordType;
 import com.exactpro.cradle.cassandra.counters.*;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
-import com.exactpro.cradle.cassandra.dao.EntityStatisticsEntity;
-import com.exactpro.cradle.cassandra.dao.SessionStatisticsEntity;
-import com.exactpro.cradle.cassandra.dao.SessionStatisticsOperator;
+import com.exactpro.cradle.cassandra.dao.statistics.EntityStatisticsEntity;
+import com.exactpro.cradle.cassandra.dao.statistics.SessionStatisticsEntity;
+import com.exactpro.cradle.cassandra.dao.statistics.SessionStatisticsOperator;
 import com.exactpro.cradle.cassandra.utils.LimitedCache;
 import com.exactpro.cradle.counters.Counter;
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
@@ -34,10 +34,7 @@ import com.exactpro.th2.taskutils.FutureTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -322,12 +319,10 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
         Collection<K> keys = recordCache.getKeys();
         for (K key : keys) {
             TimeFrameRecordCache<V> timeFrameRecords = recordCache.extract(key);
-            if (timeFrameRecords == null)
-                continue;
-            for (FrameType frameType : FrameType.values()) {
-                Collection<TimeFrameRecord<V>> records = timeFrameRecords.getRecordSamples(frameType).extractAll();
-                persistor.persist(bookId, key, frameType, records);
-            }
+            if (timeFrameRecords != null)
+                for (FrameType frameType : FrameType.values()) {
+                    persistor.persist(bookId, key, frameType, timeFrameRecords.getRecordSamples(frameType).extractAll());
+                }
         }
     }
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.exactpro.cradle.cassandra.dao;
+package com.exactpro.cradle.cassandra.dao.statistics;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
@@ -29,7 +29,7 @@ import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.cassandra.dao.SessionStatisticsEntity.*;
+import static com.exactpro.cradle.cassandra.dao.statistics.SessionStatisticsEntity.*;
 
 @Dao
 public interface SessionStatisticsOperator {

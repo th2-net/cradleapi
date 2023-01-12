@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.cassandra.dao;
+package com.exactpro.cradle.cassandra.dao.statistics;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.*;

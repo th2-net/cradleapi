@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.exactpro.cradle.cassandra.dao;
+package com.exactpro.cradle.cassandra.dao.statistics;
 
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.exactpro.cradle.counters.Counter;
@@ -24,15 +24,14 @@ import java.time.Instant;
 import java.util.Objects;
 
 @Entity
-@CqlName(MessageStatisticsEntity.TABLE_NAME)
+@CqlName(EntityStatisticsEntity.TABLE_NAME)
 @PropertyStrategy(mutable = false)
-public class MessageStatisticsEntity {
-    public static final String TABLE_NAME = "message_statistics";
+public class EntityStatisticsEntity {
+    public static final String TABLE_NAME = "entity_statistics";
 
     public static final String FIELD_BOOK = "book";
     public static final String FIELD_PAGE = "page";
-    public static final String FIELD_SESSION_ALIAS = "session_alias";
-    public static final String FIELD_DIRECTION = "direction";
+    public static final String FIELD_ENTITY_TYPE = "entity_type";
     public static final String FIELD_FRAME_TYPE = "frame_type";
     public static final String FIELD_FRAME_START = "frame_start";
     public static final String FIELD_ENTITY_COUNT = "entity_count";
@@ -47,18 +46,14 @@ public class MessageStatisticsEntity {
     private final String page;
 
     @PartitionKey(2)
-    @CqlName(FIELD_SESSION_ALIAS)
-    private final String sessionAlias;
+    @CqlName(FIELD_ENTITY_TYPE)
+    private final Byte entityType;
 
     @PartitionKey(3)
-    @CqlName(FIELD_DIRECTION)
-    private final String direction;
-
-    @PartitionKey(4)
     @CqlName(FIELD_FRAME_TYPE)
     private final Byte frameType;
 
-    @ClusteringColumn(5)
+    @ClusteringColumn(3)
     @CqlName(FIELD_FRAME_START)
     private final Instant frameStart;
 
@@ -68,11 +63,10 @@ public class MessageStatisticsEntity {
     @CqlName(FIELD_ENTITY_SIZE)
     private final Long entitySize;
 
-    public MessageStatisticsEntity(String book, String page, String sessionAlias, String direction, Byte frameType, Instant frameStart, Long entityCount, Long entitySize) {
+    public EntityStatisticsEntity(String book, String page, Byte entityType, Byte frameType, Instant frameStart, Long entityCount, Long entitySize) {
         this.book = book;
         this.page = page;
-        this.sessionAlias = sessionAlias;
-        this.direction = direction;
+        this.entityType = entityType;
         this.frameType = frameType;
         this.frameStart = frameStart;
         this.entityCount = entityCount;
@@ -89,11 +83,8 @@ public class MessageStatisticsEntity {
     public String getPage() {
         return page;
     }
-    public String getSessionAlias() {
-        return sessionAlias;
-    }
-    public String getDirection() {
-        return direction;
+    public Byte getEntityType() {
+        return entityType;
     }
     public Byte getFrameType() {
         return frameType;
@@ -111,25 +102,22 @@ public class MessageStatisticsEntity {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof MessageStatisticsEntity)) return false;
-        MessageStatisticsEntity that = (MessageStatisticsEntity) o;
-
-        return Objects.equals(getBook(), that.getBook())
-                && Objects.equals(getPage(), that.getPage())
-                && Objects.equals(getSessionAlias(), that.getSessionAlias())
-                && Objects.equals(getDirection(), that.getDirection())
-                && Objects.equals(getFrameType(), that.getFrameType())
-                && Objects.equals(getFrameStart(), that.getFrameStart())
-                && Objects.equals(getEntityCount(), that.getEntityCount())
-                && Objects.equals(getEntitySize(), that.getEntitySize());
+        if (!(o instanceof EntityStatisticsEntity)) return false;
+        EntityStatisticsEntity that = (EntityStatisticsEntity) o;
+        return getBook().equals(that.getBook())
+                && getPage().equals(that.getPage())
+                && getEntityType().equals(that.getEntityType())
+                && getFrameType().equals(that.getFrameType())
+                && getFrameStart().equals(that.getFrameStart())
+                && getEntityCount().equals(that.getEntityCount())
+                && getEntitySize().equals(that.getEntitySize());
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(getBook(),
                 getPage(),
-                getSessionAlias(),
-                getDirection(),
+                getEntityType(),
                 getFrameType(),
                 getFrameStart(),
                 getEntityCount(),
