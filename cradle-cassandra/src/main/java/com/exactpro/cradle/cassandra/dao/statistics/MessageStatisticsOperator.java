@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,16 @@
 package com.exactpro.cradle.cassandra.dao.statistics;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.datastax.oss.driver.api.mapper.annotations.*;
+import com.datastax.oss.driver.api.mapper.annotations.Dao;
+import com.datastax.oss.driver.api.mapper.annotations.Delete;
+import com.datastax.oss.driver.api.mapper.annotations.Query;
+import com.datastax.oss.driver.api.mapper.annotations.QueryProvider;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
@@ -48,20 +54,9 @@ public interface MessageStatisticsOperator {
             Function<BoundStatementBuilder, BoundStatementBuilder> attributes
     );
 
-
-
-    @Increment(entityClass = MessageStatisticsEntity.class)
-    CompletableFuture<Void> update(
-            String book,
-            String page,
-            String sessionAlias,
-            String direction,
-            Byte frameType,
-            Instant frameStart,
-            @CqlName(FIELD_ENTITY_COUNT) long count,
-            @CqlName(FIELD_ENTITY_SIZE) long size,
-            Function<BoundStatementBuilder, BoundStatementBuilder> attributes
-    );
+    @QueryProvider(providerClass = MessageStatisticsBatchInserter.class, entityHelpers = MessageStatisticsEntity.class, providerMethod = "update")
+    CompletableFuture<AsyncResultSet> update(Collection<MessageStatisticsEntity> counters,
+                                             Function<BatchStatementBuilder, BatchStatementBuilder> attributes);
 
     @Delete(entityClass = MessageStatisticsEntity.class)
     void remove(String book, String page, String sessionAlias, String direction, Byte frameType,

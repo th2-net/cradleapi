@@ -25,6 +25,7 @@ import com.exactpro.cradle.SessionRecordType;
 import com.exactpro.cradle.cassandra.counters.*;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.statistics.EntityStatisticsEntity;
+import com.exactpro.cradle.cassandra.dao.statistics.MessageStatisticsEntity;
 import com.exactpro.cradle.cassandra.dao.statistics.SessionStatisticsEntity;
 import com.exactpro.cradle.cassandra.dao.statistics.SessionStatisticsOperator;
 import com.exactpro.cradle.cassandra.utils.LimitedCache;
@@ -34,7 +35,10 @@ import com.exactpro.th2.taskutils.FutureTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -201,6 +205,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
             if (!entityCounters.isEmpty()) {
                 logger.debug("Persisting batch of {} entity statistic records", entityCounters.size());
                 CompletableFuture<AsyncResultSet> future = operators.getEntityStatisticsOperator().update(entityCounters, batchWriteAttrs);
+                futures.track(future);
                 future.whenComplete((result, e) -> {
                     if (e != null)
                         exceptionHandler.accept(e);
@@ -226,18 +231,21 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
         };
 
         try {
-            logger.trace("Persisting {} message counter for {}:{}:{}:{}", records.size(), bookId, key.getSessionAlias(), key.getDirection(), frameType);
-            for (TimeFrameRecord<Counter> counter : records) {
-                CompletableFuture<Void> future = operators.getMessageStatisticsOperator().update(
-                        bookId.getName(),
-                        key.getPage(),
-                        key.getSessionAlias(),
-                        key.getDirection(),
-                        frameType.getValue(),
-                        counter.getFrameStart(),
-                        counter.getRecord().getEntityCount(),
-                        counter.getRecord().getEntitySize(),
-                        writeAttrs);
+            logger.trace("Persisting {} message counters for {}:{}:{}:{}", records.size(), bookId, key.getSessionAlias(), key.getDirection(), frameType);
+            List<MessageStatisticsEntity> messageCounters = records.stream()
+                    .map(counter -> new MessageStatisticsEntity(bookId.getName(),
+                            key.getPage(),
+                            key.getSessionAlias(),
+                            key.getDirection(),
+                            frameType.getValue(),
+                            counter.getFrameStart(),
+                            counter.getRecord().getEntityCount(),
+                            counter.getRecord().getEntitySize()))
+                    .collect(Collectors.toList());
+
+            if (!messageCounters.isEmpty()) {
+                logger.debug("Persisting batch of {} message statistic records", messageCounters.size());
+                CompletableFuture<AsyncResultSet> future = operators.getMessageStatisticsOperator().update(messageCounters, batchWriteAttrs);
                 futures.track(future);
                 future.whenComplete((result, e) -> {
                     if (e != null)
