@@ -24,6 +24,7 @@ import com.exactpro.cradle.FrameType;
 import com.exactpro.cradle.SessionRecordType;
 import com.exactpro.cradle.cassandra.counters.*;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
+import com.exactpro.cradle.cassandra.dao.EntityStatisticsEntity;
 import com.exactpro.cradle.cassandra.dao.SessionStatisticsEntity;
 import com.exactpro.cradle.cassandra.dao.SessionStatisticsOperator;
 import com.exactpro.cradle.cassandra.utils.LimitedCache;
@@ -40,6 +41,7 @@ import java.util.Map;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class StatisticsWorker implements Runnable, EntityStatisticsCollector, MessageStatisticsCollector, SessionStatisticsCollector {
 
@@ -189,16 +191,19 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
         try {
             logger.trace("Persisting {} entity counters for {}:{}:{}", records.size(), bookId, entityKey, frameType);
-            for (TimeFrameRecord<Counter> counter : records) {
-                CompletableFuture<Void> future = operators.getEntityStatisticsOperator().update(bookId.getName(),
-                        entityKey.getPage(),
-                        entityKey.getEntityType().getValue(),
-                        frameType.getValue(),
-                        counter.getFrameStart(),
-                        counter.getRecord().getEntityCount(),
-                        counter.getRecord().getEntitySize(),
-                        writeAttrs);
-                futures.track(future);
+            List<EntityStatisticsEntity> entityCounters = records.stream()
+                    .map(counter -> new EntityStatisticsEntity(bookId.getName(),
+                                                entityKey.getPage(),
+                                                entityKey.getEntityType().getValue(),
+                                                frameType.getValue(),
+                                                counter.getFrameStart(),
+                                                counter.getRecord().getEntityCount(),
+                                                counter.getRecord().getEntitySize()))
+                    .collect(Collectors.toList());
+
+            if (!entityCounters.isEmpty()) {
+                logger.debug("Persisting batch of {} entity statistic records", entityCounters.size());
+                CompletableFuture<AsyncResultSet> future = operators.getEntityStatisticsOperator().update(entityCounters, batchWriteAttrs);
                 future.whenComplete((result, e) -> {
                     if (e != null)
                         exceptionHandler.accept(e);
