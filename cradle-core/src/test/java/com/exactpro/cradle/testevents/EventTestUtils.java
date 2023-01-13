@@ -25,7 +25,7 @@ public class EventTestUtils
 	{
 		RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
 	  //These fields are present only in StoredTestEvent and will fail comparison with TestEventToStore
-		config.ignoreFieldsMatchingRegexes("pageId", ".*\\.pageId", "error", ".*\\.error", "recDate", ".*\\.recDate");
+		config.ignoreFieldsMatchingRegexes("pageId", ".*\\.pageId", "error", ".*\\.error", "recDate", ".*\\.recDate", "lastStartTimestamp", ".*\\.lastStartTimestamp");
 		
 		Assertions.assertThat(stored)
 				.usingRecursiveComparison(config)
