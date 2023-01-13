@@ -38,8 +38,7 @@ public class MessageBatchToStore extends StoredMessageBatch
 	private static final Logger logger = LoggerFactory.getLogger(MessageBatchToStore.class);
 	
 	private final int maxBatchSize;
-	private LocalDate batchDate;
-	
+
 	public MessageBatchToStore(int maxBatchSize)
 	{
 		this.maxBatchSize = maxBatchSize;
@@ -117,7 +116,6 @@ public class MessageBatchToStore extends StoredMessageBatch
 				throw new CradleStorageException("Sequence number for first message in batch cannot be negative");
 			
 			id = new StoredMessageId(message.getBookId(), message.getSessionAlias(), message.getDirection(), message.getTimestamp(), i);
-			batchDate = TimeUtils.toLocalTimestamp(id.getTimestamp()).toLocalDate();
 			messageSeq = i;
 		}
 		else
@@ -131,10 +129,6 @@ public class MessageBatchToStore extends StoredMessageBatch
 			if (id.getDirection() != message.getDirection())
 				throw new CradleStorageException("Batch contains messages with direction "+id.getDirection()+", "
 						+ "but in your message it is "+message.getDirection());
-			LocalDate messageDate = TimeUtils.toLocalTimestamp(message.getTimestamp()).toLocalDate();
-			if (!batchDate.equals(messageDate))
-				throw new CradleStorageException("Batch contains messages with date '" + batchDate + "', "
-						+ "but in your message it is '" + messageDate);
 			StoredMessage lastMsg = getLastMessage();
 			
 			if (lastMsg.getTimestamp().isAfter(message.getTimestamp()))

@@ -31,6 +31,8 @@ public abstract class CradleEntity
 	public static final String FIELD_COMPRESSED = "compressed";
 	public static final String FIELD_LABELS = "labels";
 	public static final String FIELD_CONTENT = "z_content";
+	public static final String FIELD_CONTENT_SIZE = "z_content_size";
+	public static final String FIELD_UNCOMPRESSED_CONTENT_SIZE = "z_content_uncompressed_size";
 
 	@CqlName(FIELD_COMPRESSED)
 	private boolean compressed;
@@ -38,14 +40,20 @@ public abstract class CradleEntity
 	private Set<String> labels;
 	@CqlName(FIELD_CONTENT)
 	private ByteBuffer content;
+	@CqlName(FIELD_CONTENT_SIZE)
+	private Integer contentSize;
+	@CqlName(FIELD_UNCOMPRESSED_CONTENT_SIZE)
+	private Integer uncompressedContentSize;
 
 	public CradleEntity () {
 	}
 
-	public CradleEntity (boolean compressed, Set<String> labels, ByteBuffer content) {
+	public CradleEntity (boolean compressed, Set<String> labels, ByteBuffer content, Integer contentSize, Integer uncompressedContentSize) {
 		this.compressed = compressed;
 		this.labels = labels;
 		this.content = content;
+		this.contentSize = contentSize;
+		this.uncompressedContentSize = uncompressedContentSize;
 	}
 
 
@@ -62,23 +70,37 @@ public abstract class CradleEntity
 		return content;
 	}
 
+	public Integer getContentSize() {
+		return contentSize;
+	}
+
+	public Integer getUncompressedContentSize() {
+		return uncompressedContentSize;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (!(o instanceof CradleEntity)) return false;
 		CradleEntity that = (CradleEntity) o;
-		return isCompressed() == that.isCompressed() && Objects.equals(getLabels(), that.getLabels()) && Objects.equals(getContent(), that.getContent());
+		return isCompressed() == that.isCompressed()
+				&& Objects.equals(getLabels(), that.getLabels())
+				&& Objects.equals(getContent(), that.getContent())
+				&& Objects.equals(getContentSize(), that.getContentSize())
+				&& Objects.equals(getUncompressedContentSize(), that.getUncompressedContentSize());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(isCompressed(), getLabels(), getContent());
+		return Objects.hash(isCompressed(), getLabels(), getContent(), getContentSize(), getUncompressedContentSize());
 	}
 
 	public abstract static class CradleEntityBuilder <T extends CradleEntity, B extends CradleEntityBuilder> {
 		private boolean compressed;
 		private Set<String> labels;
 		private ByteBuffer content;
+		private Integer contentSize;
+		private Integer uncompressedContentSize;
 
 		public CradleEntityBuilder () {
 		}
@@ -98,6 +120,16 @@ public abstract class CradleEntity
 			return (B) this;
 		}
 
+		public B setContentSize (Integer contentSize) {
+			this.contentSize = contentSize;
+			return (B) this;
+		}
+
+		public B setUncompressedContentSize(Integer uncompressedContentSize) {
+			this.uncompressedContentSize = uncompressedContentSize;
+			return (B) this;
+		}
+
 		public boolean isCompressed() {
 			return compressed;
 		}
@@ -108,6 +140,14 @@ public abstract class CradleEntity
 
 		public ByteBuffer getContent() {
 			return content;
+		}
+
+		public Integer getContentSize() {
+			return contentSize;
+		}
+
+		public Integer getUncompressedContentSize() {
+			return uncompressedContentSize;
 		}
 
 		public abstract T build ();
