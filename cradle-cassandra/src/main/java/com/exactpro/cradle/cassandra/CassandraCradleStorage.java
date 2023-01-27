@@ -1200,11 +1200,16 @@ public class CassandraCradleStorage extends CradleStorage
 
 		//remove page
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(pageInfo.getStarted());
-		operators.getPageOperator().remove(book,
-				ldt.toLocalDate(), 
-				ldt.toLocalTime(), 
-				Instant.now(), 
-				writeAttrs);
+		if (pageInfo.getStarted().isAfter(Instant.now())) {
+			operators.getPageOperator().remove(book, ldt.toLocalDate(), ldt.toLocalTime(), writeAttrs);
+		} else {
+			operators.getPageOperator().setRemovedStatus(book,
+					ldt.toLocalDate(),
+					ldt.toLocalTime(),
+					Instant.now(),
+					writeAttrs);
+		}
+
 	}
 
 	private void removeEntityStatistics(PageId pageId) {

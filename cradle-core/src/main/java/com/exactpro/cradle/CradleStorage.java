@@ -344,12 +344,21 @@ public abstract class CradleStorage
 		
 		List<PageInfo> toAdd = checkPages(pages, book);
 		
-		PageInfo lastPage = book.getLastPage();
-		PageInfo endedPage;
-		if (lastPage != null && lastPage.getEnded() == null)
-			endedPage = PageInfo.ended(lastPage, toAdd.get(0).getStarted());
-		else
-			endedPage = null;
+		PageInfo bookLastPage = book.getLastPage();
+		PageInfo endedPage = null;
+		PageInfo lastPageToAdd = !toAdd.isEmpty() ? toAdd.get(toAdd.size()-1) : null;
+
+		/*
+			If last page of toAdd list is after current last we need to
+			finish current last page in book
+		 */
+		if (bookLastPage != null
+				&& bookLastPage.getEnded() == null
+				&& lastPageToAdd != null
+				&& lastPageToAdd.getStarted().isAfter(bookLastPage.getStarted())) {
+
+				endedPage = PageInfo.ended(bookLastPage, toAdd.get(0).getStarted());
+		}
 		
 		try
 		{
@@ -1344,7 +1353,24 @@ public abstract class CradleStorage
 			}, composingService);
 		return result;
 	}
-	
+
+	private Instant checkCollisionAndGetPageEnd(BookInfo book, PageToAdd page, Instant defaultPageEnd) throws CradleStorageException {
+		PageInfo pageInBookBeforeStart = book.findPage(page.getStart());
+
+		if (pageInBookBeforeStart != null
+				&& pageInBookBeforeStart.getEnded() != null
+				&& pageInBookBeforeStart.getEnded().isAfter(page.getStart())) {
+			throw new CradleStorageException(String.format("Can't add new page in book %s, it collided with current page %s %s-%s",
+					book.getId().getName(),
+					pageInBookBeforeStart.getId().getName(),
+					pageInBookBeforeStart.getStarted(),
+					pageInBookBeforeStart.getEnded()));
+		}
+
+		PageInfo pageInBookAfterStart = book.getNextPage(page.getStart());
+
+		return pageInBookAfterStart == null ? defaultPageEnd : pageInBookAfterStart.getStarted();
+	}
 	
 	private List<PageInfo> checkPages(List<PageToAdd> pages, BookInfo book) throws CradleStorageException
 	{
@@ -1355,8 +1381,6 @@ public abstract class CradleStorage
 					firstStart = pages.get(0).getStart();
 			if (!firstStart.isAfter(now))
 				throw new CradleStorageException("Timestamp of new page start must be after current timestamp ("+now+")");
-			if (!firstStart.isAfter(lastPage.getStarted()))
-				throw new CradleStorageException("Timestamp of new page start must be after last page start ("+lastPage.getStarted()+")");
 		}
 		
 		Set<String> names = new HashSet<>();
@@ -1377,21 +1401,25 @@ public abstract class CradleStorage
 			
 			if (prevPage != null)
 			{
-				if (!page.getStart().isAfter(prevPage.getStart()))
+				if (!page.getStart().isAfter(prevPage.getStart())) {
 					throw new CradleStorageException("Unordered pages: page '"+name+"' should start after page '"+prevPage.getName()+"'");
-				result.add(new PageInfo(new PageId(bookId, prevPage.getName()), 
-						prevPage.getStart(), 
-						page.getStart(), 
+				}
+
+				result.add(new PageInfo(new PageId(bookId, prevPage.getName()),
+						prevPage.getStart(),
+						checkCollisionAndGetPageEnd(book, prevPage, page.getStart()),
 						prevPage.getComment()));
 			}
 			prevPage = page;
 		}
 
-		if (prevPage != null)
-			result.add(new PageInfo(new PageId(bookId, prevPage.getName()), 
-					prevPage.getStart(), 
-					null, 
+		if (prevPage != null) {
+			result.add(new PageInfo(new PageId(bookId, prevPage.getName()),
+					prevPage.getStart(),
+					checkCollisionAndGetPageEnd(book, prevPage, null),
 					prevPage.getComment()));
+		}
+
 		return result;
 	}
 	
