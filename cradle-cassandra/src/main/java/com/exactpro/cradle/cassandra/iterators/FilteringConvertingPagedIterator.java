@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,8 @@ public class FilteringConvertingPagedIterator<R, E> implements Iterator<R> {
 	private final Function<E, R> converter;
 	private R preFetchedElement;
 	private final Predicate<R> filter;
+	private final Predicate<R> iterationCondition;
+	private boolean terminated;
 
 	public FilteringConvertingPagedIterator(MappedAsyncPagingIterable<E> rows,
 											SelectQueryExecutor selectExecutor,
@@ -49,6 +51,7 @@ public class FilteringConvertingPagedIterator<R, E> implements Iterator<R> {
 											AtomicInteger returned,
 											Function<E, R> converter, Function<Row, E> mapper,
 											Predicate<R> filter,
+											Predicate<R> iterationCondition,
 											String queryInfo)
 	{
 		this.it = new PagedIterator<>(rows, selectExecutor, mapper, queryInfo);
@@ -56,26 +59,42 @@ public class FilteringConvertingPagedIterator<R, E> implements Iterator<R> {
 		this.returned = returned;
 		this.converter = converter;
 		this.filter = filter;
+		this.iterationCondition = iterationCondition;
+	}
+
+
+	private boolean checkIterationCondition(R value) {
+		if (iterationCondition == null || iterationCondition.test(value)) {
+			return true;
+		}
+		terminated = true;
+		return false;
 	}
 
 	private boolean skipToValid() {
-		if (!it.hasNext()) {
+		if (terminated || !it.hasNext()) {
 			return false;
 		}
 
-		R nextEl = converter.apply(it.next());
+		R converted = converter.apply(it.next());
+		if (!checkIterationCondition(converted)) {
+			return false;
+		}
 
-		while (it.hasNext() && !filter.test(nextEl)) {
+		while (it.hasNext() && !filter.test(converted)) {
 			logger.trace("Skipping element");
-			nextEl = converter.apply(it.next());
+			converted = converter.apply(it.next());
+			if (!checkIterationCondition(converted)) {
+				return false;
+			}
 		}
 
 		// If this is true, it means that it.hasNext() is false, it has no more elements
-		if (!filter.test(nextEl)) {
+		if (!filter.test(converted)) {
 			return false;
 		}
 
-		preFetchedElement = nextEl;
+		preFetchedElement = converted;
 		return true;
 	}
 
@@ -100,7 +119,11 @@ public class FilteringConvertingPagedIterator<R, E> implements Iterator<R> {
 	@Override
 	public boolean hasNext() {
 		if (preFetchedElement != null) {
-			return true;
+			return checkIterationCondition(preFetchedElement);
+		}
+
+		if (terminated) {
+			return false;
 		}
 
 		if (!(limit <= 0 || returned.get() < limit) && it.hasNext()) {
@@ -108,5 +131,9 @@ public class FilteringConvertingPagedIterator<R, E> implements Iterator<R> {
 		}
 
 		return skipToValid();
+	}
+
+	public boolean isTerminated() {
+		return terminated;
 	}
 }

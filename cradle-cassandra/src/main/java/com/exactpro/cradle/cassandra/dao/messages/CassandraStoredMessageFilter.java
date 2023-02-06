@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,8 +54,7 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	private final Order order;
 
 	public CassandraStoredMessageFilter(String book, String page, String sessionAlias, String direction,
-										FilterForGreater<Instant> messageTimeFrom, FilterForLess<Instant> messageTimeTo,
-										FilterForAny<Long> sequence)
+										FilterForGreater<Instant> messageTimeFrom, FilterForLess<Instant> messageTimeTo)
 	{
 		this.book = book;
 		this.page = page;
@@ -63,14 +62,13 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 		this.direction = direction;
 		this.messageTimeFrom = messageTimeFrom;
 		this.messageTimeTo = messageTimeTo;
-		this.sequence = sequence;
+		this.sequence = null;
 		this.limit = 0;
 		this.order = Order.DIRECT;
 	}
 
 	public CassandraStoredMessageFilter(String book, String page, String sessionAlias, String direction,
-										FilterForGreater<Instant> messageTimeFrom, FilterForLess<Instant> messageTimeTo,
-										FilterForAny<Long> sequence, int limit, Order order)
+										FilterForGreater<Instant> messageTimeFrom, FilterForLess<Instant> messageTimeTo, int limit, Order order)
 	{
 		this.book = book;
 		this.page = page;
@@ -78,7 +76,7 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 		this.direction = direction;
 		this.messageTimeFrom = messageTimeFrom;
 		this.messageTimeTo = messageTimeTo;
-		this.sequence = sequence;
+		this.sequence = null;
 		this.limit = limit;
 		this.order = order;
 	}
@@ -155,6 +153,7 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 		return direction;
 	}
 
+	@Deprecated
 	public FilterForAny<Long> getSequence()
 	{
 		return sequence;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,15 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
-import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
+import com.exactpro.cradle.cassandra.dao.messages.sequences.MessageBatchIteratorCondition;
+import com.exactpro.cradle.cassandra.dao.messages.sequences.MessageBatchIteratorFilter;
+import com.exactpro.cradle.cassandra.dao.messages.sequences.SequenceRange;
+import com.exactpro.cradle.cassandra.dao.messages.sequences.SequenceRangeExtractor;
+import com.exactpro.cradle.cassandra.iterators.FilteringConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
-import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.filters.FilterForAny;
 import com.exactpro.cradle.messages.MessageFilter;
+import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,25 +40,45 @@ import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.workers.MessagesWorker.mapMessageBatchEntity;
 
-public class MessageBatchesIteratorProvider extends AbstractMessageIteratorProvider<StoredMessageBatch>
-{
+public class MessageBatchesIteratorProvider extends AbstractMessageIteratorProvider<StoredMessageBatch> {
+
 	private static final Logger logger = LoggerFactory.getLogger(MessageBatchesIteratorProvider.class);
+
+	private final MessageBatchIteratorFilter<StoredMessageBatch> batchFilter;
+	private final MessageBatchIteratorCondition<StoredMessageBatch> iterationCondition;
+	private FilteringConvertingPagedIterator<StoredMessageBatch, MessageBatchEntity> iterator;
 
 	public MessageBatchesIteratorProvider(String requestInfo, MessageFilter filter, CassandraOperators operators, BookInfo book,
 										  ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
 										  Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException
 	{
 		super(requestInfo, filter, operators, book, composingService, selectQueryExecutor, readAttrs);
+		FilterForAny<Long> sequenceFilter = filter.getSequence();
+		if (sequenceFilter == null) {
+			batchFilter = MessageBatchIteratorFilter.none();
+			iterationCondition = MessageBatchIteratorCondition.none();
+		} else {
+			SequenceRangeExtractor<StoredMessageBatch> extractor = batch -> new SequenceRange(batch.getFirstMessage().getSequence(),
+																								batch.getLastMessage().getSequence());
+			batchFilter = new MessageBatchIteratorFilter<>(filter, extractor);
+			iterationCondition = new MessageBatchIteratorCondition<>(filter, extractor);
+		}
 	}
 
 
 	@Override
-	public CompletableFuture<Iterator<StoredMessageBatch>> nextIterator()
-	{
-		if (cassandraFilter == null)
+	public CompletableFuture<Iterator<StoredMessageBatch>> nextIterator() {
+
+		if (cassandraFilter == null) {
 			return CompletableFuture.completedFuture(null);
-		if (limit > 0 && returned.get() >= limit)
-		{
+		}
+
+		if (iterator != null && iterator.isTerminated()) {
+			logger.debug("Iterator was interrupted because iterator condition was not met");
+			return CompletableFuture.completedFuture(null);
+		}
+
+		if (limit > 0 && returned.get() >= limit) {
 			logger.debug("Filtering interrupted because limit for records to return ({}) is reached ({})", limit, returned);
 			return CompletableFuture.completedFuture(null);
 		}
@@ -65,9 +90,10 @@ public class MessageBatchesIteratorProvider extends AbstractMessageIteratorProvi
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
 					// Updated limit should be smaller, since we already got entities from previous batch
 					cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(),0));
-					return new ConvertingPagedIterator<>(resultSet, selectQueryExecutor, limit, returned,
+					iterator = new FilteringConvertingPagedIterator<>(resultSet, selectQueryExecutor, limit, returned,
 							entity -> mapMessageBatchEntity(pageId, entity), messageBatchEntityConverter::getEntity,
-							"fetch next page of message batches");
+							batchFilter, iterationCondition, "fetch next page of message batches");
+					return iterator;
 				}, composingService);
 	}
 }
