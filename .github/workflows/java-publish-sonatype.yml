@@ -1,3 +1,12 @@
+name: Build and release Java distributions to sonatype.
+on:
+  push:
+    branches:
+    - master
+    - version-*
+    paths:
+    - gradle.properties
+
 jobs:
   build:
     uses: th2-net/.github/.github/workflows/compound-java.yml@main

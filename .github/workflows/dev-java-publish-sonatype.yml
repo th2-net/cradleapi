@@ -1,3 +1,10 @@
+name: Dev build and publish Java distributions to sonatype snapshot repository
+on:
+  push:
+    branches-ignore:
+    - master
+    - version-*
+
 jobs:
   build-job:
     uses: th2-net/.github/.github/workflows/compound-java-dev.yml@main
