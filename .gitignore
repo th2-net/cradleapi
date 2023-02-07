@@ -6,6 +6,9 @@
 /cradle-cassandra/.project
 /cradle-cassandra/.classpath
 /cradle-cassandra/build
+/cradle-cassandra/gradle/
+/cradle-core/gradle/
+/gradle/dependency-locks/
 /cradle-core/.classpath
 /cradle-core/.project
 /cradle-core/.settings
