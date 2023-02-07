@@ -5,7 +5,7 @@ plugins {
 
 ext {
 	slf4j_version = '1.7.36'
-	jackson_version = '2.9.7'
+	jackson_version = '2.13.4'
 
 	sharedDir = file("${project.rootDir}/shared")
 }
