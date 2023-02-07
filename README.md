@@ -1,4 +1,4 @@
-# Cradle API (3.1.4)
+# Cradle API (3.1.5)
 
 ## Overview
 
@@ -141,6 +141,10 @@ Events in a batch can have a reference only to the parent of the batch or other 
 Test events have mandatory parameters that are verified when storing an event. These are: id, name (for non-batch events), start timestamp.
 
 ## Release notes
+
+### 3.1.5
++ datastax drive upgrade from `4.13.0` to `4.14.1`
++ jackson upgrade from `2.9.7` to `13.4.0`
 
 ### 3.1.4
 
