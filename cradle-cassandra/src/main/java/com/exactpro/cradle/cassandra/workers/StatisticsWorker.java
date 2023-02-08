@@ -17,17 +17,13 @@ package com.exactpro.cradle.cassandra.workers;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
-import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.EntityType;
 import com.exactpro.cradle.FrameType;
 import com.exactpro.cradle.SessionRecordType;
 import com.exactpro.cradle.cassandra.counters.*;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
-import com.exactpro.cradle.cassandra.dao.statistics.EntityStatisticsEntity;
-import com.exactpro.cradle.cassandra.dao.statistics.MessageStatisticsEntity;
-import com.exactpro.cradle.cassandra.dao.statistics.SessionStatisticsEntity;
-import com.exactpro.cradle.cassandra.dao.statistics.SessionStatisticsOperator;
+import com.exactpro.cradle.cassandra.dao.statistics.*;
 import com.exactpro.cradle.cassandra.utils.LimitedCache;
 import com.exactpro.cradle.counters.Counter;
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
@@ -42,24 +38,22 @@ import java.util.Map;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class StatisticsWorker implements Runnable, EntityStatisticsCollector, MessageStatisticsCollector, SessionStatisticsCollector {
 
     private static final Logger logger = LoggerFactory.getLogger(StatisticsWorker.class);
+    private static final int MAX_BATCH_STATEMENTS = 16384;
 
-    private final FutureTracker futures;
+    private final FutureTracker<AsyncResultSet> futures;
     private final CassandraOperators operators;
     private final long interval;
     private final Map<BookId, BookStatisticsRecordsCaches> bookCounterCaches;
-    private final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs;
     private final Function<BatchStatementBuilder, BatchStatementBuilder> batchWriteAttrs;
     private final boolean isEnabled;
 
     public StatisticsWorker (WorkerSupplies workerSupplies, long persistenceInterval) {
-        this.futures = new FutureTracker();
+        this.futures = new FutureTracker<>();
         this.operators = workerSupplies.getOperators();
-        this.writeAttrs = workerSupplies.getWriteAttrs();
         this.batchWriteAttrs = workerSupplies.getBatchWriteAttrs();
         this.interval = persistenceInterval;
         this.bookCounterCaches = new ConcurrentHashMap<>();
@@ -178,141 +172,153 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
     }
 
 
-    private void persistEntityCounters(BookId bookId, BookStatisticsRecordsCaches.EntityKey entityKey, FrameType frameType, Collection<TimeFrameRecord<Counter>> records) {
+    private void persistEntityCounters(BookId bookId, BookStatisticsRecordsCaches.EntityKey key, FrameType frameType, Collection<TimeFrameRecord<Counter>> records) {
 
-        final Consumer<Throwable> exceptionHandler = (Throwable e) -> {
-            logger.error("Exception persisting entity counter, rescheduling", e);
-            records.forEach(counter ->  getBookStatisticsRecordsCaches(bookId)
-                                                    .getEntityCounterCache()
-                                                    .get(entityKey)
-                                                    .getRecordSamples(frameType)
-                                                    .update(counter.getFrameStart(), counter.getRecord())
-            );
+        logger.trace("Persisting {} entity counters for {}:{}:{}", records.size(), bookId, key, frameType);
+        final EntityStatisticsOperator op = operators.getEntityStatisticsOperator();
+
+        final Consumer<List<EntityStatisticsEntity>> persistor = (List<EntityStatisticsEntity> batch) -> {
+
+            logger.debug("Persisting batch of {} entity statistic records", batch.size());
+            CompletableFuture<AsyncResultSet> future = op.update(batch, batchWriteAttrs);
+            futures.track(future);
+            future.whenComplete((result, e) -> {
+                if (e != null) {
+                    logger.error("Exception persisting message counters, rescheduling", e);
+                    TimeFrameRecordSamples<Counter> samples = getBookStatisticsRecordsCaches(bookId)
+                                                                        .getEntityCounterCache()
+                                                                        .get(key)
+                                                                        .getRecordSamples(frameType);
+                    batch.forEach(record -> samples.update(record.getFrameStart(), new Counter(record.getEntityCount(), record.getEntitySize())));
+                }
+            });
         };
 
-        try {
-            logger.trace("Persisting {} entity counters for {}:{}:{}", records.size(), bookId, entityKey, frameType);
-            List<EntityStatisticsEntity> entityCounters = records.stream()
-                    .map(counter -> new EntityStatisticsEntity(bookId.getName(),
-                                                entityKey.getPage(),
-                                                entityKey.getEntityType().getValue(),
-                                                frameType.getValue(),
-                                                counter.getFrameStart(),
-                                                counter.getRecord().getEntityCount(),
-                                                counter.getRecord().getEntitySize()))
-                    .collect(Collectors.toList());
-
-            if (!entityCounters.isEmpty()) {
-                logger.debug("Persisting batch of {} entity statistic records", entityCounters.size());
-                CompletableFuture<AsyncResultSet> future = operators.getEntityStatisticsOperator().update(entityCounters, batchWriteAttrs);
-                futures.track(future);
-                future.whenComplete((result, e) -> {
-                    if (e != null)
-                        exceptionHandler.accept(e);
-                });
+        List<EntityStatisticsEntity> batch = new ArrayList<>();
+        for (TimeFrameRecord<Counter> counter : records) {
+            batch.add(new EntityStatisticsEntity(   bookId.getName(),
+                                                    key.getPage(),
+                                                    key.getEntityType().getValue(),
+                                                    frameType.getValue(),
+                                                    counter.getFrameStart(),
+                                                    counter.getRecord().getEntityCount(),
+                                                    counter.getRecord().getEntitySize()));
+            if (batch.size() >= MAX_BATCH_STATEMENTS) {
+                persistor.accept(batch);
+                batch = new ArrayList<>();
             }
-        } catch (Exception e) {
-            exceptionHandler.accept(e);
+        }
+
+        // persist any leftover batch
+        if (batch.size() > 0) {
+            persistor.accept(batch);
         }
     }
 
 
-
     private void persistMessageCounters(BookId bookId, BookStatisticsRecordsCaches.MessageKey key, FrameType frameType, Collection<TimeFrameRecord<Counter>> records) {
 
-        final Consumer<Throwable> exceptionHandler = (Throwable e) -> {
-            logger.error("Exception persisting message counter, rescheduling", e);
-            records.forEach(counter -> getBookStatisticsRecordsCaches(bookId)
-                                                    .getMessageCounterCache()
-                                                    .get(key)
-                                                    .getRecordSamples(frameType)
-                                                    .update(counter.getFrameStart(), counter.getRecord())
-            );
+        logger.trace("Persisting {} message counters for {}:{}:{}:{}", records.size(), bookId, key.getSessionAlias(), key.getDirection(), frameType);
+        final MessageStatisticsOperator op = operators.getMessageStatisticsOperator();
+
+        final Consumer<List<MessageStatisticsEntity>> persistor = (List<MessageStatisticsEntity> batch) -> {
+
+            logger.debug("Persisting batch of {} message statistic records", batch.size());
+            CompletableFuture<AsyncResultSet> future = op.update(batch, batchWriteAttrs);
+            futures.track(future);
+            future.whenComplete((result, e) -> {
+                if (e != null) {
+                    logger.error("Exception persisting message counters, rescheduling", e);
+                    TimeFrameRecordSamples<Counter> samples = getBookStatisticsRecordsCaches(bookId)
+                                                                        .getMessageCounterCache()
+                                                                        .get(key)
+                                                                        .getRecordSamples(frameType);
+                    batch.forEach(record -> samples.update(record.getFrameStart(), new Counter(record.getEntityCount(), record.getEntitySize())));
+                }
+            });
         };
 
-        try {
-            logger.trace("Persisting {} message counters for {}:{}:{}:{}", records.size(), bookId, key.getSessionAlias(), key.getDirection(), frameType);
-            List<MessageStatisticsEntity> messageCounters = records.stream()
-                    .map(counter -> new MessageStatisticsEntity(bookId.getName(),
-                            key.getPage(),
-                            key.getSessionAlias(),
-                            key.getDirection(),
-                            frameType.getValue(),
-                            counter.getFrameStart(),
-                            counter.getRecord().getEntityCount(),
-                            counter.getRecord().getEntitySize()))
-                    .collect(Collectors.toList());
-
-            if (!messageCounters.isEmpty()) {
-                logger.debug("Persisting batch of {} message statistic records", messageCounters.size());
-                CompletableFuture<AsyncResultSet> future = operators.getMessageStatisticsOperator().update(messageCounters, batchWriteAttrs);
-                futures.track(future);
-                future.whenComplete((result, e) -> {
-                    if (e != null)
-                        exceptionHandler.accept(e);
-                });
+        List<MessageStatisticsEntity> batch = new ArrayList<>();
+        for (TimeFrameRecord<Counter> counter : records) {
+            batch.add(new MessageStatisticsEntity(  bookId.getName(),
+                                                    key.getPage(),
+                                                    key.getSessionAlias(),
+                                                    key.getDirection(),
+                                                    frameType.getValue(),
+                                                    counter.getFrameStart(),
+                                                    counter.getRecord().getEntityCount(),
+                                                    counter.getRecord().getEntitySize()));
+            if (batch.size() >= MAX_BATCH_STATEMENTS) {
+                persistor.accept(batch);
+                batch = new ArrayList<>();
             }
-        } catch (Exception e) {
-            exceptionHandler.accept(e);
+        }
+
+        // persist any leftover batch
+        if (batch.size() > 0) {
+            persistor.accept(batch);
         }
     }
 
 
     private void persistSessionStatistics(BookId bookId, BookStatisticsRecordsCaches.SessionRecordKey key, FrameType frameType, Collection<TimeFrameRecord<SessionList>> records) {
 
-        final Consumer<Throwable> exceptionHandler = (Throwable e) -> {
-            logger.error("Exception persisting session statistics, rescheduling", e);
-            records.forEach(sessionsRecord -> getBookStatisticsRecordsCaches(bookId)
-                                                    .getSessionRecordCache()
-                                                    .get(key)
-                                                    .getRecordSamples(frameType)
-                                                    .update(sessionsRecord.getFrameStart(), sessionsRecord.getRecord())
-            );
+        logger.trace("Persisting session statistics for {}:{}:{}:{} with {} records"
+                                                                                    , bookId
+                                                                                    , key.getPage()
+                                                                                    , key.getRecordType()
+                                                                                    , frameType
+                                                                                    , records.size());
+
+        final SessionStatisticsOperator op = operators.getSessionStatisticsOperator();
+        final LimitedCache<SessionStatisticsEntity> cache = operators.getSessionStatisticsCache();
+
+        final Consumer<List<SessionStatisticsEntity>> persistor = (List<SessionStatisticsEntity> batch) -> {
+
+            logger.debug("Persisting batch of {} session statistic records", batch.size());
+            CompletableFuture<AsyncResultSet> future = op.write(batch, batchWriteAttrs);
+            futures.track(future);
+            future.whenComplete((result, e) -> {
+                if (e != null) {
+                    logger.error("Exception persisting session statistics, rescheduling", e);
+                    TimeFrameRecordSamples<SessionList> samples = getBookStatisticsRecordsCaches(bookId)
+                                                                            .getSessionRecordCache()
+                                                                            .get(key)
+                                                                            .getRecordSamples(frameType);
+                    batch.forEach(record -> samples.update(record.getFrameStart(), new SessionList(record.getSession())));
+                } else {
+                    batch.forEach(cache::store);
+                }
+            });
         };
 
-        try {
-            logger.trace("Persisting session statistics for {}:{}:{}:{} with {} records"
-                    , bookId
-                    , key.getPage()
-                    , key.getRecordType()
-                    , frameType
-                    , records.size());
+        List<SessionStatisticsEntity> batch = new ArrayList<>();
 
-            SessionStatisticsOperator op = operators.getSessionStatisticsOperator();
-            LimitedCache<SessionStatisticsEntity> cache = operators.getSessionStatisticsCache();
-            List<SessionStatisticsEntity> sessionBatch = new ArrayList<>();
+        for (TimeFrameRecord<SessionList> sessionsRecord: records) {
+            for (String session : sessionsRecord.getRecord().getSessions()) {
+                SessionStatisticsEntity entity = new SessionStatisticsEntity(   bookId.getName(),
+                                                                                key.getPage(),
+                                                                                key.getRecordType().getValue(),
+                                                                                frameType.getValue(),
+                                                                                sessionsRecord.getFrameStart(),
+                                                                                session);
+                if (!cache.contains(entity)) {
+                    logger.trace("Batching {}", entity);
+                    batch.add(entity);
+                } else {
+                    logger.trace("{} found in cache, ignoring", entity);
+                }
 
-            for (TimeFrameRecord<SessionList> sessionsRecord: records) {
-                for (String session : sessionsRecord.getRecord().getSessions()) {
-                    SessionStatisticsEntity entity = new SessionStatisticsEntity(
-                            bookId.getName(),
-                            key.getPage(),
-                            key.getRecordType().getValue(),
-                            frameType.getValue(),
-                            sessionsRecord.getFrameStart(),
-                            session);
-                    if (!cache.contains(entity)) {
-                        logger.trace("Batching {}", entity);
-                        sessionBatch.add(entity);
-                    } else {
-                        logger.trace("{} found in cache, ignoring", entity);
-                    }
+                if (batch.size() >= MAX_BATCH_STATEMENTS) {
+                    persistor.accept(batch);
+                    batch = new ArrayList<>();
                 }
             }
+        }
 
-            if (!sessionBatch.isEmpty()) {
-                logger.debug("Persisting batch of {} session statistic records", sessionBatch.size());
-                CompletableFuture<AsyncResultSet> future = op.write(sessionBatch, batchWriteAttrs);
-                futures.track(future);
-                future.whenComplete((result, e) -> {
-                    if (e != null)
-                        exceptionHandler.accept(e);
-                    else
-                        sessionBatch.forEach(cache::store);
-                });
-            }
-        } catch (Exception e) {
-            exceptionHandler.accept(e);
+        // persist any leftover batch
+        if (batch.size() > 0) {
+            persistor.accept(batch);
         }
     }
 
