@@ -1,10 +1,8 @@
 package com.exactpro.cradle.iterators;
 
-
-import com.google.common.base.Predicate;
-
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.function.Predicate;
 
 public class TakeWhileIterator<T> implements Iterator<T> {
 
