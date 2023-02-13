@@ -17,6 +17,8 @@
 package com.exactpro.cradle.utils;
 
 import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.BookInfo;
+import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.serialization.*;
 import com.exactpro.cradle.testevents.*;
@@ -44,7 +46,7 @@ public class TestEventUtils
 	 * @param event to validate
 	 * @throws CradleStorageException if validation failed
 	 */
-	public static void validateTestEvent(TestEvent event) throws CradleStorageException
+	public static void validateTestEvent(TestEvent event, BookInfo bookInfo) throws CradleStorageException
 	{
 		if (event.getId() == null)
 			throw new CradleStorageException("Test event ID cannot be null");
@@ -71,6 +73,15 @@ public class TestEventUtils
 		validateTestEventEndDate(event);
 		if (event.getParentId() != null && !event.getBookId().equals(event.getParentId().getBookId()))
 			throw new CradleStorageException("Test event and its parent must be from the same book");
+		if (bookInfo != null) {
+			PageInfo pageInfo = bookInfo.findPage(event.getParentId().getStartTimestamp());
+			if (pageInfo == null) {
+				throw new CradleStorageException(
+						String.format("Test event's parent event's startTimestamp is %s , could not find corresponding page in book %s",
+								event.getParentId().getStartTimestamp(),
+								bookInfo.getId()));
+			}
+		}
 		
 		Set<StoredMessageId> messages = event.getMessages();
 		if (messages != null)

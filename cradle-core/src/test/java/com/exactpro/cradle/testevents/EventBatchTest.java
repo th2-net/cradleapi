@@ -136,7 +136,7 @@ public class EventBatchTest
 		
 		TestEventBatchToStore batch = new TestEventBatchToStore(batchId, null, parentId, MAX_SIZE);
 		batch.addTestEvent(event);
-		TestEventUtils.validateTestEvent(batch);
+		TestEventUtils.validateTestEvent(batch, null);
 	}
 	
 	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Batch must have a parent")

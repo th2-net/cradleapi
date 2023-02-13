@@ -110,7 +110,7 @@ public class EventSingleTest
 	{
 		try
 		{
-			TestEventUtils.validateTestEvent(builder.build());
+			TestEventUtils.validateTestEvent(builder.build(), null);
 		}
 		catch (CradleStorageException e)
 		{
@@ -126,7 +126,7 @@ public class EventSingleTest
 				.name(DUMMY_NAME)
 				.content("Test content".getBytes())
 				.build();
-		TestEventUtils.validateTestEvent(event);
+		TestEventUtils.validateTestEvent(event, null);
 	}
 	
 	@Test

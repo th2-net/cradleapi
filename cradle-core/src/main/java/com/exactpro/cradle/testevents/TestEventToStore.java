@@ -38,7 +38,7 @@ public abstract class TestEventToStore implements TestEvent
 		this.id = id;
 		this.name = name;
 		this.parentId = parentId;
-		TestEventUtils.validateTestEvent(this);
+		TestEventUtils.validateTestEvent(this, null);
 	}
 	
 	
