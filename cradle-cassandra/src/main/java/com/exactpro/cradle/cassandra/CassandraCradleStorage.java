@@ -1220,8 +1220,7 @@ public class CassandraCradleStorage extends CradleStorage
 						Instant.now(),
 						null);
 
-				operators.getPageOperator().remove(book, entity.getStartDate(), entity.getStartTime(), writeAttrs);
-				pageOperator.write(updatedEntity, writeAttrs);
+				pageOperator.update(updatedEntity, writeAttrs);
 			}
 		} else {
 			pageOperator.setRemovedStatus(book,

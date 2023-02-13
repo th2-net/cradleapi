@@ -29,6 +29,7 @@ import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.mapper.annotations.*;
+import com.datastax.oss.driver.api.mapper.entity.saving.NullSavingStrategy;
 
 @Dao
 public interface PageOperator {
@@ -42,7 +43,7 @@ public interface PageOperator {
 	PagingIterable<PageEntity> get(String book, LocalDate startDate, LocalTime startTime,
 								   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
-	@Update
+	@Update(nullSavingStrategy = NullSavingStrategy.SET_TO_NULL)
 	ResultSet update(PageEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
