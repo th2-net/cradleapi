@@ -73,7 +73,7 @@ public class TestEventUtils
 		validateTestEventEndDate(event);
 		if (event.getParentId() != null && !event.getBookId().equals(event.getParentId().getBookId()))
 			throw new CradleStorageException("Test event and its parent must be from the same book");
-		if (bookInfo != null) {
+		if (bookInfo != null && event.getParentId() != null) {
 			PageInfo pageInfo = bookInfo.findPage(event.getParentId().getStartTimestamp());
 			if (pageInfo == null) {
 				throw new CradleStorageException(
