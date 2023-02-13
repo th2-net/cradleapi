@@ -4,6 +4,11 @@ import com.google.common.collect.Iterators;
 
 import java.util.Iterator;
 
+/**
+ *  Iterator which limits passed iterator by limitSize,
+ *  negative limit should not be passed
+ * @param <T>
+ */
 public class LimitedIterator<T> implements Iterator<T> {
 
     private final Iterator<T> wrapped;

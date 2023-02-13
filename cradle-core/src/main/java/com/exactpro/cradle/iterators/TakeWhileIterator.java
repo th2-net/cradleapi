@@ -4,6 +4,11 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.function.Predicate;
 
+/**
+ * Iterator which returns elements
+ * from underlying iterator while predicate is true
+ * @param <T>
+ */
 public class TakeWhileIterator<T> implements Iterator<T> {
 
     private final Predicate<? super T> predicate;

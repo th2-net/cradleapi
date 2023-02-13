@@ -5,6 +5,11 @@ import com.google.common.collect.Iterators;
 
 import java.util.Iterator;
 
+/**
+ *  Iterator which filters elements from
+ *  underlying iterator, according to predicate
+ * @param <T>
+ */
 public class FilteringIterator<T> implements Iterator<T> {
 
     private final Iterator<T> wrapped;

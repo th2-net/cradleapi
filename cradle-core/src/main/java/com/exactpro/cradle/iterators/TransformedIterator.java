@@ -6,6 +6,12 @@ import com.google.common.collect.Iterators;
 
 import java.util.Iterator;
 
+/**
+ * Iterator which transforms elements
+ * from underlying iterator from one class to another
+ * @param <F>
+ * @param <T>
+ */
 public class TransformedIterator<F, T> implements Iterator<T> {
 
     private final Iterator<T> wrapped;

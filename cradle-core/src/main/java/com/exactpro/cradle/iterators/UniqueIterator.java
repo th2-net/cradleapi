@@ -7,6 +7,11 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+/**
+ * Iterator which returns skips duplicates
+ * from underlying iterator
+ * @param <T>
+ */
 public class UniqueIterator<T> extends FilteringIterator<T> {
 
     private static class UniquePredicate<T> implements Predicate<T> {
