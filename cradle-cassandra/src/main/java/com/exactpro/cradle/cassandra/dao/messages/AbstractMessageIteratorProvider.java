@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -155,7 +155,6 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 					filter.getDirection().getLabel(),
 					leftBoundFilter,
 					rightBoundFilter,
-					filter.getSequence(),
 					filter.getLimit(),
 					filter.getOrder());
 		} else {
@@ -166,7 +165,6 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 					filter.getDirection().getLabel(),
 					leftBoundFilter,
 					rightBoundFilter,
-					filter.getSequence(),
 					filter.getLimit(),
 					filter.getOrder());
 		}
@@ -199,7 +197,6 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 				prevFilter.getDirection(),
 				leftBoundFilter,
 				rightBoundFilter,
-				prevFilter.getSequence(),
 				updatedLimit,
 				filter.getOrder());
 	}
