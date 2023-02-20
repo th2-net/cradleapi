@@ -23,11 +23,13 @@ import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.messages.converters.GroupedMessageBatchEntityConverter;
-import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
+import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
 import com.exactpro.cradle.cassandra.workers.MessagesWorker;
+import com.exactpro.cradle.iterators.ConvertingIterator;
+import com.exactpro.cradle.iterators.LimitedIterator;
 import com.exactpro.cradle.messages.GroupedMessageFilter;
 import com.exactpro.cradle.messages.StoredGroupedMessageBatch;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -134,9 +136,13 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
 					// Updated limit should be smaller, since we already got entities from previous batch
 					cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(),0));
-					return new ConvertingPagedIterator<>(resultSet, selectQueryExecutor, 0, new AtomicInteger(),
-							entity -> MessagesWorker.mapGroupedMessageBatchEntity(pageId, entity), converter::getEntity,
-							"fetch next page of message batches");
+					return new ConvertingIterator<>(
+							new LimitedIterator<>(
+									new PagedIterator<>(resultSet, selectQueryExecutor, converter::getEntity, getRequestInfo()),
+									cassandraFilter.getLimit()
+							), entity -> MessagesWorker.mapGroupedMessageBatchEntity(pageId, entity));
+
+					//TODO: previous code didn't use "limit" and "queryinfo" was set by hand dont know why
 				}, composingService)
 				.thenApplyAsync(it -> new FilteredGroupedMessageBatchIterator(it, filter, limit, returned), composingService);
 	}

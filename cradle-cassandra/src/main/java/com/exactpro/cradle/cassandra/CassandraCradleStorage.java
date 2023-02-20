@@ -55,6 +55,7 @@ import com.exactpro.cradle.counters.Counter;
 import com.exactpro.cradle.counters.CounterSample;
 import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.intervals.IntervalsWorker;
+import com.exactpro.cradle.iterators.ConvertingIterator;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
@@ -1257,12 +1258,12 @@ public class CassandraCradleStorage extends CradleStorage
 				endDate,
 				endTime,
 				readAttrs)
-				.thenApply(rs -> new ConvertingPagedIterator<>(rs,
-						selectExecutor,
-						0,
-						new AtomicInteger(0),
-						PageEntity::toPageInfo,
-						(el) -> operators.getPageEntityConverter().getEntity(el), queryInfo));
+				.thenApply(rs -> new ConvertingIterator<>(
+						new PagedIterator<>(rs,
+								selectExecutor,
+								operators.getPageEntityConverter()::getEntity,
+								queryInfo),
+						PageEntity::toPageInfo));
 	}
 
 	@Override

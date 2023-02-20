@@ -6,18 +6,18 @@ import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.counters.FrameInterval;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
-import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
+import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
 import com.exactpro.cradle.counters.CounterSample;
 import com.exactpro.cradle.filters.FilterForGreater;
+import com.exactpro.cradle.iterators.ConvertingIterator;
 
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 public class MessageStatisticsIteratorProvider extends IteratorProvider<CounterSample> {
@@ -74,13 +74,9 @@ public class MessageStatisticsIteratorProvider extends IteratorProvider<CounterS
                 .thenApplyAsync(rs -> {
                             currentPage = book.getNextPage(currentPage.getStarted());
 
-                            return new ConvertingPagedIterator<>(rs,
-                                    selectQueryExecutor,
-                                    -1,
-                                    new AtomicInteger(0),
-                                    MessageStatisticsEntity::toCounterSample,
-                                    messageStatsConverter::getEntity,
-                                    this.getRequestInfo());
+                            return new ConvertingIterator<>(
+                                    new PagedIterator<>(rs, selectQueryExecutor, messageStatsConverter::getEntity, getRequestInfo()),
+                                    MessageStatisticsEntity::toCounterSample);
                         }, composingService);
     }
 }
