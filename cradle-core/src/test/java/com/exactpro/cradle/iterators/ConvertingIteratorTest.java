@@ -8,7 +8,7 @@ import java.util.List;
 public class ConvertingIteratorTest {
 
     @Test(description = "Test case when simple transformation is being done")
-    public void testTransform() {
+    public void testConvert() {
         ConvertingIterator<String, Integer> iterator = new ConvertingIterator<>(List.of("1", "2", "3", "4", "5", "6").iterator(), (el) -> Integer.parseInt(el));
         Iterable<Integer> actualIterable = () -> iterator;
         Iterable<Integer> expectedIterable = List.of(1, 2, 3, 4, 5, 6);
