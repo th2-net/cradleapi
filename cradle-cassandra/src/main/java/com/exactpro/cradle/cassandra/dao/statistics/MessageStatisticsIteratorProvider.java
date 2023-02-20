@@ -1,8 +1,11 @@
-package com.exactpro.cradle.cassandra.dao;
+package com.exactpro.cradle.cassandra.dao.statistics;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.exactpro.cradle.*;
+import com.exactpro.cradle.BookInfo;
+import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.counters.FrameInterval;
+import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
@@ -17,32 +20,34 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-public class EntityStatisticsIteratorProvider extends IteratorProvider<CounterSample> {
+public class MessageStatisticsIteratorProvider extends IteratorProvider<CounterSample> {
     private CassandraOperators operators;
     private BookInfo book;
     private ExecutorService composingService;
     private SelectQueryExecutor selectQueryExecutor;
-    private EntityType entityType;
-    private FrameType frameType;
+    private String sessionAlias;
+    private Direction direction;
     private FrameInterval frameInterval;
     private Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
     private PageInfo currentPage;
-    public EntityStatisticsIteratorProvider(String requestInfo, CassandraOperators operators, BookInfo book,
-                                            ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
-                                            EntityType entityType,
-                                            FrameType frameType,
-                                            FrameInterval frameInterval,
-                                            Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) {
+
+
+    public MessageStatisticsIteratorProvider(String requestInfo, CassandraOperators operators, BookInfo book,
+                                             ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
+                                             String sessionAlias, Direction direction, FrameInterval frameInterval,
+                                             Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) {
         super(requestInfo);
+
         this.operators = operators;
         this.book = book;
         this.composingService = composingService;
         this.selectQueryExecutor = selectQueryExecutor;
-        this.entityType = entityType;
-        this.frameType = frameType;
+        this.sessionAlias = sessionAlias;
+        this.direction = direction;
         this.frameInterval = frameInterval;
         this.readAttrs = readAttrs;
         this.currentPage = FilterUtils.findFirstPage(null, FilterForGreater.forGreater(frameInterval.getInterval().getStart()),book);
+
     }
 
     @Override
@@ -54,25 +59,28 @@ public class EntityStatisticsIteratorProvider extends IteratorProvider<CounterSa
         Instant actualStart = frameInterval.getFrameType().getFrameStart(frameInterval.getInterval().getStart());
         Instant actualEnd = frameInterval.getFrameType().getFrameEnd(frameInterval.getInterval().getEnd());
 
-        EntityStatisticsOperator entityStatsOperator = operators.getEntityStatisticsOperator();
-        EntityStatisticsEntityConverter entityStatsConverter = operators.getEntityStatisticsEntityConverter();
+        MessageStatisticsOperator messageStatsOperator = operators.getMessageStatisticsOperator();
+        MessageStatisticsEntityConverter messageStatsConverter = operators.getMessageStatisticsEntityConverter();
 
-        return entityStatsOperator.getStatistics(
+        return messageStatsOperator.getStatistics(
                         currentPage.getId().getBookId().getName(),
                         currentPage.getId().getName(),
-						entityType.getValue(),
-						frameType.getValue(),
-						actualStart,
-						actualEnd,
-						readAttrs)
-				.thenApplyAsync(rs -> {
+                        sessionAlias,
+                        direction.getLabel(),
+                        frameInterval.getFrameType().getValue(),
+                        actualStart,
+                        actualEnd,
+                        readAttrs)
+                .thenApplyAsync(rs -> {
                             currentPage = book.getNextPage(currentPage.getStarted());
+
                             return new ConvertingPagedIterator<>(rs,
                                     selectQueryExecutor,
                                     -1,
                                     new AtomicInteger(0),
-                                    EntityStatisticsEntity::toCounterSample,
-                                    entityStatsConverter::getEntity, this.getRequestInfo());
-                });
+                                    MessageStatisticsEntity::toCounterSample,
+                                    messageStatsConverter::getEntity,
+                                    this.getRequestInfo());
+                        }, composingService);
     }
 }
