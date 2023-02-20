@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle.cassandra.workers;
 
+import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookCache;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
@@ -33,12 +34,14 @@ public class WorkerSupplies {
     private final SelectQueryExecutor selectExecutor;
     private final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs;
     private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
+    private final Function<BatchStatementBuilder, BatchStatementBuilder> batchWriteAttrs;
 
     public WorkerSupplies(CassandraStorageSettings settings, CassandraOperators operators,
                           ExecutorService composingService, BookCache BookCache,
                           SelectQueryExecutor selectExecutor,
                           Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
-                          Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) {
+                          Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs,
+                          Function<BatchStatementBuilder, BatchStatementBuilder> batchWriteAttrs) {
         this.settings = settings;
         this.operators = operators;
         this.composingService = composingService;
@@ -46,6 +49,7 @@ public class WorkerSupplies {
         this.selectExecutor = selectExecutor;
         this.writeAttrs = writeAttrs;
         this.readAttrs = readAttrs;
+        this.batchWriteAttrs = batchWriteAttrs;
     }
 
     public CassandraStorageSettings getSettings() {
@@ -74,5 +78,9 @@ public class WorkerSupplies {
 
     public Function<BoundStatementBuilder, BoundStatementBuilder> getReadAttrs() {
         return readAttrs;
+    }
+
+    public Function<BatchStatementBuilder, BatchStatementBuilder> getBatchWriteAttrs() {
+        return batchWriteAttrs;
     }
 }

@@ -144,6 +144,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 							entityConverter::getEntity,
 							// This filter function checks if batch interval crosses requested filter interval
 							convertedEntity -> !convertedEntity.getLastStartTimestamp().isBefore(actualFrom),
+							null,
 							getRequestInfo());
 				}, composingService);
 	}

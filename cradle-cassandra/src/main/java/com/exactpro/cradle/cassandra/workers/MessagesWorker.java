@@ -171,7 +171,7 @@ public class MessagesWorker extends Worker
 		String queryInfo = format("get nearest time and sequence before %s for page '%s'",
 				TimeUtils.toInstant(messageDate, messageTime), page.getId().getName());
 		return selectQueryExecutor.executeSingleRowResultQuery(
-						() -> mbOperator.getNearestTimeAndSequenceBefore(page.getId().getBookId().getName(), page.getId().getName(), sessionAlias,
+						() -> mbOperator.getNearestBatchTimeAndSequenceBefore(page.getId().getBookId().getName(), page.getId().getName(), sessionAlias,
 								direction, messageDate, messageTime, sequence, readAttrs), Function.identity(), queryInfo)
 				.thenComposeAsync(row ->
 				{

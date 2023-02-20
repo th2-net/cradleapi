@@ -28,6 +28,7 @@ import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
 import com.exactpro.cradle.cassandra.dao.intervals.converters.IntervalEntityConverter;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.messages.converters.*;
+import com.exactpro.cradle.cassandra.dao.statistics.*;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.PageScopeEntityConverter;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.ScopeEntityConverter;
