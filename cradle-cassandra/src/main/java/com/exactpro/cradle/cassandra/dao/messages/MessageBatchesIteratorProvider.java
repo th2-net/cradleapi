@@ -24,9 +24,13 @@ import com.exactpro.cradle.cassandra.dao.messages.sequences.MessageBatchIterator
 import com.exactpro.cradle.cassandra.dao.messages.sequences.MessageBatchIteratorFilter;
 import com.exactpro.cradle.cassandra.dao.messages.sequences.SequenceRange;
 import com.exactpro.cradle.cassandra.dao.messages.sequences.SequenceRangeExtractor;
-import com.exactpro.cradle.cassandra.iterators.FilteringConvertingPagedIterator;
+import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.filters.FilterForAny;
+import com.exactpro.cradle.iterators.ConvertingIterator;
+import com.exactpro.cradle.iterators.FilteringIterator;
+import com.exactpro.cradle.iterators.LimitedIterator;
+import com.exactpro.cradle.iterators.TakeWhileIterator;
 import com.exactpro.cradle.messages.MessageFilter;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -46,7 +50,7 @@ public class MessageBatchesIteratorProvider extends AbstractMessageIteratorProvi
 
 	private final MessageBatchIteratorFilter<StoredMessageBatch> batchFilter;
 	private final MessageBatchIteratorCondition<StoredMessageBatch> iterationCondition;
-	private FilteringConvertingPagedIterator<StoredMessageBatch, MessageBatchEntity> iterator;
+	private TakeWhileIterator<StoredMessageBatch> iterator;
 
 	public MessageBatchesIteratorProvider(String requestInfo, MessageFilter filter, CassandraOperators operators, BookInfo book,
 										  ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
@@ -73,7 +77,7 @@ public class MessageBatchesIteratorProvider extends AbstractMessageIteratorProvi
 			return CompletableFuture.completedFuture(null);
 		}
 
-		if (iterator != null && iterator.isTerminated()) {
+		if (iterator != null && iterator.isHalted()) {
 			logger.debug("Iterator was interrupted because iterator condition was not met");
 			return CompletableFuture.completedFuture(null);
 		}
@@ -90,9 +94,21 @@ public class MessageBatchesIteratorProvider extends AbstractMessageIteratorProvi
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
 					// Updated limit should be smaller, since we already got entities from previous batch
 					cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(),0));
-					iterator = new FilteringConvertingPagedIterator<>(resultSet, selectQueryExecutor, limit, returned,
-							entity -> mapMessageBatchEntity(pageId, entity), messageBatchEntityConverter::getEntity,
-							batchFilter, iterationCondition, "fetch next page of message batches");
+
+					iterator = new TakeWhileIterator<>(
+							new FilteringIterator<>(
+									new ConvertingIterator<>(
+											new LimitedIterator<>(
+													new PagedIterator<>(
+															resultSet,
+															selectQueryExecutor,
+															messageBatchEntityConverter::getEntity,
+															getRequestInfo()),
+													limit),
+											entity -> mapMessageBatchEntity(pageId, entity)),
+									batchFilter::test),
+							iterationCondition);
+
 					return iterator;
 				}, composingService);
 	}

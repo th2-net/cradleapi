@@ -24,13 +24,17 @@ import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.EventBatchDurationWorker;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
-import com.exactpro.cradle.cassandra.iterators.FilteringConvertingPagedIterator;
+import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
 import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
+import com.exactpro.cradle.iterators.ConvertingIterator;
+import com.exactpro.cradle.iterators.FilteringIterator;
+import com.exactpro.cradle.iterators.LimitedIterator;
+import com.exactpro.cradle.iterators.TakeWhileIterator;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventFilter;
@@ -135,17 +139,18 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
 					cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(),0));
 
-					return new FilteringConvertingPagedIterator<>(
-							resultSet,
-							selectQueryExecutor,
-							limit,
-							returned,
-							entity -> mapTestEventEntity(pageId, entity),
-							entityConverter::getEntity,
-							// This filter function checks if batch interval crosses requested filter interval
-							convertedEntity -> !convertedEntity.getLastStartTimestamp().isBefore(actualFrom),
-							null,
-							getRequestInfo());
+					//TODO: previous code contained possible bug, needs to be checked
+					return new TakeWhileIterator<>(
+							new ConvertingIterator<>(
+								new LimitedIterator<>(
+										new PagedIterator<>(
+												resultSet,
+												selectQueryExecutor,
+												entityConverter::getEntity,
+												getRequestInfo()),
+										limit),
+									entity -> mapTestEventEntity(pageId, entity)),
+							convertedEntity -> !convertedEntity.getLastStartTimestamp().isBefore(actualFrom));
 				}, composingService);
 	}
 
