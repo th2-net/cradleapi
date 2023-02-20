@@ -5,11 +5,11 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 
-public class TransformedIteratorTest {
+public class ConvertingIteratorTest {
 
     @Test(description = "Test case when simple transformation is being done")
     public void testTransform() {
-        TransformedIterator<String, Integer> iterator = new TransformedIterator<>(List.of("1", "2", "3", "4", "5", "6").iterator(), (el) -> Integer.parseInt(el));
+        ConvertingIterator<String, Integer> iterator = new ConvertingIterator<>(List.of("1", "2", "3", "4", "5", "6").iterator(), (el) -> Integer.parseInt(el));
         Iterable<Integer> actualIterable = () -> iterator;
         Iterable<Integer> expectedIterable = List.of(1, 2, 3, 4, 5, 6);
 

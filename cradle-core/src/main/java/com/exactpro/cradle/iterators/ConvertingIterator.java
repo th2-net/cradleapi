@@ -9,14 +9,14 @@ import java.util.Iterator;
 /**
  * Iterator which transforms elements
  * from underlying iterator from one class to another
- * @param <F>
- * @param <T>
+ * @param <F> type to convert from
+ * @param <T> type to convert to
  */
-public class TransformedIterator<F, T> implements Iterator<T> {
+public class ConvertingIterator<F, T> implements Iterator<T> {
 
     private final Iterator<T> wrapped;
 
-    public TransformedIterator (Iterator<F> iterator, Function<? super F, ? extends T> function) {
+    public ConvertingIterator(Iterator<F> iterator, Function<? super F, ? extends T> function) {
         this.wrapped = Iterators.transform(iterator, function);
     }
 
