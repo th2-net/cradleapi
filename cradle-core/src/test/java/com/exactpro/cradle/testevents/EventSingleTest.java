@@ -70,7 +70,7 @@ public class EventSingleTest
 					{validEvent().messages(Collections.singleton(new StoredMessageId(new BookId(BOOK.getName()+"1"),  //Different book in message
 							"Session1", Direction.FIRST, START_TIMESTAMP, 1))), "Book of message"},
 					{validEvent().parentId(new StoredTestEventId(BOOK, SCOPE, BEFORE_START_TIMESTAMP, ID_VALUE)),
-							"parent"}
+							"could not find corresponding page in book"}
 				};
 	}
 	
