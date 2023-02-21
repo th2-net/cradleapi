@@ -1258,12 +1258,14 @@ public class CassandraCradleStorage extends CradleStorage
 				endDate,
 				endTime,
 				readAttrs)
-				.thenApply(rs -> new ConvertingIterator<>(
-						new PagedIterator<>(rs,
-								selectExecutor,
-								operators.getPageEntityConverter()::getEntity,
-								queryInfo),
-						PageEntity::toPageInfo));
+				.thenApply(rs -> {
+					PagedIterator<PageEntity> pagedIterator = new PagedIterator<>(rs,
+							selectExecutor,
+							operators.getPageEntityConverter()::getEntity,
+							queryInfo);
+
+					return new ConvertingIterator<>(pagedIterator, PageEntity::toPageInfo);
+				});
 	}
 
 	@Override

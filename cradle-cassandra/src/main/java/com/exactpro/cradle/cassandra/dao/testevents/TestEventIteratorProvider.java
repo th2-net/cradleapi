@@ -34,7 +34,6 @@ import com.exactpro.cradle.filters.FilterForLess;
 import com.exactpro.cradle.iterators.ConvertingIterator;
 import com.exactpro.cradle.iterators.FilteringIterator;
 import com.exactpro.cradle.iterators.LimitedIterator;
-import com.exactpro.cradle.iterators.TakeWhileIterator;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventFilter;
@@ -139,18 +138,20 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
 					cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(),0));
 
-					//TODO: previous code contained possible bug, needs to be checked
-					return new TakeWhileIterator<>(
-							new ConvertingIterator<>(
-								new LimitedIterator<>(
-										new PagedIterator<>(
-												resultSet,
-												selectQueryExecutor,
-												entityConverter::getEntity,
-												getRequestInfo()),
-										limit),
-									entity -> mapTestEventEntity(pageId, entity)),
+					PagedIterator<TestEventEntity> pagedIterator = new PagedIterator<>(
+							resultSet,
+							selectQueryExecutor,
+							entityConverter::getEntity,
+							getRequestInfo());
+					ConvertingIterator<TestEventEntity, StoredTestEvent> convertingIterator = new ConvertingIterator<>(
+							pagedIterator, entity ->
+							mapTestEventEntity(pageId, entity));
+					FilteringIterator<StoredTestEvent> filteringIterator = new FilteringIterator<>(
+							convertingIterator,
 							convertedEntity -> !convertedEntity.getLastStartTimestamp().isBefore(actualFrom));
+
+					return new LimitedIterator<>(
+							filteringIterator, limit);
 				}, composingService);
 	}
 

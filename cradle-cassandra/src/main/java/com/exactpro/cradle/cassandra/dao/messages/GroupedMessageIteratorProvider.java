@@ -136,13 +136,16 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
 					// Updated limit should be smaller, since we already got entities from previous batch
 					cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(),0));
-					return new ConvertingIterator<>(
-							new LimitedIterator<>(
-									new PagedIterator<>(resultSet, selectQueryExecutor, converter::getEntity, getRequestInfo()),
-									cassandraFilter.getLimit()
-							), entity -> MessagesWorker.mapGroupedMessageBatchEntity(pageId, entity));
 
-					//TODO: previous code didn't use "limit" and "queryinfo" was set by hand dont know why
+					PagedIterator<GroupedMessageBatchEntity> pagedIterator = new PagedIterator<>(
+							resultSet,
+							selectQueryExecutor,
+							converter::getEntity,
+							getRequestInfo());
+
+					return new ConvertingIterator<>(
+							pagedIterator,
+							entity -> MessagesWorker.mapGroupedMessageBatchEntity(pageId, entity));
 				}, composingService)
 				.thenApplyAsync(it -> new FilteredGroupedMessageBatchIterator(it, filter, limit, returned), composingService);
 	}

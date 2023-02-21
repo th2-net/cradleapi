@@ -85,13 +85,17 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
     }
 
     private Iterable<Interval> getIntervalsIterator(MappedAsyncPagingIterable<IntervalEntity> iterable, String queryInfo) {
-        return () ->
-                new ConvertingIterator<>(
-                        new PagedIterator<>(iterable,
-                                selectQueryExecutor,
-                                converter::getEntity,
-                                queryInfo),
-                        this::mapEntityToInterval);
+        return () -> {
+            PagedIterator<IntervalEntity> pagedIterator = new PagedIterator<>(iterable,
+                    selectQueryExecutor,
+                    converter::getEntity,
+                    queryInfo);
+
+            return new ConvertingIterator<>(
+                    pagedIterator,
+                    this::mapEntityToInterval);
+        };
+
     }
 
     @Override

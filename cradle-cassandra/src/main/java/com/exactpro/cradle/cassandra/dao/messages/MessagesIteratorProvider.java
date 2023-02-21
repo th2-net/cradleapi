@@ -94,22 +94,22 @@ public class MessagesIteratorProvider extends AbstractMessageIteratorProvider<St
 					// Updated limit should be smaller, since we already got entities from previous batch
 					cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(),0));
 
+					PagedIterator<MessageBatchEntity> pagedIterator = new PagedIterator<>(
+							resultSet,
+							selectQueryExecutor,
+							messageBatchEntityConverter::getEntity,
+							getRequestInfo());
+					ConvertingIterator<MessageBatchEntity, StoredMessageBatch> convertingIterator = new ConvertingIterator<>(
+							pagedIterator, entity ->
+							mapMessageBatchEntity(pageId, entity));
+					FilteringIterator<StoredMessageBatch> filteringIterator = new FilteringIterator<>(
+							convertingIterator,
+							batchFilter::test);
 					iterator = new TakeWhileIterator<>(
-							new FilteringIterator<>(
-								new ConvertingIterator<>(
-										new LimitedIterator<>(
-												new PagedIterator<>(
-														resultSet,
-														selectQueryExecutor,
-														messageBatchEntityConverter::getEntity,
-														getRequestInfo()),
-												limit),
-										entity -> mapMessageBatchEntity(pageId, entity)),
-								batchFilter::test),
+							filteringIterator,
 							iterationCondition);
 
 					return iterator;
-					// TODO: previous code used -1 as limit, dont know why
 				}, composingService)
 				.thenApplyAsync(it -> new FilteredMessageIterator(it, filter, limit, returned), composingService);
 	}

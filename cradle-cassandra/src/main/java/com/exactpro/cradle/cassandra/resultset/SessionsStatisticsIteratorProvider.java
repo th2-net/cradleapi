@@ -46,7 +46,7 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
         to guarantee that unique elements will be returned
         across all iterators
      */
-    private final Set<Long> registry;
+    private final Set<Integer> registry;
     private PageInfo curPage;
 
     public SessionsStatisticsIteratorProvider (String requestInfo,
@@ -110,14 +110,15 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
                                     frameIndex ++;
                                 }
 
-                                //TODO previous version used registry for uniqueness across multiple iterators
-                                return new UniqueIterator<>(
-                                        new ConvertingIterator<>(
-                                                new PagedIterator<>(rs,
-                                                        selectQueryExecutor,
-                                                        converter::getEntity,
-                                                        getRequestInfo()),
-                                                SessionStatisticsEntity::getSession));
-                                });
+                                PagedIterator<SessionStatisticsEntity> pagedIterator = new PagedIterator<>(rs,
+                                        selectQueryExecutor,
+                                        converter::getEntity,
+                                        getRequestInfo());
+                                ConvertingIterator<SessionStatisticsEntity, String> convertingIterator = new ConvertingIterator<>(
+                                        pagedIterator,
+                                        SessionStatisticsEntity::getSession);
+
+                                return new UniqueIterator<>(convertingIterator, registry);
+                                }, composingService);
         }
 }

@@ -33,7 +33,11 @@ public class UniqueIterator<T> extends FilteringIterator<T> {
         private final Set<Integer> set;
 
         private UniquePredicate() {
-            this.set = new HashSet<>();
+            this(new HashSet<>());
+        }
+
+        private UniquePredicate(Set<Integer> set) {
+            this.set = set;
         }
 
         @Override
@@ -47,5 +51,9 @@ public class UniqueIterator<T> extends FilteringIterator<T> {
 
     public UniqueIterator(Iterator<T> iterator) {
         super(iterator, new UniquePredicate<>());
+    }
+
+    public UniqueIterator(Iterator<T> iterator, Set<Integer> registry) {
+        super(iterator, new UniquePredicate<>(registry));
     }
 }

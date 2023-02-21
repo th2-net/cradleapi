@@ -74,8 +74,14 @@ public class MessageStatisticsIteratorProvider extends IteratorProvider<CounterS
                 .thenApplyAsync(rs -> {
                             currentPage = book.getNextPage(currentPage.getStarted());
 
+                            PagedIterator<MessageStatisticsEntity> pagedIterator = new PagedIterator<>(
+                                    rs,
+                                    selectQueryExecutor,
+                                    messageStatsConverter::getEntity,
+                                    getRequestInfo());
+
                             return new ConvertingIterator<>(
-                                    new PagedIterator<>(rs, selectQueryExecutor, messageStatsConverter::getEntity, getRequestInfo()),
+                                    pagedIterator,
                                     MessageStatisticsEntity::toCounterSample);
                         }, composingService);
     }

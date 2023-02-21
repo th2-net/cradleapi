@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle.cassandra.dao.messages;
 
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.PageId;
@@ -89,24 +90,26 @@ public class MessageBatchesIteratorProvider extends AbstractMessageIteratorProvi
 
 		logger.debug("Getting next iterator for '{}' by filter {}", getRequestInfo(), cassandraFilter);
 		return op.getByFilter(cassandraFilter, selectQueryExecutor, getRequestInfo(), readAttrs)
-				.thenApplyAsync(resultSet ->
-				{
+				.thenApplyAsync(resultSet -> {
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
-					// Updated limit should be smaller, since we already got entities from previous batch
-					cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(),0));
+// Updated limit should be smaller, since we already got entities from previous batch
+					cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(), 0));
 
+					PagedIterator<MessageBatchEntity> pagedIterator = new PagedIterator<>(
+							resultSet,
+							selectQueryExecutor,
+							messageBatchEntityConverter::getEntity,
+							getRequestInfo());
+					ConvertingIterator<MessageBatchEntity, StoredMessageBatch> convertingIterator = new ConvertingIterator<>(
+							pagedIterator, entity ->
+							mapMessageBatchEntity(pageId, entity));
+					FilteringIterator<StoredMessageBatch> filteringIterator = new FilteringIterator<>(
+							convertingIterator,
+							batchFilter::test);
+					LimitedIterator<StoredMessageBatch> limitedIterator = new LimitedIterator<>(
+							filteringIterator, limit);
 					iterator = new TakeWhileIterator<>(
-							new FilteringIterator<>(
-									new ConvertingIterator<>(
-											new LimitedIterator<>(
-													new PagedIterator<>(
-															resultSet,
-															selectQueryExecutor,
-															messageBatchEntityConverter::getEntity,
-															getRequestInfo()),
-													limit),
-											entity -> mapMessageBatchEntity(pageId, entity)),
-									batchFilter::test),
+							limitedIterator,
 							iterationCondition);
 
 					return iterator;

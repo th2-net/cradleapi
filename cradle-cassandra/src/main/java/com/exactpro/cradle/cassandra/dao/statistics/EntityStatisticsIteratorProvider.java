@@ -69,9 +69,15 @@ public class EntityStatisticsIteratorProvider extends IteratorProvider<CounterSa
 				.thenApplyAsync(rs -> {
                             currentPage = book.getNextPage(currentPage.getStarted());
 
+                            PagedIterator<EntityStatisticsEntity> pagedIterator =  new PagedIterator<>(
+                                    rs,
+                                    selectQueryExecutor,
+                                    entityStatsConverter::getEntity,
+                                    getRequestInfo());
+
                             return new ConvertingIterator<>(
-                                    new PagedIterator<>(rs, selectQueryExecutor, entityStatsConverter::getEntity, getRequestInfo()),
+                                    pagedIterator,
                                     EntityStatisticsEntity::toCounterSample);
-                }, composingService); //TODO: Check why didn't this use composing service before
+                }, composingService);
     }
 }
