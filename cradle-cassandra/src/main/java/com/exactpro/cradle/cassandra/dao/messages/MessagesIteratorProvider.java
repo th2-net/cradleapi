@@ -44,17 +44,7 @@ public class MessagesIteratorProvider extends AbstractMessageIteratorProvider<St
 	@Override
 	public CompletableFuture<Iterator<StoredMessage>> nextIterator()
 	{
-		if (cassandraFilter == null) {
-			return CompletableFuture.completedFuture(null);
-		}
-
-		if (iterator != null && iterator.isHalted()) {
-			logger.debug("Iterator was interrupted because iterator condition was not met");
-			return CompletableFuture.completedFuture(null);
-		}
-
-		if (limit > 0 && returned.get() >= limit) {
-			logger.debug("Filtering interrupted because limit for records to return ({}) is reached ({})", limit, returned);
+		if (!performNextIteratorChecks()) {
 			return CompletableFuture.completedFuture(null);
 		}
 

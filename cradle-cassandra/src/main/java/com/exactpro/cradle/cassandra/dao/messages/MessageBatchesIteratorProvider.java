@@ -20,6 +20,7 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
+import com.exactpro.cradle.iterators.LimitedIterator;
 import com.exactpro.cradle.messages.MessageFilter;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -45,23 +46,13 @@ public class MessageBatchesIteratorProvider extends AbstractMessageIteratorProvi
 
 	@Override
 	public CompletableFuture<Iterator<StoredMessageBatch>> nextIterator() {
-
-		if (cassandraFilter == null) {
-			return CompletableFuture.completedFuture(null);
-		}
-
-		if (iterator != null && iterator.isHalted()) {
-			logger.debug("Iterator was interrupted because iterator condition was not met");
-			return CompletableFuture.completedFuture(null);
-		}
-
-		if (limit > 0 && returned.get() >= limit) {
-			logger.debug("Filtering interrupted because limit for records to return ({}) is reached ({})", limit, returned);
+		if (!performNextIteratorChecks()) {
 			return CompletableFuture.completedFuture(null);
 		}
 
 		logger.debug("Getting next iterator for '{}' by filter {}", getRequestInfo(), cassandraFilter);
 		return op.getByFilter(cassandraFilter, selectQueryExecutor, getRequestInfo(), readAttrs)
-				.thenApplyAsync(this::getBatchedIterator, composingService);
+				.thenApplyAsync(this::getBatchedIterator, composingService)
+				.thenApply(it -> new LimitedIterator<>(iterator, limit));
 	}
 }

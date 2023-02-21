@@ -38,12 +38,13 @@ import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
 import com.exactpro.cradle.iterators.ConvertingIterator;
 import com.exactpro.cradle.iterators.FilteringIterator;
-import com.exactpro.cradle.iterators.LimitedIterator;
 import com.exactpro.cradle.iterators.TakeWhileIterator;
 import com.exactpro.cradle.messages.MessageFilter;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TimeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -60,6 +61,8 @@ import static com.exactpro.cradle.cassandra.workers.MessagesWorker.mapMessageBat
 
 abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvider<T>
 {
+
+	private static final Logger logger = LoggerFactory.getLogger(AbstractMessageIteratorProvider.class);
 	protected final MessageBatchOperator op;
 	protected final MessageBatchEntityConverter messageBatchEntityConverter;
 	protected final BookInfo book;
@@ -235,6 +238,24 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 				filter.getOrder());
 	}
 
+	protected boolean performNextIteratorChecks () {
+		if (cassandraFilter == null) {
+			return false;
+		}
+
+		if (iterator != null && iterator.isHalted()) {
+			logger.debug("Iterator was interrupted because iterator condition was not met");
+			return false;
+		}
+
+		if (limit > 0 && returned.get() >= limit) {
+			logger.debug("Filtering interrupted because limit for records to return ({}) is reached ({})", limit, returned);
+			return false;
+		}
+
+		return true;
+	}
+
 	protected Iterator<StoredMessageBatch> getBatchedIterator (MappedAsyncPagingIterable<MessageBatchEntity> resultSet) {
 		PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
 		// Updated limit should be smaller, since we already got entities from previous batch
@@ -251,10 +272,8 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		FilteringIterator<StoredMessageBatch> filteringIterator = new FilteringIterator<>(
 				convertingIterator,
 				batchFilter::test);
-		LimitedIterator<StoredMessageBatch> limitedIterator = new LimitedIterator<>(
-				filteringIterator, limit);
 		iterator = new TakeWhileIterator<>(
-				limitedIterator,
+				filteringIterator,
 				iterationCondition);
 
 		return iterator;
