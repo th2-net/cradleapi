@@ -18,22 +18,10 @@ package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookInfo;
-import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
-import com.exactpro.cradle.cassandra.dao.messages.sequences.MessageBatchIteratorCondition;
-import com.exactpro.cradle.cassandra.dao.messages.sequences.MessageBatchIteratorFilter;
-import com.exactpro.cradle.cassandra.dao.messages.sequences.SequenceRange;
-import com.exactpro.cradle.cassandra.dao.messages.sequences.SequenceRangeExtractor;
-import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
-import com.exactpro.cradle.filters.FilterForAny;
-import com.exactpro.cradle.iterators.ConvertingIterator;
-import com.exactpro.cradle.iterators.FilteringIterator;
-import com.exactpro.cradle.iterators.LimitedIterator;
-import com.exactpro.cradle.iterators.TakeWhileIterator;
 import com.exactpro.cradle.messages.MessageFilter;
 import com.exactpro.cradle.messages.StoredMessage;
-import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,30 +31,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.cassandra.workers.MessagesWorker.mapMessageBatchEntity;
-
 public class MessagesIteratorProvider extends AbstractMessageIteratorProvider<StoredMessage> {
 	private static final Logger logger = LoggerFactory.getLogger(MessagesIteratorProvider.class);
-
-	private final MessageBatchIteratorFilter<StoredMessageBatch> batchFilter;
-	private final MessageBatchIteratorCondition<StoredMessageBatch> iterationCondition;
-	private TakeWhileIterator<StoredMessageBatch> iterator;
 
 	public MessagesIteratorProvider(String requestInfo, MessageFilter filter, CassandraOperators operators, BookInfo book,
 									ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
 									Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException
 	{
 		super(requestInfo, filter, operators, book, composingService, selectQueryExecutor, readAttrs);
-		FilterForAny<Long> sequenceFilter = filter.getSequence();
-		if (sequenceFilter == null) {
-			batchFilter = MessageBatchIteratorFilter.none();
-			iterationCondition = MessageBatchIteratorCondition.none();
-		} else {
-			SequenceRangeExtractor<StoredMessageBatch> extractor = batch -> new SequenceRange(batch.getFirstMessage().getSequence(),
-					batch.getLastMessage().getSequence());
-			batchFilter = new MessageBatchIteratorFilter<>(filter, extractor);
-			iterationCondition = new MessageBatchIteratorCondition<>(filter, extractor);
-		}
 	}
 
 	@Override
@@ -88,29 +60,7 @@ public class MessagesIteratorProvider extends AbstractMessageIteratorProvider<St
 
 		logger.debug("Getting next iterator for '{}' by filter {}", getRequestInfo(), cassandraFilter);
 		return op.getByFilter(cassandraFilter, selectQueryExecutor, getRequestInfo(), readAttrs)
-				.thenApplyAsync(resultSet ->
-				{
-					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
-					// Updated limit should be smaller, since we already got entities from previous batch
-					cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(),0));
-
-					PagedIterator<MessageBatchEntity> pagedIterator = new PagedIterator<>(
-							resultSet,
-							selectQueryExecutor,
-							messageBatchEntityConverter::getEntity,
-							getRequestInfo());
-					ConvertingIterator<MessageBatchEntity, StoredMessageBatch> convertingIterator = new ConvertingIterator<>(
-							pagedIterator, entity ->
-							mapMessageBatchEntity(pageId, entity));
-					FilteringIterator<StoredMessageBatch> filteringIterator = new FilteringIterator<>(
-							convertingIterator,
-							batchFilter::test);
-					iterator = new TakeWhileIterator<>(
-							filteringIterator,
-							iterationCondition);
-
-					return iterator;
-				}, composingService)
+				.thenApplyAsync(this::getBatchedIterator, composingService)
 				.thenApplyAsync(it -> new FilteredMessageIterator(it, filter, limit, returned), composingService);
 	}
 }

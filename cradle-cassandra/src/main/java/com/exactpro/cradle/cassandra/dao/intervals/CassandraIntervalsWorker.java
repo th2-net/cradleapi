@@ -20,7 +20,6 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.shaded.guava.common.collect.Iterables;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.cassandra.EntityConverter;
-import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.workers.Worker;
 import com.exactpro.cradle.cassandra.workers.WorkerSupplies;
@@ -41,7 +40,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.CradleStorage.TIMEZONE_OFFSET;

@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle.cassandra.dao.messages;
 
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.exactpro.cradle.BookInfo;
@@ -24,12 +25,23 @@ import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.messages.converters.MessageBatchEntityConverter;
+import com.exactpro.cradle.cassandra.dao.messages.sequences.MessageBatchIteratorCondition;
+import com.exactpro.cradle.cassandra.dao.messages.sequences.MessageBatchIteratorFilter;
+import com.exactpro.cradle.cassandra.dao.messages.sequences.SequenceRange;
+import com.exactpro.cradle.cassandra.dao.messages.sequences.SequenceRangeExtractor;
+import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
+import com.exactpro.cradle.filters.FilterForAny;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
+import com.exactpro.cradle.iterators.ConvertingIterator;
+import com.exactpro.cradle.iterators.FilteringIterator;
+import com.exactpro.cradle.iterators.LimitedIterator;
+import com.exactpro.cradle.iterators.TakeWhileIterator;
 import com.exactpro.cradle.messages.MessageFilter;
+import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TimeUtils;
 
@@ -37,12 +49,14 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_FIRST_MESSAGE_TIME;
+import static com.exactpro.cradle.cassandra.workers.MessagesWorker.mapMessageBatchEntity;
 
 abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvider<T>
 {
@@ -59,6 +73,9 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 	protected final int limit;
 	protected final AtomicInteger returned;
 	protected CassandraStoredMessageFilter cassandraFilter;
+	protected final MessageBatchIteratorFilter<StoredMessageBatch> batchFilter;
+	protected final MessageBatchIteratorCondition<StoredMessageBatch> iterationCondition;
+	protected TakeWhileIterator<StoredMessageBatch> iterator;
 
 	public AbstractMessageIteratorProvider(String requestInfo, MessageFilter filter, CassandraOperators operators, BookInfo book,
 										   ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
@@ -77,6 +94,23 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		this.leftBoundFilter = createLeftBoundFilter(filter);
 		this.rightBoundFilter = createRightBoundFilter(filter);
 		this.cassandraFilter = createInitialFilter(filter);
+
+		FilterForAny<Long> sequenceFilter = filter.getSequence();
+		MessageBatchIteratorFilter<StoredMessageBatch> batchFilter;
+		MessageBatchIteratorCondition<StoredMessageBatch> iterationCondition;
+		if (sequenceFilter == null) {
+			batchFilter = MessageBatchIteratorFilter.none();
+			iterationCondition = MessageBatchIteratorCondition.none();
+		} else {
+			SequenceRangeExtractor<StoredMessageBatch> extractor = batch -> new SequenceRange(
+					batch.getFirstMessage().getSequence(),
+					batch.getLastMessage().getSequence());
+			batchFilter = new MessageBatchIteratorFilter<>(filter, extractor);
+			iterationCondition = new MessageBatchIteratorCondition<>(filter, extractor);
+		}
+
+		this.batchFilter = batchFilter;
+		this.iterationCondition = iterationCondition;
 	}
 
 	protected FilterForGreater<Instant> createLeftBoundFilter(MessageFilter filter) throws CradleStorageException
@@ -199,5 +233,30 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 				rightBoundFilter,
 				updatedLimit,
 				filter.getOrder());
+	}
+
+	protected Iterator<StoredMessageBatch> getBatchedIterator (MappedAsyncPagingIterable<MessageBatchEntity> resultSet) {
+		PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
+		// Updated limit should be smaller, since we already got entities from previous batch
+		cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(),0));
+
+		PagedIterator<MessageBatchEntity> pagedIterator = new PagedIterator<>(
+				resultSet,
+				selectQueryExecutor,
+				messageBatchEntityConverter::getEntity,
+				getRequestInfo());
+		ConvertingIterator<MessageBatchEntity, StoredMessageBatch> convertingIterator = new ConvertingIterator<>(
+				pagedIterator, entity ->
+				mapMessageBatchEntity(pageId, entity));
+		FilteringIterator<StoredMessageBatch> filteringIterator = new FilteringIterator<>(
+				convertingIterator,
+				batchFilter::test);
+		LimitedIterator<StoredMessageBatch> limitedIterator = new LimitedIterator<>(
+				filteringIterator, limit);
+		iterator = new TakeWhileIterator<>(
+				limitedIterator,
+				iterationCondition);
+
+		return iterator;
 	}
 }
