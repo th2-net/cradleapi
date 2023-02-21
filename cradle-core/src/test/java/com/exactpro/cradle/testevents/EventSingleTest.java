@@ -140,7 +140,7 @@ public class EventSingleTest
 				.name(DUMMY_NAME)
 				.content("Test content".getBytes())
 				.build();
-		TestEventUtils.validateTestEvent(event, null);
+		TestEventUtils.validateTestEvent(event);
 	}
 	
 	@Test

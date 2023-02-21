@@ -40,13 +40,33 @@ public class TestEventUtils
 
 	private static final EventBatchDeserializer deserializer = new EventBatchDeserializer();
 	private static final EventBatchSerializer serializer = new EventBatchSerializer();
-	
+
+	/**
+	 * Validates event with checks requiring bookInfo as well as necessary fields
+	 * @param event event
+	 * @param bookInfo bookInfo
+	 * @throws CradleStorageException if validation failed
+	 */
+	public static void validateTestEvent(TestEvent event, BookInfo bookInfo) throws CradleStorageException {
+		if (bookInfo != null && event.getParentId() != null) {
+			PageInfo pageInfo = bookInfo.findPage(event.getParentId().getStartTimestamp());
+			if (pageInfo == null) {
+				throw new CradleStorageException(
+						String.format("Test event's parent event's startTimestamp is %s , could not find corresponding page in book %s",
+								event.getParentId().getStartTimestamp(),
+								bookInfo.getId()));
+			}
+		}
+
+		validateTestEvent(event);
+	}
+
 	/**
 	 * Checks that test event has all necessary fields set
 	 * @param event to validate
 	 * @throws CradleStorageException if validation failed
 	 */
-	public static void validateTestEvent(TestEvent event, BookInfo bookInfo) throws CradleStorageException
+	public static void validateTestEvent(TestEvent event) throws CradleStorageException
 	{
 		if (event.getId() == null)
 			throw new CradleStorageException("Test event ID cannot be null");
@@ -73,15 +93,6 @@ public class TestEventUtils
 		validateTestEventEndDate(event);
 		if (event.getParentId() != null && !event.getBookId().equals(event.getParentId().getBookId()))
 			throw new CradleStorageException("Test event and its parent must be from the same book");
-		if (bookInfo != null && event.getParentId() != null) {
-			PageInfo pageInfo = bookInfo.findPage(event.getParentId().getStartTimestamp());
-			if (pageInfo == null) {
-				throw new CradleStorageException(
-						String.format("Test event's parent event's startTimestamp is %s , could not find corresponding page in book %s",
-								event.getParentId().getStartTimestamp(),
-								bookInfo.getId()));
-			}
-		}
 		
 		Set<StoredMessageId> messages = event.getMessages();
 		if (messages != null)
