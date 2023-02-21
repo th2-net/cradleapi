@@ -35,7 +35,6 @@ import com.exactpro.cradle.cassandra.dao.statistics.MessageStatisticsIteratorPro
 import com.exactpro.cradle.cassandra.dao.statistics.MessageStatisticsOperator;
 import com.exactpro.cradle.cassandra.dao.statistics.SessionStatisticsOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
-import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
 import com.exactpro.cradle.cassandra.metrics.DriverMetrics;
@@ -75,7 +74,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
