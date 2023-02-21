@@ -53,6 +53,6 @@ public class MessageBatchesIteratorProvider extends AbstractMessageIteratorProvi
 		logger.debug("Getting next iterator for '{}' by filter {}", getRequestInfo(), cassandraFilter);
 		return op.getByFilter(cassandraFilter, selectQueryExecutor, getRequestInfo(), readAttrs)
 				.thenApplyAsync(this::getBatchedIterator, composingService)
-				.thenApply(it -> new LimitedIterator<>(iterator, limit));
+				.thenApply(it -> new LimitedIterator<>(it, limit));
 	}
 }

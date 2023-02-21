@@ -76,9 +76,9 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 	protected final int limit;
 	protected final AtomicInteger returned;
 	protected CassandraStoredMessageFilter cassandraFilter;
-	protected final MessageBatchIteratorFilter<StoredMessageBatch> batchFilter;
-	protected final MessageBatchIteratorCondition<StoredMessageBatch> iterationCondition;
-	protected TakeWhileIterator<StoredMessageBatch> iterator;
+	protected final MessageBatchIteratorFilter<MessageBatchEntity> batchFilter;
+	protected final MessageBatchIteratorCondition<MessageBatchEntity> iterationCondition;
+	protected TakeWhileIterator<MessageBatchEntity> takeWhileIterator;
 
 	public AbstractMessageIteratorProvider(String requestInfo, MessageFilter filter, CassandraOperators operators, BookInfo book,
 										   ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
@@ -99,15 +99,15 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		this.cassandraFilter = createInitialFilter(filter);
 
 		FilterForAny<Long> sequenceFilter = filter.getSequence();
-		MessageBatchIteratorFilter<StoredMessageBatch> batchFilter;
-		MessageBatchIteratorCondition<StoredMessageBatch> iterationCondition;
+		MessageBatchIteratorFilter<MessageBatchEntity> batchFilter;
+		MessageBatchIteratorCondition<MessageBatchEntity> iterationCondition;
 		if (sequenceFilter == null) {
 			batchFilter = MessageBatchIteratorFilter.none();
 			iterationCondition = MessageBatchIteratorCondition.none();
 		} else {
-			SequenceRangeExtractor<StoredMessageBatch> extractor = batch -> new SequenceRange(
-					batch.getFirstMessage().getSequence(),
-					batch.getLastMessage().getSequence());
+			SequenceRangeExtractor<MessageBatchEntity> extractor = entity -> new SequenceRange(
+					entity.getSequence(),
+					entity.getLastSequence());
 			batchFilter = new MessageBatchIteratorFilter<>(filter, extractor);
 			iterationCondition = new MessageBatchIteratorCondition<>(filter, extractor);
 		}
@@ -243,7 +243,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 			return false;
 		}
 
-		if (iterator != null && iterator.isHalted()) {
+		if (takeWhileIterator != null && takeWhileIterator.isHalted()) {
 			logger.debug("Iterator was interrupted because iterator condition was not met");
 			return false;
 		}
@@ -266,16 +266,17 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 				selectQueryExecutor,
 				messageBatchEntityConverter::getEntity,
 				getRequestInfo());
-		ConvertingIterator<MessageBatchEntity, StoredMessageBatch> convertingIterator = new ConvertingIterator<>(
-				pagedIterator, entity ->
-				mapMessageBatchEntity(pageId, entity));
-		FilteringIterator<StoredMessageBatch> filteringIterator = new FilteringIterator<>(
-				convertingIterator,
+		FilteringIterator<MessageBatchEntity> filteringIterator = new FilteringIterator<>(
+				pagedIterator,
 				batchFilter::test);
-		iterator = new TakeWhileIterator<>(
+		// We need to store this iterator since
+		// it gives info whether or no iterator was halted
+		takeWhileIterator = new TakeWhileIterator<>(
 				filteringIterator,
 				iterationCondition);
 
-		return iterator;
+		return new ConvertingIterator<>(
+				takeWhileIterator, entity ->
+				mapMessageBatchEntity(pageId, entity));
 	}
 }
