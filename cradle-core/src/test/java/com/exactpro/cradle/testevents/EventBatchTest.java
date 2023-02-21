@@ -17,6 +17,7 @@
 package com.exactpro.cradle.testevents;
 
 import com.exactpro.cradle.serialization.EventsSizeCalculator;
+import org.assertj.core.api.Assertions;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -287,6 +288,7 @@ public class EventBatchTest
 		try
 		{
 			batch.addTestEvent(builder.build());
+			Assertions.fail("Invalid message passed validation");
 		}
 		catch (CradleStorageException e)
 		{
