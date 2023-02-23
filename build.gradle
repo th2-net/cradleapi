@@ -1,5 +1,6 @@
 plugins {
 	id "io.github.gradle-nexus.publish-plugin" version"1.0.0"
+	id "org.owasp.dependencycheck" version "8.1.0"
 	id 'signing'
 }
 
@@ -15,11 +16,21 @@ allprojects {
 	group   = 'com.exactpro.th2'
 }
 
+dependencyCheck {
+	formats=['SARIF', 'JSON', 'HTML']
+	failBuildOnCVSS=5
+	analyzers {
+		assemblyEnabled = false
+		nugetconfEnabled = false
+		nodeEnabled = false
+	}
+}
 subprojects {
 	apply plugin: 'java-library'
 	apply plugin: 'maven'
 	apply plugin: 'maven-publish'
 	apply plugin: 'signing'
+	apply plugin: 'org.owasp.dependencycheck'
 
 	repositories {
 		mavenCentral()
