@@ -1,5 +1,5 @@
 ext {
-	driver_version = '4.13.0'
+	driver_version = '4.14.1'
 }
 
 configurations.all {
