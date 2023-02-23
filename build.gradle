@@ -16,15 +16,6 @@ allprojects {
 	group   = 'com.exactpro.th2'
 }
 
-dependencyCheck {
-	formats=['SARIF', 'JSON', 'HTML']
-	failBuildOnCVSS=5
-	analyzers {
-		assemblyEnabled = false
-		nugetconfEnabled = false
-		nodeEnabled = false
-	}
-}
 subprojects {
 	apply plugin: 'java-library'
 	apply plugin: 'maven'
@@ -48,6 +39,15 @@ subprojects {
 	targetCompatibility = JavaVersion.VERSION_11 //Java version to generate classes for.
 	compileJava.options.debugOptions.debugLevel = 'source,lines,vars' // Include debug information
 
+	dependencyCheck {
+		formats=['SARIF', 'JSON', 'HTML']
+		failBuildOnCVSS=5
+		analyzers {
+			assemblyEnabled = false
+			nugetconfEnabled = false
+			nodeEnabled = false
+		}
+	}
 
 	jar {
 		manifest {
