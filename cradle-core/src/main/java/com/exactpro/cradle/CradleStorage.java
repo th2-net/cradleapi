@@ -1353,8 +1353,9 @@ public abstract class CradleStorage
 		{
 			Instant now = Instant.now(),
 					firstStart = pages.get(0).getStart();
-			if (!firstStart.isAfter(now))
-				throw new CradleStorageException("Timestamp of new page start must be after current timestamp ("+now+")");
+			// TODO: change this
+//			if (!firstStart.isAfter(now))
+//				throw new CradleStorageException("Timestamp of new page start must be after current timestamp ("+now+")");
 			if (!firstStart.isAfter(lastPage.getStarted()))
 				throw new CradleStorageException("Timestamp of new page start must be after last page start ("+lastPage.getStarted()+")");
 		}
