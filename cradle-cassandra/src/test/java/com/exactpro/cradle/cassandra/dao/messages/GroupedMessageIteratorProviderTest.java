@@ -1,13 +1,27 @@
+/*
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.exactpro.cradle.cassandra.dao.messages;
 
-import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.*;
-import com.exactpro.cradle.cassandra.CassandraCradleManager;
+import com.exactpro.cradle.cassandra.BaseCassandraTest;
 import com.exactpro.cradle.cassandra.CassandraCradleStorage;
-import com.exactpro.cradle.cassandra.CassandraStorageSettings;
-import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
+import com.exactpro.cradle.cassandra.CassandraCradleHelper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
@@ -15,7 +29,6 @@ import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.utils.CradleStorageException;
-import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.junit.jupiter.api.Assertions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,14 +46,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class GroupedMessageIteratorProviderTest {
+public class GroupedMessageIteratorProviderTest extends BaseCassandraTest {
 
     private static final Logger logger = LoggerFactory.getLogger(GroupedMessageIteratorProviderTest.class);
 
 
     public static String content = "default_content";
-    public static String KEYSPACE_NAME = "test_keyspace";
-    public static String LOCAL_DATACENTER_NAME = "datacenter1";
     private static final BookId BOOKID = new BookId("test_book");
     private static final String PAGE_PREFIX = "test_page_";
     private static final String GROUP_NAME = "test_group";
@@ -55,46 +66,15 @@ public class GroupedMessageIteratorProviderTest {
     private ExecutorService composingService = Executors.newSingleThreadExecutor();
     public final static String protocol = "default_message_protocol";
     private CqlSession session;
-    private CassandraConnectionSettings cassandraConnectionSettings;
     private CassandraCradleStorage storage;
-    private CassandraStorageSettings cassandraStorageSettings;
     private List<PageInfo> pages;
 
-    private void setUpEmbeddedCassandra () {
-        try {
-            EmbeddedCassandraServerHelper.startEmbeddedCassandra();
-            session = EmbeddedCassandraServerHelper.getSession();
-            cassandraConnectionSettings = new CassandraConnectionSettings(
-                    EmbeddedCassandraServerHelper.getHost(),
-                    EmbeddedCassandraServerHelper.getNativeTransportPort(),
-                    LOCAL_DATACENTER_NAME);
-        } catch (IOException | InterruptedException e) {
-            logger.info("", e);
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void setUpCradle () {
-        try {
-            cassandraStorageSettings = new CassandraStorageSettings(
-                    5000,
-                    ConsistencyLevel.ONE,
-                    ConsistencyLevel.ONE);
-            cassandraStorageSettings.setResultPageSize(5);
-            cassandraStorageSettings.setKeyspace(KEYSPACE_NAME);
-            cassandraStorageSettings.setCounterPersistenceInterval(0);
-
-            CassandraCradleManager manager = new CassandraCradleManager(cassandraConnectionSettings, cassandraStorageSettings, true);
-            storage = (CassandraCradleStorage) manager.getStorage();
-        } catch (CradleStorageException | IOException e) {
-            logger.info("", e);
-        }
-    }
-
     @BeforeClass
-    public void beforeClass () {
-        setUpEmbeddedCassandra();
-        setUpCradle ();
+    public void startUp () {
+        super.startUp();
+        this.session = CassandraCradleHelper.getInstance().getSession();
+        this.storage = CassandraCradleHelper.getInstance().getStorage();
+
         setUpOperators ();
         setUpBooksAndPages();
     }
@@ -186,7 +166,7 @@ public class GroupedMessageIteratorProviderTest {
 
     private void setUpOperators() {
         CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(session).build();
-        operators = new CassandraOperators(dataMapper, cassandraStorageSettings);
+        operators = new CassandraOperators(dataMapper, CassandraCradleHelper.getInstance().getStorageSettings());
     }
 
     private void generateData () throws CradleStorageException {

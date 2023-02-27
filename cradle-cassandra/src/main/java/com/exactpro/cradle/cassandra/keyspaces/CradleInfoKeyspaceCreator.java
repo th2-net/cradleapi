@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,10 @@
 
 package com.exactpro.cradle.cassandra.keyspaces;
 
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
@@ -39,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.function.Supplier;
 
 public class CradleInfoKeyspaceCreator extends KeyspaceCreator
@@ -79,6 +83,36 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 
 		createSessionStatistics();
 		createEventBatchMaxDurations();
+	}
+
+	static void truncateTables (CqlSession session, String keyspace) {
+		List<String> tableNames = List.of(
+				BookEntity.TABLE_NAME,
+				PageEntity.TABLE_NAME,
+				PageNameEntity.TABLE_NAME,
+				SessionEntity.TABLE_NAME,
+				ScopeEntity.TABLE_NAME,
+				MessageBatchEntity.TABLE_NAME,
+				GroupedMessageBatchEntity.TABLE_NAME,
+				PageSessionEntity.TABLE_NAME,
+				PageGroupEntity.TABLE_NAME,
+				GroupEntity.TABLE_NAME,
+				TestEventEntity.TABLE_NAME,
+				PageScopeEntity.TABLE_NAME,
+				LabelEntity.TABLE_NAME,
+				IntervalEntity.TABLE_NAME,
+				MessageStatisticsEntity.TABLE_NAME,
+				EntityStatisticsEntity.TABLE_NAME,
+				SessionStatisticsEntity.TABLE_NAME,
+				EventBatchMaxDurationEntity.TABLE_NAME);
+
+		logger.info("Truncating tables");
+		for (String tableName : tableNames) {
+			SimpleStatement truncateStatement = QueryBuilder.truncate(keyspace, tableName).build();
+
+			session.execute(truncateStatement);
+		}
+		logger.info("Tables were truncated");
 	}
 
 	@Override
