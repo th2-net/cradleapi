@@ -5,7 +5,7 @@ plugins {
 
 ext {
 	slf4j_version = '1.7.36'
-	jackson_version = '2.9.7'
+	jackson_version = '2.13.4'
 
 	sharedDir = file("${project.rootDir}/shared")
 }
@@ -13,6 +13,24 @@ ext {
 allprojects {
 	version = release_version
 	group   = 'com.exactpro.th2'
+
+	configurations {
+		compileClasspath {
+			resolutionStrategy.activateDependencyLocking()
+		}
+	}
+
+	tasks.register('resolveAndLockAll') {
+		doFirst {
+			println gradle.startParameter.writeDependencyLocks
+		}
+		doLast {
+			configurations.findAll {
+				// Add any custom filtering on the configurations to be resolved
+				it.canBeResolved
+			}.each { it.resolve() }
+		}
+	}
 }
 
 subprojects {
@@ -27,6 +45,22 @@ subprojects {
 		configurations.all {
 			resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
 			resolutionStrategy.cacheDynamicVersionsFor 0, 'seconds'
+		}
+	}
+
+	configurations {
+		compileClasspath {
+			resolutionStrategy.activateDependencyLocking()
+		}
+	}
+
+	tasks.register('createLockFiles', Copy) {
+		dependsOn('resolveAndLockAll')
+		from "./gradle/dependency-locks/compileClasspath.lockfile"
+		into "./.."
+
+		rename { String filename ->
+			return project.name + '-' + filename
 		}
 	}
 	
