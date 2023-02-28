@@ -1,13 +1,13 @@
 dependencies {
 	compile "com.fasterxml.jackson.core:jackson-databind:${jackson_version}"
-	compile "commons-io:commons-io:2.5"
+	compile "commons-io:commons-io:2.11.0"
 	compile "org.apache.commons:commons-lang3:3.8.1"
 
 	implementation "org.slf4j:slf4j-api:${slf4j_version}"
 	testImplementation "org.slf4j:slf4j-log4j12:${slf4j_version}"
 	testImplementation 'org.testng:testng:7.1.0'
 	testImplementation 'org.assertj:assertj-core:3.12.2'
-	implementation 'com.google.guava:guava:19.0'
+	implementation 'com.google.guava:guava:31.1-jre'
 }
 
 test {
