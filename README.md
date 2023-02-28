@@ -35,7 +35,7 @@ repositories {
 To use Cradle API, add the following dependency to your project:
 ```
 dependencies {
-	implementation 'com.exactpro.th2:cradle-cassandra:2.12.0'
+	implementation 'com.exactpro.th2:cradle-cassandra:5.0.0'
 	...
 }
 ```
@@ -171,15 +171,15 @@ IDs for stored data are generated outside of Cradle and are supplied with the ob
 
 Messages are stored in batches, i.e. if multiple messages arrive in a short period of time, they can be put in a batch and saved as one record in Cradle. Or you can have one message per batch.
 
-Each message has an ID that consists of `stream_name`:`direction`:`message_index`.
+Batches have group name and can contain different sessions and directions.
 
-Stream name is similar to session alias, i.e. is a name for a pair of connected endpoints that exchange messages.
+Each message has an ID that consists of `sessaion_alias`:`direction`:`message_index`.
 
 Direction is "first" or "second" depending on endpoint that generated the message.
 
 Message index is a number, incremented for each new message within the same stream and direction.
 
-I.e. if for the stream name="stream1" and direction="first" the last message index was 10, the next message index for this stream name and direction is expected to be 11. It can be different, but greater than 10.
+I.e. if for the session alias = "stream1" and direction="first" the last message index was 10, the next message index for this session and direction is expected to be 11. It can be different, but greater than 10.
 
 Messages can have metadata as a set of key-value string pairs, providing additional details about the message. Metadata cannot be used in any search requests or filtering.
 
@@ -189,6 +189,6 @@ Test events in Cradle can be stored separately or in batches, if an event has co
 
 A test event can have a reference to its parent, thus forming a hierarchical structure. Events that started the test execution have no parent and are called "root test events".
 
-Events in a batch can have a reference only to the parent of the batch or other test events from the same batch. Events outside of the batch should not reference events within the batch.
+Events in a batch can have a reference only to the parent of the batch or other test events from the same batch. Events outside the batch should not reference events within the batch.
 
 Test events have mandatory parameters that are verified when storing an event. These are: id, name (for non-batch events), start timestamp.
