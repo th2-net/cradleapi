@@ -176,3 +176,13 @@ static def getDate() {
 	def formattedDate = date.format('yyyyMMdd-HH:mm:ss.SSS')
 	return formattedDate
 }
+
+dependencyCheck {
+	formats=['SARIF', 'JSON', 'HTML']
+	failBuildOnCVSS=5
+	analyzers {
+		assemblyEnabled = false
+		nugetconfEnabled = false
+		nodeEnabled = false
+	}
+}
