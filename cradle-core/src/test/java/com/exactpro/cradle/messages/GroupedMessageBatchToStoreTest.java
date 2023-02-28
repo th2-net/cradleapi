@@ -68,8 +68,6 @@ public class GroupedMessageBatchToStoreTest
 					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
 							new IdData(new BookId(book.getName()+"X"), sessionAlias, d, timestamp, seq+1))},             //Different books
 					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq),
-							new IdData(book, sessionAlias, Direction.FIRST, timestamp.plus(1, ChronoUnit.DAYS), seq+1))},  //Different date
-					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
 							new IdData(book, sessionAlias, d, timestamp.minusMillis(1), seq))},    //Timestamp is less than previous
 					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
 							new IdData(book, sessionAlias, d, timestamp, seq),                     //Sequence is not incremented

@@ -62,7 +62,9 @@ public class TestEvenInserter {
                 .setByteBuffer(FIELD_MESSAGES, testEvent.getMessages())
                 .setSet(FIELD_LABELS, testEvent.getLabels(), String.class)
                 .setByteBuffer(FIELD_CONTENT, testEvent.getContent())
-                .setInstant(FIELD_REC_DATE, Instant.now());
+                .setInstant(FIELD_REC_DATE, Instant.now())
+                .setInt(FIELD_CONTENT_SIZE, testEvent.getContentSize())
+                .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, testEvent.getUncompressedContentSize());
 
 
         attributes.apply(builder);

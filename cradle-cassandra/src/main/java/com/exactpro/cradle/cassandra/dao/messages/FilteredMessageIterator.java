@@ -17,6 +17,7 @@
 package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.shaded.guava.common.collect.Streams;
+import com.exactpro.cradle.Order;
 import com.exactpro.cradle.filters.FilterForAny;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
@@ -25,15 +26,19 @@ import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.MessageFilter;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 public class FilteredMessageIterator extends MappedIterator<StoredMessageBatch, StoredMessage>
 {
-	private FilterForAny<Long> sequence;
-	private FilterForGreater<Instant> timestampFrom;
-	private FilterForLess<Instant> timestampTo;
+	private final FilterForAny<Long> sequence;
+	private final FilterForGreater<Instant> timestampFrom;
+	private final FilterForLess<Instant> timestampTo;
+	private final Order order;
 
 	public FilteredMessageIterator(Iterator<StoredMessageBatch> batchIterator, MessageFilter filter, int limit,
 			AtomicInteger returned)
@@ -42,6 +47,7 @@ public class FilteredMessageIterator extends MappedIterator<StoredMessageBatch, 
 		sequence = filter == null ? null : filter.getSequence();
 		timestampFrom = filter == null ? null : filter.getTimestampFrom();
 		timestampTo = filter == null ? null : filter.getTimestampTo();
+		order = filter == null ? Order.DIRECT : filter.getOrder();
 	}
 
 	@Override
@@ -49,7 +55,16 @@ public class FilteredMessageIterator extends MappedIterator<StoredMessageBatch, 
 	{
 		Predicate<StoredMessage> filterPredicate = createFilterPredicate();
 		return Streams.stream(sourceIterator)
-				.flatMap(b -> b.getMessages().stream())
+				.flatMap(b -> {
+					if (order.equals(Order.REVERSE)) {
+						var elements  = new ArrayList<>(b.getMessages());
+						Collections.reverse(elements);
+
+						return elements.stream();
+					}
+
+					return b.getMessages().stream();
+				})
 				.filter(filterPredicate)
 				.iterator();
 	}

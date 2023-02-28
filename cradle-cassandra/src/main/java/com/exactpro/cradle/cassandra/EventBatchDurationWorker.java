@@ -8,9 +8,6 @@ import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 public class EventBatchDurationWorker {
@@ -29,41 +26,46 @@ public class EventBatchDurationWorker {
         this.defaultBatchDurationMillis = defaultBatchDurationMillis;
     }
 
-    public CompletableFuture<Void> updateMaxDuration(EventBatchDurationCache.CacheKey key, long duration, Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs) throws CradleStorageException {
-        Long cachedDuration = cache.getMaxDuration(key);
+    public void updateMaxDuration(PageId pageId, String scope, long duration, Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs) throws CradleStorageException {
+        String book = pageId.getBookId().getName();
+        String page = pageId.getName();
+        EventBatchMaxDurationEntity entity = new EventBatchMaxDurationEntity(book, page, scope, duration);
+        Long cachedDuration = cache.getMaxDuration(book, page, scope);
+
 
         if (cachedDuration != null) {
-            if (cachedDuration > duration) {
-                return CompletableFuture.completedFuture(null);
+            if (cachedDuration < duration) {
+                // we have already persisted some duration before as we have some value in cache,
+                // so we can just update the record in the database
+                operator.updateMaxDuration(entity, duration, writeAttrs);
+                cache.updateCache(book, page, scope, duration);
             }
+        } else {
+            // we don't have any duration cached, so we don't know if record exists in database
+            // first try to insert and if no success then try to update
+            boolean inserted = operator.writeMaxDuration(entity, writeAttrs);
+            if (!inserted) {
+                operator.updateMaxDuration(entity, duration, writeAttrs);
+            }
+            cache.updateCache(book, page, scope, duration);
         }
-
-        return operator.writeMaxDuration(new EventBatchMaxDurationEntity(key.getBook(), key.getPage(), key.getScope(), duration), writeAttrs)
-                .thenAcceptAsync((res) -> operator.updateMaxDuration(key.getBook(), key.getPage(), key.getScope(), duration, duration, writeAttrs))
-                .whenComplete((rtn, e) -> {
-                    if (e != null) {
-                        cache.updateCache(key, duration);
-                    }
-                });
     }
 
     public void removePageDurations (PageId pageId) {
-        List<EventBatchDurationCache.CacheKey> keysToRemove = new ArrayList<>();
-
         // Remove from cache
-        cache.removePageDurations(pageId);
+        int invalidatedCnt = cache.removePageDurations(pageId);
 
         // Remove from database
-        logger.trace("{} EventBatchMaxDurationEntity will be removed from database", keysToRemove.size());
+        logger.trace("{} EventBatchMaxDurationEntity will be removed from database", invalidatedCnt);
         operator.removeMaxDurations(pageId.getBookId().getName(), pageId.getName());
     }
 
-    public long getMaxDuration(EventBatchDurationCache.CacheKey key, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) {
-        EventBatchMaxDurationEntity entity = operator.getMaxDuration(key.getBook(), key.getPage(), key.getScope(), readAttrs);
+    public long getMaxDuration(String book, String page, String scope, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) {
+        EventBatchMaxDurationEntity entity = operator.getMaxDuration(book, page, scope, readAttrs);
 
         if (entity == null) {
             logger.trace("Could not get max duration for key ({}, {}, {}), returning default value",
-                    key.getBook(), key.getPage(), key.getScope());
+                    book, page, scope);
 
             return defaultBatchDurationMillis;
         }

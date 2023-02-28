@@ -15,13 +15,13 @@
  */
 package com.exactpro.cradle.cassandra.dao.messages;
 
-import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
-import com.datastax.oss.driver.api.mapper.annotations.CqlName;
-import com.datastax.oss.driver.api.mapper.annotations.Entity;
-import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import com.datastax.oss.driver.api.mapper.annotations.*;
+
+import java.util.Objects;
 
 @Entity
 @CqlName(PageGroupEntity.TABLE_NAME)
+@PropertyStrategy(mutable = false)
 public class PageGroupEntity {
     public static final String TABLE_NAME = "page_groups";
 
@@ -31,18 +31,15 @@ public class PageGroupEntity {
 
     @PartitionKey(0)
     @CqlName(FIELD_BOOK)
-    private String book;
+    private final String book;
 
     @PartitionKey(1)
     @CqlName(FIELD_PAGE)
-    private String page;
+    private final String page;
 
     @ClusteringColumn(0)
     @CqlName(FIELD_GROUP)
-    private String group;
-
-    public PageGroupEntity () {
-    }
+    private final String group;
 
     public PageGroupEntity (String book, String page, String group) {
         this.book = book;
@@ -53,24 +50,26 @@ public class PageGroupEntity {
     public String getBook()	{
         return book;
     }
-
-    public void setBook(String book) {
-        this.book = book;
-    }
-
     public String getPage() {
         return page;
     }
-
-    public void setPage(String page) {
-        this.page = page;
-    }
-
     public String getGroup() {
         return group;
     }
 
-    public void setGroup(String group) {
-        this.group = group;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof PageGroupEntity)) return false;
+        PageGroupEntity that = (PageGroupEntity) o;
+
+        return Objects.equals(getBook(), that.getBook())
+                && Objects.equals(getPage(), that.getPage())
+                && Objects.equals(getGroup(), that.getGroup());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getBook(), getPage(), getGroup());
     }
 }

@@ -17,38 +17,22 @@
 package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.datastax.oss.driver.api.mapper.annotations.*;
-import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.CradleEntity;
-import com.exactpro.cradle.messages.StoredMessageId;
-import com.exactpro.cradle.serialization.SerializedEntityData;
-import com.exactpro.cradle.serialization.SerializedEntityMetadata;
-import com.exactpro.cradle.testevents.*;
-import com.exactpro.cradle.utils.*;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.exactpro.cradle.utils.TimeUtils;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-import java.util.zip.DataFormatException;
 
-/**
- * Contains data of {@link StoredTestEvent} to write to or to obtain from Cassandra
- */
 @Entity
 @CqlName(TestEventEntity.TABLE_NAME)
-public class TestEventEntity extends CradleEntity {
+@PropertyStrategy(mutable = false)
+public final class TestEventEntity extends CradleEntity {
 	public static final String TABLE_NAME = "test_events";
-	private static final Logger logger = LoggerFactory.getLogger(TestEventEntity.class);
 
 	public static final String FIELD_BOOK = "book";
 	public static final String FIELD_PAGE = "page";
@@ -70,123 +54,133 @@ public class TestEventEntity extends CradleEntity {
 
 	@PartitionKey(1)
 	@CqlName(FIELD_BOOK)
-	private String book;
+	private final String book;
 
 	@PartitionKey(2)
 	@CqlName(FIELD_PAGE)
-	private String page;
+	private final String page;
 
 	@PartitionKey(3)
 	@CqlName(FIELD_SCOPE)
-	private String scope;
+	private final String scope;
 	
 	@ClusteringColumn(1)
 	@CqlName(FIELD_START_DATE)
-	private LocalDate startDate;
+	private final LocalDate startDate;
 	
 	@ClusteringColumn(2)
 	@CqlName(FIELD_START_TIME)
-	private LocalTime startTime;
+	private final LocalTime startTime;
 	
 	@ClusteringColumn(3)
 	@CqlName(FIELD_ID)
-	private String id;
+	private final String id;
 	
 	@CqlName(FIELD_NAME)
-	private String name;
+	private final String name;
 	
 	@CqlName(FIELD_TYPE)
-	private String type;
+	private final String type;
 	
 	@CqlName(FIELD_SUCCESS)
-	private boolean success;
+	private final boolean success;
 	
 	@CqlName(FIELD_ROOT)
-	private boolean root;
+	private final boolean root;
 	
 	@CqlName(FIELD_PARENT_ID)
-	private String parentId;
+	private final String parentId;
 
 	@CqlName(FIELD_EVENT_BATCH)
-	private boolean eventBatch;
+	private final boolean eventBatch;
 	
 	@CqlName(FIELD_EVENT_COUNT)
-	private int eventCount;
+	private final int eventCount;
 	
 	@CqlName(FIELD_END_DATE)
-	private LocalDate endDate;
+	private final LocalDate endDate;
 	@CqlName(FIELD_END_TIME)
-	private LocalTime endTime;
+	private final LocalTime endTime;
 	
 	@CqlName(FIELD_MESSAGES)
-	private ByteBuffer messages;
+	private final ByteBuffer messages;
 
 	@CqlName(FIELD_REC_DATE)
-	private Instant recDate;
+	private final Instant recDate;
 
-	private List<SerializedEntityMetadata> serializedEventMetadata;
-
-	public TestEventEntity() {
-	}
-
-	public TestEventEntity(TestEventToStore event, PageId pageId, int maxUncompressedSize) throws IOException
+	public TestEventEntity(String book,
+						   String page,
+						   String scope,
+						   LocalDate startDate,
+						   LocalTime startTime,
+						   String id,
+						   String name,
+						   String type,
+						   boolean success,
+						   boolean root,
+						   String parentId,
+						   boolean eventBatch,
+						   int eventCount,
+						   LocalDate endDate,
+						   LocalTime endTime,
+						   Instant recDate,
+						   ByteBuffer messages,
+						   boolean compressed,
+						   Set<String> labels,
+						   ByteBuffer content,
+						   Integer contentSize,
+						   Integer compressedContentSize)
 	{
-		logger.debug("Creating entity from test event '{}'", event.getId());
+		super(compressed, labels, content, contentSize, compressedContentSize);
 
-		SerializedEntityData serializedEventData = TestEventUtils.getTestEventContent(event);
-
-		byte[] content = serializedEventData.getSerializedData();
-		boolean compressed;
-		if (content != null && content.length > maxUncompressedSize)
-		{
-			logger.trace("Compressing content of test event '{}'", event.getId());
-			content = CompressionUtils.compressData(content);
-			compressed = true;
-		}
-		else
-			compressed = false;
-		
-		byte[] messages = TestEventUtils.serializeLinkedMessageIds(event);
-		
-		StoredTestEventId parentId = event.getParentId();
-		LocalDateTime start = TimeUtils.toLocalTimestamp(event.getStartTimestamp());
-
-		setBook(pageId.getBookId().getName());
-		setPage(pageId.getName());
-		setScope(event.getScope());
-		setStartTimestamp(start);
-		setId(event.getId().getId());
-		
-		setSuccess(event.isSuccess());
-		setRoot(parentId == null);
-		setEventBatch(event.isBatch());
-		setName(event.getName());
-		setType(event.getType());
-		setParentId(parentId != null ? parentId.toString() : "");  //Empty string for absent parentId allows using index to get root events
-		if (event.isBatch())
-			setEventCount(event.asBatch().getTestEventsCount());
-		setEndTimestamp(event.getEndTimestamp());
-		
-		if (messages != null)
-			setMessages(ByteBuffer.wrap(messages));
-		
-		setCompressed(compressed);
-		//TODO: this.setLabels(event.getLabels());
-		if (content != null)
-			setContent(ByteBuffer.wrap(content));
-
-		setSerializedEventMetadata(serializedEventData.getSerializedEntityMetadata());
+		this.book = book;
+		this.page = page;
+		this.scope = scope;
+		this.startDate = startDate;
+		this.startTime = startTime;
+		this.id = id;
+		this.name = name;
+		this.type = type;
+		this.success = success;
+		this.root = root;
+		this.parentId = parentId;
+		this.eventBatch = eventBatch;
+		this.eventCount = eventCount;
+		this.endDate = endDate;
+		this.endTime = endTime;
+		this.messages = messages;
+		this.recDate = recDate;
 	}
 
+	private static TestEventEntity build(TestEventEntityBuilder builder) {
+		return new TestEventEntity(
+									builder.book,
+									builder.page,
+									builder.scope,
+									builder.startDate,
+									builder.startTime,
+									builder.id,
+									builder.name,
+									builder.type,
+									builder.success,
+									builder.root,
+									builder.parentId,
+									builder.eventBatch,
+									builder.eventCount,
+									builder.endDate,
+									builder.endTime,
+									builder.recDate,
+									builder.messages,
+									builder.isCompressed(),
+									builder.getLabels(),
+									builder.getContent(),
+									builder.getContentSize(),
+									builder.getUncompressedContentSize());
+	}
 
 	public String getBook()
 	{
 		return book;
-	}
-
-	public void setBook(String book)
-	{
-		this.book = book;
 	}
 
 	public String getPage()
@@ -194,311 +188,278 @@ public class TestEventEntity extends CradleEntity {
 		return page;
 	}
 	
-	public void setPage(String page)
-	{
-		this.page = page;
-	}
-	
-	
 	public String getScope()
 	{
 		return scope;
 	}
 	
-	public void setScope(String scope)
-	{
-		this.scope = scope;
-	}
-	
-	
 	public LocalDate getStartDate()
 	{
 		return startDate;
 	}
-	
-	public void setStartDate(LocalDate startDate)
-	{
-		this.startDate = startDate;
-	}	
-	
+
 	public LocalTime getStartTime()
 	{
 		return startTime;
 	}
-	
-	public void setStartTime(LocalTime startTime)
-	{
-		this.startTime = startTime;
-	}
-	
-	@Transient
-	public Instant getStartTimestamp()
-	{
-		return TimeUtils.toInstant(getStartDate(), getStartTime());
-	}
-	
-	@Transient
-	public void setStartTimestamp(Instant timestamp)
-	{
-		if (timestamp != null)
-			setStartTimestamp(TimeUtils.toLocalTimestamp(timestamp));
-		else
-		{
-			setStartDate(null);
-			setStartTime(null);
-		}
-	}
-	
-	@Transient
-	public void setStartTimestamp(LocalDateTime timestamp)
-	{
-		if (timestamp != null)
-		{
-			setStartDate(timestamp.toLocalDate());
-			setStartTime(timestamp.toLocalTime());
-		}
-		else
-		{
-			setStartDate(null);
-			setStartTime(null);
-		}
-	}
-	
 	
 	public String getId()
 	{
 		return id;
 	}
 	
-	public void setId(String id)
-	{
-		this.id = id;
-	}
-	
-	
 	public String getName()
 	{
 		return name;
 	}
 	
-	public void setName(String name)
-	{
-		this.name = name;
-	}
-	
-	
 	public String getType()
 	{
 		return type;
 	}
-	
-	public void setType(String type)
-	{
-		this.type = type;
-	}
-	
-	
+
 	public boolean isSuccess()
 	{
 		return success;
 	}
 	
-	public void setSuccess(boolean success)
-	{
-		this.success = success;
-	}
-	
-
 	public boolean isRoot()
 	{
 		return root;
 	}
-	
-	public void setRoot(boolean root)
-	{
-		this.root = root;
-	}
-	
 
 	public String getParentId()
 	{
 		return parentId;
 	}
-	
-	public void setParentId(String parentId)
-	{
-		this.parentId = parentId;
-	}
-	
-	
+
 	public boolean isEventBatch()
 	{
 		return eventBatch;
 	}
-	
-	public void setEventBatch(boolean eventBatch)
-	{
-		this.eventBatch = eventBatch;
-	}
-	
-	
+
 	public int getEventCount()
 	{
 		return eventCount;
 	}
-	
-	public void setEventCount(int eventCount)
-	{
-		this.eventCount = eventCount;
-	}
-	
-	
+
 	public LocalDate getEndDate()
 	{
 		return endDate;
 	}
-	
-	public void setEndDate(LocalDate endDate)
-	{
-		this.endDate = endDate;
-	}
-	
+
 	public LocalTime getEndTime()
 	{
 		return endTime;
-	}
-	
-	public void setEndTime(LocalTime endTime)
-	{
-		this.endTime = endTime;
-	}
-	
-	@Transient
-	public Instant getEndTimestamp()
-	{
-		return TimeUtils.toInstant(getEndDate(), getEndTime());
-	}
-	
-	@Transient
-	public void setEndTimestamp(Instant timestamp)
-	{
-		if (timestamp != null)
-		{
-			LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
-			setEndDate(ldt.toLocalDate());
-			setEndTime(ldt.toLocalTime());
-		}
-		else
-		{
-			setEndDate(null);
-			setEndTime(null);
-		}
 	}
 
 	public Instant getRecDate() {
 		return recDate;
 	}
 
-	public void setRecDate(Instant recDate) {
-		this.recDate = recDate;
-	}
-
-	@Transient
-	public List<SerializedEntityMetadata> getSerializedEventMetadata() {
-		return serializedEventMetadata;
-	}
-
-	@Transient
-	public void setSerializedEventMetadata(List<SerializedEntityMetadata> serializedEventMetadata) {
-		this.serializedEventMetadata = serializedEventMetadata;
-	}
-
-
 	public ByteBuffer getMessages()
 	{
 		return messages;
 	}
-	
-	public void setMessages(ByteBuffer messages)
-	{
-		this.messages = messages;
+
+	public static TestEventEntityBuilder builder () {
+		return new TestEventEntityBuilder();
 	}
-	
-	
-	public StoredTestEvent toStoredTestEvent(PageId pageId) 
-			throws IOException, CradleStorageException, DataFormatException, CradleIdException
-	{
-		StoredTestEventId eventId = createId(pageId.getBookId());
-		logger.trace("Creating test event '{}' from entity", eventId);
-		
-		byte[] content = restoreContent(eventId);
-		return isEventBatch() ? toStoredTestEventBatch(pageId, eventId, content) : toStoredTestEventSingle(pageId, eventId, content);
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof TestEventEntity)) return false;
+		if (!super.equals(o)) return false;
+		TestEventEntity event = (TestEventEntity) o;
+
+		return isSuccess() == event.isSuccess()
+				&& isRoot() == event.isRoot()
+				&& isEventBatch() == event.isEventBatch()
+				&& getEventCount() == event.getEventCount()
+				&& Objects.equals(getBook(), event.getBook())
+				&& Objects.equals(getPage(), event.getPage())
+				&& Objects.equals(getScope(), event.getScope())
+				&& Objects.equals(getStartDate(), event.getStartDate())
+				&& Objects.equals(getStartTime(), event.getStartTime())
+				&& Objects.equals(getId(), event.getId())
+				&& Objects.equals(getName(), event.getName())
+				&& Objects.equals(getType(), event.getType())
+				&& Objects.equals(getParentId(), event.getParentId())
+				&& Objects.equals(getEndDate(), event.getEndDate())
+				&& Objects.equals(getEndTime(), event.getEndTime())
+				&& Objects.equals(getMessages(), event.getMessages())
+				&& Objects.equals(getRecDate(), event.getRecDate());
 	}
-	
-	
-	private StoredTestEventId createId(BookId bookId)
-	{
-		return new StoredTestEventId(bookId, getScope(), getStartTimestamp(), getId());
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(),
+				getBook(),
+				getPage(),
+				getScope(),
+				getStartDate(),
+				getStartTime(),
+				getId(),
+				getName(),
+				getType(),
+				isSuccess(),
+				isRoot(),
+				getParentId(),
+				isEventBatch(),
+				getEventCount(),
+				getEndDate(),
+				getEndTime(),
+				getMessages(),
+				getRecDate());
 	}
-	
-	private StoredTestEventId createParentId() throws CradleIdException
-	{
-		return StringUtils.isEmpty(getParentId()) ? null : StoredTestEventId.fromString(getParentId());
-	}
-	
-	
-	private byte[] restoreContent(StoredTestEventId eventId) throws IOException, DataFormatException
-	{
-		ByteBuffer content = getContent();
-		if (content == null)
-			return null;
-		
-		byte[] result = content.array();
-		if (isCompressed())
-		{
-			logger.trace("Decompressing content of test event '{}'", eventId);
-			return CompressionUtils.decompressData(result);
+
+	public static class TestEventEntityBuilder extends CradleEntityBuilder<TestEventEntity, TestEventEntityBuilder> {
+		private String book;
+		private String page;
+		private String scope;
+		private LocalDate startDate;
+		private LocalTime startTime;
+		private String id;
+		private String name;
+		private String type;
+		private boolean success;
+		private boolean root;
+		private String parentId;
+		private boolean eventBatch;
+		private int eventCount;
+		private LocalDate endDate;
+		private LocalTime endTime;
+		private ByteBuffer messages;
+		private Instant recDate;
+
+		private  TestEventEntityBuilder () {
 		}
-		return result;
-	}
 	
-	private Set<StoredMessageId> restoreMessages(BookId bookId) 
-			throws IOException, DataFormatException, CradleIdException
-	{
-		ByteBuffer messages = getMessages();
-		if (messages == null)
-			return null;
-		
-		byte[] result = messages.array();
-		return TestEventUtils.deserializeLinkedMessageIds(result, bookId);
-	}
+		public TestEventEntityBuilder setBook(String book) {
+			this.book = book;
+			return this;
+		}
 	
-	private Map<StoredTestEventId, Set<StoredMessageId>> restoreBatchMessages(BookId bookId) 
-			throws IOException, DataFormatException, CradleIdException
-	{
-		ByteBuffer messages = getMessages();
-		if (messages == null)
-			return null;
-		
-		byte[] result = messages.array();
-		return TestEventUtils.deserializeBatchLinkedMessageIds(result, bookId);
-	}
+		public TestEventEntityBuilder setPage(String page) {
+			this.page = page;
+			return this;
+		}
 	
+		public TestEventEntityBuilder setScope(String scope) {
+			this.scope = scope;
+			return this;
+		}
 	
-	private StoredTestEventSingle toStoredTestEventSingle(PageId pageId, StoredTestEventId eventId, byte[] content) 
-			throws IOException, CradleStorageException, DataFormatException, CradleIdException
-	{
-		Set<StoredMessageId> messages = restoreMessages(pageId.getBookId());
-		return new StoredTestEventSingle(eventId, getName(), getType(), createParentId(),
-				getEndTimestamp(), isSuccess(), content, messages, pageId, null, recDate);
-	}
+		public TestEventEntityBuilder setStartDate(LocalDate startDate) {
+			this.startDate = startDate;
+			return this;
+		}
 	
-	private StoredTestEventBatch toStoredTestEventBatch(PageId pageId, StoredTestEventId eventId, byte[] content) 
-			throws IOException, CradleStorageException, DataFormatException, CradleIdException
-	{
-		Collection<BatchedStoredTestEvent> children = TestEventUtils.deserializeTestEvents(content, eventId);
-		Map<StoredTestEventId, Set<StoredMessageId>> messages = restoreBatchMessages(pageId.getBookId());
-		return new StoredTestEventBatch(eventId, getName(), getType(), createParentId(),
-				children, messages, pageId, null, recDate);
+		public TestEventEntityBuilder setStartTime(LocalTime startTime) {
+			this.startTime = startTime;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setId(String id) {
+			this.id = id;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setName(String name) {
+			this.name = name;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setType(String type) {
+			this.type = type;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setSuccess(boolean success) {
+			this.success = success;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setRoot(boolean root) {
+			this.root = root;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setParentId(String parentId) {
+			this.parentId = parentId;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setEventBatch(boolean eventBatch) {
+			this.eventBatch = eventBatch;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setEventCount(int eventCount) {
+			this.eventCount = eventCount;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setEndDate(LocalDate endDate) {
+			this.endDate = endDate;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setEndTime(LocalTime endTime) {
+			this.endTime = endTime;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setMessages(ByteBuffer messages) {
+			this.messages = messages;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setRecDate(Instant recDate) {
+			this.recDate = recDate;
+			return this;
+		}
+	
+		public TestEventEntityBuilder setStartTimestamp(Instant timestamp) {
+			if (timestamp != null) {
+				setStartTimestamp(TimeUtils.toLocalTimestamp(timestamp));
+			} else {
+				setStartDate(null);
+				setStartTime(null);
+			}
+	
+			return this;
+		}
+	
+		public TestEventEntityBuilder setStartTimestamp(LocalDateTime timestamp) {
+			if (timestamp != null) {
+				setStartDate(timestamp.toLocalDate());
+				setStartTime(timestamp.toLocalTime());
+			} else {
+				setStartDate(null);
+				setStartTime(null);
+			}
+	
+			return this;
+		}
+	
+		public TestEventEntityBuilder setEndTimestamp(Instant timestamp) {
+			if (timestamp != null) {
+				LocalDateTime ldt = TimeUtils.toLocalTimestamp(timestamp);
+				setEndDate(ldt.toLocalDate());
+				setEndTime(ldt.toLocalTime());
+			} else {
+				setEndDate(null);
+				setEndTime(null);
+			}
+
+			return this;
+		}
+	
+
+		public TestEventEntity build () {
+			return TestEventEntity.build(this);
+		}
 	}
 }

@@ -21,14 +21,14 @@ import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.Order;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.PageInfo;
-import com.exactpro.cradle.cassandra.EventBatchDurationCache;
 import com.exactpro.cradle.cassandra.EventBatchDurationWorker;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
-import com.exactpro.cradle.cassandra.iterators.SkippingConvertingPagedIterator;
+import com.exactpro.cradle.cassandra.iterators.FilteringConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
+import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
 import com.exactpro.cradle.testevents.StoredTestEvent;
@@ -133,17 +133,18 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 		return op.getByFilter(cassandraFilter, selectQueryExecutor, getRequestInfo(), readAttrs)
 				.thenApplyAsync(resultSet -> {
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
-					cassandraFilter = createNextFilter(cassandraFilter);
+					cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(),0));
 
-					return new SkippingConvertingPagedIterator<>(
+					return new FilteringConvertingPagedIterator<>(
 							resultSet,
 							selectQueryExecutor,
 							limit,
 							returned,
 							entity -> mapTestEventEntity(pageId, entity),
 							entityConverter::getEntity,
-							// This skip function checks if batch interval crosses requested filter interval
-							convertedEntity -> convertedEntity.getLastStartTimestamp().isBefore(actualFrom),
+							// This filter function checks if batch interval crosses requested filter interval
+							convertedEntity -> !convertedEntity.getLastStartTimestamp().isBefore(actualFrom),
+							null,
 							getRequestInfo());
 				}, composingService);
 	}
@@ -154,8 +155,13 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 			Only initial filter needs to be adjusted with max duration,
 			since `createNextFilter` just passes timestamps from previous to next filters
 		 */
-		long duration = eventBatchDurationWorker.getMaxDuration(new EventBatchDurationCache.CacheKey(filter.getBookId().getName(), firstPage.getId().getName(), filter.getScope()), readAttrs);
-		FilterForGreater<Instant> newFrom = FilterForGreater.forGreater(actualFrom.minusMillis(duration));
+		long duration = eventBatchDurationWorker.getMaxDuration(filter.getBookId().getName(), firstPage.getId().getName(), filter.getScope(), readAttrs);
+		FilterForGreater<Instant> newFrom;
+		if (filter.getStartTimestampFrom().getOperation().equals(ComparisonOperation.GREATER)) {
+			newFrom = FilterForGreater.forGreater(actualFrom.minusMillis(duration));
+		} else {
+			newFrom = FilterForGreater.forGreaterOrEquals(actualFrom.minusMillis(duration));
+		}
 
 		String parentId = getParentIdString(filter);
 		return new CassandraTestEventFilter(
@@ -166,10 +172,11 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 				filter.getStartTimestampTo(),
 				filter.getId(),
 				parentId,
+				filter.getLimit(),
 				filter.getOrder());
 	}
 	
-	private CassandraTestEventFilter createNextFilter(CassandraTestEventFilter prevFilter) {
+	private CassandraTestEventFilter createNextFilter(CassandraTestEventFilter prevFilter, Integer updatedLimit) {
 
 		PageInfo prevPage = book.getPage(new PageId(book.getId(), prevFilter.getPage()));
 		if (prevPage == lastPage)
@@ -190,6 +197,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 				prevFilter.getStartTimestampTo(),
 				prevFilter.getId(),
 				prevFilter.getParentId(),
+				updatedLimit,
 				prevFilter.getOrder());
 	}
 	

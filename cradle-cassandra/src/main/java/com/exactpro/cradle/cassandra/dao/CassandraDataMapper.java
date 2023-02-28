@@ -20,9 +20,12 @@ import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.exactpro.cradle.cassandra.dao.books.BookOperator;
 import com.exactpro.cradle.cassandra.dao.books.PageNameOperator;
 import com.exactpro.cradle.cassandra.dao.books.PageOperator;
+import com.exactpro.cradle.cassandra.dao.books.converters.PageEntityConverter;
 import com.exactpro.cradle.cassandra.dao.intervals.IntervalOperator;
+import com.exactpro.cradle.cassandra.dao.intervals.converters.IntervalEntityConverter;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.messages.converters.*;
+import com.exactpro.cradle.cassandra.dao.statistics.*;
 import com.exactpro.cradle.cassandra.dao.testevents.EventBatchMaxDurationOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.PageScopesOperator;
@@ -121,4 +124,10 @@ public interface CassandraDataMapper {
 
     @DaoFactory
     GroupEntityConverter groupEntityConverter();
+
+    @DaoFactory
+    IntervalEntityConverter intervalEntityConverter();
+
+    @DaoFactory
+    PageEntityConverter pageEntityConverter();
 }

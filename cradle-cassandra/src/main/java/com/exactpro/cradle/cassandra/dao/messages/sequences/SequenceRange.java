@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.exactpro.cradle.cassandra.dao;
 
-import com.datastax.oss.driver.api.mapper.annotations.Dao;
-import com.exactpro.cradle.cassandra.EntityConverter;
+package com.exactpro.cradle.cassandra.dao.messages.sequences;
 
-@Dao
-public interface MessageStatisticsEntityConverter extends EntityConverter<MessageStatisticsEntity> {
+public class SequenceRange {
+    public final long first;
+    public final long last;
+
+    public SequenceRange(long first, long last) {
+        this.first = first;
+        this.last = last;
+    }
 }

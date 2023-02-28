@@ -16,6 +16,23 @@
 
 package com.exactpro.cradle;
 
+import com.exactpro.cradle.counters.Counter;
+import com.exactpro.cradle.counters.CounterSample;
+import com.exactpro.cradle.counters.Interval;
+import com.exactpro.cradle.errors.PageNotFoundException;
+import com.exactpro.cradle.filters.AbstractFilter;
+import com.exactpro.cradle.intervals.IntervalsWorker;
+import com.exactpro.cradle.messages.*;
+import com.exactpro.cradle.resultset.CradleResultSet;
+import com.exactpro.cradle.resultset.EmptyResultSet;
+import com.exactpro.cradle.testevents.*;
+import com.exactpro.cradle.utils.BookPagesNamesChecker;
+import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.TestEventUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -23,25 +40,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import com.exactpro.cradle.counters.Counter;
-import com.exactpro.cradle.counters.CounterSample;
-import com.exactpro.cradle.counters.Interval;
-import com.exactpro.cradle.filters.AbstractFilter;
-import com.exactpro.cradle.intervals.IntervalsWorker;
-import com.exactpro.cradle.messages.*;
-import com.exactpro.cradle.utils.BookPagesNamesChecker;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.exactpro.cradle.resultset.CradleResultSet;
-import com.exactpro.cradle.resultset.EmptyResultSet;
-import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.TestEventFilter;
-import com.exactpro.cradle.testevents.StoredTestEventId;
-import com.exactpro.cradle.testevents.TestEventToStore;
-import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.TestEventUtils;
 
 /**
  * Storage which holds information about all data sent or received and test events.
@@ -205,7 +203,9 @@ public abstract class CradleStorage
 
 	protected abstract PageInfo doUpdatePageName (BookId bookId, String pageName, String newPageName) throws CradleStorageException;
 
+	protected abstract Iterator<PageInfo> doGetPages (BookId bookId, Interval interval) throws CradleStorageException;
 
+	protected abstract CompletableFuture<Iterator<PageInfo>> doGetPagesAsync (BookId bookId, Interval interval);
 
 	/**
 	 * Initializes internal objects of storage and prepares it to access data, i.e. creates needed connections and facilities.
@@ -231,10 +231,9 @@ public abstract class CradleStorage
 	
 	/**
 	 * IntervalsWorker is used to work with Crawler intervals
-	 * @param pageId page to get worker for
 	 * @return instance of IntervalsWorker
 	 */
-	public abstract IntervalsWorker getIntervalsWorker(PageId pageId);
+	public abstract IntervalsWorker getIntervalsWorker();
 	
 	
 	/**
@@ -477,13 +476,16 @@ public abstract class CradleStorage
 	public final void storeGroupedMessageBatch(GroupedMessageBatchToStore batch)
 			throws CradleStorageException, IOException
 	{
-		BookId bookId = batch.getBookId();
-		Instant ts = batch.getFirstTimestamp();
-		String id = String.format("{}:{}", bookId, ts);
-		logger.debug("Storing message batch {} grouped by {}", id, batch.getGroup());
-		PageInfo page = findPage(bookId, ts);
-		doStoreGroupedMessageBatch(batch, page);
-		logger.debug("Message batch {} grouped by {} has been stored", id, batch.getGroup());
+		String groupName = batch.getGroup();
+		String id = String.format("%s:%s", batch.getBookId(), batch.getFirstTimestamp().toString());
+		logger.debug("Storing message batch {} grouped by {}", id, groupName);
+
+		var batches = paginateBatch(batch);
+		for (var b : batches) {
+			doStoreGroupedMessageBatch(b.getKey(), b.getValue());
+		}
+
+		logger.debug("Message batch {} grouped by {} has been stored", id, groupName);
 	}
 	
 	
@@ -511,26 +513,81 @@ public abstract class CradleStorage
 		return result;
 	}
 
+
+	List<Pair<GroupedMessageBatchToStore, PageInfo>> paginateBatch(GroupedMessageBatchToStore batch) throws CradleStorageException {
+
+		BookId bookId = batch.getBookId();
+		PageInfo lastPage = findPage(bookId, batch.getFirstTimestamp());
+		List<Pair<StoredMessage, PageInfo>> messagePages = new ArrayList<>();
+
+		// check if pages for every message are the same
+		boolean singlePageBatch = true;
+		for (var message : batch.getMessages()) {
+			Instant ts = message.getTimestamp();
+			if (!lastPage.isValidFor(ts)) {
+				lastPage = findPage(bookId, ts);
+				singlePageBatch = false;
+			}
+			messagePages.add(Pair.of(message, lastPage));
+		}
+
+		if (singlePageBatch) {
+			return List.of(Pair.of(batch, lastPage));
+		}
+
+		// decompose batch into single page batches
+		lastPage = null;
+		Pair<GroupedMessageBatchToStore, PageInfo> currentBatch = null;
+		List<Pair<GroupedMessageBatchToStore, PageInfo>> result = new ArrayList<>();
+		for (var p : messagePages) {
+			if (lastPage == null || !lastPage.equals(p.getValue())) {
+				currentBatch = Pair.of(entitiesFactory.groupedMessageBatch(batch.getGroup()), p.getValue());
+				result.add(currentBatch);
+				lastPage = p.getValue();
+			}
+			StoredMessage message = p.getKey();
+			MessageToStoreBuilder builder = MessageToStore.builder()
+					.id(message.getId())
+					.protocol(message.getProtocol())
+					.content(message.getContent());
+
+			if (message.getMetadata() != null)
+				message.getMetadata().toMap().forEach(builder::metadata);
+			currentBatch.getKey().addMessage(builder.build());
+		}
+		return result;
+	}
+
 	/**
 	 * Asynchronously writes data about given message batch to current page grouped by provided group name
 	 * @param batch data to write
 	 * @return future to get know if storing was successful
 	 * @throws CradleStorageException if given parameters are invalid
-	 * @throws IOException if data writing failed
 	 */
 	public final CompletableFuture<Void> storeGroupedMessageBatchAsync(GroupedMessageBatchToStore batch)
-			throws CradleStorageException, IOException
+			throws CradleStorageException
 	{
 		String groupName = batch.getGroup();
 		if (groupName == null)
 			throw new CradleStorageException("'groupName' is required parameter and can not be null");
-		
-		BookId bookId = batch.getBookId();
-		Instant ts = batch.getFirstTimestamp();
-		String id = String.format("{}:{}", bookId, ts);
-		logger.debug("Storing message batch {} grouped by {} asynchronously", id, ts, groupName);
-		PageInfo page = findPage(bookId, ts);
-		CompletableFuture<Void> result = doStoreGroupedMessageBatchAsync(batch, page);
+
+		String id = String.format("%s:%s", batch.getBookId(), batch.getFirstTimestamp().toString());
+		logger.debug("Storing message batch {} grouped by {} asynchronously", id, groupName);
+
+		var batches = paginateBatch(batch);
+
+		CompletableFuture<Void>[] futures = new CompletableFuture[batches.size()];
+		int i = 0;
+		for (var b : batches) {
+			CompletableFuture<Void> future;
+			try {
+				future = doStoreGroupedMessageBatchAsync(b.getKey(), b.getValue());
+			} catch (Exception e) {
+				future = CompletableFuture.failedFuture(e);
+			}
+			futures[i++] = future;
+		}
+		CompletableFuture<Void> result = CompletableFuture.allOf(futures);
 		result.whenCompleteAsync((r, error) -> {
 			if (error != null)
 				logger.error("Error while storing message batch "+id+" grouped by "+groupName+" asynchronously", error);
@@ -541,26 +598,66 @@ public abstract class CradleStorage
 	}
 
 
+	TestEventToStore alignEventTimestampsToPage(TestEventToStore event, PageInfo page) throws CradleStorageException {
+
+		if (!event.isBatch())
+			return event;
+
+		TestEventBatchToStore batch = event.asBatch();
+
+		Map<StoredTestEventId, StoredTestEventId> idMappings = new HashMap<>();
+		batch.getTestEvents().forEach((e) -> {
+			if (!page.isValidFor(e.getStartTimestamp())) {
+				StoredTestEventId id = e.getId();
+				idMappings.put(id, new StoredTestEventId(id.getBookId(), id.getScope(), page.getEnded().minusNanos(1), id.getId()));
+			}
+		});
+
+		if (idMappings.isEmpty())
+			return event;
+
+		logger.warn("Batch contains events from different pages, aligning event timestamps to first event's page's end ({})", event.getId());
+
+		TestEventBatchToStore newBatch = entitiesFactory.testEventBatch(event.getId(), event.getName(), event.getParentId());
+		newBatch.setType(event.getType());
+
+		for (var e : batch.getTestEvents()) {
+			TestEventSingleToStore newEvent = new TestEventSingleToStoreBuilder()
+													.id(idMappings.getOrDefault(e.getId(), e.getId()))
+													.name(e.getName())
+													.parentId(idMappings.getOrDefault(e.getParentId(), e.getParentId()))
+													.type(e.getType())
+													.endTimestamp(e.getEndTimestamp())
+													.success(e.isSuccess())
+													.messages(e.getMessages())
+													.content(e.getContent())
+													.build();
+			newBatch.addTestEvent(newEvent);
+		}
+
+		return newBatch;
+	}
+
 	/**
 	 * Writes data about given test event to current page
 	 * @param event data to write
 	 * @throws IOException if data writing failed
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final void storeTestEvent(TestEventToStore event) throws IOException, CradleStorageException
-	{
+	public final void storeTestEvent(TestEventToStore event) throws IOException, CradleStorageException	{
+
 		StoredTestEventId id = event.getId();
 		logger.debug("Storing test event {}", id);
 		PageInfo page = findPage(id.getBookId(), id.getStartTimestamp());
 		
-		TestEventUtils.validateTestEvent(event);
+		TestEventUtils.validateTestEvent(event, getBookCache().getBook(id.getBookId()));
+		final TestEventToStore alignedEvent = alignEventTimestampsToPage(event, page);
 		
-		doStoreTestEvent(event, page);
+		doStoreTestEvent(alignedEvent, page);
 		logger.debug("Test event {} has been stored", id);
-		if (event.getParentId() != null)
-		{
+		if (alignedEvent.getParentId() != null) {
 			logger.debug("Updating parents of test event {}", id);
-			doUpdateParentTestEvents(event);
+			doUpdateParentTestEvents(alignedEvent);
 			logger.debug("Parents of test event {} have been updated", id);
 		}
 	}
@@ -572,15 +669,16 @@ public abstract class CradleStorage
 	 * @return future to get know if storing was successful
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final CompletableFuture<Void> storeTestEventAsync(TestEventToStore event) throws IOException, CradleStorageException
-	{
+	public final CompletableFuture<Void> storeTestEventAsync(TestEventToStore event) throws IOException, CradleStorageException {
+
 		StoredTestEventId id = event.getId();
 		logger.debug("Storing test event {} asynchronously", id);
 		PageInfo page = findPage(id.getBookId(), id.getStartTimestamp());
 		
-		TestEventUtils.validateTestEvent(event);
+		TestEventUtils.validateTestEvent(event, getBookCache().getBook(id.getBookId()));
+		final TestEventToStore alignedEvent = alignEventTimestampsToPage(event, page);
 		
-		CompletableFuture<Void> result = doStoreTestEventAsync(event, page);
+		CompletableFuture<Void> result = doStoreTestEventAsync(alignedEvent, page);
 		result.whenCompleteAsync((r, error) -> {
 				if (error != null)
 					logger.error("Error while storing test event "+id+" asynchronously", error);
@@ -588,17 +686,17 @@ public abstract class CradleStorage
 					logger.debug("Test event {} has been stored asynchronously", id);
 			}, composingService);
 		
-		if (event.getParentId() == null)
+		if (alignedEvent.getParentId() == null)
 			return result;
 		
 		return result.thenComposeAsync(r -> {
 			logger.debug("Updating parents of test event {} asynchronously", id);
-			CompletableFuture<Void> result2 = doUpdateParentTestEventsAsync(event);
+			CompletableFuture<Void> result2 = doUpdateParentTestEventsAsync(alignedEvent);
 			result2.whenCompleteAsync((r2, error) -> {
 					if (error != null)
 						logger.error("Error while updating parents of test event "+id+" asynchronously", error);
 					else
-						logger.debug("Parents of test event {} have been updated asynchronously", event.getId());
+						logger.debug("Parents of test event {} have been updated asynchronously", alignedEvent.getId());
 				}, composingService);
 			return result2;
 		}, composingService);
@@ -1198,6 +1296,28 @@ public abstract class CradleStorage
 		return updatedPageInfo;
 	}
 
+	/**
+	 * Gets pages which intersect or are inside this interval,
+	 * both start and end are inclusive
+	 * @param bookId Identifier for book
+	 * @param interval Time interval
+	 * @return iterator of PageInfo
+	 */
+	public Iterator<PageInfo> getPages(BookId bookId, Interval interval) throws CradleStorageException {
+		return doGetPages(bookId, interval);
+	}
+
+	/**
+	 * Gets async iterator of pages which intersect or are inside this interval,
+	 * both start and end are inclusive
+	 * @param bookId Identifier for book
+	 * @param interval Time interval
+	 * @return iterator of PageInfo
+	 */
+	public CompletableFuture <Iterator<PageInfo>> getPagesAsync(BookId bookId, Interval interval) throws CradleStorageException {
+		return doGetPagesAsync(bookId, interval);
+	}
+
 	private void updatePage(PageId pageId, PageInfo updatedPageInfo) throws CradleStorageException {
 		BookInfo bookInfo = getBookCache().getBook(pageId.getBookId());
 
@@ -1331,10 +1451,10 @@ public abstract class CradleStorage
 		BookInfo book = getBookCache().getBook(bookId);
 		Instant now = Instant.now();
 		if (timestamp.isAfter(now))
-			throw new CradleStorageException("Timestamp "+timestamp+" is from future, now is "+now);
+			throw new PageNotFoundException(String.format("Timestamp %s is from future, now is %s", timestamp, now));
 		PageInfo page = book.findPage(timestamp);
 		if (page == null || (page.getEnded() != null && !timestamp.isBefore(page.getEnded())))  //If page.getEnded().equals(timestamp), timestamp is outside of page
-			throw new CradleStorageException("Book '"+bookId+"' has no page for timestamp "+timestamp);
+			throw new PageNotFoundException(String.format("Book '%s' has no page for timestamp %s", bookId, timestamp));
 		return page;
 	}
 

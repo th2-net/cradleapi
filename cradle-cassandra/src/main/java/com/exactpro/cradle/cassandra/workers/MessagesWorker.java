@@ -18,7 +18,6 @@ package com.exactpro.cradle.cassandra.workers;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
-import com.datastax.oss.driver.internal.core.util.concurrent.CompletableFutures;
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.counters.MessageStatisticsCollector;
 import com.exactpro.cradle.cassandra.counters.SessionStatisticsCollector;
@@ -28,6 +27,8 @@ import com.exactpro.cradle.cassandra.dao.cache.CachedSession;
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.messages.converters.MessageBatchEntityConverter;
 import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
+import com.exactpro.cradle.cassandra.utils.GroupedMessageEntityUtils;
+import com.exactpro.cradle.cassandra.utils.MessageBatchEntityUtils;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
@@ -77,7 +78,7 @@ public class MessagesWorker extends Worker
 	{
 		try
 		{
-			StoredMessageBatch batch = entity.toStoredMessageBatch(pageId);
+			StoredMessageBatch batch = MessageBatchEntityUtils.toStoredMessageBatch(entity, pageId);
 			updateMessageReadMetrics(batch);
 			return batch;
 		}
@@ -91,7 +92,7 @@ public class MessagesWorker extends Worker
 	{
 		try
 		{
-			StoredGroupedMessageBatch batch = entity.toStoredGroupedMessageBatch(pageId);
+			StoredGroupedMessageBatch batch = GroupedMessageEntityUtils.toStoredGroupedMessageBatch(entity, pageId);
 			updateMessageReadMetrics(pageId.getBookId(), batch);
 			return batch;
 		}
@@ -170,7 +171,7 @@ public class MessagesWorker extends Worker
 		String queryInfo = format("get nearest time and sequence before %s for page '%s'",
 				TimeUtils.toInstant(messageDate, messageTime), page.getId().getName());
 		return selectQueryExecutor.executeSingleRowResultQuery(
-						() -> mbOperator.getNearestTimeAndSequenceBefore(page.getId().getBookId().getName(), page.getId().getName(), sessionAlias,
+						() -> mbOperator.getNearestBatchTimeAndSequenceBefore(page.getId().getBookId().getName(), page.getId().getName(), sessionAlias,
 								direction, messageDate, messageTime, sequence, readAttrs), Function.identity(), queryInfo)
 				.thenComposeAsync(row ->
 				{
@@ -192,7 +193,7 @@ public class MessagesWorker extends Worker
 		}
 		catch (CradleStorageException e)
 		{
-			return CompletableFutures.failedFuture(e);
+			return CompletableFuture.failedFuture(e);
 		}
 
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(id.getTimestamp());
@@ -243,17 +244,6 @@ public class MessagesWorker extends Worker
 					logger.debug("There is no message with id '{}' in batch '{}'", id, batch.getId());
 					return CompletableFuture.completedFuture(null);
 				}, composingService);
-	}
-
-	public MessageBatchEntity createMessageBatchEntity(MessageBatchToStore batch, PageId pageId) throws IOException
-	{
-		return new MessageBatchEntity(batch, pageId, settings.getMaxUncompressedMessageBatchSize());
-	}
-	
-	public GroupedMessageBatchEntity createGroupedMessageBatchEntity(GroupedMessageBatchToStore batch, PageId pageId)
-			throws IOException
-	{
-		return new GroupedMessageBatchEntity(batch, pageId, settings.getMaxUncompressedMessageBatchSize());
 	}
 
 	public CompletableFuture<PageGroupEntity> storePageGroup (GroupedMessageBatchEntity groupedMessageBatchEntity) {
@@ -328,29 +318,64 @@ public class MessagesWorker extends Worker
 		return operators.getSessionsOperator().write(new SessionEntity(bookId.toString(), batch.getSessionAlias()), writeAttrs);
 	}
 
-	public CompletableFuture<Void> storeMessageBatch(MessageBatchEntity entity, BookId bookId)
-	{
+	public CompletableFuture<Void> storeMessageBatch(MessageBatchToStore batch, PageId pageId) {
+		BookId bookId = pageId.getBookId();
 		MessageBatchOperator mbOperator = getOperators().getMessageBatchOperator();
-		List<SerializedEntityMetadata> meta = entity.getSerializedMessageMetadata();
 
-		return mbOperator.write(entity, writeAttrs)
-				.thenAccept(result -> messageStatisticsCollector.updateMessageBatchStatistics(bookId, entity.getPage(), entity.getSessionAlias(), entity.getDirection(), meta))
-				.thenAcceptAsync(result -> sessionStatisticsCollector.updateSessionStatistics(bookId, entity.getPage(), SessionRecordType.SESSION, entity.getSessionAlias(), meta))
-				.thenAcceptAsync(result -> updateMessageWriteMetrics(entity, bookId), composingService);
+		return CompletableFuture.supplyAsync(() -> {
+			try {
+				return MessageBatchEntityUtils.toSerializedEntity(batch, pageId, settings.getMaxUncompressedMessageBatchSize());
+			} catch (Exception e) {
+				throw new CompletionException(e);
+			}
+		}).thenComposeAsync(serializedEntity -> {
+			MessageBatchEntity entity = serializedEntity.getEntity();
+			List<SerializedEntityMetadata> meta = serializedEntity.getSerializedEntityData().getSerializedEntityMetadata();
+
+			return mbOperator.write(entity, writeAttrs)
+					.thenRunAsync(() -> messageStatisticsCollector.updateMessageBatchStatistics(bookId,
+																								entity.getPage(),
+																								entity.getSessionAlias(),
+																								entity.getDirection(),
+																								meta), composingService)
+					.thenRunAsync(() -> sessionStatisticsCollector.updateSessionStatistics(bookId,
+																							entity.getPage(),
+																							SessionRecordType.SESSION,
+																							entity.getSessionAlias(),
+																							meta), composingService)
+					.thenRunAsync(() -> updateMessageWriteMetrics(entity, bookId), composingService);
+		});
 	}
 
-	public CompletableFuture<GroupedMessageBatchEntity> storeGroupedMessageBatch(GroupedMessageBatchEntity entity, BookId bookId)
-	{
+	public CompletableFuture<Void> storeGroupedMessageBatch(GroupedMessageBatchToStore batchToStore, PageId pageId) {
+		BookId bookId = pageId.getBookId();
 		GroupedMessageBatchOperator gmbOperator = getOperators().getGroupedMessageBatchOperator();
-		List<SerializedEntityMetadata> meta = entity.getSerializedMessageMetadata();
 
-		return gmbOperator.write(entity, writeAttrs)
-				.thenApplyAsync(result -> storePageGroup(entity))
-				.thenApplyAsync(result -> storeGroup(entity))
-				.thenAccept(result -> messageStatisticsCollector.updateMessageBatchStatistics(bookId, entity.getPage(), entity.getGroup(), "", meta))
-				.thenAcceptAsync(result -> sessionStatisticsCollector.updateSessionStatistics(bookId, entity.getPage(), SessionRecordType.SESSION_GROUP, entity.getGroup(), meta))
-				.thenAcceptAsync(result -> updateMessageWriteMetrics(entity, bookId), composingService)
-				.thenApplyAsync(result -> entity, composingService);
+		return CompletableFuture.supplyAsync(() -> {
+			try {
+				return GroupedMessageEntityUtils.toSerializedEntity(batchToStore, pageId, settings.getMaxUncompressedMessageBatchSize());
+			} catch (Exception e) {
+				throw new CompletionException(e);
+			}
+		}).thenComposeAsync(serializedEntity -> {
+			GroupedMessageBatchEntity entity = serializedEntity.getEntity();
+			List<SerializedEntityMetadata> meta = serializedEntity.getSerializedEntityData().getSerializedEntityMetadata();
+
+			return gmbOperator.write(entity, writeAttrs)
+					.thenComposeAsync((unused) -> storePageGroup(entity))
+					.thenComposeAsync((unused) -> storeGroup(entity))
+					.thenRunAsync(() -> messageStatisticsCollector.updateMessageBatchStatistics(bookId,
+																								pageId.getName(),
+																								entity.getGroup(),
+																								"",
+																								meta), composingService)
+					.thenRunAsync(() -> sessionStatisticsCollector.updateSessionStatistics(bookId,
+																							pageId.getName(),
+																							SessionRecordType.SESSION_GROUP,
+																							entity.getGroup(),
+																							meta), composingService)
+					.thenRunAsync(() -> updateMessageWriteMetrics(entity, bookId), composingService);
+		});
 	}
 
 	public long getBoundarySequence(String sessionAlias, Direction direction, BookInfo book, boolean first)

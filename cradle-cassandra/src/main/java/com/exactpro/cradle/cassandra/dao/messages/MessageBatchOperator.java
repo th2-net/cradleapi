@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,23 +38,27 @@ public interface MessageBatchOperator {
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Query( "SELECT " +
+				FIELD_FIRST_MESSAGE_DATE + ", " +
+				FIELD_FIRST_MESSAGE_TIME + ", " +
 				FIELD_SEQUENCE + ", " +
-				FIELD_FIRST_MESSAGE_TIME + " " +
+				FIELD_LAST_MESSAGE_DATE + ", " +
+				FIELD_LAST_MESSAGE_TIME + ", " +
+				FIELD_LAST_SEQUENCE + " " +
 			"FROM ${qualifiedTableId} " +
 			"WHERE " +
 				FIELD_BOOK + " =:book AND " +
 				FIELD_PAGE + " =:page AND " +
 				FIELD_SESSION_ALIAS + " =:sessionAlias AND " +
 				FIELD_DIRECTION + " =:direction AND " +
-				FIELD_FIRST_MESSAGE_DATE + " =:messageDate AND " +
-			    "(" + FIELD_FIRST_MESSAGE_TIME + ", " + FIELD_SEQUENCE + ") <= (:messageTime, :sequence) " +
+			    "(" + FIELD_FIRST_MESSAGE_DATE + ", " + FIELD_FIRST_MESSAGE_TIME + ", " + FIELD_SEQUENCE + ") <= " +
+							"(:messageDate, :messageTime, :sequence) " +
 			"ORDER BY " +
 				FIELD_FIRST_MESSAGE_DATE + " DESC, " +
 				FIELD_FIRST_MESSAGE_TIME + " DESC, " +
 				FIELD_SEQUENCE + " DESC LIMIT 1")
-	CompletableFuture<Row> getNearestTimeAndSequenceBefore(String book, String page, String sessionAlias,
-			String direction, LocalDate messageDate, LocalTime messageTime, long sequence,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<Row> getNearestBatchTimeAndSequenceBefore(String book, String page, String sessionAlias,
+																String direction, LocalDate messageDate, LocalTime messageTime, long sequence,
+																Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 
 
@@ -66,8 +70,7 @@ public interface MessageBatchOperator {
 				FIELD_PAGE + "=:page AND " +
 				FIELD_SESSION_ALIAS + " =:sessionAlias AND " +
 				FIELD_DIRECTION + " =:direction AND " +
-				FIELD_FIRST_MESSAGE_DATE + " =:messageDate AND " +
-				FIELD_FIRST_MESSAGE_TIME + " <=:messageTime " +
+				"(" + FIELD_FIRST_MESSAGE_DATE + ", " + FIELD_FIRST_MESSAGE_TIME + ") <= (:messageDate, :messageTime) " +
 			"ORDER BY " +
 				FIELD_FIRST_MESSAGE_DATE + " DESC, " +
 				FIELD_FIRST_MESSAGE_TIME + " DESC, " +

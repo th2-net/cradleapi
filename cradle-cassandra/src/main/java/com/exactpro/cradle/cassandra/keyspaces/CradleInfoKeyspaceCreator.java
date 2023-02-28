@@ -20,9 +20,9 @@ import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
-import com.exactpro.cradle.cassandra.dao.EntityStatisticsEntity;
-import com.exactpro.cradle.cassandra.dao.MessageStatisticsEntity;
-import com.exactpro.cradle.cassandra.dao.SessionStatisticsEntity;
+import com.exactpro.cradle.cassandra.dao.statistics.EntityStatisticsEntity;
+import com.exactpro.cradle.cassandra.dao.statistics.MessageStatisticsEntity;
+import com.exactpro.cradle.cassandra.dao.statistics.SessionStatisticsEntity;
 import com.exactpro.cradle.cassandra.dao.books.BookEntity;
 import com.exactpro.cradle.cassandra.dao.books.PageEntity;
 import com.exactpro.cradle.cassandra.dao.books.PageNameEntity;
@@ -165,7 +165,9 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 				.withColumn(MessageBatchEntity.FIELD_COMPRESSED, DataTypes.BOOLEAN)
 				.withColumn(MessageBatchEntity.FIELD_LABELS, DataTypes.setOf(DataTypes.TEXT))
 				.withColumn(MessageBatchEntity.FIELD_CONTENT, DataTypes.BLOB)
-				.withColumn(MessageBatchEntity.FIELD_REC_DATE, DataTypes.TIMESTAMP));
+				.withColumn(MessageBatchEntity.FIELD_REC_DATE, DataTypes.TIMESTAMP)
+				.withColumn(MessageBatchEntity.FIELD_CONTENT_SIZE, DataTypes.INT)
+				.withColumn(MessageBatchEntity.FIELD_UNCOMPRESSED_CONTENT_SIZE, DataTypes.INT));
 	}
 
 	private void createGroupedMessages() throws IOException
@@ -185,7 +187,9 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 				.withColumn(GroupedMessageBatchEntity.FIELD_MESSAGE_COUNT, DataTypes.INT)
 				.withColumn(GroupedMessageBatchEntity.FIELD_COMPRESSED, DataTypes.BOOLEAN)
 				.withColumn(GroupedMessageBatchEntity.FIELD_LABELS, DataTypes.setOf(DataTypes.TEXT))
-				.withColumn(GroupedMessageBatchEntity.FIELD_CONTENT, DataTypes.BLOB));
+				.withColumn(GroupedMessageBatchEntity.FIELD_CONTENT, DataTypes.BLOB)
+				.withColumn(MessageBatchEntity.FIELD_CONTENT_SIZE, DataTypes.INT)
+				.withColumn(MessageBatchEntity.FIELD_UNCOMPRESSED_CONTENT_SIZE, DataTypes.INT));
 	}
 
 	private void createPageSessions() throws IOException
@@ -241,7 +245,9 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 				.withColumn(TestEventEntity.FIELD_MESSAGES, DataTypes.BLOB)
 				.withColumn(TestEventEntity.FIELD_LABELS, DataTypes.setOf(DataTypes.TEXT))
 				.withColumn(TestEventEntity.FIELD_CONTENT, DataTypes.BLOB)
-				.withColumn(TestEventEntity.FIELD_REC_DATE, DataTypes.TIMESTAMP));
+				.withColumn(TestEventEntity.FIELD_REC_DATE, DataTypes.TIMESTAMP)
+				.withColumn(MessageBatchEntity.FIELD_CONTENT_SIZE, DataTypes.INT)
+				.withColumn(MessageBatchEntity.FIELD_UNCOMPRESSED_CONTENT_SIZE, DataTypes.INT));
 	}
 
 	private void createPageScopes() throws IOException
@@ -272,7 +278,6 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 		String tableName = IntervalEntity.TABLE_NAME;
 		createTable(tableName, () -> SchemaBuilder.createTable(getKeyspace(), tableName).ifNotExists()
 				.withPartitionKey(IntervalEntity.FIELD_BOOK, DataTypes.TEXT)
-				.withPartitionKey(IntervalEntity.FIELD_PAGE, DataTypes.TEXT)
 				.withPartitionKey(IntervalEntity.FIELD_INTERVAL_START_DATE, DataTypes.DATE)
 				.withClusteringColumn(IntervalEntity.FIELD_CRAWLER_NAME, DataTypes.TEXT)
 				.withClusteringColumn(IntervalEntity.FIELD_CRAWLER_VERSION, DataTypes.TEXT)

@@ -26,10 +26,10 @@ import java.util.concurrent.CompletionException;
 import java.util.zip.DataFormatException;
 
 import com.exactpro.cradle.*;
-import com.exactpro.cradle.cassandra.EventBatchDurationCache;
 import com.exactpro.cradle.cassandra.EventBatchDurationWorker;
 import com.exactpro.cradle.cassandra.counters.BookStatisticsRecordsCaches;
 import com.exactpro.cradle.cassandra.counters.EntityStatisticsCollector;
+import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
 import com.exactpro.cradle.utils.CradleIdException;
@@ -41,11 +41,6 @@ import org.slf4j.LoggerFactory;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
-import com.exactpro.cradle.cassandra.dao.testevents.PageScopeEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.ScopeEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventIteratorProvider;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
@@ -77,7 +72,7 @@ public class EventsWorker extends Worker
 	{
 		try
 		{
-			StoredTestEvent testEvent = entity.toStoredTestEvent(pageId);
+			StoredTestEvent testEvent = TestEventEntityUtils.toStoredTestEvent(entity, pageId);
 			updateEventReadMetrics(testEvent);
 			return testEvent;
 		}
@@ -99,37 +94,46 @@ public class EventsWorker extends Worker
 				.inc(entity.isEventBatch() ? entity.getEventCount() : 1);
 	}
 
-	public TestEventEntity createEntity(TestEventToStore event, PageId pageId) throws IOException
-	{
-		return new TestEventEntity(event, pageId, settings.getMaxUncompressedTestEventSize());
-	}
-	
-	public CompletableFuture<Void> storeEntity(TestEventEntity entity, BookId bookId)
+	public CompletableFuture<Void> storeEvent(TestEventToStore event, PageId pageId)
 	{
 		TestEventOperator op = getOperators().getTestEventOperator();
-		List<SerializedEntityMetadata> meta = entity.getSerializedEventMetadata();
-		BookStatisticsRecordsCaches.EntityKey key = new BookStatisticsRecordsCaches.EntityKey(entity.getPage(), EntityType.EVENT);
-		return op.write(entity, writeAttrs)
-				.thenAccept(result -> {
-					try {
-						Instant lastStartTimestamp = entity.getStartTimestamp();
-						for (SerializedEntityMetadata el : entity.getSerializedEventMetadata()) {
-							if (el.getTimestamp() != null && lastStartTimestamp.isBefore(el.getTimestamp())) {
-								lastStartTimestamp = el.getTimestamp();
+		BookStatisticsRecordsCaches.EntityKey key = new BookStatisticsRecordsCaches.EntityKey(pageId.getName(), EntityType.EVENT);
+
+		return CompletableFuture.supplyAsync(() -> {
+			try {
+				return TestEventEntityUtils.toSerializedEntity(event, pageId, settings.getMaxUncompressedMessageBatchSize());
+			} catch (Exception e) {
+				throw new CompletionException(e);
+			}
+		}).thenComposeAsync(serializedEntity -> {
+			TestEventEntity entity = serializedEntity.getEntity();
+			List<SerializedEntityMetadata> meta = serializedEntity.getSerializedEntityData().getSerializedEntityMetadata();
+
+			return op.write(entity, writeAttrs)
+					.thenAcceptAsync(result -> {
+						try {
+							Instant firstTimestamp = meta.get(0).getTimestamp();
+							Instant lastStartTimestamp = firstTimestamp;
+							for (SerializedEntityMetadata el : meta) {
+								if (el.getTimestamp() != null) {
+									if (firstTimestamp.isAfter(el.getTimestamp())) {
+										firstTimestamp = el.getTimestamp();
+									}
+									if (lastStartTimestamp.isBefore(el.getTimestamp())) {
+										lastStartTimestamp = el.getTimestamp();
+									}
+								}
 							}
-						}
-						if (entity.getStartTimestamp() != null) {
-							durationWorker.updateMaxDuration(
-									new EventBatchDurationCache.CacheKey(entity.getBook(), entity.getPage(), entity.getScope()),
-									Duration.between(entity.getStartTimestamp(), lastStartTimestamp).toMillis(),
+							durationWorker.updateMaxDuration(pageId, entity.getScope(),
+									Duration.between(firstTimestamp, lastStartTimestamp).toMillis(),
 									writeAttrs);
+						} catch (CradleStorageException e) {
+							logger.error("Exception while updating max duration {}", e.getMessage());
 						}
-					} catch (CradleStorageException e) {
-						logger.error("Exception while updating max duration {}", e.getMessage());
-					}
-				})
-				.thenAccept(result -> entityStatisticsCollector.updateEntityBatchStatistics(bookId, key, meta))
-				.thenAcceptAsync(result -> updateEventWriteMetrics(entity, bookId));
+					})
+					.thenRunAsync(() -> entityStatisticsCollector.updateEntityBatchStatistics(pageId.getBookId(), key, meta), composingService)
+					.thenRunAsync(() -> updateEventWriteMetrics(entity, pageId.getBookId()), composingService);
+		});
 	}
 	
 	public CompletableFuture<ScopeEntity> storeScope(TestEventToStore event)
@@ -176,7 +180,7 @@ public class EventsWorker extends Worker
 					
 					try
 					{
-						return entity.toStoredTestEvent(pageId);
+						return TestEventEntityUtils.toStoredTestEvent(entity, pageId);
 					}
 					catch (Exception e)
 					{
@@ -199,7 +203,7 @@ public class EventsWorker extends Worker
 			startTimestamp = filter.getStartTimestampFrom().getValue();
 		}
 
-		TestEventIteratorProvider provider = new TestEventIteratorProvider("get test events filtered by "+filter, 
+		TestEventIteratorProvider provider = new TestEventIteratorProvider("get test events filtered by "+filter,
 				filter, getOperators(), book, composingService, selectQueryExecutor,
 				durationWorker,
 				composeReadAttrs(filter.getFetchParameters()),

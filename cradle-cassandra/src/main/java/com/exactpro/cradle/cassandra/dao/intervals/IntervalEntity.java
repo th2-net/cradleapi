@@ -16,26 +16,18 @@
 
 package com.exactpro.cradle.cassandra.dao.intervals;
 
-import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
-import com.datastax.oss.driver.api.mapper.annotations.CqlName;
-import com.datastax.oss.driver.api.mapper.annotations.Entity;
-import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
-import com.exactpro.cradle.PageId;
-import com.exactpro.cradle.intervals.Interval;
-import com.exactpro.cradle.intervals.RecoveryState;
+import com.datastax.oss.driver.api.mapper.annotations.*;
 
-import java.io.IOException;
 import java.time.*;
-
+import java.util.Objects;
 
 @Entity
 @CqlName(IntervalEntity.TABLE_NAME)
+@PropertyStrategy(mutable = false)
 public class IntervalEntity {
     public static final String TABLE_NAME = "intervals";
-    public static final ZoneOffset TIMEZONE_OFFSET = ZoneOffset.UTC;
 
     public static final String FIELD_BOOK = "book";
-    public static final String FIELD_PAGE = "page";
     public static final String FIELD_INTERVAL_START_DATE = "interval_start_date";
     public static final String FIELD_CRAWLER_NAME = "crawler_name";
     public static final String FIELD_CRAWLER_VERSION = "crawler_version";
@@ -50,179 +42,230 @@ public class IntervalEntity {
 
     @PartitionKey(1)
     @CqlName(FIELD_BOOK)
-    private String book;
+    private final String book;
 
     @PartitionKey(2)
-    @CqlName(FIELD_PAGE)
-    private String page;
-
-    @PartitionKey(3)
     @CqlName(FIELD_INTERVAL_START_DATE)
-    private LocalDate startDate;
+    private final LocalDate startDate;
 
     @ClusteringColumn(1)
     @CqlName(FIELD_CRAWLER_NAME)
-    private String crawlerName;
+    private final String crawlerName;
 
     @ClusteringColumn(2)
     @CqlName(FIELD_CRAWLER_VERSION)
-    private String crawlerVersion;
+    private final String crawlerVersion;
 
     @ClusteringColumn(3)
     @CqlName(FIELD_CRAWLER_TYPE)
-    private String crawlerType;
+    private final String crawlerType;
 
     @ClusteringColumn(4)
     @CqlName(FIELD_INTERVAL_START_TIME)
-    private LocalTime startTime;
+    private final LocalTime startTime;
 
     @CqlName(FIELD_INTERVAL_END_DATE)
-    private LocalDate endDate;
+    private final LocalDate endDate;
 
     @CqlName(FIELD_INTERVAL_END_TIME)
-    private LocalTime endTime;
+    private final LocalTime endTime;
 
     @CqlName(FIELD_INTERVAL_LAST_UPDATE_DATE)
-    private LocalDate lastUpdateDate;
+    private final LocalDate lastUpdateDate;
 
     @CqlName(FIELD_INTERVAL_LAST_UPDATE_TIME)
-    private LocalTime lastUpdateTime;
+    private final LocalTime lastUpdateTime;
 
     @CqlName(FIELD_RECOVERY_STATE_JSON)
-    private String recoveryStateJson;
+    private final String recoveryState;
 
     @CqlName(FIELD_INTERVAL_PROCESSED)
-    private boolean processed;
+    private final boolean processed;
 
-    public IntervalEntity() {
-    }
-
-    public IntervalEntity(Interval interval, PageId pageId) {
-        this.startTime = LocalTime.from(interval.getStartTime().atOffset(TIMEZONE_OFFSET));
-        this.endTime = LocalTime.from(interval.getEndTime().atOffset(TIMEZONE_OFFSET));
-        this.startDate = LocalDate.from(interval.getStartTime().atOffset(TIMEZONE_OFFSET));
-        this.endDate = LocalDate.from(interval.getEndTime().atOffset(TIMEZONE_OFFSET));
-        this.lastUpdateTime = LocalTime.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET));
-        this.lastUpdateDate = LocalDate.from(interval.getLastUpdateDateTime().atOffset(TIMEZONE_OFFSET));
-        this.recoveryStateJson = interval.getRecoveryState().convertToJson();
-        this.page = pageId.getName();
-        this.book = pageId.getBookId().getName();
-        this.crawlerName = interval.getCrawlerName();
-        this.crawlerVersion = interval.getCrawlerVersion();
-        this.crawlerType = interval.getCrawlerType();
-        this.processed = interval.isProcessed();
+    public IntervalEntity(String book, LocalDate startDate, String crawlerName, String crawlerVersion, String crawlerType, LocalTime startTime, LocalTime endTime, LocalDate lastUpdateDate, LocalDate endDate, LocalTime lastUpdateTime, String recoveryState, boolean processed) {
+        this.book = book;
+        this.startDate = startDate;
+        this.crawlerName = crawlerName;
+        this.crawlerVersion = crawlerVersion;
+        this.crawlerType = crawlerType;
+        this.startTime = startTime;
+        this.endDate = endDate;
+        this.endTime = endTime;
+        this.lastUpdateDate = lastUpdateDate;
+        this.lastUpdateTime = lastUpdateTime;
+        this.recoveryState = recoveryState;
+        this.processed = processed;
     }
 
     public String getBook() {
         return book;
     }
-
-    public void setBook(String book) {
-        this.book = book;
-    }
-
-    public String getPage() {
-        return page;
-    }
-
-    public void setPage(String page) {
-        this.page = page;
-    }
-
     public LocalDate getStartDate() {
         return startDate;
     }
-
-    public void setStartDate(LocalDate startDate) {
-        this.startDate = startDate;
-    }
-
     public LocalTime getStartTime() {
         return startTime;
     }
-
-    public void setStartTime(LocalTime startTime) {
-        this.startTime = startTime;
-    }
-
     public LocalTime getEndTime() {
         return endTime;
     }
-
-    public void setEndTime(LocalTime endTime) {
-        this.endTime = endTime;
-    }
-
     public LocalDate getLastUpdateDate() {
         return lastUpdateDate;
     }
-
-    public void setLastUpdateDate(LocalDate lastUpdateDate) {
-        this.lastUpdateDate = lastUpdateDate;
-    }
-
     public LocalDate getEndDate() {
         return endDate;
     }
-
-    public void setEndDate(LocalDate endDate) {
-        this.endDate = endDate;
-    }
-
     public LocalTime getLastUpdateTime() {
         return lastUpdateTime;
     }
-
-    public void setLastUpdateTime(LocalTime lastUpdateTime) {
-        this.lastUpdateTime = lastUpdateTime;
+    public String getRecoveryState() {
+        return recoveryState;
     }
-
-    public String getRecoveryStateJson() {
-        return recoveryStateJson;
-    }
-
-    public void setRecoveryStateJson(String recoveryStateJson) {
-        this.recoveryStateJson = recoveryStateJson;
-    }
-
     public String getCrawlerName() {
         return crawlerName;
     }
-
-    public void setCrawlerName(String crawlerName) {
-        this.crawlerName = crawlerName;
-    }
-
     public String getCrawlerVersion() {
         return crawlerVersion;
     }
-
-    public void setCrawlerVersion(String crawlerVersion) {
-        this.crawlerVersion = crawlerVersion;
-    }
-
     public String getCrawlerType() {
         return crawlerType;
     }
-
-    public void setCrawlerType(String crawlerType) {
-        this.crawlerType = crawlerType;
-    }
-
     public boolean isProcessed() {
         return processed;
     }
 
-    public void setProcessed(boolean processed) {
-        this.processed = processed;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof IntervalEntity)) return false;
+        IntervalEntity that = (IntervalEntity) o;
+
+        return isProcessed() == that.isProcessed()
+                && Objects.equals(getBook(), that.getBook())
+                && Objects.equals(getStartDate(), that.getStartDate())
+                && Objects.equals(getCrawlerName(), that.getCrawlerName())
+                && Objects.equals(getCrawlerVersion(), that.getCrawlerVersion())
+                && Objects.equals(getCrawlerType(), that.getCrawlerType())
+                && Objects.equals(getStartTime(), that.getStartTime())
+                && Objects.equals(getEndDate(), that.getEndDate())
+                && Objects.equals(getEndTime(), that.getEndTime())
+                && Objects.equals(getLastUpdateDate(), that.getLastUpdateDate())
+                && Objects.equals(getLastUpdateTime(), that.getLastUpdateTime())
+                && Objects.equals(getRecoveryState(), that.getRecoveryState());
     }
 
-    public Interval asInterval() throws IOException {
-        return Interval.builder().startTime(Instant.from(LocalDateTime.of(startDate, startTime).atOffset(TIMEZONE_OFFSET)))
-                .endTime(Instant.from(LocalDateTime.of(endDate, endTime).atOffset(TIMEZONE_OFFSET)))
-                .recoveryState(RecoveryState.getMAPPER().readValue(recoveryStateJson, RecoveryState.class))
-                .lastUpdateTime(Instant.from(LocalDateTime.of(lastUpdateDate, lastUpdateTime).atOffset(TIMEZONE_OFFSET)))
-                .crawlerName(crawlerName).crawlerVersion(crawlerVersion).crawlerType(crawlerType)
-                .processed(processed).build();
+    @Override
+    public int hashCode() {
+        return Objects.hash(getBook(),
+                getStartDate(),
+                getCrawlerName(),
+                getCrawlerVersion(),
+                getCrawlerType(),
+                getStartTime(),
+                getEndDate(),
+                getEndTime(),
+                getLastUpdateDate(),
+                getLastUpdateTime(),
+                getRecoveryState(),
+                isProcessed());
+    }
+
+    public static IntervalEntityBuilder builder () {
+        return new IntervalEntityBuilder();
+    }
+
+    public static class IntervalEntityBuilder {
+
+        private String book;
+        private LocalDate startDate;
+        private String crawlerName;
+        private String crawlerVersion;
+        private String crawlerType;
+        private LocalTime startTime;
+        private LocalDate endDate;
+        private LocalTime endTime;
+        private LocalDate lastUpdateDate;
+        private LocalTime lastUpdateTime;
+        private String recoveryState;
+        private boolean processed;
+
+        private IntervalEntityBuilder () {
+        }
+
+        public IntervalEntityBuilder setBook (String book) {
+            this.book = book;
+            return this;
+        }
+
+        public IntervalEntityBuilder setStartDate (LocalDate startDate) {
+            this.startDate = startDate;
+            return this;
+        }
+
+        public IntervalEntityBuilder setCrawlerName (String crawlerName) {
+            this.crawlerName = crawlerName;
+            return this;
+        }
+
+        public IntervalEntityBuilder setCrawlerVersion (String crawlerVersion) {
+            this.crawlerVersion = crawlerVersion;
+            return this;
+        }
+
+        public IntervalEntityBuilder setCrawlerType (String crawlerType) {
+            this.crawlerType = crawlerType;
+            return this;
+        }
+
+        public IntervalEntityBuilder setStartTime (LocalTime startTime) {
+            this.startTime = startTime;
+            return this;
+        }
+
+        public IntervalEntityBuilder setEndDate (LocalDate endDate) {
+            this.endDate = endDate;
+            return this;
+        }
+
+        public IntervalEntityBuilder setEndTime (LocalTime endTime) {
+            this.endTime = endTime;
+            return this;
+        }
+
+        public IntervalEntityBuilder setLastUpdateDate (LocalDate lastUpdateDate) {
+            this.lastUpdateDate = lastUpdateDate;
+            return this;
+        }
+
+        public IntervalEntityBuilder setLastUpdateTime (LocalTime lastUpdateTime) {
+            this.lastUpdateTime = lastUpdateTime;
+            return this;
+        }
+
+        public IntervalEntityBuilder setRecoveryState (String recoveryState) {
+            this.recoveryState = recoveryState;
+            return this;
+        }
+
+        public IntervalEntityBuilder setProcessed (boolean processed) {
+            this.processed = processed;
+            return this;
+        }
+
+        public IntervalEntity build () {
+            return new IntervalEntity(
+                    book,
+                    startDate,
+                    crawlerName,
+                    crawlerVersion,
+                    crawlerType,
+                    startTime,
+                    endTime,
+                    lastUpdateDate,
+                    endDate,
+                    lastUpdateTime,
+                    recoveryState,
+                    processed);
+        }
     }
 }

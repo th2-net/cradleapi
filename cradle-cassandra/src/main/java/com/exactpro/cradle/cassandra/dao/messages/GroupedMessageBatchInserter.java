@@ -41,7 +41,9 @@ public class GroupedMessageBatchInserter {
                 .setBoolean(FIELD_COMPRESSED, groupedMessageBatch.isCompressed())
                 .setSet(FIELD_LABELS, groupedMessageBatch.getLabels(), String.class)
                 .setByteBuffer(FIELD_CONTENT, groupedMessageBatch.getContent())
-                .setInstant(FIELD_REC_DATE, Instant.now());
+                .setInstant(FIELD_REC_DATE, Instant.now())
+                .setInt(FIELD_CONTENT_SIZE, groupedMessageBatch.getContentSize())
+                .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, groupedMessageBatch.getUncompressedContentSize());
 
 
         attributes.apply(builder);

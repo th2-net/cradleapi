@@ -67,7 +67,7 @@ public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMes
             select = FilterUtils.timestampFilterToWhere(messageTimeTo.getOperation(), select, FIELD_FIRST_MESSAGE_DATE, FIELD_FIRST_MESSAGE_TIME, DATE_TO, TIME_TO);
 
         if (limit != 0) {
-            select.limit(limit);
+            select = select.limit(limit);
         }
 
         if (this.order == null || this.order == Order.DIRECT) {

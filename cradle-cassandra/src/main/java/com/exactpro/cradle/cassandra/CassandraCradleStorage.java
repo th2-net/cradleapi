@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.PagingIterable;
+import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
@@ -27,8 +28,14 @@ import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
 import com.exactpro.cradle.cassandra.counters.FrameInterval;
 import com.exactpro.cradle.cassandra.dao.*;
 import com.exactpro.cradle.cassandra.dao.books.*;
+import com.exactpro.cradle.cassandra.dao.intervals.CassandraIntervalsWorker;
 import com.exactpro.cradle.cassandra.dao.messages.*;
+import com.exactpro.cradle.cassandra.dao.statistics.EntityStatisticsIteratorProvider;
+import com.exactpro.cradle.cassandra.dao.statistics.MessageStatisticsIteratorProvider;
+import com.exactpro.cradle.cassandra.dao.statistics.MessageStatisticsOperator;
+import com.exactpro.cradle.cassandra.dao.statistics.SessionStatisticsOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
+import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
 import com.exactpro.cradle.cassandra.metrics.DriverMetrics;
@@ -61,14 +68,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -86,12 +92,14 @@ public class CassandraCradleStorage extends CradleStorage
 	private Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
 			readAttrs,
 			strictReadAttrs;
+	private Function<BatchStatementBuilder, BatchStatementBuilder> batchWriteAttrs;
 	private SelectExecutionPolicy multiRowResultExecPolicy, singleRowResultExecPolicy;
 	private EventsWorker eventsWorker;
 	private MessagesWorker messagesWorker;
 	private BookCache bookCache;
 	private StatisticsWorker statisticsWorker;
 	private EventBatchDurationWorker eventBatchDurationWorker;
+	private IntervalsWorker intervalsWorker;
 
 
 	public CassandraCradleStorage(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings, 
@@ -139,6 +147,8 @@ public class CassandraCradleStorage extends CradleStorage
 			int resultPageSize = settings.getResultPageSize();
 			writeAttrs = builder -> builder.setConsistencyLevel(settings.getWriteConsistencyLevel())
 					.setTimeout(timeout);
+			batchWriteAttrs = builder -> builder.setConsistencyLevel(settings.getWriteConsistencyLevel())
+					.setTimeout(timeout);
 			readAttrs = builder -> builder.setConsistencyLevel(settings.getReadConsistencyLevel())
 					.setTimeout(timeout)
 					.setPageSize(resultPageSize);
@@ -155,11 +165,12 @@ public class CassandraCradleStorage extends CradleStorage
 					operators.getEventBatchMaxDurationOperator(),
 					settings.getEventBatchDurationMillis());
 
-			WorkerSupplies ws = new WorkerSupplies(settings, operators, composingService, bookCache, selectExecutor, writeAttrs, readAttrs);
+			WorkerSupplies ws = new WorkerSupplies(settings, operators, composingService, bookCache, selectExecutor, writeAttrs, readAttrs, batchWriteAttrs);
 			statisticsWorker = new StatisticsWorker(ws, settings.getCounterPersistenceInterval());
 			eventsWorker = new EventsWorker(ws, statisticsWorker, eventBatchDurationWorker);
 			messagesWorker = new MessagesWorker(ws, statisticsWorker, statisticsWorker);
 			statisticsWorker.start();
+			intervalsWorker = new CassandraIntervalsWorker(ws);
 		}
 		catch (Exception e)
 		{
@@ -201,13 +212,14 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected void doAddBook(BookToAdd newBook, BookId bookId) throws IOException
+	protected void doAddBook(BookToAdd book, BookId bookId) throws IOException
 	{
-		BookEntity bookEntity = new BookEntity(newBook, settings.getSchemaVersion());
+
+		BookEntity entity = new BookEntity(book.getName(), book.getFullName(), book.getDesc(), book.getCreated(), settings.getSchemaVersion());
 		try
 		{
-			if (!operators.getBookOperator().write(bookEntity, writeAttrs).wasApplied())
-				throw new IOException("Query to insert book '"+bookEntity.getName()+"' was not applied. Probably, book already exists");
+			if (!operators.getBookOperator().write(entity, writeAttrs).wasApplied())
+				throw new IOException("Query to insert book '"+entity.getName()+"' was not applied. Probably, book already exists");
 		}
 		catch (IOException e)
 		{
@@ -279,21 +291,14 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected void doStoreMessageBatch(MessageBatchToStore batch, PageInfo page) throws IOException
-	{
+	protected void doStoreMessageBatch(MessageBatchToStore batch, PageInfo page) throws IOException {
 		PageId pageId = page.getId();
-		BookId bookId = pageId.getBookId();
-
-		try
-		{
-			MessageBatchEntity entity = messagesWorker.createMessageBatchEntity(batch, pageId);
-			messagesWorker.storeMessageBatch(entity, bookId).get();
+		try {
+			messagesWorker.storeMessageBatch(batch, pageId).get();
 			messagesWorker.storeSession(batch).get();
 			messagesWorker.storePageSession(batch, pageId).get();
-		}
-		catch (Exception e)
-		{
-			throw new IOException("Error while storing message batch "+batch.getId(), e);
+		} catch (Exception e) {
+			throw new IOException("Exception while storing message batch " + batch.getId(), e);
 		}
 	}
 
@@ -302,16 +307,13 @@ public class CassandraCradleStorage extends CradleStorage
 			throws IOException
 	{
 		PageId pageId = page.getId();
-		BookId bookId = pageId.getBookId();
 
 		try
 		{
-			GroupedMessageBatchEntity entity = messagesWorker.createGroupedMessageBatchEntity(batch, pageId);
-			messagesWorker.storeGroupedMessageBatch(entity, bookId).get();
+			messagesWorker.storeGroupedMessageBatch(batch, pageId).get();
 
 			for (MessageBatchToStore b: batch.getSessionMessageBatches()) {
-				MessageBatchEntity e = messagesWorker.createMessageBatchEntity(b, pageId);
-				messagesWorker.storeMessageBatch(e, bookId).get();
+				messagesWorker.storeMessageBatch(b, pageId).get();
 				messagesWorker.storeSession(b).get();
 				messagesWorker.storePageSession(b, pageId).get();
 			}
@@ -323,25 +325,11 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Void> doStoreMessageBatchAsync(MessageBatchToStore batch, PageInfo page)
-	{
+	protected CompletableFuture<Void> doStoreMessageBatchAsync(MessageBatchToStore batch, PageInfo page) {
 		PageId pageId = page.getId();
-		BookId bookId = pageId.getBookId();
-
-		return CompletableFuture.supplyAsync(() ->
-				{
-					try
-					{
-						return messagesWorker.createMessageBatchEntity(batch, pageId);
-					}
-					catch (IOException e)
-					{
-						throw new CompletionException(e);
-					}
-				}, composingService)
-				.thenComposeAsync(entity -> messagesWorker.storeMessageBatch(entity, bookId), composingService)
-				.thenComposeAsync(r -> messagesWorker.storeSession(batch), composingService)
-				.thenComposeAsync(r -> messagesWorker.storePageSession(batch, pageId), composingService)
+		return messagesWorker.storeMessageBatch(batch, pageId)
+				.thenComposeAsync((unused) -> messagesWorker.storeSession(batch), composingService)
+				.thenComposeAsync((unused) -> messagesWorker.storePageSession(batch, pageId), composingService)
 				.thenAccept(NOOP);
 	}
 
@@ -350,72 +338,41 @@ public class CassandraCradleStorage extends CradleStorage
 			throws CradleStorageException
 	{
 		PageId pageId = page.getId();
-		BookId bookId = pageId.getBookId();
 
-		CompletableFuture<Void> future = CompletableFuture.supplyAsync(() ->
-		{
-			try	{
-				return messagesWorker.createGroupedMessageBatchEntity(batch, pageId);
-			}
-			catch (IOException e) {
-				throw new CompletionException(e);
-			}
-		}, composingService)
-				.thenComposeAsync(entity -> messagesWorker.storeGroupedMessageBatch(entity, bookId))
-				.thenAccept(NOOP);
+		CompletableFuture<Void> future =  messagesWorker.storeGroupedMessageBatch(batch, pageId);
 
 		// store individual session message batches
 		for (MessageBatchToStore b: batch.getSessionMessageBatches()) {
-			future = future.thenComposeAsync(ignored -> {
-				try {
-					return messagesWorker.storeMessageBatch(messagesWorker.createMessageBatchEntity(b, pageId), bookId);
-				} catch (IOException e) {
-					throw new CompletionException(e);
-				}
-			}, composingService)
-				.thenComposeAsync(r -> messagesWorker.storeSession(b), composingService)
-				.thenComposeAsync(r -> messagesWorker.storePageSession(b, pageId), composingService)
-				.thenAccept(NOOP);
+			future = future.thenComposeAsync((unused) -> messagesWorker.storeMessageBatch(b, pageId), composingService)
+							.thenComposeAsync((unused) -> messagesWorker.storeSession(b), composingService)
+							.thenComposeAsync((unused) -> messagesWorker.storePageSession(b, pageId), composingService)
+							.thenAccept(NOOP);
 		}
 		return future;
 	}
 
 	@Override
-	protected void doStoreTestEvent(TestEventToStore event, PageInfo page) throws IOException, CradleStorageException
-	{
+	protected void doStoreTestEvent(TestEventToStore event, PageInfo page) throws IOException {
 		PageId pageId = page.getId();
-		BookId bookId = pageId.getBookId();
 		try
 		{
-			TestEventEntity entity = eventsWorker.createEntity(event, pageId);
-			eventsWorker.storeEntity(entity, bookId).get();
+			eventsWorker.storeEvent(event, pageId);
 			eventsWorker.storeScope(event).get();
 			eventsWorker.storePageScope(event, pageId).get();
 		}
 		catch (Exception e)
 		{
-			throw new IOException("Error while storing test event "+event.getId(), e);
+			throw new IOException("Error while storing test event " + event.getId(), e);
 		}
 	}
 
 	@Override
-	protected CompletableFuture<Void> doStoreTestEventAsync(TestEventToStore event, PageInfo page) throws IOException, CradleStorageException
-	{
+	protected CompletableFuture<Void> doStoreTestEventAsync(TestEventToStore event, PageInfo page) throws IOException, CradleStorageException {
 		PageId pageId = page.getId();
-		BookId bookId = pageId.getBookId();
-		return CompletableFuture.supplyAsync(() -> {
-					try
-					{
-						return eventsWorker.createEntity(event, pageId);
-					}
-					catch (IOException e)
-					{
-						throw new CompletionException(e);
-					}
-				}, composingService)
-				.thenComposeAsync(entity -> eventsWorker.storeEntity(entity, bookId), composingService)
-				.thenComposeAsync((r) -> eventsWorker.storeScope(event), composingService)
-				.thenComposeAsync((r) -> eventsWorker.storePageScope(event, pageId), composingService)
+
+		return eventsWorker.storeEvent(event, pageId)
+				.thenComposeAsync((unused) -> eventsWorker.storeScope(event), composingService)
+				.thenComposeAsync((unused) -> eventsWorker.storePageScope(event, pageId), composingService)
 				.thenAccept(NOOP);
 	}
 
@@ -982,12 +939,27 @@ public class CassandraCradleStorage extends CradleStorage
 		if (pageEntity == null || !pageEntity.getName().equals(pageNameEntity.getName()))
 			throw new CradleStorageException(String.format("Inconsistent data for page \"%s\" in book %s", pageName, bookId.getName()));
 
-		pageNameEntity.setComment(comment);
-		pageEntity.setComment(comment);
-		pageEntity.setUpdated(Instant.now());
+		PageEntity updatedPageEntity = new PageEntity(pageEntity.getBook(),
+				pageEntity.getStartDate(),
+				pageEntity.getStartTime(),
+				pageEntity.getName(),
+				comment,
+				pageEntity.getEndDate(),
+				pageEntity.getEndTime(),
+				Instant.now(),
+				pageEntity.getRemoved());
+
+		PageNameEntity updatedPageNameEntity = new PageNameEntity(pageNameEntity.getBook(),
+				pageNameEntity.getName(),
+				pageNameEntity.getStartDate(),
+				pageNameEntity.getStartTime(),
+				comment,
+				pageNameEntity.getEndDate(),
+				pageNameEntity.getEndTime());
+
 		try {
-			pageNameOperator.update(pageNameEntity, readAttrs);
-			pageOperator.update(pageEntity, readAttrs);
+			pageNameOperator.update(updatedPageNameEntity, readAttrs);
+			pageOperator.update(updatedPageEntity, readAttrs);
 		} catch (Exception e) {
 			throw new CradleStorageException(String.format("Failed to update page comment, this might result in broken state, try again. %s", e.getCause()));
 		}
@@ -1012,14 +984,38 @@ public class CassandraCradleStorage extends CradleStorage
 		if (pageEntity == null || !pageEntity.getName().equals(pageNameEntity.getName()))
 			throw new CradleStorageException(String.format("Inconsistent data for page \"%s\" in book %s", oldPageName, bookId.getName()));
 
-		pageEntity.setName(newPageName);
-		pageEntity.setUpdated(Instant.now());
-		pageNameEntity.setName(newPageName);
+		PageInfo pageInfo = pageEntity.toPageInfo();
+		Instant now = Instant.now();
+		if (pageInfo.getStarted().isBefore(now)) {
+			throw new CradleStorageException(
+					String.format("You can only rename pages which start in future: pageStart - %s, now - %s",
+							pageInfo.getStarted(),
+							now));
+		}
+
+		PageEntity updatedPageEntity = new PageEntity(pageEntity.getBook(),
+				pageEntity.getStartDate(),
+				pageEntity.getStartTime(),
+				newPageName,
+				pageEntity.getComment(),
+				pageEntity.getEndDate(),
+				pageEntity.getEndTime(),
+				Instant.now(),
+				pageEntity.getRemoved());
+
+		PageNameEntity newPageNameEntity = new PageNameEntity(pageNameEntity.getBook(),
+				newPageName,
+				pageNameEntity.getStartDate(),
+				pageNameEntity.getStartTime(),
+				pageNameEntity.getComment(),
+				pageNameEntity.getEndDate(),
+				pageNameEntity.getEndTime());
+
 		pageNameOperator.remove(bookId.getName(), oldPageName, readAttrs);
 
 		try {
-			pageNameOperator.writeNew(pageNameEntity, readAttrs);
-			pageOperator.update(pageEntity, readAttrs);
+			pageNameOperator.writeNew(newPageNameEntity, readAttrs);
+			pageOperator.update(updatedPageEntity, readAttrs);
 		} catch (Exception e) {
 			throw new CradleStorageException(String.format("Failed to update page name, this might result in broken state, try again. %s", e.getCause()));
 		}
@@ -1028,9 +1024,9 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	public IntervalsWorker getIntervalsWorker(PageId pageId)
+	public IntervalsWorker getIntervalsWorker()
 	{
-		return null; //TODO: implement
+		return intervalsWorker;
 	}
 	
 	
@@ -1087,7 +1083,12 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		return writeAttrs;
 	}
-	
+
+	public Function<BatchStatementBuilder, BatchStatementBuilder> getBatchWriteAttrs()
+	{
+		return batchWriteAttrs;
+	}
+
 	public Function<BoundStatementBuilder, BoundStatementBuilder> getReadAttrs()
 	{
 		return readAttrs;
@@ -1226,6 +1227,56 @@ public class CassandraCradleStorage extends CradleStorage
 					ft.getValue(), writeAttrs);
 			operators.getEntityStatisticsOperator().remove(book, pageId.getName(), EntityType.EVENT.getValue(),
 					ft.getValue(), writeAttrs);
+		}
+	}
+
+	@Override
+	protected CompletableFuture<Iterator<PageInfo>> doGetPagesAsync (BookId bookId, Interval interval) {
+		String queryInfo = String.format(
+				"Getting pages for book %s between  %s - %s ",
+				bookId.getName(),
+				interval.getStart(),
+				interval.getEnd());
+
+		PageEntity startPage = operators.getPageOperator()
+				.getPageForLessOrEqual(
+						bookId.getName(),
+						LocalDate.ofInstant(interval.getStart(), TIMEZONE_OFFSET),
+						LocalTime.ofInstant(interval.getStart(), TIMEZONE_OFFSET),
+						readAttrs).one();
+
+		LocalDate startDate = startPage == null ? LocalDate.MIN : startPage.getStartDate();
+		LocalTime startTime = startPage == null ? LocalTime.MIN : startPage.getStartTime();
+		LocalDate endDate = LocalDate.ofInstant(interval.getEnd(), TIMEZONE_OFFSET);
+		LocalTime endTime = LocalTime.ofInstant(interval.getEnd(), TIMEZONE_OFFSET);
+
+		return operators.getPageOperator().getPagesForInterval(
+				bookId.getName(),
+				startDate,
+				startTime,
+				endDate,
+				endTime,
+				readAttrs)
+				.thenApply(rs -> new ConvertingPagedIterator<>(rs,
+						selectExecutor,
+						0,
+						new AtomicInteger(0),
+						PageEntity::toPageInfo,
+						(el) -> operators.getPageEntityConverter().getEntity(el), queryInfo));
+	}
+
+	@Override
+	protected Iterator<PageInfo> doGetPages(BookId bookId, Interval interval) throws CradleStorageException {
+		String queryInfo = String.format(
+				"Getting pages for book %s between  %s - %s ",
+				bookId.getName(),
+				interval.getStart(),
+				interval.getEnd());
+
+		try {
+			return doGetPagesAsync(bookId, interval).get();
+		} catch (InterruptedException | ExecutionException e) {
+			throw new CradleStorageException("Error while " + queryInfo, e);
 		}
 	}
 }

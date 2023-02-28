@@ -59,7 +59,7 @@ public class MessageUtils
 		if (ArrayUtils.isEmpty(message.getContent()))
 			throw new CradleStorageException("Message must have content");
 	}
-	
+
 	/**
 	 * Serializes messages, skipping non-meaningful or calculable fields
 	 * @param messages to serialize

@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.zip.DataFormatException;
 
+import com.exactpro.cradle.cassandra.dao.SerializedEntity;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.testng.annotations.DataProvider;
@@ -93,11 +94,12 @@ public class TestEventEntityTest
 	@Test(dataProvider = "events")
 	public void eventEntity(TestEventToStore event) throws CradleStorageException, IOException, DataFormatException, CradleIdException
 	{
-		TestEventEntity entity = new TestEventEntity(event, page, 2000);
-		StoredTestEvent newEvent = entity.toStoredTestEvent(page);
+		SerializedEntity<TestEventEntity> serializedEntity = TestEventEntityUtils.toSerializedEntity(event,  page, 2000);
+		TestEventEntity entity = serializedEntity.getEntity();
+		StoredTestEvent newEvent = TestEventEntityUtils.toStoredTestEvent(entity, page);
 		
 		RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
-		config.ignoreFieldsMatchingRegexes("pageId", ".*\\.pageId", "error", ".*\\.error", "recDate", ".*\\.recDate");
+		config.ignoreFieldsMatchingRegexes("pageId", ".*\\.pageId", "error", ".*\\.error", "recDate", ".*\\.recDate", "lastStartTimestamp", ".*\\.lastStartTimestamp");
 		
 		Assertions.assertThat(newEvent)
 				.usingRecursiveComparison(config)
