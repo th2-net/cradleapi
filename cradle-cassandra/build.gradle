@@ -21,12 +21,34 @@ dependencies {
 
 
 	implementation 'io.netty:netty-handler'
+		constraints {
+			implementation('io.netty:netty-handler:4.1.89.Final') {
+				because 'version specified in datastax driver does not pass vulnerability check'
+			}
+		}
+
+	implementation 'com.fasterxml.jackson.core:jackson-databind'
+		constraints {
+			implementation( "com.fasterxml.jackson.core:jackson-databind:${jackson_version}") {
+				because 'version specified in datastax driver does not pass vulnerability check'
+			}
+		}
+
+
+	annotationProcessor 'io.netty:netty-handler'
 	constraints {
-		implementation('io.netty:netty-handler:4.1.89.Final') {
+		annotationProcessor( 'io.netty:netty-handler:4.1.89.Final') {
 			because 'version specified in datastax driver does not pass vulnerability check'
 		}
 	}
-	annotationProcessor 'io.netty:netty-handler:4.1.89.Final'
+	annotationProcessor 'com.fasterxml.jackson.core:jackson-databind'
+	constraints {
+		annotationProcessor( "com.fasterxml.jackson.core:jackson-databind:${jackson_version}") {
+			because 'version specified in datastax driver does not pass vulnerability check'
+		}
+	}
+
+
 
 	testImplementation 'org.testng:testng:7.1.0'
 	testImplementation 'org.assertj:assertj-core:3.12.2'
