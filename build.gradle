@@ -6,7 +6,7 @@ plugins {
 
 ext {
 	slf4j_version = '1.7.36'
-	jackson_version = '2.13.4'
+	jackson_version = '2.14.2'
 
 	sharedDir = file("${project.rootDir}/shared")
 }
@@ -14,16 +14,6 @@ ext {
 allprojects {
 	version = release_version
 	group   = 'com.exactpro.th2'
-
-	configurations {
-		compileClasspath {
-			resolutionStrategy.activateDependencyLocking()
-		}
-	}
-
-	dependencyLocking {
-		lockAllConfigurations()
-	}
 
 }
 
