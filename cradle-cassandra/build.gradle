@@ -8,6 +8,7 @@ configurations.all {
 }
 
 dependencies {
+	api platform('com.exactpro.th2:bom:4.2.0')
 	compile project(":cradle-core")
 
 	implementation 'com.exactpro.th2:task-utils:0.1.0'
