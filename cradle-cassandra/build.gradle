@@ -8,10 +8,10 @@ configurations.all {
 }
 
 dependencies {
-	compile project(":cradle-core")
+	api project(":cradle-core")
 
+	implementation "org.apache.commons:commons-lang3"
 	implementation 'com.exactpro.th2:task-utils:0.1.0'
-	annotationProcessor "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
 
 	implementation "com.datastax.oss:java-driver-core:${driver_version}"
 	implementation "com.datastax.oss:java-driver-query-builder:${driver_version}"
@@ -19,39 +19,19 @@ dependencies {
 	implementation "com.datastax.oss:java-driver-mapper-runtime:${driver_version}"
 	implementation 'io.prometheus:simpleclient_dropwizard:0.9.0'
 
-
 	implementation 'io.netty:netty-handler'
-		constraints {
-			implementation('io.netty:netty-handler:4.1.89.Final') {
-				because 'version specified in datastax driver does not pass vulnerability check'
-			}
-		}
 
 	implementation 'com.fasterxml.jackson.core:jackson-databind'
-		constraints {
-			implementation( "com.fasterxml.jackson.core:jackson-databind:${jackson_version}") {
-				because 'version specified in datastax driver does not pass vulnerability check'
-			}
-		}
 
-
+	annotationProcessor platform('com.exactpro.th2:bom:4.2.0')
+	annotationProcessor "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
 	annotationProcessor 'io.netty:netty-handler'
-	constraints {
-		annotationProcessor( 'io.netty:netty-handler:4.1.89.Final') {
-			because 'version specified in datastax driver does not pass vulnerability check'
-		}
-	}
 	annotationProcessor 'com.fasterxml.jackson.core:jackson-databind'
-	constraints {
-		annotationProcessor( "com.fasterxml.jackson.core:jackson-databind:${jackson_version}") {
-			because 'version specified in datastax driver does not pass vulnerability check'
-		}
-	}
-
-
 
 	testImplementation 'org.testng:testng:7.1.0'
 	testImplementation 'org.assertj:assertj-core:3.12.2'
+	testImplementation "org.apache.logging.log4j:log4j-slf4j2-impl"
+	testImplementation 'org.apache.logging.log4j:log4j-core'
 }
 
 def gen_dir = 'build/generated/sources/annotationProcessor/main'
