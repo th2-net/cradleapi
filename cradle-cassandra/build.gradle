@@ -8,7 +8,6 @@ configurations.all {
 }
 
 dependencies {
-	api platform('com.exactpro.th2:bom:4.2.0')
 	compile project(":cradle-core")
 
 	implementation 'com.exactpro.th2:task-utils:0.1.0'
@@ -19,7 +18,10 @@ dependencies {
 	implementation "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
 	implementation "com.datastax.oss:java-driver-mapper-runtime:${driver_version}"
 	implementation 'io.prometheus:simpleclient_dropwizard:0.9.0'
-	
+
+
+	implementation 'io.netty:netty-handler:4.1.89.Final'
+
 	testImplementation 'org.testng:testng:7.1.0'
 	testImplementation 'org.assertj:assertj-core:3.12.2'
 }
