@@ -22,16 +22,16 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.exactpro.cradle.*;
+import org.assertj.core.api.Assertions;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.Direction;
-import com.exactpro.cradle.TestUtils;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
+import org.yaml.snakeyaml.util.ArrayUtils;
 
 public class EventSingleTest
 {
@@ -40,6 +40,7 @@ public class EventSingleTest
 			DUMMY_NAME = "TestEvent",
 			ID_VALUE = "Event_ID";
 	public static final Instant START_TIMESTAMP = Instant.now().minus(10, ChronoUnit.SECONDS);
+	public static final Instant BEFORE_START_TIMESTAMP = START_TIMESTAMP.minus(10, ChronoUnit.SECONDS);
 	public static final StoredTestEventId DUMMY_ID = new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, ID_VALUE),
 			batchParentId = new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "BatchParentID");
 	
@@ -67,7 +68,9 @@ public class EventSingleTest
 					{validEvent().endTimestamp(START_TIMESTAMP.minusMillis(5000)),                                    //End before start
 							"cannot end sooner than it started"},
 					{validEvent().messages(Collections.singleton(new StoredMessageId(new BookId(BOOK.getName()+"1"),  //Different book in message
-							"Session1", Direction.FIRST, START_TIMESTAMP, 1))), "Book of message"}
+							"Session1", Direction.FIRST, START_TIMESTAMP, 1))), "Book of message"},
+					{validEvent().parentId(new StoredTestEventId(BOOK, SCOPE, BEFORE_START_TIMESTAMP, ID_VALUE)),
+							"could not find corresponding page in book"}
 				};
 	}
 	
@@ -110,7 +113,18 @@ public class EventSingleTest
 	{
 		try
 		{
-			TestEventUtils.validateTestEvent(builder.build());
+			BookInfo bookInfo = new BookInfo(
+					BOOK,
+					null,
+					null,
+					START_TIMESTAMP,
+					Collections.singleton(new PageInfo(
+							new PageId(null, null),
+							START_TIMESTAMP,
+							START_TIMESTAMP,
+							null)));
+			TestEventUtils.validateTestEvent(builder.build(), bookInfo);
+			Assertions.fail("Invalid message passed validation");
 		}
 		catch (CradleStorageException e)
 		{
