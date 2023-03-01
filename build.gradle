@@ -1,12 +1,10 @@
 plugins {
 	id "io.github.gradle-nexus.publish-plugin" version"1.0.0"
+	id "org.owasp.dependencycheck" version "8.1.2"
 	id 'signing'
 }
 
 ext {
-	slf4j_version = '1.7.36'
-	jackson_version = '2.13.4'
-
 	sharedDir = file("${project.rootDir}/shared")
 }
 
@@ -14,30 +12,23 @@ allprojects {
 	version = release_version
 	group   = 'com.exactpro.th2'
 
-	configurations {
-		compileClasspath {
-			resolutionStrategy.activateDependencyLocking()
+	dependencyCheck {
+		formats=['SARIF', 'JSON', 'HTML']
+		failBuildOnCVSS=5
+		analyzers {
+			assemblyEnabled = false
+			nugetconfEnabled = false
+			nodeEnabled = false
 		}
 	}
 
-	tasks.register('resolveAndLockAll') {
-		doFirst {
-			println gradle.startParameter.writeDependencyLocks
-		}
-		doLast {
-			configurations.findAll {
-				// Add any custom filtering on the configurations to be resolved
-				it.canBeResolved
-			}.each { it.resolve() }
-		}
-	}
 }
 
 subprojects {
 	apply plugin: 'java-library'
-	apply plugin: 'maven'
 	apply plugin: 'maven-publish'
 	apply plugin: 'signing'
+	apply plugin: 'org.owasp.dependencycheck'
 
 	repositories {
 		mavenCentral()
@@ -48,29 +39,12 @@ subprojects {
 		}
 	}
 
-	configurations {
-		compileClasspath {
-			resolutionStrategy.activateDependencyLocking()
-		}
-	}
 
-	tasks.register('createLockFiles', Copy) {
-		dependsOn('resolveAndLockAll')
-		from "./gradle/dependency-locks/compileClasspath.lockfile"
-		into "./.."
-
-		rename { String filename ->
-			return project.name + '-' + filename
-		}
-	}
-	
-	
 	defaultTasks 'build'
 	
 	sourceCompatibility = JavaVersion.VERSION_11 //Java version compatibility to use when compiling Java source.
 	targetCompatibility = JavaVersion.VERSION_11 //Java version to generate classes for.
 	compileJava.options.debugOptions.debugLevel = 'source,lines,vars' // Include debug information
-
 
 	jar {
 		manifest {
