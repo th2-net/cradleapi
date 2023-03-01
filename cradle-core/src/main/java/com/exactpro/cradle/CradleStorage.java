@@ -659,7 +659,7 @@ public abstract class CradleStorage
 		logger.debug("Storing test event {}", id);
 		PageInfo page = findPage(id.getBookId(), id.getStartTimestamp());
 		
-		TestEventUtils.validateTestEvent(event);
+		TestEventUtils.validateTestEvent(event, getBookCache().getBook(id.getBookId()));
 		final TestEventToStore alignedEvent = alignEventTimestampsToPage(event, page);
 		
 		doStoreTestEvent(alignedEvent, page);
@@ -684,7 +684,7 @@ public abstract class CradleStorage
 		logger.debug("Storing test event {} asynchronously", id);
 		PageInfo page = findPage(id.getBookId(), id.getStartTimestamp());
 		
-		TestEventUtils.validateTestEvent(event);
+		TestEventUtils.validateTestEvent(event, getBookCache().getBook(id.getBookId()));
 		final TestEventToStore alignedEvent = alignEventTimestampsToPage(event, page);
 		
 		CompletableFuture<Void> result = doStoreTestEventAsync(alignedEvent, page);

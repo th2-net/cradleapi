@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.PagingIterable;
+import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
@@ -29,6 +30,10 @@ import com.exactpro.cradle.cassandra.dao.*;
 import com.exactpro.cradle.cassandra.dao.books.*;
 import com.exactpro.cradle.cassandra.dao.intervals.CassandraIntervalsWorker;
 import com.exactpro.cradle.cassandra.dao.messages.*;
+import com.exactpro.cradle.cassandra.dao.statistics.EntityStatisticsIteratorProvider;
+import com.exactpro.cradle.cassandra.dao.statistics.MessageStatisticsIteratorProvider;
+import com.exactpro.cradle.cassandra.dao.statistics.MessageStatisticsOperator;
+import com.exactpro.cradle.cassandra.dao.statistics.SessionStatisticsOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
@@ -87,6 +92,7 @@ public class CassandraCradleStorage extends CradleStorage
 	private Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
 			readAttrs,
 			strictReadAttrs;
+	private Function<BatchStatementBuilder, BatchStatementBuilder> batchWriteAttrs;
 	private SelectExecutionPolicy multiRowResultExecPolicy, singleRowResultExecPolicy;
 	private EventsWorker eventsWorker;
 	private MessagesWorker messagesWorker;
@@ -141,6 +147,8 @@ public class CassandraCradleStorage extends CradleStorage
 			int resultPageSize = settings.getResultPageSize();
 			writeAttrs = builder -> builder.setConsistencyLevel(settings.getWriteConsistencyLevel())
 					.setTimeout(timeout);
+			batchWriteAttrs = builder -> builder.setConsistencyLevel(settings.getWriteConsistencyLevel())
+					.setTimeout(timeout);
 			readAttrs = builder -> builder.setConsistencyLevel(settings.getReadConsistencyLevel())
 					.setTimeout(timeout)
 					.setPageSize(resultPageSize);
@@ -157,7 +165,7 @@ public class CassandraCradleStorage extends CradleStorage
 					operators.getEventBatchMaxDurationOperator(),
 					settings.getEventBatchDurationMillis());
 
-			WorkerSupplies ws = new WorkerSupplies(settings, operators, composingService, bookCache, selectExecutor, writeAttrs, readAttrs);
+			WorkerSupplies ws = new WorkerSupplies(settings, operators, composingService, bookCache, selectExecutor, writeAttrs, readAttrs, batchWriteAttrs);
 			statisticsWorker = new StatisticsWorker(ws, settings.getCounterPersistenceInterval());
 			eventsWorker = new EventsWorker(ws, statisticsWorker, eventBatchDurationWorker);
 			messagesWorker = new MessagesWorker(ws, statisticsWorker, statisticsWorker);
@@ -1075,7 +1083,12 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		return writeAttrs;
 	}
-	
+
+	public Function<BatchStatementBuilder, BatchStatementBuilder> getBatchWriteAttrs()
+	{
+		return batchWriteAttrs;
+	}
+
 	public Function<BoundStatementBuilder, BoundStatementBuilder> getReadAttrs()
 	{
 		return readAttrs;
