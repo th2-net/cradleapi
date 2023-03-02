@@ -18,18 +18,40 @@ package com.exactpro.cradle.cassandra.workers;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
-import com.exactpro.cradle.*;
+import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.BookInfo;
+import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.PageId;
+import com.exactpro.cradle.PageInfo;
+import com.exactpro.cradle.SessionRecordType;
 import com.exactpro.cradle.cassandra.counters.MessageStatisticsCollector;
 import com.exactpro.cradle.cassandra.counters.SessionStatisticsCollector;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageSession;
 import com.exactpro.cradle.cassandra.dao.cache.CachedSession;
-import com.exactpro.cradle.cassandra.dao.messages.*;
+import com.exactpro.cradle.cassandra.dao.messages.GroupEntity;
+import com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity;
+import com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchOperator;
+import com.exactpro.cradle.cassandra.dao.messages.GroupedMessageIteratorProvider;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchesIteratorProvider;
+import com.exactpro.cradle.cassandra.dao.messages.MessagesIteratorProvider;
+import com.exactpro.cradle.cassandra.dao.messages.PageGroupEntity;
+import com.exactpro.cradle.cassandra.dao.messages.PageSessionEntity;
+import com.exactpro.cradle.cassandra.dao.messages.SessionEntity;
 import com.exactpro.cradle.cassandra.dao.messages.converters.MessageBatchEntityConverter;
 import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
 import com.exactpro.cradle.cassandra.utils.GroupedMessageEntityUtils;
 import com.exactpro.cradle.cassandra.utils.MessageBatchEntityUtils;
-import com.exactpro.cradle.messages.*;
+import com.exactpro.cradle.messages.GroupedMessageBatchToStore;
+import com.exactpro.cradle.messages.GroupedMessageFilter;
+import com.exactpro.cradle.messages.MessageBatchToStore;
+import com.exactpro.cradle.messages.MessageFilter;
+import com.exactpro.cradle.messages.StoredGroupedMessageBatch;
+import com.exactpro.cradle.messages.StoredMessage;
+import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -51,7 +73,9 @@ import java.util.function.Function;
 import java.util.zip.DataFormatException;
 
 import static com.exactpro.cradle.CradleStorage.EMPTY_MESSAGE_INDEX;
-import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.*;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_FIRST_MESSAGE_TIME;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_LAST_SEQUENCE;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_SEQUENCE;
 import static java.lang.String.format;
 
 public class MessagesWorker extends Worker
@@ -328,7 +352,7 @@ public class MessagesWorker extends Worker
 			} catch (Exception e) {
 				throw new CompletionException(e);
 			}
-		}).thenComposeAsync(serializedEntity -> {
+		}, composingService).thenComposeAsync(serializedEntity -> {
 			MessageBatchEntity entity = serializedEntity.getEntity();
 			List<SerializedEntityMetadata> meta = serializedEntity.getSerializedEntityData().getSerializedEntityMetadata();
 
@@ -344,7 +368,7 @@ public class MessagesWorker extends Worker
 																							entity.getSessionAlias(),
 																							meta), composingService)
 					.thenRunAsync(() -> updateMessageWriteMetrics(entity, bookId), composingService);
-		});
+		}, composingService);
 	}
 
 	public CompletableFuture<Void> storeGroupedMessageBatch(GroupedMessageBatchToStore batchToStore, PageId pageId) {
@@ -357,13 +381,13 @@ public class MessagesWorker extends Worker
 			} catch (Exception e) {
 				throw new CompletionException(e);
 			}
-		}).thenComposeAsync(serializedEntity -> {
+		}, composingService).thenComposeAsync(serializedEntity -> {
 			GroupedMessageBatchEntity entity = serializedEntity.getEntity();
 			List<SerializedEntityMetadata> meta = serializedEntity.getSerializedEntityData().getSerializedEntityMetadata();
 
 			return gmbOperator.write(entity, writeAttrs)
-					.thenComposeAsync((unused) -> storePageGroup(entity))
-					.thenComposeAsync((unused) -> storeGroup(entity))
+                    .thenComposeAsync((unused) -> storePageGroup(entity), composingService)
+                    .thenComposeAsync((unused) -> storeGroup(entity), composingService)
 					.thenRunAsync(() -> messageStatisticsCollector.updateMessageBatchStatistics(bookId,
 																								pageId.getName(),
 																								entity.getGroup(),
@@ -375,7 +399,7 @@ public class MessagesWorker extends Worker
 																							entity.getGroup(),
 																							meta), composingService)
 					.thenRunAsync(() -> updateMessageWriteMetrics(entity, bookId), composingService);
-		});
+		}, composingService);
 	}
 
 	public long getBoundarySequence(String sessionAlias, Direction direction, BookInfo book, boolean first)
