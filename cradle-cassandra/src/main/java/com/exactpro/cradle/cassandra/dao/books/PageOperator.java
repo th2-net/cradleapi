@@ -42,8 +42,11 @@ public interface PageOperator {
 			    "(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") > (:startDate, :startTime)")
 	PagingIterable<PageEntity> get(String book, LocalDate startDate, LocalTime startTime,
 								   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
+
 	@Update(nullSavingStrategy = NullSavingStrategy.SET_TO_NULL)
+	ResultSet hardUpdate(PageEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+	@Update(nullSavingStrategy = NullSavingStrategy.DO_NOT_SET)
 	ResultSet update(PageEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
