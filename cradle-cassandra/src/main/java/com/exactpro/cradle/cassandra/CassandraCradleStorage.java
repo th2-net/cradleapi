@@ -248,7 +248,7 @@ public class CassandraCradleStorage extends CradleStorage
 				PageNameEntity nameEntity = new PageNameEntity(bookName, pageName, page.getStarted(), page.getComment(), page.getEnded());
 				if (!pageNameOp.writeNew(nameEntity, writeAttrs).wasApplied())
 					throw new IOException("Query to insert page '"+nameEntity.getName()+"' was not applied. Probably, page already exists");
-				PageEntity entity = new PageEntity(bookName, pageName, page.getStarted(), page.getComment(), page.getEnded());
+				PageEntity entity = new PageEntity(bookName, pageName, page.getStarted(), page.getComment(), page.getEnded(), page.getUpdated());
 				pageOp.write(entity, writeAttrs);
 			}
 			catch (IOException e)
@@ -1234,7 +1234,7 @@ public class CassandraCradleStorage extends CradleStorage
 						Instant.now(),
 						null);
 
-				ResultSet rs = pageOperator.hardUpdate(updatedEntity, writeAttrs);
+				ResultSet rs = pageOperator.update(updatedEntity, writeAttrs);
 				if (!rs.wasApplied()) {
 					throw new CradleStorageException(String.format("Update wasn't applied to page %s in book %s",
 							updatedEntity.getName(),

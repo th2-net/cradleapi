@@ -44,9 +44,6 @@ public interface PageOperator {
 								   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Update(nullSavingStrategy = NullSavingStrategy.SET_TO_NULL)
-	ResultSet hardUpdate(PageEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-
-	@Update(nullSavingStrategy = NullSavingStrategy.DO_NOT_SET)
 	ResultSet update(PageEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
