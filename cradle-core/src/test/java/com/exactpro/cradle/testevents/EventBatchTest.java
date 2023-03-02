@@ -16,7 +16,9 @@
 
 package com.exactpro.cradle.testevents;
 
+import com.exactpro.cradle.*;
 import com.exactpro.cradle.serialization.EventsSizeCalculator;
+import org.assertj.core.api.Assertions;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -32,9 +34,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.Direction;
-import com.exactpro.cradle.TestUtils;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -286,7 +285,20 @@ public class EventBatchTest
 	{
 		try
 		{
-			batch.addTestEvent(builder.build());
+			var singleEvent = builder.build();
+			BookInfo bookInfo = new BookInfo(
+					BOOK,
+					null,
+					null,
+					START_TIMESTAMP,
+					Collections.singleton(new PageInfo(
+							new PageId(null, null),
+							START_TIMESTAMP,
+							START_TIMESTAMP,
+							null)));
+			TestEventUtils.validateTestEvent(singleEvent, bookInfo);
+			batch.addTestEvent(singleEvent);
+			Assertions.fail("Invalid message passed validation");
 		}
 		catch (CradleStorageException e)
 		{

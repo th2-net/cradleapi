@@ -1210,13 +1210,38 @@ public class CassandraCradleStorage extends CradleStorage
 		//remove page name
 		operators.getPageNameOperator().remove(book, page, writeAttrs);
 
+		PageOperator pageOperator = operators.getPageOperator();
 		//remove page
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(pageInfo.getStarted());
-		operators.getPageOperator().remove(book,
-				ldt.toLocalDate(), 
-				ldt.toLocalTime(), 
-				Instant.now(), 
-				writeAttrs);
+		if (pageInfo.getStarted().isAfter(Instant.now())) {
+			operators.getPageOperator().remove(book, ldt.toLocalDate(), ldt.toLocalTime(), writeAttrs);
+			/*
+				New last page might have non-null end,
+				need to update that
+			 */
+			PageEntity entity = pageOperator.getPageForLessOrEqual(book, LocalDate.MAX, LocalTime.MAX, readAttrs).one();
+			if (entity != null && (entity.getEndDate() != null || entity.getEndTime() != null)) {
+				PageEntity updatedEntity = new PageEntity(
+						entity.getBook(),
+						entity.getStartDate(),
+						entity.getStartTime(),
+						entity.getName(),
+						entity.getComment(),
+						null,
+						null,
+						Instant.now(),
+						null);
+
+				pageOperator.update(updatedEntity, writeAttrs);
+			}
+		} else {
+			pageOperator.setRemovedStatus(book,
+					ldt.toLocalDate(),
+					ldt.toLocalTime(),
+					Instant.now(),
+					writeAttrs);
+		}
+
 	}
 
 	private void removeEntityStatistics(PageId pageId) {

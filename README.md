@@ -35,7 +35,7 @@ repositories {
 To use Cradle API, add the following dependency to your project:
 ```
 dependencies {
-	implementation 'com.exactpro.th2:cradle-cassandra:2.12.0'
+	implementation 'com.exactpro.th2:cradle-cassandra:5.0.0'
 	...
 }
 ```
@@ -49,57 +49,112 @@ The main classes are `CradleManager` and `CradleStorage`.
 `CradleManager` initializes Cradle API to work with particular database and provides access to `CradleStorage` object bound to that database.
 
 Cradle API uses DataStax Java driver to connect to Cassandra. To manage the additional driver settings you can put application.conf file
-into the root directory of your project. The structure of this file is described in https://github.com/datastax/java-driver/blob/4.0.1/core/src/main/resources/reference.conf
+into the root directory of your project. The structure of this file is described in https://github.com/datastax/java-driver/blob/4.x/core/src/main/resources/reference.conf
 
 Example of Cradle API initialization to work with Cassandra:
 ```java
-CassandraConnectionSettings settings = new CassandraConnectionSettings("datacenter1", "cassandra-host", 9042, "cassandra-keyspace");
-settings.setUsername("cassandra-username");
-settings.setPassword("cassandra-password");
+CassandraConnectionSettings connectionSettings = new CassandraConnectionSettings(CASSANDRA_HOST, CASSANDRA_PORT, DATACENTER);
+connectionSettings.setUsername(CASSANDRA_USERNAME);
+connectionSettings.setPassword(CASSANDRA_PASSWORD);
 
-CassandraConnection connection = new CassandraConnection(settings);
+CassandraStorageSettings storageSettings = new CassandraStorageSettings();
+storageSettings.setKeyspace(CASSANDRA_KEYSPACE);
+storageSettings.setResultPageSize(FETCH_PAGE_SIZE);
 
-CradleManager manager = new CassandraCradleManager(connection);
-manager.init("instance1");
-
+CradleManager manager = new CassandraCradleManager(connectionSettings, storageSettings, true);
 CradleStorage storage = manager.getStorage();
+
+// Operations on cradle can be performed using storage object.
+Collection<BookInfo> books = storage.getBooks();
+
+// After completing work with cradle you should close manager
+manager.close();
 ```
 
 `CassandraConnectionSettings` object is used to define Cassandra host to connect to, username and password to use and other connection settings.
 
-`CassandraCradleManager` will establish the connection when `init()` method is called. Parameter of `init()` method ("instance1") is a name of Cradle instance to use when writing/reading data. It is used to divide data within one database (in case of Cassandra, within one Cassandra keyspace). So, if multiple applications/services need to work with the same data in Cradle, they should use the same instance name.
+`CassandraCradleManager` will establish the connection when constructed.
 
 Once initialized, `CradleStorage` can be used to write/read data:
 ```java
-String streamName = "stream1";
+String bookName = "new_test_book";
+String groupName = "group1";
+String scopeName = "scope1";
 Direction direction = Direction.FIRST;
-Instant now = Instant.now();
-long index = now.toEpochMilli();
+long seq = 4588290;
+BookId bookId = new BookId(bookName);
 
-//Writing a message
-StoredMessageBatch batch = new StoredMessageBatch();
-batch.addMessage(new MessageToStoreBuilder().streamName(streamName).direction(direction).index(index).timestamp(now)
-		.content("Message1".getBytes()).build());
-storage.storeMessageBatch(batch);
+// Writing a message batch
+// Messages in the batch must be from the same book, session alias and direction can be mixed
+MessageToStore message1 = new MessageToStoreBuilder()
+                .bookId(bookId)
+                .sessionAlias("session1")
+                .direction(Direction.FIRST)
+                .timestamp(Instant.now())
+                .sequence(4588290)
+                .content("Message from code example".getBytes(StandardCharsets.UTF_8))
+                .build();
+MessageToStore message2 = new MessageToStoreBuilder()
+                .bookId(bookId)
+                .sessionAlias("session2")
+                .direction(Direction.SECOND)
+                .timestamp(Instant.now())
+                .sequence(29098023)
+                .content("Yet another message from code example".getBytes(StandardCharsets.UTF_8))
+                .build();
+
+GroupedMessageBatchToStore messageBatch = storage.getEntitiesFactory().groupedMessageBatch(groupName);
+messageBatch.addMessage(message1);
+messageBatch.addMessage(message2);
+storage.storeGroupedMessageBatch(messageBatch);
+
 
 //Reading messages by filter
-StoredMessageFilter filter = new StoredMessageFilterBuilder()
-		.streamName().isEqualTo(streamName)
-		.direction().isEqualTo(direction)
-		.limit(100)
-		.build();
-for (StoredMessage msg : storage.getMessages(filter)) {
-	System.out.println(msg.getId()+" - "+msg.getTimestamp());
+MessageFilter messageFilter = new MessageFilterBuilder()
+                .bookId(bookId)
+                .sessionAlias("session1")
+                .direction(Direction.FIRST)
+                .limit(100)
+                .build();
+for (StoredMessage msg : storage.getMessages(messageFilter).asIterable()) {
+    System.out.println(msg.getId() + " - " + msg.getTimestamp());
 }
 
-//Writing a test event
-TestEventToStore event = new TestEventToStoreBuilder().id(new StoredTestEventId(UUID.randomUUID().toString()))
-		.name("Test event 1").startTimestamp(now).content("Test content".getBytes()).build();
-storage.storeTestEvent(StoredTestEvent.newStoredTestEventSingle(event));
+//Writing a test event batch
+TestEventBatchToStore eventBatch = storage.getEntitiesFactory().testEventBatchBuilder()
+                .id(bookId, scopeName, Instant.now(), UUID.randomUUID().toString())
+                .name("Parent Event")
+                .build();
+        
+TestEventSingleToStore event1 = new TestEventSingleToStoreBuilder()
+                .id(bookId, scopeName, Instant.now(), UUID.randomUUID().toString())
+                .name("Test event 1")
+                .content("Test event from code example".getBytes(StandardCharsets.UTF_8))
+                .success(true)
+                .type("main")
+                .build();
+TestEventSingleToStore event2 = new TestEventSingleToStoreBuilder()
+                .id(bookId, scopeName, Instant.now(), UUID.randomUUID().toString())
+                .name("Test event 2")
+                .content("Test event from code example".getBytes(StandardCharsets.UTF_8))
+                .success(false)
+                .type("main")
+                .build();
 
-//Reading a test event
-StoredTestEventWrapper storedEvent = storage.getTestEvent(event.getId());
-System.out.println(storedEvent.getName()+" - "+storedEvent.getStartTimestamp());
+eventBatch.addTestEvent(event1);
+eventBatch.addTestEvent(event2);
+storage.storeTestEvent(eventBatch);
+
+//Reading a test event batches
+TestEventFilter eventFilter = new TestEventFilterBuilder()
+                .bookId(bookId)
+                .scope(scopeName)
+                .startTimestampTo().isLessThanOrEqualTo(Instant.now())
+                .limit(100)
+                .build();
+for (StoredTestEvent evt : storage.getTestEvents(eventFilter).asIterable()) {
+    System.out.println(evt.getId()+" - "+evt.asBatch().getStartTimestamp());
+}
 ```
 
 # Data in Cradle
@@ -116,15 +171,15 @@ IDs for stored data are generated outside of Cradle and are supplied with the ob
 
 Messages are stored in batches, i.e. if multiple messages arrive in a short period of time, they can be put in a batch and saved as one record in Cradle. Or you can have one message per batch.
 
-Each message has an ID that consists of `stream_name`:`direction`:`message_index`.
+Batches have group name and can contain different sessions and directions.
 
-Stream name is similar to session alias, i.e. is a name for a pair of connected endpoints that exchange messages.
+Each message has an ID that consists of `sessaion_alias`:`direction`:`message_index`.
 
 Direction is "first" or "second" depending on endpoint that generated the message.
 
 Message index is a number, incremented for each new message within the same stream and direction.
 
-I.e. if for the stream name="stream1" and direction="first" the last message index was 10, the next message index for this stream name and direction is expected to be 11. It can be different, but greater than 10.
+I.e. if for the session alias = "stream1" and direction="first" the last message index was 10, the next message index for this session and direction is expected to be 11. It can be different, but greater than 10.
 
 Messages can have metadata as a set of key-value string pairs, providing additional details about the message. Metadata cannot be used in any search requests or filtering.
 
@@ -134,6 +189,6 @@ Test events in Cradle can be stored separately or in batches, if an event has co
 
 A test event can have a reference to its parent, thus forming a hierarchical structure. Events that started the test execution have no parent and are called "root test events".
 
-Events in a batch can have a reference only to the parent of the batch or other test events from the same batch. Events outside of the batch should not reference events within the batch.
+Events in a batch can have a reference only to the parent of the batch or other test events from the same batch. Events outside the batch should not reference events within the batch.
 
 Test events have mandatory parameters that are verified when storing an event. These are: id, name (for non-batch events), start timestamp.
