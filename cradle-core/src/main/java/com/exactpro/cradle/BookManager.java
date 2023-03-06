@@ -1,17 +1,17 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ *  Copyright 2023 Exactpro (Exactpro Systems Limited)
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  */
 
 package com.exactpro.cradle;
@@ -19,15 +19,19 @@ package com.exactpro.cradle;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import com.exactpro.cradle.utils.CradleStorageException;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class BookManager
 {
 	private final static Logger logger = LoggerFactory.getLogger(BookManager.class);
+
+	private static final ThreadFactory THREAD_FACTORY = new ThreadFactoryBuilder().setNameFormat("cradle-book-manager-%d").build();
 	private final BookCache bookCache;
 	private ScheduledExecutorService executorService;
 	private Long refreshIntervalMillis;
@@ -47,7 +51,7 @@ public class BookManager
 			return;
 		}
 
-		executorService = Executors.newScheduledThreadPool(1);
+		executorService = Executors.newScheduledThreadPool(1, THREAD_FACTORY);
 		logger.debug("Registered refresher task for cached books");
 		executorService.scheduleWithFixedDelay(new Refresher(bookCache), refreshIntervalMillis, refreshIntervalMillis, TimeUnit.MILLISECONDS);
 	}
