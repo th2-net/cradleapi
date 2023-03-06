@@ -141,6 +141,7 @@ public class CassandraStorageSettings {
         this.groupsCacheSize = settings.getGroupsCacheSize();
         this.sessionStatisticsCacheSize = settings.getSessionStatisticsCacheSize();
         this.counterPersistenceInterval = settings.getCounterPersistenceInterval();
+        this.composingServiceThreads = settings.getComposingServiceThreads();
 		this.bookRefreshIntervalMillis = settings.getBookRefreshIntervalMillis();
         this.eventBatchDurationMillis = settings.getEventBatchDurationMillis();
         this.eventBatchDurationCacheSize = settings.getEventBatchDurationCacheSize();
