@@ -1,17 +1,17 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ *  Copyright 2023 Exactpro (Exactpro Systems Limited)
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  */
 
 package com.exactpro.cradle.cassandra;
@@ -20,6 +20,8 @@ import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.cassandra.connection.NetworkTopologyStrategy;
 import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
+
+import static com.exactpro.cradle.CradleStorage.DEFAULT_COMPOSING_SERVICE_THREADS;
 
 public class CassandraStorageSettings {
     public static final String SCHEMA_VERSION = "5.3.0";
@@ -52,7 +54,7 @@ public class CassandraStorageSettings {
             schemaVersion;
     private int keyspaceReplicationFactor;
 
-    private int maxParallelQueries,
+    private int maxParallelQueries, //FIXME: remove
             resultPageSize,
             maxMessageBatchSize,
             maxUncompressedMessageBatchSize,
@@ -66,7 +68,8 @@ public class CassandraStorageSettings {
             pageGroupsCacheSize,
             groupsCacheSize,
             eventBatchDurationCacheSize,
-            counterPersistenceInterval;
+            counterPersistenceInterval,
+            composingServiceThreads;
 
     private SelectExecutionPolicy multiRowResultExecutionPolicy, singleRowResultExecutionPolicy;
 
@@ -101,6 +104,7 @@ public class CassandraStorageSettings {
         this.scopesCacheSize = DEFAULT_SCOPES_CACHE_SIZE;
         this.pageScopesCacheSize = DEFAULT_PAGE_SCOPES_CACHE_SIZE;
         this.counterPersistenceInterval = DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS;
+        this.composingServiceThreads = DEFAULT_COMPOSING_SERVICE_THREADS;
 		this.bookRefreshIntervalMillis = DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS;
         this.sessionsCacheSize = DEFAULT_SESSIONS_CACHE_SIZE;
         this.sessionStatisticsCacheSize = DEFAULT_SESSION_STATISTICS_CACHE_SIZE;
@@ -300,6 +304,14 @@ public class CassandraStorageSettings {
 
     public void setCounterPersistenceInterval(int counterPersistenceInterval) {
         this.counterPersistenceInterval = counterPersistenceInterval;
+    }
+
+    public int getComposingServiceThreads() {
+        return composingServiceThreads;
+    }
+
+    public void setComposingServiceThreads(int composingServiceThreads) {
+        this.composingServiceThreads = composingServiceThreads;
     }
 
     public SelectExecutionPolicy getMultiRowResultExecutionPolicy() {
