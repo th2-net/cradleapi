@@ -51,7 +51,8 @@ public abstract class CradleStorage
 	public static final ZoneOffset TIMEZONE_OFFSET = ZoneOffset.UTC;
 	public static final long EMPTY_MESSAGE_INDEX = -1L;
 	public static final int DEFAULT_MAX_MESSAGE_BATCH_SIZE = 1024*1024,
-			DEFAULT_MAX_TEST_EVENT_BATCH_SIZE = DEFAULT_MAX_MESSAGE_BATCH_SIZE;
+			DEFAULT_MAX_TEST_EVENT_BATCH_SIZE = DEFAULT_MAX_MESSAGE_BATCH_SIZE,
+			DEFAULT_COMPOSING_SERVICE_THREADS = 5;
 
 	protected BookManager bookManager;
 	private volatile boolean initialized = false,
@@ -60,16 +61,14 @@ public abstract class CradleStorage
 	protected final boolean ownedComposingService;
 	protected final CradleEntitiesFactory entitiesFactory;
 
-	public CradleStorage(ExecutorService composingService, int maxMessageBatchSize,
-			int maxTestEventBatchSize) throws CradleStorageException
+	public CradleStorage(ExecutorService composingService, int composingServiceThreads, int maxMessageBatchSize,
+						 int maxTestEventBatchSize) throws CradleStorageException
 	{
-		if (composingService == null)
-		{
+		if (composingService == null) {
 			ownedComposingService = true;
-			this.composingService = Executors.newFixedThreadPool(5);
-		}
-		else
-		{
+			this.composingService = Executors.newFixedThreadPool(composingServiceThreads);
+			logger.info("Created composing service executor with {} threads", composingServiceThreads);
+		} else {
 			ownedComposingService = false;
 			this.composingService = composingService;
 		}
@@ -79,8 +78,8 @@ public abstract class CradleStorage
 	
 	public CradleStorage() throws CradleStorageException
 	{
-		this(null, DEFAULT_MAX_MESSAGE_BATCH_SIZE,
-				DEFAULT_MAX_TEST_EVENT_BATCH_SIZE);
+		this(null, DEFAULT_COMPOSING_SERVICE_THREADS,
+				DEFAULT_MAX_MESSAGE_BATCH_SIZE, DEFAULT_MAX_TEST_EVENT_BATCH_SIZE);
 	}
 	
 
