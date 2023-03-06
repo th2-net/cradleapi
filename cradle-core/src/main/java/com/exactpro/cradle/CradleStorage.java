@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -583,20 +584,27 @@ public abstract class CradleStorage
 		String id = String.format("%s:%s", batch.getBookId(), batch.getFirstTimestamp().toString());
 		logger.debug("Storing message batch {} grouped by {} asynchronously", id, groupName);
 
-		var batches = paginateBatch(batch);
-
-		CompletableFuture<Void>[] futures = new CompletableFuture[batches.size()];
-		int i = 0;
-		for (var b : batches) {
-			CompletableFuture<Void> future;
+		CompletableFuture<Void> result = CompletableFuture.supplyAsync(() -> {
 			try {
-				future = doStoreGroupedMessageBatchAsync(b.getKey(), b.getValue());
+				return paginateBatch(batch);
 			} catch (Exception e) {
-				future = CompletableFuture.failedFuture(e);
+				throw new CompletionException(e);
 			}
-			futures[i++] = future;
-		}
-		CompletableFuture<Void> result = CompletableFuture.allOf(futures);
+		}, composingService).thenCompose((batches) -> {
+			CompletableFuture<Void>[] futures = new CompletableFuture[batches.size()];
+			int i = 0;
+			for (var b : batches) {
+				CompletableFuture<Void> future;
+				try {
+					future = doStoreGroupedMessageBatchAsync(b.getKey(), b.getValue());
+				} catch (Exception e) {
+					future = CompletableFuture.failedFuture(e);
+				}
+				futures[i++] = future;
+			}
+			return CompletableFuture.allOf(futures);
+		});
+
 		result.whenCompleteAsync((r, error) -> {
 			if (error != null)
 				logger.error("Error while storing message batch "+id+" grouped by "+groupName+" asynchronously", error);
