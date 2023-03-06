@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,32 @@
 
 package com.exactpro.cradle.cassandra.workers;
 
+import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.BookInfo;
+import com.exactpro.cradle.EntityType;
+import com.exactpro.cradle.PageId;
+import com.exactpro.cradle.cassandra.EventBatchDurationWorker;
+import com.exactpro.cradle.cassandra.counters.BookStatisticsRecordsCaches;
+import com.exactpro.cradle.cassandra.counters.EntityStatisticsCollector;
+import com.exactpro.cradle.cassandra.dao.CassandraOperators;
+import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
+import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
+import com.exactpro.cradle.cassandra.dao.testevents.*;
+import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
+import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
+import com.exactpro.cradle.resultset.CradleResultSet;
+import com.exactpro.cradle.serialization.SerializedEntityMetadata;
+import com.exactpro.cradle.testevents.StoredTestEvent;
+import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.TestEventFilter;
+import com.exactpro.cradle.testevents.TestEventToStore;
+import com.exactpro.cradle.utils.CradleIdException;
+import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.TimeUtils;
+import io.prometheus.client.Counter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -24,30 +50,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.zip.DataFormatException;
-
-import com.exactpro.cradle.*;
-import com.exactpro.cradle.cassandra.EventBatchDurationWorker;
-import com.exactpro.cradle.cassandra.counters.BookStatisticsRecordsCaches;
-import com.exactpro.cradle.cassandra.counters.EntityStatisticsCollector;
-import com.exactpro.cradle.cassandra.dao.testevents.*;
-import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityConverter;
-import com.exactpro.cradle.serialization.SerializedEntityMetadata;
-import com.exactpro.cradle.utils.CradleIdException;
-import com.exactpro.cradle.utils.CradleStorageException;
-import io.prometheus.client.Counter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.exactpro.cradle.cassandra.dao.CassandraOperators;
-import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
-import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
-import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
-import com.exactpro.cradle.resultset.CradleResultSet;
-import com.exactpro.cradle.testevents.StoredTestEvent;
-import com.exactpro.cradle.testevents.StoredTestEventId;
-import com.exactpro.cradle.testevents.TestEventFilter;
-import com.exactpro.cradle.testevents.TestEventToStore;
-import com.exactpro.cradle.utils.TimeUtils;
 
 public class EventsWorker extends Worker
 {
@@ -105,7 +107,7 @@ public class EventsWorker extends Worker
 			} catch (Exception e) {
 				throw new CompletionException(e);
 			}
-		}).thenComposeAsync(serializedEntity -> {
+		}, composingService).thenCompose(serializedEntity -> {
 			TestEventEntity entity = serializedEntity.getEntity();
 			List<SerializedEntityMetadata> meta = serializedEntity.getSerializedEntityData().getSerializedEntityMetadata();
 
@@ -130,9 +132,10 @@ public class EventsWorker extends Worker
 						} catch (CradleStorageException e) {
 							logger.error("Exception while updating max duration {}", e.getMessage());
 						}
-					})
-					.thenRunAsync(() -> entityStatisticsCollector.updateEntityBatchStatistics(pageId.getBookId(), key, meta), composingService)
-					.thenRunAsync(() -> updateEventWriteMetrics(entity, pageId.getBookId()), composingService);
+
+						entityStatisticsCollector.updateEntityBatchStatistics(pageId.getBookId(), key, meta);
+						updateEventWriteMetrics(entity, pageId.getBookId());
+					}, composingService);
 		});
 	}
 	
