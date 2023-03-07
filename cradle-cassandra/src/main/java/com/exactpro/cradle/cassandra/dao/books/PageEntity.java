@@ -87,7 +87,7 @@ public class PageEntity {
 		this.removed = removed;
 	}
 	
-	public PageEntity(String book, String name, Instant started, String comment, Instant ended)	{
+	public PageEntity(String book, String name, Instant started, String comment, Instant ended, Instant updated)	{
 
 		LocalDateTime startedLdt = TimeUtils.toLocalTimestamp(started);
 		
@@ -96,8 +96,8 @@ public class PageEntity {
 		this.startDate = startedLdt.toLocalDate();
 		this.startTime = startedLdt.toLocalTime();
 		this.comment = comment;
-		updated = null;
-		removed = null;
+		this.updated = updated;
+		this.removed = null;
 		
 		if (ended != null) {
 			LocalDateTime endedLdt = TimeUtils.toLocalTimestamp(ended);
@@ -110,7 +110,7 @@ public class PageEntity {
 	}
 	
 	public PageEntity(PageInfo pageInfo) {
-		this(pageInfo.getId().getBookId().getName(), pageInfo.getId().getName(), pageInfo.getStarted(), pageInfo.getComment(), pageInfo.getEnded());
+		this(pageInfo.getId().getBookId().getName(), pageInfo.getId().getName(), pageInfo.getStarted(), pageInfo.getComment(), pageInfo.getEnded(), pageInfo.getUpdated());
 	}
 	
 	
