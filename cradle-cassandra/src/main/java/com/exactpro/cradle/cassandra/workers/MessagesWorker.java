@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -246,7 +246,7 @@ public class MessagesWorker extends Worker
 				}, composingService);
 	}
 
-	public CompletableFuture<PageGroupEntity> storePageGroup (GroupedMessageBatchEntity groupedMessageBatchEntity) {
+	private CompletableFuture<PageGroupEntity> storePageGroup (GroupedMessageBatchEntity groupedMessageBatchEntity) {
 		CassandraOperators operators = getOperators();
 		PageGroupEntity pageGroupEntity = new PageGroupEntity(
 				groupedMessageBatchEntity.getBook(),
@@ -260,14 +260,14 @@ public class MessagesWorker extends Worker
 
 		logger.debug("Writing group '{}' for page '{}'", pageGroupEntity.getGroup(), pageGroupEntity.getPage());
 		return operators.getPageGroupsOperator().write(pageGroupEntity, writeAttrs)
-				.whenComplete((result, e) -> {
+				.whenCompleteAsync((result, e) -> {
 					if (e == null) {
 						operators.getPageGroupCache().store(pageGroupEntity);
 					}
-				});
+				}, composingService);
 	}
 
-	public CompletableFuture<GroupEntity> storeGroup (GroupedMessageBatchEntity groupedMessageBatchEntity) {
+	private CompletableFuture<GroupEntity> storeGroup (GroupedMessageBatchEntity groupedMessageBatchEntity) {
 		CassandraOperators operators = getOperators();
 		GroupEntity groupEntity = new GroupEntity(groupedMessageBatchEntity.getBook(), groupedMessageBatchEntity.getGroup());
 
@@ -278,11 +278,11 @@ public class MessagesWorker extends Worker
 
 		logger.debug("Writing group '{}'", groupEntity.getGroup());
 		return operators.getGroupsOperator().write(groupEntity, writeAttrs)
-				.whenComplete((result, e) -> {
+				.whenCompleteAsync((result, e) -> {
 					if (e == null) {
 						operators.getGroupCache().store(groupEntity);
 					}
-				});
+				}, composingService);
 	}
 
 	public CompletableFuture<PageSessionEntity> storePageSession(MessageBatchToStore batch, PageId pageId)
@@ -328,22 +328,24 @@ public class MessagesWorker extends Worker
 			} catch (Exception e) {
 				throw new CompletionException(e);
 			}
-		}).thenComposeAsync(serializedEntity -> {
+		}, composingService).thenCompose(serializedEntity -> {
 			MessageBatchEntity entity = serializedEntity.getEntity();
 			List<SerializedEntityMetadata> meta = serializedEntity.getSerializedEntityData().getSerializedEntityMetadata();
 
 			return mbOperator.write(entity, writeAttrs)
-					.thenRunAsync(() -> messageStatisticsCollector.updateMessageBatchStatistics(bookId,
-																								entity.getPage(),
-																								entity.getSessionAlias(),
-																								entity.getDirection(),
-																								meta), composingService)
-					.thenRunAsync(() -> sessionStatisticsCollector.updateSessionStatistics(bookId,
-																							entity.getPage(),
-																							SessionRecordType.SESSION,
-																							entity.getSessionAlias(),
-																							meta), composingService)
-					.thenRunAsync(() -> updateMessageWriteMetrics(entity, bookId), composingService);
+					.thenRunAsync(() -> {
+						messageStatisticsCollector.updateMessageBatchStatistics(bookId,
+																				entity.getPage(),
+																				entity.getSessionAlias(),
+																				entity.getDirection(),
+																				meta);
+						sessionStatisticsCollector.updateSessionStatistics(bookId,
+																				entity.getPage(),
+																				SessionRecordType.SESSION,
+																				entity.getSessionAlias(),
+																				meta);
+						updateMessageWriteMetrics(entity, bookId);
+					}, composingService);
 		});
 	}
 
@@ -357,26 +359,29 @@ public class MessagesWorker extends Worker
 			} catch (Exception e) {
 				throw new CompletionException(e);
 			}
-		}).thenComposeAsync(serializedEntity -> {
+		}, composingService).thenCompose(serializedEntity -> {
 			GroupedMessageBatchEntity entity = serializedEntity.getEntity();
 			List<SerializedEntityMetadata> meta = serializedEntity.getSerializedEntityData().getSerializedEntityMetadata();
 
 			return gmbOperator.write(entity, writeAttrs)
-					.thenComposeAsync((unused) -> storePageGroup(entity))
-					.thenComposeAsync((unused) -> storeGroup(entity))
-					.thenRunAsync(() -> messageStatisticsCollector.updateMessageBatchStatistics(bookId,
-																								pageId.getName(),
-																								entity.getGroup(),
-																								"",
-																								meta), composingService)
-					.thenRunAsync(() -> sessionStatisticsCollector.updateSessionStatistics(bookId,
-																							pageId.getName(),
-																							SessionRecordType.SESSION_GROUP,
-																							entity.getGroup(),
-																							meta), composingService)
-					.thenRunAsync(() -> updateMessageWriteMetrics(entity, bookId), composingService);
+                    .thenRunAsync(() -> storePageGroup(entity), composingService)
+                    .thenRunAsync(() -> storeGroup(entity), composingService)
+					.thenRunAsync(() -> {
+						messageStatisticsCollector.updateMessageBatchStatistics(bookId,
+																				pageId.getName(),
+																				entity.getGroup(),
+																				"",
+																				meta);
+						sessionStatisticsCollector.updateSessionStatistics(bookId,
+																				pageId.getName(),
+																				SessionRecordType.SESSION_GROUP,
+																				entity.getGroup(),
+																				meta);
+						updateMessageWriteMetrics(entity, bookId);
+					}, composingService);
 		});
 	}
+
 
 	public long getBoundarySequence(String sessionAlias, Direction direction, BookInfo book, boolean first)
 			throws CradleStorageException
