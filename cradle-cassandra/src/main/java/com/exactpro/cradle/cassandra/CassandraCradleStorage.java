@@ -275,7 +275,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected void doRemovePage(PageInfo page) {
+	protected void doRemovePage(PageInfo page) throws CradleStorageException {
 		PageId pageId = page.getId();
 
 		removeSessionData(pageId);
