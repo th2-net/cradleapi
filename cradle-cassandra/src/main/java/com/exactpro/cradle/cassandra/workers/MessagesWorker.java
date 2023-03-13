@@ -58,10 +58,14 @@ public class MessagesWorker extends Worker
 {
 	private static final Logger logger = LoggerFactory.getLogger(MessagesWorker.class);
 
-	private static final Counter MESSAGE_READ_METRIC = Counter.build().name("cradle_message_readed")
+	private static final Counter MESSAGE_READ_METRIC = Counter.build().name("cradle_message_read_total")
 			.help("Fetched messages").labelNames(BOOK_ID, SESSION_ALIAS, DIRECTION).register();
-	private static final Counter MESSAGE_WRITE_METRIC = Counter.build().name("cradle_message_stored")
+	private static final Counter MESSAGE_STORE_METRIC = Counter.build().name("cradle_message_stored_total")
 			.help("Stored messages").labelNames(BOOK_ID, SESSION_ALIAS, DIRECTION).register();
+	private static final Counter MESSAGE_STORE_UNCOMPRESSED_BYTES = Counter.build().name("cradle_message_stored_uncompressed_bytes_total")
+			.help("Stored uncompressed message bytes").labelNames(BOOK_ID, SESSION_ALIAS).register();
+	private static final Counter MESSAGE_STORE_COMPRESSED_BYTES = Counter.build().name("cradle_message_stored_compressed_bytes_total")
+			.help("Stored compressed message bytes").labelNames(BOOK_ID, SESSION_ALIAS).register();
 
 	private final MessageStatisticsCollector messageStatisticsCollector;
 	private final SessionStatisticsCollector sessionStatisticsCollector;
@@ -116,18 +120,31 @@ public class MessagesWorker extends Worker
 				.inc(batch.getMessageCount());
 	}
 
-	private static void updateMessageWriteMetrics(MessageBatchEntity entity, BookId bookId)
-	{
-		MESSAGE_WRITE_METRIC
+	private static void updateMessageWriteMetrics(MessageBatchEntity entity, BookId bookId) {
+		MESSAGE_STORE_METRIC
 				.labels(bookId.getName(), entity.getSessionAlias(), entity.getDirection())
 				.inc(entity.getMessageCount());
+
+		MESSAGE_STORE_UNCOMPRESSED_BYTES
+				.labels(bookId.getName(), entity.getSessionAlias())
+				.inc(entity.getUncompressedContentSize());
+		MESSAGE_STORE_COMPRESSED_BYTES
+				.labels(bookId.getName(), entity.getSessionAlias())
+				.inc(entity.getContentSize());
+
 	}
 
-	private static void updateMessageWriteMetrics(GroupedMessageBatchEntity entity, BookId bookId)
-	{
-		MESSAGE_WRITE_METRIC
+	private static void updateMessageWriteMetrics(GroupedMessageBatchEntity entity, BookId bookId) {
+		MESSAGE_STORE_METRIC
 				.labels(bookId.getName(), entity.getGroup(), "")
 				.inc(entity.getMessageCount());
+
+		MESSAGE_STORE_UNCOMPRESSED_BYTES
+				.labels(bookId.getName(), entity.getGroup())
+				.inc(entity.getUncompressedContentSize());
+		MESSAGE_STORE_COMPRESSED_BYTES
+				.labels(bookId.getName(), entity.getGroup())
+				.inc(entity.getContentSize());
 	}
 
 	public CompletableFuture<CradleResultSet<StoredMessageBatch>> getMessageBatches(MessageFilter filter, BookInfo book)

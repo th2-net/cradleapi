@@ -55,10 +55,14 @@ public class EventsWorker extends Worker
 {
 	private static final Logger logger = LoggerFactory.getLogger(EventsWorker.class);
 
-	private static final Counter EVENTS_READ_METRIC = Counter.build().name("cradle_test_events_readed")
+	private static final Counter EVENTS_READ_METRIC = Counter.build().name("cradle_test_events_read_total")
 			.help("Fetched test events").labelNames(BOOK_ID, SCOPE).register();
-	private static final Counter EVENTS_STORE_METRIC = Counter.build().name("cradle_test_events_stored")
+	private static final Counter EVENTS_STORE_METRIC = Counter.build().name("cradle_test_events_stored_total")
 			.help("Stored test events").labelNames(BOOK_ID, SCOPE).register();
+	private static final Counter EVENTS_STORE_UNCOMPRESSED_BYTES = Counter.build().name("cradle_test_events_stored_uncompressed_bytes_total")
+			.help("Stored uncompressed event bytes").labelNames(BOOK_ID, SCOPE).register();
+	private static final Counter EVENTS_STORE_COMPRESSED_BYTES = Counter.build().name("cradle_test_events_stored_compressed_bytes_total")
+			.help("Stored compressed event bytes").labelNames(BOOK_ID, SCOPE).register();
 
 	private final EntityStatisticsCollector entityStatisticsCollector;
 	private final EventBatchDurationWorker durationWorker;
@@ -90,10 +94,14 @@ public class EventsWorker extends Worker
 				.inc(testEvent.isSingle() ? 1 : testEvent.asBatch().getTestEventsCount());
 	}
 
-	private static void updateEventWriteMetrics(TestEventEntity entity, BookId bookId)
-	{
+	private static void updateEventWriteMetrics(TestEventEntity entity, BookId bookId) {
 		EVENTS_STORE_METRIC.labels(bookId.getName(), entity.getScope())
 				.inc(entity.isEventBatch() ? entity.getEventCount() : 1);
+
+		EVENTS_STORE_UNCOMPRESSED_BYTES.labels(bookId.getName(), entity.getScope())
+				.inc(entity.getUncompressedContentSize());
+		EVENTS_STORE_COMPRESSED_BYTES.labels(bookId.getName(), entity.getScope())
+				.inc(entity.getContentSize());
 	}
 
 	public CompletableFuture<Void> storeEvent(TestEventToStore event, PageId pageId)
