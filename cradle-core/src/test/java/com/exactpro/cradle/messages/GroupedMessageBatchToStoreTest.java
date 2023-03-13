@@ -321,39 +321,7 @@ public class GroupedMessageBatchToStoreTest
 		Assert.assertEquals(msg.getId(), new StoredMessageId(book, sessionAlias, direction, timestamp, seq+1));
 	}
 	
-	@Test
-	public void batchShowsLastTimestamp() throws CradleStorageException
-	{
-		Instant timestamp = Instant.ofEpochSecond(1000);
-		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE);
-		batch.addMessage(builder
-				.bookId(book)
-				.sessionAlias(sessionAlias)
-				.direction(Direction.FIRST)
-				.sequence(1)
-				.timestamp(timestamp.plusSeconds(20))
-				.content(messageContent)
-				.build());
-		
-		batch.addMessage(builder
-				.bookId(book)
-				.sessionAlias(sessionAlias)
-				.direction(Direction.SECOND)
-				.timestamp(timestamp.plusSeconds(10))
-				.content(messageContent)
-				.build());
-		
-		batch.addMessage(builder
-				.bookId(book)
-				.sessionAlias(sessionAlias)
-				.direction(Direction.SECOND)
-				.timestamp(timestamp.plusSeconds(15))
-				.content(messageContent)
-				.build());
 
-		Assert.assertEquals(batch.getLastTimestamp(), timestamp.plusSeconds(20), "Last timestamp is incorrect");
-	}
-	
 	@Test
 	public void batchSerialization() throws CradleStorageException, IOException
 	{

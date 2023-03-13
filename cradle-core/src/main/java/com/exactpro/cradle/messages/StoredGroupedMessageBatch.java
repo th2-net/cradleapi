@@ -19,18 +19,21 @@ package com.exactpro.cradle.messages;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
+import com.google.common.collect.Lists;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.TreeSet;
+import java.util.List;
+
+import static com.exactpro.cradle.serialization.MessagesSizeCalculator.MESSAGE_BATCH_CONST_VALUE;
 
 public class StoredGroupedMessageBatch {
 	protected BookId bookId;
 	private final String group;
 	protected int batchSize;
-	protected final TreeSet<StoredMessage> messages;
+    protected final List<StoredMessage> messages;
 	private final Instant recDate;
 
 	public BookId getBookId() {
@@ -46,7 +49,7 @@ public class StoredGroupedMessageBatch {
 		this.group = group;
 		this.messages = createMessagesCollection(messages, pageId);
 		if (messages == null || messages.isEmpty()) {
-			batchSize = MessagesSizeCalculator.calculateMessageBatchSize(Collections.emptyList()).total;
+            batchSize = MESSAGE_BATCH_CONST_VALUE;
 			return;
 		}
 		batchSize = MessagesSizeCalculator.calculateMessageBatchSize(messages).total;
@@ -68,15 +71,15 @@ public class StoredGroupedMessageBatch {
 	}
 
 	public Collection<StoredMessage> getMessagesReverse()	{
-		return Collections.unmodifiableCollection(messages.descendingSet());
+        return Collections.unmodifiableCollection(Lists.reverse(messages));
 	}
 
 	public StoredMessage getFirstMessage() {
-		return !messages.isEmpty() ? messages.first() : null;
+        return !messages.isEmpty() ? messages.get(0) : null;
 	}
 
 	public StoredMessage getLastMessage() {
-		return !messages.isEmpty() ? messages.last() : null;
+        return !messages.isEmpty() ? messages.get(messages.size() - 1) : null;
 	}
 
 	public Instant getFirstTimestamp() {
@@ -98,18 +101,13 @@ public class StoredGroupedMessageBatch {
 		return messages.isEmpty();
 	}
 
-	public static final Comparator<StoredMessage> STORED_MESSAGE_COMPARATOR = Comparator.comparing(StoredMessage::getTimestamp)
-			.thenComparing(StoredMessage::getSessionAlias)
-			.thenComparing(StoredMessage::getDirection)
-			.thenComparingLong(StoredMessage::getSequence);
-
-	protected TreeSet<StoredMessage> createMessagesCollection(Collection<StoredMessage> messages, PageId pageId)	{
+    protected List<StoredMessage> createMessagesCollection(Collection<StoredMessage> messages, PageId pageId) {
 		if (messages == null)
-			return new TreeSet<>(STORED_MESSAGE_COMPARATOR);
+            return new ArrayList<>();
 		
-		TreeSet<StoredMessage> result = new TreeSet<>(STORED_MESSAGE_COMPARATOR);
+        List<StoredMessage> result = new ArrayList<>(messages.size());
 		for (StoredMessage msg : messages)
-			result.add(new StoredMessage(msg, msg.getId(), pageId));
+            result.add(new StoredMessage(msg, msg.getId(), pageId)); // why do we copy messages here?
 		return result;
 	}
 }
