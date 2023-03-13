@@ -3,7 +3,7 @@
 
 <suite name = "Cassandra Suite">
 
-   <test name = "Suite">
+   <test name = "Suite" parallel="false">
       <packages>
          <package name="com.exactpro.cradle.cassandra.*"/>
       </packages>

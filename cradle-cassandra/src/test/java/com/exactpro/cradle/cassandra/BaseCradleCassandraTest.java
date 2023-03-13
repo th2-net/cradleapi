@@ -28,9 +28,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class BaseCassandraTest {
+public class BaseCradleCassandraTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(BaseCassandraTest.class);
+    private static final Logger logger = LoggerFactory.getLogger(BaseCradleCassandraTest.class);
 
 
     protected static final String DEFAULT_PAGE_PREFIX = "test_page_";
