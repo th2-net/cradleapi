@@ -81,6 +81,7 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 	 * @return immutable message object with assigned ID
 	 * @throws CradleStorageException if message cannot be added to the batch due to verification failure
 	 */
+	//FIXME: java.util.TreeSet.add() 68,759 ms (28.3%) jmh test
 	public StoredMessage addMessage(MessageToStore message) throws CradleStorageException {
 		int expMsgSize = MessagesSizeCalculator.calculateMessageSizeInBatch(message);
 		if (!hasSpace(expMsgSize))
@@ -201,6 +202,7 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 		return true;
 	}
 
+	//FIXME: com.exactpro.cradle.messages.GroupedMessageBatchToStore.getSessionMessageBatches() 24,485 ms (16.1%)
 	public Collection<MessageBatchToStore> getSessionMessageBatches() throws CradleStorageException{
 		Map<SessionKey, MessageBatchToStore> batches = new HashMap<>();
 		for (StoredMessage message: getMessages()) {

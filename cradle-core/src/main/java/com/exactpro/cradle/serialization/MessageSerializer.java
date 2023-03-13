@@ -31,6 +31,7 @@ import static com.exactpro.cradle.serialization.SerializationUtils.*;
 
 public class MessageSerializer {
 
+	//FIXME: com.exactpro.cradle.serialization.MessageSerializer.serializeBatch() 31,319 ms (20.6%)
 	public SerializedEntityData serializeBatch(Collection<StoredMessage> batch) throws SerializationException {
 		SerializationBatchSizes messageBatchSizes = MessagesSizeCalculator.calculateMessageBatchSize(batch);
 		ByteBuffer buffer = ByteBuffer.allocate(messageBatchSizes.total);
@@ -40,6 +41,7 @@ public class MessageSerializer {
 		return new SerializedEntityData(serializedMessageMetadata, buffer.array());
 	}
 
+	//FIXME: com.exactpro.cradle.serialization.MessageSerializer.serializeBatch() 15,597 ms (10.3%)
 	public List<SerializedEntityMetadata> serializeBatch(
 			Collection<StoredMessage> batch, ByteBuffer buffer, SerializationBatchSizes messageBatchSizes
 	) throws SerializationException {

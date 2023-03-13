@@ -527,6 +527,7 @@ public abstract class CradleStorage
 	}
 
 
+	//FIXME: com.exactpro.cradle.CradleStorage.paginateBatch() 9,932 ms (6.5%)
 	List<Pair<GroupedMessageBatchToStore, PageInfo>> paginateBatch(GroupedMessageBatchToStore batch) throws CradleStorageException {
 
 		BookId bookId = batch.getBookId();

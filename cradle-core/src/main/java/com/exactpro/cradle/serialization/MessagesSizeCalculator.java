@@ -74,6 +74,7 @@ public class MessagesSizeCalculator {
 		return (str != null ? str.getBytes(StandardCharsets.UTF_8).length : 0) + 4;
 	}
 
+	//FIXME: com.exactpro.cradle.serialization.MessagesSizeCalculator.calculateMessageBatchSize() 12,657 ms (8.3%)
 	public static SerializationBatchSizes calculateMessageBatchSize(Collection<? extends CradleMessage> message) {
 
 		SerializationBatchSizes sizes = new SerializationBatchSizes(message.size());
