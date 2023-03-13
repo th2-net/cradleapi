@@ -1,17 +1,17 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ *  Copyright 2023 Exactpro (Exactpro Systems Limited)
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  */
 
 package com.exactpro.cradle.cassandra;
@@ -81,7 +81,7 @@ import java.util.stream.Collectors;
 
 public class CassandraCradleStorage extends CradleStorage
 {
-	private Logger logger = LoggerFactory.getLogger(CassandraCradleStorage.class);
+	private final Logger LOGGER = LoggerFactory.getLogger(CassandraCradleStorage.class);
 	
 	private final CassandraConnection connection;
 	private final CassandraStorageSettings settings;
@@ -105,7 +105,7 @@ public class CassandraCradleStorage extends CradleStorage
 	public CassandraCradleStorage(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings, 
 			ExecutorService composingService) throws CradleStorageException
 	{
-		super(composingService, storageSettings.getMaxMessageBatchSize(), storageSettings.getMaxTestEventBatchSize());
+		super(composingService, storageSettings.getComposingServiceThreads(), storageSettings.getMaxMessageBatchSize(), storageSettings.getMaxTestEventBatchSize());
 		this.connection = new CassandraConnection(connectionSettings, storageSettings.getTimeout());
 		this.settings = storageSettings;
 
@@ -140,7 +140,7 @@ public class CassandraCradleStorage extends CradleStorage
 			if (prepareStorage)
 				createStorage();
 			else
-				logger.info("Storage creation skipped");
+				LOGGER.info("Storage creation skipped");
 			
 
 			Duration timeout = Duration.ofMillis(settings.getTimeout());
@@ -185,7 +185,7 @@ public class CassandraCradleStorage extends CradleStorage
 		statisticsWorker.stop();
 		if (connection.isRunning())
 		{
-			logger.info("Disconnecting from Cassandra...");
+			LOGGER.info("Disconnecting from Cassandra...");
 			try
 			{
 				connection.stop();
@@ -196,7 +196,7 @@ public class CassandraCradleStorage extends CradleStorage
 			}
 		}
 		else
-			logger.info("Already disconnected from Cassandra");
+			LOGGER.info("Already disconnected from Cassandra");
 	}
 
 	@Override
@@ -274,8 +274,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected void doRemovePage(PageInfo page) throws CradleStorageException
-	{
+	protected void doRemovePage(PageInfo page) throws CradleStorageException {
 		PageId pageId = page.getId();
 
 		removeSessionData(pageId);
@@ -367,7 +366,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Void> doStoreTestEventAsync(TestEventToStore event, PageInfo page) throws IOException, CradleStorageException {
+	protected CompletableFuture<Void> doStoreTestEventAsync(TestEventToStore event, PageInfo page) {
 		PageId pageId = page.getId();
 
 		return eventsWorker.storeEvent(event, pageId)
@@ -536,7 +535,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Collection<String> doGetSessionAliases(BookId bookId) throws IOException, CradleStorageException
+	protected Collection<String> doGetSessionAliases(BookId bookId) throws CradleStorageException
 	{
 		MappedAsyncPagingIterable<SessionEntity> entities;
 		String queryInfo = String.format("Getting session aliases for book '%s'", bookId);
@@ -564,11 +563,11 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Collection<String> doGetGroups(BookId bookId) throws IOException, CradleStorageException {
+	protected Collection<String> doGetGroups(BookId bookId) throws CradleStorageException {
 
 		String queryInfo = String.format("Getting groups for book '%s'", bookId);
 
-		MappedAsyncPagingIterable<GroupEntity> entities = null;
+		MappedAsyncPagingIterable<GroupEntity> entities;
 		try {
 			var future = operators.getGroupsOperator().get(bookId.getName(), getReadAttrs());
 
@@ -607,14 +606,13 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<StoredTestEvent> doGetTestEventAsync(StoredTestEventId id, PageId pageId) throws CradleStorageException
-	{
+	protected CompletableFuture<StoredTestEvent> doGetTestEventAsync(StoredTestEventId id, PageId pageId) {
 		return eventsWorker.getTestEvent(id, pageId);
 	}
 	
 	
 	@Override
-	protected CradleResultSet<StoredTestEvent> doGetTestEvents(TestEventFilter filter, BookInfo book) throws CradleStorageException, IOException
+	protected CradleResultSet<StoredTestEvent> doGetTestEvents(TestEventFilter filter, BookInfo book) throws IOException
 	{
 		try
 		{
@@ -627,16 +625,13 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected CompletableFuture<CradleResultSet<StoredTestEvent>> doGetTestEventsAsync(TestEventFilter filter, BookInfo book) 
-			throws CradleStorageException
-	{
+	protected CompletableFuture<CradleResultSet<StoredTestEvent>> doGetTestEventsAsync(TestEventFilter filter, BookInfo book) {
 		return eventsWorker.getTestEvents(filter, book);
 	}
 	
 	
 	@Override
-	protected Collection<String> doGetScopes(BookId bookId) throws IOException, CradleStorageException
-	{
+	protected Collection<String> doGetScopes(BookId bookId) throws IOException {
 		MappedAsyncPagingIterable<ScopeEntity> entities;
 		String queryInfo = String.format("get scopes for book '%s'", bookId);
 		try
@@ -675,7 +670,7 @@ public class CassandraCradleStorage extends CradleStorage
 				interval.getStart().toString(),
 				interval.getEnd().toString());
 
-		logger.info("Getting {}", queryInfo);
+		LOGGER.info("Getting {}", queryInfo);
 		MessageStatisticsIteratorProvider iteratorProvider = new MessageStatisticsIteratorProvider(queryInfo,
 				operators,
 				getBookCache().getBook(bookId),
@@ -725,7 +720,7 @@ public class CassandraCradleStorage extends CradleStorage
 				interval.getStart().toString(),
 				interval.getEnd().toString());
 
-		logger.info("Getting {}", queryInfo);
+		LOGGER.info("Getting {}", queryInfo);
 
 
 		EntityStatisticsIteratorProvider iteratorProvider = new EntityStatisticsIteratorProvider(queryInfo,
@@ -746,7 +741,7 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CradleResultSet<CounterSample> doGetCounters(BookId bookId,
 														   EntityType entityType,
 														   FrameType frameType,
-														   Interval interval) throws CradleStorageException, IOException {
+														   Interval interval) throws IOException {
 		String queryInfo = String.format("Counters for %s with frameType-%s from %s to %s",
 				entityType.name(),
 				frameType.name(),
@@ -766,14 +761,14 @@ public class CassandraCradleStorage extends CradleStorage
 	protected CompletableFuture<Counter> doGetMessageCountAsync(BookId bookId,
 																String sessionAlias,
 																Direction direction,
-																Interval interval) throws CradleStorageException {
+																Interval interval) {
 		String queryInfo = String.format("Cumulative count for Messages with session_alias-%s, direction-%s from %s to %s",
 				sessionAlias,
 				direction,
 				interval.getStart().toString(),
 				interval.getEnd().toString());
 
-		logger.info("Getting {}", queryInfo);
+		LOGGER.info("Getting {}", queryInfo);
 
 		List<FrameInterval> slices = StorageUtils.sliceInterval(interval);
 
@@ -791,7 +786,7 @@ public class CassandraCradleStorage extends CradleStorage
 						sum = sum.incrementedBy(res.next().getCounter());
 					}
 				} catch (CradleStorageException | IOException e) {
-					logger.error("Error while getting {}, cause - {}", queryInfo, e.getCause());
+					LOGGER.error("Error while getting {}, cause - {}", queryInfo, e.getCause());
 				}
 			}
 
@@ -800,7 +795,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Counter doGetMessageCount(BookId bookId, String sessionAlias, Direction direction, Interval interval) throws CradleStorageException, IOException {
+	protected Counter doGetMessageCount(BookId bookId, String sessionAlias, Direction direction, Interval interval) throws IOException {
 		String queryInfo = String.format("Cumulative count for Messages with session_alias-%s, direction-%s from %s to %s",
 				sessionAlias,
 				direction,
@@ -817,13 +812,13 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CompletableFuture<Counter> doGetCountAsync(BookId bookId, EntityType entityType, Interval interval) throws CradleStorageException {
+	protected CompletableFuture<Counter> doGetCountAsync(BookId bookId, EntityType entityType, Interval interval) {
 		String queryInfo = String.format("Cumulative count for %s with from %s to %s",
 				entityType.name(),
 				interval.getStart().toString(),
 				interval.getEnd().toString());
 
-		logger.info("Getting {}", queryInfo);
+		LOGGER.info("Getting {}", queryInfo);
 
 		List<FrameInterval> slices = StorageUtils.sliceInterval(interval);
 
@@ -841,7 +836,7 @@ public class CassandraCradleStorage extends CradleStorage
 						sum = sum.incrementedBy(res.next().getCounter());
 					}
 				} catch (CradleStorageException | IOException e) {
-					logger.error("Error while getting {}, cause - {}", queryInfo, e.getCause());
+					LOGGER.error("Error while getting {}, cause - {}", queryInfo, e.getCause());
 				}
 			}
 
@@ -850,7 +845,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Counter doGetCount(BookId bookId, EntityType entityType, Interval interval) throws CradleStorageException, IOException {
+	protected Counter doGetCount(BookId bookId, EntityType entityType, Interval interval) throws IOException {
 		String queryInfo = String.format("Cumulative count for %s with from %s to %s",
 				entityType.name(),
 				interval.getStart().toString(),
@@ -1034,11 +1029,11 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		if (!connection.isRunning())
 		{
-			logger.info("Connecting to Cassandra...");
+			LOGGER.info("Connecting to Cassandra...");
 			try
 			{
 				connection.start();
-				logger.info("Connected to Cassandra");
+				LOGGER.info("Connected to Cassandra");
 			}
 			catch (Exception e)
 			{
@@ -1046,7 +1041,7 @@ public class CassandraCradleStorage extends CradleStorage
 			}
 		}
 		else
-			logger.info("Already connected to Cassandra");
+			LOGGER.info("Already connected to Cassandra");
 	}
 	
 	protected CassandraOperators createOperators(CqlSession session, CassandraStorageSettings settings)
@@ -1059,9 +1054,9 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		try
 		{
-			logger.info("Creating storage");
+			LOGGER.info("Creating storage");
 			new CradleInfoKeyspaceCreator(exec, settings).createAll();
-			logger.info("Storage creation finished");
+			LOGGER.info("Storage creation finished");
 		}
 		catch (IOException e)
 		{
