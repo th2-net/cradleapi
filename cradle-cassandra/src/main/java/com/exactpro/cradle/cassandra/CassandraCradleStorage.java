@@ -22,6 +22,7 @@ import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
@@ -247,7 +248,7 @@ public class CassandraCradleStorage extends CradleStorage
 				PageNameEntity nameEntity = new PageNameEntity(bookName, pageName, page.getStarted(), page.getComment(), page.getEnded());
 				if (!pageNameOp.writeNew(nameEntity, writeAttrs).wasApplied())
 					throw new IOException("Query to insert page '"+nameEntity.getName()+"' was not applied. Probably, page already exists");
-				PageEntity entity = new PageEntity(bookName, pageName, page.getStarted(), page.getComment(), page.getEnded());
+				PageEntity entity = new PageEntity(bookName, pageName, page.getStarted(), page.getComment(), page.getEnded(), page.getUpdated());
 				pageOp.write(entity, writeAttrs);
 			}
 			catch (IOException e)
@@ -274,7 +275,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected void doRemovePage(PageInfo page) {
+	protected void doRemovePage(PageInfo page) throws CradleStorageException {
 		PageId pageId = page.getId();
 
 		removeSessionData(pageId);
@@ -962,7 +963,7 @@ public class CassandraCradleStorage extends CradleStorage
 			throw new CradleStorageException(String.format("Failed to update page comment, this might result in broken state, try again. %s", e.getCause()));
 		}
 
-		return pageEntity.toPageInfo();
+		return updatedPageEntity.toPageInfo();
 	}
 
 	@Override
@@ -1018,7 +1019,7 @@ public class CassandraCradleStorage extends CradleStorage
 			throw new CradleStorageException(String.format("Failed to update page name, this might result in broken state, try again. %s", e.getCause()));
 		}
 
-		return pageEntity.toPageInfo();
+		return updatedPageEntity.toPageInfo();
 	}
 
 	@Override
@@ -1198,7 +1199,7 @@ public class CassandraCradleStorage extends CradleStorage
 		pageScopesOp.remove(book, page, writeAttrs);
 	}
 	
-	protected void removePageData(PageInfo pageInfo) {
+	protected void removePageData(PageInfo pageInfo) throws CradleStorageException {
 
 		String book = pageInfo.getId().getBookId().getName();
 		String page = pageInfo.getId().getName();
@@ -1231,7 +1232,12 @@ public class CassandraCradleStorage extends CradleStorage
 						Instant.now(),
 						null);
 
-				pageOperator.update(updatedEntity, writeAttrs);
+				ResultSet rs = pageOperator.update(updatedEntity, writeAttrs);
+				if (!rs.wasApplied()) {
+					throw new CradleStorageException(String.format("Update wasn't applied to page %s in book %s",
+							updatedEntity.getName(),
+							updatedEntity.getBook()));
+				}
 			}
 		} else {
 			pageOperator.setRemovedStatus(book,

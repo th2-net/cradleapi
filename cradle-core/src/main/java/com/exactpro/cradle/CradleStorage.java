@@ -1,5 +1,5 @@
 /*
- *  Copyright 2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -1489,9 +1489,6 @@ public abstract class CradleStorage
 
 	public PageInfo findPage(BookId bookId, Instant timestamp) throws CradleStorageException {
 		BookInfo book = getBookCache().getBook(bookId);
-		Instant now = Instant.now();
-		if (timestamp.isAfter(now))
-			throw new PageNotFoundException(String.format("Timestamp %s is from future, now is %s", timestamp, now));
 		PageInfo page = book.findPage(timestamp);
 		if (page == null || (page.getEnded() != null && !timestamp.isBefore(page.getEnded())))  //If page.getEnded().equals(timestamp), timestamp is outside of page
 			throw new PageNotFoundException(String.format("Book '%s' has no page for timestamp %s", bookId, timestamp));
