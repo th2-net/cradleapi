@@ -311,10 +311,12 @@ public class CassandraCradleStorage extends CradleStorage
 		{
 			messagesWorker.storeGroupedMessageBatch(batch, pageId).get();
 
-			for (MessageBatchToStore b: batch.getSessionMessageBatches()) {
-				messagesWorker.storeMessageBatch(b, pageId).get();
-				messagesWorker.storeSession(b).get();
-				messagesWorker.storePageSession(b, pageId).get();
+			if (settings.isStoreIndividualMessageSessions()) {
+				for (MessageBatchToStore b : batch.getSessionMessageBatches()) {
+					messagesWorker.storeMessageBatch(b, pageId).get();
+					messagesWorker.storeSession(b).get();
+					messagesWorker.storePageSession(b, pageId).get();
+				}
 			}
 		}
 		catch (Exception e)
@@ -340,12 +342,13 @@ public class CassandraCradleStorage extends CradleStorage
 
 		CompletableFuture<Void> future =  messagesWorker.storeGroupedMessageBatch(batch, pageId);
 
-		// store individual session message batches
-		for (MessageBatchToStore b: batch.getSessionMessageBatches()) {
-			future = future.thenComposeAsync((unused) -> messagesWorker.storeMessageBatch(b, pageId), composingService)
-							.thenComposeAsync((unused) -> messagesWorker.storeSession(b), composingService)
-							.thenComposeAsync((unused) -> messagesWorker.storePageSession(b, pageId), composingService)
-							.thenAccept(NOOP);
+		if (settings.isStoreIndividualMessageSessions()) {
+			for (MessageBatchToStore b : batch.getSessionMessageBatches()) {
+				future = future.thenComposeAsync((unused) -> messagesWorker.storeMessageBatch(b, pageId), composingService)
+						.thenComposeAsync((unused) -> messagesWorker.storeSession(b), composingService)
+						.thenComposeAsync((unused) -> messagesWorker.storePageSession(b, pageId), composingService)
+						.thenAccept(NOOP);
+			}
 		}
 		return future;
 	}

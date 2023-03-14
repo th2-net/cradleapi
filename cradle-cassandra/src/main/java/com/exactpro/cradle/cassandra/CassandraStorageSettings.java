@@ -43,6 +43,7 @@ public class CassandraStorageSettings {
             DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS = 1000;
 	public static final long DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS = 60000,
             DEFAULT_EVENT_BATCH_DURATION_MILLIS = 5_000;
+    public static final boolean DEFAULT_STORE_INDIVIDUAL_MESSAGE_SESSIONS = true;
 
 
 
@@ -74,6 +75,8 @@ public class CassandraStorageSettings {
     private SelectExecutionPolicy multiRowResultExecutionPolicy, singleRowResultExecutionPolicy;
 
 	private long bookRefreshIntervalMillis, eventBatchDurationMillis;
+
+    private boolean storeIndividualMessageSessions;
 
     public CassandraStorageSettings() {
         this(null, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
@@ -112,6 +115,7 @@ public class CassandraStorageSettings {
         this.groupsCacheSize = DEFAULT_GROUPS_CACHE_SIZE;
         this.eventBatchDurationCacheSize = DEFAULT_EVENT_BATCH_DURATION_CACHE_SIZE;
         this.eventBatchDurationMillis = DEFAULT_EVENT_BATCH_DURATION_MILLIS;
+        this.storeIndividualMessageSessions = DEFAULT_STORE_INDIVIDUAL_MESSAGE_SESSIONS;
     }
 
     public CassandraStorageSettings(CassandraStorageSettings settings) {
@@ -145,6 +149,8 @@ public class CassandraStorageSettings {
 		this.bookRefreshIntervalMillis = settings.getBookRefreshIntervalMillis();
         this.eventBatchDurationMillis = settings.getEventBatchDurationMillis();
         this.eventBatchDurationCacheSize = settings.getEventBatchDurationCacheSize();
+
+        this.storeIndividualMessageSessions = settings.isStoreIndividualMessageSessions();
     }
 
 
@@ -357,4 +363,11 @@ public class CassandraStorageSettings {
         this.eventBatchDurationCacheSize = eventBatchDurationCacheSize;
     }
 
+    public boolean isStoreIndividualMessageSessions() {
+        return storeIndividualMessageSessions;
+    }
+
+    public void setStoreIndividualMessageSessions(boolean storeIndividualMessageSessions) {
+        this.storeIndividualMessageSessions = storeIndividualMessageSessions;
+    }
 }
