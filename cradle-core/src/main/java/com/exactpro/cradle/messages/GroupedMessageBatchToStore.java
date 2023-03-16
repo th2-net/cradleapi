@@ -24,7 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -67,7 +66,7 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 	 * @return true if batch has enough space to hold given message
 	 */
 	public boolean hasSpace(MessageToStore message)	{
-		return hasSpace(MessagesSizeCalculator.calculateMessageSize(message));
+		return hasSpace(message.getSerializedSize());
 	}
 
 	private boolean hasSpace(int messageSize) {
@@ -81,9 +80,8 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 	 * @return immutable message object with assigned ID
 	 * @throws CradleStorageException if message cannot be added to the batch due to verification failure
 	 */
-	//FIXME: java.util.TreeSet.add() 68,759 ms (28.3%) jmh test
 	public StoredMessage addMessage(MessageToStore message) throws CradleStorageException {
-		int expMsgSize = MessagesSizeCalculator.calculateMessageSizeInBatch(message);
+		int expMsgSize = message.getSerializedSize();
 		if (!hasSpace(expMsgSize))
 			throw new CradleStorageException("Batch has not enough space to hold given message");
 		

@@ -70,7 +70,7 @@ public class MessageUtilsTest
 	@Test
 	public void messageIds() throws IOException
 	{
-		byte[] bytes = MessageUtils.serializeMessages(batch.getMessages()).getSerializedData();
+		byte[] bytes = MessageUtils.serializeMessages(batch).getSerializedData();
 		
 		Collection<StoredMessage> restored = MessageUtils.deserializeMessages(bytes, batch.getId());
 		Iterator<StoredMessage> it = restored.iterator();
@@ -82,7 +82,7 @@ public class MessageUtilsTest
 	@Test
 	public void oneMessageId() throws IOException
 	{
-		byte[] bytes = MessageUtils.serializeMessages(batch.getMessages()).getSerializedData();
+		byte[] bytes = MessageUtils.serializeMessages(batch).getSerializedData();
 		StoredMessage restored = MessageUtils.deserializeOneMessage(bytes, msg2.getId());
 		Assert.assertEquals(restored.getId(), msg2.getId(), "ID of requested message");
 	}

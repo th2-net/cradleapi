@@ -16,17 +16,14 @@
 
 package com.exactpro.cradle.messages;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
+import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.exactpro.cradle.utils.CradleStorageException;
+import java.time.Instant;
+import java.util.Objects;
 
 /**
  * Holds information about batch of messages to be stored in Cradle.
@@ -78,7 +75,7 @@ public class MessageBatchToStore extends StoredMessageBatch
 	 */
 	public boolean hasSpace(MessageToStore message)
 	{
-		return hasSpace(MessagesSizeCalculator.calculateMessageSize(message));
+		return hasSpace(message.getSerializedSize());
 	}
 
 	private boolean hasSpace(int messageSize)
@@ -96,7 +93,7 @@ public class MessageBatchToStore extends StoredMessageBatch
 	 */
 	public StoredMessage addMessage(MessageToStore message) throws CradleStorageException
 	{
-		int expMsgSize = MessagesSizeCalculator.calculateMessageSizeInBatch(message);
+		int expMsgSize = message.getSerializedSize();
 		if (!hasSpace(expMsgSize))
 			throw new CradleStorageException("Batch has not enough space to hold given message");
 		

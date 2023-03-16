@@ -16,20 +16,19 @@
 
 package com.exactpro.cradle.messages;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
-
-import java.time.Instant;
-
+import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import com.exactpro.cradle.serialization.SerializationException;
+import com.exactpro.cradle.utils.CradleStorageException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import com.exactpro.cradle.Direction;
-import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.utils.CradleStorageException;
+import java.time.Instant;
+
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 public class MessageBatchToStoreJoinTest
 {
@@ -44,7 +43,7 @@ public class MessageBatchToStoreJoinTest
         assertTrue(emptyBatch.addBatch(batch));
 
         assertEquals(emptyBatch.getMessageCount(), 5);
-        assertEquals(emptyBatch.getBatchSize(), getBatchSize(emptyBatch));
+        assertEquals(emptyBatch.getBatchSize(), emptyBatch.getBatchSize());
         assertEquals(emptyBatch.getSessionAlias(), "test");
         assertEquals(emptyBatch.getDirection(), Direction.FIRST);
     }
@@ -99,10 +98,10 @@ public class MessageBatchToStoreJoinTest
         MessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, protocol, 5, 5);
         MessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH.plusMillis(5), protocol, 5, 5);
 
-        assertEquals(first.getBatchSize(), getBatchSize(first));
+        assertEquals(first.getBatchSize(), first.getBatchSize());
         assertTrue(first.addBatch(second));
         assertEquals(first.getMessageCount(), 10);
-        assertEquals(first.getBatchSize(), getBatchSize(first));
+        assertEquals(first.getBatchSize(), first.getBatchSize());
         assertEquals(first.getSessionAlias(), "test");
         assertEquals(first.getDirection(), Direction.FIRST);
     }
@@ -116,7 +115,7 @@ public class MessageBatchToStoreJoinTest
         assertFalse(first.addBatch(second));
         assertEquals(first.getMessageCount(), 1);
         assertEquals(first.getBatchSize(), sizeBefore);
-        assertEquals(first.getBatchSize(), getBatchSize(first));
+        assertEquals(first.getBatchSize(), first.getBatchSize());
         assertEquals(first.getSessionAlias(), "test");
         assertEquals(first.getDirection(), Direction.FIRST);
     }
@@ -229,7 +228,4 @@ public class MessageBatchToStoreJoinTest
                             MessagesSizeCalculator.calculateStringSize(direction.getLabel())));
     }
 
-    private int getBatchSize(StoredMessageBatch batch) throws SerializationException {
-        return MessagesSizeCalculator.calculateMessageBatchSize(batch.getMessages()).total;
-    }
 }

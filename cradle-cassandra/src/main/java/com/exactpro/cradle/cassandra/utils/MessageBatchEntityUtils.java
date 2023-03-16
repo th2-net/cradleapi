@@ -20,7 +20,10 @@ import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.SerializedEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
-import com.exactpro.cradle.messages.*;
+import com.exactpro.cradle.messages.MessageBatchToStore;
+import com.exactpro.cradle.messages.StoredMessage;
+import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.serialization.SerializedEntityData;
 import com.exactpro.cradle.utils.CompressionUtils;
 import com.exactpro.cradle.utils.MessageUtils;
@@ -44,7 +47,7 @@ public class MessageBatchEntityUtils {
         logger.debug("Creating entity from message batch '{}'", batch.getId());
         MessageBatchEntity.MessageBatchEntityBuilder builder = MessageBatchEntity.builder();
 
-        SerializedEntityData serializedEntityData = MessageUtils.serializeMessages(batch.getMessages());
+        SerializedEntityData serializedEntityData = MessageUtils.serializeMessages(batch);
         byte[] batchContent = serializedEntityData.getSerializedData();
 
         builder.setUncompressedContentSize(batchContent.length);

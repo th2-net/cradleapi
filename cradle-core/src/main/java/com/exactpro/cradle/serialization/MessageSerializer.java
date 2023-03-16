@@ -16,6 +16,8 @@
 
 package com.exactpro.cradle.serialization;
 
+import com.exactpro.cradle.messages.GroupedMessageBatchToStore;
+import com.exactpro.cradle.messages.MessageBatchToStore;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.messages.StoredMessageMetadata;
@@ -26,40 +28,46 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import static com.exactpro.cradle.serialization.Serialization.MessageBatchConst.*;
-import static com.exactpro.cradle.serialization.SerializationUtils.*;
+import static com.exactpro.cradle.serialization.MessagesSizeCalculator.MESSAGE_LENGTH_IN_BATCH;
+import static com.exactpro.cradle.serialization.Serialization.MessageBatchConst.MESSAGE_BATCH_MAGIC;
+import static com.exactpro.cradle.serialization.Serialization.MessageBatchConst.MESSAGE_MAGIC;
+import static com.exactpro.cradle.serialization.Serialization.MessageBatchConst.MESSAGE_PROTOCOL_VER;
+import static com.exactpro.cradle.serialization.SerializationUtils.printBody;
+import static com.exactpro.cradle.serialization.SerializationUtils.printInstant;
+import static com.exactpro.cradle.serialization.SerializationUtils.printString;
 
 public class MessageSerializer {
+	public SerializedEntityData serializeBatch(MessageBatchToStore batch) throws SerializationException {
+		return serializeBatch(batch.getMessages(), batch.getBatchSize());
+	}
 
-	//FIXME: com.exactpro.cradle.serialization.MessageSerializer.serializeBatch() 31,319 ms (20.6%)
+	public SerializedEntityData serializeBatch(GroupedMessageBatchToStore batch) throws SerializationException {
+		return serializeBatch(batch.getMessages(), batch.getBatchSize());
+	}
+
 	public SerializedEntityData serializeBatch(Collection<StoredMessage> batch) throws SerializationException {
-		SerializationBatchSizes messageBatchSizes = MessagesSizeCalculator.calculateMessageBatchSize(batch);
-		ByteBuffer buffer = ByteBuffer.allocate(messageBatchSizes.total);
-		
-		List<SerializedEntityMetadata> serializedMessageMetadata = this.serializeBatch(batch, buffer, messageBatchSizes);
+		return serializeBatch(batch, MessagesSizeCalculator.calculateMessageBatchSize(batch));
+	}
 
+	private SerializedEntityData serializeBatch(Collection<StoredMessage> batch, int batchSize) throws SerializationException {
+		ByteBuffer buffer = ByteBuffer.allocate(batchSize);
+		List<SerializedEntityMetadata> serializedMessageMetadata = this.serializeBatch(batch, buffer);
 		return new SerializedEntityData(serializedMessageMetadata, buffer.array());
 	}
 
 	//FIXME: com.exactpro.cradle.serialization.MessageSerializer.serializeBatch() 15,597 ms (10.3%)
 	public List<SerializedEntityMetadata> serializeBatch(
-			Collection<StoredMessage> batch, ByteBuffer buffer, SerializationBatchSizes messageBatchSizes
+			Collection<StoredMessage> batch, ByteBuffer buffer
 	) throws SerializationException {
-
-		if (messageBatchSizes == null) {
-			messageBatchSizes = MessagesSizeCalculator.calculateMessageBatchSize(batch);
-		}
-
 		List<SerializedEntityMetadata> serializedMessageMetadata = new ArrayList<>(batch.size());
 
 		buffer.putInt(MESSAGE_BATCH_MAGIC);
 		buffer.put(MESSAGE_PROTOCOL_VER);
-		
+
 		buffer.putInt(batch.size());
 		int i = 0;
 		for (StoredMessage message : batch) {
-			int messageSize = messageBatchSizes.entities[i];
-
+			int messageSize = message.getSerializedSize() - MESSAGE_LENGTH_IN_BATCH;
 			buffer.putInt(messageSize);
 			this.serialize(message, buffer);
 			serializedMessageMetadata.add(new SerializedEntityMetadata(message.getTimestamp(), messageSize));

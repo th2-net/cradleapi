@@ -52,7 +52,7 @@ public class StoredGroupedMessageBatch {
             batchSize = MESSAGE_BATCH_CONST_VALUE;
 			return;
 		}
-		batchSize = MessagesSizeCalculator.calculateMessageBatchSize(messages).total;
+		batchSize = MessagesSizeCalculator.calculateMessageBatchSize(messages);
 	}
 
 	public String getGroup() {

@@ -47,7 +47,7 @@ public class GroupedMessageEntityUtils {
 
         logger.debug("Creating entity from grouped message batch '{}'", group);
 
-        SerializedEntityData serializedEntityData = MessageUtils.serializeMessages(batch.getMessages());
+        SerializedEntityData serializedEntityData = MessageUtils.serializeMessages(batch);
 
         byte[] batchContent = serializedEntityData.getSerializedData();
 

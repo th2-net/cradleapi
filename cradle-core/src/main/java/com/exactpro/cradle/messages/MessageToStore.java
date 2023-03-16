@@ -16,11 +16,12 @@
 
 package com.exactpro.cradle.messages;
 
-import java.util.Arrays;
-
+import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import com.exactpro.cradle.utils.CompressionUtils;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.MessageUtils;
+
+import java.util.Arrays;
 
 /**
  * Object to hold information about one message prepared to be stored in Cradle
@@ -30,17 +31,23 @@ public class MessageToStore implements CradleMessage {
     private final String protocol;
     private final byte[] content;
     private MessageMetadata metadata;
+    private int serializedSize;
 
     MessageToStore(StoredMessageId id, String protocol, byte[] content) throws CradleStorageException {
+        this(id, protocol, content, null);
+    }
+
+    MessageToStore(StoredMessageId id, String protocol, byte[] content, MessageMetadata metadata) throws CradleStorageException {
         this.id = id;
         this.protocol = protocol;
         this.content = content;
+        this.metadata = metadata;
         MessageUtils.validateMessage(this);
+        this.serializedSize = MessagesSizeCalculator.calculateMessageSizeInBatch(this);
     }
 
     public MessageToStore(MessageToStore copyFrom) throws CradleStorageException {
-        this(copyFrom.getId(), copyFrom.getProtocol(), copyFrom.getContent());
-        this.metadata = copyFrom.getMetadata() != null ? new MessageMetadata(copyFrom.getMetadata()) : null;
+        this(copyFrom.getId(), copyFrom.getProtocol(), copyFrom.getContent(), copyFrom.getMetadata() != null ? new MessageMetadata(copyFrom.getMetadata()) : null);
     }
 
     public static MessageToStoreBuilder builder() {
@@ -68,14 +75,21 @@ public class MessageToStore implements CradleMessage {
         return metadata;
     }
 
+    @Override
+    public int getSerializedSize() {
+        return serializedSize;
+    }
+
     public void setMetadata(MessageMetadata metadata) {
         this.metadata = metadata;
+        this.serializedSize = MessagesSizeCalculator.calculateMessageSizeInBatch(this);
     }
 
     public void addMetadata(String key, String value) {
         if (metadata == null)
             metadata = new MessageMetadata();
         metadata.add(key, value);
+        this.serializedSize = MessagesSizeCalculator.calculateMessageSizeInBatch(this);
     }
 
 

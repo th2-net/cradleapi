@@ -337,7 +337,7 @@ public class GroupedMessageBatchToStoreTest
 				.build());
 
 		StoredMessage storedMsg = batch.getFirstMessage();
-		byte[] bytes = MessageUtils.serializeMessages(batch.getMessages()).getSerializedData();
+		byte[] bytes = MessageUtils.serializeMessages(batch).getSerializedData();
 		StoredMessage msg = MessageUtils.deserializeMessages(bytes, book).iterator().next();
 		Assert.assertEquals(msg, storedMsg, "Message should be completely serialized/deserialized");
 	}
