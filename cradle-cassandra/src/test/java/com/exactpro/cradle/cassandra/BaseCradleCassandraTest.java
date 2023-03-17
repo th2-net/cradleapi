@@ -18,11 +18,9 @@ package com.exactpro.cradle.cassandra;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.exactpro.cradle.*;
-import com.exactpro.cradle.cassandra.keyspaces.TableTruncator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.awt.print.Book;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -82,8 +80,6 @@ public class BaseCradleCassandraTest {
     }
 
     protected void startUp(BookId bookId) {
-        TableTruncator.truncateTables(CassandraCradleHelper.getInstance().getSession(), CassandraCradleHelper.KEYSPACE_NAME);
-
         this.session = CassandraCradleHelper.getInstance().getSession();
         this.storage = CassandraCradleHelper.getInstance().getStorage();
         this.bookId = generateBookId();

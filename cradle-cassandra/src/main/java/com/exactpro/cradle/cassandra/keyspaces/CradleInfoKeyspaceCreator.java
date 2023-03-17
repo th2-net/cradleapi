@@ -85,36 +85,6 @@ public class CradleInfoKeyspaceCreator extends KeyspaceCreator
 		createEventBatchMaxDurations();
 	}
 
-	static void truncateTables (CqlSession session, String keyspace) {
-		List<String> tableNames = List.of(
-				BookEntity.TABLE_NAME,
-				PageEntity.TABLE_NAME,
-				PageNameEntity.TABLE_NAME,
-				SessionEntity.TABLE_NAME,
-				ScopeEntity.TABLE_NAME,
-				MessageBatchEntity.TABLE_NAME,
-				GroupedMessageBatchEntity.TABLE_NAME,
-				PageSessionEntity.TABLE_NAME,
-				PageGroupEntity.TABLE_NAME,
-				GroupEntity.TABLE_NAME,
-				TestEventEntity.TABLE_NAME,
-				PageScopeEntity.TABLE_NAME,
-				LabelEntity.TABLE_NAME,
-				IntervalEntity.TABLE_NAME,
-				MessageStatisticsEntity.TABLE_NAME,
-				EntityStatisticsEntity.TABLE_NAME,
-				SessionStatisticsEntity.TABLE_NAME,
-				EventBatchMaxDurationEntity.TABLE_NAME);
-
-		logger.info("Truncating tables");
-		for (String tableName : tableNames) {
-			SimpleStatement truncateStatement = QueryBuilder.truncate(keyspace, tableName).build();
-
-			session.execute(truncateStatement);
-		}
-		logger.info("Tables were truncated");
-	}
-
 	@Override
 	public void createAll() throws IOException, CradleStorageException
 	{
