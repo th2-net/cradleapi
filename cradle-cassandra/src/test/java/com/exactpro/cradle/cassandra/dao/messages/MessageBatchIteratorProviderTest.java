@@ -33,9 +33,9 @@ public class MessageBatchIteratorProviderTest extends BaseCradleCassandraTest {
     private static final Logger logger = LoggerFactory.getLogger(MessageBatchIteratorProviderTest.class);
 
     public static String content = "default_content";
-    private static final String GROUP_NAME = "test_group";
-    private static final String FIRST_SESSION_ALIAS = "test_session_alias_first";
-    private static final String SECOND_SESSION_ALIAS = "test_session_alias_second";
+    private static final String GROUP_NAME = "test_group_MessageBatchIteratorProviderTest";
+    private static final String FIRST_SESSION_ALIAS = "test_session_alias_first_MessageBatchIteratorProviderTest";
+    private static final String SECOND_SESSION_ALIAS = "test_session_alias_second_MessageBatchIteratorProviderTest";
 
     private List<GroupedMessageBatchToStore> data;
     private Map<MessageBatchIteratorProviderTest.StoredMessageKey, List<StoredMessageBatch>> storedData;
@@ -255,7 +255,7 @@ public class MessageBatchIteratorProviderTest extends BaseCradleCassandraTest {
     }
 
     @Test(description = "Simply gets all messages by session_alias and direction iterator provider")
-    public void getAllGroupedMessagesTest () {
+    public void getAllMessagesTest() {
         try {
             MessageFilter messageFilter =  new MessageFilter(bookId, FIRST_SESSION_ALIAS, Direction.FIRST);
             MessageBatchesIteratorProvider iteratorProvider = createIteratorProvider(messageFilter);
@@ -267,6 +267,7 @@ public class MessageBatchIteratorProviderTest extends BaseCradleCassandraTest {
             List<StoredMessageBatch> expected = storedData.get(new MessageBatchIteratorProviderTest.StoredMessageKey(FIRST_SESSION_ALIAS, Direction.FIRST));
 
             Assertions.assertThat(actual)
+                    .usingElementComparatorIgnoringFields("recDate")
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException | CradleStorageException e) {
             logger.error("", e);

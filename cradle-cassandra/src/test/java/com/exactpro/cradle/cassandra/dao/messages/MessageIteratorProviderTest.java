@@ -32,9 +32,9 @@ public class MessageIteratorProviderTest extends BaseCradleCassandraTest {
     private static final Logger logger = LoggerFactory.getLogger(MessageIteratorProviderTest.class);
 
     public static String content = "default_content";
-    private static final String GROUP_NAME = "test_group";
-    private static final String FIRST_SESSION_ALIAS = "test_session_alias_first";
-    private static final String SECOND_SESSION_ALIAS = "test_session_alias_second";
+    private static final String GROUP_NAME = "test_group_MessageIteratorProviderTest";
+    private static final String FIRST_SESSION_ALIAS = "test_session_alias_first_MessageIteratorProviderTest";
+    private static final String SECOND_SESSION_ALIAS = "test_session_alias_second_MessageIteratorProviderTest";
 
     private List<GroupedMessageBatchToStore> data;
     private Map<StoredMessageKey, List<StoredMessage>> storedData;

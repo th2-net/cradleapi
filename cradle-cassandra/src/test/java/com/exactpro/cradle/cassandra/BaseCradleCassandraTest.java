@@ -79,7 +79,6 @@ public class BaseCradleCassandraTest {
     protected void startUp(boolean initBooksAndPages) {
         TableTruncator.truncateTables(CassandraCradleHelper.getInstance().getSession(), CassandraCradleHelper.KEYSPACE_NAME);
 
-
         this.session = CassandraCradleHelper.getInstance().getSession();
         this.storage = CassandraCradleHelper.getInstance().getStorage();
 
@@ -103,6 +102,9 @@ public class BaseCradleCassandraTest {
             pages = new ArrayList<>(book.getPages());
         } catch (Exception e) {
             logger.error("", e);
+            if (!e.getMessage().contains("already present in storage")) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }

@@ -33,6 +33,7 @@ import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
+import com.exactpro.cradle.cassandra.workers.MessagesWorker;
 import com.exactpro.cradle.filters.FilterForAny;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
@@ -57,14 +58,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_FIRST_MESSAGE_TIME;
-import static com.exactpro.cradle.cassandra.workers.MessagesWorker.mapMessageBatchEntity;
 
 abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvider<T>
 {
 
 	private static final Logger logger = LoggerFactory.getLogger(AbstractMessageIteratorProvider.class);
 	protected final MessageBatchOperator op;
-	protected final MessageBatchEntityConverter messageBatchEntityConverter;
+	protected final MessageBatchEntityConverter converter;
 	protected final BookInfo book;
 	protected final ExecutorService composingService;
 	protected final SelectQueryExecutor selectQueryExecutor;
@@ -86,7 +86,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 	{
 		super(requestInfo);
 		this.op = operators.getMessageBatchOperator();
-		this.messageBatchEntityConverter = operators.getMessageBatchEntityConverter();
+		this.converter = operators.getMessageBatchEntityConverter();
 		this.book = book;
 		this.composingService = composingService;
 		this.selectQueryExecutor = selectQueryExecutor;
@@ -264,7 +264,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		PagedIterator<MessageBatchEntity> pagedIterator = new PagedIterator<>(
 				resultSet,
 				selectQueryExecutor,
-				messageBatchEntityConverter::getEntity,
+				converter::getEntity,
 				getRequestInfo());
 		FilteringIterator<MessageBatchEntity> filteringIterator = new FilteringIterator<>(
 				pagedIterator,
@@ -277,6 +277,6 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 
 		return new ConvertingIterator<>(
 				takeWhileIterator, entity ->
-				mapMessageBatchEntity(pageId, entity));
+				MessagesWorker.mapMessageBatchEntity(pageId, entity));
 	}
 }

@@ -36,7 +36,7 @@ public class CassandraCradleHelper {
     public static String KEYSPACE_NAME = "test_keyspace";
     public static int TIMEOUT = 5000;
     public static int RESULT_PAGE_SIZE = 5;
-    public static int PERSISTANCE_INTERVAL = 0;
+    public static int PERSISTENCE_INTERVAL = 0;
 
     private CqlSession session;
     private CassandraConnectionSettings connectionSettings;
@@ -46,18 +46,13 @@ public class CassandraCradleHelper {
     private static CassandraCradleHelper instance;
 
     @BeforeSuite
-    public static void beforeGroup () {
+    public static void beforeSuite() {
         instance = new CassandraCradleHelper();
     }
 
     private CassandraCradleHelper () {
-        if (session == null) {
-            setUpEmbeddedCassandra();
-        }
-
-        if (storage == null) {
-            setUpCradle();
-        }
+        setUpEmbeddedCassandra();
+        setUpCradle();
     }
 
     public static synchronized CassandraCradleHelper getInstance () {
@@ -90,7 +85,7 @@ public class CassandraCradleHelper {
                     ConsistencyLevel.ONE);
             storageSettings.setResultPageSize(RESULT_PAGE_SIZE);
             storageSettings.setKeyspace(KEYSPACE_NAME);
-            storageSettings.setCounterPersistenceInterval(PERSISTANCE_INTERVAL);
+            storageSettings.setCounterPersistenceInterval(PERSISTENCE_INTERVAL);
 
             CassandraCradleManager manager = new CassandraCradleManager(connectionSettings, storageSettings, true);
             storage = (CassandraCradleStorage) manager.getStorage();
