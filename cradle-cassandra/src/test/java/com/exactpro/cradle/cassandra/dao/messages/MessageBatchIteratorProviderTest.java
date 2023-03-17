@@ -33,9 +33,9 @@ public class MessageBatchIteratorProviderTest extends BaseCradleCassandraTest {
     private static final Logger logger = LoggerFactory.getLogger(MessageBatchIteratorProviderTest.class);
 
     public static String content = "default_content";
-    private static final String GROUP_NAME = "test_group_MessageBatchIteratorProviderTest";
-    private static final String FIRST_SESSION_ALIAS = "test_session_alias_first_MessageBatchIteratorProviderTest";
-    private static final String SECOND_SESSION_ALIAS = "test_session_alias_second_MessageBatchIteratorProviderTest";
+    private static final String GROUP_NAME = "test_group";
+    private static final String FIRST_SESSION_ALIAS = "test_session_alias";
+    private static final String SECOND_SESSION_ALIAS = "test_session_alias";
 
     private List<GroupedMessageBatchToStore> data;
     private Map<MessageBatchIteratorProviderTest.StoredMessageKey, List<StoredMessageBatch>> storedData;
@@ -45,7 +45,7 @@ public class MessageBatchIteratorProviderTest extends BaseCradleCassandraTest {
     public final static String protocol = "default_message_protocol";
     @BeforeClass
     public void startUp () {
-        super.startUp(true);
+        super.startUp(generateBookId());
 
         setUpOperators ();
         generateData();

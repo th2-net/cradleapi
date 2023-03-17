@@ -49,9 +49,9 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
     private static final Logger logger = LoggerFactory.getLogger(GroupedMessageIteratorProviderTest.class);
 
     public static String content = "default_content";
-    private static final String GROUP_NAME = "test_group_GroupedMessageIteratorProviderTest";
-    private static final String FIRST_SESSION_ALIAS = "test_session_alias_first_GroupedMessageIteratorProviderTest";
-    private static final String SECOND_SESSION_ALIAS = "test_session_alias_second_GroupedMessageIteratorProviderTest";
+    private static final String GROUP_NAME = "test_group";
+    private static final String FIRST_SESSION_ALIAS = "test_session_alias_first";
+    private static final String SECOND_SESSION_ALIAS = "test_session_alias_second";
 
     private List<GroupedMessageBatchToStore> data;
     private List<StoredGroupedMessageBatch> storedData;
@@ -61,7 +61,7 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
     public final static String protocol = "default_message_protocol";
     @BeforeClass
     public void startUp () {
-        super.startUp(true);
+        super.startUp(generateBookId());
 
         setUpOperators ();
         generateData();

@@ -22,6 +22,7 @@ import com.exactpro.cradle.cassandra.keyspaces.TableTruncator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.awt.print.Book;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -73,18 +74,23 @@ public class BaseCradleCassandraTest {
     protected BookId bookId = DEFAULT_BOOK_ID;
 
     protected void startUp () {
-        startUp(false);
+        startUp(null);
     }
 
-    protected void startUp(boolean initBooksAndPages) {
+    protected BookId generateBookId () {
+        return new BookId(getClass().getSimpleName() + "Book");
+    }
+
+    protected void startUp(BookId bookId) {
         TableTruncator.truncateTables(CassandraCradleHelper.getInstance().getSession(), CassandraCradleHelper.KEYSPACE_NAME);
 
         this.session = CassandraCradleHelper.getInstance().getSession();
         this.storage = CassandraCradleHelper.getInstance().getStorage();
+        this.bookId = generateBookId();
 
-        if (initBooksAndPages) {
+        if (bookId != null) {
             setUpBooksAndPages(
-                    DEFAULT_BOOK_ID,
+                    bookId,
                     DEFAULT_PAGES.stream().map(
                             el -> new PageToAdd(
                                     el.getId().getName(),
@@ -102,9 +108,7 @@ public class BaseCradleCassandraTest {
             pages = new ArrayList<>(book.getPages());
         } catch (Exception e) {
             logger.error("", e);
-            if (!e.getMessage().contains("already present in storage")) {
-                throw new RuntimeException(e);
-            }
+            throw new RuntimeException(e);
         }
     }
 }
