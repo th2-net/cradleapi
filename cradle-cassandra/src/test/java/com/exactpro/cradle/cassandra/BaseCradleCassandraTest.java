@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class BaseCradleCassandraTest {
+public abstract class BaseCradleCassandraTest {
 
     private static final Logger logger = LoggerFactory.getLogger(BaseCradleCassandraTest.class);
 
@@ -72,19 +72,21 @@ public class BaseCradleCassandraTest {
     protected BookId bookId = DEFAULT_BOOK_ID;
 
     protected void startUp () {
-        startUp(null);
+        startUp(false);
     }
 
-    protected BookId generateBookId () {
+    private BookId generateBookId () {
         return new BookId(getClass().getSimpleName() + "Book");
     }
 
-    protected void startUp(BookId bookId) {
+    protected abstract void generateData ();
+
+    protected void startUp(boolean generateBookPages) {
         this.session = CassandraCradleHelper.getInstance().getSession();
         this.storage = CassandraCradleHelper.getInstance().getStorage();
         this.bookId = generateBookId();
 
-        if (bookId != null) {
+        if (generateBookPages) {
             setUpBooksAndPages(
                     bookId,
                     DEFAULT_PAGES.stream().map(

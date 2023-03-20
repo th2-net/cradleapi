@@ -1,6 +1,5 @@
 package com.exactpro.cradle.cassandra.dao.messages;
 
-import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.BaseCradleCassandraTest;
 import com.exactpro.cradle.cassandra.CassandraCradleHelper;
@@ -31,20 +30,19 @@ public class MessageIteratorProviderTest extends BaseCradleCassandraTest {
 
     private static final Logger logger = LoggerFactory.getLogger(MessageIteratorProviderTest.class);
 
-    public static String content = "default_content";
+    private static final String CONTENT = "default_content";
     private static final String GROUP_NAME = "test_group";
     private static final String FIRST_SESSION_ALIAS = "test_session_alias";
     private static final String SECOND_SESSION_ALIAS = "test_session_alias";
 
     private List<GroupedMessageBatchToStore> data;
     private Map<StoredMessageKey, List<StoredMessage>> storedData;
-    private CompletableFuture<MappedAsyncPagingIterable<GroupedMessageBatchEntity>> iterable;
     private CassandraOperators operators;
     private ExecutorService composingService = Executors.newSingleThreadExecutor();
     public final static String protocol = "default_message_protocol";
     @BeforeClass
     public void startUp () {
-        super.startUp(generateBookId());
+        super.startUp(true);
 
         setUpOperators ();
         generateData();
@@ -91,7 +89,8 @@ public class MessageIteratorProviderTest extends BaseCradleCassandraTest {
         operators = new CassandraOperators(dataMapper, CassandraCradleHelper.getInstance().getStorageSettings());
     }
 
-    private void generateData () {
+    @Override
+    protected void generateData () {
         /*
          Storing grouped messages results
          in storing usual messages as well
@@ -104,7 +103,7 @@ public class MessageIteratorProviderTest extends BaseCradleCassandraTest {
                     .direction(Direction.FIRST)
                     .timestamp(dataStart.plus(5, ChronoUnit.MINUTES))
                     .sequence(1L)
-                    .content(content.getBytes(StandardCharsets.UTF_8))
+                    .content(CONTENT.getBytes(StandardCharsets.UTF_8))
                     .protocol(protocol)
                     .build());
             b1.addMessage(MessageToStore.builder()
@@ -113,7 +112,7 @@ public class MessageIteratorProviderTest extends BaseCradleCassandraTest {
                     .direction(Direction.SECOND)
                     .timestamp(dataStart.plus(9, ChronoUnit.MINUTES))
                     .sequence(2L)
-                    .content(content.getBytes(StandardCharsets.UTF_8))
+                    .content(CONTENT.getBytes(StandardCharsets.UTF_8))
                     .protocol(protocol)
                     .build());
 
@@ -124,7 +123,7 @@ public class MessageIteratorProviderTest extends BaseCradleCassandraTest {
                     .direction(Direction.FIRST)
                     .timestamp(dataStart.plus(15, ChronoUnit.MINUTES))
                     .sequence(3L)
-                    .content(content.getBytes(StandardCharsets.UTF_8))
+                    .content(CONTENT.getBytes(StandardCharsets.UTF_8))
                     .protocol(protocol)
                     .build());
             b2.addMessage(MessageToStore.builder()
@@ -133,7 +132,7 @@ public class MessageIteratorProviderTest extends BaseCradleCassandraTest {
                     .direction(Direction.SECOND)
                     .timestamp(dataStart.plus(19, ChronoUnit.MINUTES))
                     .sequence(4L)
-                    .content(content.getBytes(StandardCharsets.UTF_8))
+                    .content(CONTENT.getBytes(StandardCharsets.UTF_8))
                     .protocol(protocol)
                     .build());
 
@@ -144,7 +143,7 @@ public class MessageIteratorProviderTest extends BaseCradleCassandraTest {
                     .direction(Direction.FIRST)
                     .timestamp(dataStart.plus(25, ChronoUnit.MINUTES))
                     .sequence(5L)
-                    .content(content.getBytes(StandardCharsets.UTF_8))
+                    .content(CONTENT.getBytes(StandardCharsets.UTF_8))
                     .protocol(protocol)
                     .build());
             b3.addMessage(MessageToStore.builder()
@@ -153,7 +152,7 @@ public class MessageIteratorProviderTest extends BaseCradleCassandraTest {
                     .direction(Direction.SECOND)
                     .timestamp(dataStart.plus(29, ChronoUnit.MINUTES))
                     .sequence(6L)
-                    .content(content.getBytes(StandardCharsets.UTF_8))
+                    .content(CONTENT.getBytes(StandardCharsets.UTF_8))
                     .protocol(protocol)
                     .build());
 

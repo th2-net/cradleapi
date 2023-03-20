@@ -150,8 +150,8 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 							convertingIterator,
 							convertedEntity -> !convertedEntity.getLastStartTimestamp().isBefore(actualFrom));
 
-					return new LimitedIterator<>(
-							filteringIterator, limit);
+
+					return limit > 0 ? new LimitedIterator<>(convertingIterator, limit) : filteringIterator;
 				}, composingService);
 	}
 
@@ -163,7 +163,9 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 		 */
 		long duration = eventBatchDurationWorker.getMaxDuration(filter.getBookId().getName(), firstPage.getId().getName(), filter.getScope(), readAttrs);
 		FilterForGreater<Instant> newFrom;
-		if (filter.getStartTimestampFrom().getOperation().equals(ComparisonOperation.GREATER)) {
+
+		ComparisonOperation operation = filter.getStartTimestampFrom() == null ? ComparisonOperation.GREATER : filter.getStartTimestampFrom().getOperation();
+		if (operation.equals(ComparisonOperation.GREATER)) {
 			newFrom = FilterForGreater.forGreater(actualFrom.minusMillis(duration));
 		} else {
 			newFrom = FilterForGreater.forGreaterOrEquals(actualFrom.minusMillis(duration));

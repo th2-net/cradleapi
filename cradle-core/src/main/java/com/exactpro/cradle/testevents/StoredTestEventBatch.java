@@ -30,6 +30,7 @@ import java.util.Set;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
+import com.google.common.collect.Lists;
 
 /**
  * Holds information about batch of test events stored in Cradle.
@@ -98,6 +99,7 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 		this.messages = Collections.unmodifiableMap(batchMessages);
 		this.endTimestamp = end;
 		this.success = success;
+		getLastStartTimestamp();
 	}
 	
 	public StoredTestEventBatch(TestEventBatch batch, PageId pageId) throws CradleStorageException
@@ -190,5 +192,38 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 		}
 
 		return lastStartTimestamp;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof StoredTestEventBatch)) return false;
+		StoredTestEventBatch batch = (StoredTestEventBatch) o;
+		return isSuccess() == batch.isSuccess()
+				&& Objects.equals(events, batch.events)
+				&& rootEvents.containsAll(batch.rootEvents)
+				&& batch.rootEvents.containsAll(rootEvents)
+				&& Objects.equals(children, batch.children)
+				&& Objects.equals(getMessages(), batch.getMessages())
+				&& Objects.equals(getEndTimestamp(), batch.getEndTimestamp())
+				&& Objects.equals(getLastStartTimestamp(), batch.getLastStartTimestamp());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(events, rootEvents, children, getMessages(), getEndTimestamp(), isSuccess(), getLastStartTimestamp());
+	}
+
+	@Override
+	public String toString() {
+		return "StoredTestEventBatch{" +
+				"events=" + events +
+				", rootEvents=" + rootEvents +
+				", children=" + children +
+				", messages=" + messages +
+				", endTimestamp=" + endTimestamp +
+				", success=" + success +
+				", lastStartTimestamp=" + lastStartTimestamp +
+				'}';
 	}
 }
