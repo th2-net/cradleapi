@@ -1,25 +1,34 @@
 plugins {
 	id "io.github.gradle-nexus.publish-plugin" version"1.0.0"
+	id "org.owasp.dependencycheck" version "8.1.2"
 	id 'signing'
 }
 
 ext {
-	slf4j_version = '1.7.36'
-	jackson_version = '2.9.7'
-
 	sharedDir = file("${project.rootDir}/shared")
 }
 
 allprojects {
 	version = release_version
 	group   = 'com.exactpro.th2'
+
+	dependencyCheck {
+		formats=['SARIF', 'JSON', 'HTML']
+		failBuildOnCVSS=5
+		analyzers {
+			assemblyEnabled = false
+			nugetconfEnabled = false
+			nodeEnabled = false
+		}
+	}
+
 }
 
 subprojects {
 	apply plugin: 'java-library'
-	apply plugin: 'maven'
 	apply plugin: 'maven-publish'
 	apply plugin: 'signing'
+	apply plugin: 'org.owasp.dependencycheck'
 
 	repositories {
 		mavenCentral()
@@ -29,14 +38,13 @@ subprojects {
 			resolutionStrategy.cacheDynamicVersionsFor 0, 'seconds'
 		}
 	}
-	
-	
+
+
 	defaultTasks 'build'
 	
 	sourceCompatibility = JavaVersion.VERSION_11 //Java version compatibility to use when compiling Java source.
 	targetCompatibility = JavaVersion.VERSION_11 //Java version to generate classes for.
 	compileJava.options.debugOptions.debugLevel = 'source,lines,vars' // Include debug information
-
 
 	jar {
 		manifest {

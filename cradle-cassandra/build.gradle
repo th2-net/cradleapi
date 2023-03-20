@@ -1,5 +1,5 @@
 ext {
-	driver_version = '4.13.0'
+	driver_version = '4.15.0'
 }
 
 configurations.all {
@@ -8,19 +8,31 @@ configurations.all {
 }
 
 dependencies {
-	compile project(":cradle-core")
+	api project(":cradle-core")
 
+	implementation "org.apache.commons:commons-lang3"
 	implementation 'com.exactpro.th2:task-utils:0.1.0'
-	annotationProcessor "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
 
 	implementation "com.datastax.oss:java-driver-core:${driver_version}"
 	implementation "com.datastax.oss:java-driver-query-builder:${driver_version}"
 	implementation "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
 	implementation "com.datastax.oss:java-driver-mapper-runtime:${driver_version}"
 	implementation 'io.prometheus:simpleclient_dropwizard:0.9.0'
-	
+
+	// this section is required to bypass failing vulnerability check caused by cassandra driver's transitive dependencies
+	implementation 'io.netty:netty-handler'
+	implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+	annotationProcessor platform('com.exactpro.th2:bom:4.2.0')
+	annotationProcessor "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
+	annotationProcessor 'io.netty:netty-handler'
+	annotationProcessor 'com.fasterxml.jackson.core:jackson-databind'
+	// ---
+
 	testImplementation 'org.testng:testng:7.1.0'
 	testImplementation 'org.assertj:assertj-core:3.12.2'
+	testImplementation "org.apache.logging.log4j:log4j-slf4j2-impl"
+	testImplementation 'org.apache.logging.log4j:log4j-core'
 }
 
 def gen_dir = 'build/generated/sources/annotationProcessor/main'

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -50,7 +51,8 @@ public abstract class CradleStorage
 	public static final ZoneOffset TIMEZONE_OFFSET = ZoneOffset.UTC;
 	public static final long EMPTY_MESSAGE_INDEX = -1L;
 	public static final int DEFAULT_MAX_MESSAGE_BATCH_SIZE = 1024*1024,
-			DEFAULT_MAX_TEST_EVENT_BATCH_SIZE = DEFAULT_MAX_MESSAGE_BATCH_SIZE;
+			DEFAULT_MAX_TEST_EVENT_BATCH_SIZE = DEFAULT_MAX_MESSAGE_BATCH_SIZE,
+			DEFAULT_COMPOSING_SERVICE_THREADS = 5;
 
 	protected BookManager bookManager;
 	private volatile boolean initialized = false,
@@ -59,16 +61,14 @@ public abstract class CradleStorage
 	protected final boolean ownedComposingService;
 	protected final CradleEntitiesFactory entitiesFactory;
 
-	public CradleStorage(ExecutorService composingService, int maxMessageBatchSize,
-			int maxTestEventBatchSize) throws CradleStorageException
+	public CradleStorage(ExecutorService composingService, int composingServiceThreads, int maxMessageBatchSize,
+						 int maxTestEventBatchSize) throws CradleStorageException
 	{
-		if (composingService == null)
-		{
+		if (composingService == null) {
 			ownedComposingService = true;
-			this.composingService = Executors.newFixedThreadPool(5);
-		}
-		else
-		{
+			this.composingService = Executors.newFixedThreadPool(composingServiceThreads);
+			logger.info("Created composing service executor with {} threads", composingServiceThreads);
+		} else {
 			ownedComposingService = false;
 			this.composingService = composingService;
 		}
@@ -78,8 +78,8 @@ public abstract class CradleStorage
 	
 	public CradleStorage() throws CradleStorageException
 	{
-		this(null, DEFAULT_MAX_MESSAGE_BATCH_SIZE,
-				DEFAULT_MAX_TEST_EVENT_BATCH_SIZE);
+		this(null, DEFAULT_COMPOSING_SERVICE_THREADS,
+				DEFAULT_MAX_MESSAGE_BATCH_SIZE, DEFAULT_MAX_TEST_EVENT_BATCH_SIZE);
 	}
 	
 
@@ -344,12 +344,21 @@ public abstract class CradleStorage
 		
 		List<PageInfo> toAdd = checkPages(pages, book);
 		
-		PageInfo lastPage = book.getLastPage();
-		PageInfo endedPage;
-		if (lastPage != null && lastPage.getEnded() == null)
-			endedPage = PageInfo.ended(lastPage, toAdd.get(0).getStarted());
-		else
-			endedPage = null;
+		PageInfo bookLastPage = book.getLastPage();
+		PageInfo endedPage = null;
+		PageInfo lastPageToAdd = !toAdd.isEmpty() ? toAdd.get(toAdd.size()-1) : null;
+
+		/*
+			If last page of toAdd list is after current last we need to
+			finish current last page in book
+		 */
+		if (bookLastPage != null
+				&& bookLastPage.getEnded() == null
+				&& lastPageToAdd != null
+				&& lastPageToAdd.getStarted().isAfter(bookLastPage.getStarted())) {
+
+				endedPage = PageInfo.ended(bookLastPage, toAdd.get(0).getStarted());
+		}
 		
 		try
 		{
@@ -574,20 +583,27 @@ public abstract class CradleStorage
 		String id = String.format("%s:%s", batch.getBookId(), batch.getFirstTimestamp().toString());
 		logger.debug("Storing message batch {} grouped by {} asynchronously", id, groupName);
 
-		var batches = paginateBatch(batch);
-
-		CompletableFuture<Void>[] futures = new CompletableFuture[batches.size()];
-		int i = 0;
-		for (var b : batches) {
-			CompletableFuture<Void> future;
+		CompletableFuture<Void> result = CompletableFuture.supplyAsync(() -> {
 			try {
-				future = doStoreGroupedMessageBatchAsync(b.getKey(), b.getValue());
+				return paginateBatch(batch);
 			} catch (Exception e) {
-				future = CompletableFuture.failedFuture(e);
+				throw new CompletionException(e);
 			}
-			futures[i++] = future;
-		}
-		CompletableFuture<Void> result = CompletableFuture.allOf(futures);
+		}, composingService).thenCompose((batches) -> {
+			CompletableFuture<Void>[] futures = new CompletableFuture[batches.size()];
+			int i = 0;
+			for (var b : batches) {
+				CompletableFuture<Void> future;
+				try {
+					future = doStoreGroupedMessageBatchAsync(b.getKey(), b.getValue());
+				} catch (Exception e) {
+					future = CompletableFuture.failedFuture(e);
+				}
+				futures[i++] = future;
+			}
+			return CompletableFuture.allOf(futures);
+		});
+
 		result.whenCompleteAsync((r, error) -> {
 			if (error != null)
 				logger.error("Error while storing message batch "+id+" grouped by "+groupName+" asynchronously", error);
@@ -650,7 +666,7 @@ public abstract class CradleStorage
 		logger.debug("Storing test event {}", id);
 		PageInfo page = findPage(id.getBookId(), id.getStartTimestamp());
 		
-		TestEventUtils.validateTestEvent(event);
+		TestEventUtils.validateTestEvent(event, getBookCache().getBook(id.getBookId()));
 		final TestEventToStore alignedEvent = alignEventTimestampsToPage(event, page);
 		
 		doStoreTestEvent(alignedEvent, page);
@@ -675,7 +691,7 @@ public abstract class CradleStorage
 		logger.debug("Storing test event {} asynchronously", id);
 		PageInfo page = findPage(id.getBookId(), id.getStartTimestamp());
 		
-		TestEventUtils.validateTestEvent(event);
+		TestEventUtils.validateTestEvent(event, getBookCache().getBook(id.getBookId()));
 		final TestEventToStore alignedEvent = alignEventTimestampsToPage(event, page);
 		
 		CompletableFuture<Void> result = doStoreTestEventAsync(alignedEvent, page);
@@ -1344,7 +1360,24 @@ public abstract class CradleStorage
 			}, composingService);
 		return result;
 	}
-	
+
+	private Instant checkCollisionAndGetPageEnd(BookInfo book, PageToAdd page, Instant defaultPageEnd) throws CradleStorageException {
+		PageInfo pageInBookBeforeStart = book.findPage(page.getStart());
+
+		if (pageInBookBeforeStart != null
+				&& pageInBookBeforeStart.getEnded() != null
+				&& pageInBookBeforeStart.getEnded().isAfter(page.getStart())) {
+			throw new CradleStorageException(String.format("Can't add new page in book %s, it collided with current page %s %s-%s",
+					book.getId().getName(),
+					pageInBookBeforeStart.getId().getName(),
+					pageInBookBeforeStart.getStarted(),
+					pageInBookBeforeStart.getEnded()));
+		}
+
+		PageInfo pageInBookAfterStart = book.getNextPage(page.getStart());
+
+		return pageInBookAfterStart == null ? defaultPageEnd : pageInBookAfterStart.getStarted();
+	}
 	
 	private List<PageInfo> checkPages(List<PageToAdd> pages, BookInfo book) throws CradleStorageException
 	{
@@ -1355,8 +1388,6 @@ public abstract class CradleStorage
 					firstStart = pages.get(0).getStart();
 			if (!firstStart.isAfter(now))
 				throw new CradleStorageException("Timestamp of new page start must be after current timestamp ("+now+")");
-			if (!firstStart.isAfter(lastPage.getStarted()))
-				throw new CradleStorageException("Timestamp of new page start must be after last page start ("+lastPage.getStarted()+")");
 		}
 		
 		Set<String> names = new HashSet<>();
@@ -1377,21 +1408,25 @@ public abstract class CradleStorage
 			
 			if (prevPage != null)
 			{
-				if (!page.getStart().isAfter(prevPage.getStart()))
+				if (!page.getStart().isAfter(prevPage.getStart())) {
 					throw new CradleStorageException("Unordered pages: page '"+name+"' should start after page '"+prevPage.getName()+"'");
-				result.add(new PageInfo(new PageId(bookId, prevPage.getName()), 
-						prevPage.getStart(), 
-						page.getStart(), 
+				}
+
+				result.add(new PageInfo(new PageId(bookId, prevPage.getName()),
+						prevPage.getStart(),
+						checkCollisionAndGetPageEnd(book, prevPage, page.getStart()),
 						prevPage.getComment()));
 			}
 			prevPage = page;
 		}
 
-		if (prevPage != null)
-			result.add(new PageInfo(new PageId(bookId, prevPage.getName()), 
-					prevPage.getStart(), 
-					null, 
+		if (prevPage != null) {
+			result.add(new PageInfo(new PageId(bookId, prevPage.getName()),
+					prevPage.getStart(),
+					checkCollisionAndGetPageEnd(book, prevPage, null),
 					prevPage.getComment()));
+		}
+
 		return result;
 	}
 	
@@ -1449,9 +1484,6 @@ public abstract class CradleStorage
 
 	public PageInfo findPage(BookId bookId, Instant timestamp) throws CradleStorageException {
 		BookInfo book = getBookCache().getBook(bookId);
-		Instant now = Instant.now();
-		if (timestamp.isAfter(now))
-			throw new PageNotFoundException(String.format("Timestamp %s is from future, now is %s", timestamp, now));
 		PageInfo page = book.findPage(timestamp);
 		if (page == null || (page.getEnded() != null && !timestamp.isBefore(page.getEnded())))  //If page.getEnded().equals(timestamp), timestamp is outside of page
 			throw new PageNotFoundException(String.format("Book '%s' has no page for timestamp %s", bookId, timestamp));

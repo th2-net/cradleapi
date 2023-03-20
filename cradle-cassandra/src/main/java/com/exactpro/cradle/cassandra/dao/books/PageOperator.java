@@ -28,11 +28,8 @@ import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.mapper.annotations.Dao;
-import com.datastax.oss.driver.api.mapper.annotations.Insert;
-import com.datastax.oss.driver.api.mapper.annotations.Query;
-import com.datastax.oss.driver.api.mapper.annotations.Select;
-import com.datastax.oss.driver.api.mapper.annotations.Update;
+import com.datastax.oss.driver.api.mapper.annotations.*;
+import com.datastax.oss.driver.api.mapper.entity.saving.NullSavingStrategy;
 
 @Dao
 public interface PageOperator {
@@ -45,8 +42,8 @@ public interface PageOperator {
 			    "(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") > (:startDate, :startTime)")
 	PagingIterable<PageEntity> get(String book, LocalDate startDate, LocalTime startTime,
 								   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
-	@Update
+
+	@Update(nullSavingStrategy = NullSavingStrategy.SET_TO_NULL)
 	ResultSet update(PageEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
@@ -59,9 +56,12 @@ public interface PageOperator {
 				FIELD_BOOK +"=:book AND " +
 				FIELD_START_DATE + "=:startDate AND " +
 				FIELD_START_TIME + "=:startTime")
-	ResultSet remove(String book, LocalDate startDate, LocalTime startTime, Instant removed,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	ResultSet setRemovedStatus(String book, LocalDate startDate, LocalTime startTime, Instant removed,
+							   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
+	@Delete(entityClass = PageEntity.class)
+	ResultSet remove (String book, LocalDate startDate, LocalTime startTime,
+					  Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Query("SELECT * FROM ${qualifiedTableId} " +
 			"WHERE " +
