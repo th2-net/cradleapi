@@ -135,7 +135,7 @@ public class CassandraCradleStorage extends CradleStorage
 		{
 			DriverMetrics.register(connection.getSession());
 			exec = new QueryExecutor(connection.getSession(),
-					settings.getTimeout(), settings.getWriteConsistencyLevel(), settings.getReadConsistencyLevel());
+					settings.getTimeout(), settings.getWriteConsistencyLevel().getValue(), settings.getReadConsistencyLevel().getValue());
 			selectExecutor = new SelectQueryExecutor(connection.getSession(), composingService, multiRowResultExecPolicy,
 							singleRowResultExecPolicy);
 			if (prepareStorage)
@@ -146,11 +146,11 @@ public class CassandraCradleStorage extends CradleStorage
 
 			Duration timeout = Duration.ofMillis(settings.getTimeout());
 			int resultPageSize = settings.getResultPageSize();
-			writeAttrs = builder -> builder.setConsistencyLevel(settings.getWriteConsistencyLevel())
+			writeAttrs = builder -> builder.setConsistencyLevel(settings.getWriteConsistencyLevel().getValue())
 					.setTimeout(timeout);
-			batchWriteAttrs = builder -> builder.setConsistencyLevel(settings.getWriteConsistencyLevel())
+			batchWriteAttrs = builder -> builder.setConsistencyLevel(settings.getWriteConsistencyLevel().getValue())
 					.setTimeout(timeout);
-			readAttrs = builder -> builder.setConsistencyLevel(settings.getReadConsistencyLevel())
+			readAttrs = builder -> builder.setConsistencyLevel(settings.getReadConsistencyLevel().getValue())
 					.setTimeout(timeout)
 					.setPageSize(resultPageSize);
 			strictReadAttrs = builder -> builder.setConsistencyLevel(ConsistencyLevel.ALL)
