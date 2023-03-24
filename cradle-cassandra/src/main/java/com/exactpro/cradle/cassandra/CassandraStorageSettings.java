@@ -17,70 +17,78 @@
 package com.exactpro.cradle.cassandra;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
-import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.cassandra.connection.NetworkTopologyStrategy;
 import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import static com.exactpro.cradle.CradleStorage.DEFAULT_COMPOSING_SERVICE_THREADS;
+import static com.exactpro.cradle.CradleStorage.DEFAULT_MAX_MESSAGE_BATCH_SIZE;
+import static com.exactpro.cradle.CradleStorage.DEFAULT_MAX_TEST_EVENT_BATCH_SIZE;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CassandraStorageSettings {
     public static final String SCHEMA_VERSION = "5.3.0";
-    public static final long DEFAULT_TIMEOUT = 5000;
+
     public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
-    public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1,
-            DEFAULT_MAX_PARALLEL_QUERIES = 500,
-            DEFAULT_RESULT_PAGE_SIZE = 0,
-            DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_SIZE = 5 * 1024,
-            DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE = 5 * 1024,
-            DEFAULT_SESSIONS_CACHE_SIZE = 100,
-            DEFAULT_SCOPES_CACHE_SIZE = 10,
-            DEFAULT_PAGE_SESSION_CACHE_SIZE = 100,
-            DEFAULT_PAGE_SCOPES_CACHE_SIZE = 100,
-            DEFAULT_SESSION_STATISTICS_CACHE_SIZE = 10_000,
-            DEFAULT_GROUPS_CACHE_SIZE = 10_000,
-            DEFAULT_EVENT_BATCH_DURATION_CACHE_SIZE = 5_000,
-            DEFAULT_PAGE_GROUPS_CACHE_SIZE = 10_000,
-            DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS = 1000;
-	public static final long DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS = 60000,
-            DEFAULT_EVENT_BATCH_DURATION_MILLIS = 5_000;
+    public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1;
+    public static final int DEFAULT_MAX_PARALLEL_QUERIES = 500;
+    public static final int DEFAULT_RESULT_PAGE_SIZE = 0;
+    public static final int DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_SIZE = 5 * 1024;
+    public static final int DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE = 5 * 1024;
+    public static final int DEFAULT_SESSIONS_CACHE_SIZE = 100;
+    public static final int DEFAULT_SCOPES_CACHE_SIZE = 10;
+    public static final int DEFAULT_PAGE_SESSION_CACHE_SIZE = 100;
+    public static final int DEFAULT_PAGE_SCOPES_CACHE_SIZE = 100;
+    public static final int DEFAULT_SESSION_STATISTICS_CACHE_SIZE = 10_000;
+    public static final int DEFAULT_GROUPS_CACHE_SIZE = 10_000;
+    public static final int DEFAULT_EVENT_BATCH_DURATION_CACHE_SIZE = 5_000;
+    public static final int DEFAULT_PAGE_GROUPS_CACHE_SIZE = 10_000;
+    public static final int DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS = 1000;
+	public static final long DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS = 60000;
+    public static final long DEFAULT_EVENT_BATCH_DURATION_MILLIS = 5_000;
+    public static final long DEFAULT_TIMEOUT = 5000;
     public static final boolean DEFAULT_STORE_INDIVIDUAL_MESSAGE_SESSIONS = true;
 
 
 
-    private final NetworkTopologyStrategy networkTopologyStrategy;
-    private final long timeout;
-    private final ConsistencyLevel writeConsistencyLevel,
-            readConsistencyLevel;
-    private String keyspace,
-            schemaVersion;
-    private int keyspaceReplicationFactor;
+    @JsonIgnore
+    private NetworkTopologyStrategy networkTopologyStrategy;
+    private long timeout = DEFAULT_TIMEOUT;
+    @JsonIgnore
+    private ConsistencyLevel writeConsistencyLevel = DEFAULT_CONSISTENCY_LEVEL;
+    @JsonIgnore
+    private ConsistencyLevel readConsistencyLevel = DEFAULT_CONSISTENCY_LEVEL;
+    private String keyspace;
+    private String schemaVersion = SCHEMA_VERSION;
+    private int keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
 
-    private int maxParallelQueries, //FIXME: remove
-            resultPageSize,
-            maxMessageBatchSize,
-            maxUncompressedMessageBatchSize,
-            maxTestEventBatchSize,
-            maxUncompressedTestEventSize,
-            sessionsCacheSize,
-            scopesCacheSize,
-            pageSessionsCacheSize,
-            pageScopesCacheSize,
-            sessionStatisticsCacheSize,
-            pageGroupsCacheSize,
-            groupsCacheSize,
-            eventBatchDurationCacheSize,
-            counterPersistenceInterval,
-            composingServiceThreads;
+    private int maxParallelQueries = DEFAULT_MAX_PARALLEL_QUERIES; // FIXME: remove
+    private int resultPageSize = DEFAULT_RESULT_PAGE_SIZE;
+    private int maxMessageBatchSize = DEFAULT_MAX_MESSAGE_BATCH_SIZE;
+    private int maxUncompressedMessageBatchSize = DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_SIZE;
+    private int maxTestEventBatchSize = DEFAULT_MAX_TEST_EVENT_BATCH_SIZE;
+    private int maxUncompressedTestEventSize = DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE;
+    private int sessionsCacheSize = DEFAULT_SESSIONS_CACHE_SIZE;
+    private int scopesCacheSize = DEFAULT_SCOPES_CACHE_SIZE;
+    private int pageSessionsCacheSize = DEFAULT_PAGE_SESSION_CACHE_SIZE;
+    private int pageScopesCacheSize = DEFAULT_PAGE_SCOPES_CACHE_SIZE;
+    private int sessionStatisticsCacheSize = DEFAULT_SESSION_STATISTICS_CACHE_SIZE;
+    private int pageGroupsCacheSize = DEFAULT_PAGE_GROUPS_CACHE_SIZE;
+    private int groupsCacheSize = DEFAULT_GROUPS_CACHE_SIZE;
+    private int eventBatchDurationCacheSize = DEFAULT_EVENT_BATCH_DURATION_CACHE_SIZE;
+    private int counterPersistenceInterval = DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS;
+    private int composingServiceThreads = DEFAULT_COMPOSING_SERVICE_THREADS;
 
-    private SelectExecutionPolicy multiRowResultExecutionPolicy, singleRowResultExecutionPolicy;
+    private SelectExecutionPolicy multiRowResultExecutionPolicy;
+    private SelectExecutionPolicy singleRowResultExecutionPolicy;
 
-	private long bookRefreshIntervalMillis, eventBatchDurationMillis;
+	private long bookRefreshIntervalMillis = DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS;
+    private long eventBatchDurationMillis = DEFAULT_EVENT_BATCH_DURATION_MILLIS;
 
-    private boolean storeIndividualMessageSessions;
+    private boolean storeIndividualMessageSessions = DEFAULT_STORE_INDIVIDUAL_MESSAGE_SESSIONS;
 
-    public CassandraStorageSettings() {
-        this(null, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
-    }
+    public CassandraStorageSettings() { }
 
     public CassandraStorageSettings(long timeout,
                                     ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel) {
@@ -89,33 +97,11 @@ public class CassandraStorageSettings {
 
     public CassandraStorageSettings(NetworkTopologyStrategy networkTopologyStrategy, long timeout,
                                     ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel) {
+        this();
         this.networkTopologyStrategy = networkTopologyStrategy;
         this.timeout = timeout;
         this.writeConsistencyLevel = writeConsistencyLevel;
         this.readConsistencyLevel = readConsistencyLevel;
-
-        this.schemaVersion = SCHEMA_VERSION;
-
-        this.keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
-        this.maxParallelQueries = DEFAULT_MAX_PARALLEL_QUERIES;
-        this.resultPageSize = DEFAULT_RESULT_PAGE_SIZE;
-        this.maxMessageBatchSize = CradleStorage.DEFAULT_MAX_MESSAGE_BATCH_SIZE;
-        this.maxUncompressedMessageBatchSize = DEFAULT_MAX_UNCOMPRESSED_MESSAGE_BATCH_SIZE;
-        this.maxTestEventBatchSize = CradleStorage.DEFAULT_MAX_TEST_EVENT_BATCH_SIZE;
-        this.maxUncompressedTestEventSize = DEFAULT_MAX_UNCOMPRESSED_TEST_EVENT_SIZE;
-        this.pageSessionsCacheSize = DEFAULT_PAGE_SESSION_CACHE_SIZE;
-        this.scopesCacheSize = DEFAULT_SCOPES_CACHE_SIZE;
-        this.pageScopesCacheSize = DEFAULT_PAGE_SCOPES_CACHE_SIZE;
-        this.counterPersistenceInterval = DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS;
-        this.composingServiceThreads = DEFAULT_COMPOSING_SERVICE_THREADS;
-		this.bookRefreshIntervalMillis = DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS;
-        this.sessionsCacheSize = DEFAULT_SESSIONS_CACHE_SIZE;
-        this.sessionStatisticsCacheSize = DEFAULT_SESSION_STATISTICS_CACHE_SIZE;
-        this.pageGroupsCacheSize = DEFAULT_PAGE_GROUPS_CACHE_SIZE;
-        this.groupsCacheSize = DEFAULT_GROUPS_CACHE_SIZE;
-        this.eventBatchDurationCacheSize = DEFAULT_EVENT_BATCH_DURATION_CACHE_SIZE;
-        this.eventBatchDurationMillis = DEFAULT_EVENT_BATCH_DURATION_MILLIS;
-        this.storeIndividualMessageSessions = DEFAULT_STORE_INDIVIDUAL_MESSAGE_SESSIONS;
     }
 
     public CassandraStorageSettings(CassandraStorageSettings settings) {
@@ -158,18 +144,33 @@ public class CassandraStorageSettings {
         return networkTopologyStrategy;
     }
 
+    public void setNetworkTopologyStrategy(NetworkTopologyStrategy networkTopologyStrategy) {
+        this.networkTopologyStrategy = networkTopologyStrategy;
+    }
+
     public long getTimeout() {
         return timeout;
+    }
+
+    public void setTimeout(long timeout) {
+        this.timeout = timeout;
     }
 
     public ConsistencyLevel getWriteConsistencyLevel() {
         return writeConsistencyLevel;
     }
 
+    public void setWriteConsistencyLevel(ConsistencyLevel writeConsistencyLevel) {
+        this.writeConsistencyLevel = writeConsistencyLevel;
+    }
+
     public ConsistencyLevel getReadConsistencyLevel() {
         return readConsistencyLevel;
     }
 
+    public void setReadConsistencyLevel(ConsistencyLevel readConsistencyLevel) {
+        this.readConsistencyLevel = readConsistencyLevel;
+    }
 
     public String getKeyspace() {
         return keyspace;
@@ -369,5 +370,39 @@ public class CassandraStorageSettings {
 
     public void setStoreIndividualMessageSessions(boolean storeIndividualMessageSessions) {
         this.storeIndividualMessageSessions = storeIndividualMessageSessions;
+    }
+
+    @Override
+    public String toString() {
+        return "CassandraStorageSettings{" +
+                "networkTopologyStrategy=" + networkTopologyStrategy +
+                ", timeout=" + timeout +
+                ", writeConsistencyLevel=" + writeConsistencyLevel +
+                ", readConsistencyLevel=" + readConsistencyLevel +
+                ", keyspace='" + keyspace + '\'' +
+                ", schemaVersion='" + schemaVersion + '\'' +
+                ", keyspaceReplicationFactor=" + keyspaceReplicationFactor +
+                ", maxParallelQueries=" + maxParallelQueries +
+                ", resultPageSize=" + resultPageSize +
+                ", maxMessageBatchSize=" + maxMessageBatchSize +
+                ", maxUncompressedMessageBatchSize=" + maxUncompressedMessageBatchSize +
+                ", maxTestEventBatchSize=" + maxTestEventBatchSize +
+                ", maxUncompressedTestEventSize=" + maxUncompressedTestEventSize +
+                ", sessionsCacheSize=" + sessionsCacheSize +
+                ", scopesCacheSize=" + scopesCacheSize +
+                ", pageSessionsCacheSize=" + pageSessionsCacheSize +
+                ", pageScopesCacheSize=" + pageScopesCacheSize +
+                ", sessionStatisticsCacheSize=" + sessionStatisticsCacheSize +
+                ", pageGroupsCacheSize=" + pageGroupsCacheSize +
+                ", groupsCacheSize=" + groupsCacheSize +
+                ", eventBatchDurationCacheSize=" + eventBatchDurationCacheSize +
+                ", counterPersistenceInterval=" + counterPersistenceInterval +
+                ", composingServiceThreads=" + composingServiceThreads +
+                ", multiRowResultExecutionPolicy=" + multiRowResultExecutionPolicy +
+                ", singleRowResultExecutionPolicy=" + singleRowResultExecutionPolicy +
+                ", bookRefreshIntervalMillis=" + bookRefreshIntervalMillis +
+                ", eventBatchDurationMillis=" + eventBatchDurationMillis +
+                ", storeIndividualMessageSessions=" + storeIndividualMessageSessions +
+                '}';
     }
 }

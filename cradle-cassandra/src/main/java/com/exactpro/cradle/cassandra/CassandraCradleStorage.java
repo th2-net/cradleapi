@@ -111,12 +111,15 @@ public class CassandraCradleStorage extends CradleStorage
 		this.settings = storageSettings;
 
 		this.multiRowResultExecPolicy = settings.getMultiRowResultExecutionPolicy();
-		if (this.multiRowResultExecPolicy == null)
+		if (this.multiRowResultExecPolicy == null) {
 			this.multiRowResultExecPolicy = new PageSizeAdjustingPolicy(settings.getResultPageSize(), 2);
+		}
 
 		this.singleRowResultExecPolicy = settings.getSingleRowResultExecutionPolicy();
-		if (this.singleRowResultExecPolicy == null)
+		if (this.singleRowResultExecPolicy == null) {
 			this.singleRowResultExecPolicy = new FixedNumberRetryPolicy(5);
+		}
+		LOGGER.info("Created cassandra cradle storage via {}", storageSettings);
 	}
 
 	private static final Consumer<Object> NOOP = whatever -> {};
