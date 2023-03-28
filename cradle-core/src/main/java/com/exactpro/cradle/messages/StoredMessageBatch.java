@@ -26,6 +26,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import static com.exactpro.cradle.serialization.MessagesSizeCalculator.MESSAGE_BATCH_CONST_VALUE;
+
 public class StoredMessageBatch implements MessageBatch
 {
 	protected StoredMessageId id;
@@ -43,11 +45,11 @@ public class StoredMessageBatch implements MessageBatch
 		this.recDate = recDate;
 		this.messages = createMessagesList(messages, pageId);
 		if (messages == null || messages.isEmpty()) {
-			batchSize = MessagesSizeCalculator.calculateMessageBatchSize(Collections.emptyList()).total;
+			batchSize = MESSAGE_BATCH_CONST_VALUE;
 			return;
 		}
 		id = this.messages.get(0).getId();
-		batchSize = MessagesSizeCalculator.calculateMessageBatchSize(messages).total;
+		batchSize = MessagesSizeCalculator.calculateMessageBatchSize(messages);
 	}
 
 	@Override

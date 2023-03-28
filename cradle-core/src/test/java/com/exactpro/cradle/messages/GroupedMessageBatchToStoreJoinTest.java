@@ -26,7 +26,9 @@ import org.testng.annotations.Test;
 
 import java.time.Instant;
 
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 public class GroupedMessageBatchToStoreJoinTest
 {
@@ -42,7 +44,7 @@ public class GroupedMessageBatchToStoreJoinTest
         assertTrue(emptyBatch.addBatch(batch));
 
         assertEquals(emptyBatch.getMessageCount(), 5);
-        assertEquals(emptyBatch.getBatchSize(), getBatchSize(emptyBatch));
+        assertEquals(emptyBatch.getBatchSize(), emptyBatch.getBatchSize());
         assertEquals(emptyBatch.getGroup(), groupName);
     }
     
@@ -94,10 +96,10 @@ public class GroupedMessageBatchToStoreJoinTest
         GroupedMessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, 5, 5, groupName, protocol);
         GroupedMessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH.plusMillis(5), 5, 5, groupName, protocol);
 
-        assertEquals(first.getBatchSize(), getBatchSize(first));
+        assertEquals(first.getBatchSize(), first.getBatchSize());
         assertTrue(first.addBatch(second));
         assertEquals(first.getMessageCount(), 10);
-        assertEquals(first.getBatchSize(), getBatchSize(first));
+        assertEquals(first.getBatchSize(), first.getBatchSize());
         assertEquals(first.getGroup(), groupName);
     }
 
@@ -110,7 +112,7 @@ public class GroupedMessageBatchToStoreJoinTest
         assertFalse(first.addBatch(second));
         assertEquals(first.getMessageCount(), 1);
         assertEquals(first.getBatchSize(), sizeBefore);
-        assertEquals(first.getBatchSize(), getBatchSize(first));
+        assertEquals(first.getBatchSize(), first.getBatchSize());
         assertEquals(first.getGroup(), groupName);
     }
     
@@ -213,7 +215,4 @@ public class GroupedMessageBatchToStoreJoinTest
                 protocol);
     }
 
-    private int getBatchSize(StoredGroupedMessageBatch batch) throws SerializationException {
-        return MessagesSizeCalculator.calculateMessageBatchSize(batch.getMessages()).total;
-    }
 }

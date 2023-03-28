@@ -17,14 +17,12 @@
 package com.exactpro.cradle.messages;
 
 import com.exactpro.cradle.Direction;
-import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -67,7 +65,7 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 	 * @return true if batch has enough space to hold given message
 	 */
 	public boolean hasSpace(MessageToStore message)	{
-		return hasSpace(MessagesSizeCalculator.calculateMessageSize(message));
+		return hasSpace(message.getSerializedSize());
 	}
 
 	private boolean hasSpace(int messageSize) {
@@ -81,20 +79,19 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 	 * @return immutable message object with assigned ID
 	 * @throws CradleStorageException if message cannot be added to the batch due to verification failure
 	 */
-	//FIXME: java.util.TreeSet.add() 68,759 ms (28.3%) jmh test
 	public StoredMessage addMessage(MessageToStore message) throws CradleStorageException {
-		int expMsgSize = MessagesSizeCalculator.calculateMessageSizeInBatch(message);
+		int expMsgSize = message.getSerializedSize();
 		if (!hasSpace(expMsgSize))
 			throw new CradleStorageException("Batch has not enough space to hold given message");
 		
 		// Checking that the timestamp of a message is not from the future
 		// Other checks have already been done when the MessageToStore was created
 		SessionKey sessionKey = new SessionKey(message.getSessionAlias(), message.getDirection());
-		Instant now = Instant.now();
-		if (message.getTimestamp().isAfter(now))
+		long now = System.currentTimeMillis() / 1000;
+		if (message.getTimestamp().getEpochSecond() > now)
 			throw new CradleStorageException(
 					"Message timestamp (" + TimeUtils.toLocalTimestamp(message.getTimestamp()) +
-							") is greater than current timestamp (" + TimeUtils.toLocalTimestamp(now) + ")");
+							") is greater than current timestamp (" + TimeUtils.toLocalTimestamp(Instant.ofEpochSecond(now)) + ")");
 
 		long messageSeq;
 		if (bookId == null) { 		// first message in the batch
@@ -145,8 +142,7 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 		StoredMessageId msgId = new StoredMessageId(message.getBookId(), message.getSessionAlias(), message.getDirection(), message.getTimestamp(), messageSeq);
 		StoredMessage msg = new StoredMessage(message, msgId, null);
 		messages.add(msg);
-		firstMessages.putIfAbsent(sessionKey, msg);
-		lastMessages.put(sessionKey, msg);
+		if (lastMessages.put(sessionKey, msg) == null) firstMessages.put(sessionKey, msg);
 		batchSize += expMsgSize;
 
 		return msg;
@@ -185,7 +181,7 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 		if (isFull() || batch.isFull())
 			return false;
 
-		int resultSize = batchSize + batch.messages.stream().mapToInt(MessagesSizeCalculator::calculateMessageSizeInBatch).sum();
+		int resultSize = batchSize + batch.messages.stream().mapToInt(StoredMessage::getSerializedSize).sum();
 
 		if (resultSize > maxBatchSize) {
 			// cannot add because of size limit
@@ -195,8 +191,7 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 		batch.getMessages().forEach(message -> {
 			messages.add(message);
 			SessionKey sessionKey = new SessionKey(message.getSessionAlias(), message.getDirection());
-			lastMessages.put(sessionKey, message);
-			firstMessages.putIfAbsent(sessionKey, message);
+			if (lastMessages.put(sessionKey, message) == null) firstMessages.put(sessionKey, message);
 		});
 		this.batchSize = resultSize;
 		return true;

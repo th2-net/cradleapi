@@ -18,6 +18,8 @@ package com.exactpro.cradle.utils;
 
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.messages.CradleMessage;
+import com.exactpro.cradle.messages.GroupedMessageBatchToStore;
+import com.exactpro.cradle.messages.MessageBatchToStore;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.serialization.MessageCommonParams;
@@ -61,13 +63,35 @@ public class MessageUtils
 	}
 
 	/**
+	 * Serializes batch messages, skipping non-meaningful or calculable fields
+	 *
+	 * @param batch to serialize
+	 * @return {@link SerializedEntityData} containing serialized messages.
+	 * @throws IOException if serialization failed
+	 */
+	public static SerializedEntityData serializeMessages(MessageBatchToStore batch) throws IOException {
+		return serializer.serializeBatch(batch);
+	}
+
+	/**
+	 * Serializes batch messages, skipping non-meaningful or calculable fields
+	 *
+	 * @param batch to serialize
+	 * @return {@link SerializedEntityData} containing serialized messages.
+	 * @throws IOException if serialization failed
+	 */
+	public static SerializedEntityData serializeMessages(GroupedMessageBatchToStore batch) throws IOException {
+		return serializer.serializeBatch(batch);
+	}
+
+	/**
 	 * Serializes messages, skipping non-meaningful or calculable fields
+	 *
 	 * @param messages to serialize
 	 * @return {@link SerializedEntityData} containing serialized messages.
 	 * @throws IOException if serialization failed
 	 */
-	public static SerializedEntityData serializeMessages(Collection<StoredMessage> messages) throws IOException
-	{
+	public static SerializedEntityData serializeMessages(Collection<StoredMessage> messages) throws IOException {
 		return serializer.serializeBatch(messages);
 	}
 
