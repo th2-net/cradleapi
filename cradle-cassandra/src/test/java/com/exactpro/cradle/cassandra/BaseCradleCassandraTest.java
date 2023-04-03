@@ -27,6 +27,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Following class should be extended in order to
+ * use tests with embedded cassandra without
+ * actually calling any of init or utility methods
+ */
 public abstract class BaseCradleCassandraTest {
 
     private static final Logger logger = LoggerFactory.getLogger(BaseCradleCassandraTest.class);
@@ -71,6 +76,10 @@ public abstract class BaseCradleCassandraTest {
     protected Instant dataEnd = DEFAULT_DATA_END;
     protected BookId bookId = DEFAULT_BOOK_ID;
 
+    /*
+        Following method should be used in beforeClass if extending class
+        wants to implement it's own logic of initializing books and pages
+     */
     protected void startUp () {
         startUp(false);
     }
@@ -79,6 +88,11 @@ public abstract class BaseCradleCassandraTest {
         return new BookId(getClass().getSimpleName() + "Book");
     }
 
+    /**
+     * Following method should be implemented and
+     * then used in beforeClass. Here should go all data
+     * initialization logic for whole class.
+     */
     protected abstract void generateData ();
 
     protected void startUp(boolean generateBookPages) {
