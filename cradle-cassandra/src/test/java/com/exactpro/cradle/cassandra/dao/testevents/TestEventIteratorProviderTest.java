@@ -1,3 +1,18 @@
+/*
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.exactpro.cradle.BookInfo;
@@ -49,7 +64,7 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
     private EventBatchDurationWorker eventBatchDurationWorker;
 
     @BeforeClass
-    public void startUp () {
+    public void startUp () throws IOException, InterruptedException, CradleStorageException {
         super.startUp(true);
 
         setUpOperators ();
@@ -65,7 +80,7 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
     }
 
     @Override
-    protected void generateData() {
+    protected void generateData() throws CradleStorageException, IOException {
         try {
             TestEventToStore b1 = generateTestEvent(FIRST_SCOPE, dataStart.plus(5, ChronoUnit.MINUTES), EVENT_BATCH_DURATION, EVENT_BATCH_DURATION/EVENTS_IN_BATCH);
             TestEventToStore b2 = generateTestEvent(SECOND_SCOPE, dataStart.plus(14, ChronoUnit.MINUTES), EVENT_BATCH_DURATION, EVENT_BATCH_DURATION/EVENTS_IN_BATCH);
@@ -95,8 +110,8 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
                         .add(storedTestEvent);
             }
         } catch (CradleStorageException | IOException e) {
-            logger.info("Error while generating data:", e);
-            throw new RuntimeException(e);
+            logger.error("Error while generating data:", e);
+            throw e;
         }
     }
 
@@ -128,10 +143,8 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
         return batch;
     }
 
-    private TestEventIteratorProvider createIteratorProvider(TestEventFilter filter, Instant actualFrom) {
+    private TestEventIteratorProvider createIteratorProvider(TestEventFilter filter, Instant actualFrom) throws CradleStorageException {
         try {
-
-
             return new TestEventIteratorProvider(
                     "",
                     filter,
@@ -143,18 +156,18 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
                     storage.getReadAttrs(),
                     actualFrom);
         } catch (CradleStorageException e) {
-            logger.error("", e);
-            throw new RuntimeException(e);
+            logger.error(e.getMessage(), e);
+            throw e;
         }
     }
 
-    private void setUpOperators() {
+    private void setUpOperators() throws IOException, InterruptedException {
         CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(session).build();
         operators = new CassandraOperators(dataMapper, CassandraCradleHelper.getInstance().getStorageSettings());
     }
 
     @Test(description = "Gets all TestEvents with specific scope")
-    public void getAllTestEventsTest () {
+    public void getAllTestEventsTest () throws CradleStorageException, ExecutionException, InterruptedException {
         try {
             TestEventFilter filter =  new TestEventFilter(bookId, FIRST_SCOPE);
             TestEventIteratorProvider iteratorProvider = createIteratorProvider(filter, dataStart);
@@ -168,13 +181,13 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
             Assertions.assertThat(actual)
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException | CradleStorageException e) {
-            logger.error("", e);
-            Assertions.fail(e.getMessage());
+            logger.error(e.getMessage(), e);
+            throw e;
         }
     }
 
     @Test(description = "Gets all TestEvents from page with specific scope")
-    public void getTestEventsFromPage() {
+    public void getTestEventsFromPage() throws CradleStorageException, ExecutionException, InterruptedException {
         try {
             TestEventFilter filter =  new TestEventFilter(bookId, FIRST_SCOPE, pages.get(2).getId());
             TestEventIteratorProvider iteratorProvider = createIteratorProvider(filter, dataStart);
@@ -188,13 +201,13 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
             Assertions.assertThat(actual)
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException | CradleStorageException e) {
-            logger.error("", e);
-            Assertions.fail(e.getMessage());
+            logger.error(e.getMessage(), e);
+            throw e;
         }
     }
 
     @Test(description = "Gets TestEvents from empty page")
-    public void getTestEventsFromEmptyPage() {
+    public void getTestEventsFromEmptyPage() throws CradleStorageException, ExecutionException, InterruptedException {
         try {
             TestEventFilter filter =  new TestEventFilter(bookId, FIRST_SCOPE, pages.get(4).getId());
             TestEventIteratorProvider iteratorProvider = createIteratorProvider(filter, dataStart);
@@ -208,13 +221,13 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
             Assertions.assertThat(actual)
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException | CradleStorageException e) {
-            logger.error("", e);
-            Assertions.fail(e.getMessage());
+            logger.error(e.getMessage(), e);
+            throw e;
         }
     }
 
     @Test(description = "Gets TestEvents from timestamp")
-    public void getTestEventsFromTimestamp() {
+    public void getTestEventsFromTimestamp() throws CradleStorageException, ExecutionException, InterruptedException {
         try {
             TestEventFilter filter =  new TestEventFilter(bookId, SECOND_SCOPE);
             filter.setStartTimestampFrom(FilterForGreater.forGreater(pages.get(2).getStarted()));
@@ -229,13 +242,13 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
             Assertions.assertThat(actual)
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException | CradleStorageException e) {
-            logger.error("", e);
-            Assertions.fail(e.getMessage());
+            logger.error(e.getMessage(), e);
+            throw e;
         }
     }
 
     @Test(description = "Gets TestEvents from timestamp which is inside one of the batches, fetching that batch as well")
-    public void getTestEventsFromTimestampInsideBatch() {
+    public void getTestEventsFromTimestampInsideBatch() throws CradleStorageException, ExecutionException, InterruptedException {
         try {
             TestEventFilter filter =  new TestEventFilter(bookId, FIRST_SCOPE);
             filter.setStartTimestampFrom(FilterForGreater.forGreaterOrEquals(
@@ -252,8 +265,8 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
             Assertions.assertThat(actual)
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException | CradleStorageException e) {
-            logger.error("", e);
-            Assertions.fail(e.getMessage());
+            logger.error(e.getMessage(), e);
+            throw e;
         }
     }
 }

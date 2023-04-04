@@ -1,3 +1,18 @@
+/*
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.exactpro.cradle.*;
@@ -41,7 +56,7 @@ public class MessageIteratorProviderTest extends BaseCradleCassandraTest {
     private ExecutorService composingService = Executors.newSingleThreadExecutor();
     public final static String protocol = "default_message_protocol";
     @BeforeClass
-    public void startUp () {
+    public void startUp () throws IOException, InterruptedException, CradleStorageException {
         super.startUp(true);
 
         setUpOperators ();
@@ -84,9 +99,21 @@ public class MessageIteratorProviderTest extends BaseCradleCassandraTest {
         }
     }
 
-    private void setUpOperators() {
+    private void setUpOperators() throws IOException, InterruptedException {
         CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(session).build();
         operators = new CassandraOperators(dataMapper, CassandraCradleHelper.getInstance().getStorageSettings());
+    }
+
+    private MessageToStore generateMessage (String sessionAlias, Direction direction, int minutesFromStart, long sequence) throws CradleStorageException {
+        return MessageToStore.builder()
+                .bookId(bookId)
+                .sessionAlias(sessionAlias)
+                .direction(direction)
+                .timestamp(dataStart.plus(minutesFromStart, ChronoUnit.MINUTES))
+                .sequence(sequence)
+                .content(CONTENT.getBytes(StandardCharsets.UTF_8))
+                .protocol(protocol)
+                .build();
     }
 
     @Override
@@ -97,64 +124,16 @@ public class MessageIteratorProviderTest extends BaseCradleCassandraTest {
          */
         try {
             GroupedMessageBatchToStore b1 =  new GroupedMessageBatchToStore(GROUP_NAME, 1024);
-            b1.addMessage(MessageToStore.builder()
-                    .bookId(bookId)
-                    .sessionAlias(FIRST_SESSION_ALIAS)
-                    .direction(Direction.FIRST)
-                    .timestamp(dataStart.plus(5, ChronoUnit.MINUTES))
-                    .sequence(1L)
-                    .content(CONTENT.getBytes(StandardCharsets.UTF_8))
-                    .protocol(protocol)
-                    .build());
-            b1.addMessage(MessageToStore.builder()
-                    .bookId(bookId)
-                    .sessionAlias(SECOND_SESSION_ALIAS)
-                    .direction(Direction.SECOND)
-                    .timestamp(dataStart.plus(9, ChronoUnit.MINUTES))
-                    .sequence(2L)
-                    .content(CONTENT.getBytes(StandardCharsets.UTF_8))
-                    .protocol(protocol)
-                    .build());
+            b1.addMessage(generateMessage(FIRST_SESSION_ALIAS, Direction.FIRST, 5, 1L));
+            b1.addMessage(generateMessage(SECOND_SESSION_ALIAS, Direction.SECOND, 9, 2L));
 
             GroupedMessageBatchToStore b2 =  new GroupedMessageBatchToStore(GROUP_NAME, 1024);
-            b2.addMessage(MessageToStore.builder()
-                    .bookId(bookId)
-                    .sessionAlias(FIRST_SESSION_ALIAS)
-                    .direction(Direction.FIRST)
-                    .timestamp(dataStart.plus(15, ChronoUnit.MINUTES))
-                    .sequence(3L)
-                    .content(CONTENT.getBytes(StandardCharsets.UTF_8))
-                    .protocol(protocol)
-                    .build());
-            b2.addMessage(MessageToStore.builder()
-                    .bookId(bookId)
-                    .sessionAlias(SECOND_SESSION_ALIAS)
-                    .direction(Direction.SECOND)
-                    .timestamp(dataStart.plus(19, ChronoUnit.MINUTES))
-                    .sequence(4L)
-                    .content(CONTENT.getBytes(StandardCharsets.UTF_8))
-                    .protocol(protocol)
-                    .build());
+            b2.addMessage(generateMessage(FIRST_SESSION_ALIAS, Direction.FIRST, 15, 3L));
+            b2.addMessage(generateMessage(SECOND_SESSION_ALIAS, Direction.SECOND, 19, 4L));
 
             GroupedMessageBatchToStore b3 =  new GroupedMessageBatchToStore(GROUP_NAME, 1024);
-            b3.addMessage(MessageToStore.builder()
-                    .bookId(bookId)
-                    .sessionAlias(FIRST_SESSION_ALIAS)
-                    .direction(Direction.FIRST)
-                    .timestamp(dataStart.plus(25, ChronoUnit.MINUTES))
-                    .sequence(5L)
-                    .content(CONTENT.getBytes(StandardCharsets.UTF_8))
-                    .protocol(protocol)
-                    .build());
-            b3.addMessage(MessageToStore.builder()
-                    .bookId(bookId)
-                    .sessionAlias(SECOND_SESSION_ALIAS)
-                    .direction(Direction.SECOND)
-                    .timestamp(dataStart.plus(29, ChronoUnit.MINUTES))
-                    .sequence(6L)
-                    .content(CONTENT.getBytes(StandardCharsets.UTF_8))
-                    .protocol(protocol)
-                    .build());
+            b3.addMessage(generateMessage(FIRST_SESSION_ALIAS, Direction.FIRST, 25, 5L));
+            b3.addMessage(generateMessage(SECOND_SESSION_ALIAS, Direction.SECOND, 25, 6L));
 
             data = List.of(b1, b2, b3);
             storedData = new HashMap<>();
@@ -172,12 +151,12 @@ public class MessageIteratorProviderTest extends BaseCradleCassandraTest {
                 storage.storeGroupedMessageBatch(el);
             }
         } catch (CradleStorageException | IOException e) {
-            logger.error("", e);
+            logger.error(e.getMessage(), e);
             throw new RuntimeException(e);
         }
     }
 
-    private MessagesIteratorProvider createIteratorProvider(MessageFilter messageFilter) {
+    private MessagesIteratorProvider createIteratorProvider(MessageFilter messageFilter) throws CradleStorageException {
         try {
             return new MessagesIteratorProvider(
                     "",
@@ -188,13 +167,13 @@ public class MessageIteratorProviderTest extends BaseCradleCassandraTest {
                     new SelectQueryExecutor(session, composingService, null, null),
                     storage.getReadAttrs());
         } catch (CradleStorageException e) {
-            logger.error("", e);
-            throw new RuntimeException(e);
+            logger.error(e.getMessage(), e);
+            throw e;
         }
     }
 
     @Test(description = "Simply gets all messages by session_alias and direction iterator provider")
-    public void getAllGroupedMessagesTest () {
+    public void getAllGroupedMessagesTest () throws CradleStorageException, ExecutionException, InterruptedException {
         try {
             MessageFilter messageFilter =  new MessageFilter(bookId, FIRST_SESSION_ALIAS, Direction.FIRST);
             MessagesIteratorProvider iteratorProvider = createIteratorProvider(messageFilter);
@@ -208,13 +187,13 @@ public class MessageIteratorProviderTest extends BaseCradleCassandraTest {
             Assertions.assertThat(actual)
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException | CradleStorageException e) {
-            logger.error("", e);
-            Assertions.fail(e.getMessage());
+            logger.error(e.getMessage(), e);
+            throw e;
         }
     }
 
     @Test(description = "Gets messages second page")
-    public void getGroupedMessagesFromSecondPage () {
+    public void getGroupedMessagesFromSecondPage () throws CradleStorageException, ExecutionException, InterruptedException {
         try {
             MessageFilter messageFilter =  new MessageFilter(bookId, SECOND_SESSION_ALIAS, Direction.SECOND, pages.get(1).getId());
             MessagesIteratorProvider iteratorProvider = createIteratorProvider(messageFilter);
@@ -228,13 +207,13 @@ public class MessageIteratorProviderTest extends BaseCradleCassandraTest {
             Assertions.assertThat(actual)
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException | CradleStorageException e) {
-            logger.error("", e);
-            Assertions.fail(e.getMessage());
+            logger.error(e.getMessage(), e);
+            throw e;
         }
     }
 
     @Test(description = "Gets messages from empty page")
-    public void getGroupedMessagesFromEmptyPageTest () {
+    public void getGroupedMessagesFromEmptyPageTest () throws CradleStorageException, ExecutionException, InterruptedException {
         try {
             MessageFilter messageFilter =  new MessageFilter(bookId, FIRST_SESSION_ALIAS, Direction.FIRST, pages.get(3).getId());
             MessagesIteratorProvider iteratorProvider = createIteratorProvider(messageFilter);
@@ -248,27 +227,8 @@ public class MessageIteratorProviderTest extends BaseCradleCassandraTest {
             Assertions.assertThat(actual)
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException | CradleStorageException e) {
-            logger.error("", e);
-            Assertions.fail(e.getMessage());
-        }
-    }
-
-    @Test(description = "tries to get messages with negative limit, provider should throw exception")
-    public void tryToGetGroupedMessagesWithNegativeLimit() {
-        try {
-            MessageFilter messageFilter =  new MessageFilter(bookId, FIRST_SESSION_ALIAS, Direction.FIRST, pages.get(3).getId());
-            messageFilter.setLimit(-1);
-            MessagesIteratorProvider iteratorProvider = createIteratorProvider(messageFilter);
-
-            CompletableFuture<CassandraCradleResultSet<StoredMessage>> rsFuture = iteratorProvider.nextIterator()
-                    .thenApplyAsync(r -> new CassandraCradleResultSet<>(r, iteratorProvider), composingService);
-
-            rsFuture.get().asIterable();
-
-            // TODO: this behavior is different from other iteratorProviders, negative limit does not fail
-//            Assertions.fail("Exception wasn't thrown while getting messages with negative limit");
-        } catch (Exception e) {
-            // Test passed
+            logger.error(e.getMessage(), e);
+            throw e;
         }
     }
 }

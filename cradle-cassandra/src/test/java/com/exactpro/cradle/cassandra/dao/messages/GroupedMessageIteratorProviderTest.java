@@ -58,80 +58,44 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
     private ExecutorService composingService = Executors.newSingleThreadExecutor();
     public final static String protocol = "default_message_protocol";
     @BeforeClass
-    public void startUp () {
+    public void startUp () throws IOException, InterruptedException, CradleStorageException {
         super.startUp(true);
 
         setUpOperators ();
         generateData();
     }
 
-    private void setUpOperators() {
+    private void setUpOperators() throws IOException, InterruptedException {
         CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(session).build();
         operators = new CassandraOperators(dataMapper, CassandraCradleHelper.getInstance().getStorageSettings());
+    }
+
+    private MessageToStore generateMessage (String sessionAlias, Direction direction, int minutesFromStart, long sequence) throws CradleStorageException {
+        return MessageToStore.builder()
+                .bookId(bookId)
+                .sessionAlias(sessionAlias)
+                .direction(direction)
+                .timestamp(dataStart.plus(minutesFromStart, ChronoUnit.MINUTES))
+                .sequence(sequence)
+                .content(CONTENT.getBytes(StandardCharsets.UTF_8))
+                .protocol(protocol)
+                .build();
     }
 
     @Override
     protected void generateData () {
         try {
             GroupedMessageBatchToStore b1 =  new GroupedMessageBatchToStore(GROUP_NAME, 1024);
-            b1.addMessage(MessageToStore.builder()
-                    .bookId(bookId)
-                    .sessionAlias(FIRST_SESSION_ALIAS)
-                    .direction(Direction.FIRST)
-                    .timestamp(dataStart.plus(5, ChronoUnit.MINUTES))
-                    .sequence(1L)
-                    .content(CONTENT.getBytes(StandardCharsets.UTF_8))
-                    .protocol(protocol)
-                    .build());
-            b1.addMessage(MessageToStore.builder()
-                    .bookId(bookId)
-                    .sessionAlias(SECOND_SESSION_ALIAS)
-                    .direction(Direction.SECOND)
-                    .timestamp(dataStart.plus(9, ChronoUnit.MINUTES))
-                    .sequence(2L)
-                    .content(CONTENT.getBytes(StandardCharsets.UTF_8))
-                    .protocol(protocol)
-                    .build());
+            b1.addMessage(generateMessage(FIRST_SESSION_ALIAS, Direction.FIRST, 5, 1L));
+            b1.addMessage(generateMessage(SECOND_SESSION_ALIAS, Direction.SECOND, 9, 2L));
 
             GroupedMessageBatchToStore b2 =  new GroupedMessageBatchToStore(GROUP_NAME, 1024);
-            b2.addMessage(MessageToStore.builder()
-                    .bookId(bookId)
-                    .sessionAlias(FIRST_SESSION_ALIAS)
-                    .direction(Direction.FIRST)
-                    .timestamp(dataStart.plus(15, ChronoUnit.MINUTES))
-                    .sequence(3L)
-                    .content(CONTENT.getBytes(StandardCharsets.UTF_8))
-                    .protocol(protocol)
-                    .build());
-            b2.addMessage(MessageToStore.builder()
-                    .bookId(bookId)
-                    .sessionAlias(SECOND_SESSION_ALIAS)
-                    .direction(Direction.SECOND)
-                    .timestamp(dataStart.plus(19, ChronoUnit.MINUTES))
-                    .sequence(4L)
-                    .content(CONTENT.getBytes(StandardCharsets.UTF_8))
-                    .protocol(protocol)
-                    .build());
+            b2.addMessage(generateMessage(FIRST_SESSION_ALIAS, Direction.FIRST, 15, 3L));
+            b2.addMessage(generateMessage(SECOND_SESSION_ALIAS, Direction.SECOND, 19, 4L));
 
             GroupedMessageBatchToStore b3 =  new GroupedMessageBatchToStore(GROUP_NAME, 1024);
-            b3.addMessage(MessageToStore.builder()
-                    .bookId(bookId)
-                    .sessionAlias(FIRST_SESSION_ALIAS)
-                    .direction(Direction.FIRST)
-                    .timestamp(dataStart.plus(25, ChronoUnit.MINUTES))
-                    .sequence(5L)
-                    .content(CONTENT.getBytes(StandardCharsets.UTF_8))
-                    .protocol(protocol)
-                    .build());
-            b3.addMessage(MessageToStore.builder()
-                    .bookId(bookId)
-                    .sessionAlias(SECOND_SESSION_ALIAS)
-                    .direction(Direction.SECOND)
-                    .timestamp(dataStart.plus(29, ChronoUnit.MINUTES))
-                    .sequence(6L)
-                    .content(CONTENT.getBytes(StandardCharsets.UTF_8))
-                    .protocol(protocol)
-                    .build());
+            b3.addMessage(generateMessage(FIRST_SESSION_ALIAS, Direction.FIRST, 25, 5L));
+            b3.addMessage(generateMessage(SECOND_SESSION_ALIAS, Direction.SECOND, 25, 6L));
 
             data = List.of(b1, b2, b3);
             storedData = List.of(
@@ -143,12 +107,12 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
                 storage.storeGroupedMessageBatch(el);
             }
         } catch (CradleStorageException | IOException e) {
-            logger.error("", e);
+            logger.error(e.getMessage(), e);
             throw new RuntimeException(e);
         }
     }
 
-    private GroupedMessageIteratorProvider createIteratorProvider(GroupedMessageFilter groupedMessageFilter) {
+    private GroupedMessageIteratorProvider createIteratorProvider(GroupedMessageFilter groupedMessageFilter) throws CradleStorageException {
         try {
             return new GroupedMessageIteratorProvider(
                     "",
@@ -160,13 +124,13 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
                     storage.getReadAttrs(),
                     Order.DIRECT);
         } catch (CradleStorageException e) {
-            logger.error("", e);
-            throw new RuntimeException(e);
+            logger.error(e.getMessage(), e);
+            throw e;
         }
     }
 
     @Test(description = "Simply gets all grouped messages from iterator provider")
-    public void getAllGroupedMessagesTest () {
+    public void getAllGroupedMessagesTest () throws ExecutionException, InterruptedException, CradleStorageException {
         GroupedMessageFilter groupedMessageFilter =  new GroupedMessageFilter(bookId, GROUP_NAME);
         GroupedMessageIteratorProvider iteratorProvider = createIteratorProvider(groupedMessageFilter);
 
@@ -181,13 +145,13 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
                     .usingElementComparatorIgnoringFields("recDate")
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException e) {
-            logger.error("", e);
-            Assertions.fail(e.getMessage());
+            logger.error(e.getMessage(), e);
+            throw e;
         }
     }
 
     @Test(description = "Gets first 2 grouped messages from iterator provider")
-    public void getFirstTwoGroupedMessagesTest () {
+    public void getFirstTwoGroupedMessagesTest () throws ExecutionException, InterruptedException, CradleStorageException {
         GroupedMessageFilter groupedMessageFilter = new GroupedMessageFilter(bookId, GROUP_NAME);
         groupedMessageFilter.setLimit(2);
         GroupedMessageIteratorProvider iteratorProvider = createIteratorProvider(groupedMessageFilter);
@@ -203,13 +167,13 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
                     .usingElementComparatorIgnoringFields("recDate")
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException e) {
-            logger.error("", e);
-            Assertions.fail(e.getMessage());
+            logger.error(e.getMessage(), e);
+            throw e;
         }
     }
 
     @Test(description = "Gets grouped messages from iterator provider starting with second page")
-    public void getGroupedMessagesAfterSecondPageTest () {
+    public void getGroupedMessagesAfterSecondPageTest () throws ExecutionException, InterruptedException, CradleStorageException {
         GroupedMessageFilter groupedMessageFilter = new GroupedMessageFilter(bookId, GROUP_NAME);
         groupedMessageFilter.setFrom(FilterForGreater.forGreaterOrEquals(pages.get(1).getStarted()));
         GroupedMessageIteratorProvider iteratorProvider = createIteratorProvider(groupedMessageFilter);
@@ -225,8 +189,8 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
                     .usingElementComparatorIgnoringFields("recDate")
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException e) {
-            logger.error("", e);
-            Assertions.fail(e.getMessage());
+            logger.error(e.getMessage(), e);
+            throw e;
         }
     }
 
@@ -250,7 +214,7 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
     }
 
     @Test(description = "Gets grouped messages from iterator provider starting with second page and limit 1")
-    public void getGroupedMessagesAfterSecondPageWithLimitTest () {
+    public void getGroupedMessagesAfterSecondPageWithLimitTest () throws ExecutionException, InterruptedException, CradleStorageException {
         GroupedMessageFilter groupedMessageFilter = new GroupedMessageFilter(bookId, GROUP_NAME);
         groupedMessageFilter.setFrom(FilterForGreater.forGreaterOrEquals(pages.get(1).getStarted()));
         groupedMessageFilter.setLimit(1);
@@ -267,13 +231,13 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
                     .usingElementComparatorIgnoringFields("recDate")
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException e) {
-            logger.error("", e);
-            Assertions.fail(e.getMessage());
+            logger.error(e.getMessage(), e);
+            throw e;
         }
     }
 
     @Test(description = "Gets grouped messages from second page")
-    public void getGroupedMessagesFromSecondPage () {
+    public void getGroupedMessagesFromSecondPage () throws ExecutionException, InterruptedException, CradleStorageException {
         GroupedMessageFilter groupedMessageFilter = new GroupedMessageFilter(bookId, GROUP_NAME);
         groupedMessageFilter.setFrom(FilterForGreater.forGreaterOrEquals(pages.get(1).getStarted()));
         groupedMessageFilter.setLimit(1);
@@ -290,13 +254,13 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
                     .usingElementComparatorIgnoringFields("recDate")
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException e) {
-            logger.error("", e);
-            Assertions.fail(e.getMessage());
+            logger.error(e.getMessage(), e);
+            throw e;
         }
     }
 
     @Test(description = "Gets grouped messages from empty page")
-    public void getGroupedMessagesFromEmptyPage () {
+    public void getGroupedMessagesFromEmptyPage () throws ExecutionException, InterruptedException, CradleStorageException {
         GroupedMessageFilter groupedMessageFilter = new GroupedMessageFilter(bookId, GROUP_NAME);
         groupedMessageFilter.setFrom(FilterForGreater.forGreaterOrEquals(pages.get(3).getStarted()));
         groupedMessageFilter.setLimit(1);
@@ -313,8 +277,8 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
                     .usingElementComparatorIgnoringFields("recDate")
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException e) {
-            logger.error("", e);
-            Assertions.fail(e.getMessage());
+            logger.error(e.getMessage(), e);
+            throw e;
         }
     }
 }

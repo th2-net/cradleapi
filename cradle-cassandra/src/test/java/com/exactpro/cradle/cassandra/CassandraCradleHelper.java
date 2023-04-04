@@ -21,8 +21,10 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
+import org.junit.After;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeSuite;
 
 import java.io.IOException;
@@ -30,7 +32,6 @@ import java.io.IOException;
 public class CassandraCradleHelper {
 
     private static final Logger logger = LoggerFactory.getLogger(CassandraCradleHelper.class);
-
 
     public static String LOCAL_DATACENTER_NAME = "datacenter1";
     public static String KEYSPACE_NAME = "test_keyspace";
@@ -46,24 +47,29 @@ public class CassandraCradleHelper {
     private static CassandraCradleHelper instance;
 
     @BeforeSuite
-    public static void beforeSuite() {
-        instance = new CassandraCradleHelper();
+    public static void beforeSuite() throws IOException, InterruptedException {
+        instance = getInstance();
     }
 
-    private CassandraCradleHelper () {
+    @AfterSuite
+    public static void afterSuite() {
+        EmbeddedCassandraServerHelper.stopEmbeddedCassandra();
+    }
+
+    private CassandraCradleHelper () throws IOException, InterruptedException {
         setUpEmbeddedCassandra();
         setUpCradle();
     }
 
-    public static synchronized CassandraCradleHelper getInstance () {
-        if (instance == null) {
-            instance = new CassandraCradleHelper();
-        }
+    public static synchronized CassandraCradleHelper getInstance () throws IOException, InterruptedException {
+            if (instance == null) {
+                instance = new CassandraCradleHelper();
+            }
 
-        return instance;
+            return instance;
     }
 
-    private void setUpEmbeddedCassandra () {
+    private void setUpEmbeddedCassandra () throws IOException, InterruptedException {
         try {
             EmbeddedCassandraServerHelper.startEmbeddedCassandra();
             session = EmbeddedCassandraServerHelper.getSession();
@@ -72,8 +78,8 @@ public class CassandraCradleHelper {
                     EmbeddedCassandraServerHelper.getNativeTransportPort(),
                     LOCAL_DATACENTER_NAME);
         } catch (IOException | InterruptedException e) {
-            logger.info("", e);
-            throw new RuntimeException(e);
+            logger.error(e.getMessage(), e);
+            throw e;
         }
     }
 
@@ -90,7 +96,7 @@ public class CassandraCradleHelper {
             CassandraCradleManager manager = new CassandraCradleManager(connectionSettings, storageSettings, true);
             storage = (CassandraCradleStorage) manager.getStorage();
         } catch (CradleStorageException | IOException e) {
-            logger.info("", e);
+            logger.error(e.getMessage(), e);
         }
     }
 

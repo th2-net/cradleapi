@@ -18,9 +18,11 @@ package com.exactpro.cradle.cassandra;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.exactpro.cradle.*;
+import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -80,7 +82,7 @@ public abstract class BaseCradleCassandraTest {
         Following method should be used in beforeClass if extending class
         wants to implement it's own logic of initializing books and pages
      */
-    protected void startUp () {
+    protected void startUp () throws IOException, InterruptedException, CradleStorageException {
         startUp(false);
     }
 
@@ -93,9 +95,9 @@ public abstract class BaseCradleCassandraTest {
      * then used in beforeClass. Here should go all data
      * initialization logic for whole class.
      */
-    protected abstract void generateData ();
+    protected abstract void generateData () throws CradleStorageException, IOException;
 
-    protected void startUp(boolean generateBookPages) {
+    protected void startUp(boolean generateBookPages) throws IOException, InterruptedException, CradleStorageException {
         this.session = CassandraCradleHelper.getInstance().getSession();
         this.storage = CassandraCradleHelper.getInstance().getStorage();
         this.bookId = generateBookId();
@@ -111,16 +113,11 @@ public abstract class BaseCradleCassandraTest {
         }
     }
 
-    protected void setUpBooksAndPages (BookId bookId, List<PageToAdd> pagesToAdd) {
-        try {
-            storage.addBook(new BookToAdd(bookId.getName(), dataStart));
+    protected void setUpBooksAndPages (BookId bookId, List<PageToAdd> pagesToAdd) throws CradleStorageException, IOException {
+        storage.addBook(new BookToAdd(bookId.getName(), dataStart));
 
-            BookInfo book = storage.addPages(bookId, pagesToAdd);
+        BookInfo book = storage.addPages(bookId, pagesToAdd);
 
-            pages = new ArrayList<>(book.getPages());
-        } catch (Exception e) {
-            logger.error("", e);
-            throw new RuntimeException(e);
-        }
+        pages = new ArrayList<>(book.getPages());
     }
 }
