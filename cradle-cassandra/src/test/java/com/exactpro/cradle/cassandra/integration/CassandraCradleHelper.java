@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.cassandra;
+package com.exactpro.cradle.cassandra.integration;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.exactpro.cradle.cassandra.CassandraCradleManager;
+import com.exactpro.cradle.cassandra.CassandraCradleStorage;
+import com.exactpro.cradle.cassandra.CassandraStorageSettings;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
 import com.exactpro.cradle.utils.CradleStorageException;
-import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
-import org.junit.After;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.CassandraContainer;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeSuite;
 
@@ -33,6 +35,7 @@ public class CassandraCradleHelper {
 
     private static final Logger logger = LoggerFactory.getLogger(CassandraCradleHelper.class);
 
+    private static String CASSANDRA_IMAGE = "cassandra:3.11.13";
     public static String LOCAL_DATACENTER_NAME = "datacenter1";
     public static String KEYSPACE_NAME = "test_keyspace";
     public static int TIMEOUT = 5000;
@@ -44,46 +47,49 @@ public class CassandraCradleHelper {
     private CassandraCradleStorage storage;
     private CassandraStorageSettings storageSettings;
 
+    private static CassandraContainer<?> cassandra;
+
     private static CassandraCradleHelper instance;
 
     @BeforeSuite
-    public static void beforeSuite() throws IOException, InterruptedException {
+    public static void beforeSuite(){
         instance = getInstance();
     }
 
     @AfterSuite
     public static void afterSuite() {
-        EmbeddedCassandraServerHelper.stopEmbeddedCassandra();
+        cassandra.stop();
     }
 
-    private CassandraCradleHelper () throws IOException, InterruptedException {
+    private CassandraCradleHelper() {
+        cassandra = new CassandraContainer<>(CASSANDRA_IMAGE);
         setUpEmbeddedCassandra();
         setUpCradle();
     }
 
-    public static synchronized CassandraCradleHelper getInstance () throws IOException, InterruptedException {
-            if (instance == null) {
-                instance = new CassandraCradleHelper();
-            }
+    public static synchronized CassandraCradleHelper getInstance() {
+        if (instance == null) {
+            instance = new CassandraCradleHelper();
+        }
 
-            return instance;
+        return instance;
     }
 
-    private void setUpEmbeddedCassandra () throws IOException, InterruptedException {
+    private void setUpEmbeddedCassandra() {
         try {
-            EmbeddedCassandraServerHelper.startEmbeddedCassandra();
-            session = EmbeddedCassandraServerHelper.getSession();
+            cassandra.start();
+            session = Connector.connect(cassandra).getSession();
             connectionSettings = new CassandraConnectionSettings(
-                    EmbeddedCassandraServerHelper.getHost(),
-                    EmbeddedCassandraServerHelper.getNativeTransportPort(),
+                    cassandra.getHost(),
+                    cassandra.getFirstMappedPort(),
                     LOCAL_DATACENTER_NAME);
-        } catch (IOException | InterruptedException e) {
+        } catch (Exception e) {
             logger.error(e.getMessage(), e);
             throw e;
         }
     }
 
-    private void setUpCradle () {
+    private void setUpCradle() {
         try {
             storageSettings = new CassandraStorageSettings(
                     TIMEOUT,
@@ -102,10 +108,6 @@ public class CassandraCradleHelper {
 
     public CqlSession getSession() {
         return session;
-    }
-
-    public CassandraConnectionSettings getConnectionSettings() {
-        return connectionSettings;
     }
 
     public CassandraCradleStorage getStorage() {

@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.cassandra.dao.messages;
+package com.exactpro.cradle.cassandra.integration.messages;
 
 import com.exactpro.cradle.*;
-import com.exactpro.cradle.cassandra.BaseCradleCassandraTest;
-import com.exactpro.cradle.cassandra.CassandraCradleHelper;
+import com.exactpro.cradle.cassandra.dao.messages.GroupedMessageIteratorProvider;
+import com.exactpro.cradle.cassandra.integration.BaseCradleCassandraTest;
+import com.exactpro.cradle.cassandra.integration.CassandraCradleHelper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;

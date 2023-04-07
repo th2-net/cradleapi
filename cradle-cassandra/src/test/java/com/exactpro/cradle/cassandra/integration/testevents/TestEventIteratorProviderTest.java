@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.exactpro.cradle.cassandra.dao.testevents;
+package com.exactpro.cradle.cassandra.integration.testevents;
 
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.PageId;
-import com.exactpro.cradle.cassandra.BaseCradleCassandraTest;
-import com.exactpro.cradle.cassandra.CassandraCradleHelper;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventIteratorProvider;
+import com.exactpro.cradle.cassandra.integration.BaseCradleCassandraTest;
+import com.exactpro.cradle.cassandra.integration.CassandraCradleHelper;
 import com.exactpro.cradle.cassandra.EventBatchDurationWorker;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;

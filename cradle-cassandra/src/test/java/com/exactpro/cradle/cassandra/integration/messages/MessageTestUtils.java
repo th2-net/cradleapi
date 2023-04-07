@@ -1,4 +1,4 @@
-package com.exactpro.cradle.cassandra.dao.messages;
+package com.exactpro.cradle.cassandra.integration.messages;
 
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.messages.*;

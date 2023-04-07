@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.cassandra;
+package com.exactpro.cradle.cassandra.integration;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.exactpro.cradle.*;
+import com.exactpro.cradle.cassandra.CassandraCradleStorage;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
