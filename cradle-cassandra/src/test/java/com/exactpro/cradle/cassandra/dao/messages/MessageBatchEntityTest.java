@@ -22,6 +22,8 @@ import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.utils.MessageBatchEntityUtils;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.cassandra.dao.SerializedEntity;
+import com.exactpro.cradle.utils.CompressException;
+import com.exactpro.cradle.utils.CompressionType;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
@@ -36,8 +38,7 @@ import static com.exactpro.cradle.cassandra.TestUtils.createContent;
 public class MessageBatchEntityTest
 {
 	@Test
-	public void messageEntity() throws IOException, DataFormatException, CradleStorageException
-	{
+	public void messageEntity() throws IOException, DataFormatException, CradleStorageException, CompressException {
 		PageId pageId = new PageId(new BookId("Test_Book_1"), "Test_Page_1");
 		MessageBatchToStore batch = MessageBatchToStore.singleton(MessageToStore.builder()
 				.bookId(pageId.getBookId())
@@ -50,7 +51,7 @@ public class MessageBatchEntityTest
 				.build(), 200);
 		StoredMessageBatch storedBatch = new StoredMessageBatch(batch.getMessages(), pageId, null);
 
-		SerializedEntity<MessageBatchEntity> serializedEntity = MessageBatchEntityUtils.toSerializedEntity(batch, pageId, 2000);
+		SerializedEntity<MessageBatchEntity> serializedEntity = MessageBatchEntityUtils.toSerializedEntity(batch, pageId, CompressionType.ZLIB, 2000);
 		StoredMessageBatch batchFromEntity = MessageBatchEntityUtils.toStoredMessageBatch(serializedEntity.getEntity(), pageId);
 
 		RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();

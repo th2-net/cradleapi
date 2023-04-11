@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
-import java.util.zip.DataFormatException;
 
 public class MessageUtils
 {
@@ -86,7 +85,6 @@ public class MessageUtils
 
 	/**
 	 * Serializes messages, skipping non-meaningful or calculable fields
-	 *
 	 * @param messages to serialize
 	 * @return {@link SerializedEntityData} containing serialized messages.
 	 * @throws IOException if serialization failed
@@ -139,9 +137,8 @@ public class MessageUtils
 	 * @return deserialized message, if found, null otherwise
 	 * @throws IOException if deserialization failed
 	 */
-	public static StoredMessage bytesToOneMessage(ByteBuffer content, boolean compressed, StoredMessageId id) throws IOException
-	{
-		byte[] contentBytes = getMessageContentBytes(content, compressed, id);
+	public static StoredMessage bytesToOneMessage(ByteBuffer content, boolean compressed, StoredMessageId id) throws IOException, CompressException {
+		byte[] contentBytes = getMessageContentBytes(content, compressed);
 		return deserializeOneMessage(contentBytes, id);
 	}
 	
@@ -153,25 +150,16 @@ public class MessageUtils
 	 * @return collection of deserialized messages
 	 * @throws IOException if deserialization failed
 	 */
-	public static List<StoredMessage> bytesToMessages(ByteBuffer content, StoredMessageId id, boolean compressed) throws IOException
-	{
-		byte[] contentBytes = getMessageContentBytes(content, compressed, id);
+	public static List<StoredMessage> bytesToMessages(ByteBuffer content, StoredMessageId id, boolean compressed) throws IOException, CompressException {
+		byte[] contentBytes = getMessageContentBytes(content, compressed);
 		return deserializeMessages(contentBytes, id);
 	}
 	
-	private static byte[] getMessageContentBytes(ByteBuffer content, boolean compressed, StoredMessageId id) throws IOException
-	{
+	private static byte[] getMessageContentBytes(ByteBuffer content, boolean compressed) throws CompressException {
 		byte[] contentBytes = content.array();
 		if (!compressed)
 			return contentBytes;
 		
-		try
-		{
-			return CompressionUtils.decompressData(contentBytes);
-		}
-		catch (IOException | DataFormatException e)
-		{
-			throw new IOException(String.format("Could not decompress content of message (ID: '%s') from Cradle", id), e);
-		}
+		return CompressionType.decompressData(contentBytes);
 	}
 }

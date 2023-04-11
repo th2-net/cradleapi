@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,6 @@ public class MessageSerializer {
 		return new SerializedEntityData(serializedMessageMetadata, buffer.array());
 	}
 
-	//FIXME: com.exactpro.cradle.serialization.MessageSerializer.serializeBatch() 15,597 ms (10.3%)
 	public List<SerializedEntityMetadata> serializeBatch(
 			Collection<StoredMessage> batch, ByteBuffer buffer
 	) throws SerializationException {

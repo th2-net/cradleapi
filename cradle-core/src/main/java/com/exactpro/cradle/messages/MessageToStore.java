@@ -17,7 +17,6 @@
 package com.exactpro.cradle.messages;
 
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
-import com.exactpro.cradle.utils.CompressionUtils;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.MessageUtils;
 
@@ -96,11 +95,11 @@ public class MessageToStore implements CradleMessage {
     @Override
     public String toString() {
         return new StringBuilder()
-                .append("MessageToStore{").append(CompressionUtils.EOL)
-                .append("id=").append(id).append(",").append(CompressionUtils.EOL)
-                .append("content=").append(Arrays.toString(content)).append(CompressionUtils.EOL)
-                .append("protocol=").append(protocol).append(",").append(CompressionUtils.EOL)
-                .append("metadata=").append(metadata).append(",").append(CompressionUtils.EOL)
+                .append("MessageToStore{").append(System.lineSeparator())
+                .append("id=").append(id).append(",").append(System.lineSeparator())
+                .append("content=").append(Arrays.toString(content)).append(System.lineSeparator())
+                .append("protocol=").append(protocol).append(",").append(System.lineSeparator())
+                .append("metadata=").append(metadata).append(",").append(System.lineSeparator())
                 .append("}").toString();
     }
 }

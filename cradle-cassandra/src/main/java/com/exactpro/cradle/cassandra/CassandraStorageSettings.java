@@ -1,5 +1,5 @@
 /*
- *  Copyright 2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.exactpro.cradle.cassandra;
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.exactpro.cradle.cassandra.connection.NetworkTopologyStrategy;
 import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
+import com.exactpro.cradle.utils.CompressionType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -49,6 +50,7 @@ public class CassandraStorageSettings {
     public static final long DEFAULT_EVENT_BATCH_DURATION_MILLIS = 5_000;
     public static final long DEFAULT_TIMEOUT = 5000;
     public static final boolean DEFAULT_STORE_INDIVIDUAL_MESSAGE_SESSIONS = true;
+    public static final CompressionType DEFAULT_COMPRESSION_TYPE = CompressionType.ZLIB;
 
 
 
@@ -87,11 +89,13 @@ public class CassandraStorageSettings {
     private long eventBatchDurationMillis = DEFAULT_EVENT_BATCH_DURATION_MILLIS;
 
     private boolean storeIndividualMessageSessions = DEFAULT_STORE_INDIVIDUAL_MESSAGE_SESSIONS;
+    private CompressionType compressionType = DEFAULT_COMPRESSION_TYPE;
 
     public CassandraStorageSettings() { }
 
     public CassandraStorageSettings(long timeout,
-                                    ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel) {
+                                    ConsistencyLevel writeConsistencyLevel,
+                                    ConsistencyLevel readConsistencyLevel) {
         this(null, timeout, writeConsistencyLevel, readConsistencyLevel);
     }
 
@@ -137,6 +141,7 @@ public class CassandraStorageSettings {
         this.eventBatchDurationCacheSize = settings.getEventBatchDurationCacheSize();
 
         this.storeIndividualMessageSessions = settings.isStoreIndividualMessageSessions();
+        this.compressionType = settings.getCompressionType();
     }
 
 
@@ -372,6 +377,14 @@ public class CassandraStorageSettings {
         this.storeIndividualMessageSessions = storeIndividualMessageSessions;
     }
 
+    public CompressionType getCompressionType() {
+        return compressionType;
+    }
+
+    public void setCompressionType(CompressionType compressionType) {
+        this.compressionType = compressionType;
+    }
+
     @Override
     public String toString() {
         return "CassandraStorageSettings{" +
@@ -403,6 +416,7 @@ public class CassandraStorageSettings {
                 ", bookRefreshIntervalMillis=" + bookRefreshIntervalMillis +
                 ", eventBatchDurationMillis=" + eventBatchDurationMillis +
                 ", storeIndividualMessageSessions=" + storeIndividualMessageSessions +
+                ", compressionType=" + compressionType +
                 '}';
     }
 }

@@ -83,5 +83,4 @@ public class MessagesSizeCalculator {
 
 		return total;
 	}
-
 }

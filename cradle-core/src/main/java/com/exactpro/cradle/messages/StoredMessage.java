@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
-import com.exactpro.cradle.utils.CompressionUtils;
 
 import java.io.Serializable;
 import java.time.Instant;
@@ -139,12 +138,12 @@ public class StoredMessage implements Serializable, CradleMessage {
     @Override
     public String toString() {
         return new StringBuilder()
-                .append("StoredMessage{").append(CompressionUtils.EOL)
-                .append("id=").append(id).append(",").append(CompressionUtils.EOL)
-                .append("content=").append(Arrays.toString(getContent())).append(CompressionUtils.EOL)
-				.append("metadata=").append(getMetadata()).append(",").append(CompressionUtils.EOL)
-				.append("protocol=").append(getProtocol()).append(",").append(CompressionUtils.EOL)
-                .append("pageId=").append(getPageId()).append(CompressionUtils.EOL)
+                .append("StoredMessage{").append(System.lineSeparator())
+                .append("id=").append(id).append(",").append(System.lineSeparator())
+                .append("content=").append(Arrays.toString(getContent())).append(System.lineSeparator())
+				.append("metadata=").append(getMetadata()).append(",").append(System.lineSeparator())
+				.append("protocol=").append(getProtocol()).append(",").append(System.lineSeparator())
+                .append("pageId=").append(getPageId()).append(System.lineSeparator())
                 .append("}").toString();
     }
 }

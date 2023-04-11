@@ -236,9 +236,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected void doAddPages(BookId bookId, List<PageInfo> pages, PageInfo lastPage)
-			throws CradleStorageException, IOException
-	{
+	protected void doAddPages(BookId bookId, List<PageInfo> pages, PageInfo lastPage) throws IOException {
 		PageOperator pageOp = operators.getPageOperator();
 		PageNameOperator pageNameOp = operators.getPageNameOperator();
 		

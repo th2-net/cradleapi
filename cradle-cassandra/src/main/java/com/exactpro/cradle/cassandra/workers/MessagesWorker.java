@@ -32,6 +32,7 @@ import com.exactpro.cradle.cassandra.utils.MessageBatchEntityUtils;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
+import com.exactpro.cradle.utils.CompressException;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TimeUtils;
 import io.prometheus.client.Counter;
@@ -86,7 +87,7 @@ public class MessagesWorker extends Worker
 			updateMessageReadMetrics(batch);
 			return batch;
 		}
-		catch (DataFormatException | IOException e)
+		catch (DataFormatException | IOException | CompressException e)
 		{
 			throw new CompletionException("Error while converting message batch entity into stored message batch", e);
 		}
@@ -100,7 +101,7 @@ public class MessagesWorker extends Worker
 			updateMessageReadMetrics(pageId.getBookId(), batch);
 			return batch;
 		}
-		catch (DataFormatException | IOException e)
+		catch (DataFormatException | IOException | CompressException e)
 		{
 			throw new CompletionException("Error while converting message batch entity into stored message batch", e);
 		}
@@ -181,9 +182,9 @@ public class MessagesWorker extends Worker
 				.thenApplyAsync(r -> new CassandraCradleResultSet<>(r, provider), composingService);
 	}
 
-	private CompletableFuture<Row> getNearestTimeAndSequenceBefore(BookInfo bookInfo, PageInfo page,
-			MessageBatchOperator mbOperator, String sessionAlias, String direction, LocalDate messageDate,
-			LocalTime messageTime, long sequence, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
+	private CompletableFuture<Row> getNearestTimeAndSequenceBefore(PageInfo page,
+																   MessageBatchOperator mbOperator, String sessionAlias, String direction, LocalDate messageDate,
+																   LocalTime messageTime, long sequence, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs)
 	{
 		String queryInfo = format("get nearest time and sequence before %s for page '%s'",
 				TimeUtils.toInstant(messageDate, messageTime), page.getId().getName());
@@ -218,7 +219,7 @@ public class MessagesWorker extends Worker
 		MessageBatchEntityConverter mbEntityConverter = operators.getMessageBatchEntityConverter();
 		MessageBatchOperator mbOperator = operators.getMessageBatchOperator();
 
-		return getNearestTimeAndSequenceBefore(bookInfo, bookInfo.getPage(pageId), mbOperator, id.getSessionAlias(),
+		return getNearestTimeAndSequenceBefore(bookInfo.getPage(pageId), mbOperator, id.getSessionAlias(),
 				id.getDirection().getLabel(), ldt.toLocalDate(), ldt.toLocalTime(), id.getSequence(), readAttrs)
 				.thenComposeAsync(row ->
 				{
@@ -263,7 +264,7 @@ public class MessagesWorker extends Worker
 				}, composingService);
 	}
 
-	private CompletableFuture<PageGroupEntity> storePageGroup (GroupedMessageBatchEntity groupedMessageBatchEntity) {
+	private CompletableFuture<PageGroupEntity> storePageGroup(GroupedMessageBatchEntity groupedMessageBatchEntity) {
 		CassandraOperators operators = getOperators();
 		PageGroupEntity pageGroupEntity = new PageGroupEntity(
 				groupedMessageBatchEntity.getBook(),
@@ -284,7 +285,7 @@ public class MessagesWorker extends Worker
 				}, composingService);
 	}
 
-	private CompletableFuture<GroupEntity> storeGroup (GroupedMessageBatchEntity groupedMessageBatchEntity) {
+	private CompletableFuture<GroupEntity> storeGroup(GroupedMessageBatchEntity groupedMessageBatchEntity) {
 		CassandraOperators operators = getOperators();
 		GroupEntity groupEntity = new GroupEntity(groupedMessageBatchEntity.getBook(), groupedMessageBatchEntity.getGroup());
 
@@ -341,7 +342,7 @@ public class MessagesWorker extends Worker
 
 		return CompletableFuture.supplyAsync(() -> {
 			try {
-				return MessageBatchEntityUtils.toSerializedEntity(batch, pageId, settings.getMaxUncompressedMessageBatchSize());
+				return MessageBatchEntityUtils.toSerializedEntity(batch, pageId, settings.getCompressionType(), settings.getMaxUncompressedMessageBatchSize());
 			} catch (Exception e) {
 				throw new CompletionException(e);
 			}
@@ -372,7 +373,7 @@ public class MessagesWorker extends Worker
 
 		return CompletableFuture.supplyAsync(() -> {
 			try {
-				return GroupedMessageEntityUtils.toSerializedEntity(batchToStore, pageId, settings.getMaxUncompressedMessageBatchSize());
+				return GroupedMessageEntityUtils.toSerializedEntity(batchToStore, pageId, settings.getCompressionType(), settings.getMaxUncompressedMessageBatchSize());
 			} catch (Exception e) {
 				throw new CompletionException(e);
 			}

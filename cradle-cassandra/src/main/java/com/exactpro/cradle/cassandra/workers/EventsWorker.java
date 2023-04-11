@@ -35,6 +35,7 @@ import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.TestEventToStore;
+import com.exactpro.cradle.utils.CompressException;
 import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TimeUtils;
@@ -82,7 +83,7 @@ public class EventsWorker extends Worker
 			updateEventReadMetrics(testEvent);
 			return testEvent;
 		}
-		catch (DataFormatException | CradleStorageException | CradleIdException | IOException e)
+		catch (DataFormatException | CradleStorageException | CradleIdException | IOException | CompressException e)
 		{
 			throw new CompletionException("Error while converting test event entity into Cradle test event", e);
 		}
@@ -111,7 +112,7 @@ public class EventsWorker extends Worker
 
 		return CompletableFuture.supplyAsync(() -> {
 			try {
-				return TestEventEntityUtils.toSerializedEntity(event, pageId, settings.getMaxUncompressedMessageBatchSize());
+				return TestEventEntityUtils.toSerializedEntity(event, pageId, settings.getCompressionType(), settings.getMaxUncompressedMessageBatchSize());
 			} catch (Exception e) {
 				throw new CompletionException(e);
 			}

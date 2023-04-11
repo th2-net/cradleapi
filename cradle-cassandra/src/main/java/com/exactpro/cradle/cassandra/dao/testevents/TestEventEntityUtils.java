@@ -40,8 +40,7 @@ public class TestEventEntityUtils {
     private static final Logger logger = LoggerFactory.getLogger(TestEventEntityUtils.class);
 
     public static StoredTestEvent toStoredTestEvent(TestEventEntity testEventEntity, PageId pageId)
-            throws IOException, CradleStorageException, DataFormatException, CradleIdException
-    {
+            throws IOException, CradleStorageException, DataFormatException, CradleIdException, CompressException {
         StoredTestEventId eventId = createId(testEventEntity, pageId.getBookId());
         logger.trace("Creating test event '{}' from entity", eventId);
 
@@ -61,17 +60,15 @@ public class TestEventEntityUtils {
     }
 
 
-    private static byte[] restoreContent(TestEventEntity testEventEntity, StoredTestEventId eventId) throws IOException, DataFormatException
-    {
+    private static byte[] restoreContent(TestEventEntity testEventEntity, StoredTestEventId eventId) throws IOException, DataFormatException, CompressException {
         ByteBuffer content = testEventEntity.getContent();
         if (content == null)
             return null;
 
         byte[] result = content.array();
-        if (testEventEntity.isCompressed())
-        {
+        if (testEventEntity.isCompressed()) {
             logger.trace("Decompressing content of test event '{}'", eventId);
-            return CompressionUtils.decompressData(result);
+            return CompressionType.decompressData(result);
         }
         return result;
     }
@@ -127,7 +124,8 @@ public class TestEventEntityUtils {
 
     public static SerializedEntity<TestEventEntity> toSerializedEntity(TestEventToStore event,
                                                                        PageId pageId,
-                                                                       int maxUncompressedSize) throws IOException {
+                                                                       CompressionType compressionType,
+                                                                       int maxUncompressedSize) throws IOException, CompressException {
         TestEventEntity.TestEventEntityBuilder builder = TestEventEntity.builder();
 
         logger.debug("Creating entity from test event '{}'", event.getId());
@@ -143,7 +141,7 @@ public class TestEventEntityUtils {
             builder.setUncompressedContentSize(content.length);
             if (content.length > maxUncompressedSize) {
                 logger.trace("Compressing content of test event '{}'", event.getId());
-                content = CompressionUtils.compressData(content);
+                content = compressionType.compress(content);
                 compressed = true;
             }
             builder.setContentSize(content.length);

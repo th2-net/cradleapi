@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
+
+import static org.testng.Assert.assertEquals;
 
 public class GroupedMessageBatchToStoreTest
 {
@@ -123,8 +125,8 @@ public class GroupedMessageBatchToStoreTest
 				1, direction, timestamp, groupName, protocol);
 
 		Assert.assertTrue(fullBySizeBatch.isFull(), "Batch indicates it is full");
-		Assert.assertEquals(fullBySizeBatch.getBatchSize(), GroupedMessageBatchToStoreJoinTest.MAX_SIZE);
-		Assert.assertEquals(fullBySizeBatch.getSpaceLeft(), 0);
+		assertEquals(fullBySizeBatch.getBatchSize(), GroupedMessageBatchToStoreJoinTest.MAX_SIZE);
+		assertEquals(fullBySizeBatch.getSpaceLeft(), 0);
 	}
 
 	@Test
@@ -177,7 +179,7 @@ public class GroupedMessageBatchToStoreTest
 
 		batch.addMessage(msg);
 		
-		Assert.assertEquals(batch.getSpaceLeft(), left - MessagesSizeCalculator.calculateMessageSizeInBatch(msg), "Batch counts space left");
+		assertEquals(batch.getSpaceLeft(), left - MessagesSizeCalculator.calculateMessageSizeInBatch(msg), "Batch counts space left");
 	}
 	
 	@Test
@@ -272,8 +274,8 @@ public class GroupedMessageBatchToStoreTest
 				.content(messageContent)
 				.build());
 		
-		Assert.assertEquals(msg1.getSequence(), seq+1, "1st and 2nd messages should have ordered sequence numbers");
-		Assert.assertEquals(msg2.getSequence(), msg1.getSequence()+1, "2nd and 3rd messages should have ordered sequence numbers");
+		assertEquals(msg1.getSequence(), seq+1, "1st and 2nd messages should have ordered sequence numbers");
+		assertEquals(msg2.getSequence(), msg1.getSequence()+1, "2nd and 3rd messages should have ordered sequence numbers");
 	}
 	
 	@Test
@@ -318,9 +320,42 @@ public class GroupedMessageBatchToStoreTest
 				.timestamp(timestamp)
 				.content(messageContent)
 				.build());
-		Assert.assertEquals(msg.getId(), new StoredMessageId(book, sessionAlias, direction, timestamp, seq+1));
+		assertEquals(msg.getId(), new StoredMessageId(book, sessionAlias, direction, timestamp, seq+1));
 	}
 	
+	@Test
+	public void batchShowsFirstLastTimestamp() throws CradleStorageException
+	{
+		Instant timestamp = Instant.ofEpochSecond(1000);
+		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE);
+		batch.addMessage(builder
+				.bookId(book)
+				.sessionAlias(sessionAlias)
+				.direction(Direction.FIRST)
+				.sequence(1)
+				.timestamp(timestamp.plusSeconds(20))
+				.content(messageContent)
+				.build());
+
+		batch.addMessage(builder
+				.bookId(book)
+				.sessionAlias(sessionAlias)
+				.direction(Direction.SECOND)
+				.timestamp(timestamp.plusSeconds(10))
+				.content(messageContent)
+				.build());
+
+		batch.addMessage(builder
+				.bookId(book)
+				.sessionAlias(sessionAlias)
+				.direction(Direction.SECOND)
+				.timestamp(timestamp.plusSeconds(15))
+				.content(messageContent)
+				.build());
+
+		assertEquals(batch.getFirstTimestamp(), timestamp.plusSeconds(10), "First timestamp is incorrect");
+		assertEquals(batch.getLastTimestamp(), timestamp.plusSeconds(20), "Last timestamp is incorrect");
+	}
 
 	@Test
 	public void batchSerialization() throws CradleStorageException, IOException
@@ -339,7 +374,7 @@ public class GroupedMessageBatchToStoreTest
 		StoredMessage storedMsg = batch.getFirstMessage();
 		byte[] bytes = MessageUtils.serializeMessages(batch).getSerializedData();
 		StoredMessage msg = MessageUtils.deserializeMessages(bytes, book).iterator().next();
-		Assert.assertEquals(msg, storedMsg, "Message should be completely serialized/deserialized");
+		assertEquals(msg, storedMsg, "Message should be completely serialized/deserialized");
 	}
 	
 	

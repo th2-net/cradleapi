@@ -23,6 +23,8 @@ import java.util.Set;
 import java.util.zip.DataFormatException;
 
 import com.exactpro.cradle.cassandra.dao.SerializedEntity;
+import com.exactpro.cradle.utils.CompressException;
+import com.exactpro.cradle.utils.CompressionType;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.testng.annotations.DataProvider;
@@ -52,13 +54,13 @@ public class TestEventEntityTest
 	private final StoredTestEventId eventId = new StoredTestEventId(book, scope, startTimestamp, "EventId"),
 			parentId = new StoredTestEventId(book, scope, startTimestamp, "ParentEventId");
 	
-	private TestEventSingleToStoreBuilder singleBuilder = TestEventSingleToStore.builder();
-	private final int contentLength = 20,
-			messagesLength = 10;
-	
+	private final TestEventSingleToStoreBuilder singleBuilder = TestEventSingleToStore.builder();
+
 	@DataProvider(name = "events")
 	public Object[][] events() throws CradleStorageException
 	{
+		int contentLength = 20;
+		int messagesLength = 10;
 		TestEventBatchToStore batch = TestEventBatchToStore.builder(1024)
 				.id(new StoredTestEventId(book, scope, startTimestamp, "BatchId"))
 				.parentId(parentId)
@@ -92,9 +94,8 @@ public class TestEventEntityTest
 	
 	
 	@Test(dataProvider = "events")
-	public void eventEntity(TestEventToStore event) throws CradleStorageException, IOException, DataFormatException, CradleIdException
-	{
-		SerializedEntity<TestEventEntity> serializedEntity = TestEventEntityUtils.toSerializedEntity(event,  page, 2000);
+	public void eventEntity(TestEventToStore event) throws CradleStorageException, IOException, DataFormatException, CradleIdException, CompressException {
+		SerializedEntity<TestEventEntity> serializedEntity = TestEventEntityUtils.toSerializedEntity(event,  page, CompressionType.ZLIB, 2000);
 		TestEventEntity entity = serializedEntity.getEntity();
 		StoredTestEvent newEvent = TestEventEntityUtils.toStoredTestEvent(entity, page);
 		

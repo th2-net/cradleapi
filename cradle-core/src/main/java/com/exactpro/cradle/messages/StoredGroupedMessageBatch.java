@@ -1,17 +1,17 @@
 /*
- *  Copyright 2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.exactpro.cradle.messages;
@@ -26,14 +26,19 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 import static com.exactpro.cradle.serialization.MessagesSizeCalculator.MESSAGE_BATCH_CONST_VALUE;
+import static java.util.stream.Collectors.toCollection;
 
 public class StoredGroupedMessageBatch {
 	protected BookId bookId;
 	private final String group;
 	protected int batchSize;
-    protected final List<StoredMessage> messages;
+    private final List<StoredMessage> messages;
+	private StoredMessage firstMessage;
+	private StoredMessage lastMessage;
 	private final Instant recDate;
 
 	public BookId getBookId() {
@@ -47,12 +52,19 @@ public class StoredGroupedMessageBatch {
 	public StoredGroupedMessageBatch(String group, Collection<StoredMessage> messages, PageId pageId, Instant recDate) {
 		this.recDate = recDate;
 		this.group = group;
-		this.messages = createMessagesCollection(messages, pageId);
-		if (messages == null || messages.isEmpty()) {
+		this.messages = messages == null || messages.isEmpty()
+			? new ArrayList<>()
+			: messages.stream()
+				.map(msg -> Objects.equals(msg.getPageId(), pageId)
+						? msg
+						: new StoredMessage(msg, msg.getId(), pageId)
+				).collect(toCollection(ArrayList<StoredMessage>::new));
+		if (this.messages.isEmpty()) {
             batchSize = MESSAGE_BATCH_CONST_VALUE;
 			return;
 		}
-		batchSize = MessagesSizeCalculator.calculateMessageBatchSize(messages);
+		this.messages.forEach(this::updateFirstLast);
+		batchSize = MessagesSizeCalculator.calculateMessageBatchSize(this.messages);
 	}
 
 	public String getGroup() {
@@ -75,11 +87,11 @@ public class StoredGroupedMessageBatch {
 	}
 
 	public StoredMessage getFirstMessage() {
-        return !messages.isEmpty() ? messages.get(0) : null;
+        return firstMessage;
 	}
 
 	public StoredMessage getLastMessage() {
-        return !messages.isEmpty() ? messages.get(messages.size() - 1) : null;
+        return lastMessage;
 	}
 
 	public Instant getFirstTimestamp() {
@@ -101,13 +113,25 @@ public class StoredGroupedMessageBatch {
 		return messages.isEmpty();
 	}
 
-    protected List<StoredMessage> createMessagesCollection(Collection<StoredMessage> messages, PageId pageId) {
-		if (messages == null)
-            return new ArrayList<>();
-		
-        List<StoredMessage> result = new ArrayList<>(messages.size());
-		for (StoredMessage msg : messages)
-            result.add(new StoredMessage(msg, msg.getId(), pageId)); // why do we copy messages here?
-		return result;
+	protected Stream<StoredMessage> messagesStream() {
+		return messages.stream();
+	}
+	protected void addMessage(StoredMessage message) {
+		messages.add(message);
+		updateFirstLast(message);
+	}
+
+	protected void addMessages(Collection<StoredMessage> messages) {
+		this.messages.addAll(messages);
+		messages.forEach(this::updateFirstLast);
+	}
+
+	private void updateFirstLast(StoredMessage message) {
+		if (firstMessage == null || message.getTimestamp().isBefore(firstMessage.getTimestamp())) {
+			firstMessage = message;
+		}
+		if (lastMessage == null || message.getTimestamp().isAfter(lastMessage.getTimestamp())) {
+			lastMessage = message;
+		}
 	}
 }

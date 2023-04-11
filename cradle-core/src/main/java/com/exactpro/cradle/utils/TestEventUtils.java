@@ -32,7 +32,6 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.zip.DataFormatException;
 
 public class TestEventUtils
 {
@@ -124,10 +123,9 @@ public class TestEventUtils
 	/**
 	 * Serializes a single test event.
 	 * @param testEvent to serialize
-	 * @throws IOException if serialization failed
 	 * @return array of bytes, containing serialized event
 	 */
-	public static SerializedEntityData serializeTestEvent(TestEventSingleToStore testEvent) throws IOException {
+	public static SerializedEntityData serializeTestEvent(TestEventSingleToStore testEvent) {
 		return serializer.serializeEvent(testEvent);
 	}
 	
@@ -152,29 +150,19 @@ public class TestEventUtils
 	 * @param compressed flag that indicates if content needs to be decompressed first
 	 * @return collection of deserialized test events
 	 * @throws IOException if deserialization failed
-	 * @throws CradleStorageException if deserialized event doesn't match batch conditions
 	 */
 	public static Collection<BatchedStoredTestEvent> bytesToTestEvents(ByteBuffer content, StoredTestEventId eventId, boolean compressed)
-			throws IOException, CradleStorageException
-	{
+			throws IOException, CompressException {
 		byte[] contentBytes = getTestEventContentBytes(content, compressed);
 		return deserializeTestEvents(contentBytes, eventId);
 	}
 	
-	public static byte[] getTestEventContentBytes(ByteBuffer content, boolean compressed) throws IOException
-	{
+	public static byte[] getTestEventContentBytes(ByteBuffer content, boolean compressed) throws CompressException {
 		byte[] contentBytes = content.array();
 		if (!compressed)
 			return contentBytes;
 		
-		try
-		{
-			return CompressionUtils.decompressData(contentBytes);
-		}
-		catch (IOException | DataFormatException e)
-		{
-			throw new IOException("Could not decompress content of test event", e);
-		}
+		return CompressionType.decompressData(contentBytes);
 	}
 	
 	

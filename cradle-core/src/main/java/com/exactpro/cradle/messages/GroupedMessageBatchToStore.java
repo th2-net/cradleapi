@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,7 +141,7 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 
 		StoredMessageId msgId = new StoredMessageId(message.getBookId(), message.getSessionAlias(), message.getDirection(), message.getTimestamp(), messageSeq);
 		StoredMessage msg = new StoredMessage(message, msgId, null);
-		messages.add(msg);
+		addMessage(msg);
 		if (lastMessages.put(sessionKey, msg) == null) firstMessages.put(sessionKey, msg);
 		batchSize += expMsgSize;
 
@@ -172,7 +172,7 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 		if (isEmpty()) {
 			this.bookId = batch.getBookId();
 			this.batchSize = batch.getBatchSize();
-			messages.addAll(batch.getMessages());
+			addMessages(batch.getMessages());
 			firstMessages.putAll(batch.firstMessages);
 			lastMessages.putAll(batch.lastMessages);
 			return true;
@@ -181,7 +181,7 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 		if (isFull() || batch.isFull())
 			return false;
 
-		int resultSize = batchSize + batch.messages.stream().mapToInt(StoredMessage::getSerializedSize).sum();
+		int resultSize = batchSize + batch.messagesStream().mapToInt(StoredMessage::getSerializedSize).sum();
 
 		if (resultSize > maxBatchSize) {
 			// cannot add because of size limit
@@ -189,7 +189,7 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 		}
 		verifyBatch(batch);
 		batch.getMessages().forEach(message -> {
-			messages.add(message);
+			addMessage(message);
 			SessionKey sessionKey = new SessionKey(message.getSessionAlias(), message.getDirection());
 			if (lastMessages.put(sessionKey, message) == null) firstMessages.put(sessionKey, message);
 		});
@@ -197,7 +197,6 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 		return true;
 	}
 
-	//FIXME: com.exactpro.cradle.messages.GroupedMessageBatchToStore.getSessionMessageBatches() 24,485 ms (16.1%)
 	public Collection<MessageBatchToStore> getSessionMessageBatches() throws CradleStorageException{
 		Map<SessionKey, MessageBatchToStore> batches = new HashMap<>();
 		for (StoredMessage message: getMessages()) {
