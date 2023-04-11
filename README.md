@@ -1,4 +1,4 @@
-# Cradle API (3.1.4)
+# Cradle API (3.1.5)
 
 ## Overview
 
@@ -124,9 +124,10 @@ Stream name is similar to session alias, i.e. is a name for a pair of connected 
 
 Direction is "first" or "second" depending on endpoint that generated the message.
 
-Message index is a number, incremented for each new message within the same stream and direction.
+Message index is a positive number, incremented for each new message within the same stream and direction.
 
-I.e. if for the stream name="stream1" and direction="first" the last message index was 10, the next message index for this stream name and direction is expected to be 11. It can be different, but greater than 10.
+I.e. if for the stream name="stream1" and direction="first" the last message index was 10, the next message index for
+this stream name and direction is expected to be 11. It can be different, but greater than 10.
 
 Messages can have metadata as a set of key-value string pairs, providing additional details about the message. Metadata cannot be used in any search requests or filtering.
 
@@ -134,13 +135,22 @@ Messages can have metadata as a set of key-value string pairs, providing additio
 
 Test events in Cradle can be stored separately or in batches, if an event has complex hierarchical structure.
 
-A test event can have a reference to its parent, thus forming a hierarchical structure. Events that started the test execution have no parent and are called "root test events".
+A test event can have a reference to its parent, thus forming a hierarchical structure. Events that started the test
+execution have no parent and are called "root test events".
 
-Events in a batch can have a reference only to the parent of the batch or other test events from the same batch. Events outside of the batch should not reference events within the batch.
+Events in a batch can have a reference only to the parent of the batch or other test events from the same batch. Events
+outside of the batch should not reference events within the batch.
 
-Test events have mandatory parameters that are verified when storing an event. These are: id, name (for non-batch events), start timestamp.
+Test events have mandatory parameters that are verified when storing an event. These are: id, name (for non-batch
+events), start timestamp.
 
 ## Release notes
+
+### 3.1.5
+
++ Add check for negative value in **StoredMessageId#index** field
+  (the negative value causes incorrect serialization and does not make much sense - it was decided to prohibit them at
+  all)
 
 ### 3.1.4
 
