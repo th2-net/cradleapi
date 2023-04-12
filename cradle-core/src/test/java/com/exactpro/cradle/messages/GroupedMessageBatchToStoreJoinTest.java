@@ -103,6 +103,17 @@ public class GroupedMessageBatchToStoreJoinTest {
     }
 
     @Test
+    public void testAddBatchMoreThanLimitBySizeToEmptyBatch() throws CradleStorageException {
+        GroupedMessageBatchToStore empty = new GroupedMessageBatchToStore(groupName, MAX_SIZE / 4);
+        GroupedMessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH, 1, MAX_SIZE / 2, groupName, protocol);
+
+        long sizeBefore = empty.getBatchSize();
+        assertFalse(empty.addBatch(second));
+        assertEquals(empty.getMessageCount(), 0);
+        assertEquals(empty.getBatchSize(), sizeBefore);
+    }
+
+    @Test
     public void testAddBatchMoreThanLimitBySize() throws CradleStorageException {
         GroupedMessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, 1, MAX_SIZE / 2, groupName, protocol);
         GroupedMessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH, 1, MAX_SIZE / 2, groupName, protocol);

@@ -44,4 +44,9 @@ public class CompressionTypeTest {
         assertEquals(bytes, LZ4.decompress(compressed), "Decompress via " + LZ4);
         assertEquals(bytes, CompressionType.decompressData(compressed), "Decompress via the decompressData method");
     }
+
+    @Test(expectedExceptions = { CompressException.class }, expectedExceptionsMessageRegExp = "Compression format is undetected\\. Decoded data: 12, supported formats: ZLIB:\\[789C],LZ4:\\[004C5A34]")
+    public void decompressionFailure() throws CompressException {
+        CompressionType.decompressData(new byte[] { 0x12 });
+    }
 }

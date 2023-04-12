@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle.utils;
 
+import com.google.common.io.BaseEncoding;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
@@ -24,13 +25,26 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.stream.Collectors;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 public enum CompressionType {
     ZLIB {
-        public static final int BUFFER_SIZE = 4096;
+        private static final int BUFFER_SIZE = 4096;
+        // https://www.rfc-editor.org/rfc/rfc1950
+        // 78 01 - No Compression/low
+        // 78 9C - Default Compression - used in our case
+        // 78 DA - Best Compression
+        private static final byte CMF = 0x78;
+        private static final byte FLG = (byte) 0x9C;
+        private final byte[] MAGIC_BYTES = new byte[] { CMF, FLG };
+
+        @Override
+        public byte[] getMagicBytes() {
+            return MAGIC_BYTES;
+        }
 
         @Override
         public byte[] compress(byte[] data) throws CompressException {
@@ -70,43 +84,65 @@ public enum CompressionType {
     LZ4 {
         private final LZ4Compressor COMPRESSOR = LZ4Factory.fastestInstance().fastCompressor();
         private final LZ4FastDecompressor DECOMPRESSOR = LZ4Factory.fastestInstance().fastDecompressor();
+        // <null>LZ4 (ASCII)
+        private final byte[] MAGIC_BYTES = ByteBuffer.allocate(4).putInt(0x004C5A34).array();
+        private final int PREFIX_SIZE = MAGIC_BYTES.length + Integer.BYTES;
+
+        @Override
+        protected byte[] getMagicBytes() {
+            return MAGIC_BYTES;
+        }
 
         @Override
         public byte[] compress(byte[] data) {
             var length = data.length;
             var maxLength = COMPRESSOR.maxCompressedLength(length);
-            var compressed = new byte[Integer.BYTES + maxLength];
-            var newLength = COMPRESSOR.compress(data, 0, length, compressed, Integer.BYTES, maxLength);
+            var compressed = new byte[PREFIX_SIZE + maxLength];
+            var newLength = COMPRESSOR.compress(data, 0, length, compressed,  PREFIX_SIZE, maxLength);
             var buffer = ByteBuffer.wrap(compressed);
-            buffer.putInt(0, length);
-            return Arrays.copyOf(compressed, Integer.BYTES + newLength);
+            buffer.put(MAGIC_BYTES, 0, MAGIC_BYTES.length);
+            buffer.putInt(MAGIC_BYTES.length, length);
+            return Arrays.copyOf(compressed, PREFIX_SIZE + newLength);
         }
 
         @Override
         public byte[] decompress(byte[] data) {
-            return DECOMPRESSOR.decompress(data, Integer.BYTES, ByteBuffer.wrap(data).getInt());
+            return DECOMPRESSOR.decompress(data, MAGIC_BYTES.length + Integer.BYTES, ByteBuffer.wrap(data).getInt(MAGIC_BYTES.length));
         }
     };
 
     public abstract byte[] compress(byte[] data) throws CompressException;
-
     public abstract byte[] decompress(byte[] data) throws CompressException;
 
-    // https://www.rfc-editor.org/rfc/rfc1950
-    // 78 01 - No Compression/low
-    // 78 9C - Default Compression - used in our case
-    // 78 DA - Best Compression
-    public static final byte ZLIB_CMF = 0x78;
-    public static final byte ZLIB_FLG = (byte) 0x9C;
+    public boolean isDecompressable(byte[] data) {
+        byte[] magicBytes = getMagicBytes();
+        if (magicBytes.length > data.length) {
+            return false;
+        }
+        for (int i = 0; i < magicBytes.length; i++) {
+            if (magicBytes[i] != data[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    protected abstract byte[] getMagicBytes();
 
     public static byte[] decompressData(byte[] data) throws CompressException {
-        if (data.length < 2) {
-            throw new CompressException("Data too short. Compression format is undetected");
+        if (data == null || data.length == 0) {
+            throw new CompressException("Data is empty or null");
         }
-        if (data[0] == ZLIB_CMF && data[1] == ZLIB_FLG) {
+        if (ZLIB.isDecompressable(data)) {
             return ZLIB.decompress(data);
-        } else {
+        } else if (LZ4.isDecompressable(data)) {
             return LZ4.decompress(data);
+        } else {
+            BaseEncoding encoder = BaseEncoding.base16();
+            throw new CompressException("Compression format is undetected. Decoded data: " + encoder.encode(data, 0, Math.min(10, data.length))
+                                        + ", supported formats: " + Arrays.stream(CompressionType.values())
+                                                    .map(type -> type.name() + ":[" + encoder.encode(type.getMagicBytes()) + "]")
+                                                    .collect(Collectors.joining(",")));
         }
     }
 }
