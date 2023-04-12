@@ -127,7 +127,7 @@ public class EventMessageIdSerializer {
 		long start = -1,
 				prevId = -1;
 		for (long id : ids) {
-			if (id <= 0) {
+			if (id < 0) {
 				throw new IllegalArgumentException("prohibited sequence " + id + " for direction " + direction);
 			}
 			if (start < 0) {
