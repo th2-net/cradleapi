@@ -34,8 +34,6 @@ dependencies {
 	testImplementation 'org.assertj:assertj-core:3.12.2'
 	testImplementation "org.apache.logging.log4j:log4j-slf4j2-impl"
 	testImplementation 'org.apache.logging.log4j:log4j-core'
-	testImplementation 'org.mockito:mockito-core:5.2.0'
-	testImplementation 'org.testcontainers:cassandra:1.17.5'
 }
 
 def gen_dir = 'build/generated/sources/annotationProcessor/main'
@@ -46,16 +44,7 @@ compileJava {
 }
 
 test {
-	useTestNG() {
-		suites "src/test/resources/core.xml"
-	}
-}
-
-tasks.register('integrationTest', Test) {
-	group = 'verification'
-	useTestNG() {
-		suites "src/test/resources/integration.xml"
-	}
+	useTestNG()
 }
 
 jar {
