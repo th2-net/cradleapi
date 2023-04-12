@@ -41,10 +41,12 @@ import java.util.zip.DataFormatException;
 public class MessageBatchEntityUtils {
     private static final Logger logger = LoggerFactory.getLogger(MessageBatchEntityUtils.class);
 
-    public static SerializedEntity<MessageBatchEntity> toSerializedEntity(MessageBatchToStore batch,
-                                                                          PageId pageId,
-                                                                          CompressionType compressionType,
-                                                                          int maxUncompressedSize) throws IOException, CompressException {
+    public static SerializedEntity<MessageBatchEntity> toSerializedEntity(
+            MessageBatchToStore batch,
+            PageId pageId,
+            CompressionType compressionType,
+            int maxUncompressedSize
+    ) throws IOException, CompressException {
         logger.debug("Creating entity from message batch '{}'", batch.getId());
         MessageBatchEntity.MessageBatchEntityBuilder builder = MessageBatchEntity.builder();
 
@@ -96,10 +98,10 @@ public class MessageBatchEntityUtils {
 
     private static StoredMessageId createId(MessageBatchEntity entity, BookId bookId) {
         return new StoredMessageId(bookId,
-                                    entity.getSessionAlias(),
-                                    Direction.byLabel(entity.getDirection()),
-                                    TimeUtils.toInstant(entity.getFirstMessageDate(), entity.getFirstMessageTime()),
-                                    entity.getSequence());
+                entity.getSessionAlias(),
+                Direction.byLabel(entity.getDirection()),
+                TimeUtils.toInstant(entity.getFirstMessageDate(), entity.getFirstMessageTime()),
+                entity.getSequence());
     }
 
 

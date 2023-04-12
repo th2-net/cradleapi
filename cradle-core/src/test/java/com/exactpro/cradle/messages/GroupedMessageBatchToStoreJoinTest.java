@@ -19,7 +19,6 @@ package com.exactpro.cradle.messages;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
-import com.exactpro.cradle.serialization.SerializationException;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -30,21 +29,21 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
-public class GroupedMessageBatchToStoreJoinTest
-{
+public class GroupedMessageBatchToStoreJoinTest {
     private static final BookId bookId = new BookId("test-book");
     private static final String groupName = "test-group";
     private static final String protocol = "test-protocol";
     static final int MAX_SIZE = 1024;
 
     @Test
-    public void testJoinEmptyBatchWithOther() throws CradleStorageException, SerializationException {
+    public void testJoinEmptyBatchWithOther() throws CradleStorageException {
         GroupedMessageBatchToStore emptyBatch = createEmptyBatch(groupName);
         GroupedMessageBatchToStore batch = createBatch(bookId, "test", 1, Direction.FIRST, Instant.EPOCH, 5, 5, groupName, null);
         assertTrue(emptyBatch.addBatch(batch));
 
         assertEquals(emptyBatch.getMessageCount(), 5);
-        assertEquals(emptyBatch.getBatchSize(), emptyBatch.getBatchSize());
+        assertEquals(emptyBatch.getBatchSize(), getBatchSize(emptyBatch));
+        assertEquals(batch.getBatchSize(), emptyBatch.getBatchSize());
         assertEquals(emptyBatch.getGroup(), groupName);
     }
     
@@ -92,19 +91,19 @@ public class GroupedMessageBatchToStoreJoinTest
 
 
     @Test
-    public void testAddBatchLessThanLimit() throws CradleStorageException, SerializationException {
+    public void testAddBatchLessThanLimit() throws CradleStorageException {
         GroupedMessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, 5, 5, groupName, protocol);
         GroupedMessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH.plusMillis(5), 5, 5, groupName, protocol);
 
-        assertEquals(first.getBatchSize(), first.getBatchSize());
+        assertEquals(first.getBatchSize(), getBatchSize(first));
         assertTrue(first.addBatch(second));
         assertEquals(first.getMessageCount(), 10);
-        assertEquals(first.getBatchSize(), first.getBatchSize());
+        assertEquals(first.getBatchSize(), getBatchSize(first));
         assertEquals(first.getGroup(), groupName);
     }
 
     @Test
-    public void testAddBatchMoreThanLimitBySize() throws CradleStorageException, SerializationException {
+    public void testAddBatchMoreThanLimitBySize() throws CradleStorageException {
         GroupedMessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, 1, MAX_SIZE / 2, groupName, protocol);
         GroupedMessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH, 1, MAX_SIZE / 2, groupName, protocol);
 
@@ -112,7 +111,7 @@ public class GroupedMessageBatchToStoreJoinTest
         assertFalse(first.addBatch(second));
         assertEquals(first.getMessageCount(), 1);
         assertEquals(first.getBatchSize(), sizeBefore);
-        assertEquals(first.getBatchSize(), first.getBatchSize());
+        assertEquals(first.getBatchSize(), getBatchSize(first));
         assertEquals(first.getGroup(), groupName);
     }
     
@@ -213,5 +212,9 @@ public class GroupedMessageBatchToStoreJoinTest
                                 MessagesSizeCalculator.calculateStringSize(direction.getLabel())),
                 group,
                 protocol);
+    }
+
+    private int getBatchSize(StoredGroupedMessageBatch batch) {
+        return MessagesSizeCalculator.calculateMessageBatchSize(batch.getMessages());
     }
 }

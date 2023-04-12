@@ -19,7 +19,6 @@ package com.exactpro.cradle.messages;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
-import com.exactpro.cradle.serialization.SerializationException;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -30,24 +29,24 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
-public class MessageBatchToStoreJoinTest
-{
+public class MessageBatchToStoreJoinTest {
     private static final BookId bookId = new BookId("testbook");
     private static final String protocol = "test-proto";
     static final int MAX_SIZE = 1024;
 
     @Test
-    public void testJoinEmptyBatchWithOther() throws CradleStorageException, SerializationException {
+    public void testJoinEmptyBatchWithOther() throws CradleStorageException {
         MessageBatchToStore emptyBatch = createEmptyBatch();
         MessageBatchToStore batch = createBatch(bookId, "test", 1, Direction.FIRST, Instant.EPOCH, null, 5, 5);
         assertTrue(emptyBatch.addBatch(batch));
 
         assertEquals(emptyBatch.getMessageCount(), 5);
-        assertEquals(emptyBatch.getBatchSize(), emptyBatch.getBatchSize());
+        assertEquals(emptyBatch.getBatchSize(), getBatchSize(emptyBatch));
+        assertEquals(batch.getBatchSize(), batch.getBatchSize());
         assertEquals(emptyBatch.getSessionAlias(), "test");
         assertEquals(emptyBatch.getDirection(), Direction.FIRST);
     }
-    
+
     @Test(dataProvider = "full batches")
     public void testJoinEmptyBatchWithFull(MessageBatchToStore other) throws CradleStorageException {
         MessageBatchToStore emptyBatch = createEmptyBatch();
@@ -58,11 +57,10 @@ public class MessageBatchToStoreJoinTest
         assertEquals(emptyBatch.getDirection(), Direction.FIRST);
     }
 
-    
     @DataProvider(name = "full batches")
     public Object[][] fullBatches() throws CradleStorageException {
-        return new Object[][] {
-                { createFullBySizeBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, protocol) }
+        return new Object[][]{
+                {createFullBySizeBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, protocol)}
         };
     }
 
@@ -82,8 +80,8 @@ public class MessageBatchToStoreJoinTest
     @DataProvider(name = "full batches matrix")
     public Object[][] fullBatchesMatrix() throws CradleStorageException {
         MessageBatchToStore fullBySizeBatch = createFullBySizeBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, protocol);
-        return new Object[][] {
-                { fullBySizeBatch, fullBySizeBatch }
+        return new Object[][]{
+                {fullBySizeBatch, fullBySizeBatch}
         };
     }
 
@@ -94,20 +92,20 @@ public class MessageBatchToStoreJoinTest
 
 
     @Test
-    public void testAddBatchLessThanLimit() throws CradleStorageException, SerializationException {
+    public void testAddBatchLessThanLimit() throws CradleStorageException {
         MessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, protocol, 5, 5);
         MessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH.plusMillis(5), protocol, 5, 5);
 
-        assertEquals(first.getBatchSize(), first.getBatchSize());
+        assertEquals(first.getBatchSize(), getBatchSize(first));
         assertTrue(first.addBatch(second));
         assertEquals(first.getMessageCount(), 10);
-        assertEquals(first.getBatchSize(), first.getBatchSize());
+        assertEquals(first.getBatchSize(), getBatchSize(first));
         assertEquals(first.getSessionAlias(), "test");
         assertEquals(first.getDirection(), Direction.FIRST);
     }
 
     @Test
-    public void testAddBatchMoreThanLimitBySize() throws CradleStorageException, SerializationException {
+    public void testAddBatchMoreThanLimitBySize() throws CradleStorageException {
         MessageBatchToStore first = createBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, protocol, 1, MAX_SIZE / 2);
         MessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH, protocol, 1, MAX_SIZE / 2);
 
@@ -115,20 +113,19 @@ public class MessageBatchToStoreJoinTest
         assertFalse(first.addBatch(second));
         assertEquals(first.getMessageCount(), 1);
         assertEquals(first.getBatchSize(), sizeBefore);
-        assertEquals(first.getBatchSize(), first.getBatchSize());
+        assertEquals(first.getBatchSize(), getBatchSize(first));
         assertEquals(first.getSessionAlias(), "test");
         assertEquals(first.getDirection(), Direction.FIRST);
     }
-    
-    
+
     @Test(
-        expectedExceptions = CradleStorageException.class,
-        expectedExceptionsMessageRegExp = "IDs are not compatible.*"
+            expectedExceptions = CradleStorageException.class,
+            expectedExceptionsMessageRegExp = "IDs are not compatible.*"
     )
     public void testThrowExceptionOnDifferentBooks() throws CradleStorageException {
         MessageBatchToStore first = createBatch(bookId, "testA", 0, Direction.FIRST, Instant.EPOCH, protocol, 5, 5);
         MessageBatchToStore
-				second = createBatch(new BookId(bookId.getName()+"2"), "testA", 5, Direction.FIRST, Instant.EPOCH, protocol, 5, 5);
+                second = createBatch(new BookId(bookId.getName() + "2"), "testA", 5, Direction.FIRST, Instant.EPOCH, protocol, 5, 5);
 
         first.addBatch(second);
     }
@@ -154,7 +151,7 @@ public class MessageBatchToStoreJoinTest
 
         first.addBatch(second);
     }
-    
+
     @Test(
             expectedExceptions = CradleStorageException.class,
             expectedExceptionsMessageRegExp = "Batches are not ordered.*"
@@ -177,14 +174,16 @@ public class MessageBatchToStoreJoinTest
         first.addBatch(second);
     }
 
-    private static MessageBatchToStore createBatch(BookId bookId,
-                                                   String sessionAlias,
-                                                   long startSequence,
-                                                   Direction direction,
-                                                   Instant startTimestamp,
-                                                   String protocol,
-                                                   int messageCount,
-                                                   int contentSizePerMessage) throws CradleStorageException {
+    private static MessageBatchToStore createBatch(
+            BookId bookId,
+            String sessionAlias,
+            long startSequence,
+            Direction direction,
+            Instant startTimestamp,
+            String protocol,
+            int messageCount,
+            int contentSizePerMessage
+    ) throws CradleStorageException {
         MessageBatchToStore messageBatchToStore = createEmptyBatch();
         long begin = startSequence;
         Instant timestamp = startTimestamp;
@@ -200,7 +199,7 @@ public class MessageBatchToStoreJoinTest
                 toStore = toStore.content(new byte[contentSizePerMessage]);
             }
             messageBatchToStore.addMessage(toStore.build());
-            
+
             timestamp = timestamp.plusMillis(1);
         }
         return messageBatchToStore;
@@ -210,9 +209,14 @@ public class MessageBatchToStoreJoinTest
         return new MessageBatchToStore(MAX_SIZE);
     }
 
-    static MessageBatchToStore createFullBySizeBatch(BookId bookId,
-            String sessionAlias, long startSequence, Direction direction, Instant startTimestamp, String protocol) throws CradleStorageException {
-
+    static MessageBatchToStore createFullBySizeBatch(
+            BookId bookId,
+            String sessionAlias,
+            long startSequence,
+            Direction direction,
+            Instant startTimestamp,
+            String protocol
+    ) throws CradleStorageException {
         return createBatch(bookId,
                 sessionAlias,
                 startSequence,
@@ -221,10 +225,14 @@ public class MessageBatchToStoreJoinTest
                 protocol,
                 1,
                 MAX_SIZE - (MessagesSizeCalculator.MESSAGE_BATCH_CONST_VALUE +
-                            MessagesSizeCalculator.MESSAGE_SIZE_CONST_VALUE +
-                            MessagesSizeCalculator.MESSAGE_LENGTH_IN_BATCH +
-                            MessagesSizeCalculator.calculateStringSize(sessionAlias) +
-                            MessagesSizeCalculator.calculateStringSize(protocol) +
-                            MessagesSizeCalculator.calculateStringSize(direction.getLabel())));
+                        MessagesSizeCalculator.MESSAGE_SIZE_CONST_VALUE +
+                        MessagesSizeCalculator.MESSAGE_LENGTH_IN_BATCH +
+                        MessagesSizeCalculator.calculateStringSize(sessionAlias) +
+                        MessagesSizeCalculator.calculateStringSize(protocol) +
+                        MessagesSizeCalculator.calculateStringSize(direction.getLabel())));
+    }
+
+    private int getBatchSize(StoredMessageBatch batch) {
+        return MessagesSizeCalculator.calculateMessageBatchSize(batch.getMessages());
     }
 }

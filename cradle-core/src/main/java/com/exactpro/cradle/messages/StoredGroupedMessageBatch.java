@@ -33,105 +33,107 @@ import static com.exactpro.cradle.serialization.MessagesSizeCalculator.MESSAGE_B
 import static java.util.stream.Collectors.toCollection;
 
 public class StoredGroupedMessageBatch {
-	protected BookId bookId;
-	private final String group;
-	protected int batchSize;
+    protected BookId bookId;
+    private final String group;
+    protected int batchSize;
     private final List<StoredMessage> messages;
-	private StoredMessage firstMessage;
-	private StoredMessage lastMessage;
-	private final Instant recDate;
+    private StoredMessage firstMessage;
+    private StoredMessage lastMessage;
+    private final Instant recDate;
 
-	public BookId getBookId() {
-		return bookId;
-	}
+    public BookId getBookId() {
+        return bookId;
+    }
 
-	public StoredGroupedMessageBatch(String group) {
-		this(group, null, null, null);
-	}
+    public StoredGroupedMessageBatch(String group) {
+        this(group, null, null, null);
+    }
 
-	public StoredGroupedMessageBatch(String group, Collection<StoredMessage> messages, PageId pageId, Instant recDate) {
-		this.recDate = recDate;
-		this.group = group;
-		this.messages = messages == null || messages.isEmpty()
-			? new ArrayList<>()
-			: messages.stream()
-				.map(msg -> Objects.equals(msg.getPageId(), pageId)
-						? msg
-						: new StoredMessage(msg, msg.getId(), pageId)
-				).collect(toCollection(ArrayList<StoredMessage>::new));
-		if (this.messages.isEmpty()) {
+    public StoredGroupedMessageBatch(String group, Collection<StoredMessage> messages, PageId pageId, Instant recDate) {
+        this.recDate = recDate;
+        this.group = group;
+        this.messages = messages == null || messages.isEmpty()
+                ? new ArrayList<>()
+                : messages.stream()
+                .map(msg -> Objects.equals(msg.getPageId(), pageId)
+                        ? msg
+                        : new StoredMessage(msg, msg.getId(), pageId)
+                ).collect(toCollection(ArrayList<StoredMessage>::new));
+        if (this.messages.isEmpty()) {
             batchSize = MESSAGE_BATCH_CONST_VALUE;
-			return;
-		}
-		this.messages.forEach(this::updateFirstLast);
-		batchSize = MessagesSizeCalculator.calculateMessageBatchSize(this.messages);
-	}
+            return;
+        }
+        this.messages.forEach(this::updateFirstLast);
+        batchSize = MessagesSizeCalculator.calculateMessageBatchSize(this.messages);
+    }
 
-	public String getGroup() {
-		return group;
-	}
-	public int getMessageCount() {
-		return messages.size();
-	}
+    public String getGroup() {
+        return group;
+    }
 
-	public int getBatchSize() {
-		return batchSize;
-	}
+    public int getMessageCount() {
+        return messages.size();
+    }
 
-	public Collection<StoredMessage> getMessages() {
-		return Collections.unmodifiableCollection(messages);
-	}
+    public int getBatchSize() {
+        return batchSize;
+    }
 
-	public Collection<StoredMessage> getMessagesReverse()	{
+    public Collection<StoredMessage> getMessages() {
+        return Collections.unmodifiableCollection(messages);
+    }
+
+    public Collection<StoredMessage> getMessagesReverse() {
         return Collections.unmodifiableCollection(Lists.reverse(messages));
-	}
+    }
 
-	public StoredMessage getFirstMessage() {
+    public StoredMessage getFirstMessage() {
         return firstMessage;
-	}
+    }
 
-	public StoredMessage getLastMessage() {
+    public StoredMessage getLastMessage() {
         return lastMessage;
-	}
+    }
 
-	public Instant getFirstTimestamp() {
-		StoredMessage m = getFirstMessage();
-		return m != null ? m.getTimestamp() : null;
-	}
+    public Instant getFirstTimestamp() {
+        StoredMessage m = getFirstMessage();
+        return m != null ? m.getTimestamp() : null;
+    }
 
-	public Instant getLastTimestamp() {
-		StoredMessage m = getLastMessage();
-		return m != null ? m.getTimestamp() : null;
-	}
+    public Instant getLastTimestamp() {
+        StoredMessage m = getLastMessage();
+        return m != null ? m.getTimestamp() : null;
+    }
 
 
-	public Instant getRecDate() {
-		return recDate;
-	}
+    public Instant getRecDate() {
+        return recDate;
+    }
 
-	public boolean isEmpty() {
-		return messages.isEmpty();
-	}
+    public boolean isEmpty() {
+        return messages.isEmpty();
+    }
 
-	protected Stream<StoredMessage> messagesStream() {
-		return messages.stream();
-	}
-	protected void addMessage(StoredMessage message) {
-		messages.add(message);
-		updateFirstLast(message);
-	}
+    protected Stream<StoredMessage> messagesStream() {
+        return messages.stream();
+    }
 
-	protected void addMessages(Collection<StoredMessage> messages) {
-		this.messages.addAll(messages);
-		messages.forEach(this::updateFirstLast);
-	}
+    protected void addMessage(StoredMessage message) {
+        messages.add(message);
+        updateFirstLast(message);
+    }
 
-	private void updateFirstLast(StoredMessage message) {
-		if (firstMessage == null || message.getTimestamp().isBefore(firstMessage.getTimestamp())) {
-			firstMessage = message;
-		}
-		if (lastMessage == null || message.getTimestamp().isAfter(lastMessage.getTimestamp())) {
-			lastMessage = message;
-		}
-	}
+    protected void addMessages(Collection<StoredMessage> messages) {
+        this.messages.addAll(messages);
+        messages.forEach(this::updateFirstLast);
+    }
+
+    private void updateFirstLast(StoredMessage message) {
+        if (firstMessage == null || message.getTimestamp().isBefore(firstMessage.getTimestamp())) {
+            firstMessage = message;
+        }
+        if (lastMessage == null || message.getTimestamp().isAfter(lastMessage.getTimestamp())) {
+            lastMessage = message;
+        }
+    }
 }

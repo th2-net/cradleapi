@@ -39,11 +39,12 @@ public class GroupedMessageEntityUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(GroupedMessageEntityUtils.class);
 
-    public static SerializedEntity<GroupedMessageBatchEntity> toSerializedEntity (GroupedMessageBatchToStore batch,
-                                                                                  PageId pageId,
-                                                                                  CompressionType compressionType,
-                                                                                  int maxUncompressedSize)
-            throws IOException, CompressException {
+    public static SerializedEntity<GroupedMessageBatchEntity> toSerializedEntity(
+            GroupedMessageBatchToStore batch,
+            PageId pageId,
+            CompressionType compressionType,
+            int maxUncompressedSize
+    ) throws IOException, CompressException {
 
         GroupedMessageBatchEntity.GroupedMessageBatchEntityBuilder builder = GroupedMessageBatchEntity.builder();
 
@@ -57,7 +58,7 @@ public class GroupedMessageEntityUtils {
 
         builder.setUncompressedContentSize(batchContent.length);
         boolean compressed = batchContent.length > maxUncompressedSize;
-        if (compressed)	{
+        if (compressed) {
             logger.trace("Compressing content of grouped message batch '{}'", group);
             batchContent = compressionType.compress(batchContent);
         }

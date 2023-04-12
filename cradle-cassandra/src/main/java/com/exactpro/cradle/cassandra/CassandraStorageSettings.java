@@ -46,13 +46,11 @@ public class CassandraStorageSettings {
     public static final int DEFAULT_EVENT_BATCH_DURATION_CACHE_SIZE = 5_000;
     public static final int DEFAULT_PAGE_GROUPS_CACHE_SIZE = 10_000;
     public static final int DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS = 1000;
-	public static final long DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS = 60000;
+    public static final long DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS = 60000;
     public static final long DEFAULT_EVENT_BATCH_DURATION_MILLIS = 5_000;
     public static final long DEFAULT_TIMEOUT = 5000;
     public static final boolean DEFAULT_STORE_INDIVIDUAL_MESSAGE_SESSIONS = true;
     public static final CompressionType DEFAULT_COMPRESSION_TYPE = CompressionType.ZLIB;
-
-
 
     @JsonIgnore
     private NetworkTopologyStrategy networkTopologyStrategy;
@@ -85,7 +83,7 @@ public class CassandraStorageSettings {
     private SelectExecutionPolicy multiRowResultExecutionPolicy;
     private SelectExecutionPolicy singleRowResultExecutionPolicy;
 
-	private long bookRefreshIntervalMillis = DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS;
+    private long bookRefreshIntervalMillis = DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS;
     private long eventBatchDurationMillis = DEFAULT_EVENT_BATCH_DURATION_MILLIS;
 
     private boolean storeIndividualMessageSessions = DEFAULT_STORE_INDIVIDUAL_MESSAGE_SESSIONS;
@@ -136,7 +134,7 @@ public class CassandraStorageSettings {
         this.sessionStatisticsCacheSize = settings.getSessionStatisticsCacheSize();
         this.counterPersistenceInterval = settings.getCounterPersistenceInterval();
         this.composingServiceThreads = settings.getComposingServiceThreads();
-		this.bookRefreshIntervalMillis = settings.getBookRefreshIntervalMillis();
+        this.bookRefreshIntervalMillis = settings.getBookRefreshIntervalMillis();
         this.eventBatchDurationMillis = settings.getEventBatchDurationMillis();
         this.eventBatchDurationCacheSize = settings.getEventBatchDurationCacheSize();
 
@@ -345,13 +343,13 @@ public class CassandraStorageSettings {
         this.singleRowResultExecutionPolicy = singleRowResultExecutionPolicy;
     }
 
-	public long getBookRefreshIntervalMillis() {
-		return bookRefreshIntervalMillis;
-	}
+    public long getBookRefreshIntervalMillis() {
+        return bookRefreshIntervalMillis;
+    }
 
-	public void setBookRefreshIntervalMillis(long bookRefreshIntervalMillis) {
-		this.bookRefreshIntervalMillis = bookRefreshIntervalMillis;
-	}
+    public void setBookRefreshIntervalMillis(long bookRefreshIntervalMillis) {
+        this.bookRefreshIntervalMillis = bookRefreshIntervalMillis;
+    }
 
     public long getEventBatchDurationMillis() {
         return eventBatchDurationMillis;
