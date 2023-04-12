@@ -29,8 +29,8 @@ public class MessageToStore implements CradleMessage {
     private final StoredMessageId id;
     private final String protocol;
     private final byte[] content;
-    private MessageMetadata metadata;
-    private int serializedSize;
+    private final MessageMetadata metadata;
+    private final int serializedSize;
 
     private MessageToStore(StoredMessageId id, String protocol, byte[] content, MessageMetadata metadata, int serializedSize) throws CradleStorageException {
         this.id = id;
@@ -47,10 +47,6 @@ public class MessageToStore implements CradleMessage {
 
     MessageToStore(StoredMessageId id, String protocol, byte[] content, MessageMetadata metadata) throws CradleStorageException {
         this(id, protocol, content, metadata, -1);
-    }
-
-    MessageToStore(StoredMessageId id, String protocol, byte[] content) throws CradleStorageException {
-        this(id, protocol, content, null);
     }
 
     public MessageToStore(MessageToStore copyFrom) throws CradleStorageException {
@@ -92,20 +88,6 @@ public class MessageToStore implements CradleMessage {
     public int getSerializedSize() {
         return serializedSize;
     }
-
-    public void setMetadata(MessageMetadata metadata) {
-        this.metadata = metadata;
-        this.serializedSize = MessagesSizeCalculator.calculateMessageSizeInBatch(this);
-    }
-
-    public void addMetadata(String key, String value) {
-        if (metadata == null) {
-            metadata = new MessageMetadata();
-        }
-        metadata.add(key, value);
-        this.serializedSize = MessagesSizeCalculator.calculateMessageSizeInBatch(this);
-    }
-
 
     @Override
     public String toString() {
