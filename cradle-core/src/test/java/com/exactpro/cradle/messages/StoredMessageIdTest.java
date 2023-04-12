@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,79 +35,88 @@ public class StoredMessageIdTest
 			messageIndex;
 	private String stringId,
 			stringIdWithColon;
-	
+
 	@BeforeClass
-	public void prepare()
-	{
+	public void prepare() {
 		streamName = "Stream1";
 		streamNameWithColon = "10.20.30.40:8080-10:20:30:42:9000";
 		direction = Direction.FIRST;
 		index = 100;
-		messageIndex = index+3;
-		stringId = streamName+IDS_DELIMITER+direction.getLabel()+IDS_DELIMITER+messageIndex;
-		stringIdWithColon = streamNameWithColon+IDS_DELIMITER+direction.getLabel()+IDS_DELIMITER+messageIndex;
+		messageIndex = index + 3;
+		stringId = streamName + IDS_DELIMITER + direction.getLabel() + IDS_DELIMITER + messageIndex;
+		stringIdWithColon = streamNameWithColon + IDS_DELIMITER + direction.getLabel() + IDS_DELIMITER + messageIndex;
 	}
-	
+
 	@DataProvider(name = "ids")
-	public Object[][] ids()
-	{
+	public Object[][] ids() {
 		return new Object[][]
 				{
-					{""},
-					{streamName},
-					{streamName+IDS_DELIMITER},
-					{streamName+IDS_DELIMITER+"XXX"},
-					{streamName+IDS_DELIMITER+"XXX"+IDS_DELIMITER},
-					{streamName+IDS_DELIMITER+"XXX"+IDS_DELIMITER+"NNN"},
-					{streamName+IDS_DELIMITER+"XXX"+IDS_DELIMITER+index},
-					{streamName+IDS_DELIMITER+direction.getLabel()},
-					{streamName+IDS_DELIMITER+direction.getLabel()+IDS_DELIMITER},
-					{streamName+IDS_DELIMITER+direction.getLabel()+IDS_DELIMITER+"NNN"}
+						{""},
+						{streamName},
+						{streamName + IDS_DELIMITER},
+						{streamName + IDS_DELIMITER + "XXX"},
+						{streamName + IDS_DELIMITER + "XXX" + IDS_DELIMITER},
+						{streamName + IDS_DELIMITER + "XXX" + IDS_DELIMITER + "NNN"},
+						{streamName + IDS_DELIMITER + "XXX" + IDS_DELIMITER + index},
+						{streamName + IDS_DELIMITER + direction.getLabel()},
+						{streamName + IDS_DELIMITER + direction.getLabel() + IDS_DELIMITER},
+						{streamName + IDS_DELIMITER + direction.getLabel() + IDS_DELIMITER + "NNN"}
 				};
 	}
-	
-	
+
+	@DataProvider(name = "illegalIndexes")
+	public Object[][] illegalIndexes() {
+		return new Object[][]{
+				{Long.MIN_VALUE},
+				{-1L},
+		};
+	}
+
+
 	@Test
-	public void idToString()
-	{
+	public void idToString() {
 		StoredMessageId id = new StoredMessageId(streamName, direction, messageIndex);
 		Assert.assertEquals(id.toString(), stringId);
 	}
-	
+
 	@Test
-	public void idFromString() throws CradleIdException
-	{
+	public void idFromString() throws CradleIdException {
 		StoredMessageId id = new StoredMessageId(streamName, direction, messageIndex),
 				fromString = StoredMessageId.fromString(stringId);
 		Assert.assertEquals(fromString, id);
 	}
-	
+
 	@Test
-	public void idFromStringWithColon() throws CradleIdException
-	{
+	public void idFromStringWithColon() throws CradleIdException {
 		StoredMessageId id = new StoredMessageId(streamNameWithColon, direction, messageIndex),
 				fromString = StoredMessageId.fromString(stringIdWithColon);
 		Assert.assertEquals(fromString, id);
 	}
-	
-	@Test(dataProvider = "ids",	
+
+	@Test(dataProvider = "ids",
 			expectedExceptions = {CradleIdException.class})
-	public void idFromStringChecks(String s) throws CradleIdException
-	{
+	public void idFromStringChecks(String s) throws CradleIdException {
 		StoredMessageId.fromString(s);
 	}
-	
+
 	@Test
-	public void correctStreamName() throws CradleIdException
-	{
+	public void correctStreamName() throws CradleIdException {
 		StoredMessageId id = StoredMessageId.fromString(stringIdWithColon);
 		Assert.assertEquals(id.getStreamName(), streamNameWithColon);
 	}
-	
+
 	@Test
-	public void correctMessageIndex() throws CradleIdException
-	{
+	public void correctMessageIndex() throws CradleIdException {
 		StoredMessageId id = StoredMessageId.fromString(stringId);
 		Assert.assertEquals(id.getIndex(), messageIndex);
+	}
+
+	@Test(
+			dataProvider = "illegalIndexes",
+			expectedExceptions = IllegalArgumentException.class,
+			expectedExceptionsMessageRegExp = "illegal index -?\\d+ for test:first"
+	)
+	public void testReportIllegalIndex(long index) throws CradleIdException {
+		StoredMessageId.fromString("test:first:" + index);
 	}
 }
