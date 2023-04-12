@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 package com.exactpro.cradle.messages;
 
-import java.time.Instant;
-
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.utils.CradleStorageException;
+
+import java.time.Instant;
 
 /**
  * Builder for MessageToStore object. After calling {@link #build()} method, the builder can be reused to build new message
@@ -99,9 +99,7 @@ public class MessageToStoreBuilder {
 
     public MessageToStore build() throws CradleStorageException {
         try {
-            MessageToStore result = createMessageToStore();
-            result.setMetadata(metadata);
-            return result;
+            return createMessageToStore();
         } finally {
             reset();
         }
@@ -110,7 +108,7 @@ public class MessageToStoreBuilder {
 
     protected MessageToStore createMessageToStore() throws CradleStorageException {
     	StoredMessageId id = new StoredMessageId(bookId, sessionAlias, direction, timestamp, sequence);
-        return new MessageToStore(id, protocol, content);
+        return new MessageToStore(id, protocol, content, metadata);
     }
 
     protected void reset() {
