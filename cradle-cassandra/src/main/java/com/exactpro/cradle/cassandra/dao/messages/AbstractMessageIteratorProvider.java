@@ -59,8 +59,7 @@ import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_FIRST_MESSAGE_TIME;
 
-abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvider<T>
-{
+abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvider<T> {
 
 	private static final Logger logger = LoggerFactory.getLogger(AbstractMessageIteratorProvider.class);
 	protected final MessageBatchOperator op;
@@ -73,6 +72,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 	protected PageInfo firstPage, lastPage;
 	protected final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
 	protected final MessageFilter filter;
+	/** limit must be strictly positive ( limit greater than 0 ) */
 	protected final int limit;
 	protected final AtomicInteger returned;
 	protected CassandraStoredMessageFilter cassandraFilter;

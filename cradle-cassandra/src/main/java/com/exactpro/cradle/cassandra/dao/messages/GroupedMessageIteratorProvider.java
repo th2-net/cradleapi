@@ -29,7 +29,6 @@ import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
 import com.exactpro.cradle.cassandra.workers.MessagesWorker;
 import com.exactpro.cradle.iterators.ConvertingIterator;
-import com.exactpro.cradle.iterators.LimitedIterator;
 import com.exactpro.cradle.messages.GroupedMessageFilter;
 import com.exactpro.cradle.messages.StoredGroupedMessageBatch;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -54,6 +53,7 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 	private final GroupedMessageFilter filter;
 	private PageInfo firstPage, lastPage;
 	private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
+	/** limit must be strictly positive ( limit greater than 0 ) */
 	private final int limit;
 	private final AtomicInteger returned;
 	protected CassandraGroupedMessageFilter cassandraFilter;

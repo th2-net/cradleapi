@@ -35,8 +35,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -47,8 +45,6 @@ import java.util.concurrent.Executors;
 public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest {
 
     private static final Logger logger = LoggerFactory.getLogger(GroupedMessageIteratorProviderTest.class);
-
-    public static final String CONTENT = "default_content";
     private static final String GROUP_NAME = "test_group";
     private static final String FIRST_SESSION_ALIAS = "test_session_alias_first";
     private static final String SECOND_SESSION_ALIAS = "test_session_alias_second";
@@ -57,7 +53,7 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
     private List<StoredGroupedMessageBatch> storedData;
     private CassandraOperators operators;
     private ExecutorService composingService = Executors.newSingleThreadExecutor();
-    public final static String protocol = "default_message_protocol";
+
     @BeforeClass
     public void startUp () throws IOException, InterruptedException, CradleStorageException {
         super.startUp(true);
@@ -69,18 +65,6 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
     private void setUpOperators() throws IOException, InterruptedException {
         CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(session).build();
         operators = new CassandraOperators(dataMapper, CassandraCradleHelper.getInstance().getStorageSettings());
-    }
-
-    private MessageToStore generateMessage (String sessionAlias, Direction direction, int minutesFromStart, long sequence) throws CradleStorageException {
-        return MessageToStore.builder()
-                .bookId(bookId)
-                .sessionAlias(sessionAlias)
-                .direction(direction)
-                .timestamp(dataStart.plus(minutesFromStart, ChronoUnit.MINUTES))
-                .sequence(sequence)
-                .content(CONTENT.getBytes(StandardCharsets.UTF_8))
-                .protocol(protocol)
-                .build();
     }
 
     @Override

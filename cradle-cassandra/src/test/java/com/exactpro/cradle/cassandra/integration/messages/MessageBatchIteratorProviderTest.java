@@ -35,8 +35,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -46,8 +44,6 @@ import java.util.concurrent.Executors;
 public class MessageBatchIteratorProviderTest extends BaseCradleCassandraTest {
 
     private static final Logger logger = LoggerFactory.getLogger(MessageBatchIteratorProviderTest.class);
-
-    private static final String CONTENT = "default_content";
     private static final String GROUP_NAME = "test_group";
     private static final String FIRST_SESSION_ALIAS = "test_session_alias";
     private static final String SECOND_SESSION_ALIAS = "test_session_alias";
@@ -56,7 +52,7 @@ public class MessageBatchIteratorProviderTest extends BaseCradleCassandraTest {
     private Map<MessageBatchIteratorProviderTest.StoredMessageKey, List<StoredMessageBatch>> storedData;
     private CassandraOperators operators;
     private ExecutorService composingService = Executors.newSingleThreadExecutor();
-    public final static String protocol = "default_message_protocol";
+
     @BeforeClass
     public void startUp () throws IOException, InterruptedException, CradleStorageException {
         super.startUp(true);
@@ -104,19 +100,6 @@ public class MessageBatchIteratorProviderTest extends BaseCradleCassandraTest {
     private void setUpOperators() throws IOException, InterruptedException {
         CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(session).build();
         operators = new CassandraOperators(dataMapper, CassandraCradleHelper.getInstance().getStorageSettings());
-    }
-
-
-    private MessageToStore generateMessage (String sessionAlias, Direction direction, int minutesFromStart, long sequence) throws CradleStorageException {
-        return MessageToStore.builder()
-                .bookId(bookId)
-                .sessionAlias(sessionAlias)
-                .direction(direction)
-                .timestamp(dataStart.plus(minutesFromStart, ChronoUnit.MINUTES))
-                .sequence(sequence)
-                .content(CONTENT.getBytes(StandardCharsets.UTF_8))
-                .protocol(protocol)
-                .build();
     }
 
     @Override
@@ -246,6 +229,24 @@ public class MessageBatchIteratorProviderTest extends BaseCradleCassandraTest {
         } catch (InterruptedException | ExecutionException | CradleStorageException e) {
             logger.error(e.getMessage(), e);
             throw e;
+        }
+    }
+
+    @Test(description = "tries to get messages with negative limit, provider should throw exception")
+    public void tryToMessageBatchWithNegativeLimit() {
+        try {
+            MessageFilter messageFilter =  new MessageFilter(bookId, FIRST_SESSION_ALIAS, Direction.FIRST);
+            messageFilter.setLimit(-1);
+            MessageBatchesIteratorProvider iteratorProvider = createIteratorProvider(messageFilter);
+
+            CompletableFuture<CassandraCradleResultSet<StoredMessageBatch>> rsFuture = iteratorProvider.nextIterator()
+                    .thenApplyAsync(r -> new CassandraCradleResultSet<>(r, iteratorProvider), composingService);
+
+            rsFuture.get().asIterable();
+
+            Assertions.fail("Exception wasn't thrown while getting messages with negative limit");
+        } catch (Exception e) {
+            // Test passed
         }
     }
 }

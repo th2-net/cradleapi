@@ -30,7 +30,6 @@ import java.util.Set;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
-import com.google.common.collect.Lists;
 
 /**
  * Holds information about batch of test events stored in Cradle.

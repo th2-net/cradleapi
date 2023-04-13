@@ -19,11 +19,13 @@ package com.exactpro.cradle.cassandra.integration;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.CassandraCradleStorage;
+import com.exactpro.cradle.messages.MessageToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -44,30 +46,33 @@ public abstract class BaseCradleCassandraTest {
     protected static final BookId DEFAULT_BOOK_ID = new BookId("test_book");
     private static final Instant DEFAULT_DATA_END = Instant.now();
     private static final Instant DEFAULT_DATA_START = DEFAULT_DATA_END.minus(1, ChronoUnit.HOURS);
+    public static final String protocol = "default_message_protocol";
+    public static final String CONTENT = "default_content";
+
 
     private static final List<PageInfo> DEFAULT_PAGES = List.of(
             new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX+0),
+                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX + 0),
                     DEFAULT_DATA_START,
                     DEFAULT_DATA_START.plus(10, ChronoUnit.MINUTES), ""),
             new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX+1),
+                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX + 1),
                     DEFAULT_DATA_START.plus(10, ChronoUnit.MINUTES),
                     DEFAULT_DATA_START.plus(20, ChronoUnit.MINUTES), ""),
             new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX+2),
+                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX + 2),
                     DEFAULT_DATA_START.plus(20, ChronoUnit.MINUTES),
                     DEFAULT_DATA_START.plus(30, ChronoUnit.MINUTES), ""),
             new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX+3),
+                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX + 3),
                     DEFAULT_DATA_START.plus(30, ChronoUnit.MINUTES),
                     DEFAULT_DATA_START.plus(40, ChronoUnit.MINUTES), ""),
             new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX+4),
+                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX + 4),
                     DEFAULT_DATA_START.plus(40, ChronoUnit.MINUTES),
                     DEFAULT_DATA_START.plus(50, ChronoUnit.MINUTES), ""),
             new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX+5),
+                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX + 5),
                     DEFAULT_DATA_START.plus(50, ChronoUnit.MINUTES),
                     DEFAULT_DATA_START.plus(60, ChronoUnit.MINUTES), ""));
 
@@ -83,11 +88,11 @@ public abstract class BaseCradleCassandraTest {
         Following method should be used in beforeClass if extending class
         wants to implement it's own logic of initializing books and pages
      */
-    protected void startUp () throws IOException, InterruptedException, CradleStorageException {
+    protected void startUp() throws IOException, InterruptedException, CradleStorageException {
         startUp(false);
     }
 
-    private BookId generateBookId () {
+    private BookId generateBookId() {
         return new BookId(getClass().getSimpleName() + "Book");
     }
 
@@ -96,7 +101,7 @@ public abstract class BaseCradleCassandraTest {
      * then used in beforeClass. Here should go all data
      * initialization logic for whole class.
      */
-    protected abstract void generateData () throws CradleStorageException, IOException;
+    protected abstract void generateData() throws CradleStorageException, IOException;
 
     protected void startUp(boolean generateBookPages) throws IOException, InterruptedException, CradleStorageException {
         this.session = CassandraCradleHelper.getInstance().getSession();
@@ -114,11 +119,23 @@ public abstract class BaseCradleCassandraTest {
         }
     }
 
-    protected void setUpBooksAndPages (BookId bookId, List<PageToAdd> pagesToAdd) throws CradleStorageException, IOException {
+    protected void setUpBooksAndPages(BookId bookId, List<PageToAdd> pagesToAdd) throws CradleStorageException, IOException {
         storage.addBook(new BookToAdd(bookId.getName(), dataStart));
 
         BookInfo book = storage.addPages(bookId, pagesToAdd);
 
         pages = new ArrayList<>(book.getPages());
+    }
+
+    protected MessageToStore generateMessage(String sessionAlias, Direction direction, int minutesFromStart, long sequence) throws CradleStorageException {
+        return MessageToStore.builder()
+                .bookId(bookId)
+                .sessionAlias(sessionAlias)
+                .direction(direction)
+                .timestamp(dataStart.plus(minutesFromStart, ChronoUnit.MINUTES))
+                .sequence(sequence)
+                .content(CONTENT.getBytes(StandardCharsets.UTF_8))
+                .protocol(protocol)
+                .build();
     }
 }
