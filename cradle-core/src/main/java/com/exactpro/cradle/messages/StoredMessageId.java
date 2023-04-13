@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,60 +26,56 @@ import com.exactpro.cradle.utils.CradleIdException;
  * All messages have sequenced index, scoped by direction and stream related to the message.
  * Message index in conjunction with stream name and direction of the message form the message ID
  */
-public class StoredMessageId implements Serializable
-{
+public class StoredMessageId implements Serializable {
 	private static final long serialVersionUID = -6856521491563727644L;
-	
+
 	private final String streamName;
 	private final Direction direction;
 	private final long index;
-	
-	public StoredMessageId(String streamName, Direction direction, long index)
-	{
+
+	public StoredMessageId(String streamName, Direction direction, long index) {
 		this.streamName = streamName;
 		this.direction = direction;
+		if (index < 0) {
+			throw new IllegalArgumentException(String.format("illegal index %d for %s:%s",
+					index, streamName, direction.getLabel()));
+		}
 		this.index = index;
 	}
-	
-	
-	public static StoredMessageId fromString(String id) throws CradleIdException
-	{
+
+
+	public static StoredMessageId fromString(String id) throws CradleIdException {
 		String[] parts = StoredMessageIdUtils.splitParts(id);
 		if (parts.length < 3)
-			throw new CradleIdException("Message ID ("+id+") should contain stream name, direction and message index delimited with '"+StoredMessageBatchId.IDS_DELIMITER+"'");
-		
+			throw new CradleIdException("Message ID (" + id + ") should contain stream name, direction and message index delimited with '" + StoredMessageBatchId.IDS_DELIMITER + "'");
+
 		long index = StoredMessageIdUtils.getIndex(parts);
 		Direction direction = StoredMessageIdUtils.getDirection(parts);
 		String streamName = StoredMessageIdUtils.getStreamName(parts);
 		return new StoredMessageId(streamName, direction, index);
 	}
-	
-	
-	public String getStreamName()
-	{
+
+
+	public String getStreamName() {
 		return streamName;
 	}
-	
-	public Direction getDirection()
-	{
+
+	public Direction getDirection() {
 		return direction;
 	}
-	
-	public long getIndex()
-	{
+
+	public long getIndex() {
 		return index;
 	}
-	
-	
+
+
 	@Override
-	public String toString()
-	{
-		return streamName+StoredMessageBatchId.IDS_DELIMITER+direction.getLabel()+StoredMessageBatchId.IDS_DELIMITER+index;
+	public String toString() {
+		return streamName + StoredMessageBatchId.IDS_DELIMITER + direction.getLabel() + StoredMessageBatchId.IDS_DELIMITER + index;
 	}
-	
+
 	@Override
-	public int hashCode()
-	{
+	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((direction == null) ? 0 : direction.hashCode());
@@ -87,10 +83,9 @@ public class StoredMessageId implements Serializable
 		result = prime * result + ((streamName == null) ? 0 : streamName.hashCode());
 		return result;
 	}
-	
+
 	@Override
-	public boolean equals(Object obj)
-	{
+	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;
 		if (obj == null)
@@ -102,8 +97,7 @@ public class StoredMessageId implements Serializable
 			return false;
 		if (index != other.index)
 			return false;
-		if (streamName == null)
-		{
+		if (streamName == null) {
 			if (other.streamName != null)
 				return false;
 		} else if (!streamName.equals(other.streamName))
