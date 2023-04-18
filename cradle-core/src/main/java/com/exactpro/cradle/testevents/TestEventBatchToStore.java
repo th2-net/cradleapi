@@ -45,17 +45,17 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
 	private final int maxBatchSize;
 	private int batchSize = EventsSizeCalculator.EVENT_BATCH_LEN_CONST;
 	
-	public TestEventBatchToStore(StoredTestEventId id, String name, StoredTestEventId parentId, int maxBatchSize) throws CradleStorageException
+	public TestEventBatchToStore(StoredTestEventId id, String name, StoredTestEventId parentId, int maxBatchSize, long storeActionRejectionThreshold) throws CradleStorageException
 	{
-		super(id, name, parentId);
+		super(id, name, parentId, storeActionRejectionThreshold);
 		success = true;
 		this.maxBatchSize = maxBatchSize;
 	}
 	
 	
-	public static TestEventBatchToStoreBuilder builder(int maxBatchSize)
+	public static TestEventBatchToStoreBuilder builder(int maxBatchSize, long storeActionRejectionThreshold)
 	{
-		return new TestEventBatchToStoreBuilder(maxBatchSize);
+		return new TestEventBatchToStoreBuilder(maxBatchSize, storeActionRejectionThreshold);
 	}
 	
 

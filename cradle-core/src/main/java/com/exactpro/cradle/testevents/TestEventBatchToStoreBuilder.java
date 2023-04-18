@@ -32,10 +32,13 @@ public class TestEventBatchToStoreBuilder
 	private String name;
 	private StoredTestEventId parentId;
 	private String type;
+
+	private final long storeActionRejectionThreshold;
 	
-	public TestEventBatchToStoreBuilder(int maxBatchSize)
+	public TestEventBatchToStoreBuilder(int maxBatchSize, long storeActionRejectionThreshold)
 	{
 		this.maxBatchSize = maxBatchSize;
+		this.storeActionRejectionThreshold = storeActionRejectionThreshold;
 	}
 	
 	
@@ -93,7 +96,7 @@ public class TestEventBatchToStoreBuilder
 	
 	protected TestEventBatchToStore createTestEventToStore(StoredTestEventId id, String name, StoredTestEventId parentId) throws CradleStorageException
 	{
-		return new TestEventBatchToStore(id, name, parentId, maxBatchSize);
+		return new TestEventBatchToStore(id, name, parentId, maxBatchSize, storeActionRejectionThreshold);
 	}
 	
 	protected void reset()
