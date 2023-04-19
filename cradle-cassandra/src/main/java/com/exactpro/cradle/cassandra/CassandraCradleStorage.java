@@ -70,6 +70,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.*;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -987,9 +988,9 @@ public class CassandraCradleStorage extends CradleStorage
 
 		PageInfo pageInfo = pageEntity.toPageInfo();
 		Instant now = Instant.now();
-		if (pageInfo.getStarted().isBefore(now)) {
+		if (pageInfo.getStarted().isBefore(now.plusMillis(Duration.of(1, ChronoUnit.MINUTES).toMillis()))) {
 			throw new CradleStorageException(
-					String.format("You can only rename pages which start in future: pageStart - %s, now - %s",
+					String.format("You can only rename pages which start after 1 minute in future: pageStart - %s, now - %s",
 							pageInfo.getStarted(),
 							now));
 		}
@@ -1215,7 +1216,7 @@ public class CassandraCradleStorage extends CradleStorage
 		PageOperator pageOperator = operators.getPageOperator();
 		//remove page
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(pageInfo.getStarted());
-		if (pageInfo.getStarted().isAfter(Instant.now())) {
+		if (pageInfo.getStarted().isAfter(Instant.now().plusMillis(Duration.of(1, ChronoUnit.MINUTES).toMillis()))) {
 			operators.getPageOperator().remove(book, ldt.toLocalDate(), ldt.toLocalTime(), writeAttrs);
 			/*
 				New last page might have non-null end,

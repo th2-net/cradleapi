@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle.messages;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -103,7 +104,7 @@ public class MessageBatchToStore extends StoredMessageBatch
 		// Checking that the timestamp of a message is not from the future
 		// Other checks have already been done when the MessageToStore was created
 		Instant now = Instant.now();
-		if (message.getTimestamp().isAfter(now))
+		if (message.getTimestamp().isAfter(now.plusMillis(Duration.of(1, ChronoUnit.MINUTES).toMillis())))
 			throw new CradleStorageException(
 					"Message timestamp (" + TimeUtils.toLocalTimestamp(message.getTimestamp()) +
 							") is greater than current timestamp (" + TimeUtils.toLocalTimestamp(now) + ")");

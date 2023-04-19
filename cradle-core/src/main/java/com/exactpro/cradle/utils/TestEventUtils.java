@@ -28,7 +28,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -86,7 +88,7 @@ public class TestEventUtils
 		if (event.getStartTimestamp() == null)
 			throw new CradleStorageException("Test event must have a start timestamp");
 		Instant now = Instant.now();
-		if (event.getStartTimestamp().isAfter(now))
+		if (event.getStartTimestamp().isAfter(now.plusMillis(Duration.of(1, ChronoUnit.MINUTES).toMillis())))
 			throw new CradleStorageException(
 					"Event start timestamp (" + TimeUtils.toLocalTimestamp(event.getStartTimestamp()) +
 							") is greater than current timestamp (" + TimeUtils.toLocalTimestamp(now) + ")");

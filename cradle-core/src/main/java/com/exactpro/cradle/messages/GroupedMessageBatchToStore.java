@@ -23,8 +23,10 @@ import com.exactpro.cradle.utils.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -90,7 +92,7 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 		// Other checks have already been done when the MessageToStore was created
 		SessionKey sessionKey = new SessionKey(message.getSessionAlias(), message.getDirection());
 		Instant now = Instant.now();
-		if (message.getTimestamp().isAfter(now))
+		if (message.getTimestamp().isAfter(now.plusMillis(Duration.of(1, ChronoUnit.MINUTES).toMillis())))
 			throw new CradleStorageException(
 					"Message timestamp (" + TimeUtils.toLocalTimestamp(message.getTimestamp()) +
 							") is greater than current timestamp (" + TimeUtils.toLocalTimestamp(now) + ")");

@@ -34,8 +34,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -1379,8 +1381,8 @@ public abstract class CradleStorage
 		{
 			Instant now = Instant.now(),
 					firstStart = pages.get(0).getStart();
-			if (!firstStart.isAfter(now))
-				throw new CradleStorageException("Timestamp of new page start must be after current timestamp ("+now+")");
+			if (!firstStart.isAfter(now.plusMillis(Duration.of(1, ChronoUnit.MINUTES).toMillis())))
+				throw new CradleStorageException("Timestamp of new page start must be after current timestamp ("+now+") plus 1 minute");
 		}
 		
 		Set<String> names = new HashSet<>();
