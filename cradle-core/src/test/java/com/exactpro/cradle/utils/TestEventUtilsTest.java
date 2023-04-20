@@ -18,9 +18,7 @@ package com.exactpro.cradle.utils;
 
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.CoreStorageSettings;
-import com.exactpro.cradle.testevents.StoredTestEventId;
-import com.exactpro.cradle.testevents.TestEventBatchToStore;
-import com.exactpro.cradle.testevents.TestEventToStore;
+import com.exactpro.cradle.testevents.*;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -43,7 +41,7 @@ public class TestEventUtilsTest
 				1024,
 				storeActionRejectionThreshold);
 		
-		batch.addTestEvent(TestEventToStore.singleBuilder(storeActionRejectionThreshold)
+		batch.addTestEvent(new TestEventSingleToStoreBuilder(storeActionRejectionThreshold)
 				.id(book, scope, Instant.now(), "EventID")
 				.name("Event1")
 				.parentId(parentId)

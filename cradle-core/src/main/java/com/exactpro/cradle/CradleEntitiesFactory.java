@@ -22,6 +22,7 @@ import com.exactpro.cradle.messages.MessageToStore;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
 import com.exactpro.cradle.testevents.TestEventBatchToStoreBuilder;
+import com.exactpro.cradle.testevents.TestEventSingleToStoreBuilder;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
@@ -33,7 +34,7 @@ public class CradleEntitiesFactory
 			maxTestEventBatchSize;
 
 	private final long storeActionRejectionThreshold;
-	
+
 	/**
 	 * Creates new factory for entities to be used with {@link CradleStorage}
 	 * @param maxMessageBatchSize maximum size of messages (in bytes) that {@link MessageBatchToStore} can hold
@@ -45,7 +46,7 @@ public class CradleEntitiesFactory
 		this.maxTestEventBatchSize = maxTestEventBatchSize;
 		this.storeActionRejectionThreshold = storeActionRejectionThreshold;
 	}
-	
+
 
 	@Deprecated
 	public MessageBatchToStore messageBatch()
@@ -56,19 +57,24 @@ public class CradleEntitiesFactory
 	public GroupedMessageBatchToStore groupedMessageBatch(String group) {
 		return new GroupedMessageBatchToStore(group, maxMessageBatchSize, storeActionRejectionThreshold);
 	}
-	
+
 	public MessageBatchToStore singletonMessageBatch(MessageToStore message) throws CradleStorageException
 	{
 		return MessageBatchToStore.singleton(message, maxMessageBatchSize, storeActionRejectionThreshold);
 	}
-	
+
 	public TestEventBatchToStore testEventBatch(StoredTestEventId id, String name, StoredTestEventId parentId) throws CradleStorageException
 	{
 		return new TestEventBatchToStore(id, name, parentId, maxTestEventBatchSize, storeActionRejectionThreshold);
 	}
-	
+
 	public TestEventBatchToStoreBuilder testEventBatchBuilder()
 	{
 		return new TestEventBatchToStoreBuilder(maxTestEventBatchSize, storeActionRejectionThreshold);
+	}
+
+	public TestEventSingleToStoreBuilder testEventBuilder()
+	{
+		return new TestEventSingleToStoreBuilder(storeActionRejectionThreshold);
 	}
 }

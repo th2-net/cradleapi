@@ -41,18 +41,6 @@ public abstract class TestEventToStore implements TestEvent
 		TestEventUtils.validateTestEvent(this, storeActionRejectionThreshold);
 	}
 	
-	
-	public static TestEventSingleToStoreBuilder singleBuilder(long storeActionRejectionThreshold)
-	{
-		return new TestEventSingleToStoreBuilder(storeActionRejectionThreshold);
-	}
-	
-	public static TestEventBatchToStoreBuilder batchBuilder(int maxBatchSize, long storeActionRejectionThreshold )
-	{
-		return new TestEventBatchToStoreBuilder(maxBatchSize, storeActionRejectionThreshold);
-	}
-	
-	
 	@Override
 	public StoredTestEventId getId()
 	{

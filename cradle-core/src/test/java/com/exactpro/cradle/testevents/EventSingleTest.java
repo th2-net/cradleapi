@@ -46,7 +46,7 @@ public class EventSingleTest
 
 	private final long storeActionRejectionThreshold = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
 
-	private TestEventSingleToStoreBuilder eventBuilder = TestEventToStore.singleBuilder(storeActionRejectionThreshold);
+	private final TestEventSingleToStoreBuilder eventBuilder = new TestEventSingleToStoreBuilder(storeActionRejectionThreshold);
 	
 	@DataProvider(name = "invalid events")
 	public Object[][] invalidEvents() throws CradleStorageException
