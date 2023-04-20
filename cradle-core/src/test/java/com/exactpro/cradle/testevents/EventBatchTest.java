@@ -45,9 +45,9 @@ public class EventBatchTest
 
 	private final long storeActionRejectionThreshold = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
 
-	private TestEventSingleToStoreBuilder eventBuilder = TestEventToStore.singleBuilder(storeActionRejectionThreshold);
-	private TestEventBatchToStoreBuilder batchBuilder = TestEventToStore.batchBuilder(MAX_SIZE, storeActionRejectionThreshold);
-	private StoredTestEventId batchId = new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, UUID.randomUUID().toString());
+	private final TestEventSingleToStoreBuilder eventBuilder = new TestEventSingleToStoreBuilder(storeActionRejectionThreshold);
+	private final TestEventBatchToStoreBuilder batchBuilder = new TestEventBatchToStoreBuilder(MAX_SIZE, storeActionRejectionThreshold);
+	private final StoredTestEventId batchId = new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, UUID.randomUUID().toString());
 	private TestEventBatchToStore batch;
 
 	@BeforeMethod
@@ -89,7 +89,7 @@ public class EventBatchTest
 	@Test
 	public void batchFields() throws CradleStorageException
 	{
-		TestEventBatchToStore event = TestEventToStore.batchBuilder(MAX_SIZE, storeActionRejectionThreshold)
+		TestEventBatchToStore event = new TestEventBatchToStoreBuilder(MAX_SIZE, storeActionRejectionThreshold)
 				.id(DUMMY_ID)
 				.name("Name1")
 				.parentId(batchParentId)
