@@ -18,6 +18,7 @@ package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
 
+import com.exactpro.cradle.CoreStorageSettings;
 import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
@@ -29,11 +30,13 @@ import com.exactpro.cradle.utils.CradleStorageException;
 public class EventBuilderTest
 {
 	private final BookId bookId = new BookId("Book1");
-	
+
+	private final long storeActionRejectionThreshold = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
+
 	@Test
 	public void singleBuilderIsReset() throws CradleStorageException
 	{
-		TestEventSingleToStoreBuilder builder = new TestEventSingleToStoreBuilder();
+		TestEventSingleToStoreBuilder builder = new TestEventSingleToStoreBuilder(storeActionRejectionThreshold);
 		builder.id(bookId, "Scope1", Instant.now(), "123")
 				.name("Event1")
 				.parentId(new StoredTestEventId(bookId, "Scope2", Instant.EPOCH, "234"))
@@ -46,14 +49,14 @@ public class EventBuilderTest
 		
 		Assertions.assertThat(builder)
 				.usingRecursiveComparison()
-				.isEqualTo(new TestEventSingleToStoreBuilder());
+				.isEqualTo(new TestEventSingleToStoreBuilder(storeActionRejectionThreshold));
 	}
 	
 	@Test
 	public void batchBuilderIsReset() throws CradleStorageException
 	{
 		int maxSize = 1024;
-		TestEventBatchToStoreBuilder builder = new TestEventBatchToStoreBuilder(maxSize);
+		TestEventBatchToStoreBuilder builder = new TestEventBatchToStoreBuilder(maxSize, storeActionRejectionThreshold);
 		builder.id(bookId, "Scope1", Instant.now(), "123")
 				.name("Event1")
 				.parentId(new StoredTestEventId(bookId, "Scope2", Instant.EPOCH, "234"))
@@ -62,6 +65,6 @@ public class EventBuilderTest
 		
 		Assertions.assertThat(builder)
 				.usingRecursiveComparison()
-				.isEqualTo(new TestEventBatchToStoreBuilder(maxSize));
+				.isEqualTo(new TestEventBatchToStoreBuilder(maxSize, storeActionRejectionThreshold));
 	}
 }

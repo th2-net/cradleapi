@@ -43,15 +43,17 @@ public class EventSingleTest
 	public static final Instant BEFORE_START_TIMESTAMP = START_TIMESTAMP.minus(10, ChronoUnit.SECONDS);
 	public static final StoredTestEventId DUMMY_ID = new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, ID_VALUE),
 			batchParentId = new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "BatchParentID");
-	
-	private TestEventSingleToStoreBuilder eventBuilder = TestEventToStore.singleBuilder();
+
+	private final long storeActionRejectionThreshold = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
+
+	private TestEventSingleToStoreBuilder eventBuilder = TestEventToStore.singleBuilder(storeActionRejectionThreshold);
 	
 	@DataProvider(name = "invalid events")
 	public Object[][] invalidEvents() throws CradleStorageException
 	{
 		return new Object[][]
 				{
-					{new TestEventSingleToStoreBuilder(),                                                             //Empty event
+					{new TestEventSingleToStoreBuilder(storeActionRejectionThreshold),                                                             //Empty event
 							"ID cannot be null"},
 					{validEvent().id(null),                                                                           //No ID
 							"ID cannot be null"},
@@ -78,7 +80,7 @@ public class EventSingleTest
 	public static TestEventSingleToStoreBuilder validEvent()
 	{
 		//Preparing valid event that corresponds to the batch. It will be made invalid in "invalid events"
-		return new TestEventSingleToStoreBuilder()
+		return new TestEventSingleToStoreBuilder(new CoreStorageSettings().calculateStoreActionRejectionThreshold())
 				.id(DUMMY_ID)
 				.parentId(batchParentId)
 				.name(DUMMY_NAME);
@@ -123,7 +125,7 @@ public class EventSingleTest
 							START_TIMESTAMP,
 							START_TIMESTAMP,
 							null)));
-			TestEventUtils.validateTestEvent(builder.build(), bookInfo);
+			TestEventUtils.validateTestEvent(builder.build(), bookInfo, storeActionRejectionThreshold);
 			Assertions.fail("Invalid message passed validation");
 		}
 		catch (CradleStorageException e)
@@ -140,7 +142,7 @@ public class EventSingleTest
 				.name(DUMMY_NAME)
 				.content("Test content".getBytes())
 				.build();
-		TestEventUtils.validateTestEvent(event);
+		TestEventUtils.validateTestEvent(event, storeActionRejectionThreshold);
 	}
 	
 	@Test

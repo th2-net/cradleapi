@@ -17,13 +17,14 @@
 package com.exactpro.cradle.cassandra;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.cassandra.connection.NetworkTopologyStrategy;
 import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
 
 import static com.exactpro.cradle.CradleStorage.DEFAULT_COMPOSING_SERVICE_THREADS;
 
-public class CassandraStorageSettings {
+public class CassandraStorageSettings extends CoreStorageSettings {
     public static final String SCHEMA_VERSION = "5.3.0";
     public static final long DEFAULT_TIMEOUT = 5000;
     public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
@@ -41,8 +42,7 @@ public class CassandraStorageSettings {
             DEFAULT_EVENT_BATCH_DURATION_CACHE_SIZE = 5_000,
             DEFAULT_PAGE_GROUPS_CACHE_SIZE = 10_000,
             DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS = 1000;
-	public static final long DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS = 60000,
-            DEFAULT_EVENT_BATCH_DURATION_MILLIS = 5_000;
+	public static final long DEFAULT_EVENT_BATCH_DURATION_MILLIS = 5_000;
 
 
 
@@ -73,7 +73,7 @@ public class CassandraStorageSettings {
 
     private SelectExecutionPolicy multiRowResultExecutionPolicy, singleRowResultExecutionPolicy;
 
-	private long bookRefreshIntervalMillis, eventBatchDurationMillis;
+	private long eventBatchDurationMillis;
 
     public CassandraStorageSettings() {
         this(null, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
@@ -332,14 +332,6 @@ public class CassandraStorageSettings {
             SelectExecutionPolicy singleRowResultExecutionPolicy) {
         this.singleRowResultExecutionPolicy = singleRowResultExecutionPolicy;
     }
-
-	public long getBookRefreshIntervalMillis() {
-		return bookRefreshIntervalMillis;
-	}
-
-	public void setBookRefreshIntervalMillis(long bookRefreshIntervalMillis) {
-		this.bookRefreshIntervalMillis = bookRefreshIntervalMillis;
-	}
 
     public long getEventBatchDurationMillis() {
         return eventBatchDurationMillis;

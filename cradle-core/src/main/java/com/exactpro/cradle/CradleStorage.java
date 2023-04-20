@@ -61,8 +61,12 @@ public abstract class CradleStorage
 	protected final boolean ownedComposingService;
 	protected final CradleEntitiesFactory entitiesFactory;
 
+	private final long pageActionRejectionThreshold;
+
+	private final long storeActionRejectionThreshold;
+
 	public CradleStorage(ExecutorService composingService, int composingServiceThreads, int maxMessageBatchSize,
-						 int maxTestEventBatchSize) throws CradleStorageException
+						 int maxTestEventBatchSize, CoreStorageSettings settings) throws CradleStorageException
 	{
 		if (composingService == null) {
 			ownedComposingService = true;
@@ -72,14 +76,17 @@ public abstract class CradleStorage
 			ownedComposingService = false;
 			this.composingService = composingService;
 		}
-		
-		entitiesFactory = new CradleEntitiesFactory(maxMessageBatchSize, maxTestEventBatchSize);
+
+		this.pageActionRejectionThreshold = settings.calculatePageActionRejectionThreshold();
+		this.storeActionRejectionThreshold = settings.calculateStoreActionRejectionThreshold();
+		entitiesFactory = new CradleEntitiesFactory(maxMessageBatchSize, maxTestEventBatchSize, storeActionRejectionThreshold);
 	}
 	
 	public CradleStorage() throws CradleStorageException
 	{
 		this(null, DEFAULT_COMPOSING_SERVICE_THREADS,
-				DEFAULT_MAX_MESSAGE_BATCH_SIZE, DEFAULT_MAX_TEST_EVENT_BATCH_SIZE);
+				DEFAULT_MAX_MESSAGE_BATCH_SIZE, DEFAULT_MAX_TEST_EVENT_BATCH_SIZE,
+				new CoreStorageSettings());
 	}
 	
 
@@ -638,7 +645,7 @@ public abstract class CradleStorage
 		newBatch.setType(event.getType());
 
 		for (var e : batch.getTestEvents()) {
-			TestEventSingleToStore newEvent = new TestEventSingleToStoreBuilder()
+			TestEventSingleToStore newEvent = new TestEventSingleToStoreBuilder(storeActionRejectionThreshold)
 													.id(idMappings.getOrDefault(e.getId(), e.getId()))
 													.name(e.getName())
 													.parentId(idMappings.getOrDefault(e.getParentId(), e.getParentId()))
@@ -666,7 +673,7 @@ public abstract class CradleStorage
 		logger.debug("Storing test event {}", id);
 		PageInfo page = findPage(id.getBookId(), id.getStartTimestamp());
 		
-		TestEventUtils.validateTestEvent(event, getBookCache().getBook(id.getBookId()));
+		TestEventUtils.validateTestEvent(event, getBookCache().getBook(id.getBookId()), storeActionRejectionThreshold);
 		final TestEventToStore alignedEvent = alignEventTimestampsToPage(event, page);
 		
 		doStoreTestEvent(alignedEvent, page);
@@ -691,7 +698,7 @@ public abstract class CradleStorage
 		logger.debug("Storing test event {} asynchronously", id);
 		PageInfo page = findPage(id.getBookId(), id.getStartTimestamp());
 		
-		TestEventUtils.validateTestEvent(event, getBookCache().getBook(id.getBookId()));
+		TestEventUtils.validateTestEvent(event, getBookCache().getBook(id.getBookId()), storeActionRejectionThreshold);
 		final TestEventToStore alignedEvent = alignEventTimestampsToPage(event, page);
 		
 		CompletableFuture<Void> result = doStoreTestEventAsync(alignedEvent, page);
@@ -1386,8 +1393,8 @@ public abstract class CradleStorage
 		{
 			Instant now = Instant.now(),
 					firstStart = pages.get(0).getStart();
-			if (!firstStart.isAfter(now))
-				throw new CradleStorageException("Timestamp of new page start must be after current timestamp ("+now+")");
+			if (!firstStart.isAfter(now.plusMillis(pageActionRejectionThreshold)))
+				throw new CradleStorageException("Timestamp of new page start must be more than: " + pageActionRejectionThreshold + " ms after current timestamp: ("+now+")");
 		}
 		
 		Set<String> names = new HashSet<>();

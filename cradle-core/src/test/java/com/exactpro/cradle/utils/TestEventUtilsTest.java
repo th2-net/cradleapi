@@ -17,6 +17,7 @@
 package com.exactpro.cradle.utils;
 
 import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
 import com.exactpro.cradle.testevents.TestEventToStore;
@@ -34,12 +35,15 @@ public class TestEventUtilsTest
 		String scope = "Scope1";
 		StoredTestEventId parentId = new StoredTestEventId(book, scope, Instant.now(), scope);
 		StoredTestEventId batchId = new StoredTestEventId(book, scope, Instant.now(), "BatchID");
+		long storeActionRejectionThreshold = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
+
 		TestEventBatchToStore batch = new TestEventBatchToStore(batchId,
 				"Batch", 
 				parentId,
-				1024);
+				1024,
+				storeActionRejectionThreshold);
 		
-		batch.addTestEvent(TestEventToStore.singleBuilder()
+		batch.addTestEvent(TestEventToStore.singleBuilder(storeActionRejectionThreshold)
 				.id(book, scope, Instant.now(), "EventID")
 				.name("Event1")
 				.parentId(parentId)

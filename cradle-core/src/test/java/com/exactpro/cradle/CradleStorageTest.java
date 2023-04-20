@@ -43,6 +43,8 @@ public class CradleStorageTest
 	private final Instant PAGE2_START = PAGE1_START.plusSeconds(60);
 	private final Instant PAGE3_START = PAGE2_START.plusSeconds(100);
 	private final StoredTestEventId DUMMY_EVENT_ID = new StoredTestEventId(BOOK_ID, SCOPE, BOOK_START, EVENT_ID);
+
+	private final long storeActionRejectionThreshold = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
 	
 	private CradleStorage storage;
 	private MessageToStoreBuilder builder;
@@ -98,7 +100,7 @@ public class CradleStorageTest
 	public TestEventSingleToStoreBuilder validEvent()
 	{
 		//Preparing valid event. It will be made invalid in "invalid events"
-		return new TestEventSingleToStoreBuilder()
+		return new TestEventSingleToStoreBuilder(storeActionRejectionThreshold)
 				.id(DUMMY_EVENT_ID)
 				.name("Event1");
 	}
@@ -143,7 +145,7 @@ public class CradleStorageTest
 		String groupName = "test-group";
 		BookId bookId = new BookId(BOOK);
 
-		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, 1_000_000);
+		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, 1_000_000, storeActionRejectionThreshold);
 
 		MessageToStore[] messages = new MessageToStore[]{
 				createMessage(bookId, "session-1", Direction.FIRST, 1, PAGE1_START.plusSeconds(1)),
@@ -164,7 +166,7 @@ public class CradleStorageTest
 		String groupName = "test-group";
 		BookId bookId = new BookId(BOOK);
 
-		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, 1_000_000);
+		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, 1_000_000, storeActionRejectionThreshold);
 
 		// page 1
 		MessageToStore[] page1Messages = new MessageToStore[]{
@@ -208,7 +210,7 @@ public class CradleStorageTest
 	private TestEventSingleToStore createEvent(String name, Instant start, Instant end, StoredTestEventId parentId, boolean success)
 			throws CradleStorageException
 	{
-		return new TestEventSingleToStoreBuilder()
+		return new TestEventSingleToStoreBuilder(storeActionRejectionThreshold)
 							.id(new StoredTestEventId(BOOK_ID, "test-scope", start, name + "-id"))
 							.name(name)
 							.type(name + "-type")
@@ -244,7 +246,7 @@ public class CradleStorageTest
 		BookId bookId = new BookId(BOOK);
 
 		StoredTestEventId batchId = new StoredTestEventId(bookId, "test-scope", PAGE1_START, "batch-id");
-		TestEventBatchToStore batch = new TestEventBatchToStoreBuilder(1_000_000)
+		TestEventBatchToStore batch = new TestEventBatchToStoreBuilder(1_000_000, storeActionRejectionThreshold)
 				.id(batchId)
 				.name("test-batch")
 				.parentId(new StoredTestEventId(bookId, "test-scope", PAGE1_START, "batch-parent-id"))
@@ -295,7 +297,7 @@ public class CradleStorageTest
 		BookId bookId = new BookId(BOOK);
 
 		StoredTestEventId batchId = new StoredTestEventId(bookId, "test-scope", PAGE1_START, "batch-id");
-		TestEventBatchToStore batch = new TestEventBatchToStoreBuilder(1_000_000)
+		TestEventBatchToStore batch = new TestEventBatchToStoreBuilder(1_000_000, storeActionRejectionThreshold)
 				.id(batchId)
 				.name("test-batch")
 				.parentId(new StoredTestEventId(bookId, "test-scope", PAGE1_START, "batch-parent-id"))
