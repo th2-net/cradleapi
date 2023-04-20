@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,7 +83,14 @@ public class StoredMessageIdTest
 					{StringUtils.joinWith(ID_PARTS_DELIMITER, book, sessionAlias, direction.getLabel(), "20211020100000123456789", seq+"\\")},
 				};
 	}
-	
+
+	@DataProvider(name = "illegalSequences")
+	public Object[][] illegalIndexes() {
+		return new Object[][]{
+				{Long.MIN_VALUE},
+				{-1L},
+		};
+	}
 	
 	@Test
 	public void idToString()
@@ -120,5 +127,20 @@ public class StoredMessageIdTest
 	{
 		StoredMessageId id = StoredMessageId.fromString(stringId);
 		Assert.assertEquals(id.getSequence(), messageSeq);
+	}
+
+	@Test(
+			dataProvider = "illegalSequences",
+			expectedExceptions = IllegalArgumentException.class,
+			expectedExceptionsMessageRegExp = "illegal sequence -?\\d+ for book1:Session1:1"
+	)
+	public void testReportIllegalIndex(long sequence) throws CradleIdException {
+		stringId = StringUtils.joinWith(ID_PARTS_DELIMITER,
+				book,
+				sessionAlias,
+				direction.getLabel(),
+				StoredMessageIdUtils.timestampToString(timestamp),
+				sequence);
+		StoredMessageId.fromString(stringId);
 	}
 }
