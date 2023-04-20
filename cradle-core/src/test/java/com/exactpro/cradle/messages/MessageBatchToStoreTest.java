@@ -202,10 +202,10 @@ public class MessageBatchToStoreTest
 
 		Assert.assertFalse(batch.hasSpace(msg), "Batch shows if it has space to hold given message");
 	}
-	
-	
-	@Test(expectedExceptions = {CradleStorageException.class}, 
-			expectedExceptionsMessageRegExp = ".* for first message in batch .*")
+
+
+	@Test(expectedExceptions = {IllegalArgumentException.class},
+			expectedExceptionsMessageRegExp = "illegal sequence -?\\d+ for book1:Session1:1")
 	public void batchChecksFirstMessage() throws CradleStorageException
 	{
 		MessageBatchToStore.singleton(builder

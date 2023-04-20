@@ -203,8 +203,8 @@ public class GroupedMessageBatchToStoreTest
 	}
 	
 	
-	@Test(expectedExceptions = {CradleStorageException.class}, 
-			expectedExceptionsMessageRegExp = ".* for first message in batch .*")
+	@Test(expectedExceptions = {IllegalArgumentException.class},
+			expectedExceptionsMessageRegExp = "illegal sequence -?\\d+ for test-book:test-session:1")
 	public void batchChecksFirstMessage() throws CradleStorageException
 	{
 		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE, storeActionRejectionThreshold);

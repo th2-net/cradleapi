@@ -1,5 +1,5 @@
 /*
- *  Copyright 2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import static com.exactpro.cradle.CradleStorage.DEFAULT_COMPOSING_SERVICE_THREAD
 public class CassandraStorageSettings extends CoreStorageSettings {
     public static final String SCHEMA_VERSION = "5.3.0";
     public static final long DEFAULT_TIMEOUT = 5000;
-    public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
+    public static final CassandraConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = CassandraConsistencyLevel.LOCAL_QUORUM;
     public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1,
             DEFAULT_MAX_PARALLEL_QUERIES = 500,
             DEFAULT_RESULT_PAGE_SIZE = 0,
@@ -48,7 +48,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
 
     private final NetworkTopologyStrategy networkTopologyStrategy;
     private final long timeout;
-    private final ConsistencyLevel writeConsistencyLevel,
+    private final CassandraConsistencyLevel writeConsistencyLevel,
             readConsistencyLevel;
     private String keyspace,
             schemaVersion;
@@ -80,12 +80,13 @@ public class CassandraStorageSettings extends CoreStorageSettings {
     }
 
     public CassandraStorageSettings(long timeout,
-                                    ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel) {
+                                    CassandraConsistencyLevel writeConsistencyLevel,
+                                    CassandraConsistencyLevel readConsistencyLevel) {
         this(null, timeout, writeConsistencyLevel, readConsistencyLevel);
     }
 
     public CassandraStorageSettings(NetworkTopologyStrategy networkTopologyStrategy, long timeout,
-                                    ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel) {
+                                    CassandraConsistencyLevel writeConsistencyLevel, CassandraConsistencyLevel readConsistencyLevel) {
         this.networkTopologyStrategy = networkTopologyStrategy;
         this.timeout = timeout;
         this.writeConsistencyLevel = writeConsistencyLevel;
@@ -156,11 +157,11 @@ public class CassandraStorageSettings extends CoreStorageSettings {
         return timeout;
     }
 
-    public ConsistencyLevel getWriteConsistencyLevel() {
+    public CassandraConsistencyLevel getWriteConsistencyLevel() {
         return writeConsistencyLevel;
     }
 
-    public ConsistencyLevel getReadConsistencyLevel() {
+    public CassandraConsistencyLevel getReadConsistencyLevel() {
         return readConsistencyLevel;
     }
 

@@ -103,7 +103,6 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 			if (bookId == null)
 				throw new CradleStorageException("BookId for the message not set (" + message.getId() + ")");
 			messageSeq = message.getSequence();
-			verifySequence(messageSeq);
 
 		} else {
 			if (!bookId.equals(message.getBookId()))
@@ -139,7 +138,6 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 					messageSeq = lastMessage.getSequence() + 1;
 			} else {
 				messageSeq = message.getSequence();
-				verifySequence(messageSeq);
 			}
 		}
 
@@ -151,11 +149,6 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 		batchSize += expMsgSize;
 
 		return msg;
-	}
-
-	private static void verifySequence(long messageSeq) throws CradleStorageException {
-		if (messageSeq < 0)
-			throw new CradleStorageException("Sequence number for first message in batch cannot be negative");
 	}
 
 	/**
