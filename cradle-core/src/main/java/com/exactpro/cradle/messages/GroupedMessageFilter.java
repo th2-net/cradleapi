@@ -21,6 +21,8 @@ import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.filters.AbstractFilter;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
+import com.exactpro.cradle.utils.CradleStorageException;
+import org.apache.commons.lang3.StringUtils;
 
 import java.time.Instant;
 
@@ -28,61 +30,59 @@ public class GroupedMessageFilter extends AbstractFilter
 {
 	private final String groupName;
 
-	public GroupedMessageFilter(BookId bookId, String groupName)
-	{
+	public GroupedMessageFilter(BookId bookId, String groupName) {
 		super(bookId);
 		this.groupName = groupName;
 	}
 
-	public GroupedMessageFilter(BookId bookId, PageId pageId, String groupName)
-	{
+	public GroupedMessageFilter(BookId bookId, PageId pageId, String groupName) {
 		super(bookId, pageId);
 		this.groupName = groupName;
 	}
 
-	public GroupedMessageFilter(GroupedMessageFilter copyFrom)
-	{
+	public GroupedMessageFilter(GroupedMessageFilter copyFrom) {
 		super(copyFrom);
 		this.groupName = copyFrom.groupName;
 	}
-	
-	public static GroupedMessageFilterBuilder builder()
-	{
+
+	public static GroupedMessageFilterBuilder builder() {
 		return new GroupedMessageFilterBuilder();
 	}
 
 	@Override
-	public void setFrom(FilterForGreater<Instant> from)
-	{
+	public void setFrom(FilterForGreater<Instant> from) {
 		super.setFrom(from);
 	}
 
 	@Override
-	public void setTo(FilterForLess<Instant> to)
-	{
+	public void setTo(FilterForLess<Instant> to) {
 		super.setTo(to);
 	}
 
-	public String getGroupName()
-	{
+	public String getGroupName() {
 		return groupName;
 	}
 
 	@Override
-	public FilterForGreater<Instant> getFrom()
-	{
+	public FilterForGreater<Instant> getFrom() {
 		return super.getFrom();
 	}
 
 	@Override
-	public FilterForLess<Instant> getTo()
-	{
+	public FilterForLess<Instant> getTo() {
 		return super.getTo();
 	}
 
 	@Override
-	public String toString()
-	{
+	protected void validate() throws CradleStorageException {
+		super.validate();
+		if (StringUtils.isBlank(groupName)) {
+			throw new CradleStorageException("groupName is blank");
+		}
+	}
+
+	@Override
+	public String toString() {
 		StringBuilder sb = new StringBuilder("[");
 		if (getBookId() != null)
 			sb.append("bookId=").append(getBookId()).append(TO_STRING_DELIMITER);
