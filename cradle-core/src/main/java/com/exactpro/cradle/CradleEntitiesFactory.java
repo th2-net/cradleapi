@@ -68,4 +68,12 @@ public class CradleEntitiesFactory
 	{
 		return new TestEventBatchToStoreBuilder(maxTestEventBatchSize);
 	}
+
+	public int getMaxMessageBatchSize() {
+		return maxMessageBatchSize;
+	}
+
+	public int getMaxTestEventBatchSize() {
+		return maxTestEventBatchSize;
+	}
 }
