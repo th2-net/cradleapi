@@ -152,7 +152,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 							convertedEntity -> !convertedEntity.getLastStartTimestamp().isBefore(actualFrom));
 
 
-					return limit > 0 ? new LimitedIterator<>(convertingIterator, limit) : filteringIterator;
+					return limit > 0 ? new LimitedIterator<>(filteringIterator, limit) : filteringIterator;
 				}, composingService);
 	}
 

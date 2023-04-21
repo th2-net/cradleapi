@@ -39,6 +39,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -77,7 +78,7 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
         eventBatchDurationWorker = Mockito.mock(EventBatchDurationWorker.class);
         Mockito.when(eventBatchDurationWorker.
                 getMaxDuration(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.eq(storage.getReadAttrs())))
-                .thenReturn(EVENT_BATCH_DURATION);
+                .thenReturn(Duration.of(5, ChronoUnit.MINUTES).toMillis());
     }
 
     @Override
@@ -87,8 +88,9 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
             TestEventToStore b2 = generateTestEvent(SECOND_SCOPE, dataStart.plus(14, ChronoUnit.MINUTES), EVENT_BATCH_DURATION, EVENT_BATCH_DURATION/EVENTS_IN_BATCH);
             TestEventToStore b3 = generateTestEvent(FIRST_SCOPE, dataStart.plus(21, ChronoUnit.MINUTES), EVENT_BATCH_DURATION, EVENT_BATCH_DURATION/EVENTS_IN_BATCH);
             TestEventToStore b4 = generateTestEvent(SECOND_SCOPE, dataStart.plus(33, ChronoUnit.MINUTES), EVENT_BATCH_DURATION, EVENT_BATCH_DURATION/EVENTS_IN_BATCH);
+            TestEventToStore b5 = generateTestEvent(FIRST_SCOPE, dataStart.plus(22, ChronoUnit.MINUTES), EVENT_BATCH_DURATION, EVENT_BATCH_DURATION/EVENTS_IN_BATCH);
 
-            data = List.of(b1, b2, b3, b4);
+            data = List.of(b1, b2, b3, b4, b5);
             storedData = new HashMap<>();
 
             for (TestEventToStore eventToStore : data) {
@@ -197,7 +199,7 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
                     .thenApplyAsync(r -> new CassandraCradleResultSet<>(r, iteratorProvider), composingService);
 
             Iterable<StoredTestEvent> actual = Lists.newArrayList(rsFuture.get().asIterable());
-            List<StoredTestEvent> expected = storedData.get(FIRST_SCOPE).subList(1, 2);
+            List<StoredTestEvent> expected = storedData.get(FIRST_SCOPE).subList(1, 3);
 
             Assertions.assertThat(actual)
                     .isEqualTo(expected);
@@ -262,6 +264,29 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
 
             Iterable<StoredTestEvent> actual = Lists.newArrayList(rsFuture.get().asIterable());
             List<StoredTestEvent> expected = storedData.get(FIRST_SCOPE);
+
+            Assertions.assertThat(actual)
+                    .isEqualTo(expected);
+        } catch (InterruptedException | ExecutionException | CradleStorageException e) {
+            logger.error(e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    @Test(description = "Gets TestEvents from timestamp which is inside one of the batches, fetching that batch as well")
+    public void getTestEventsFromTimestampInsideBatch2() throws CradleStorageException, ExecutionException, InterruptedException {
+        try {
+            TestEventFilter filter =  new TestEventFilter(bookId, FIRST_SCOPE);
+            filter.setStartTimestampFrom(FilterForGreater.forGreaterOrEquals(
+                    storedData.get(FIRST_SCOPE).get(2).getStartTimestamp()));
+            TestEventIteratorProvider iteratorProvider = createIteratorProvider(filter,
+                    storedData.get(FIRST_SCOPE).get(2).getStartTimestamp());
+
+            CompletableFuture<CassandraCradleResultSet<StoredTestEvent>> rsFuture = iteratorProvider.nextIterator()
+                    .thenApplyAsync(r -> new CassandraCradleResultSet<>(r, iteratorProvider), composingService);
+
+            Iterable<StoredTestEvent> actual = Lists.newArrayList(rsFuture.get().asIterable());
+            List<StoredTestEvent> expected = storedData.get(FIRST_SCOPE).subList(2, 3);
 
             Assertions.assertThat(actual)
                     .isEqualTo(expected);
