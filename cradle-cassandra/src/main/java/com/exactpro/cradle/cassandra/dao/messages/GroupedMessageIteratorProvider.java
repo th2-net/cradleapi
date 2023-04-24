@@ -34,6 +34,7 @@ import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -43,7 +44,7 @@ import java.util.function.Function;
 public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroupedMessageBatch>
 {
 	public static final Logger logger = LoggerFactory.getLogger(GroupedMessageIteratorProvider.class);
-	
+
 	private final GroupedMessageBatchOperator op;
 	private final GroupedMessageBatchEntityConverter converter;
 	private final BookInfo book;
@@ -64,8 +65,7 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 										  ExecutorService composingService,
 										  SelectQueryExecutor selectQueryExecutor,
 										  Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs,
-										  Order order) throws CradleStorageException
-	{
+										  Order order) throws CradleStorageException {
 
 		super(requestInfo);
 		this.op = operators.getGroupedMessageBatchOperator();
@@ -86,11 +86,10 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 		this.cassandraFilter = createInitialFilter(filter);
 	}
 
-	private CassandraGroupedMessageFilter createInitialFilter(GroupedMessageFilter filter)
-	{
+	private CassandraGroupedMessageFilter createInitialFilter(GroupedMessageFilter filter) {
 		return new CassandraGroupedMessageFilter(
 				book.getId().getName(),
-				firstPage.getId().getName(),
+				getFirstPage().getId().getName(),
 				filter.getGroupName(),
 				filter.getFrom(),
 				filter.getTo(),
@@ -98,13 +97,12 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 				filter.getLimit());
 	}
 
-	protected CassandraGroupedMessageFilter createNextFilter(CassandraGroupedMessageFilter prevFilter, int updatedLimit)
-	{
+	protected CassandraGroupedMessageFilter createNextFilter(CassandraGroupedMessageFilter prevFilter, int updatedLimit) {
 		PageInfo prevPage = book.getPage(new PageId(book.getId(), prevFilter.getPage()));
-		if (prevPage.equals(lastPage))
+		if (prevPage.equals(getLastPage()))
 			return null;
 
-		PageInfo nextPage = book.getNextPage(prevPage.getStarted());
+		PageInfo nextPage = getNextPage(prevPage.getStarted());
 
 		return new CassandraGroupedMessageFilter(
 				book.getId().getName(),
@@ -117,12 +115,10 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 	}
 
 	@Override
-	public CompletableFuture<Iterator<StoredGroupedMessageBatch>> nextIterator()
-	{
+	public CompletableFuture<Iterator<StoredGroupedMessageBatch>> nextIterator() {
 		if (cassandraFilter == null)
 			return CompletableFuture.completedFuture(null);
-		if (limit > 0 && returned.get() >= limit)
-		{
+		if (limit > 0 && returned.get() >= limit) {
 			logger.debug("Filtering interrupted because limit for records to return ({}) is reached ({})", limit, returned);
 			return CompletableFuture.completedFuture(null);
 		}
@@ -133,11 +129,29 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 				{
 					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
 					// Updated limit should be smaller, since we already got entities from previous batch
-					cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(),0));
+					cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(), 0));
 					return new ConvertingPagedIterator<>(resultSet, selectQueryExecutor, 0, new AtomicInteger(),
 							entity -> MessagesWorker.mapGroupedMessageBatchEntity(pageId, entity), converter::getEntity,
 							"fetch next page of message batches");
 				}, composingService)
 				.thenApplyAsync(it -> new FilteredGroupedMessageBatchIterator(it, filter, limit, returned), composingService);
+	}
+
+	private boolean isDirectOrder() {
+		return order == Order.DIRECT;
+	}
+
+	private PageInfo getFirstPage() {
+		return isDirectOrder() ? firstPage : lastPage;
+	}
+
+	private PageInfo getLastPage() {
+		return isDirectOrder() ? lastPage : firstPage;
+	}
+
+	private PageInfo getNextPage(Instant currentPageStart) {
+		return isDirectOrder()
+				? book.getNextPage(currentPageStart)
+				: book.getPreviousPage(currentPageStart);
 	}
 }

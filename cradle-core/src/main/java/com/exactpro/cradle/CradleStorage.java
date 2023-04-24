@@ -66,8 +66,7 @@ public abstract class CradleStorage
 	protected final CradleEntitiesFactory entitiesFactory;
 
 	public CradleStorage(ExecutorService composingService, int composingServiceThreads, int maxMessageBatchSize,
-						 int maxTestEventBatchSize) throws CradleStorageException
-	{
+						 int maxTestEventBatchSize) throws CradleStorageException {
 		if (composingService == null) {
 			ownedComposingService = true;
 			this.composingService = Executors.newFixedThreadPool(composingServiceThreads, THREAD_FACTORY);
@@ -76,80 +75,108 @@ public abstract class CradleStorage
 			ownedComposingService = false;
 			this.composingService = composingService;
 		}
-		
+
 		entitiesFactory = new CradleEntitiesFactory(maxMessageBatchSize, maxTestEventBatchSize);
 	}
-	
-	public CradleStorage() throws CradleStorageException
-	{
+
+	public CradleStorage() throws CradleStorageException {
 		this(null, DEFAULT_COMPOSING_SERVICE_THREADS,
 				DEFAULT_MAX_MESSAGE_BATCH_SIZE, DEFAULT_MAX_TEST_EVENT_BATCH_SIZE);
 	}
-	
+
 
 	protected abstract void doInit(boolean prepareStorage) throws CradleStorageException;
+
 	protected abstract BookCache getBookCache ();
+
 	protected abstract void doDispose() throws CradleStorageException;
 
 	protected abstract Collection<BookListEntry> doListBooks ();
+
 	protected abstract void doAddBook(BookToAdd newBook, BookId bookId) throws IOException;
+
 	protected abstract void doAddPages(BookId bookId, List<PageInfo> pages, PageInfo lastPage) throws CradleStorageException, IOException;
+
 	protected abstract Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException, IOException;
+
 	protected abstract Collection<PageInfo> doGetAllPages(BookId bookId) throws CradleStorageException;
+
 	protected abstract void doRemovePage(PageInfo page) throws CradleStorageException, IOException;
-	
-	
+
+
 	protected abstract void doStoreMessageBatch(MessageBatchToStore batch, PageInfo page) throws IOException, CradleStorageException;
+
 	protected abstract void doStoreGroupedMessageBatch(GroupedMessageBatchToStore batch, PageInfo page)
 			throws IOException;
+
 	protected abstract CompletableFuture<Void> doStoreMessageBatchAsync(MessageBatchToStore batch, PageInfo page)
 			throws IOException, CradleStorageException;
+
 	protected abstract CompletableFuture<Void> doStoreGroupedMessageBatchAsync(GroupedMessageBatchToStore batch, PageInfo page) throws IOException, CradleStorageException;
-	
-	
+
+
 	protected abstract void doStoreTestEvent(TestEventToStore event, PageInfo page) throws IOException, CradleStorageException;
+
 	protected abstract CompletableFuture<Void> doStoreTestEventAsync(TestEventToStore event, PageInfo page) throws IOException, CradleStorageException;
+
 	protected abstract void doUpdateParentTestEvents(TestEventToStore event) throws IOException;
+
 	protected abstract CompletableFuture<Void> doUpdateParentTestEventsAsync(TestEventToStore event);
+
 	protected abstract void doUpdateEventStatus(StoredTestEvent event, boolean success) throws IOException;
+
 	protected abstract CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEvent event, boolean success);
-	
-	
+
+
 	protected abstract StoredMessage doGetMessage(StoredMessageId id, PageId pageId) throws IOException, CradleStorageException;
+
 	protected abstract CompletableFuture<StoredMessage> doGetMessageAsync(StoredMessageId id, PageId pageId)
 			throws CradleStorageException;
+
 	protected abstract StoredMessageBatch doGetMessageBatch(StoredMessageId id, PageId pageId) throws IOException, CradleStorageException;
+
 	protected abstract CompletableFuture<StoredMessageBatch> doGetMessageBatchAsync(StoredMessageId id, PageId pageId)
 			throws CradleStorageException;
-	
-	protected abstract CradleResultSet<StoredMessage> doGetMessages(MessageFilter filter, BookInfo book) 
+
+	protected abstract CradleResultSet<StoredMessage> doGetMessages(MessageFilter filter, BookInfo book)
 			throws IOException, CradleStorageException;
+
 	protected abstract CompletableFuture<CradleResultSet<StoredMessage>> doGetMessagesAsync(MessageFilter filter, BookInfo book)
 			throws CradleStorageException;
-	protected abstract CradleResultSet<StoredMessageBatch> doGetMessageBatches(MessageFilter filter, BookInfo book) 
+
+	protected abstract CradleResultSet<StoredMessageBatch> doGetMessageBatches(MessageFilter filter, BookInfo book)
 			throws IOException, CradleStorageException;
+
 	protected abstract CradleResultSet<StoredGroupedMessageBatch> doGetGroupedMessageBatches(GroupedMessageFilter filter, BookInfo book)
 			throws IOException, CradleStorageException;
+
 	protected abstract CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetMessageBatchesAsync(MessageFilter filter,
-			BookInfo book) throws CradleStorageException;
+																									   BookInfo book) throws CradleStorageException;
+
 	protected abstract CompletableFuture<CradleResultSet<StoredGroupedMessageBatch>> doGetGroupedMessageBatchesAsync(GroupedMessageFilter filter,
-			BookInfo book) throws CradleStorageException;
-	
+																													 BookInfo book) throws CradleStorageException;
+
 	protected abstract long doGetLastSequence(String sessionAlias, Direction direction, BookId bookId)
 			throws IOException, CradleStorageException;
+
 	protected abstract long doGetFirstSequence(String sessionAlias, Direction direction, BookId bookId)
 			throws IOException, CradleStorageException;
+
 	protected abstract Collection<String> doGetSessionAliases(BookId bookId) throws IOException, CradleStorageException;
+
 	protected abstract Collection<String> doGetGroups(BookId bookId) throws IOException, CradleStorageException;
-	
-	
+
+
 	protected abstract StoredTestEvent doGetTestEvent(StoredTestEventId id, PageId pageId) throws IOException, CradleStorageException;
+
 	protected abstract CompletableFuture<StoredTestEvent> doGetTestEventAsync(StoredTestEventId ids, PageId pageId) throws CradleStorageException;
-	protected abstract CradleResultSet<StoredTestEvent> doGetTestEvents(TestEventFilter filter, BookInfo book) 
+
+	protected abstract CradleResultSet<StoredTestEvent> doGetTestEvents(TestEventFilter filter, BookInfo book)
 			throws IOException, CradleStorageException;
-	protected abstract CompletableFuture<CradleResultSet<StoredTestEvent>> doGetTestEventsAsync(TestEventFilter filter, BookInfo book) 
+
+	protected abstract CompletableFuture<CradleResultSet<StoredTestEvent>> doGetTestEventsAsync(TestEventFilter filter, BookInfo book)
 			throws CradleStorageException;
-	
+
 	protected abstract Collection<String> doGetScopes(BookId bookId) throws IOException, CradleStorageException;
 
 	protected abstract CompletableFuture<CradleResultSet<CounterSample>> doGetMessageCountersAsync(BookId bookId,
@@ -157,6 +184,7 @@ public abstract class CradleStorage
 																								   Direction direction,
 																								   FrameType frameType,
 																								   Interval interval) throws CradleStorageException;
+
 	protected abstract CradleResultSet<CounterSample> doGetMessageCounters(BookId bookId,
 																		   String sessionAlias,
 																		   Direction direction,
@@ -167,6 +195,7 @@ public abstract class CradleStorage
 																							EntityType entityType,
 																							FrameType frameType,
 																							Interval interval) throws CradleStorageException;
+
 	protected abstract CradleResultSet<CounterSample> doGetCounters(BookId bookId,
 																	EntityType entityType,
 																	FrameType frameType,
@@ -217,13 +246,12 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if storage initialization failed
 	 * @throws IOException if data reading or creation of storage failed
 	 */
-	public void init(boolean prepareStorage) throws CradleStorageException, IOException
-	{
+	public void init(boolean prepareStorage) throws CradleStorageException, IOException {
 		if (initialized)
 			return;
-		
+
 		logger.info("Initializing storage");
-		
+
 		doInit(prepareStorage);
 		// In case it did not get initialized in doInit
 		if (bookManager == null) {
@@ -232,45 +260,42 @@ public abstract class CradleStorage
 		initialized = true;
 		logger.info("Storage initialized");
 	}
-	
+
 	/**
 	 * IntervalsWorker is used to work with Crawler intervals
 	 * @return instance of IntervalsWorker
 	 */
 	public abstract IntervalsWorker getIntervalsWorker();
-	
-	
+
+
 	/**
 	 * Disposes resources occupied by storage which means closing of opened connections, flushing all buffers, etc.
 	 * @throws CradleStorageException if there was error during storage disposal, which may mean issue with data flushing, unexpected connection break, etc.
 	 */
-	public final void dispose() throws CradleStorageException
-	{
+	public final void dispose() throws CradleStorageException {
 		if (disposed)
 			return;
-		
+
 		logger.info("Disposing storage");
-		
-		if (ownedComposingService)
-		{
+
+		if (ownedComposingService) {
 			logger.info("Shutting down composing service...");
 			composingService.shutdownNow();
 		}
-		
+
 		doDispose();
 		disposed = true;
 		logger.info("Storage disposed");
 	}
-	
+
 	/**
 	 * @return true if storage is already disposed and false if it is not disposed, including the case when disposal failed with error
 	 */
-	public final boolean isDisposed()
-	{
+	public final boolean isDisposed() {
 		return disposed;
 	}
-	
-	
+
+
 	/**
 	 * Creates new book and adds it to storage, adding page with given name to newly created book
 	 * @param book information about book to add and its first page
@@ -278,15 +303,14 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if the book is already present
 	 * @throws IOException if book data writing failed
 	 */
-	public BookInfo addBook(BookToAdd book) throws CradleStorageException, IOException
-	{
+	public BookInfo addBook(BookToAdd book) throws CradleStorageException, IOException {
 		BookPagesNamesChecker.validateBookName(book.getName());
 
 		BookId id = new BookId(book.getName());
 		logger.info("Adding book '{}' to storage", id);
 		if (checkBook(id))
 			throw new CradleStorageException("Book '"+id+"' is already present in storage");
-		
+
 		doAddBook(book, id);
 		BookInfo newBook = new BookInfo(id, book.getFullName(), book.getDesc(), book.getCreated(), null);
 		getBookCache().updateCachedBook(newBook);
@@ -308,13 +332,12 @@ public abstract class CradleStorage
 	/**
 	 * @return collection of books currently available in storage
 	 */
-	public Collection<BookInfo> getBooks()
-	{
+	public Collection<BookInfo> getBooks() {
 		return Collections.unmodifiableCollection(getBookCache().getCachedBooks());
 	}
-	
+
 	/**
-	 * Adds to given book the new page, started at current timestamp. 
+	 * Adds to given book the new page, started at current timestamp.
 	 * Last page of the book will be marked as ended at timestamp of new page start
 	 * @param bookId ID of the book where to add the page
 	 * @param pageName name of new page
@@ -324,13 +347,12 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if given bookId is unknown or page with given name already exists in this book
 	 * @throws IOException if page data writing failed
 	 */
-	public BookInfo addPage(BookId bookId, String pageName, Instant pageStart, String pageComment) throws CradleStorageException, IOException
-	{
+	public BookInfo addPage(BookId bookId, String pageName, Instant pageStart, String pageComment) throws CradleStorageException, IOException {
 		return addPages(bookId, Collections.singletonList(new PageToAdd(pageName, pageStart, pageComment)));
 	}
-	
+
 	/**
-	 * Adds new pages to given book. 
+	 * Adds new pages to given book.
 	 * Last page of the book will be marked as ended at start timestamp of the first page being added
 	 * @param bookId ID of the book where to add the page
 	 * @param pages to add
@@ -338,21 +360,20 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if given bookId is unknown, page to add already exists or new pages are not in ascending order
 	 * @throws IOException if page data writing failed
 	 */
-	public BookInfo addPages(BookId bookId, List<PageToAdd> pages) throws CradleStorageException, IOException
-	{
+	public BookInfo addPages(BookId bookId, List<PageToAdd> pages) throws CradleStorageException, IOException {
 		logger.info("Adding pages {} to book '{}'", pages, bookId);
-		
+
 		BookInfo book = refreshPages(bookId);
 		if (pages == null || pages.isEmpty())
 			return book;
-		
+
 		List<PageInfo> toAdd = checkPages(pages, book);
-		
+
 		PageInfo bookLastPage = book.getLastPage();
 		PageInfo endedPage = null;
 		PageInfo lastPageToAdd = !toAdd.isEmpty() ? toAdd.get(toAdd.size()-1) : null;
 
-		/*
+        /*
 			If last page of toAdd list is after current last we need to
 			finish current last page in book
 		 */
@@ -361,38 +382,34 @@ public abstract class CradleStorage
 				&& lastPageToAdd != null
 				&& lastPageToAdd.getStarted().isAfter(bookLastPage.getStarted())) {
 
-				endedPage = PageInfo.ended(bookLastPage, toAdd.get(0).getStarted());
+			endedPage = PageInfo.ended(bookLastPage, toAdd.get(0).getStarted());
 		}
-		
-		try
-		{
+
+		try {
 			doAddPages(bookId, toAdd, endedPage);
-		}
-		catch (IOException e)
-		{
+		} catch (IOException e) {
 			//Need to refresh book's pages to make user able to see what was the reason of failure, e.g. new page was actually present
 			refreshPages(bookId);
 			throw e;
 		}
-		
+
 		if (endedPage != null)
 			book.addPage(endedPage);  //Replacing last page with ended one, i.e. updating last page info
 		for (PageInfo newPage : toAdd)
 			book.addPage(newPage);
-		
+
 		return book;
 	}
-	
+
 	/**
-	 * Refreshes pages information of given book, loading actual data from storage. 
+	 * Refreshes pages information of given book, loading actual data from storage.
 	 * Use this method to refresh Cradle API internal book cache when new pages were added to the book or removed outside of the application
 	 * @param bookId ID of the book whose pages to refresh
 	 * @return refreshed book information
 	 * @throws CradleStorageException if given bookId is unknown
 	 * @throws IOException if page data reading failed
 	 */
-	public BookInfo refreshPages(BookId bookId) throws CradleStorageException, IOException
-	{
+	public BookInfo refreshPages(BookId bookId) throws CradleStorageException, IOException {
 		logger.info("Refreshing pages of book '{}'", bookId);
 		BookInfo book = getBookCache().getBook(bookId);
 		Collection<PageInfo> pages = doLoadPages(bookId);
@@ -434,7 +451,7 @@ public abstract class CradleStorage
 
 		return bookInfo;
 	}
-	
+
 	/**
 	 * Removes page with given ID, deleting all messages and test events stored within that page
 	 * @param pageId ID of page to remove
@@ -442,13 +459,12 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if given page ID or its book is unknown or the page is currently the active one
 	 * @throws IOException if page data removal failed
 	 */
-	public BookInfo removePage(PageId pageId) throws CradleStorageException, IOException
-	{
+	public BookInfo removePage(PageId pageId) throws CradleStorageException, IOException {
 		logger.info("Removing page '{}'", pageId);
-		
+
 		BookId bookId = pageId.getBookId();
 		BookInfo book = refreshPages(bookId);
-		
+
 		String pageName = pageId.getName();
 		PageInfo page = book.getPage(pageId);
 		if (page == null)
@@ -458,17 +474,16 @@ public abstract class CradleStorage
 		logger.info("Page '{}' has been removed", pageId);
 		return book;
 	}
-	
-	
+
+
 	/**
 	 * @return factory to create message and test event batches that conform with storage settings
 	 */
-	public CradleEntitiesFactory getEntitiesFactory()
-	{
+	public CradleEntitiesFactory getEntitiesFactory() {
 		return entitiesFactory;
 	}
-	
-	
+
+
 	/**
 	 * Writes data about given message batch to current page
 	 * @param batch data to write
@@ -476,8 +491,7 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
 	@Deprecated
-	public final void storeMessageBatch(MessageBatchToStore batch) throws IOException, CradleStorageException
-	{
+	public final void storeMessageBatch(MessageBatchToStore batch) throws IOException, CradleStorageException {
 		StoredMessageId id = batch.getId();
 		logger.debug("Storing message batch {}", id);
 		PageInfo page = findPage(id.getBookId(), id.getTimestamp());
@@ -485,10 +499,9 @@ public abstract class CradleStorage
 		logger.debug("Message batch {} has been stored", id);
 	}
 
-	
+
 	public final void storeGroupedMessageBatch(GroupedMessageBatchToStore batch)
-			throws CradleStorageException, IOException
-	{
+			throws CradleStorageException, IOException {
 		String groupName = batch.getGroup();
 		String id = String.format("%s:%s", batch.getBookId(), batch.getFirstTimestamp().toString());
 		logger.debug("Storing message batch {} grouped by {}", id, groupName);
@@ -500,8 +513,8 @@ public abstract class CradleStorage
 
 		logger.debug("Message batch {} grouped by {} has been stored", id, groupName);
 	}
-	
-	
+
+
 	/**
 	 * Asynchronously writes data about given message batch to current page
 	 * @param batch data to write
@@ -511,18 +524,17 @@ public abstract class CradleStorage
 	 */
 	@Deprecated
 	public final CompletableFuture<Void> storeMessageBatchAsync(MessageBatchToStore batch)
-			throws CradleStorageException, IOException
-	{
+			throws CradleStorageException, IOException {
 		StoredMessageId id = batch.getId();
 		logger.debug("Storing message batch {} asynchronously", id);
 		PageInfo page = findPage(id.getBookId(), id.getTimestamp());
 		CompletableFuture<Void> result = doStoreMessageBatchAsync(batch, page);
 		result.whenCompleteAsync((r, error) -> {
-				if (error != null)
-					logger.error("Error while storing message batch "+id+" asynchronously", error);
-				else
-					logger.debug("Message batch {} has been stored asynchronously", id);
-			}, composingService);
+			if (error != null)
+				logger.error("Error while storing message batch "+id+" asynchronously", error);
+			else
+				logger.debug("Message batch {} has been stored asynchronously", id);
+		}, composingService);
 		return result;
 	}
 
@@ -578,8 +590,7 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
 	public final CompletableFuture<Void> storeGroupedMessageBatchAsync(GroupedMessageBatchToStore batch)
-			throws CradleStorageException
-	{
+			throws CradleStorageException {
 		String groupName = batch.getGroup();
 		if (groupName == null)
 			throw new CradleStorageException("'groupName' is required parameter and can not be null");
@@ -643,15 +654,15 @@ public abstract class CradleStorage
 
 		for (var e : batch.getTestEvents()) {
 			TestEventSingleToStore newEvent = new TestEventSingleToStoreBuilder()
-													.id(idMappings.getOrDefault(e.getId(), e.getId()))
-													.name(e.getName())
-													.parentId(idMappings.getOrDefault(e.getParentId(), e.getParentId()))
-													.type(e.getType())
-													.endTimestamp(e.getEndTimestamp())
-													.success(e.isSuccess())
-													.messages(e.getMessages())
-													.content(e.getContent())
-													.build();
+					.id(idMappings.getOrDefault(e.getId(), e.getId()))
+					.name(e.getName())
+					.parentId(idMappings.getOrDefault(e.getParentId(), e.getParentId()))
+					.type(e.getType())
+					.endTimestamp(e.getEndTimestamp())
+					.success(e.isSuccess())
+					.messages(e.getMessages())
+					.content(e.getContent())
+					.build();
 			newBatch.addTestEvent(newEvent);
 		}
 
@@ -664,15 +675,15 @@ public abstract class CradleStorage
 	 * @throws IOException if data writing failed
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final void storeTestEvent(TestEventToStore event) throws IOException, CradleStorageException	{
+	public final void storeTestEvent(TestEventToStore event) throws IOException, CradleStorageException {
 
 		StoredTestEventId id = event.getId();
 		logger.debug("Storing test event {}", id);
 		PageInfo page = findPage(id.getBookId(), id.getStartTimestamp());
-		
+
 		TestEventUtils.validateTestEvent(event, getBookCache().getBook(id.getBookId()));
 		final TestEventToStore alignedEvent = alignEventTimestampsToPage(event, page);
-		
+
 		doStoreTestEvent(alignedEvent, page);
 		logger.debug("Test event {} has been stored", id);
 		if (alignedEvent.getParentId() != null) {
@@ -681,7 +692,7 @@ public abstract class CradleStorage
 			logger.debug("Parents of test event {} have been updated", id);
 		}
 	}
-	
+
 	/**
 	 * Asynchronously writes data about given test event to current page
 	 * @param event data to write
@@ -694,35 +705,35 @@ public abstract class CradleStorage
 		StoredTestEventId id = event.getId();
 		logger.debug("Storing test event {} asynchronously", id);
 		PageInfo page = findPage(id.getBookId(), id.getStartTimestamp());
-		
+
 		TestEventUtils.validateTestEvent(event, getBookCache().getBook(id.getBookId()));
 		final TestEventToStore alignedEvent = alignEventTimestampsToPage(event, page);
-		
+
 		CompletableFuture<Void> result = doStoreTestEventAsync(alignedEvent, page);
 		result.whenCompleteAsync((r, error) -> {
-				if (error != null)
-					logger.error("Error while storing test event "+id+" asynchronously", error);
-				else
-					logger.debug("Test event {} has been stored asynchronously", id);
-			}, composingService);
-		
+			if (error != null)
+				logger.error("Error while storing test event "+id+" asynchronously", error);
+			else
+				logger.debug("Test event {} has been stored asynchronously", id);
+		}, composingService);
+
 		if (alignedEvent.getParentId() == null)
 			return result;
-		
+
 		return result.thenComposeAsync(r -> {
 			logger.debug("Updating parents of test event {} asynchronously", id);
 			CompletableFuture<Void> result2 = doUpdateParentTestEventsAsync(alignedEvent);
 			result2.whenCompleteAsync((r2, error) -> {
-					if (error != null)
-						logger.error("Error while updating parents of test event "+id+" asynchronously", error);
-					else
-						logger.debug("Parents of test event {} have been updated asynchronously", alignedEvent.getId());
-				}, composingService);
+				if (error != null)
+					logger.error("Error while updating parents of test event "+id+" asynchronously", error);
+				else
+					logger.debug("Parents of test event {} have been updated asynchronously", alignedEvent.getId());
+			}, composingService);
 			return result2;
 		}, composingService);
 	}
-	
-	
+
+
 	/**
 	 * Retrieves message data stored under given ID
 	 * @param id of stored message to retrieve
@@ -730,36 +741,34 @@ public abstract class CradleStorage
 	 * @throws IOException if message data retrieval failed
 	 * @throws CradleStorageException if given parameter is invalid
 	 */
-	public final StoredMessage getMessage(StoredMessageId id) throws IOException, CradleStorageException
-	{
+	public final StoredMessage getMessage(StoredMessageId id) throws IOException, CradleStorageException {
 		logger.debug("Getting message {}", id);
 		PageId pageId = findPage(id.getBookId(), id.getTimestamp()).getId();
 		StoredMessage result = doGetMessage(id, pageId);
 		logger.debug("Message {} got from page {}", id, pageId);
 		return result;
 	}
-	
+
 	/**
 	 * Asynchronously retrieves message data stored under given ID
 	 * @param id of stored message to retrieve
 	 * @return future to obtain data of stored message
 	 * @throws CradleStorageException if given parameter is invalid
 	 */
-	public final CompletableFuture<StoredMessage> getMessageAsync(StoredMessageId id) throws CradleStorageException
-	{
+	public final CompletableFuture<StoredMessage> getMessageAsync(StoredMessageId id) throws CradleStorageException {
 		logger.debug("Getting message {} asynchronously", id);
 		PageId pageId = findPage(id.getBookId(), id.getTimestamp()).getId();
 		CompletableFuture<StoredMessage> result = doGetMessageAsync(id, pageId);
 		result.whenCompleteAsync((r, error) -> {
-				if (error != null)
-					logger.error("Error while getting message "+id+" from page "+pageId+" asynchronously", error);
-				else
-					logger.debug("Message {} from page {} got asynchronously", id, pageId);
-			}, composingService);
+			if (error != null)
+				logger.error("Error while getting message "+id+" from page "+pageId+" asynchronously", error);
+			else
+				logger.debug("Message {} from page {} got asynchronously", id, pageId);
+		}, composingService);
 		return result;
 	}
-	
-	
+
+
 	/**
 	 * Retrieves the batch of messages where message with given ID is stored
 	 * @param id of stored message whose batch to retrieve
@@ -767,35 +776,33 @@ public abstract class CradleStorage
 	 * @throws IOException if batch data retrieval failed
 	 * @throws CradleStorageException if given parameter is invalid
 	 */
-	public final StoredMessageBatch getMessageBatch(StoredMessageId id) throws IOException, CradleStorageException
-	{
+	public final StoredMessageBatch getMessageBatch(StoredMessageId id) throws IOException, CradleStorageException {
 		logger.debug("Getting message batch by message ID {}", id);
 		PageId pageId = findPage(id.getBookId(), id.getTimestamp()).getId();
 		StoredMessageBatch result = doGetMessageBatch(id, pageId);
 		logger.debug("Message batch by message ID {} got from page {}", id, pageId);
 		return result;
 	}
-	
+
 	/**
 	 * Asynchronously retrieves the batch of messages where message with given ID is stored
 	 * @param id of stored message whose batch to retrieve
 	 * @return future to obtain batch of messages
 	 * @throws CradleStorageException if given parameter is invalid
 	 */
-	protected final CompletableFuture<StoredMessageBatch> getMessageBatchAsync(StoredMessageId id) throws CradleStorageException
-	{
+	protected final CompletableFuture<StoredMessageBatch> getMessageBatchAsync(StoredMessageId id) throws CradleStorageException {
 		logger.debug("Getting message batch by message ID {} asynchronously", id);
 		PageId pageId = findPage(id.getBookId(), id.getTimestamp()).getId();
 		CompletableFuture<StoredMessageBatch> result = doGetMessageBatchAsync(id, pageId);
 		result.whenCompleteAsync((r, error) -> {
-				if (error != null)
-					logger.error("Error while getting message batch by message ID "+id+" from page "+pageId+" asynchronously", error);
-				else
-					logger.debug("Message batch by message ID {} from page {} got asynchronously", id, pageId);
-			}, composingService);
+			if (error != null)
+				logger.error("Error while getting message batch by message ID "+id+" from page "+pageId+" asynchronously", error);
+			else
+				logger.debug("Message batch by message ID {} from page {} got asynchronously", id, pageId);
+		}, composingService);
 		return result;
 	}
-	
+
 	/**
 	 * Allows enumerating stored messages filtering them by given conditions
 	 * @param filter defines conditions to filter messages by
@@ -803,42 +810,40 @@ public abstract class CradleStorage
 	 * @throws IOException if data retrieval failed
 	 * @throws CradleStorageException if filter is invalid
 	 */
-	public final CradleResultSet<StoredMessage> getMessages(MessageFilter filter) throws IOException, CradleStorageException
-	{
+	public final CradleResultSet<StoredMessage> getMessages(MessageFilter filter) throws IOException, CradleStorageException {
 		logger.debug("Filtering messages by {}", filter);
 		if (!checkFilter(filter))
 			return new EmptyResultSet<>();
-		
+
 		BookInfo book = getBookCache().getBook(filter.getBookId());
 		CradleResultSet<StoredMessage> result = doGetMessages(filter, book);
 		logger.debug("Got result set with messages filtered by {}", filter);
 		return result;
 	}
-	
+
 	/**
 	 * Allows to asynchronously obtain result set to enumerate stored messages filtering them by given conditions
 	 * @param filter defines conditions to filter messages by
 	 * @return future to obtain result set to enumerate messages
 	 * @throws CradleStorageException if filter is invalid
 	 */
-	public final CompletableFuture<CradleResultSet<StoredMessage>> getMessagesAsync(MessageFilter filter) throws CradleStorageException
-	{
+	public final CompletableFuture<CradleResultSet<StoredMessage>> getMessagesAsync(MessageFilter filter) throws CradleStorageException {
 		logger.debug("Asynchronously getting messages filtered by {}", filter);
 		if (!checkFilter(filter))
 			return CompletableFuture.completedFuture(new EmptyResultSet<>());
-		
+
 		BookInfo book = getBookCache().getBook(filter.getBookId());
 		CompletableFuture<CradleResultSet<StoredMessage>> result = doGetMessagesAsync(filter, book);
 		result.whenCompleteAsync((r, error) -> {
-				if (error != null)
-					logger.error("Error while getting messages filtered by "+filter+" asynchronously", error);
-				else
-					logger.debug("Result set with messages filtered by {} got asynchronously", filter);
-			}, composingService);
+			if (error != null)
+				logger.error("Error while getting messages filtered by "+filter+" asynchronously", error);
+			else
+				logger.debug("Result set with messages filtered by {} got asynchronously", filter);
+		}, composingService);
 		return result;
 	}
-	
-	
+
+
 	/**
 	 * Allows enumerating stored message batches filtering them by given conditions
 	 * @param filter defines conditions to filter message batches by
@@ -846,12 +851,11 @@ public abstract class CradleStorage
 	 * @throws IOException if data retrieval failed
 	 * @throws CradleStorageException if filter is invalid
 	 */
-	public final CradleResultSet<StoredMessageBatch> getMessageBatches(MessageFilter filter) throws IOException, CradleStorageException
-	{
+	public final CradleResultSet<StoredMessageBatch> getMessageBatches(MessageFilter filter) throws IOException, CradleStorageException {
 		logger.debug("Filtering message batches by {}", filter);
 		if (!checkFilter(filter))
 			return new EmptyResultSet<>();
-		
+
 		BookInfo book = getBookCache().getBook(filter.getBookId());
 		CradleResultSet<StoredMessageBatch> result = doGetMessageBatches(filter, book);
 		logger.debug("Got result set with message batches filtered by {}", filter);
@@ -867,8 +871,7 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if filter is invalid
 	 */
 	public final CradleResultSet<StoredGroupedMessageBatch> getGroupedMessageBatches(GroupedMessageFilter filter)
-			throws CradleStorageException, IOException
-	{
+			throws CradleStorageException, IOException {
 		logger.debug("Filtering grouped message batches by {}", filter);
 		checkAbstractFilter(filter);
 
@@ -877,67 +880,64 @@ public abstract class CradleStorage
 		logger.debug("Got result set with grouped message batches filtered by {}", filter);
 		return result;
 	}
-	
-	
+
+
 	/**
 	 * Allows to asynchronously obtain result set to enumerate stored message batches filtering them by given conditions
 	 * @param filter defines conditions to filter message batches by
 	 * @return future to obtain result set to enumerate message batches
 	 * @throws CradleStorageException if filter is invalid
 	 */
-	public final CompletableFuture<CradleResultSet<StoredMessageBatch>> getMessageBatchesAsync(MessageFilter filter) throws CradleStorageException
-	{
+	public final CompletableFuture<CradleResultSet<StoredMessageBatch>> getMessageBatchesAsync(MessageFilter filter) throws CradleStorageException {
 		logger.debug("Asynchronously getting message batches filtered by {}", filter);
 		if (!checkFilter(filter))
 			return CompletableFuture.completedFuture(new EmptyResultSet<>());
-		
+
 		BookInfo book = getBookCache().getBook(filter.getBookId());
 		CompletableFuture<CradleResultSet<StoredMessageBatch>> result = doGetMessageBatchesAsync(filter, book);
 		result.whenCompleteAsync((r, error) -> {
-				if (error != null)
-					logger.error("Error while getting message batches filtered by "+filter+" asynchronously", error);
-				else
-					logger.debug("Result set with message batches filtered by {} got asynchronously", filter);
-			}, composingService);
+			if (error != null)
+				logger.error("Error while getting message batches filtered by "+filter+" asynchronously", error);
+			else
+				logger.debug("Result set with message batches filtered by {} got asynchronously", filter);
+		}, composingService);
 		return result;
 	}
-	
-	
+
+
 	/**
 	 * Allows to asynchronously obtain result set to enumerate stored message batches filtering them by given conditions
 	 * @param filter defines conditions to filter message batches by
 	 * @return future to obtain result set to enumerate message batches
 	 * @throws CradleStorageException if filter is invalid
 	 */
-	public final CompletableFuture<CradleResultSet<StoredGroupedMessageBatch>> getGroupedMessageBatchesAsync(GroupedMessageFilter filter) throws CradleStorageException
-	{
+	public final CompletableFuture<CradleResultSet<StoredGroupedMessageBatch>> getGroupedMessageBatchesAsync(GroupedMessageFilter filter) throws CradleStorageException {
 		logger.debug("Asynchronously getting grouped message batches filtered by {}", filter);
 		checkAbstractFilter(filter);
-		
+
 		BookInfo book = getBookCache().getBook(filter.getBookId());
 		CompletableFuture<CradleResultSet<StoredGroupedMessageBatch>> result = doGetGroupedMessageBatchesAsync(filter, book);
 		result.whenCompleteAsync((r, error) -> {
-				if (error != null)
-					logger.error("Error while getting message batches filtered by "+filter+" asynchronously", error);
-				else
-					logger.debug("Result set with message batches filtered by {} got asynchronously", filter);
-			}, composingService);
+			if (error != null)
+				logger.error("Error while getting message batches filtered by "+filter+" asynchronously", error);
+			else
+				logger.debug("Result set with message batches filtered by {} got asynchronously", filter);
+		}, composingService);
 		return result;
 	}
-	
-	
+
+
 	/**
-	 * Retrieves last stored sequence number for given session alias and direction within given page. 
+	 * Retrieves last stored sequence number for given session alias and direction within given page.
 	 * Use result of this method to continue writing messages.
-	 * @param sessionAlias to get sequence number for 
+	 * @param sessionAlias to get sequence number for
 	 * @param direction to get sequence number for
 	 * @param bookId to get last sequence for
 	 * @return last stored sequence number for given arguments, if it is present, -1 otherwise
 	 * @throws IOException if retrieval failed
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final long getLastSequence(String sessionAlias, Direction direction, BookId bookId) throws IOException, CradleStorageException
-	{
+	public final long getLastSequence(String sessionAlias, Direction direction, BookId bookId) throws IOException, CradleStorageException {
 		logger.debug("Getting last stored sequence number for book '{}' and session alias '{}' and direction '{}'",
 				bookId, sessionAlias, direction.getLabel());
 		long result = doGetLastSequence(sessionAlias, direction, bookId);
@@ -955,15 +955,13 @@ public abstract class CradleStorage
 	 * @throws IOException if retrieval failed
 	 * @throws CradleStorageException if given parameters are invalid
 	 */
-	public final long getFirstSequence(String sessionAlias, Direction direction, BookId bookId) throws IOException, CradleStorageException
-	{
+	public final long getFirstSequence(String sessionAlias, Direction direction, BookId bookId) throws IOException, CradleStorageException {
 		logger.debug("Getting first stored sequence number for book '{}' and session alias '{}' and direction '{}'",
 				bookId, sessionAlias, direction.getLabel());
 		long result = doGetFirstSequence(sessionAlias, direction, bookId);
 		logger.debug("Sequence number {} got", result);
 		return result;
 	}
-
 
 
 	/**
@@ -973,8 +971,7 @@ public abstract class CradleStorage
 	 * @throws IOException if data retrieval failed
 	 * @throws CradleStorageException if given book ID is invalid
 	 */
-	public final Collection<String> getSessionAliases(BookId bookId) throws IOException, CradleStorageException
-	{
+	public final Collection<String> getSessionAliases(BookId bookId) throws IOException, CradleStorageException {
 		logger.debug("Getting session aliases for book '{}'", bookId);
 		getBookCache().getBook(bookId);
 		Collection<String> result = doGetSessionAliases(bookId);
@@ -992,8 +989,8 @@ public abstract class CradleStorage
 
 		return result;
 	}
-	
-	
+
+
 	/**
 	 * Retrieves test event data stored under given ID
 	 * @param id of stored test event to retrieve
@@ -1001,36 +998,34 @@ public abstract class CradleStorage
 	 * @throws IOException if test event data retrieval failed
 	 * @throws CradleStorageException if given parameter is invalid
 	 */
-	public final StoredTestEvent getTestEvent(StoredTestEventId id) throws IOException, CradleStorageException
-	{
+	public final StoredTestEvent getTestEvent(StoredTestEventId id) throws IOException, CradleStorageException {
 		logger.debug("Getting test event {}", id);
 		PageId pageId = findPage(id.getBookId(), id.getStartTimestamp()).getId();
 		StoredTestEvent result = doGetTestEvent(id, pageId);
 		logger.debug("Test event {} got from page {}", id, pageId);
 		return result;
 	}
-	
+
 	/**
 	 * Asynchronously retrieves test event data stored under given ID
 	 * @param id of stored test event to retrieve
 	 * @return future to obtain data of stored test event
 	 * @throws CradleStorageException if given parameter is invalid
 	 */
-	public final CompletableFuture<StoredTestEvent> getTestEventAsync(StoredTestEventId id) throws CradleStorageException
-	{
+	public final CompletableFuture<StoredTestEvent> getTestEventAsync(StoredTestEventId id) throws CradleStorageException {
 		logger.debug("Getting test event {} asynchronously", id);
 		PageId pageId = findPage(id.getBookId(), id.getStartTimestamp()).getId();
 		CompletableFuture<StoredTestEvent> result = doGetTestEventAsync(id, pageId);
 		result.whenCompleteAsync((r, error) -> {
-				if (error != null)
-					logger.error("Error while getting test event "+id+" from page "+pageId+" asynchronously", error);
-				else
-					logger.debug("Test event {} from page {} got asynchronously", id, pageId);
-			}, composingService);
+			if (error != null)
+				logger.error("Error while getting test event "+id+" from page "+pageId+" asynchronously", error);
+			else
+				logger.debug("Test event {} from page {} got asynchronously", id, pageId);
+		}, composingService);
 		return result;
 	}
-	
-	
+
+
 	/**
 	 * Allows to enumerate test events, filtering them by given conditions
 	 * @param filter defines conditions to filter test events by
@@ -1038,18 +1033,17 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if filter is invalid
 	 * @throws IOException if data retrieval failed
 	 */
-	public final CradleResultSet<StoredTestEvent> getTestEvents(TestEventFilter filter) throws CradleStorageException, IOException
-	{
+	public final CradleResultSet<StoredTestEvent> getTestEvents(TestEventFilter filter) throws CradleStorageException, IOException {
 		logger.debug("Filtering test events by {}", filter);
 		if (!checkFilter(filter))
 			return new EmptyResultSet<>();
-		
+
 		BookInfo book = getBookCache().getBook(filter.getBookId());
 		CradleResultSet<StoredTestEvent> result = doGetTestEvents(filter, book);
 		logger.debug("Got result set with test events filtered by {}", filter);
 		return result;
 	}
-	
+
 	/**
 	 * Allows to asynchronously obtain result set to enumerate test events, filtering them by given conditions
 	 * @param filter defines conditions to filter test events by
@@ -1057,23 +1051,22 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if filter is invalid
 	 * @throws IOException if data retrieval failed
 	 */
-	public final CompletableFuture<CradleResultSet<StoredTestEvent>> getTestEventsAsync(TestEventFilter filter) throws CradleStorageException, IOException
-	{
+	public final CompletableFuture<CradleResultSet<StoredTestEvent>> getTestEventsAsync(TestEventFilter filter) throws CradleStorageException, IOException {
 		logger.debug("Asynchronously getting test events filtered by {}", filter);
 		if (!checkFilter(filter))
 			return CompletableFuture.completedFuture(new EmptyResultSet<>());
-		
+
 		BookInfo book = getBookCache().getBook(filter.getBookId());
 		CompletableFuture<CradleResultSet<StoredTestEvent>> result = doGetTestEventsAsync(filter, book);
 		result.whenCompleteAsync((r, error) -> {
-				if (error != null)
-					logger.error("Error while getting test events filtered by "+filter+" asynchronously", error);
-				else
-					logger.debug("Result set with test events filtered by {} got asynchronously", filter);
-			}, composingService);
+			if (error != null)
+				logger.error("Error while getting test events filtered by "+filter+" asynchronously", error);
+			else
+				logger.debug("Result set with test events filtered by {} got asynchronously", filter);
+		}, composingService);
 		return result;
 	}
-	
+
 	/**
 	 * Obtains collection of scope names whose test events are saved in given book
 	 * @param bookId to get scopes from
@@ -1081,8 +1074,7 @@ public abstract class CradleStorage
 	 * @throws IOException if data retrieval failed
 	 * @throws CradleStorageException if given book ID is invalid
 	 */
-	public final Collection<String> getScopes(BookId bookId) throws IOException, CradleStorageException
-	{
+	public final Collection<String> getScopes(BookId bookId) throws IOException, CradleStorageException {
 		logger.debug("Getting scopes for book '{}'", bookId);
 		getBookCache().getBook(bookId);
 		Collection<String> result = doGetScopes(bookId);
@@ -1101,10 +1093,10 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if given book ID is invalid
 	 */
 	public CompletableFuture<CradleResultSet<CounterSample>> getMessageCountersAsync(BookId bookId,
-																			   String sessionAlias,
-																			   Direction direction,
-																			   FrameType frameType,
-																			   Interval interval) throws CradleStorageException {
+																					 String sessionAlias,
+																					 Direction direction,
+																					 FrameType frameType,
+																					 Interval interval) throws CradleStorageException {
 		return doGetMessageCountersAsync(bookId,  sessionAlias, direction, frameType, interval);
 	}
 
@@ -1120,10 +1112,10 @@ public abstract class CradleStorage
 	 * @throws IOException if there is a problem with input/output
 	 */
 	public CradleResultSet<CounterSample> getMessageCounters(BookId bookId,
-													   String sessionAlias,
-													   Direction direction,
-													   FrameType frameType,
-													   Interval interval) throws CradleStorageException, IOException {
+															 String sessionAlias,
+															 Direction direction,
+															 FrameType frameType,
+															 Interval interval) throws CradleStorageException, IOException {
 		return doGetMessageCounters(bookId, sessionAlias, direction, frameType, interval);
 	}
 
@@ -1137,9 +1129,9 @@ public abstract class CradleStorage
 	 * @throws CradleStorageException if given book ID is invalid
 	 */
 	public CompletableFuture<CradleResultSet<CounterSample>> getCountersAsync (BookId bookId,
-																	EntityType entityType,
-																	FrameType frameType,
-																	Interval interval) throws CradleStorageException {
+																			   EntityType entityType,
+																			   FrameType frameType,
+																			   Interval interval) throws CradleStorageException {
 		return doGetCountersAsync(bookId, entityType, frameType, interval);
 	}
 
@@ -1345,23 +1337,21 @@ public abstract class CradleStorage
 		bookInfo.addPage(updatedPageInfo);
 	}
 
-	public final void updateEventStatus(StoredTestEvent event, boolean success) throws IOException
-	{
+	public final void updateEventStatus(StoredTestEvent event, boolean success) throws IOException {
 		logger.debug("Updating status of event {}", event.getId());
 		doUpdateEventStatus(event, success);
 		logger.debug("Status of event {} has been updated", event.getId());
 	}
 
-	public final CompletableFuture<Void> updateEventStatusAsync(StoredTestEvent event, boolean success)
-	{
+	public final CompletableFuture<Void> updateEventStatusAsync(StoredTestEvent event, boolean success) {
 		logger.debug("Asynchronously updating status of event {}", event.getId());
 		CompletableFuture<Void> result = doUpdateEventStatusAsync(event, success);
 		result.whenCompleteAsync((r, error) -> {
-				if (error != null)
-					logger.error("Error while asynchronously updating status of event "+event.getId());
-				else
-					logger.debug("Status of event {} updated asynchronously", event.getId());
-			}, composingService);
+			if (error != null)
+				logger.error("Error while asynchronously updating status of event "+event.getId());
+			else
+				logger.debug("Status of event {} updated asynchronously", event.getId());
+		}, composingService);
 		return result;
 	}
 
@@ -1382,36 +1372,34 @@ public abstract class CradleStorage
 
 		return pageInBookAfterStart == null ? defaultPageEnd : pageInBookAfterStart.getStarted();
 	}
-	
-	private List<PageInfo> checkPages(List<PageToAdd> pages, BookInfo book) throws CradleStorageException
-	{
+
+	private List<PageInfo> checkPages(List<PageToAdd> pages, BookInfo book) throws CradleStorageException {
 		PageInfo lastPage = book.getLastPage();
 		if (lastPage != null)  //If book has any pages, i.e. may have some data
 		{
+			// TODO: shouldn't we use 'lastPage.getStart()' to validate that new page is not in the past?
 			Instant now = Instant.now(),
 					firstStart = pages.get(0).getStart();
 			if (!firstStart.isAfter(now))
 				throw new CradleStorageException("Timestamp of new page start must be after current timestamp ("+now+")");
 		}
-		
+
 		Set<String> names = new HashSet<>();
 		PageToAdd prevPage = null;
 		BookId bookId = book.getId();
 		List<PageInfo> result = new ArrayList<>(pages.size());
-		for (PageToAdd page : pages)
-		{
+		for (PageToAdd page : pages) {
 			BookPagesNamesChecker.validatePageName(page.getName());
 
 			String name = page.getName();
 			if (names.contains(name))
 				throw new CradleStorageException("Duplicated page name: '"+page.getName()+"'");
 			names.add(name);
-			
+
 			if (book.getPage(new PageId(bookId, name)) != null)
 				throw new CradleStorageException("Page '"+name+"' is already present in book '"+bookId+"'");
-			
-			if (prevPage != null)
-			{
+
+			if (prevPage != null) {
 				if (!page.getStart().isAfter(prevPage.getStart())) {
 					throw new CradleStorageException("Unordered pages: page '"+name+"' should start after page '"+prevPage.getName()+"'");
 				}
@@ -1433,52 +1421,48 @@ public abstract class CradleStorage
 
 		return result;
 	}
-	
-	private boolean checkFilter(MessageFilter filter) throws CradleStorageException
-	{
+
+	private boolean checkFilter(MessageFilter filter) throws CradleStorageException {
 		checkAbstractFilter(filter);
-		
+
 		//TODO: add more checks
 		return true;
 	}
 
-	private void checkAbstractFilter(AbstractFilter filter) throws CradleStorageException
-	{
+	private void checkAbstractFilter(AbstractFilter filter) throws CradleStorageException {
 		BookInfo book = getBookCache().getBook(filter.getBookId());
 		if (filter.getPageId() != null)
 			checkPage(filter.getPageId(), book.getId());
 	}
-	
-	private boolean checkFilter(TestEventFilter filter) throws CradleStorageException
-	{
+
+	private boolean checkFilter(TestEventFilter filter) throws CradleStorageException {
 		BookInfo book = getBookCache().getBook(filter.getBookId());
 		checkAbstractFilter(filter);
-		
+
 		if (filter.getParentId() != null && !book.getId().equals(filter.getParentId().getBookId()))
 			throw new CradleStorageException("Requested book ("+book.getId()+") doesn't match book of requested parent ("+filter.getParentId()+")");
-		
+
 		Instant timeFrom = filter.getStartTimestampFrom() != null ? filter.getStartTimestampFrom().getValue() : null,
 				timeTo = filter.getStartTimestampTo() != null ? filter.getStartTimestampTo().getValue() : null;
-		if (timeFrom != null && timeTo != null 
+		if (timeFrom != null && timeTo != null
 				&& timeFrom.isAfter(timeTo))
 			throw new CradleStorageException("Left bound for start timestamp ("+timeFrom+") "
 					+ "is after the right bound ("+timeTo+")");
-		
+
 		if (timeTo != null && timeTo.isBefore(book.getCreated()))
 			return false;
-		
-		if (filter.getPageId() != null)
-		{
+
+		if (filter.getPageId() != null) {
 			PageInfo page = book.getPage(filter.getPageId());
 			Instant pageStarted = page.getStarted(),
 					pageEnded = page.getEnded();
-			
+
 			if (timeFrom != null && pageEnded != null && timeFrom.isAfter(pageEnded))
 				return false;
 			if (timeTo != null && timeTo.isBefore(pageStarted))
 				return false;
 		}
-		
+
 		return true;
 	}
 

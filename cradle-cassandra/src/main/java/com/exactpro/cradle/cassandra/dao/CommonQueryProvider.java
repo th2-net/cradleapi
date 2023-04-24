@@ -28,41 +28,45 @@ import com.datastax.oss.driver.api.mapper.MapperContext;
 import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class CommonQueryProvider<T>
-{
+public class CommonQueryProvider<T> {
+	private static final Logger LOGGER = LoggerFactory.getLogger(CommonQueryProvider.class);
 	private final CqlSession session;
 	private final EntityHelper<T> helper;
-	
-	public CommonQueryProvider(MapperContext context, EntityHelper<T> helper)
-	{
+
+	public CommonQueryProvider(MapperContext context, EntityHelper<T> helper) {
 		this.session = context.getSession();
 		this.helper = helper;
 	}
-	
-	public CompletableFuture<MappedAsyncPagingIterable<T>> getByFilter(CassandraFilter<T> filter,
+
+	public CompletableFuture<MappedAsyncPagingIterable<T>> getByFilter(
+			CassandraFilter<T> filter,
 			SelectQueryExecutor selectExecutor, String queryInfo,
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
-	{
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes
+	) {
 		Select select = createQuery(filter);
 		PreparedStatement ps = session.prepare(select.build());
 		BoundStatement bs = bindParameters(ps, filter, attributes);
 		return selectExecutor.executeMultiRowResultQuery(
 				() -> session.executeAsync(bs).toCompletableFuture(), helper::get, queryInfo);
 	}
-	
-	
-	private Select createQuery(CassandraFilter<T> filter)
-	{
+
+
+	private Select createQuery(CassandraFilter<T> filter) {
 		Select select = helper.selectStart();
-		if (filter != null)
+		if (filter != null) {
 			select = filter.addConditions(select);
+		}
+		LOGGER.trace("Executing query {}", select);
 		return select;
 	}
-	
-	private BoundStatement bindParameters(PreparedStatement ps, CassandraFilter<T> filter, 
-			Function<BoundStatementBuilder, BoundStatementBuilder> attributes)
-	{
+
+	private BoundStatement bindParameters(
+			PreparedStatement ps, CassandraFilter<T> filter,
+			Function<BoundStatementBuilder, BoundStatementBuilder> attributes
+	) {
 		BoundStatementBuilder builder = ps.boundStatementBuilder();
 		builder = attributes.apply(builder);
 		if (filter != null)

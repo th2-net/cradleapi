@@ -26,6 +26,7 @@ import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
 
 import java.time.Instant;
+import java.util.StringJoiner;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.*;
@@ -57,8 +58,8 @@ public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMes
     @Override
     public Select addConditions(Select select) {
         select = select
-				.whereColumn(FIELD_BOOK).isEqualTo(bindMarker())
-				.whereColumn(FIELD_PAGE).isEqualTo(bindMarker())
+                .whereColumn(FIELD_BOOK).isEqualTo(bindMarker())
+                .whereColumn(FIELD_PAGE).isEqualTo(bindMarker())
                 .whereColumn(FIELD_ALIAS_GROUP).isEqualTo(bindMarker());
 
         if (messageTimeFrom != null)
@@ -84,8 +85,8 @@ public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMes
     @Override
     public BoundStatementBuilder bindParameters(BoundStatementBuilder builder) {
         builder = builder
-				.setString(FIELD_BOOK, book)
-				.setString(FIELD_PAGE, page)
+                .setString(FIELD_BOOK, book)
+                .setString(FIELD_PAGE, page)
                 .setString(FIELD_ALIAS_GROUP, groupName);
 
         if (messageTimeFrom != null)
@@ -96,9 +97,9 @@ public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMes
         return builder;
     }
 
-	public String getBook() {
-		return book;
-	}
+    public String getBook() {
+        return book;
+    }
 
     public String getPage() {
         return page;
@@ -118,5 +119,18 @@ public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMes
 
     public FilterForLess<Instant> getMessageTimeTo() {
         return messageTimeTo;
+    }
+
+    @Override
+    public String toString() {
+        return new StringJoiner(", ", CassandraGroupedMessageFilter.class.getSimpleName() + "[", "]")
+                .add("book='" + book + "'")
+                .add("page='" + page + "'")
+                .add("groupName='" + groupName + "'")
+                .add("limit=" + limit)
+                .add("messageTimeFrom " + messageTimeFrom)
+                .add("messageTimeTo " + messageTimeTo)
+                .add("order=" + order)
+                .toString();
     }
 }
