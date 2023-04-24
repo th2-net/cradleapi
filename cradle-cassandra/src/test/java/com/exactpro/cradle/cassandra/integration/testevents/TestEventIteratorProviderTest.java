@@ -25,6 +25,7 @@ import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
+import com.exactpro.cradle.cassandra.retries.PageSizeAdjustingPolicy;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.testevents.*;
@@ -48,6 +49,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static com.exactpro.cradle.cassandra.CassandraStorageSettings.DEFAULT_RESULT_PAGE_SIZE;
+
 public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
 
     private static final Logger logger = LoggerFactory.getLogger(TestEventIteratorProviderTest.class);
@@ -55,42 +58,47 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
     private static final String CONTENT = "default_content";
     private static final String FIRST_SCOPE = "test_scope_first";
     private static final String SECOND_SCOPE = "test_scope_second";
+
+    private static final String THIRD_SCOPE = "test_scope_third";
+
     private final static String EVENT_NAME = "default_event_name";
     private final long EVENT_BATCH_DURATION = 24000L;
     private final long EVENTS_IN_BATCH = 4;
 
-    private List<TestEventToStore> data;
+    private final List<TestEventToStore> data = new ArrayList<>();
     private Map<String, List<StoredTestEvent>> storedData;
     private CassandraOperators operators;
-    private ExecutorService composingService = Executors.newSingleThreadExecutor();
+    private final ExecutorService composingService = Executors.newSingleThreadExecutor();
     private EventBatchDurationWorker eventBatchDurationWorker;
 
     @BeforeClass
-    public void startUp () throws IOException, InterruptedException, CradleStorageException {
+    public void startUp() throws IOException, InterruptedException, CradleStorageException {
         super.startUp(true);
 
-        setUpOperators ();
+        setUpOperators();
         generateData();
         mockEventBatchDurationWorker();
     }
 
-    private void mockEventBatchDurationWorker () {
+    private void mockEventBatchDurationWorker() {
         eventBatchDurationWorker = Mockito.mock(EventBatchDurationWorker.class);
         Mockito.when(eventBatchDurationWorker.
-                getMaxDuration(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.eq(storage.getReadAttrs())))
-                .thenReturn(Duration.of(5, ChronoUnit.MINUTES).toMillis());
+                        getMaxDuration(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.eq(storage.getReadAttrs())))
+                .thenReturn(EVENT_BATCH_DURATION);
     }
 
     @Override
     protected void generateData() throws CradleStorageException, IOException {
         try {
-            TestEventToStore b1 = generateTestEvent(FIRST_SCOPE, dataStart.plus(5, ChronoUnit.MINUTES), EVENT_BATCH_DURATION, EVENT_BATCH_DURATION/EVENTS_IN_BATCH);
-            TestEventToStore b2 = generateTestEvent(SECOND_SCOPE, dataStart.plus(14, ChronoUnit.MINUTES), EVENT_BATCH_DURATION, EVENT_BATCH_DURATION/EVENTS_IN_BATCH);
-            TestEventToStore b3 = generateTestEvent(FIRST_SCOPE, dataStart.plus(21, ChronoUnit.MINUTES), EVENT_BATCH_DURATION, EVENT_BATCH_DURATION/EVENTS_IN_BATCH);
-            TestEventToStore b4 = generateTestEvent(SECOND_SCOPE, dataStart.plus(33, ChronoUnit.MINUTES), EVENT_BATCH_DURATION, EVENT_BATCH_DURATION/EVENTS_IN_BATCH);
-            TestEventToStore b5 = generateTestEvent(FIRST_SCOPE, dataStart.plus(22, ChronoUnit.MINUTES), EVENT_BATCH_DURATION, EVENT_BATCH_DURATION/EVENTS_IN_BATCH);
+            TestEventToStore b1 = generateTestEvent(FIRST_SCOPE, dataStart.plus(5, ChronoUnit.MINUTES), EVENT_BATCH_DURATION, EVENT_BATCH_DURATION / EVENTS_IN_BATCH);
+            TestEventToStore b2 = generateTestEvent(SECOND_SCOPE, dataStart.plus(14, ChronoUnit.MINUTES), EVENT_BATCH_DURATION, EVENT_BATCH_DURATION / EVENTS_IN_BATCH);
+            TestEventToStore b3 = generateTestEvent(FIRST_SCOPE, dataStart.plus(21, ChronoUnit.MINUTES), EVENT_BATCH_DURATION, EVENT_BATCH_DURATION / EVENTS_IN_BATCH);
+            TestEventToStore b4 = generateTestEvent(SECOND_SCOPE, dataStart.plus(33, ChronoUnit.MINUTES), EVENT_BATCH_DURATION, EVENT_BATCH_DURATION / EVENTS_IN_BATCH);
 
-            data = List.of(b1, b2, b3, b4, b5);
+
+            data.addAll(List.of(b1, b2, b3, b4));
+            data.addAll(generateOverlappingEvents());
+
             storedData = new HashMap<>();
 
             for (TestEventToStore eventToStore : data) {
@@ -116,6 +124,27 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
             logger.error("Error while generating data:", e);
             throw e;
         }
+    }
+
+    private List<TestEventToStore> generateOverlappingEvents() throws CradleStorageException {
+        Instant baseStartTime = dataStart.plus(35, ChronoUnit.MINUTES);
+
+        long b1Duration = EVENT_BATCH_DURATION;
+        long b2Duration = (long) (b1Duration * 0.1);
+        long b3Duration = (long) (b1Duration * 0.7);
+        long b4Duration = (long) (b1Duration * 0.3);
+        long b5Duration = (long) (b1Duration * 0.4);
+
+        long shift = (long) (EVENT_BATCH_DURATION * 0.05);
+
+        TestEventToStore b1 = generateTestEvent(THIRD_SCOPE, baseStartTime, EVENT_BATCH_DURATION, b1Duration / EVENTS_IN_BATCH);
+        TestEventToStore b2 = generateTestEvent(THIRD_SCOPE, baseStartTime.plus(Duration.of(shift, ChronoUnit.MILLIS)), b2Duration, b2Duration / EVENTS_IN_BATCH);
+        TestEventToStore b3 = generateTestEvent(THIRD_SCOPE, baseStartTime.plus(Duration.of(shift + b2Duration, ChronoUnit.MILLIS)), b3Duration, b3Duration / EVENTS_IN_BATCH);
+        TestEventToStore b4 = generateTestEvent(THIRD_SCOPE, baseStartTime.plus(Duration.of(2 * shift + b2Duration, ChronoUnit.MILLIS)), b4Duration, b4Duration / EVENTS_IN_BATCH);
+        TestEventToStore b5 = generateTestEvent(THIRD_SCOPE, baseStartTime.plus(Duration.of(3 * shift + b2Duration, ChronoUnit.MILLIS)), b5Duration, b5Duration / EVENTS_IN_BATCH);
+
+        //We place b2 the last because it is one that will be excluded in expected result, and it's easier to do sublist if this element is the last one.
+        return List.of(b1, b3, b4, b5, b2);
     }
 
     /*
@@ -154,7 +183,7 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
                     operators,
                     storage.refreshBook(bookId.getName()),
                     composingService,
-                    new SelectQueryExecutor(session, composingService, null, null),
+                    new SelectQueryExecutor(session, composingService, new PageSizeAdjustingPolicy(1, 2), null),
                     eventBatchDurationWorker,
                     storage.getReadAttrs(),
                     actualFrom);
@@ -170,9 +199,9 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
     }
 
     @Test(description = "Gets all TestEvents with specific scope")
-    public void getAllTestEventsTest () throws CradleStorageException, ExecutionException, InterruptedException {
+    public void getAllTestEventsTest() throws CradleStorageException, ExecutionException, InterruptedException {
         try {
-            TestEventFilter filter =  new TestEventFilter(bookId, FIRST_SCOPE);
+            TestEventFilter filter = new TestEventFilter(bookId, FIRST_SCOPE);
             TestEventIteratorProvider iteratorProvider = createIteratorProvider(filter, dataStart);
 
             CompletableFuture<CassandraCradleResultSet<StoredTestEvent>> rsFuture = iteratorProvider.nextIterator()
@@ -192,14 +221,14 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
     @Test(description = "Gets all TestEvents from page with specific scope")
     public void getTestEventsFromPage() throws CradleStorageException, ExecutionException, InterruptedException {
         try {
-            TestEventFilter filter =  new TestEventFilter(bookId, FIRST_SCOPE, pages.get(2).getId());
+            TestEventFilter filter = new TestEventFilter(bookId, FIRST_SCOPE, pages.get(2).getId());
             TestEventIteratorProvider iteratorProvider = createIteratorProvider(filter, dataStart);
 
             CompletableFuture<CassandraCradleResultSet<StoredTestEvent>> rsFuture = iteratorProvider.nextIterator()
                     .thenApplyAsync(r -> new CassandraCradleResultSet<>(r, iteratorProvider), composingService);
 
             Iterable<StoredTestEvent> actual = Lists.newArrayList(rsFuture.get().asIterable());
-            List<StoredTestEvent> expected = storedData.get(FIRST_SCOPE).subList(1, 3);
+            List<StoredTestEvent> expected = storedData.get(FIRST_SCOPE).subList(1, 2);
 
             Assertions.assertThat(actual)
                     .isEqualTo(expected);
@@ -212,7 +241,7 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
     @Test(description = "Gets TestEvents from empty page")
     public void getTestEventsFromEmptyPage() throws CradleStorageException, ExecutionException, InterruptedException {
         try {
-            TestEventFilter filter =  new TestEventFilter(bookId, FIRST_SCOPE, pages.get(4).getId());
+            TestEventFilter filter = new TestEventFilter(bookId, FIRST_SCOPE, pages.get(4).getId());
             TestEventIteratorProvider iteratorProvider = createIteratorProvider(filter, dataStart);
 
             CompletableFuture<CassandraCradleResultSet<StoredTestEvent>> rsFuture = iteratorProvider.nextIterator()
@@ -232,7 +261,7 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
     @Test(description = "Gets TestEvents from timestamp")
     public void getTestEventsFromTimestamp() throws CradleStorageException, ExecutionException, InterruptedException {
         try {
-            TestEventFilter filter =  new TestEventFilter(bookId, SECOND_SCOPE);
+            TestEventFilter filter = new TestEventFilter(bookId, SECOND_SCOPE);
             filter.setStartTimestampFrom(FilterForGreater.forGreater(pages.get(2).getStarted()));
             TestEventIteratorProvider iteratorProvider = createIteratorProvider(filter, dataStart);
 
@@ -253,7 +282,7 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
     @Test(description = "Gets TestEvents from timestamp which is inside one of the batches, fetching that batch as well")
     public void getTestEventsFromTimestampInsideBatch() throws CradleStorageException, ExecutionException, InterruptedException {
         try {
-            TestEventFilter filter =  new TestEventFilter(bookId, FIRST_SCOPE);
+            TestEventFilter filter = new TestEventFilter(bookId, FIRST_SCOPE);
             filter.setStartTimestampFrom(FilterForGreater.forGreaterOrEquals(
                     storedData.get(FIRST_SCOPE).get(0).getStartTimestamp().plusMillis(EVENT_BATCH_DURATION)));
             TestEventIteratorProvider iteratorProvider = createIteratorProvider(filter,
@@ -273,20 +302,23 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
         }
     }
 
-    @Test(description = "Gets TestEvents from timestamp which is inside one of the batches, fetching that batch as well")
-    public void getTestEventsFromTimestampInsideBatch2() throws CradleStorageException, ExecutionException, InterruptedException {
+
+    @Test(description = "Gets TestEvents from timestamp which will include several batches among them invalid ones too (because of query shift). check that invalid batches are removed by filtering iterator. ")
+    public void testFilteringIteratorProvider() throws CradleStorageException, ExecutionException, InterruptedException {
         try {
-            TestEventFilter filter =  new TestEventFilter(bookId, FIRST_SCOPE);
+            TestEventFilter filter = new TestEventFilter(bookId, THIRD_SCOPE);
+            //storedData.get(THIRD_SCOPE).get(3) will get b5 (from overlapping events) start time
             filter.setStartTimestampFrom(FilterForGreater.forGreaterOrEquals(
-                    storedData.get(FIRST_SCOPE).get(2).getStartTimestamp()));
+                    storedData.get(THIRD_SCOPE).get(3).getStartTimestamp()));
             TestEventIteratorProvider iteratorProvider = createIteratorProvider(filter,
-                    storedData.get(FIRST_SCOPE).get(2).getStartTimestamp());
+                    storedData.get(THIRD_SCOPE).get(3).getStartTimestamp());
 
             CompletableFuture<CassandraCradleResultSet<StoredTestEvent>> rsFuture = iteratorProvider.nextIterator()
                     .thenApplyAsync(r -> new CassandraCradleResultSet<>(r, iteratorProvider), composingService);
 
             Iterable<StoredTestEvent> actual = Lists.newArrayList(rsFuture.get().asIterable());
-            List<StoredTestEvent> expected = storedData.get(FIRST_SCOPE).subList(2, 3);
+            //this sublist will exclude b2 (from overlapping events)
+            List<StoredTestEvent> expected = storedData.get(THIRD_SCOPE).subList(0, 4);
 
             Assertions.assertThat(actual)
                     .isEqualTo(expected);
