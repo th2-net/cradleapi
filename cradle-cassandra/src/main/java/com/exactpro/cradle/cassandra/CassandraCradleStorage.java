@@ -984,13 +984,13 @@ public class CassandraCradleStorage extends CradleStorage
 			throw new CradleStorageException(String.format("Inconsistent data for page \"%s\" in book %s", oldPageName, bookId.getName()));
 
 		PageInfo pageInfo = pageEntity.toPageInfo();
-		Instant now = Instant.now();
-		if (pageInfo.getStarted().isBefore(now.plusMillis(pageActionRejectionThreshold))) {
+		Instant nowPlusThreshold = Instant.now().plusMillis(pageActionRejectionThreshold);
+		if (pageInfo.getStarted().isBefore(nowPlusThreshold)) {
 			throw new CradleStorageException(
-					String.format("You can only rename pages which start more than %d ms in future: pageStart - %s, now - %s",
+					String.format("You can only rename pages which start more than %d ms in future: pageStart - %s, now + threshold - %s",
 							pageActionRejectionThreshold,
 							pageInfo.getStarted(),
-							now));
+							nowPlusThreshold));
 		}
 
 		PageEntity updatedPageEntity = new PageEntity(pageEntity.getBook(),

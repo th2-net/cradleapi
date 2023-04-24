@@ -1391,10 +1391,13 @@ public abstract class CradleStorage
 		PageInfo lastPage = book.getLastPage();
 		if (lastPage != null)  //If book has any pages, i.e. may have some data
 		{
-			Instant now = Instant.now(),
-					firstStart = pages.get(0).getStart();
-			if (!firstStart.isAfter(now.plusMillis(pageActionRejectionThreshold)))
-				throw new CradleStorageException("Timestamp of new page start must be more than: " + pageActionRejectionThreshold + " ms after current timestamp: ("+now+")");
+			Instant nowPlusThreshold = Instant.now().plusMillis(pageActionRejectionThreshold);
+			Instant	firstStart = pages.get(0).getStart();
+			if (firstStart.isBefore(nowPlusThreshold))
+				throw new CradleStorageException(String.format("You can only create pages which start more than %d ms in future: First pageStart - %s, now + threshold - %s",
+						pageActionRejectionThreshold,
+						firstStart,
+						nowPlusThreshold));
 		}
 		
 		Set<String> names = new HashSet<>();
