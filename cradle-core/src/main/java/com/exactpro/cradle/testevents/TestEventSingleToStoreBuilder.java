@@ -37,7 +37,13 @@ public class TestEventSingleToStoreBuilder
 	private boolean success;
 	private Set<StoredMessageId> messages;
 	private byte[] content;
-	
+
+	private final long storeActionRejectionThreshold;
+
+	public TestEventSingleToStoreBuilder(long storeActionRejectionThreshold) {
+		this.storeActionRejectionThreshold = storeActionRejectionThreshold;
+	}
+
 	public TestEventSingleToStoreBuilder id(StoredTestEventId id)
 	{
 		this.id = id;
@@ -105,7 +111,7 @@ public class TestEventSingleToStoreBuilder
 	{
 		try
 		{
-			TestEventSingleToStore result = createTestEventToStore(id, name, parentId);
+			TestEventSingleToStore result = createTestEventToStore(id, name, parentId, storeActionRejectionThreshold);
 			result.setType(type);
 			result.setEndTimestamp(endTimestamp);
 			result.setSuccess(success);
@@ -120,9 +126,9 @@ public class TestEventSingleToStoreBuilder
 	}
 	
 	
-	protected TestEventSingleToStore createTestEventToStore(StoredTestEventId id, String name, StoredTestEventId parentId) throws CradleStorageException
+	protected TestEventSingleToStore createTestEventToStore(StoredTestEventId id, String name, StoredTestEventId parentId, long storeActionRejectionThreshold) throws CradleStorageException
 	{
-		return new TestEventSingleToStore(id, name, parentId);
+		return new TestEventSingleToStore(id, name, parentId, storeActionRejectionThreshold);
 	}
 	
 	protected void reset()

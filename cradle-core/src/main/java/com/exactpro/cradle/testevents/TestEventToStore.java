@@ -32,26 +32,14 @@ public abstract class TestEventToStore implements TestEvent
 	protected String type;
 	protected Instant endTimestamp;
 	protected boolean success;
-	
-	public TestEventToStore(StoredTestEventId id, String name, StoredTestEventId parentId) throws CradleStorageException
+
+	public TestEventToStore(StoredTestEventId id, String name, StoredTestEventId parentId, long storeActionRejectionThreshold) throws CradleStorageException
 	{
 		this.id = id;
 		this.name = name;
 		this.parentId = parentId;
-		TestEventUtils.validateTestEvent(this);
+		TestEventUtils.validateTestEvent(this, storeActionRejectionThreshold);
 	}
-	
-	
-	public static TestEventSingleToStoreBuilder singleBuilder()
-	{
-		return new TestEventSingleToStoreBuilder();
-	}
-	
-	public static TestEventBatchToStoreBuilder batchBuilder(int maxBatchSize)
-	{
-		return new TestEventBatchToStoreBuilder(maxBatchSize);
-	}
-	
 	
 	@Override
 	public StoredTestEventId getId()

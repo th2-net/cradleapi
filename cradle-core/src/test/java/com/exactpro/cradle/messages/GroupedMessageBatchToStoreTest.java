@@ -17,6 +17,7 @@
 package com.exactpro.cradle.messages;
 
 import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -44,7 +45,9 @@ public class GroupedMessageBatchToStoreTest
 	private Instant timestamp;
 	private String protocol;
 	private byte[] messageContent;
-	
+
+	private final long storeActionRejectionThreshold = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
+
 	@BeforeClass
 	public void prepare()
 	{
@@ -97,7 +100,7 @@ public class GroupedMessageBatchToStoreTest
 	public void batchContentIsLimited() throws CradleStorageException
 	{
 		byte[] content = new byte[5000];
-		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE);
+		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE, storeActionRejectionThreshold);
 		batch.addMessage(builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)
@@ -131,7 +134,7 @@ public class GroupedMessageBatchToStoreTest
 	public void batchIsFull() throws CradleStorageException
 	{
 		byte[] content = new byte[MAX_SIZE/2];
-		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE);
+		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE, storeActionRejectionThreshold);
 		batch.addMessage(builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)
@@ -163,7 +166,7 @@ public class GroupedMessageBatchToStoreTest
 	public void batchCountsSpaceLeft() throws CradleStorageException
 	{
 		byte[] content = new byte[MAX_SIZE / 2];
-		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE);
+		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE, storeActionRejectionThreshold);
 		long left = batch.getSpaceLeft();
 
 		MessageToStore msg = builder
@@ -184,7 +187,7 @@ public class GroupedMessageBatchToStoreTest
 	public void batchChecksSpaceLeft() throws CradleStorageException
 	{
 		byte[] content = new byte[MAX_SIZE/2];
-		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE);
+		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE, storeActionRejectionThreshold);
 		
 		MessageToStore msg = builder
 				.bookId(book)
@@ -200,11 +203,11 @@ public class GroupedMessageBatchToStoreTest
 	}
 	
 	
-	@Test(expectedExceptions = {CradleStorageException.class}, 
-			expectedExceptionsMessageRegExp = ".* for first message in batch .*")
+	@Test(expectedExceptions = {IllegalArgumentException.class},
+			expectedExceptionsMessageRegExp = "illegal sequence -?\\d+ for test-book:test-session:1")
 	public void batchChecksFirstMessage() throws CradleStorageException
 	{
-		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE);
+		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE, storeActionRejectionThreshold);
 		batch.addMessage(builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)
@@ -220,7 +223,7 @@ public class GroupedMessageBatchToStoreTest
 			expectedExceptionsMessageRegExp = ".*, but in your message it is .*")
 	public void batchConsistency(List<IdData> ids) throws CradleStorageException
 	{
-		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE);
+		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE, storeActionRejectionThreshold);
 		for (IdData id : ids)
 		{
 			batch.addMessage(builder
@@ -239,7 +242,7 @@ public class GroupedMessageBatchToStoreTest
 			expectedExceptionsMessageRegExp = "Message must .*")
 	public void messageValidation(MessageToStoreBuilder builder) throws CradleStorageException
 	{
-		MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE);
+		MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE, storeActionRejectionThreshold);
 		batch.addMessage(builder.build());
 	}
 	
@@ -254,7 +257,7 @@ public class GroupedMessageBatchToStoreTest
 				.sequence(seq)
 				.timestamp(timestamp)
 				.content(messageContent)
-				.build(), MAX_SIZE);
+				.build(), MAX_SIZE, storeActionRejectionThreshold);
 		
 		StoredMessage msg1 = batch.addMessage(builder
 				.bookId(book)
@@ -287,7 +290,7 @@ public class GroupedMessageBatchToStoreTest
 				.sequence(seq)
 				.timestamp(timestamp)
 				.content(messageContent)
-				.build(), MAX_SIZE);
+				.build(), MAX_SIZE, storeActionRejectionThreshold);
 		
 		batch.addMessage(builder
 				.bookId(book)
@@ -310,7 +313,7 @@ public class GroupedMessageBatchToStoreTest
 				.sequence(seq)
 				.timestamp(timestamp)
 				.content(messageContent)
-				.build(), MAX_SIZE);
+				.build(), MAX_SIZE, storeActionRejectionThreshold);
 		StoredMessage msg = batch.addMessage(builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)
@@ -325,7 +328,7 @@ public class GroupedMessageBatchToStoreTest
 	public void batchShowsLastTimestamp() throws CradleStorageException
 	{
 		Instant timestamp = Instant.ofEpochSecond(1000);
-		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE);
+		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE, storeActionRejectionThreshold);
 		batch.addMessage(builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)
@@ -357,7 +360,7 @@ public class GroupedMessageBatchToStoreTest
 	@Test
 	public void batchSerialization() throws CradleStorageException, IOException
 	{
-		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE);
+		GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(groupName, MAX_SIZE, storeActionRejectionThreshold);
 		batch.addMessage(builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)

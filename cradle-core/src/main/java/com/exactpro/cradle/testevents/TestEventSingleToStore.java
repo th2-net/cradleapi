@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.util.Set;
 
 import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
@@ -32,15 +33,15 @@ public class TestEventSingleToStore extends TestEventToStore implements TestEven
 	private Set<StoredMessageId> messages;
 	private byte[] content;
 	
-	public TestEventSingleToStore(StoredTestEventId id, String name, StoredTestEventId parentId) throws CradleStorageException
+	public TestEventSingleToStore(StoredTestEventId id, String name, StoredTestEventId parentId, long storeActionRejectionThreshold) throws CradleStorageException
 	{
-		super(id, name, parentId);
+		super(id, name, parentId, storeActionRejectionThreshold);
 	}
 	
 	
-	public static TestEventSingleToStoreBuilder builder()
+	public static TestEventSingleToStoreBuilder builder(long storeActionRejectionThreshold)
 	{
-		return new TestEventSingleToStoreBuilder();
+		return new TestEventSingleToStoreBuilder(storeActionRejectionThreshold);
 	}
 	
 	

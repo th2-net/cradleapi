@@ -37,14 +37,17 @@ public class MessageBatchToStore extends StoredMessageBatch
 	
 	private final int maxBatchSize;
 
-	public MessageBatchToStore(int maxBatchSize)
+	private final long storeActionRejectionThreshold;
+
+	public MessageBatchToStore(int maxBatchSize, long storeActionRejectionThreshold)
 	{
 		this.maxBatchSize = maxBatchSize;
+		this.storeActionRejectionThreshold = storeActionRejectionThreshold;
 	}
-	
-	public static MessageBatchToStore singleton(MessageToStore message, int maxBatchSize) throws CradleStorageException
+
+	public static MessageBatchToStore singleton(MessageToStore message, int maxBatchSize, long storeActionRejectionThreshold) throws CradleStorageException
 	{
-		MessageBatchToStore result = new MessageBatchToStore(maxBatchSize);
+		MessageBatchToStore result = new MessageBatchToStore(maxBatchSize, storeActionRejectionThreshold);
 		result.addMessage(message);
 		return result;
 	}
@@ -101,10 +104,10 @@ public class MessageBatchToStore extends StoredMessageBatch
 		// Checking that the timestamp of a message is not from the future
 		// Other checks have already been done when the MessageToStore was created
 		Instant now = Instant.now();
-		if (message.getTimestamp().isAfter(now))
+		if (message.getTimestamp().isAfter(now.plusMillis(storeActionRejectionThreshold)))
 			throw new CradleStorageException(
 					"Message timestamp (" + TimeUtils.toLocalTimestamp(message.getTimestamp()) +
-							") is greater than current timestamp (" + TimeUtils.toLocalTimestamp(now) + ")");
+							") is greater than current timestamp ( " + TimeUtils.toLocalTimestamp(now) + " ) plus rejectionThreshold interval (" + storeActionRejectionThreshold + ")ms");
 
 		long messageSeq;
 		if (id == null)

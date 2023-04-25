@@ -1,5 +1,5 @@
 /*
- *  Copyright 2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -17,16 +17,17 @@
 package com.exactpro.cradle.cassandra;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.cassandra.connection.NetworkTopologyStrategy;
 import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
 
 import static com.exactpro.cradle.CradleStorage.DEFAULT_COMPOSING_SERVICE_THREADS;
 
-public class CassandraStorageSettings {
+public class CassandraStorageSettings extends CoreStorageSettings {
     public static final String SCHEMA_VERSION = "5.3.0";
     public static final long DEFAULT_TIMEOUT = 5000;
-    public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
+    public static final CassandraConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = CassandraConsistencyLevel.LOCAL_QUORUM;
     public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1,
             DEFAULT_MAX_PARALLEL_QUERIES = 500,
             DEFAULT_RESULT_PAGE_SIZE = 0,
@@ -41,14 +42,13 @@ public class CassandraStorageSettings {
             DEFAULT_EVENT_BATCH_DURATION_CACHE_SIZE = 5_000,
             DEFAULT_PAGE_GROUPS_CACHE_SIZE = 10_000,
             DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS = 1000;
-	public static final long DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS = 60000,
-            DEFAULT_EVENT_BATCH_DURATION_MILLIS = 5_000;
+	public static final long DEFAULT_EVENT_BATCH_DURATION_MILLIS = 5_000;
 
 
 
     private final NetworkTopologyStrategy networkTopologyStrategy;
     private final long timeout;
-    private final ConsistencyLevel writeConsistencyLevel,
+    private final CassandraConsistencyLevel writeConsistencyLevel,
             readConsistencyLevel;
     private String keyspace,
             schemaVersion;
@@ -73,19 +73,20 @@ public class CassandraStorageSettings {
 
     private SelectExecutionPolicy multiRowResultExecutionPolicy, singleRowResultExecutionPolicy;
 
-	private long bookRefreshIntervalMillis, eventBatchDurationMillis;
+	private long eventBatchDurationMillis;
 
     public CassandraStorageSettings() {
         this(null, DEFAULT_TIMEOUT, DEFAULT_CONSISTENCY_LEVEL, DEFAULT_CONSISTENCY_LEVEL);
     }
 
     public CassandraStorageSettings(long timeout,
-                                    ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel) {
+                                    CassandraConsistencyLevel writeConsistencyLevel,
+                                    CassandraConsistencyLevel readConsistencyLevel) {
         this(null, timeout, writeConsistencyLevel, readConsistencyLevel);
     }
 
     public CassandraStorageSettings(NetworkTopologyStrategy networkTopologyStrategy, long timeout,
-                                    ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel) {
+                                    CassandraConsistencyLevel writeConsistencyLevel, CassandraConsistencyLevel readConsistencyLevel) {
         this.networkTopologyStrategy = networkTopologyStrategy;
         this.timeout = timeout;
         this.writeConsistencyLevel = writeConsistencyLevel;
@@ -156,11 +157,11 @@ public class CassandraStorageSettings {
         return timeout;
     }
 
-    public ConsistencyLevel getWriteConsistencyLevel() {
+    public CassandraConsistencyLevel getWriteConsistencyLevel() {
         return writeConsistencyLevel;
     }
 
-    public ConsistencyLevel getReadConsistencyLevel() {
+    public CassandraConsistencyLevel getReadConsistencyLevel() {
         return readConsistencyLevel;
     }
 
@@ -332,14 +333,6 @@ public class CassandraStorageSettings {
             SelectExecutionPolicy singleRowResultExecutionPolicy) {
         this.singleRowResultExecutionPolicy = singleRowResultExecutionPolicy;
     }
-
-	public long getBookRefreshIntervalMillis() {
-		return bookRefreshIntervalMillis;
-	}
-
-	public void setBookRefreshIntervalMillis(long bookRefreshIntervalMillis) {
-		this.bookRefreshIntervalMillis = bookRefreshIntervalMillis;
-	}
 
     public long getEventBatchDurationMillis() {
         return eventBatchDurationMillis;

@@ -42,11 +42,14 @@ import com.exactpro.cradle.utils.TestEventUtils;
 public class EventBatchTest
 {
 	private final int MAX_SIZE = 1024;
-	private TestEventSingleToStoreBuilder eventBuilder = TestEventToStore.singleBuilder();
-	private TestEventBatchToStoreBuilder batchBuilder = TestEventToStore.batchBuilder(MAX_SIZE);
-	private StoredTestEventId batchId = new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, UUID.randomUUID().toString());
+
+	private final long storeActionRejectionThreshold = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
+
+	private final TestEventSingleToStoreBuilder eventBuilder = new TestEventSingleToStoreBuilder(storeActionRejectionThreshold);
+	private final TestEventBatchToStoreBuilder batchBuilder = new TestEventBatchToStoreBuilder(MAX_SIZE, storeActionRejectionThreshold);
+	private final StoredTestEventId batchId = new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, UUID.randomUUID().toString());
 	private TestEventBatchToStore batch;
-	
+
 	@BeforeMethod
 	public void prepareBatch() throws CradleStorageException
 	{
@@ -86,7 +89,7 @@ public class EventBatchTest
 	@Test
 	public void batchFields() throws CradleStorageException
 	{
-		TestEventBatchToStore event = TestEventToStore.batchBuilder(MAX_SIZE)
+		TestEventBatchToStore event = new TestEventBatchToStoreBuilder(MAX_SIZE, storeActionRejectionThreshold)
 				.id(DUMMY_ID)
 				.name("Name1")
 				.parentId(batchParentId)
@@ -133,9 +136,9 @@ public class EventBatchTest
 				.content("Test content".getBytes())
 				.build();
 		
-		TestEventBatchToStore batch = new TestEventBatchToStore(batchId, null, parentId, MAX_SIZE);
+		TestEventBatchToStore batch = new TestEventBatchToStore(batchId, null, parentId, MAX_SIZE, storeActionRejectionThreshold);
 		batch.addTestEvent(event);
-		TestEventUtils.validateTestEvent(batch);
+		TestEventUtils.validateTestEvent(batch, storeActionRejectionThreshold);
 	}
 	
 	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Batch must have a parent")
@@ -296,7 +299,7 @@ public class EventBatchTest
 							START_TIMESTAMP,
 							START_TIMESTAMP,
 							null)));
-			TestEventUtils.validateTestEvent(singleEvent, bookInfo);
+			TestEventUtils.validateTestEvent(singleEvent, bookInfo, storeActionRejectionThreshold);
 			batch.addTestEvent(singleEvent);
 			Assertions.fail("Invalid message passed validation");
 		}

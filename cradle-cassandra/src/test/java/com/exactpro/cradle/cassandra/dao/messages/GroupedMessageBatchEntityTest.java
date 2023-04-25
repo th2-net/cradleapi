@@ -1,6 +1,7 @@
 package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.SerializedEntity;
@@ -24,7 +25,7 @@ public class GroupedMessageBatchEntityTest {
         PageId pageId = new PageId(new BookId("Test_Book_1"), "Test_Page_1");
         String group = "test-group";
 
-        GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(group, 10_000);
+        GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(group, 10_000, new CoreStorageSettings().calculateStoreActionRejectionThreshold());
         MessageToStore message = MessageToStore.builder()
                 .bookId(pageId.getBookId())
                 .sessionAlias("TEST_Session")

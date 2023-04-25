@@ -17,6 +17,7 @@
 package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.utils.MessageBatchEntityUtils;
@@ -47,7 +48,7 @@ public class MessageBatchEntityTest
 				.sequence(1)
 				.content(createContent(40))
 				.metadata("key_test", "value_test")
-				.build(), 200);
+				.build(), 200, new CoreStorageSettings().calculateStoreActionRejectionThreshold());
 		StoredMessageBatch storedBatch = new StoredMessageBatch(batch.getMessages(), pageId, null);
 
 		SerializedEntity<MessageBatchEntity> serializedEntity = MessageBatchEntityUtils.toSerializedEntity(batch, pageId, 2000);
