@@ -145,7 +145,10 @@ public class StoredMessageBatch implements MessageBatch
 		if (this == o) return true;
 		if (!(o instanceof StoredMessageBatch)) return false;
 		StoredMessageBatch that = (StoredMessageBatch) o;
-		return getBatchSize() == that.getBatchSize() && Objects.equals(getId(), that.getId()) && Objects.equals(getMessages(), that.getMessages()) && Objects.equals(getRecDate(), that.getRecDate());
+		return getBatchSize() == that.getBatchSize()
+				&& Objects.equals(getId(), that.getId())
+				&& Objects.equals(getMessages(), that.getMessages())
+				&& Objects.equals(getRecDate(), that.getRecDate());
 	}
 
 	@Override

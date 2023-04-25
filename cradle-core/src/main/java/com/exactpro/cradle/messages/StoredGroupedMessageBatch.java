@@ -136,8 +136,7 @@ public class StoredGroupedMessageBatch {
 		return getBatchSize() == that.getBatchSize()
 				&& getBookId().equals(that.getBookId())
 				&& getGroup().equals(that.getGroup())
-				&& getMessages().containsAll(that.getMessages())
-				&& that.getMessages().containsAll(getMessages())
+				&& getMessages().equals(that.getMessages())
 				&& getRecDate().equals(that.getRecDate());
 	}
 
