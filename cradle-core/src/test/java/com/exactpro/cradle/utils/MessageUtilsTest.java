@@ -17,6 +17,7 @@
 package com.exactpro.cradle.utils;
 
 import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.messages.MessageBatchToStore;
 import com.exactpro.cradle.messages.MessageToStoreBuilder;
@@ -47,7 +48,7 @@ public class MessageUtilsTest
 		byte[] content = "Message text".getBytes();
 		
 		long seq = 10;
-		batch = new MessageBatchToStore(1024);
+		batch = new MessageBatchToStore(1024, new CoreStorageSettings().calculateStoreActionRejectionThreshold());
 		msg1 = batch.addMessage(builder
 				.bookId(bookId)
 				.sessionAlias(sessionAlias)

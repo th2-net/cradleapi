@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.zip.DataFormatException;
 
+import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.cassandra.dao.SerializedEntity;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
@@ -49,17 +50,19 @@ public class TestEventEntityTest
 	private final PageId page = new PageId(book, "Page1");
 	private final String scope = "Scope1";
 	private final Instant startTimestamp = Instant.now();
+
+	private final long storeActionRejectionThreshold = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
 	private final StoredTestEventId eventId = new StoredTestEventId(book, scope, startTimestamp, "EventId"),
 			parentId = new StoredTestEventId(book, scope, startTimestamp, "ParentEventId");
 	
-	private TestEventSingleToStoreBuilder singleBuilder = TestEventSingleToStore.builder();
+	private TestEventSingleToStoreBuilder singleBuilder = TestEventSingleToStore.builder(storeActionRejectionThreshold);
 	private final int contentLength = 20,
 			messagesLength = 10;
 	
 	@DataProvider(name = "events")
 	public Object[][] events() throws CradleStorageException
 	{
-		TestEventBatchToStore batch = TestEventBatchToStore.builder(1024)
+		TestEventBatchToStore batch = TestEventBatchToStore.builder(1024, storeActionRejectionThreshold)
 				.id(new StoredTestEventId(book, scope, startTimestamp, "BatchId"))
 				.parentId(parentId)
 				.build();

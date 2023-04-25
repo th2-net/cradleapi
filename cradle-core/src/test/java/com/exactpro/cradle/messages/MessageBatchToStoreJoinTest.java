@@ -22,6 +22,7 @@ import static org.testng.Assert.assertTrue;
 
 import java.time.Instant;
 
+import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import com.exactpro.cradle.serialization.SerializationException;
 import org.testng.annotations.DataProvider;
@@ -208,7 +209,7 @@ public class MessageBatchToStoreJoinTest
     }
 
     private static MessageBatchToStore createEmptyBatch() {
-        return new MessageBatchToStore(MAX_SIZE);
+        return new MessageBatchToStore(MAX_SIZE, new CoreStorageSettings().calculateStoreActionRejectionThreshold());
     }
 
     static MessageBatchToStore createFullBySizeBatch(BookId bookId,

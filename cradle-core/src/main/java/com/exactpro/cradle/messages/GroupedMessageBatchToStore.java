@@ -24,7 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,11 +36,14 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 	private final Map<SessionKey, StoredMessage> firstMessages;
 	private final Map<SessionKey, StoredMessage> lastMessages;
 
-	public GroupedMessageBatchToStore(String group, int maxBatchSize)	{
+	private final long storeActionRejectionThreshold;
+
+	public GroupedMessageBatchToStore(String group, int maxBatchSize, long storeActionRejectionThreshold)	{
 		super(group);
 		this.maxBatchSize = maxBatchSize;
 		this.firstMessages = new HashMap<>();
 		this.lastMessages = new HashMap<>();
+		this.storeActionRejectionThreshold = storeActionRejectionThreshold;
 	}
 	
 	/**
@@ -90,10 +92,10 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 		// Other checks have already been done when the MessageToStore was created
 		SessionKey sessionKey = new SessionKey(message.getSessionAlias(), message.getDirection());
 		Instant now = Instant.now();
-		if (message.getTimestamp().isAfter(now))
+		if (message.getTimestamp().isAfter(now.plusMillis(storeActionRejectionThreshold)))
 			throw new CradleStorageException(
 					"Message timestamp (" + TimeUtils.toLocalTimestamp(message.getTimestamp()) +
-							") is greater than current timestamp (" + TimeUtils.toLocalTimestamp(now) + ")");
+							") is greater than current timestamp ( " + TimeUtils.toLocalTimestamp(now) + " ) plus rejectionThreshold interval (" + storeActionRejectionThreshold + ")ms");
 
 		long messageSeq;
 		if (bookId == null) { 		// first message in the batch
@@ -198,7 +200,7 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
 		Map<SessionKey, MessageBatchToStore> batches = new HashMap<>();
 		for (StoredMessage message: getMessages()) {
 			SessionKey key = new SessionKey(message.getSessionAlias(), message.getDirection());
-			MessageBatchToStore batch = batches.computeIfAbsent(key, k -> new MessageBatchToStore(maxBatchSize));
+			MessageBatchToStore batch = batches.computeIfAbsent(key, k -> new MessageBatchToStore(maxBatchSize, storeActionRejectionThreshold));
 
 			StoredMessageId msgId = new StoredMessageId(message.getBookId(),
 					message.getSessionAlias(),

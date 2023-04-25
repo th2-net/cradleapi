@@ -17,6 +17,7 @@
 package com.exactpro.cradle.messages;
 
 import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -43,7 +44,9 @@ public class MessageBatchToStoreTest
 	private Instant timestamp;
 	private String protocol;
 	private byte[] messageContent;
-	
+
+	private final long storeActionRejectionThreshold = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
+
 	@BeforeClass
 	public void prepare()
 	{
@@ -106,7 +109,7 @@ public class MessageBatchToStoreTest
 				.sequence(1)
 				.timestamp(timestamp)
 				.content(content)
-				.build(), MAX_SIZE);
+				.build(), MAX_SIZE, storeActionRejectionThreshold);
 		for (int i = 0; i <= (MAX_SIZE/content.length)+1; i++)
 			batch.addMessage(builder
 					.bookId(book)
@@ -141,7 +144,7 @@ public class MessageBatchToStoreTest
 				.protocol(protocol)
 				.content(content)
 				.build();
-		MessageBatchToStore batch = MessageBatchToStore.singleton(message, MAX_SIZE);
+		MessageBatchToStore batch = MessageBatchToStore.singleton(message, MAX_SIZE, storeActionRejectionThreshold);
 		batch.addMessage(builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)
@@ -164,7 +167,7 @@ public class MessageBatchToStoreTest
 	public void batchCountsSpaceLeft() throws CradleStorageException
 	{
 		byte[] content = new byte[MAX_SIZE / 2];
-		MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE);
+		MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE, storeActionRejectionThreshold);
 		long left = batch.getSpaceLeft();
 
 		MessageToStore msg = builder
@@ -185,7 +188,7 @@ public class MessageBatchToStoreTest
 	public void batchChecksSpaceLeft() throws CradleStorageException
 	{
 		byte[] content = new byte[MAX_SIZE/2];
-		MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE);
+		MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE, storeActionRejectionThreshold);
 		
 		MessageToStore msg = builder
 				.bookId(book)
@@ -212,7 +215,7 @@ public class MessageBatchToStoreTest
 				.sequence(-1)
 				.timestamp(timestamp)
 				.content(messageContent)
-				.build(), MAX_SIZE);
+				.build(), MAX_SIZE, storeActionRejectionThreshold);
 	}
 	
 	@Test(dataProvider = "multiple messages",
@@ -220,7 +223,7 @@ public class MessageBatchToStoreTest
 			expectedExceptionsMessageRegExp = ".*, but in your message it is .*")
 	public void batchConsistency(List<IdData> ids) throws CradleStorageException
 	{
-		MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE);
+		MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE, storeActionRejectionThreshold);
 		for (IdData id : ids)
 		{
 			batch.addMessage(builder
@@ -239,7 +242,7 @@ public class MessageBatchToStoreTest
 			expectedExceptionsMessageRegExp = "Message must .*")
 	public void messageValidation(MessageToStoreBuilder builder) throws CradleStorageException
 	{
-		MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE);
+		MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE, storeActionRejectionThreshold);
 		batch.addMessage(builder.build());
 	}
 	
@@ -254,7 +257,7 @@ public class MessageBatchToStoreTest
 				.sequence(seq)
 				.timestamp(timestamp)
 				.content(messageContent)
-				.build(), MAX_SIZE);
+				.build(), MAX_SIZE, storeActionRejectionThreshold);
 		
 		StoredMessage msg1 = batch.addMessage(builder
 				.bookId(book)
@@ -287,7 +290,7 @@ public class MessageBatchToStoreTest
 				.sequence(seq)
 				.timestamp(timestamp)
 				.content(messageContent)
-				.build(), MAX_SIZE);
+				.build(), MAX_SIZE, storeActionRejectionThreshold);
 		
 		batch.addMessage(builder
 				.bookId(book)
@@ -310,7 +313,7 @@ public class MessageBatchToStoreTest
 				.sequence(seq)
 				.timestamp(timestamp)
 				.content(messageContent)
-				.build(), MAX_SIZE);
+				.build(), MAX_SIZE, storeActionRejectionThreshold);
 		StoredMessage msg = batch.addMessage(builder
 				.bookId(book)
 				.sessionAlias(sessionAlias)
@@ -332,7 +335,7 @@ public class MessageBatchToStoreTest
 				.sequence(1)
 				.timestamp(timestamp)
 				.content(messageContent)
-				.build(), MAX_SIZE);
+				.build(), MAX_SIZE, storeActionRejectionThreshold);
 		
 		batch.addMessage(builder
 				.bookId(book)
@@ -366,7 +369,7 @@ public class MessageBatchToStoreTest
 				.timestamp(timestamp)
 				.metadata("md", "some value")
 				.content(messageContent)
-				.build(), MAX_SIZE);
+				.build(), MAX_SIZE, storeActionRejectionThreshold);
 		StoredMessage storedMsg = batch.getFirstMessage();
 		byte[] bytes = MessageUtils.serializeMessages(batch.getMessages()).getSerializedData();
 		StoredMessage msg = MessageUtils.deserializeMessages(bytes, batch.id).iterator().next();

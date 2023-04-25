@@ -17,6 +17,7 @@
 package com.exactpro.cradle.messages;
 
 import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import com.exactpro.cradle.serialization.SerializationException;
@@ -192,7 +193,7 @@ public class GroupedMessageBatchToStoreJoinTest
     }
 
     private static GroupedMessageBatchToStore createEmptyBatch(String group) {
-        return new GroupedMessageBatchToStore(group, MAX_SIZE);
+        return new GroupedMessageBatchToStore(group, MAX_SIZE, new CoreStorageSettings().calculateStoreActionRejectionThreshold());
     }
 
     static GroupedMessageBatchToStore createFullBySizeBatch(BookId bookId,

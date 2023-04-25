@@ -38,7 +38,7 @@ public class CradleEntitiesFactoryTest
 	@BeforeClass
 	public void prepare()
 	{
-		factory = new CradleEntitiesFactory(maxMessageBatchSize, maxEventBatchSize);
+		factory = new CradleEntitiesFactory(maxMessageBatchSize, maxEventBatchSize, new CoreStorageSettings().calculateStoreActionRejectionThreshold());
 	}
 	
 	@Test

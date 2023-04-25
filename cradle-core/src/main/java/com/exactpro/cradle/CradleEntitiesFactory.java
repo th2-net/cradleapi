@@ -18,10 +18,10 @@ package com.exactpro.cradle;
 
 import com.exactpro.cradle.messages.GroupedMessageBatchToStore;
 import com.exactpro.cradle.messages.MessageBatchToStore;
-import com.exactpro.cradle.messages.MessageToStore;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
 import com.exactpro.cradle.testevents.TestEventBatchToStoreBuilder;
+import com.exactpro.cradle.testevents.TestEventSingleToStoreBuilder;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
@@ -31,41 +31,44 @@ public class CradleEntitiesFactory
 {
 	private final int maxMessageBatchSize,
 			maxTestEventBatchSize;
-	
+
+	private final long storeActionRejectionThreshold;
+
 	/**
 	 * Creates new factory for entities to be used with {@link CradleStorage}
 	 * @param maxMessageBatchSize maximum size of messages (in bytes) that {@link MessageBatchToStore} can hold
 	 * @param maxTestEventBatchSize maximum size of test events (in bytes) that {@link TestEventBatchToStore} can hold
 	 */
-	public CradleEntitiesFactory(int maxMessageBatchSize, int maxTestEventBatchSize)
+	public CradleEntitiesFactory(int maxMessageBatchSize, int maxTestEventBatchSize, long storeActionRejectionThreshold)
 	{
 		this.maxMessageBatchSize = maxMessageBatchSize;
 		this.maxTestEventBatchSize = maxTestEventBatchSize;
+		this.storeActionRejectionThreshold = storeActionRejectionThreshold;
 	}
-	
+
 
 	@Deprecated
 	public MessageBatchToStore messageBatch()
 	{
-		return new MessageBatchToStore(maxMessageBatchSize);
+		return new MessageBatchToStore(maxMessageBatchSize, storeActionRejectionThreshold);
 	}
 
 	public GroupedMessageBatchToStore groupedMessageBatch(String group) {
-		return new GroupedMessageBatchToStore(group, maxMessageBatchSize);
+		return new GroupedMessageBatchToStore(group, maxMessageBatchSize, storeActionRejectionThreshold);
 	}
-	
-	public MessageBatchToStore singletonMessageBatch(MessageToStore message) throws CradleStorageException
-	{
-		return MessageBatchToStore.singleton(message, maxMessageBatchSize);
-	}
-	
+
 	public TestEventBatchToStore testEventBatch(StoredTestEventId id, String name, StoredTestEventId parentId) throws CradleStorageException
 	{
-		return new TestEventBatchToStore(id, name, parentId, maxTestEventBatchSize);
+		return new TestEventBatchToStore(id, name, parentId, maxTestEventBatchSize, storeActionRejectionThreshold);
 	}
-	
+
 	public TestEventBatchToStoreBuilder testEventBatchBuilder()
 	{
-		return new TestEventBatchToStoreBuilder(maxTestEventBatchSize);
+		return new TestEventBatchToStoreBuilder(maxTestEventBatchSize, storeActionRejectionThreshold);
+	}
+
+	public TestEventSingleToStoreBuilder testEventBuilder()
+	{
+		return new TestEventSingleToStoreBuilder(storeActionRejectionThreshold);
 	}
 }

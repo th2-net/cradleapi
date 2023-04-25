@@ -47,7 +47,7 @@ public class TestEventUtils
 	 * @param bookInfo bookInfo
 	 * @throws CradleStorageException if validation failed
 	 */
-	public static void validateTestEvent(TestEvent event, BookInfo bookInfo) throws CradleStorageException {
+	public static void validateTestEvent(TestEvent event, BookInfo bookInfo, long storeActionRejectionThreshold) throws CradleStorageException {
 		if (bookInfo != null && event.getParentId() != null) {
 			PageInfo pageInfo = bookInfo.findPage(event.getParentId().getStartTimestamp());
 			if (pageInfo == null) {
@@ -58,7 +58,7 @@ public class TestEventUtils
 			}
 		}
 
-		validateTestEvent(event);
+		validateTestEvent(event, storeActionRejectionThreshold);
 	}
 
 	/**
@@ -66,7 +66,7 @@ public class TestEventUtils
 	 * @param event to validate
 	 * @throws CradleStorageException if validation failed
 	 */
-	public static void validateTestEvent(TestEvent event) throws CradleStorageException
+	public static void validateTestEvent(TestEvent event, long storeActionRejectionThreshold) throws CradleStorageException
 	{
 		if (event.getId() == null)
 			throw new CradleStorageException("Test event ID cannot be null");
@@ -86,10 +86,10 @@ public class TestEventUtils
 		if (event.getStartTimestamp() == null)
 			throw new CradleStorageException("Test event must have a start timestamp");
 		Instant now = Instant.now();
-		if (event.getStartTimestamp().isAfter(now))
+		if (event.getStartTimestamp().isAfter(now.plusMillis(storeActionRejectionThreshold)))
 			throw new CradleStorageException(
 					"Event start timestamp (" + TimeUtils.toLocalTimestamp(event.getStartTimestamp()) +
-							") is greater than current timestamp (" + TimeUtils.toLocalTimestamp(now) + ")");
+							") is greater than current timestamp ( " + TimeUtils.toLocalTimestamp(now) + " ) plus storeActionRejectionThreshold interval (" + storeActionRejectionThreshold + ")ms");
 		validateTestEventEndDate(event);
 		if (event.getParentId() != null && !event.getBookId().equals(event.getParentId().getBookId()))
 			throw new CradleStorageException("Test event and its parent must be from the same book");
