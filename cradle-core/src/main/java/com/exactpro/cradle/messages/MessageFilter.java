@@ -17,8 +17,6 @@
 package com.exactpro.cradle.messages;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 

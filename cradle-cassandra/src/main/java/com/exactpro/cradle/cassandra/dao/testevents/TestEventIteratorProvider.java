@@ -53,13 +53,13 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 	/*
 	 * The iterator creates CassandraTestEventFilter for each new DB query.
 	 * Each query targets one page, returning iterator to access the data.
-	 * 
-	 * Initial filter gets the starting page and the ending page. 
+	 *
+	 * Initial filter gets the starting page and the ending page.
 	 * If the ending page was queried, no more queries will be done, meaning the end of data
 	 */
-	
+
 	private static final Logger logger = LoggerFactory.getLogger(TestEventIteratorProvider.class);
-	
+
 	private final TestEventOperator op;
 	private final BookInfo book;
 	private final ExecutorService composingService;
@@ -67,12 +67,13 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 	private final TestEventEntityConverter entityConverter;
 	private final PageInfo firstPage, lastPage;
 	private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
+	/** limit must be strictly positive ( limit greater than 0 ) */
 	private final int limit;
 	private final AtomicInteger returned;
 	private CassandraTestEventFilter cassandraFilter;
 	private final EventBatchDurationWorker eventBatchDurationWorker;
 	private final Instant actualFrom;
-	
+
 	public TestEventIteratorProvider(String requestInfo, TestEventFilter filter, CassandraOperators operators, BookInfo book,
 									 ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
 									 EventBatchDurationWorker eventBatchDurationWorker,
@@ -150,8 +151,8 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 							convertingIterator,
 							convertedEntity -> !convertedEntity.getLastStartTimestamp().isBefore(actualFrom));
 
-					return new LimitedIterator<>(
-							filteringIterator, limit);
+
+					return limit > 0 ? new LimitedIterator<>(filteringIterator, limit) : filteringIterator;
 				}, composingService);
 	}
 
@@ -163,7 +164,9 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 		 */
 		long duration = eventBatchDurationWorker.getMaxDuration(filter.getBookId().getName(), firstPage.getId().getName(), filter.getScope(), readAttrs);
 		FilterForGreater<Instant> newFrom;
-		if (filter.getStartTimestampFrom().getOperation().equals(ComparisonOperation.GREATER)) {
+
+		ComparisonOperation operation = filter.getStartTimestampFrom() == null ? ComparisonOperation.GREATER : filter.getStartTimestampFrom().getOperation();
+		if (operation.equals(ComparisonOperation.GREATER)) {
 			newFrom = FilterForGreater.forGreater(actualFrom.minusMillis(duration));
 		} else {
 			newFrom = FilterForGreater.forGreaterOrEquals(actualFrom.minusMillis(duration));
@@ -181,7 +184,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 				filter.getLimit(),
 				filter.getOrder());
 	}
-	
+
 	private CassandraTestEventFilter createNextFilter(CassandraTestEventFilter prevFilter, Integer updatedLimit) {
 
 		PageInfo prevPage = book.getPage(new PageId(book.getId(), prevFilter.getPage()));
@@ -206,17 +209,17 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 				updatedLimit,
 				prevFilter.getOrder());
 	}
-	
-	
+
+
 	private String getParentIdString(TestEventFilter filter) {
 
 		if (filter.isRoot())
 			return "";
-		
+
 		StoredTestEventId parentId = filter.getParentId();
 		if (parentId != null)
 			return parentId.toString();
-		
+
 		return null;
 	}
 }

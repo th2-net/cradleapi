@@ -49,7 +49,8 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	private final FilterForLess<Instant> messageTimeTo;
 	private final FilterForAny<Long> sequence;
 
-	private final Integer limit;
+	/** limit must be strictly positive ( limit greater than 0 ) */
+	private final int limit;
 
 	private final Order order;
 

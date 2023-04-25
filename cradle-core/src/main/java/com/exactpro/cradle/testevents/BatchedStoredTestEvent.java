@@ -18,9 +18,7 @@ package com.exactpro.cradle.testevents;
 
 import java.io.Serializable;
 import java.time.Instant;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Set;
+import java.util.*;
 
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.messages.StoredMessageId;
@@ -150,5 +148,41 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 	public Collection<BatchedStoredTestEvent> getChildren()
 	{
 		return batch.getChildren(getId());
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof BatchedStoredTestEvent)) return false;
+		BatchedStoredTestEvent that = (BatchedStoredTestEvent) o;
+		return isSuccess() == that.isSuccess()
+				&& Objects.equals(getId(), that.getId())
+				&& Objects.equals(getName(), that.getName())
+				&& Objects.equals(getType(), that.getType())
+				&& Objects.equals(getParentId(), that.getParentId())
+				&& Objects.equals(getEndTimestamp(), that.getEndTimestamp())
+				&& Arrays.equals(getContent(), that.getContent())
+				&& Objects.equals(getPageId(), that.getPageId());
+	}
+
+	@Override
+	public int hashCode() {
+		int result = Objects.hash(getId(), getName(), getType(), getParentId(), getEndTimestamp(), isSuccess(), getPageId());
+		result = 31 * result + Arrays.hashCode(getContent());
+		return result;
+	}
+
+	@Override
+	public String toString() {
+		return "BatchedStoredTestEvent{" +
+				"id=" + id +
+				", name='" + name + '\'' +
+				", type='" + type + '\'' +
+				", parentId=" + parentId +
+				", endTimestamp=" + endTimestamp +
+				", success=" + success +
+				", content=" + Arrays.toString(content) +
+				", pageId=" + pageId +
+				'}';
 	}
 }

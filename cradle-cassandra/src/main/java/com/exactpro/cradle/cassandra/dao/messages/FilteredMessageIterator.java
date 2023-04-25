@@ -31,7 +31,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 public class FilteredMessageIterator extends MappedIterator<StoredMessageBatch, StoredMessage>
 {
