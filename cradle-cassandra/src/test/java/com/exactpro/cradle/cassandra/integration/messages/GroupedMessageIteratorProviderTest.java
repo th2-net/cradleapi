@@ -49,6 +49,8 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
     private static final String FIRST_SESSION_ALIAS = "test_session_alias_first";
     private static final String SECOND_SESSION_ALIAS = "test_session_alias_second";
 
+    private final long storeActionRejectionThreshold = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
+
     private List<GroupedMessageBatchToStore> data;
     private List<StoredGroupedMessageBatch> storedData;
     private CassandraOperators operators;
@@ -70,15 +72,15 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
     @Override
     protected void generateData () {
         try {
-            GroupedMessageBatchToStore b1 =  new GroupedMessageBatchToStore(GROUP_NAME, 1024);
+            GroupedMessageBatchToStore b1 =  new GroupedMessageBatchToStore(GROUP_NAME, 1024, storeActionRejectionThreshold);
             b1.addMessage(generateMessage(FIRST_SESSION_ALIAS, Direction.FIRST, 5, 1L));
             b1.addMessage(generateMessage(SECOND_SESSION_ALIAS, Direction.SECOND, 9, 2L));
 
-            GroupedMessageBatchToStore b2 =  new GroupedMessageBatchToStore(GROUP_NAME, 1024);
+            GroupedMessageBatchToStore b2 =  new GroupedMessageBatchToStore(GROUP_NAME, 1024, storeActionRejectionThreshold);
             b2.addMessage(generateMessage(FIRST_SESSION_ALIAS, Direction.FIRST, 15, 3L));
             b2.addMessage(generateMessage(SECOND_SESSION_ALIAS, Direction.SECOND, 19, 4L));
 
-            GroupedMessageBatchToStore b3 =  new GroupedMessageBatchToStore(GROUP_NAME, 1024);
+            GroupedMessageBatchToStore b3 =  new GroupedMessageBatchToStore(GROUP_NAME, 1024, storeActionRejectionThreshold);
             b3.addMessage(generateMessage(FIRST_SESSION_ALIAS, Direction.FIRST, 25, 5L));
             b3.addMessage(generateMessage(SECOND_SESSION_ALIAS, Direction.SECOND, 25, 6L));
 

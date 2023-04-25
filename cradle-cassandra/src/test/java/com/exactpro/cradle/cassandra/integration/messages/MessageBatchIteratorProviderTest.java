@@ -16,6 +16,7 @@
 package com.exactpro.cradle.cassandra.integration.messages;
 
 import com.exactpro.cradle.BookInfo;
+import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchesIteratorProvider;
 import com.exactpro.cradle.cassandra.integration.BaseCradleCassandraTest;
@@ -47,6 +48,8 @@ public class MessageBatchIteratorProviderTest extends BaseCradleCassandraTest {
     private static final String GROUP_NAME = "test_group";
     private static final String FIRST_SESSION_ALIAS = "test_session_alias";
     private static final String SECOND_SESSION_ALIAS = "test_session_alias";
+
+    private final long storeActionRejectionThreshold = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
 
     private List<GroupedMessageBatchToStore> data;
     private Map<MessageBatchIteratorProviderTest.StoredMessageKey, List<StoredMessageBatch>> storedData;
@@ -109,19 +112,19 @@ public class MessageBatchIteratorProviderTest extends BaseCradleCassandraTest {
          in storing usual messages as well
          */
         try {
-            GroupedMessageBatchToStore b1 =  new GroupedMessageBatchToStore(GROUP_NAME, 1024);
+            GroupedMessageBatchToStore b1 =  new GroupedMessageBatchToStore(GROUP_NAME, 1024, storeActionRejectionThreshold);
             b1.addMessage(generateMessage(FIRST_SESSION_ALIAS, Direction.FIRST, 5, 1L));
             b1.addMessage(generateMessage(FIRST_SESSION_ALIAS, Direction.FIRST, 6, 2L));
             b1.addMessage(generateMessage(SECOND_SESSION_ALIAS, Direction.SECOND, 7, 3L));
             b1.addMessage(generateMessage(SECOND_SESSION_ALIAS, Direction.SECOND, 8, 4L));
 
-            GroupedMessageBatchToStore b2 =  new GroupedMessageBatchToStore(GROUP_NAME, 1024);
+            GroupedMessageBatchToStore b2 =  new GroupedMessageBatchToStore(GROUP_NAME, 1024, storeActionRejectionThreshold);
             b2.addMessage(generateMessage(FIRST_SESSION_ALIAS, Direction.FIRST, 12, 5L));
             b2.addMessage(generateMessage(SECOND_SESSION_ALIAS, Direction.SECOND, 13, 6L));
             b2.addMessage(generateMessage(FIRST_SESSION_ALIAS, Direction.FIRST, 14, 7L));
             b2.addMessage(generateMessage(SECOND_SESSION_ALIAS, Direction.SECOND, 15, 8L));
 
-            GroupedMessageBatchToStore b3 =  new GroupedMessageBatchToStore(GROUP_NAME, 1024);
+            GroupedMessageBatchToStore b3 =  new GroupedMessageBatchToStore(GROUP_NAME, 1024, storeActionRejectionThreshold);
             b3.addMessage(generateMessage(FIRST_SESSION_ALIAS, Direction.FIRST, 25, 9L));
             b3.addMessage(generateMessage(SECOND_SESSION_ALIAS, Direction.SECOND, 26, 10L));
             b3.addMessage(generateMessage(FIRST_SESSION_ALIAS, Direction.FIRST, 27, 11L));

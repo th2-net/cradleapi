@@ -18,6 +18,7 @@ package com.exactpro.cradle.cassandra.integration;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.exactpro.cradle.cassandra.CassandraConsistencyLevel;
 import com.exactpro.cradle.cassandra.CassandraCradleManager;
 import com.exactpro.cradle.cassandra.CassandraCradleStorage;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
@@ -93,8 +94,8 @@ public class CassandraCradleHelper {
         try {
             storageSettings = new CassandraStorageSettings(
                     TIMEOUT,
-                    ConsistencyLevel.ONE,
-                    ConsistencyLevel.ONE);
+                    CassandraConsistencyLevel.ONE,
+                    CassandraConsistencyLevel.ONE);
             storageSettings.setResultPageSize(RESULT_PAGE_SIZE);
             storageSettings.setKeyspace(KEYSPACE_NAME);
             storageSettings.setCounterPersistenceInterval(PERSISTENCE_INTERVAL);

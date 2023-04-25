@@ -16,6 +16,7 @@
 package com.exactpro.cradle.cassandra.integration.testevents;
 
 import com.exactpro.cradle.BookInfo;
+import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventIteratorProvider;
 import com.exactpro.cradle.cassandra.integration.BaseCradleCassandraTest;
@@ -65,6 +66,7 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
     private final long EVENT_BATCH_DURATION = 24000L;
     private final long EVENTS_IN_BATCH = 4;
 
+    private final long storeActionRejectionThreshold = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
     private final List<TestEventToStore> data = new ArrayList<>();
     private Map<String, List<StoredTestEvent>> storedData;
     private CassandraOperators operators;
@@ -155,14 +157,14 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
     private TestEventToStore generateTestEvent (String scope, Instant start, long batchDuration, long eventDuration) throws CradleStorageException {
         StoredTestEventId parentId = new StoredTestEventId(bookId, scope, start, UUID.randomUUID().toString());
         StoredTestEventId id = new StoredTestEventId(bookId, scope, start, UUID.randomUUID().toString());
-        TestEventBatchToStore batch = new TestEventBatchToStoreBuilder(100*1024)
+        TestEventBatchToStore batch = new TestEventBatchToStoreBuilder(100*1024, storeActionRejectionThreshold)
                 .name(EVENT_NAME)
                 .id(id)
                 .parentId(parentId)
                 .build();
 
         for (long i = 0; i < batchDuration; i += eventDuration) {
-            batch.addTestEvent(new TestEventSingleToStoreBuilder()
+            batch.addTestEvent(new TestEventSingleToStoreBuilder(storeActionRejectionThreshold)
                     .content(CONTENT.getBytes(StandardCharsets.UTF_8))
                     .id(bookId, scope, start.plusMillis(i), UUID.randomUUID().toString())
                     .endTimestamp(start.plusMillis(i + eventDuration))
