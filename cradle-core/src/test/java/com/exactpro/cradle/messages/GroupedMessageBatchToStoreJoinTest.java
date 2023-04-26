@@ -17,6 +17,7 @@
 package com.exactpro.cradle.messages;
 
 import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -46,7 +47,7 @@ public class GroupedMessageBatchToStoreJoinTest {
         assertEquals(batch.getBatchSize(), emptyBatch.getBatchSize());
         assertEquals(emptyBatch.getGroup(), groupName);
     }
-    
+
     @Test(dataProvider = "full batches")
     public void testJoinEmptyBatchWithFull(GroupedMessageBatchToStore other) throws CradleStorageException {
         GroupedMessageBatchToStore emptyBatch = createEmptyBatch(groupName);
@@ -56,11 +57,11 @@ public class GroupedMessageBatchToStoreJoinTest {
         assertEquals(emptyBatch.getGroup(), groupName);
     }
 
-    
+
     @DataProvider(name = "full batches")
     public Object[][] fullBatches() throws CradleStorageException {
-        return new Object[][] {
-                { createFullBySizeBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, groupName, protocol) }
+        return new Object[][]{
+                {createFullBySizeBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, groupName, protocol)}
         };
     }
 
@@ -79,8 +80,8 @@ public class GroupedMessageBatchToStoreJoinTest {
     @DataProvider(name = "full batches matrix")
     public Object[][] fullBatchesMatrix() throws CradleStorageException {
         GroupedMessageBatchToStore fullBySizeBatch = createFullBySizeBatch(bookId, "test", 0, Direction.FIRST, Instant.EPOCH, groupName, protocol);
-        return new Object[][] {
-                { fullBySizeBatch, fullBySizeBatch }
+        return new Object[][]{
+                {fullBySizeBatch, fullBySizeBatch}
         };
     }
 
@@ -104,7 +105,7 @@ public class GroupedMessageBatchToStoreJoinTest {
 
     @Test
     public void testAddBatchMoreThanLimitBySizeToEmptyBatch() throws CradleStorageException {
-        GroupedMessageBatchToStore empty = new GroupedMessageBatchToStore(groupName, MAX_SIZE / 4);
+        GroupedMessageBatchToStore empty = new GroupedMessageBatchToStore(groupName, MAX_SIZE / 4, new CoreStorageSettings().calculateStoreActionRejectionThreshold());
         GroupedMessageBatchToStore second = createBatch(bookId, "test", 5, Direction.FIRST, Instant.EPOCH, 1, MAX_SIZE / 2, groupName, protocol);
 
         long sizeBefore = empty.getBatchSize();
@@ -125,16 +126,16 @@ public class GroupedMessageBatchToStoreJoinTest {
         assertEquals(first.getBatchSize(), getBatchSize(first));
         assertEquals(first.getGroup(), groupName);
     }
-    
-    
+
+
     @Test(
-        expectedExceptions = CradleStorageException.class,
-        expectedExceptionsMessageRegExp = "Batch BookId-s differ.*"
+            expectedExceptions = CradleStorageException.class,
+            expectedExceptionsMessageRegExp = "Batch BookId-s differ.*"
     )
     public void testThrowExceptionOnDifferentBooks() throws CradleStorageException {
         GroupedMessageBatchToStore first = createBatch(bookId, "testA", 0, Direction.FIRST, Instant.EPOCH, 5, 5, groupName, protocol);
         GroupedMessageBatchToStore second =
-                createBatch(new BookId(bookId.getName()+"2"), "testA", 5, Direction.FIRST, Instant.EPOCH, 5, 5, groupName, protocol);
+                createBatch(new BookId(bookId.getName() + "2"), "testA", 5, Direction.FIRST, Instant.EPOCH, 5, 5, groupName, protocol);
 
         first.addBatch(second);
     }
@@ -157,7 +158,7 @@ public class GroupedMessageBatchToStoreJoinTest {
 
         first.addBatch(second);
     }
-    
+
     @Test(
             expectedExceptions = CradleStorageException.class,
             expectedExceptionsMessageRegExp = "Batches intersect by time.*"
@@ -181,7 +182,7 @@ public class GroupedMessageBatchToStoreJoinTest {
     }
 
     private static GroupedMessageBatchToStore createBatch(BookId bookId, String sessionAlias, long startSequence, Direction direction, Instant startTimestamp,
-            int messageCount, int contentSizePerMessage, String group, String protocol) throws CradleStorageException {
+                                                          int messageCount, int contentSizePerMessage, String group, String protocol) throws CradleStorageException {
         GroupedMessageBatchToStore batch = createEmptyBatch(group);
         long begin = startSequence;
         Instant timestamp = startTimestamp;
@@ -197,30 +198,30 @@ public class GroupedMessageBatchToStoreJoinTest {
                 toStore = toStore.content(new byte[contentSizePerMessage]);
             }
             batch.addMessage(toStore.build());
-            
+
             timestamp = timestamp.plusMillis(1);
         }
         return batch;
     }
 
     private static GroupedMessageBatchToStore createEmptyBatch(String group) {
-        return new GroupedMessageBatchToStore(group, MAX_SIZE);
+        return new GroupedMessageBatchToStore(group, MAX_SIZE, new CoreStorageSettings().calculateStoreActionRejectionThreshold());
     }
 
     static GroupedMessageBatchToStore createFullBySizeBatch(BookId bookId,
-            String sessionAlias, long startSequence, Direction direction, Instant startTimestamp, String group, String protocol) throws CradleStorageException {
+                                                            String sessionAlias, long startSequence, Direction direction, Instant startTimestamp, String group, String protocol) throws CradleStorageException {
         return createBatch(bookId,
                 sessionAlias,
                 startSequence,
                 direction,
                 startTimestamp,
                 1,
-                MAX_SIZE - ( MessagesSizeCalculator.MESSAGE_BATCH_CONST_VALUE +
-                                MessagesSizeCalculator.MESSAGE_SIZE_CONST_VALUE +
-                                MessagesSizeCalculator.MESSAGE_LENGTH_IN_BATCH +
-                                MessagesSizeCalculator.calculateStringSize(sessionAlias) +
-                                MessagesSizeCalculator.calculateStringSize(protocol) +
-                                MessagesSizeCalculator.calculateStringSize(direction.getLabel())),
+                MAX_SIZE - (MessagesSizeCalculator.MESSAGE_BATCH_CONST_VALUE +
+                        MessagesSizeCalculator.MESSAGE_SIZE_CONST_VALUE +
+                        MessagesSizeCalculator.MESSAGE_LENGTH_IN_BATCH +
+                        MessagesSizeCalculator.calculateStringSize(sessionAlias) +
+                        MessagesSizeCalculator.calculateStringSize(protocol) +
+                        MessagesSizeCalculator.calculateStringSize(direction.getLabel())),
                 group,
                 protocol);
     }

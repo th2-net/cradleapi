@@ -17,6 +17,7 @@
 package com.exactpro.cradle.cassandra;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.cassandra.connection.NetworkTopologyStrategy;
 import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
 import com.exactpro.cradle.utils.CompressionType;
@@ -27,8 +28,9 @@ import static com.exactpro.cradle.CradleStorage.DEFAULT_COMPOSING_SERVICE_THREAD
 import static com.exactpro.cradle.CradleStorage.DEFAULT_MAX_MESSAGE_BATCH_SIZE;
 import static com.exactpro.cradle.CradleStorage.DEFAULT_MAX_TEST_EVENT_BATCH_SIZE;
 
+@SuppressWarnings("unused")
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CassandraStorageSettings {
+public class CassandraStorageSettings extends CoreStorageSettings {
     public static final String SCHEMA_VERSION = "5.3.0";
 
     public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
@@ -46,7 +48,6 @@ public class CassandraStorageSettings {
     public static final int DEFAULT_EVENT_BATCH_DURATION_CACHE_SIZE = 5_000;
     public static final int DEFAULT_PAGE_GROUPS_CACHE_SIZE = 10_000;
     public static final int DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS = 1000;
-    public static final long DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS = 60000;
     public static final long DEFAULT_EVENT_BATCH_DURATION_MILLIS = 5_000;
     public static final long DEFAULT_TIMEOUT = 5000;
     public static final boolean DEFAULT_STORE_INDIVIDUAL_MESSAGE_SESSIONS = true;
@@ -83,22 +84,26 @@ public class CassandraStorageSettings {
     private SelectExecutionPolicy multiRowResultExecutionPolicy;
     private SelectExecutionPolicy singleRowResultExecutionPolicy;
 
-    private long bookRefreshIntervalMillis = DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS;
     private long eventBatchDurationMillis = DEFAULT_EVENT_BATCH_DURATION_MILLIS;
 
     private boolean storeIndividualMessageSessions = DEFAULT_STORE_INDIVIDUAL_MESSAGE_SESSIONS;
     private CompressionType compressionType = DEFAULT_COMPRESSION_TYPE;
 
-    public CassandraStorageSettings() { }
+    public CassandraStorageSettings() {
+    }
 
-    public CassandraStorageSettings(long timeout,
-                                    ConsistencyLevel writeConsistencyLevel,
-                                    ConsistencyLevel readConsistencyLevel) {
+    public CassandraStorageSettings(
+            long timeout,
+            ConsistencyLevel writeConsistencyLevel,
+            ConsistencyLevel readConsistencyLevel
+    ) {
         this(null, timeout, writeConsistencyLevel, readConsistencyLevel);
     }
 
-    public CassandraStorageSettings(NetworkTopologyStrategy networkTopologyStrategy, long timeout,
-                                    ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel) {
+    public CassandraStorageSettings(
+            NetworkTopologyStrategy networkTopologyStrategy, long timeout,
+            ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel
+    ) {
         this();
         this.networkTopologyStrategy = networkTopologyStrategy;
         this.timeout = timeout;
@@ -330,7 +335,8 @@ public class CassandraStorageSettings {
     }
 
     public void setMultiRowResultExecutionPolicy(
-            SelectExecutionPolicy multiRowResultExecutionPolicy) {
+            SelectExecutionPolicy multiRowResultExecutionPolicy
+    ) {
         this.multiRowResultExecutionPolicy = multiRowResultExecutionPolicy;
     }
 
@@ -339,16 +345,9 @@ public class CassandraStorageSettings {
     }
 
     public void setSingleRowResultExecutionPolicy(
-            SelectExecutionPolicy singleRowResultExecutionPolicy) {
+            SelectExecutionPolicy singleRowResultExecutionPolicy
+    ) {
         this.singleRowResultExecutionPolicy = singleRowResultExecutionPolicy;
-    }
-
-    public long getBookRefreshIntervalMillis() {
-        return bookRefreshIntervalMillis;
-    }
-
-    public void setBookRefreshIntervalMillis(long bookRefreshIntervalMillis) {
-        this.bookRefreshIntervalMillis = bookRefreshIntervalMillis;
     }
 
     public long getEventBatchDurationMillis() {

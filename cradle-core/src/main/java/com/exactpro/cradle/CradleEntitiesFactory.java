@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,62 +18,60 @@ package com.exactpro.cradle;
 
 import com.exactpro.cradle.messages.GroupedMessageBatchToStore;
 import com.exactpro.cradle.messages.MessageBatchToStore;
-import com.exactpro.cradle.messages.MessageToStore;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
 import com.exactpro.cradle.testevents.TestEventBatchToStoreBuilder;
+import com.exactpro.cradle.testevents.TestEventSingleToStoreBuilder;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 /**
  * Factory to create entities to be used with {@link CradleStorage}. Created objects will conform with particular CradleStorage settings.
  */
-public class CradleEntitiesFactory
-{
-	private final int maxMessageBatchSize,
-			maxTestEventBatchSize;
-	
-	/**
-	 * Creates new factory for entities to be used with {@link CradleStorage}
-	 * @param maxMessageBatchSize maximum size of messages (in bytes) that {@link MessageBatchToStore} can hold
-	 * @param maxTestEventBatchSize maximum size of test events (in bytes) that {@link TestEventBatchToStore} can hold
-	 */
-	public CradleEntitiesFactory(int maxMessageBatchSize, int maxTestEventBatchSize)
-	{
-		this.maxMessageBatchSize = maxMessageBatchSize;
-		this.maxTestEventBatchSize = maxTestEventBatchSize;
-	}
-	
+public class CradleEntitiesFactory {
+    private final int maxMessageBatchSize,
+            maxTestEventBatchSize;
 
-	@Deprecated
-	public MessageBatchToStore messageBatch()
-	{
-		return new MessageBatchToStore(maxMessageBatchSize);
-	}
+    private final long storeActionRejectionThreshold;
 
-	public GroupedMessageBatchToStore groupedMessageBatch(String group) {
-		return new GroupedMessageBatchToStore(group, maxMessageBatchSize);
-	}
-	
-	public MessageBatchToStore singletonMessageBatch(MessageToStore message) throws CradleStorageException
-	{
-		return MessageBatchToStore.singleton(message, maxMessageBatchSize);
-	}
-	
-	public TestEventBatchToStore testEventBatch(StoredTestEventId id, String name, StoredTestEventId parentId) throws CradleStorageException
-	{
-		return new TestEventBatchToStore(id, name, parentId, maxTestEventBatchSize);
-	}
-	
-	public TestEventBatchToStoreBuilder testEventBatchBuilder()
-	{
-		return new TestEventBatchToStoreBuilder(maxTestEventBatchSize);
-	}
+    /**
+     * Creates new factory for entities to be used with {@link CradleStorage}
+     *
+     * @param maxMessageBatchSize   maximum size of messages (in bytes) that {@link MessageBatchToStore} can hold
+     * @param maxTestEventBatchSize maximum size of test events (in bytes) that {@link TestEventBatchToStore} can hold
+     */
+    public CradleEntitiesFactory(int maxMessageBatchSize, int maxTestEventBatchSize, long storeActionRejectionThreshold) {
+        this.maxMessageBatchSize = maxMessageBatchSize;
+        this.maxTestEventBatchSize = maxTestEventBatchSize;
+        this.storeActionRejectionThreshold = storeActionRejectionThreshold;
+    }
 
-	public int getMaxMessageBatchSize() {
-		return maxMessageBatchSize;
-	}
 
-	public int getMaxTestEventBatchSize() {
-		return maxTestEventBatchSize;
-	}
+    @Deprecated
+    public MessageBatchToStore messageBatch() {
+        return new MessageBatchToStore(maxMessageBatchSize, storeActionRejectionThreshold);
+    }
+
+    public GroupedMessageBatchToStore groupedMessageBatch(String group) {
+        return new GroupedMessageBatchToStore(group, maxMessageBatchSize, storeActionRejectionThreshold);
+    }
+
+    public TestEventBatchToStore testEventBatch(StoredTestEventId id, String name, StoredTestEventId parentId) throws CradleStorageException {
+        return new TestEventBatchToStore(id, name, parentId, maxTestEventBatchSize, storeActionRejectionThreshold);
+    }
+
+    public TestEventBatchToStoreBuilder testEventBatchBuilder() {
+        return new TestEventBatchToStoreBuilder(maxTestEventBatchSize, storeActionRejectionThreshold);
+    }
+
+    public TestEventSingleToStoreBuilder testEventBuilder() {
+        return new TestEventSingleToStoreBuilder(storeActionRejectionThreshold);
+    }
+
+    public int getMaxMessageBatchSize() {
+        return maxMessageBatchSize;
+    }
+
+    public int getMaxTestEventBatchSize() {
+        return maxTestEventBatchSize;
+    }
 }

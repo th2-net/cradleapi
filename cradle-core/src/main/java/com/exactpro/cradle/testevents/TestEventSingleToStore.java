@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,80 +16,69 @@
 
 package com.exactpro.cradle.testevents;
 
-import java.time.Instant;
-import java.util.Set;
-
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
 
+import java.time.Instant;
+import java.util.Set;
+
 /**
  * Holds information about single (individual) test event prepared to be stored in Cradle
  */
-public class TestEventSingleToStore extends TestEventToStore implements TestEventSingle
-{
-	private Set<StoredMessageId> messages;
-	private byte[] content;
-	
-	public TestEventSingleToStore(StoredTestEventId id, String name, StoredTestEventId parentId) throws CradleStorageException
-	{
-		super(id, name, parentId);
-	}
-	
-	
-	public static TestEventSingleToStoreBuilder builder()
-	{
-		return new TestEventSingleToStoreBuilder();
-	}
-	
-	
-	@Override
-	public Set<StoredMessageId> getMessages()
-	{
-		return messages;
-	}
-	
-	@Override
-	public byte[] getContent()
-	{
-		return content;
-	}
-	
-	public void setContent(byte[] content)
-	{
-		this.content = content;
-	}
-	
-	
-	public void setEndTimestamp(Instant endTimestamp) throws CradleStorageException
-	{
-		this.endTimestamp = endTimestamp;
-		TestEventUtils.validateTestEventEndDate(this);
-	}
-	
-	public void setSuccess(boolean success)
-	{
-		this.success = success;
-	}
-	
-	public void setMessages(Set<StoredMessageId> messages) throws CradleStorageException
-	{
-		validateAttachedMessageIds(messages);
-		this.messages = messages;
-	}
+public class TestEventSingleToStore extends TestEventToStore implements TestEventSingle {
+    private Set<StoredMessageId> messages;
+    private byte[] content;
 
-	private void validateAttachedMessageIds(Set<StoredMessageId> ids) throws CradleStorageException
-	{
-		if (ids == null)
-			return;
-		BookId eventBookId = getId().getBookId();
-		for (StoredMessageId id : ids)
-		{
-			BookId messageBookId = id.getBookId();
-			if (!eventBookId.equals(messageBookId))
-				throw new CradleStorageException("Book of message (" +
-						messageBookId + ") differs from the event book (" + eventBookId + ")");
-		}
-	}
+    public TestEventSingleToStore(StoredTestEventId id, String name, StoredTestEventId parentId, long storeActionRejectionThreshold) throws CradleStorageException {
+        super(id, name, parentId, storeActionRejectionThreshold);
+    }
+
+
+    public static TestEventSingleToStoreBuilder builder(long storeActionRejectionThreshold) {
+        return new TestEventSingleToStoreBuilder(storeActionRejectionThreshold);
+    }
+
+
+    @Override
+    public Set<StoredMessageId> getMessages() {
+        return messages;
+    }
+
+    @Override
+    public byte[] getContent() {
+        return content;
+    }
+
+    public void setContent(byte[] content) {
+        this.content = content;
+    }
+
+
+    public void setEndTimestamp(Instant endTimestamp) throws CradleStorageException {
+        this.endTimestamp = endTimestamp;
+        TestEventUtils.validateTestEventEndDate(this);
+    }
+
+    public void setSuccess(boolean success) {
+        this.success = success;
+    }
+
+    public void setMessages(Set<StoredMessageId> messages) throws CradleStorageException {
+        validateAttachedMessageIds(messages);
+        this.messages = messages;
+    }
+
+    private void validateAttachedMessageIds(Set<StoredMessageId> ids) throws CradleStorageException {
+        if (ids == null)
+            return;
+        BookId eventBookId = getId().getBookId();
+        for (StoredMessageId id : ids) {
+            BookId messageBookId = id.getBookId();
+            if (!eventBookId.equals(messageBookId))
+                throw new CradleStorageException("Book of message (" +
+                        messageBookId + ") differs from the event book (" + eventBookId + ")");
+        }
+    }
 }

@@ -86,7 +86,9 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	private final CassandraConnection connection;
 	private final CassandraStorageSettings settings;
-	
+
+	private final long pageActionRejectionThreshold;
+
 	private CassandraOperators operators;
 	private QueryExecutor exec;
 	private SelectQueryExecutor selectExecutor;
@@ -106,9 +108,10 @@ public class CassandraCradleStorage extends CradleStorage
 	public CassandraCradleStorage(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings, 
 			ExecutorService composingService) throws CradleStorageException
 	{
-		super(composingService, storageSettings.getComposingServiceThreads(), storageSettings.getMaxMessageBatchSize(), storageSettings.getMaxTestEventBatchSize());
+		super(composingService, storageSettings.getComposingServiceThreads(), storageSettings.getMaxMessageBatchSize(), storageSettings.getMaxTestEventBatchSize(), storageSettings);
 		this.connection = new CassandraConnection(connectionSettings, storageSettings.getTimeout());
 		this.settings = storageSettings;
+		this.pageActionRejectionThreshold = settings.calculatePageActionRejectionThreshold();
 
 		this.multiRowResultExecPolicy = settings.getMultiRowResultExecutionPolicy();
 		if (this.multiRowResultExecPolicy == null) {
@@ -985,12 +988,13 @@ public class CassandraCradleStorage extends CradleStorage
 			throw new CradleStorageException(String.format("Inconsistent data for page \"%s\" in book %s", oldPageName, bookId.getName()));
 
 		PageInfo pageInfo = pageEntity.toPageInfo();
-		Instant now = Instant.now();
-		if (pageInfo.getStarted().isBefore(now)) {
+		Instant nowPlusThreshold = Instant.now().plusMillis(pageActionRejectionThreshold);
+		if (pageInfo.getStarted().isBefore(nowPlusThreshold)) {
 			throw new CradleStorageException(
-					String.format("You can only rename pages which start in future: pageStart - %s, now - %s",
+					String.format("You can only rename pages which start more than %d ms in future: pageStart - %s, now + threshold - %s",
+							pageActionRejectionThreshold,
 							pageInfo.getStarted(),
-							now));
+							nowPlusThreshold));
 		}
 
 		PageEntity updatedPageEntity = new PageEntity(pageEntity.getBook(),
@@ -1214,7 +1218,7 @@ public class CassandraCradleStorage extends CradleStorage
 		PageOperator pageOperator = operators.getPageOperator();
 		//remove page
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(pageInfo.getStarted());
-		if (pageInfo.getStarted().isAfter(Instant.now())) {
+		if (pageInfo.getStarted().isAfter(Instant.now().plusMillis(pageActionRejectionThreshold))) {
 			operators.getPageOperator().remove(book, ldt.toLocalDate(), ldt.toLocalTime(), writeAttrs);
 			/*
 				New last page might have non-null end,

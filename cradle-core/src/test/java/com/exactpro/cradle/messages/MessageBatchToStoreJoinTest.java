@@ -17,6 +17,7 @@
 package com.exactpro.cradle.messages;
 
 import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -206,7 +207,7 @@ public class MessageBatchToStoreJoinTest {
     }
 
     private static MessageBatchToStore createEmptyBatch() {
-        return new MessageBatchToStore(MAX_SIZE);
+        return new MessageBatchToStore(MAX_SIZE, new CoreStorageSettings().calculateStoreActionRejectionThreshold());
     }
 
     static MessageBatchToStore createFullBySizeBatch(

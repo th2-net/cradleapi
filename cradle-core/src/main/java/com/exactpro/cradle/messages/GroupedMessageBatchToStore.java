@@ -35,11 +35,14 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
     private final Map<SessionKey, StoredMessage> firstMessages;
     private final Map<SessionKey, StoredMessage> lastMessages;
 
-    public GroupedMessageBatchToStore(String group, int maxBatchSize) {
+    private final long storeActionRejectionThreshold;
+
+    public GroupedMessageBatchToStore(String group, int maxBatchSize, long storeActionRejectionThreshold) {
         super(group);
         this.maxBatchSize = maxBatchSize;
         this.firstMessages = new HashMap<>();
         this.lastMessages = new HashMap<>();
+        this.storeActionRejectionThreshold = storeActionRejectionThreshold;
     }
 
     /**
@@ -92,10 +95,10 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
         // Other checks have already been done when the MessageToStore was created
         SessionKey sessionKey = new SessionKey(message.getSessionAlias(), message.getDirection());
         long now = System.currentTimeMillis() / 1000;
-        if (message.getTimestamp().getEpochSecond() > now)
+        if (message.getTimestamp().getEpochSecond() > now + storeActionRejectionThreshold)
             throw new CradleStorageException(
                     "Message timestamp (" + TimeUtils.toLocalTimestamp(message.getTimestamp()) +
-                            ") is greater than current timestamp (" + TimeUtils.toLocalTimestamp(Instant.ofEpochSecond(now)) + ")");
+                            ") is greater than current timestamp ( " + TimeUtils.toLocalTimestamp(Instant.ofEpochSecond(now)) + " ) plus rejectionThreshold interval (" + storeActionRejectionThreshold + ")ms");
 
         long messageSeq;
         if (bookId == null) {        // first message in the batch
@@ -103,7 +106,7 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
             if (bookId == null)
                 throw new CradleStorageException("BookId for the message not set (" + message.getId() + ")");
             messageSeq = message.getSequence();
-            verifySequence(messageSeq);
+
         } else {
             if (!bookId.equals(message.getBookId()))
                 throw new CradleStorageException("Batch contains messages of book '" + bookId + "', "
@@ -139,7 +142,7 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
                     messageSeq = lastMessage.getSequence() + 1;
             } else {
                 messageSeq = message.getSequence();
-                verifySequence(messageSeq);
+
             }
         }
 
@@ -152,10 +155,6 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
         return msg;
     }
 
-    private static void verifySequence(long messageSeq) throws CradleStorageException {
-        if (messageSeq < 0)
-            throw new CradleStorageException("Sequence number for first message in batch cannot be negative");
-    }
 
     /**
      * @param batch the batch to add to the current one.
@@ -214,7 +213,7 @@ public class GroupedMessageBatchToStore extends StoredGroupedMessageBatch {
         Map<SessionKey, MessageBatchToStore> batches = new HashMap<>();
         for (StoredMessage message : getMessages()) {
             SessionKey key = new SessionKey(message.getSessionAlias(), message.getDirection());
-            MessageBatchToStore batch = batches.computeIfAbsent(key, k -> new MessageBatchToStore(maxBatchSize));
+            MessageBatchToStore batch = batches.computeIfAbsent(key, k -> new MessageBatchToStore(maxBatchSize, storeActionRejectionThreshold));
 
             StoredMessageId msgId = new StoredMessageId(
                     message.getBookId(),
