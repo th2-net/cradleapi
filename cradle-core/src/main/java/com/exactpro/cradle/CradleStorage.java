@@ -118,7 +118,6 @@ public abstract class CradleStorage {
                 new CoreStorageSettings());
     }
 
-
     protected abstract void doInit(boolean prepareStorage) throws CradleStorageException;
 
     protected abstract BookCache getBookCache();
@@ -1504,7 +1503,8 @@ public abstract class CradleStorage {
         PageInfo lastPage = book.getLastPage();
         if (lastPage != null)  //If book has any pages, i.e. may have some data
         {
-            Instant nowPlusThreshold = Instant.now().plusMillis(pageActionRejectionThreshold);
+            // TODO: shouldn't we use 'lastPage.getStart()' to validate that new page is not in the past?
+			Instant nowPlusThreshold = Instant.now().plusMillis(pageActionRejectionThreshold);
             Instant firstStart = pages.get(0).getStart();
             if (firstStart.isBefore(nowPlusThreshold))
                 throw new CradleStorageException(String.format("You can only create pages which start more than %d ms in future: First pageStart - %s, now + threshold - %s",
