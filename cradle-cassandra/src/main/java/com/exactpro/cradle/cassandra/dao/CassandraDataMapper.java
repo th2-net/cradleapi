@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import com.exactpro.cradle.cassandra.dao.intervals.converters.IntervalEntityConv
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.messages.converters.*;
 import com.exactpro.cradle.cassandra.dao.statistics.*;
+import com.exactpro.cradle.cassandra.dao.statistics.scopes.ScopeStatisticsEntityConverter;
+import com.exactpro.cradle.cassandra.dao.statistics.scopes.ScopeStatisticsOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.EventBatchMaxDurationOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.PageScopesOperator;
@@ -87,6 +89,8 @@ public interface CassandraDataMapper {
     SessionStatisticsOperator sessionStatisticsOperator(@DaoKeyspace String keyspace, @DaoTable String statisticsTable);
 
     @DaoFactory
+    ScopeStatisticsOperator scopeStatisticsOperator(@DaoKeyspace String keyspace, @DaoTable String statisticsTable);
+    @DaoFactory
     EventBatchMaxDurationOperator eventBatchMaxDurationOperator(@DaoKeyspace String keyspace, @DaoTable String statisticsTable);
 
     @DaoFactory
@@ -118,6 +122,9 @@ public interface CassandraDataMapper {
 
     @DaoFactory
     SessionStatisticsEntityConverter sessionStatisticsEntityConverter();
+
+    @DaoFactory
+    ScopeStatisticsEntityConverter scopeStatisticsEntityConverter();
 
     @DaoFactory
     PageGroupEntityConverter pageGroupEntityConverter();

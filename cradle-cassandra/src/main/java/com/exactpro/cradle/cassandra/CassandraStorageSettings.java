@@ -38,6 +38,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
             DEFAULT_PAGE_SESSION_CACHE_SIZE = 100,
             DEFAULT_PAGE_SCOPES_CACHE_SIZE = 100,
             DEFAULT_SESSION_STATISTICS_CACHE_SIZE = 10_000,
+            DEFAULT_SCOPE_STATISTICS_CACHE_SIZE = 10_000,
             DEFAULT_GROUPS_CACHE_SIZE = 10_000,
             DEFAULT_EVENT_BATCH_DURATION_CACHE_SIZE = 5_000,
             DEFAULT_PAGE_GROUPS_CACHE_SIZE = 10_000,
@@ -65,6 +66,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
             pageSessionsCacheSize,
             pageScopesCacheSize,
             sessionStatisticsCacheSize,
+            scopeStatisticsCacheSize,
             pageGroupsCacheSize,
             groupsCacheSize,
             eventBatchDurationCacheSize,
@@ -109,6 +111,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
 		this.bookRefreshIntervalMillis = DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS;
         this.sessionsCacheSize = DEFAULT_SESSIONS_CACHE_SIZE;
         this.sessionStatisticsCacheSize = DEFAULT_SESSION_STATISTICS_CACHE_SIZE;
+        this.scopeStatisticsCacheSize = DEFAULT_SCOPE_STATISTICS_CACHE_SIZE;
         this.pageGroupsCacheSize = DEFAULT_PAGE_GROUPS_CACHE_SIZE;
         this.groupsCacheSize = DEFAULT_GROUPS_CACHE_SIZE;
         this.eventBatchDurationCacheSize = DEFAULT_EVENT_BATCH_DURATION_CACHE_SIZE;
@@ -141,6 +144,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
         this.pageGroupsCacheSize = settings.getPageGroupsCacheSize();
         this.groupsCacheSize = settings.getGroupsCacheSize();
         this.sessionStatisticsCacheSize = settings.getSessionStatisticsCacheSize();
+        this.scopeStatisticsCacheSize = settings.getScopeStatisticsCacheSize();
         this.counterPersistenceInterval = settings.getCounterPersistenceInterval();
         this.composingServiceThreads = settings.getComposingServiceThreads();
 		this.bookRefreshIntervalMillis = settings.getBookRefreshIntervalMillis();
@@ -265,6 +269,14 @@ public class CassandraStorageSettings extends CoreStorageSettings {
 
     public void setSessionStatisticsCacheSize(int size) {
         this.sessionStatisticsCacheSize = size;
+    }
+
+    public int getScopeStatisticsCacheSize() {
+        return scopeStatisticsCacheSize;
+    }
+
+    public void setScopeStatisticsCacheSize(int scopeStatisticsCacheSize) {
+        this.scopeStatisticsCacheSize = scopeStatisticsCacheSize;
     }
 
     public int getScopesCacheSize() {

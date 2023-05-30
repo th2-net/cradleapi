@@ -23,6 +23,7 @@ import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.EventBatchDurationWorker;
 import com.exactpro.cradle.cassandra.counters.BookStatisticsRecordsCaches;
 import com.exactpro.cradle.cassandra.counters.EntityStatisticsCollector;
+import com.exactpro.cradle.cassandra.counters.ScopeStatisticsCollector;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.cache.CachedPageScope;
 import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
@@ -61,12 +62,15 @@ public class EventsWorker extends Worker
 			.help("Stored test events").labelNames(BOOK_ID, SCOPE).register();
 
 	private final EntityStatisticsCollector entityStatisticsCollector;
+
+	private final ScopeStatisticsCollector scopeStatisticsCollector;
 	private final EventBatchDurationWorker durationWorker;
 
-	public EventsWorker(WorkerSupplies workerSupplies, EntityStatisticsCollector entityStatisticsCollector, EventBatchDurationWorker durationWorker)
+	public EventsWorker(WorkerSupplies workerSupplies, EntityStatisticsCollector entityStatisticsCollector, ScopeStatisticsCollector scopeStatisticsCollector, EventBatchDurationWorker durationWorker)
 	{
 		super(workerSupplies);
 		this.entityStatisticsCollector = entityStatisticsCollector;
+		this.scopeStatisticsCollector = scopeStatisticsCollector;
 		this.durationWorker = durationWorker;
 	}
 
@@ -134,6 +138,7 @@ public class EventsWorker extends Worker
 						}
 
 						entityStatisticsCollector.updateEntityBatchStatistics(pageId.getBookId(), key, meta);
+						scopeStatisticsCollector.updateScopeStatistics(pageId.getBookId(), pageId.getName(), event.getScope(), meta);
 						updateEventWriteMetrics(entity, pageId.getBookId());
 					}, composingService);
 		});

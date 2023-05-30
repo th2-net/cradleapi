@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,11 +29,14 @@ public class BookStatisticsRecordsCaches {
     private final EntityCounterCache entityCounterCache;
     private final SessionRecordCache sessionRecordCache;
 
+    private final ScopeRecordCache scopeRecordCache;
+
     public BookStatisticsRecordsCaches(BookId bookId) {
         this.bookId = bookId;
         messageCounterCache = new MessageCounterCache();
         entityCounterCache = new EntityCounterCache();
         sessionRecordCache = new SessionRecordCache();
+        scopeRecordCache = new ScopeRecordCache();
     }
 
     public BookId getBookId() {
@@ -52,15 +55,21 @@ public class BookStatisticsRecordsCaches {
         return sessionRecordCache;
     }
 
-    public boolean notEmpty() {
-        return !(messageCounterCache.isEmpty() && entityCounterCache.isEmpty() && sessionRecordCache.isEmpty());
+    public ScopeRecordCache getScopeRecordCache() {
+        return scopeRecordCache;
     }
 
-    public interface RecordKey {}
+    public boolean notEmpty() {
+        return !(messageCounterCache.isEmpty() && entityCounterCache.isEmpty() && sessionRecordCache.isEmpty() && scopeRecordCache.isEmpty());
+    }
+
+    public interface RecordKey {
+    }
 
     public static class SessionRecordKey implements RecordKey {
         private final String page;
         private final SessionRecordType recordType;
+
         public SessionRecordKey(String page, SessionRecordType recordType) {
             this.page = page;
             this.recordType = recordType;
@@ -98,11 +107,44 @@ public class BookStatisticsRecordsCaches {
         }
     }
 
+    public static class ScopeRecordKey implements RecordKey {
+        private final String page;
+
+        public ScopeRecordKey(String page) {
+            this.page = page;
+        }
+
+        public String getPage() {
+            return page;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            SessionRecordKey that = (SessionRecordKey) o;
+
+            return (!page.equals(that.page));
+        }
+
+        @Override
+        public int hashCode() {
+            return page.hashCode();
+        }
+
+        @Override
+        public String toString() {
+            return page;
+        }
+    }
+
 
     public static class MessageKey implements RecordKey {
         private final String page;
         private final String sessionAlias;
         private final String direction;
+
         public MessageKey(String page, String sessionAlias, String direction) {
             this.page = page;
             this.sessionAlias = sessionAlias;
@@ -145,12 +187,18 @@ public class BookStatisticsRecordsCaches {
         private final String page;
         private final EntityType entityType;
 
-        public EntityKey(String page, EntityType entityType){
+        public EntityKey(String page, EntityType entityType) {
             this.page = page;
             this.entityType = entityType;
         }
-        public String getPage() { return page; }
-        public EntityType getEntityType() { return entityType; }
+
+        public String getPage() {
+            return page;
+        }
+
+        public EntityType getEntityType() {
+            return entityType;
+        }
 
         @Override
         public boolean equals(Object o) {
@@ -184,8 +232,16 @@ public class BookStatisticsRecordsCaches {
         }
     }
 
+    public static class ScopeRecordCache extends RecordCache<ScopeRecordKey, ScopeList> {
+        public ScopeRecordCache() {
+            super(new ScopesTimeFrameRecordFactory());
+        }
+    }
+
     public static class EntityCounterCache extends RecordCache<EntityKey, Counter> {
-        public EntityCounterCache() { super(new CounterTimeFrameRecordFactory()); }
+        public EntityCounterCache() {
+            super(new CounterTimeFrameRecordFactory());
+        }
     }
 
     public static class RecordCache<K, V> {

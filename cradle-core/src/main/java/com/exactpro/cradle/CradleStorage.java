@@ -155,6 +155,11 @@ public abstract class CradleStorage
 	
 	protected abstract Collection<String> doGetScopes(BookId bookId) throws IOException, CradleStorageException;
 
+	protected abstract CradleResultSet<String> doGetScopes(BookId bookId, Interval interval) throws IOException, CradleStorageException;
+
+	protected abstract CompletableFuture<CradleResultSet<String>> doGetScopesAsync(BookId bookId,
+																						   Interval interval) throws CradleStorageException;
+
 	protected abstract CompletableFuture<CradleResultSet<CounterSample>> doGetMessageCountersAsync(BookId bookId,
 																								   String sessionAlias,
 																								   Direction direction,
@@ -1078,6 +1083,24 @@ public abstract class CradleStorage
 	}
 	
 	/**
+	 * Obtains collection of scope names whose test events are saved in given book that match the given interval
+	 * both start and end are inclusive
+	 * @param bookId to get scopes from
+	 * @param interval Time interval
+	 * @return collection of scope names
+	 * @throws IOException if data retrieval failed
+	 * @throws CradleStorageException if given book ID is invalid
+	 */
+	public final CradleResultSet<String> getScopes(BookId bookId, Interval interval) throws IOException, CradleStorageException
+	{
+		logger.debug("Getting scopes for book '{}' and interval '{}'", bookId, interval);
+		getBookCache().getBook(bookId);
+		CradleResultSet<String> result = doGetScopes(bookId, interval);
+		logger.debug("Finished get scopes for book '{}' and interval '{}'", bookId, interval);
+		return result;
+	}
+
+	/**
 	 * Obtains collection of scope names whose test events are saved in given book
 	 * @param bookId to get scopes from
 	 * @return collection of scope names
@@ -1089,8 +1112,20 @@ public abstract class CradleStorage
 		logger.debug("Getting scopes for book '{}'", bookId);
 		getBookCache().getBook(bookId);
 		Collection<String> result = doGetScopes(bookId);
-		logger.debug("Scopes for book '{}' got", bookId);
+		logger.debug("Finished get scopes for book '{}'", bookId);
 		return result;
+	}
+
+	/**
+	 * Obtains collection of scope names whose test events are saved in given book that match the given interval
+	 * both start and end are inclusive
+	 * @param bookId of a book we need to search in
+	 * @param interval of time
+	 * @return async result set of unique scopes
+	 * @throws CradleStorageException in case could not get data
+	 */
+	public CompletableFuture <CradleResultSet<String>> getScopesAsync (BookId bookId, Interval interval) throws CradleStorageException {
+		return doGetScopesAsync(bookId, interval);
 	}
 
 	/**

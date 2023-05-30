@@ -41,6 +41,7 @@ import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
 import com.exactpro.cradle.cassandra.metrics.DriverMetrics;
 import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
+import com.exactpro.cradle.cassandra.resultset.ScopeStatisticsIteratorProvider;
 import com.exactpro.cradle.cassandra.resultset.SessionsStatisticsIteratorProvider;
 import com.exactpro.cradle.cassandra.retries.FixedNumberRetryPolicy;
 import com.exactpro.cradle.cassandra.retries.PageSizeAdjustingPolicy;
@@ -171,7 +172,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 			WorkerSupplies ws = new WorkerSupplies(settings, operators, composingService, bookCache, selectExecutor, writeAttrs, readAttrs, batchWriteAttrs);
 			statisticsWorker = new StatisticsWorker(ws, settings.getCounterPersistenceInterval());
-			eventsWorker = new EventsWorker(ws, statisticsWorker, eventBatchDurationWorker);
+			eventsWorker = new EventsWorker(ws, statisticsWorker, statisticsWorker, eventBatchDurationWorker);
 			messagesWorker = new MessagesWorker(ws, statisticsWorker, statisticsWorker);
 			statisticsWorker.start();
 			intervalsWorker = new CassandraIntervalsWorker(ws);
@@ -282,6 +283,7 @@ public class CassandraCradleStorage extends CradleStorage
 		PageId pageId = page.getId();
 
 		removeSessionData(pageId);
+		removeScopeData(pageId);
 		removeGroupData(pageId);
 		removeTestEventData(pageId);
 		removePageDurations(pageId);
@@ -659,6 +661,40 @@ public class CassandraCradleStorage extends CradleStorage
 		while (it.hasNext())
 			result.add(it.next().getScope());
 		return result;
+	}
+
+	@Override
+	protected CompletableFuture<CradleResultSet<String>> doGetScopesAsync(BookId bookId, Interval interval) throws CradleStorageException {
+		String queryInfo = String.format("Scopes in book %s from %s to %s",
+				bookId.getName(),
+				interval.getStart().toString(),
+				interval.getEnd().toString());
+
+		List<FrameInterval> frameIntervals = StorageUtils.sliceInterval(interval);
+
+		ScopeStatisticsIteratorProvider iteratorProvider = new ScopeStatisticsIteratorProvider(
+				queryInfo,
+				operators,
+				getBookCache().getBook(bookId),
+				composingService,
+				selectExecutor,
+				readAttrs,
+				frameIntervals);
+
+		return iteratorProvider.nextIterator()
+				.thenApplyAsync(it -> new CassandraCradleResultSet<>(it, iteratorProvider));
+	}
+
+	@Override
+	protected CradleResultSet<String> doGetScopes(BookId bookId, Interval interval) throws CradleStorageException {
+		try
+		{
+			return doGetScopesAsync(bookId, interval).get();
+		}
+		catch (Exception e)
+		{
+			throw new CradleStorageException("Error while getting Scopes", e);
+		}
 	}
 
 	@Override
@@ -1147,6 +1183,10 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 
 		pageSessionsOp.remove(book, page, writeAttrs);
+	}
+
+	protected void removeScopeData(PageId pageId) {
+		//TODO
 	}
 
 	protected void removeGroupData (PageId pageId) {

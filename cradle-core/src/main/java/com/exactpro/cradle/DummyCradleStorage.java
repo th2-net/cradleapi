@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -320,6 +320,16 @@ public class DummyCradleStorage extends CradleStorage
 	@Override
 	protected Collection<String> doGetScopes(BookId bookId) throws IOException, CradleStorageException
 	{
+		return null;
+	}
+
+	@Override
+	protected CradleResultSet<String> doGetScopes(BookId bookId, Interval interval) throws IOException, CradleStorageException {
+		return null;
+	}
+
+	@Override
+	protected CompletableFuture<CradleResultSet<String>> doGetScopesAsync(BookId bookId, Interval interval) throws CradleStorageException {
 		return null;
 	}
 

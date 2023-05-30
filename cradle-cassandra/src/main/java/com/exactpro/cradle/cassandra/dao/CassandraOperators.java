@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,9 @@ import com.exactpro.cradle.cassandra.dao.intervals.converters.IntervalEntityConv
 import com.exactpro.cradle.cassandra.dao.messages.*;
 import com.exactpro.cradle.cassandra.dao.messages.converters.*;
 import com.exactpro.cradle.cassandra.dao.statistics.*;
+import com.exactpro.cradle.cassandra.dao.statistics.scopes.ScopeStatisticsEntity;
+import com.exactpro.cradle.cassandra.dao.statistics.scopes.ScopeStatisticsEntityConverter;
+import com.exactpro.cradle.cassandra.dao.statistics.scopes.ScopeStatisticsOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.PageScopeEntityConverter;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.ScopeEntityConverter;
@@ -54,6 +57,7 @@ public class CassandraOperators {
     private final MessageStatisticsOperator messageStatisticsOperator;
     private final EntityStatisticsOperator entityStatisticsOperator;
     private final SessionStatisticsOperator sessionStatisticsOperator;
+    private final ScopeStatisticsOperator scopeStatisticsOperator;
     private final EventBatchMaxDurationOperator eventBatchMaxDurationOperator;
 
     private final SessionEntityConverter sessionEntityConverter;
@@ -66,6 +70,8 @@ public class CassandraOperators {
     private final MessageStatisticsEntityConverter messageStatisticsEntityConverter;
     private final EntityStatisticsEntityConverter entityStatisticsEntityConverter;
     private final SessionStatisticsEntityConverter sessionStatisticsEntityConverter;
+    private final ScopeStatisticsEntityConverter scopeStatisticsEntityConverter;
+
     private final GroupEntityConverter groupEntityConverter;
     private final PageGroupEntityConverter pageGroupEntityConverter;
     private final IntervalEntityConverter intervalEntityConverter;
@@ -78,6 +84,8 @@ public class CassandraOperators {
     private final LimitedCache<GroupEntity> groupCache;
     private final LimitedCache<PageGroupEntity> pageGroupCache;
     private final LimitedCache<SessionStatisticsEntity> sessionStatisticsCache;
+
+    private final LimitedCache<ScopeStatisticsEntity> scopeStatisticsCache;
 
     public CassandraOperators(CassandraDataMapper dataMapper, CassandraStorageSettings settings) {
 
@@ -99,6 +107,7 @@ public class CassandraOperators {
         messageStatisticsOperator = dataMapper.messageStatisticsOperator(keyspace, MessageStatisticsEntity.TABLE_NAME);
         entityStatisticsOperator = dataMapper.entityStatisticsOperator(keyspace, EntityStatisticsEntity.TABLE_NAME);
         sessionStatisticsOperator = dataMapper.sessionStatisticsOperator(keyspace, SessionStatisticsEntity.TABLE_NAME);
+        scopeStatisticsOperator = dataMapper.scopeStatisticsOperator(keyspace, ScopeStatisticsEntity.TABLE_NAME);
         eventBatchMaxDurationOperator = dataMapper.eventBatchMaxDurationOperator(keyspace, EventBatchMaxDurationEntity.TABLE_NAME);
 
         intervalOperator = dataMapper.intervalOperator(keyspace, IntervalEntity.TABLE_NAME);
@@ -115,6 +124,7 @@ public class CassandraOperators {
         messageStatisticsEntityConverter = dataMapper.messageStatisticsEntityConverter();
         entityStatisticsEntityConverter = dataMapper.entityStatisticsEntityConverter();
         sessionStatisticsEntityConverter = dataMapper.sessionStatisticsEntityConverter();
+        scopeStatisticsEntityConverter = dataMapper.scopeStatisticsEntityConverter();
         intervalEntityConverter = dataMapper.intervalEntityConverter();
         pageEntityConverter = dataMapper.pageEntityConverter();
 
@@ -125,6 +135,7 @@ public class CassandraOperators {
         scopesCache = new LimitedCache<>(settings.getScopesCacheSize());
         pageScopesCache = new LimitedCache<>(settings.getPageScopesCacheSize());
         sessionStatisticsCache = new LimitedCache<>(settings.getSessionStatisticsCacheSize());
+        scopeStatisticsCache = new LimitedCache<>(settings.getScopeStatisticsCacheSize());
     }
 
     public BookOperator getBookOperator() {
@@ -183,6 +194,10 @@ public class CassandraOperators {
         return sessionStatisticsOperator;
     }
 
+    public ScopeStatisticsOperator getScopeStatisticsOperator() {
+        return scopeStatisticsOperator;
+    }
+
     public EventBatchMaxDurationOperator getEventBatchMaxDurationOperator() {
         return eventBatchMaxDurationOperator;
     }
@@ -227,6 +242,10 @@ public class CassandraOperators {
         return sessionStatisticsEntityConverter;
     }
 
+    public ScopeStatisticsEntityConverter getScopeStatisticsEntityConverter() {
+        return scopeStatisticsEntityConverter;
+    }
+
     public LimitedCache<CachedSession> getSessionsCache() {
         return sessionsCache;
     }
@@ -245,6 +264,10 @@ public class CassandraOperators {
 
     public LimitedCache<SessionStatisticsEntity> getSessionStatisticsCache() {
         return sessionStatisticsCache;
+    }
+
+    public LimitedCache<ScopeStatisticsEntity> getScopeStatisticsCache() {
+        return scopeStatisticsCache;
     }
 
     public GroupsOperator getGroupsOperator() {
