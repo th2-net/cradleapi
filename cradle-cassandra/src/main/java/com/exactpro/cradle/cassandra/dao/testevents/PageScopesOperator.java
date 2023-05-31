@@ -34,6 +34,9 @@ public interface PageScopesOperator {
 	
 	@Select
 	PagingIterable<PageScopeEntity> get(String book, String page, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+	@Select
+	CompletableFuture<MappedAsyncPagingIterable<PageScopeEntity>> getAsync(String book, String page, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Insert
 	CompletableFuture<PageScopeEntity> write(PageScopeEntity pageScope, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);

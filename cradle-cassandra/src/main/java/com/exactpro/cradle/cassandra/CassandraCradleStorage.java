@@ -662,6 +662,39 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
+	protected CradleResultSet<String> doGetScopes(BookId bookId, Interval interval) throws IOException {
+		try
+		{
+			return doGetScopesAsync(bookId, interval).get();
+		}
+		catch (Exception e)
+		{
+			throw new IOException("Error while getting scopes for book: " + bookId.getName() + " within interval: " +interval.toString(), e);
+		}
+	}
+
+	@Override
+	protected CompletableFuture<CradleResultSet<String>> doGetScopesAsync(BookId bookId, Interval interval) throws CradleStorageException {
+		BookInfo book = getBookCache().getBook(bookId);
+
+		String queryInfo = String.format("Scopes in book %s from pages that fall within %s to %s",
+				bookId.getName(),
+				interval.getStart().toString(),
+				interval.getEnd().toString());
+
+		PageScopesIteratorProvider iteratorProvider = new PageScopesIteratorProvider(
+				queryInfo,
+				operators,
+				book,
+				interval,
+				composingService,
+				selectExecutor,
+				readAttrs
+		);
+		return iteratorProvider.nextIterator().thenApplyAsync(it -> new CassandraCradleResultSet<>(it, iteratorProvider));
+	}
+
+	@Override
 	protected CompletableFuture<CradleResultSet<CounterSample>> doGetMessageCountersAsync(BookId bookId,
 																						  String sessionAlias,
 																						  Direction direction,
