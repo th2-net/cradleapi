@@ -155,7 +155,7 @@ public abstract class CradleStorage
 
 	protected abstract Collection<String> doGetScopes(BookId bookId) throws IOException, CradleStorageException;
 
-	protected abstract CradleResultSet<String> doGetScopes(BookId bookId, Interval interval) throws IOException;
+	protected abstract CradleResultSet<String> doGetScopes(BookId bookId, Interval interval) throws CradleStorageException;
 
 	protected abstract CompletableFuture<CradleResultSet<String>> doGetScopesAsync(BookId bookId, Interval interval) throws CradleStorageException;
 
@@ -201,14 +201,25 @@ public abstract class CradleStorage
 	protected abstract CompletableFuture<CradleResultSet<String>> doGetSessionAliasesAsync(BookId bookId,
 																						   Interval interval) throws CradleStorageException;
 
+	//TODO add another method with third parametter 'pressison' that will return results from statistics table
+	// 	protected abstract CompletableFuture<CradleResultSet<String>> doGetSessionAliasesAsync(BookId bookId, Interval interval) throws CradleStorageException;
+
 	protected abstract CradleResultSet<String> doGetSessionAliases(BookId bookId,
 																   Interval interval) throws CradleStorageException;
 
+	//TODO add another method with third parametter 'pressison' that will return results from statistics table
+	//	protected abstract CradleResultSet<String> doGetSessionAliases(BookId bookId, Interval interval) throws CradleStorageException;
+
 	protected abstract CompletableFuture<CradleResultSet<String>> doGetSessionGroupsAsync(BookId bookId,
 																						  Interval interval) throws CradleStorageException;
+	//TODO add another method with third parametter 'pressison' that will return results from statistics table
+	//	protected abstract CompletableFuture<CradleResultSet<String>> doGetSessionGroupsAsync(BookId bookId, Interval interval) throws CradleStorageException;
 
 	protected abstract CradleResultSet<String> doGetSessionGroups(BookId bookId,
 																  Interval interval) throws CradleStorageException;
+
+	//TODO add another method with third parametter 'pressison' that will return results from statistics table
+	//	protected abstract CradleResultSet<String> doGetSessionGroups(BookId bookId, Interval interval) throws CradleStorageException;
 
 	protected abstract PageInfo doUpdatePageComment (BookId bookId, String pageName, String comment) throws CradleStorageException;
 
@@ -1234,7 +1245,7 @@ public abstract class CradleStorage
 	}
 
 	/**
-	 * Gets session aliases in a book for a time interval asynchronously
+	 * Allows enumerating asynchronously stored session aliases in given book if their pages match the given interval
 	 * @param bookId of a book we need to search in
 	 * @param interval of time
 	 * @return async result set of unique session aliases
@@ -1244,8 +1255,12 @@ public abstract class CradleStorage
 		return doGetSessionAliasesAsync(bookId, interval);
 	}
 
+//	public CompletableFuture<CradleResultSet<String>> getSessionAliasesAsync(BookId bookId, Interval interval) throws CradleStorageException{
+//		return doGetSessionAliasesAsync(bookId, interval);
+//	}
+
 	/**
-	 * Gets session aliases in a book for a time interval
+	 * Allows enumerating stored session aliases in given book if their pages match the given interval
 	 * @param bookId of a book we need to search in
 	 * @param interval of time
 	 * @return result set of unique session aliases
@@ -1255,8 +1270,12 @@ public abstract class CradleStorage
 		return doGetSessionAliases(bookId, interval);
 	}
 
+//	public CradleResultSet<String> getSessionAliases(BookId bookId, Interval interval) throws CradleStorageException{
+//		return doGetSessionAliases(bookId, interval);
+//	}
+
 	/**
-	 * Gets group aliases in a book for a time interval asynchronously
+	 * Allows enumerating asynchronously stored group aliases in given book if their pages match the given interval
 	 * @param bookId of a book we need to search in
 	 * @param interval of time
 	 * @return async result set of unique session groups
@@ -1266,8 +1285,12 @@ public abstract class CradleStorage
 		return doGetSessionGroupsAsync(bookId, interval);
 	}
 
+//	public CompletableFuture<CradleResultSet<String>> getSessionGroupsAsync(BookId bookId, Interval interval) throws CradleStorageException{
+//		return doGetSessionGroupsAsync(bookId, interval);
+//	}
+
 	/**
-	 * Gets group aliases in a book for a time interval
+	 * Allows enumerating stored group aliases in given book if their pages match the given interval
 	 * @param bookId of a book we need to search in
 	 * @param interval of time
 	 * @return result set of unique session groups
@@ -1276,6 +1299,10 @@ public abstract class CradleStorage
 	public CradleResultSet<String> getSessionGroups (BookId bookId, Interval interval) throws CradleStorageException {
 		return doGetSessionGroups(bookId, interval);
 	}
+
+//	public CradleResultSet<String> getSessionGroups(BookId bookId, Interval interval) throws CradleStorageException{
+//		return doGetSessionGroups(bookId, interval);
+//	}
 
 	/**
 	 *	Updates comment field for page
@@ -1351,9 +1378,9 @@ public abstract class CradleStorage
 	 * @param bookId to get scopes from
 	 * @param interval Time interval
 	 * @return resulte set of unique scope names
-	 * @throws IOException if data retrieval failed
+	 * @throws CradleStorageException if given book ID is invalid
 	 */
-	public CradleResultSet<String> getScopes(BookId bookId, Interval interval) throws IOException {
+	public CradleResultSet<String> getScopes(BookId bookId, Interval interval) throws CradleStorageException {
 		return doGetScopes(bookId, interval);
 	}
 

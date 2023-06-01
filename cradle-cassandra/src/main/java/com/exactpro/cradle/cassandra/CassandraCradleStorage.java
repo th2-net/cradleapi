@@ -662,14 +662,14 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CradleResultSet<String> doGetScopes(BookId bookId, Interval interval) throws IOException {
+	protected CradleResultSet<String> doGetScopes(BookId bookId, Interval interval) throws CradleStorageException {
 		try
 		{
 			return doGetScopesAsync(bookId, interval).get();
 		}
 		catch (Exception e)
 		{
-			throw new IOException("Error while getting scopes for book: " + bookId.getName() + " within interval: " +interval.toString(), e);
+			throw new CradleStorageException("Error while getting scopes for book: " + bookId.getName() + " within interval: " +interval.toString(), e);
 		}
 	}
 
@@ -922,7 +922,23 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<CradleResultSet<String>> doGetSessionAliasesAsync(BookId bookId, Interval interval) throws CradleStorageException {
-		return doGetSessionsAsync(bookId, interval, SessionRecordType.SESSION);
+		BookInfo book = getBookCache().getBook(bookId);
+
+		String queryInfo = String.format("Session Aliases in book %s from pages that fall within %s to %s",
+				bookId.getName(),
+				interval.getStart().toString(),
+				interval.getEnd().toString());
+
+		PageSessionsIteratorProvider iteratorProvider = new PageSessionsIteratorProvider(
+				queryInfo,
+				operators,
+				book,
+				interval,
+				composingService,
+				selectExecutor,
+				readAttrs
+		);
+		return iteratorProvider.nextIterator().thenApplyAsync(it -> new CassandraCradleResultSet<>(it, iteratorProvider));
 	}
 
 	@Override
@@ -951,7 +967,23 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<CradleResultSet<String>> doGetSessionGroupsAsync(BookId bookId, Interval interval) throws CradleStorageException {
-		return doGetSessionsAsync(bookId, interval, SessionRecordType.SESSION_GROUP);
+		BookInfo book = getBookCache().getBook(bookId);
+
+		String queryInfo = String.format("Scopes in book %s from pages that fall within %s to %s",
+				bookId.getName(),
+				interval.getStart().toString(),
+				interval.getEnd().toString());
+
+		PageGroupsIteratorProvider iteratorProvider = new PageGroupsIteratorProvider(
+				queryInfo,
+				operators,
+				book,
+				interval,
+				composingService,
+				selectExecutor,
+				readAttrs
+		);
+		return iteratorProvider.nextIterator().thenApplyAsync(it -> new CassandraCradleResultSet<>(it, iteratorProvider));
 	}
 
 	@Override

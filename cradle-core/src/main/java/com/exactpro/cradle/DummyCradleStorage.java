@@ -324,7 +324,7 @@ public class DummyCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected CradleResultSet<String> doGetScopes(BookId bookId, Interval interval) throws IOException {
+	protected CradleResultSet<String> doGetScopes(BookId bookId, Interval interval) throws CradleStorageException {
 		return null;
 	}
 

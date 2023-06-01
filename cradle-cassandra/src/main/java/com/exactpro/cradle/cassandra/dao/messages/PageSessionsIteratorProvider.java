@@ -14,32 +14,32 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.cassandra.dao.testevents;
+package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
-import com.exactpro.cradle.cassandra.dao.testevents.converters.PageScopeEntityConverter;
+import com.exactpro.cradle.cassandra.dao.messages.converters.PageSessionEntityConverter;
 import com.exactpro.cradle.cassandra.iterators.DuplicateSkippingConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.resultset.PagesInIntervalIteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.counters.Interval;
 
-import java.util.*;
+import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-public class PageScopesIteratorProvider extends PagesInIntervalIteratorProvider<String> {
+public class PageSessionsIteratorProvider extends PagesInIntervalIteratorProvider<String> {
 
-    public PageScopesIteratorProvider(String requestInfo,
-                                      CassandraOperators operators,
-                                      BookInfo book,
-                                      Interval interval,
-                                      ExecutorService composingService,
-                                      SelectQueryExecutor selectQueryExecutor,
-                                      Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) {
+    public PageSessionsIteratorProvider(String requestInfo,
+                                        CassandraOperators operators,
+                                        BookInfo book,
+                                        Interval interval,
+                                        ExecutorService composingService,
+                                        SelectQueryExecutor selectQueryExecutor,
+                                        Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) {
         super(requestInfo, operators, book, interval, composingService, selectQueryExecutor, readAttrs);
     }
 
@@ -50,15 +50,15 @@ public class PageScopesIteratorProvider extends PagesInIntervalIteratorProvider<
             return CompletableFuture.completedFuture(null);
         }
 
-        PageScopesOperator pageScopesOperator = operators.getPageScopesOperator();
-        PageScopeEntityConverter converter = operators.getPageScopeEntityConverter();
+        PageSessionsOperator pageSessionsOperator = operators.getPageSessionsOperator();
+        PageSessionEntityConverter converter = operators.getPageSessionEntityConverter();
 
-        return pageScopesOperator.getAsync(book.getId().getName(), pages.remove(), readAttrs).thenApplyAsync(rs ->
+        return pageSessionsOperator.getAsync(book.getId().getName(), pages.remove(), readAttrs).thenApplyAsync(rs ->
                 new DuplicateSkippingConvertingPagedIterator<>(rs,
                         selectQueryExecutor,
                         -1,
                         new AtomicInteger(0),
-                        PageScopeEntity::getScope,
+                        PageSessionEntity::getSessionAlias,
                         converter::getEntity,
                         getRequestInfo()
                 ), composingService);

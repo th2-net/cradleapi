@@ -9,6 +9,9 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
+//FIXME this iterator can be a potential bug source, having a Set<Long> as registry and calculating elements using
+// passed hash function can lead to collisions and thus skipping non-duplicate element.
+// we should deprecate this class and replace it's usage with DuplicateSkippingConvertingPagedIterator
 public class DuplicateSkippingIterator<R, E> extends ConvertingPagedIterator<R, E>{
 
     private Set<Long> registry;
