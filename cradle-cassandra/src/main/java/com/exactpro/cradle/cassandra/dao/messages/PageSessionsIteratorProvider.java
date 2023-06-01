@@ -17,13 +17,15 @@
 package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.exactpro.cradle.BookInfo;
+import com.exactpro.cradle.BookCache;
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.messages.converters.PageSessionEntityConverter;
 import com.exactpro.cradle.cassandra.iterators.DuplicateSkippingConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.resultset.PagesInIntervalIteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.counters.Interval;
+import com.exactpro.cradle.utils.CradleStorageException;
 
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
@@ -35,12 +37,13 @@ public class PageSessionsIteratorProvider extends PagesInIntervalIteratorProvide
 
     public PageSessionsIteratorProvider(String requestInfo,
                                         CassandraOperators operators,
-                                        BookInfo book,
+                                        BookId bookId,
+                                        BookCache bookCache,
                                         Interval interval,
                                         ExecutorService composingService,
                                         SelectQueryExecutor selectQueryExecutor,
-                                        Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) {
-        super(requestInfo, operators, book, interval, composingService, selectQueryExecutor, readAttrs);
+                                        Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException {
+        super(requestInfo, operators, bookId, bookCache, interval, composingService, selectQueryExecutor, readAttrs);
     }
 
     @Override
@@ -53,7 +56,7 @@ public class PageSessionsIteratorProvider extends PagesInIntervalIteratorProvide
         PageSessionsOperator pageSessionsOperator = operators.getPageSessionsOperator();
         PageSessionEntityConverter converter = operators.getPageSessionEntityConverter();
 
-        return pageSessionsOperator.getAsync(book.getId().getName(), pages.remove(), readAttrs).thenApplyAsync(rs ->
+        return pageSessionsOperator.getAsync(bookId.getName(), pages.remove(), readAttrs).thenApplyAsync(rs ->
                 new DuplicateSkippingConvertingPagedIterator<>(rs,
                         selectQueryExecutor,
                         -1,

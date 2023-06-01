@@ -17,10 +17,12 @@
 package com.exactpro.cradle.cassandra.resultset;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.exactpro.cradle.BookInfo;
+import com.exactpro.cradle.BookCache;
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.counters.Interval;
+import com.exactpro.cradle.utils.CradleStorageException;
 
 import java.time.Instant;
 import java.util.LinkedList;
@@ -39,31 +41,32 @@ public abstract class PagesInIntervalIteratorProvider<T> extends IteratorProvide
     protected final CassandraOperators operators;
     protected final ExecutorService composingService;
     protected final SelectQueryExecutor selectQueryExecutor;
-    protected final BookInfo book;
+    protected final BookId bookId;
     protected final Queue<String> pages;
     protected final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
 
     public PagesInIntervalIteratorProvider(String requestInfo,
                                            CassandraOperators operators,
-                                           BookInfo book,
+                                           BookId bookId,
+                                           BookCache bookCache,
                                            Interval interval,
                                            ExecutorService composingService,
                                            SelectQueryExecutor selectQueryExecutor,
-                                           Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) {
+                                           Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException {
         super(requestInfo);
         this.operators = operators;
-        this.book = book;
-        this.pages = getPagesInInterval(book, interval);
+        this.bookId = bookId;
+        this.pages = getPagesInInterval(bookId, bookCache, interval);
         this.composingService = composingService;
         this.selectQueryExecutor = selectQueryExecutor;
         this.readAttrs = readAttrs;
     }
 
-    private Queue<String> getPagesInInterval(BookInfo book, Interval interval) {
+    private Queue<String> getPagesInInterval(BookId bookId, BookCache bookCache, Interval interval) throws CradleStorageException {
         Instant start = interval.getStart();
         Instant end = interval.getEnd();
 
-        return book.getPages()
+        return bookCache.loadPageInfo(bookId, false)
                 .stream()
                 .filter(page -> page.getEnded().isAfter(start) && !page.getStarted().isAfter(end))
                 .map(page -> page.getId().getName())

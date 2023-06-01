@@ -17,13 +17,15 @@
 package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.exactpro.cradle.BookInfo;
+import com.exactpro.cradle.BookCache;
+import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.messages.converters.PageGroupEntityConverter;
 import com.exactpro.cradle.cassandra.iterators.DuplicateSkippingConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.resultset.PagesInIntervalIteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.counters.Interval;
+import com.exactpro.cradle.utils.CradleStorageException;
 
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
@@ -33,8 +35,15 @@ import java.util.function.Function;
 
 public class PageGroupsIteratorProvider extends PagesInIntervalIteratorProvider<String> {
 
-    public PageGroupsIteratorProvider(String requestInfo, CassandraOperators operators, BookInfo book, Interval interval, ExecutorService composingService, SelectQueryExecutor selectQueryExecutor, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) {
-        super(requestInfo, operators, book, interval, composingService, selectQueryExecutor, readAttrs);
+    public PageGroupsIteratorProvider(String requestInfo,
+                                      CassandraOperators operators,
+                                      BookId bookId,
+                                      BookCache bookCache,
+                                      Interval interval,
+                                      ExecutorService composingService,
+                                      SelectQueryExecutor selectQueryExecutor,
+                                      Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException {
+        super(requestInfo, operators, bookId, bookCache, interval, composingService, selectQueryExecutor, readAttrs);
     }
 
     @Override
@@ -47,7 +56,7 @@ public class PageGroupsIteratorProvider extends PagesInIntervalIteratorProvider<
         PageGroupsOperator pageGroupsOperator = operators.getPageGroupsOperator();
         PageGroupEntityConverter converter = operators.getPageGroupEntityConverter();
 
-        return pageGroupsOperator.getAsync(book.getId().getName(), pages.remove(), readAttrs).thenApplyAsync(rs ->
+        return pageGroupsOperator.getAsync(bookId.getName(), pages.remove(), readAttrs).thenApplyAsync(rs ->
                 new DuplicateSkippingConvertingPagedIterator<>(rs,
                         selectQueryExecutor,
                         -1,

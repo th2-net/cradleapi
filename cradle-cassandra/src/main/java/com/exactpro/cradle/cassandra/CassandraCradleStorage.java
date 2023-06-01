@@ -675,8 +675,6 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<CradleResultSet<String>> doGetScopesAsync(BookId bookId, Interval interval) throws CradleStorageException {
-		BookInfo book = getBookCache().getBook(bookId);
-
 		String queryInfo = String.format("Scopes in book %s from pages that fall within %s to %s",
 				bookId.getName(),
 				interval.getStart().toString(),
@@ -685,7 +683,8 @@ public class CassandraCradleStorage extends CradleStorage
 		PageScopesIteratorProvider iteratorProvider = new PageScopesIteratorProvider(
 				queryInfo,
 				operators,
-				book,
+				bookId,
+				getBookCache(),
 				interval,
 				composingService,
 				selectExecutor,
@@ -922,8 +921,6 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<CradleResultSet<String>> doGetSessionAliasesAsync(BookId bookId, Interval interval) throws CradleStorageException {
-		BookInfo book = getBookCache().getBook(bookId);
-
 		String queryInfo = String.format("Session Aliases in book %s from pages that fall within %s to %s",
 				bookId.getName(),
 				interval.getStart().toString(),
@@ -932,7 +929,8 @@ public class CassandraCradleStorage extends CradleStorage
 		PageSessionsIteratorProvider iteratorProvider = new PageSessionsIteratorProvider(
 				queryInfo,
 				operators,
-				book,
+				bookId,
+				getBookCache(),
 				interval,
 				composingService,
 				selectExecutor,
@@ -967,8 +965,6 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<CradleResultSet<String>> doGetSessionGroupsAsync(BookId bookId, Interval interval) throws CradleStorageException {
-		BookInfo book = getBookCache().getBook(bookId);
-
 		String queryInfo = String.format("Scopes in book %s from pages that fall within %s to %s",
 				bookId.getName(),
 				interval.getStart().toString(),
@@ -977,7 +973,8 @@ public class CassandraCradleStorage extends CradleStorage
 		PageGroupsIteratorProvider iteratorProvider = new PageGroupsIteratorProvider(
 				queryInfo,
 				operators,
-				book,
+				bookId,
+				getBookCache(),
 				interval,
 				composingService,
 				selectExecutor,
