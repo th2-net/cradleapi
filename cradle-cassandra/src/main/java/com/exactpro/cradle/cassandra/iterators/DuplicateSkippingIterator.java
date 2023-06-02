@@ -1,3 +1,19 @@
+/*
+ * Copyright 2022-2023 Exactpro (Exactpro Systems Limited)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.exactpro.cradle.cassandra.iterators;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
@@ -9,14 +25,10 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-//FIXME this iterator can be a potential bug source, having a Set<Long> as registry and calculating elements using
-// passed hash function can lead to collisions and thus skipping non-duplicate element.
-// we should deprecate this class and replace it's usage with DuplicateSkippingConvertingPagedIterator
-public class DuplicateSkippingIterator<R, E> extends ConvertingPagedIterator<R, E>{
+public class DuplicateSkippingIterator<R, E> extends ConvertingPagedIterator<R, E> {
 
-    private Set<Long> registry;
+    private final Set<R> registry;
     private R preFetchedElement;
-    private Function<R, Long> hashFunction;
 
     public DuplicateSkippingIterator(MappedAsyncPagingIterable<E> rows,
                                      SelectQueryExecutor selectExecutor,
@@ -24,12 +36,9 @@ public class DuplicateSkippingIterator<R, E> extends ConvertingPagedIterator<R, 
                                      AtomicInteger returned,
                                      Function<E, R> converter,
                                      Function<Row, E> mapper,
-                                     Function<R, Long> hashFunction,
-                                     Set<Long> registry,
                                      String queryInfo) {
         super(rows, selectExecutor, limit, returned, converter, mapper, queryInfo);
-        this.hashFunction = hashFunction;
-        this.registry = registry == null ? new HashSet<>() : registry;
+        this.registry = new HashSet<>();
         this.preFetchedElement = null;
     }
 
@@ -42,8 +51,7 @@ public class DuplicateSkippingIterator<R, E> extends ConvertingPagedIterator<R, 
         while (super.hasNext()) {
             R el = super.next();
 
-            if (!registry.contains(hashFunction.apply(el))) {
-                registry.add(hashFunction.apply(el));
+            if (registry.add(el)) {
                 preFetchedElement = el;
                 return true;
             }

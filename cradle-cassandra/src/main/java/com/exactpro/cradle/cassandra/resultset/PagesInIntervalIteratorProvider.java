@@ -68,7 +68,7 @@ public abstract class PagesInIntervalIteratorProvider<T> extends IteratorProvide
 
         return bookCache.loadPageInfo(bookId, false)
                 .stream()
-                .filter(page -> page.getEnded().isAfter(start) && !page.getStarted().isAfter(end))
+                .filter(page -> !page.getEnded().isBefore(start) && !page.getStarted().isAfter(end))
                 .map(page -> page.getId().getName())
                 .collect(Collectors.toCollection(LinkedList::new));
     }

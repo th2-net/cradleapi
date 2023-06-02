@@ -114,8 +114,6 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
                                         new AtomicInteger(0),
                                         SessionStatisticsEntity::getSession,
                                         converter::getEntity,
-                                        (str) -> Long.valueOf(str.hashCode()),
-                                        registry,
                                         getRequestInfo());
                                 }, composingService);
         }

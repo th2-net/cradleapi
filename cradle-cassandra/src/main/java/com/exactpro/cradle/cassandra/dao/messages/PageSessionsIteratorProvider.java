@@ -21,7 +21,7 @@ import com.exactpro.cradle.BookCache;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.messages.converters.PageSessionEntityConverter;
-import com.exactpro.cradle.cassandra.iterators.DuplicateSkippingConvertingPagedIterator;
+import com.exactpro.cradle.cassandra.iterators.DuplicateSkippingIterator;
 import com.exactpro.cradle.cassandra.resultset.PagesInIntervalIteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.counters.Interval;
@@ -57,7 +57,7 @@ public class PageSessionsIteratorProvider extends PagesInIntervalIteratorProvide
         PageSessionEntityConverter converter = operators.getPageSessionEntityConverter();
 
         return pageSessionsOperator.getAsync(bookId.getName(), pages.remove(), readAttrs).thenApplyAsync(rs ->
-                new DuplicateSkippingConvertingPagedIterator<>(rs,
+                new DuplicateSkippingIterator<>(rs,
                         selectQueryExecutor,
                         -1,
                         new AtomicInteger(0),
