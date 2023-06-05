@@ -20,6 +20,7 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.querybuilder.relation.MultiColumnRelationBuilder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
+import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
 import com.exactpro.cradle.Order;
 import com.exactpro.cradle.cassandra.dao.CassandraFilter;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
@@ -71,6 +72,7 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	public CassandraStoredMessageFilter(String book, String page, String sessionAlias, String direction,
 										FilterForGreater<Instant> messageTimeFrom, FilterForLess<Instant> messageTimeTo, int limit, Order order)
 	{
+		Preconditions.checkArgument(limit > 0, "Limit must be strictly positive");
 		this.book = book;
 		this.page = page;
 		this.sessionAlias = sessionAlias;

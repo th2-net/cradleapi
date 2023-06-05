@@ -19,6 +19,7 @@ package com.exactpro.cradle.cassandra.dao.messages;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
+import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
 import com.exactpro.cradle.Order;
 import com.exactpro.cradle.cassandra.dao.CassandraFilter;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
@@ -47,6 +48,7 @@ public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMes
                                          FilterForLess<Instant> messageTimeTo,
                                          Order order,
                                          int limit) {
+        Preconditions.checkArgument(limit > 0, "Limit must be strictly positive");
         this.book = book;
         this.page = page;
         this.groupName = groupName;
