@@ -16,7 +16,6 @@
 
 package com.exactpro.cradle.cassandra;
 
-import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.cassandra.connection.NetworkTopologyStrategy;
 import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
@@ -33,7 +32,7 @@ import static com.exactpro.cradle.CradleStorage.DEFAULT_MAX_TEST_EVENT_BATCH_SIZ
 public class CassandraStorageSettings extends CoreStorageSettings {
     public static final String SCHEMA_VERSION = "5.3.0";
 
-    public static final ConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = ConsistencyLevel.LOCAL_QUORUM;
+    public static final CassandraConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = CassandraConsistencyLevel.LOCAL_QUORUM;
     public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1;
     public static final int DEFAULT_MAX_PARALLEL_QUERIES = 500;
     public static final int DEFAULT_RESULT_PAGE_SIZE = 0;
@@ -57,9 +56,9 @@ public class CassandraStorageSettings extends CoreStorageSettings {
     private NetworkTopologyStrategy networkTopologyStrategy;
     private long timeout = DEFAULT_TIMEOUT;
     @JsonIgnore
-    private ConsistencyLevel writeConsistencyLevel = DEFAULT_CONSISTENCY_LEVEL;
+    private CassandraConsistencyLevel writeConsistencyLevel = DEFAULT_CONSISTENCY_LEVEL;
     @JsonIgnore
-    private ConsistencyLevel readConsistencyLevel = DEFAULT_CONSISTENCY_LEVEL;
+    private CassandraConsistencyLevel readConsistencyLevel = DEFAULT_CONSISTENCY_LEVEL;
     private String keyspace;
     private String schemaVersion = SCHEMA_VERSION;
     private int keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
@@ -94,15 +93,15 @@ public class CassandraStorageSettings extends CoreStorageSettings {
 
     public CassandraStorageSettings(
             long timeout,
-            ConsistencyLevel writeConsistencyLevel,
-            ConsistencyLevel readConsistencyLevel
+            CassandraConsistencyLevel writeConsistencyLevel,
+            CassandraConsistencyLevel readConsistencyLevel
     ) {
         this(null, timeout, writeConsistencyLevel, readConsistencyLevel);
     }
 
     public CassandraStorageSettings(
             NetworkTopologyStrategy networkTopologyStrategy, long timeout,
-            ConsistencyLevel writeConsistencyLevel, ConsistencyLevel readConsistencyLevel
+            CassandraConsistencyLevel writeConsistencyLevel, CassandraConsistencyLevel readConsistencyLevel
     ) {
         this();
         this.networkTopologyStrategy = networkTopologyStrategy;
@@ -164,19 +163,19 @@ public class CassandraStorageSettings extends CoreStorageSettings {
         this.timeout = timeout;
     }
 
-    public ConsistencyLevel getWriteConsistencyLevel() {
+    public CassandraConsistencyLevel getWriteConsistencyLevel() {
         return writeConsistencyLevel;
     }
 
-    public void setWriteConsistencyLevel(ConsistencyLevel writeConsistencyLevel) {
+    public void setWriteConsistencyLevel(CassandraConsistencyLevel writeConsistencyLevel) {
         this.writeConsistencyLevel = writeConsistencyLevel;
     }
 
-    public ConsistencyLevel getReadConsistencyLevel() {
+    public CassandraConsistencyLevel getReadConsistencyLevel() {
         return readConsistencyLevel;
     }
 
-    public void setReadConsistencyLevel(ConsistencyLevel readConsistencyLevel) {
+    public void setReadConsistencyLevel(CassandraConsistencyLevel readConsistencyLevel) {
         this.readConsistencyLevel = readConsistencyLevel;
     }
 
