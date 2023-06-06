@@ -1,0 +1,31 @@
+name: Build and publish dev-release Java distributions to sonatype.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - dev-version-*
+    paths:
+      - gradle.properties
+
+jobs:
+  build:
+    uses: th2-net/.github/.github/workflows/compound-java.yml@main
+    with:
+      build-target: 'Sonatype'
+      runsOn: ubuntu-latest
+      devRelease: true
+    secrets:
+      sonatypeUsername: ${{ secrets.SONATYPE_NEXUS_USERNAME }}
+      sonatypePassword: ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
+      sonatypeSigningKey: ${{ secrets.SONATYPE_GPG_ARMORED_KEY }}
+      sonatypeSigningPassword: ${{ secrets.SONATYPE_SIGNING_PASSWORD }}
+  create-tag:
+    name: "Create tag ${{ needs.build.outputs.version }}"
+    runs-on: ubuntu-latest
+    needs: [ build ]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - run: git tag ${{ needs.build.outputs.version }}
