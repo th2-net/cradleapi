@@ -21,6 +21,8 @@ import com.exactpro.cradle.utils.TestEventUtils;
 
 import java.time.Instant;
 
+import static com.exactpro.cradle.CoreStorageSettings.DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS;
+
 /**
  * Holds basic information about test event prepared to be stored in Cradle. Events extend this class with additional data
  */
@@ -37,6 +39,22 @@ public abstract class TestEventToStore implements TestEvent {
         this.name = name;
         this.parentId = parentId;
         TestEventUtils.validateTestEvent(this, storeActionRejectionThreshold);
+    }
+
+    public static TestEventSingleToStoreBuilder singleBuilder(long storeActionRejectionThreshold) {
+        return new TestEventSingleToStoreBuilder(storeActionRejectionThreshold);
+    }
+
+    public static TestEventSingleToStoreBuilder singleBuilder() {
+        return singleBuilder(DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS);
+    }
+
+    public static TestEventBatchToStoreBuilder batchBuilder(int maxBatchSize, long storeActionRejectionThreshold) {
+        return new TestEventBatchToStoreBuilder(maxBatchSize, storeActionRejectionThreshold);
+    }
+
+    public static TestEventBatchToStoreBuilder batchBuilder(int maxBatchSize) {
+        return batchBuilder(maxBatchSize, DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS);
     }
 
     @Override
