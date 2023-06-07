@@ -3,7 +3,7 @@ name: Build and publish dev-release Java distributions to sonatype.
 on:
   push:
     tags:
-      - 5.*-dev
+      - \d+.\d+.\d+-dev
 
 jobs:
   build:
