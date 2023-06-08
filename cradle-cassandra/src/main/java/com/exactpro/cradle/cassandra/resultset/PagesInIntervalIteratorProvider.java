@@ -19,6 +19,7 @@ package com.exactpro.cradle.cassandra.resultset;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookCache;
 import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.counters.Interval;
@@ -26,6 +27,7 @@ import com.exactpro.cradle.utils.CradleStorageException;
 
 import java.time.Instant;
 import java.util.LinkedList;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
@@ -34,6 +36,7 @@ import java.util.stream.Collectors;
 /**
  * Iterator provider which provides different iterators for each
  * page that is the given interval of time and belongs the given book
+ *
  * @param <T> type of the iterated object
  */
 public abstract class PagesInIntervalIteratorProvider<T> extends IteratorProvider<T> {
@@ -68,8 +71,19 @@ public abstract class PagesInIntervalIteratorProvider<T> extends IteratorProvide
 
         return bookCache.loadPageInfo(bookId, false)
                 .stream()
-                .filter(page -> !page.getEnded().isBefore(start) && !page.getStarted().isAfter(end))
+                .filter(page -> checkInterval(page, start, end))
                 .map(page -> page.getId().getName())
                 .collect(Collectors.toCollection(LinkedList::new));
+    }
+
+    private boolean checkInterval(PageInfo page, Instant start, Instant end) {
+        var pageStart = page.getStarted();
+        Objects.requireNonNull(pageStart, String.format("Page \"%s\" has null start time", page.getId().getName()));
+        var pageEnd = page.getEnded();
+        if (pageEnd == null) {
+            return pageStart.isAfter(start) && pageStart.isBefore(end);
+        } else {
+            return !pageEnd.isBefore(start) && !pageStart.isAfter(end);
+        }
     }
 }
