@@ -27,13 +27,17 @@ import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.utils.CradleStorageException;
 
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 public class PageGroupsIteratorProvider extends PagesInIntervalIteratorProvider<String> {
+
+    private final Set<String> registry = new HashSet<>();
 
     public PageGroupsIteratorProvider(String requestInfo,
                                       CassandraOperators operators,
@@ -63,6 +67,7 @@ public class PageGroupsIteratorProvider extends PagesInIntervalIteratorProvider<
                         new AtomicInteger(0),
                         PageGroupEntity::getGroup,
                         converter::getEntity,
+                        registry,
                         getRequestInfo()
                 ), composingService);
     }

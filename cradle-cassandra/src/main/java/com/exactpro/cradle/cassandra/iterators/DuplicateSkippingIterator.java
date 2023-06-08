@@ -20,7 +20,6 @@ import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -36,9 +35,10 @@ public class DuplicateSkippingIterator<R, E> extends ConvertingPagedIterator<R, 
                                      AtomicInteger returned,
                                      Function<E, R> converter,
                                      Function<Row, E> mapper,
+                                     Set<R> registry,
                                      String queryInfo) {
         super(rows, selectExecutor, limit, returned, converter, mapper, queryInfo);
-        this.registry = new HashSet<>();
+        this.registry = registry;
         this.preFetchedElement = null;
     }
 

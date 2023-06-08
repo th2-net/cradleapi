@@ -35,6 +35,8 @@ import java.util.function.Function;
 
 public class PageScopesIteratorProvider extends PagesInIntervalIteratorProvider<String> {
 
+    private final Set<String> registry = new HashSet<>();
+
     public PageScopesIteratorProvider(String requestInfo,
                                       CassandraOperators operators,
                                       BookId bookId,
@@ -63,6 +65,7 @@ public class PageScopesIteratorProvider extends PagesInIntervalIteratorProvider<
                         new AtomicInteger(0),
                         PageScopeEntity::getScope,
                         converter::getEntity,
+                        registry,
                         getRequestInfo()
                 ), composingService);
     }

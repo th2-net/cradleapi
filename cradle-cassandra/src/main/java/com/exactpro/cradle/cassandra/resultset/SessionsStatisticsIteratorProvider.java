@@ -44,7 +44,7 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
         to guarantee that unique elements will be returned
         across all iterators
      */
-    private final Set<Long> registry;
+    private final Set<String> registry;
     private PageInfo curPage;
 
     public SessionsStatisticsIteratorProvider (String requestInfo,
@@ -114,6 +114,7 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
                                         new AtomicInteger(0),
                                         SessionStatisticsEntity::getSession,
                                         converter::getEntity,
+                                        registry,
                                         getRequestInfo());
                                 }, composingService);
         }
