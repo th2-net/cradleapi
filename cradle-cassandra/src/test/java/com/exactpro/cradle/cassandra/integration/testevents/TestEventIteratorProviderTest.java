@@ -55,18 +55,13 @@ import static com.exactpro.cradle.cassandra.CassandraStorageSettings.DEFAULT_RES
 public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
 
     private static final Logger logger = LoggerFactory.getLogger(TestEventIteratorProviderTest.class);
-
-    private static final String CONTENT = "default_content";
     private static final String FIRST_SCOPE = "test_scope_first";
     private static final String SECOND_SCOPE = "test_scope_second";
 
     private static final String THIRD_SCOPE = "test_scope_third";
 
-    private final static String EVENT_NAME = "default_event_name";
     private final long EVENT_BATCH_DURATION = 24000L;
     private final long EVENTS_IN_BATCH = 4;
-
-    private final long storeActionRejectionThreshold = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
     private final List<TestEventToStore> data = new ArrayList<>();
     private Map<String, List<StoredTestEvent>> storedData;
     private CassandraOperators operators;
@@ -147,34 +142,6 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
 
         //We place b2 the last because it is one that will be excluded in expected result, and it's easier to do sublist if this element is the last one.
         return List.of(b1, b3, b4, b5, b2);
-    }
-
-    /*
-        Generates test event filled with events
-        each of event having `eventDuration` duration
-        while batch itself having `batchDuration` duration
-     */
-    private TestEventToStore generateTestEvent (String scope, Instant start, long batchDuration, long eventDuration) throws CradleStorageException {
-        StoredTestEventId parentId = new StoredTestEventId(bookId, scope, start, UUID.randomUUID().toString());
-        StoredTestEventId id = new StoredTestEventId(bookId, scope, start, UUID.randomUUID().toString());
-        TestEventBatchToStore batch = new TestEventBatchToStoreBuilder(100*1024, storeActionRejectionThreshold)
-                .name(EVENT_NAME)
-                .id(id)
-                .parentId(parentId)
-                .build();
-
-        for (long i = 0; i < batchDuration; i += eventDuration) {
-            batch.addTestEvent(new TestEventSingleToStoreBuilder(storeActionRejectionThreshold)
-                    .content(CONTENT.getBytes(StandardCharsets.UTF_8))
-                    .id(bookId, scope, start.plusMillis(i), UUID.randomUUID().toString())
-                    .endTimestamp(start.plusMillis(i + eventDuration))
-                    .success(true)
-                    .name(EVENT_NAME)
-                    .parentId(parentId)
-                    .build());
-        }
-
-        return batch;
     }
 
     private TestEventIteratorProvider createIteratorProvider(TestEventFilter filter, Instant actualFrom) throws CradleStorageException {

@@ -20,9 +20,8 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.CassandraCradleStorage;
 import com.exactpro.cradle.messages.MessageToStore;
+import com.exactpro.cradle.testevents.*;
 import com.exactpro.cradle.utils.CradleStorageException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -30,6 +29,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -38,16 +38,16 @@ import java.util.stream.Collectors;
  * actually calling any of init or utility methods
  */
 public abstract class BaseCradleCassandraTest {
-
-    private static final Logger logger = LoggerFactory.getLogger(BaseCradleCassandraTest.class);
-
-
     protected static final String DEFAULT_PAGE_PREFIX = "test_page_";
     protected static final BookId DEFAULT_BOOK_ID = new BookId("test_book");
+    private final static String EVENT_NAME = "default_event_name";
     private static final Instant DEFAULT_DATA_END = Instant.now();
     private static final Instant DEFAULT_DATA_START = DEFAULT_DATA_END.minus(1, ChronoUnit.HOURS);
     public static final String protocol = "default_message_protocol";
     public static final String CONTENT = "default_content";
+
+    private final long storeActionRejectionThreshold = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
+
 
 
     private static final List<PageInfo> DEFAULT_PAGES = List.of(
@@ -138,4 +138,33 @@ public abstract class BaseCradleCassandraTest {
                 .protocol(protocol)
                 .build();
     }
+
+    /*
+    Generates test event filled with events
+    each of event having `eventDuration` duration
+    while batch itself having `batchDuration` duration
+ */
+    protected TestEventToStore generateTestEvent (String scope, Instant start, long batchDuration, long eventDuration) throws CradleStorageException {
+        StoredTestEventId parentId = new StoredTestEventId(bookId, scope, start, UUID.randomUUID().toString());
+        StoredTestEventId id = new StoredTestEventId(bookId, scope, start, UUID.randomUUID().toString());
+        TestEventBatchToStore batch = new TestEventBatchToStoreBuilder(100*1024, storeActionRejectionThreshold)
+                .name(EVENT_NAME)
+                .id(id)
+                .parentId(parentId)
+                .build();
+
+        for (long i = 0; i < batchDuration; i += eventDuration) {
+            batch.addTestEvent(new TestEventSingleToStoreBuilder(storeActionRejectionThreshold)
+                    .content(CONTENT.getBytes(StandardCharsets.UTF_8))
+                    .id(bookId, scope, start.plusMillis(i), UUID.randomUUID().toString())
+                    .endTimestamp(start.plusMillis(i + eventDuration))
+                    .success(true)
+                    .name(EVENT_NAME)
+                    .parentId(parentId)
+                    .build());
+        }
+
+        return batch;
+    }
+
 }

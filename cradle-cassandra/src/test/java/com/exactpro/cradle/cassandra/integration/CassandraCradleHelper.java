@@ -16,7 +16,6 @@
 
 package com.exactpro.cradle.cassandra.integration;
 
-import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.exactpro.cradle.cassandra.CassandraConsistencyLevel;
 import com.exactpro.cradle.cassandra.CassandraCradleManager;
@@ -53,7 +52,7 @@ public class CassandraCradleHelper {
     private static CassandraCradleHelper instance;
 
     @BeforeSuite
-    public static void beforeSuite(){
+    public static void beforeSuite() {
         instance = getInstance();
     }
 
