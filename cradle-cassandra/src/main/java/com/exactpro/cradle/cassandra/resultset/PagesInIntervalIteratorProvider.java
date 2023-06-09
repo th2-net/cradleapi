@@ -24,8 +24,6 @@ import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.utils.CradleStorageException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.LinkedList;
@@ -49,8 +47,6 @@ public abstract class PagesInIntervalIteratorProvider<T> extends IteratorProvide
     protected final BookId bookId;
     protected final Queue<String> pages;
     protected final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
-    private static final Logger logger = LoggerFactory.getLogger(PagesInIntervalIteratorProvider.class);
-
     public PagesInIntervalIteratorProvider(String requestInfo,
                                            CassandraOperators operators,
                                            BookId bookId,
@@ -75,10 +71,7 @@ public abstract class PagesInIntervalIteratorProvider<T> extends IteratorProvide
         return bookCache.loadPageInfo(bookId, false)
                 .stream()
                 .filter(page -> checkInterval(page, start, end))
-                .map(page -> {
-                    logger.info("page: {} start: {} - end: {}", page.getId(), page.getStarted(), page.getEnded());
-                    return page.getId().getName();
-                })
+                .map(page -> page.getId().getName())
                 .collect(Collectors.toCollection(LinkedList::new));
     }
 
