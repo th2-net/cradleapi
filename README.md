@@ -35,7 +35,7 @@ repositories {
 To use Cradle API, add the following dependency to your project:
 ```
 dependencies {
-	implementation 'com.exactpro.th2:cradle-cassandra:5.0.0'
+	implementation 'com.exactpro.th2:cradle-cassandra:5.0.2'
 	...
 }
 ```

@@ -56,7 +56,7 @@ public class CassandraConnection
 		if (!StringUtils.isEmpty(settings.getLocalDataCenter()))
 			sessionBuilder = sessionBuilder.withLocalDatacenter(settings.getLocalDataCenter());
 		if (settings.getPort() > -1)
-			sessionBuilder = sessionBuilder.addContactPoint(new InetSocketAddress(settings.getHost(), settings.getPort()));
+			sessionBuilder = sessionBuilder.addContactPoint(InetSocketAddress.createUnresolved(settings.getHost(), settings.getPort()));
 		if (!StringUtils.isEmpty(settings.getUsername()))
 			sessionBuilder = sessionBuilder.withAuthCredentials(settings.getUsername(), settings.getPassword());
 		session = sessionBuilder.build();
