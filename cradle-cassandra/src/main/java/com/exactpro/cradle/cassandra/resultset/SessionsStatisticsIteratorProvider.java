@@ -45,7 +45,7 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
         to guarantee that unique elements will be returned
         across all iterators
      */
-    private final Set<Integer> registry;
+    private final Set<String> registry;
     private PageInfo curPage;
 
     public SessionsStatisticsIteratorProvider (String requestInfo,

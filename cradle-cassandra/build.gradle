@@ -18,6 +18,7 @@ dependencies {
 	implementation "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
 	implementation "com.datastax.oss:java-driver-mapper-runtime:${driver_version}"
 	implementation 'io.prometheus:simpleclient_dropwizard:0.16.0'
+	implementation 'com.google.guava:guava'
 
 	// this section is required to bypass failing vulnerability check caused by cassandra driver's transitive dependencies
 	annotationProcessor platform('com.exactpro.th2:bom:4.3.0')

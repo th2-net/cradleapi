@@ -25,18 +25,21 @@ import java.util.Set;
 /**
  * Iterator which returns skips duplicates
  * from underlying iterator
+ * ------------- USE WITH CAUTION ------------------------------------------------------
+ * Since this iterator caches the values, it must be used only for primitives or strings
+ * caching large set of full scaled database objects may cause OOM
  * @param <T>
  */
 public class UniqueIterator<T> extends FilteringIterator<T> {
 
     private static class UniquePredicate<T> implements Predicate<T> {
-        private final Set<Integer> set;
+        private final Set<T> set;
 
         private UniquePredicate() {
             this(new HashSet<>());
         }
 
-        private UniquePredicate(Set<Integer> set) {
+        private UniquePredicate(Set<T> set) {
             this.set = set;
         }
 
@@ -45,7 +48,7 @@ public class UniqueIterator<T> extends FilteringIterator<T> {
             if (input == null) {
                 return false;
             }
-            return set.add(input.hashCode());
+            return set.add(input);
         }
     }
 
@@ -53,7 +56,7 @@ public class UniqueIterator<T> extends FilteringIterator<T> {
         super(iterator, new UniquePredicate<>());
     }
 
-    public UniqueIterator(Iterator<T> iterator, Set<Integer> registry) {
+    public UniqueIterator(Iterator<T> iterator, Set<T> registry) {
         super(iterator, new UniquePredicate<>(registry));
     }
 }
