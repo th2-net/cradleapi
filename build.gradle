@@ -15,6 +15,7 @@ allprojects {
 	dependencyCheck {
 		formats=['SARIF', 'JSON', 'HTML']
 		failBuildOnCVSS=5
+		suppressionFile="suppressions.xml"
 		analyzers {
 			assemblyEnabled = false
 			nugetconfEnabled = false
