@@ -72,7 +72,6 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	public CassandraStoredMessageFilter(String book, String page, String sessionAlias, String direction,
 										FilterForGreater<Instant> messageTimeFrom, FilterForLess<Instant> messageTimeTo, int limit, Order order)
 	{
-		Preconditions.checkArgument(limit > 0, "Limit must be strictly positive");
 		this.book = book;
 		this.page = page;
 		this.sessionAlias = sessionAlias;

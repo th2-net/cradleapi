@@ -56,7 +56,6 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
                                     FilterForGreater<Instant> startTimestampFrom, FilterForLess<Instant> startTimestampTo,
                                     StoredTestEventId id,
                                     String parentId, int limit, Order order) {
-        Preconditions.checkArgument(limit > 0, "Limit must be strictly positive");
         this.book = book;
         this.page = page;
         this.scope = scope;

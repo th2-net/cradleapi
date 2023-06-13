@@ -48,7 +48,6 @@ public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMes
                                          FilterForLess<Instant> messageTimeTo,
                                          Order order,
                                          int limit) {
-        Preconditions.checkArgument(limit > 0, "Limit must be strictly positive");
         this.book = book;
         this.page = page;
         this.groupName = groupName;
