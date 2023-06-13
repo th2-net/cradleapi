@@ -20,7 +20,7 @@ dependencies {
 	implementation 'io.prometheus:simpleclient_dropwizard:0.16.0'
 
 	// this section is required to bypass failing vulnerability check caused by cassandra driver's transitive dependencies
-	annotationProcessor platform('com.exactpro.th2:bom:4.2.0-vulnerability-update-5252714905-93a9a7c-SNAPSHOT')
+	annotationProcessor platform('com.exactpro.th2:bom:4.3.0')
 	annotationProcessor "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
 	// ---
 

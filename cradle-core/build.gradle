@@ -1,5 +1,5 @@
 dependencies {
-	api platform('com.exactpro.th2:bom:4.2.0-vulnerability-update-5252714905-93a9a7c-SNAPSHOT')
+	api platform('com.exactpro.th2:bom:4.3.0')
 
 	implementation "com.fasterxml.jackson.core:jackson-databind"
 	implementation "org.apache.commons:commons-lang3"
