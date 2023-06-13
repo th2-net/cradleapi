@@ -15,6 +15,7 @@ allprojects {
 	dependencyCheck {
 		formats=['SARIF', 'JSON', 'HTML']
 		failBuildOnCVSS=5
+		suppressionFile="suppressions.xml"
 		analyzers {
 			assemblyEnabled = false
 			nugetconfEnabled = false
@@ -32,7 +33,15 @@ subprojects {
 
 	repositories {
 		mavenCentral()
+		maven {
+			name 'Sonatype_snapshots'
+			url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
+		}
 
+		maven {
+			name 'Sonatype_releases'
+			url 'https://s01.oss.sonatype.org/content/repositories/releases/'
+		}
 		configurations.all {
 			resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
 			resolutionStrategy.cacheDynamicVersionsFor 0, 'seconds'
