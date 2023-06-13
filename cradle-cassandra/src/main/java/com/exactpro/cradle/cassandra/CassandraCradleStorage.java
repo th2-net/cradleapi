@@ -662,6 +662,38 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
+	protected CradleResultSet<String> doGetScopes(BookId bookId, Interval interval) throws CradleStorageException {
+		try
+		{
+			return doGetScopesAsync(bookId, interval).get();
+		}
+		catch (Exception e)
+		{
+			throw new CradleStorageException("Error while getting scopes for book: " + bookId.getName() + " within interval: " +interval.toString(), e);
+		}
+	}
+
+	@Override
+	protected CompletableFuture<CradleResultSet<String>> doGetScopesAsync(BookId bookId, Interval interval) throws CradleStorageException {
+		String queryInfo = String.format("Scopes in book %s from pages that fall within %s to %s",
+				bookId.getName(),
+				interval.getStart().toString(),
+				interval.getEnd().toString());
+
+		PageScopesIteratorProvider iteratorProvider = new PageScopesIteratorProvider(
+				queryInfo,
+				operators,
+				bookId,
+				getBookCache(),
+				interval,
+				composingService,
+				selectExecutor,
+				readAttrs
+		);
+		return iteratorProvider.nextIterator().thenApplyAsync(it -> new CassandraCradleResultSet<>(it, iteratorProvider));
+	}
+
+	@Override
 	protected CompletableFuture<CradleResultSet<CounterSample>> doGetMessageCountersAsync(BookId bookId,
 																						  String sessionAlias,
 																						  Direction direction,
@@ -889,7 +921,22 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<CradleResultSet<String>> doGetSessionAliasesAsync(BookId bookId, Interval interval) throws CradleStorageException {
-		return doGetSessionsAsync(bookId, interval, SessionRecordType.SESSION);
+		String queryInfo = String.format("Session Aliases in book %s from pages that fall within %s to %s",
+				bookId.getName(),
+				interval.getStart().toString(),
+				interval.getEnd().toString());
+
+		PageSessionsIteratorProvider iteratorProvider = new PageSessionsIteratorProvider(
+				queryInfo,
+				operators,
+				bookId,
+				getBookCache(),
+				interval,
+				composingService,
+				selectExecutor,
+				readAttrs
+		);
+		return iteratorProvider.nextIterator().thenApplyAsync(it -> new CassandraCradleResultSet<>(it, iteratorProvider));
 	}
 
 	@Override
@@ -918,7 +965,22 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<CradleResultSet<String>> doGetSessionGroupsAsync(BookId bookId, Interval interval) throws CradleStorageException {
-		return doGetSessionsAsync(bookId, interval, SessionRecordType.SESSION_GROUP);
+		String queryInfo = String.format("Scopes in book %s from pages that fall within %s to %s",
+				bookId.getName(),
+				interval.getStart().toString(),
+				interval.getEnd().toString());
+
+		PageGroupsIteratorProvider iteratorProvider = new PageGroupsIteratorProvider(
+				queryInfo,
+				operators,
+				bookId,
+				getBookCache(),
+				interval,
+				composingService,
+				selectExecutor,
+				readAttrs
+		);
+		return iteratorProvider.nextIterator().thenApplyAsync(it -> new CassandraCradleResultSet<>(it, iteratorProvider));
 	}
 
 	@Override

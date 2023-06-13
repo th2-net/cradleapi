@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle.cassandra.dao.messages;
 
+import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
@@ -32,6 +33,9 @@ public interface PageGroupsOperator {
     @Select
     PagingIterable<PageGroupEntity> get(String book, String page,
                                           Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+    @Select
+    CompletableFuture<MappedAsyncPagingIterable<PageGroupEntity>> getAsync(String book, String page, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
     @Insert
     CompletableFuture<PageGroupEntity> write(PageGroupEntity entity,

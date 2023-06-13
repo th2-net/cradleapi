@@ -11,22 +11,17 @@ dependencies {
 	api project(":cradle-core")
 
 	implementation "org.apache.commons:commons-lang3"
-	implementation 'com.exactpro.th2:task-utils:0.1.0'
+	implementation 'com.exactpro.th2:task-utils:0.1.2'
 
 	implementation "com.datastax.oss:java-driver-core:${driver_version}"
 	implementation "com.datastax.oss:java-driver-query-builder:${driver_version}"
 	implementation "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
 	implementation "com.datastax.oss:java-driver-mapper-runtime:${driver_version}"
-	implementation 'io.prometheus:simpleclient_dropwizard:0.9.0'
+	implementation 'io.prometheus:simpleclient_dropwizard:0.16.0'
 
 	// this section is required to bypass failing vulnerability check caused by cassandra driver's transitive dependencies
-	implementation 'io.netty:netty-handler'
-	implementation 'com.fasterxml.jackson.core:jackson-databind'
-
-	annotationProcessor platform('com.exactpro.th2:bom:4.2.0')
+	annotationProcessor platform('com.exactpro.th2:bom:4.3.0')
 	annotationProcessor "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
-	annotationProcessor 'io.netty:netty-handler'
-	annotationProcessor 'com.fasterxml.jackson.core:jackson-databind'
 	// ---
 
 	testImplementation 'org.testng:testng:7.1.0'
