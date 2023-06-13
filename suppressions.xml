@@ -4,6 +4,6 @@
                 <notes><![CDATA[FP per issue https://github.com/jeremylong/DependencyCheck/issues/2995]]>
                 </notes>
                 <packageUrl regex="true">^pkg:maven/com\.exactpro\.th2/task-utils@.*$</packageUrl>
-                <vulnerabilityName>CVE-2023-2972</vulnerabilityName>
+                <cpe>cpe:/a:utils_project:utils</cpe>
         </suppress>
 </suppressions>
