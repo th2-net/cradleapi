@@ -1,48 +1,52 @@
 ext {
-	driver_version = '4.15.0'
+    driver_version = '4.15.0'
 }
 
-configurations.all {
-	exclude group: 'com.esri.geometry'
-	exclude group: 'org.apache.tinkerpop'
+configurations.configureEach {
+    exclude group: 'com.esri.geometry'
+    exclude group: 'org.apache.tinkerpop'
 }
 
 dependencies {
-	api project(":cradle-core")
+    api project(":cradle-core")
 
-	implementation "org.apache.commons:commons-lang3"
-	implementation 'com.exactpro.th2:task-utils:0.1.2'
+    implementation "org.apache.commons:commons-lang3"
+    implementation 'com.exactpro.th2:task-utils:0.1.2'
 
-	implementation "com.datastax.oss:java-driver-core:${driver_version}"
-	implementation "com.datastax.oss:java-driver-query-builder:${driver_version}"
-	implementation "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
-	implementation "com.datastax.oss:java-driver-mapper-runtime:${driver_version}"
-	implementation 'io.prometheus:simpleclient_dropwizard:0.16.0'
+    implementation "com.datastax.oss:java-driver-core:${driver_version}"
+    implementation "com.datastax.oss:java-driver-query-builder:${driver_version}"
+    implementation "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
+    implementation "com.datastax.oss:java-driver-mapper-runtime:${driver_version}"
+    implementation 'io.prometheus:simpleclient_dropwizard:0.16.0'
 
-	// this section is required to bypass failing vulnerability check caused by cassandra driver's transitive dependencies
-	annotationProcessor platform('com.exactpro.th2:bom:4.3.0')
-	annotationProcessor "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
-	// ---
+    // this section is required to bypass failing vulnerability check caused by cassandra driver's transitive dependencies
+    annotationProcessor platform('com.exactpro.th2:bom:4.3.0')
+    annotationProcessor "com.datastax.oss:java-driver-mapper-processor:${driver_version}"
+    // ---
 
-	testImplementation 'org.testng:testng:7.1.0'
-	testImplementation 'org.assertj:assertj-core:3.12.2'
-	testImplementation "org.apache.logging.log4j:log4j-slf4j2-impl"
-	testImplementation 'org.apache.logging.log4j:log4j-core'
+    testImplementation 'org.testng:testng:7.7.0'
+    testImplementation 'org.assertj:assertj-core:3.12.2'
+    testImplementation "org.apache.logging.log4j:log4j-slf4j2-impl"
+    testImplementation 'org.apache.logging.log4j:log4j-core'
 }
 
 def gen_dir = 'build/generated/sources/annotationProcessor/main'
 sourceSets.main.java.srcDirs += [gen_dir]
 
 compileJava {
-	options.annotationProcessorGeneratedSourcesDirectory = file("${projectDir}/${gen_dir}")
+    options.annotationProcessorGeneratedSourcesDirectory = file("${projectDir}/${gen_dir}")
 }
 
 test {
-	useTestNG()
+    useTestNG()
 }
 
 jar {
-	manifest {
-		attributes("Specification-Title": "Cradle Cassandra")
-	}
+    manifest {
+        attributes("Specification-Title": "Cradle Cassandra")
+    }
+}
+
+dependencyCheck {
+    suppressionFile = "${rootDir}/suppressions.xml"
 }
