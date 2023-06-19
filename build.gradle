@@ -83,8 +83,7 @@ subprojects {
                     project.hasProperty('nexus_url')) ||
                     (repository == publishing.repositories.sonatype &&
                             project.hasProperty('sonatypeUsername') &&
-                            project.hasProperty('sonatypePassword')) ||
-                    (repository == publishing.repositories.localRepo)
+                            project.hasProperty('sonatypePassword'))
         }
     }
     tasks.withType(Sign).configureEach {
@@ -134,10 +133,6 @@ subprojects {
             }
         }
         repositories {
-            maven {
-                name = 'localRepo'
-                url = sharedDir
-            }
             //Nexus repo to publish from gitlab
             maven {
                 name = 'nexusRepository'
@@ -170,10 +165,6 @@ tasks.register("listProjects") {
     doLast {
         subprojects.forEach { println(it.name) }
     }
-}
-
-clean {
-    delete sharedDir
 }
 
 static def getDate() {
