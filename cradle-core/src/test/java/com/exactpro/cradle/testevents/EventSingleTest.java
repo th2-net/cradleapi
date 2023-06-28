@@ -31,7 +31,6 @@ import org.testng.annotations.Test;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
-import org.yaml.snakeyaml.util.ArrayUtils;
 
 public class EventSingleTest
 {

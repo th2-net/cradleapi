@@ -16,8 +16,6 @@
 
 package com.exactpro.cradle.cassandra.retries;
 
-import java.util.Collection;
-
 import com.datastax.oss.driver.api.core.cql.Statement;
 
 /**

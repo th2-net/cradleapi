@@ -19,6 +19,7 @@ package com.exactpro.cradle.cassandra.dao.messages;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
+import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
 import com.exactpro.cradle.Order;
 import com.exactpro.cradle.cassandra.dao.CassandraFilter;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
@@ -33,7 +34,9 @@ import static com.exactpro.cradle.cassandra.dao.messages.CassandraStoredMessageF
 
 public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMessageBatchEntity> {
     private final String book, page, groupName;
-    private final Integer limit;
+
+    /** limit must be strictly positive ( limit greater than 0 ) */
+    private final int limit;
     private final FilterForGreater<Instant> messageTimeFrom;
     private final FilterForLess<Instant> messageTimeTo;
     private final Order order;
@@ -66,7 +69,7 @@ public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMes
         if (messageTimeTo != null)
             select = FilterUtils.timestampFilterToWhere(messageTimeTo.getOperation(), select, FIELD_FIRST_MESSAGE_DATE, FIELD_FIRST_MESSAGE_TIME, DATE_TO, TIME_TO);
 
-        if (limit != 0) {
+        if (limit > 0) {
             select = select.limit(limit);
         }
 
@@ -108,7 +111,7 @@ public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMes
         return groupName;
     }
 
-    public Integer getLimit() {
+    public int getLimit() {
         return limit;
     }
 

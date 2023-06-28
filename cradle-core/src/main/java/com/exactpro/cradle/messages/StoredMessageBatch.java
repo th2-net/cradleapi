@@ -21,10 +21,7 @@ import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class StoredMessageBatch implements MessageBatch
 {
@@ -141,5 +138,31 @@ public class StoredMessageBatch implements MessageBatch
 		for (StoredMessage msg : messages)
 			result.add(new StoredMessage(msg, msg.getId(), pageId));
 		return result;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof StoredMessageBatch)) return false;
+		StoredMessageBatch that = (StoredMessageBatch) o;
+		return getBatchSize() == that.getBatchSize()
+				&& Objects.equals(getId(), that.getId())
+				&& Objects.equals(getMessages(), that.getMessages())
+				&& Objects.equals(getRecDate(), that.getRecDate());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(getId(), getBatchSize(), getMessages(), getRecDate());
+	}
+
+	@Override
+	public String toString() {
+		return "StoredMessageBatch{" +
+				"id=" + id +
+				", batchSize=" + batchSize +
+				", messages=" + messages +
+				", recDate=" + recDate +
+				'}';
 	}
 }

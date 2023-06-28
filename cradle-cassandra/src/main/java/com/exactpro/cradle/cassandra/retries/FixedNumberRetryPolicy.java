@@ -18,8 +18,6 @@ package com.exactpro.cradle.cassandra.retries;
 
 import com.datastax.oss.driver.api.core.cql.Statement;
 
-import java.util.Collection;
-
 public class FixedNumberRetryPolicy implements SelectExecutionPolicy
 {
 	private int maxRetry;

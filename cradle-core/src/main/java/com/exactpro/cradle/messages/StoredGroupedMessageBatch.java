@@ -21,10 +21,7 @@ import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 
 import java.time.Instant;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.TreeSet;
+import java.util.*;
 
 public class StoredGroupedMessageBatch {
 	protected BookId bookId;
@@ -50,6 +47,7 @@ public class StoredGroupedMessageBatch {
 			return;
 		}
 		batchSize = MessagesSizeCalculator.calculateMessageBatchSize(messages).total;
+		this.bookId = pageId.getBookId();
 	}
 
 	public String getGroup() {
@@ -128,5 +126,33 @@ public class StoredGroupedMessageBatch {
 		for (StoredMessage msg : messages)
 			result.add(new StoredMessage(msg, msg.getId(), pageId));
 		return result;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof StoredGroupedMessageBatch)) return false;
+		StoredGroupedMessageBatch that = (StoredGroupedMessageBatch) o;
+		return getBatchSize() == that.getBatchSize()
+				&& getBookId().equals(that.getBookId())
+				&& getGroup().equals(that.getGroup())
+				&& getMessages().equals(that.getMessages())
+				&& getRecDate().equals(that.getRecDate());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(getBookId(), getGroup(), getBatchSize(), getMessages(), getRecDate());
+	}
+
+	@Override
+	public String toString() {
+		return "StoredGroupedMessageBatch{" +
+				"bookId=" + bookId +
+				", group='" + group + '\'' +
+				", batchSize=" + batchSize +
+				", messages=" + messages +
+				", recDate=" + recDate +
+				'}';
 	}
 }

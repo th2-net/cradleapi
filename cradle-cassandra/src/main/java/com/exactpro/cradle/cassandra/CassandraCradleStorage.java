@@ -36,7 +36,6 @@ import com.exactpro.cradle.cassandra.dao.statistics.MessageStatisticsIteratorPro
 import com.exactpro.cradle.cassandra.dao.statistics.MessageStatisticsOperator;
 import com.exactpro.cradle.cassandra.dao.statistics.SessionStatisticsOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.*;
-import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
 import com.exactpro.cradle.cassandra.metrics.DriverMetrics;
@@ -56,6 +55,7 @@ import com.exactpro.cradle.counters.Counter;
 import com.exactpro.cradle.counters.CounterSample;
 import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.intervals.IntervalsWorker;
+import com.exactpro.cradle.iterators.ConvertingIterator;
 import com.exactpro.cradle.messages.*;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
@@ -75,7 +75,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -1349,12 +1348,14 @@ public class CassandraCradleStorage extends CradleStorage
 				endDate,
 				endTime,
 				readAttrs)
-				.thenApply(rs -> new ConvertingPagedIterator<>(rs,
-						selectExecutor,
-						0,
-						new AtomicInteger(0),
-						PageEntity::toPageInfo,
-						(el) -> operators.getPageEntityConverter().getEntity(el), queryInfo));
+				.thenApply(rs -> {
+					PagedIterator<PageEntity> pagedIterator = new PagedIterator<>(rs,
+							selectExecutor,
+							operators.getPageEntityConverter()::getEntity,
+							queryInfo);
+
+					return new ConvertingIterator<>(pagedIterator, PageEntity::toPageInfo);
+				});
 	}
 
 	@Override

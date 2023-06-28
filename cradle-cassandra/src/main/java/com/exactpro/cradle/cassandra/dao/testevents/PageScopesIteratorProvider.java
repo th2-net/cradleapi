@@ -21,16 +21,17 @@ import com.exactpro.cradle.BookCache;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.testevents.converters.PageScopeEntityConverter;
-import com.exactpro.cradle.cassandra.iterators.DuplicateSkippingIterator;
+import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.resultset.PagesInIntervalIteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.counters.Interval;
+import com.exactpro.cradle.iterators.ConvertingIterator;
+import com.exactpro.cradle.iterators.UniqueIterator;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 public class PageScopesIteratorProvider extends PagesInIntervalIteratorProvider<String> {
@@ -58,15 +59,16 @@ public class PageScopesIteratorProvider extends PagesInIntervalIteratorProvider<
         PageScopesOperator pageScopesOperator = operators.getPageScopesOperator();
         PageScopeEntityConverter converter = operators.getPageScopeEntityConverter();
 
-        return pageScopesOperator.getAsync(bookId.getName(), pages.remove(), readAttrs).thenApplyAsync(rs ->
-                new DuplicateSkippingIterator<>(rs,
-                        selectQueryExecutor,
-                        -1,
-                        new AtomicInteger(0),
-                        PageScopeEntity::getScope,
-                        converter::getEntity,
-                        registry,
-                        getRequestInfo()
-                ), composingService);
+        return pageScopesOperator.getAsync(bookId.getName(), pages.remove(), readAttrs).thenApplyAsync(rs -> {
+            PagedIterator<PageScopeEntity> pagedIterator = new PagedIterator<>(rs,
+                    selectQueryExecutor,
+                    converter::getEntity,
+                    getRequestInfo());
+            ConvertingIterator<PageScopeEntity, String> convertingIterator = new ConvertingIterator<>(
+                    pagedIterator,
+                    PageScopeEntity::getScope);
+
+            return new UniqueIterator<>(convertingIterator, registry);
+        });
     }
 }

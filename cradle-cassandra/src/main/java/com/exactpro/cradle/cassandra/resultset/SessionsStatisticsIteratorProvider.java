@@ -9,10 +9,12 @@ import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.statistics.SessionStatisticsEntity;
 import com.exactpro.cradle.cassandra.dao.statistics.SessionStatisticsEntityConverter;
 import com.exactpro.cradle.cassandra.dao.statistics.SessionStatisticsOperator;
-import com.exactpro.cradle.cassandra.iterators.DuplicateSkippingIterator;
+import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
 import com.exactpro.cradle.filters.FilterForGreater;
+import com.exactpro.cradle.iterators.ConvertingIterator;
+import com.exactpro.cradle.iterators.UniqueIterator;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -21,7 +23,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 /**
@@ -108,14 +109,15 @@ public class SessionsStatisticsIteratorProvider extends IteratorProvider<String>
                                     frameIndex ++;
                                 }
 
-                                return new DuplicateSkippingIterator<>(rs,
+                                PagedIterator<SessionStatisticsEntity> pagedIterator = new PagedIterator<>(rs,
                                         selectQueryExecutor,
-                                        -1,
-                                        new AtomicInteger(0),
-                                        SessionStatisticsEntity::getSession,
                                         converter::getEntity,
-                                        registry,
                                         getRequestInfo());
+                                ConvertingIterator<SessionStatisticsEntity, String> convertingIterator = new ConvertingIterator<>(
+                                        pagedIterator,
+                                        SessionStatisticsEntity::getSession);
+
+                                return new UniqueIterator<>(convertingIterator, registry);
                                 }, composingService);
         }
 }

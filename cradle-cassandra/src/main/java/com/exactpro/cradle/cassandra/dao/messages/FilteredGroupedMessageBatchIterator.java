@@ -29,8 +29,8 @@ import java.util.function.Predicate;
 
 public class FilteredGroupedMessageBatchIterator extends MappedIterator<StoredGroupedMessageBatch, StoredGroupedMessageBatch>
 {
-	private FilterForGreater<Instant> filterFrom;
-	private FilterForLess<Instant> filterTo;
+	private final FilterForGreater<Instant> filterFrom;
+	private final FilterForLess<Instant> filterTo;
 
 
 	public FilteredGroupedMessageBatchIterator(Iterator<StoredGroupedMessageBatch> sourceIterator, GroupedMessageFilter filter,

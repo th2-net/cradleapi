@@ -21,10 +21,12 @@ import com.exactpro.cradle.BookCache;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.messages.converters.PageGroupEntityConverter;
-import com.exactpro.cradle.cassandra.iterators.DuplicateSkippingIterator;
+import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.resultset.PagesInIntervalIteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.counters.Interval;
+import com.exactpro.cradle.iterators.ConvertingIterator;
+import com.exactpro.cradle.iterators.UniqueIterator;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 import java.util.HashSet;
@@ -32,7 +34,6 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 public class PageGroupsIteratorProvider extends PagesInIntervalIteratorProvider<String> {
@@ -60,15 +61,17 @@ public class PageGroupsIteratorProvider extends PagesInIntervalIteratorProvider<
         PageGroupsOperator pageGroupsOperator = operators.getPageGroupsOperator();
         PageGroupEntityConverter converter = operators.getPageGroupEntityConverter();
 
-        return pageGroupsOperator.getAsync(bookId.getName(), pages.remove(), readAttrs).thenApplyAsync(rs ->
-                new DuplicateSkippingIterator<>(rs,
-                        selectQueryExecutor,
-                        -1,
-                        new AtomicInteger(0),
-                        PageGroupEntity::getGroup,
-                        converter::getEntity,
-                        registry,
-                        getRequestInfo()
-                ), composingService);
+        return pageGroupsOperator.getAsync(bookId.getName(), pages.remove(), readAttrs).thenApplyAsync(rs ->{
+
+            PagedIterator<PageGroupEntity> pagedIterator = new PagedIterator<>(rs,
+                    selectQueryExecutor,
+                    converter::getEntity,
+                    getRequestInfo());
+            ConvertingIterator<PageGroupEntity, String> convertingIterator = new ConvertingIterator<>(
+                    pagedIterator,
+                    PageGroupEntity::getGroup);
+
+            return new UniqueIterator<>(convertingIterator, registry);
+        });
     }
 }

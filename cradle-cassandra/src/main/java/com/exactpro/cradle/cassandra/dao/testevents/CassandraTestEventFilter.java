@@ -19,6 +19,7 @@ package com.exactpro.cradle.cassandra.dao.testevents;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
+import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
 import com.exactpro.cradle.Order;
 import com.exactpro.cradle.cassandra.dao.CassandraFilter;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
@@ -46,13 +47,15 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
     private final FilterForLess<Instant> startTimestampTo;
     private final String parentId;
     private final StoredTestEventId id;
-    private final Integer limit;
+
+    /** limit must be strictly positive ( limit greater than 0 ) */
+    private final int limit;
     private final Order order;
 
     public CassandraTestEventFilter(String book, String page, String scope,
                                     FilterForGreater<Instant> startTimestampFrom, FilterForLess<Instant> startTimestampTo,
                                     StoredTestEventId id,
-                                    String parentId, Integer limit, Order order) {
+                                    String parentId, int limit, Order order) {
         this.book = book;
         this.page = page;
         this.scope = scope;
