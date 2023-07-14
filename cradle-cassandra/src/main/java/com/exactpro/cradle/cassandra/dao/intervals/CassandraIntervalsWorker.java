@@ -20,11 +20,12 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.shaded.guava.common.collect.Iterables;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.cassandra.EntityConverter;
-import com.exactpro.cradle.cassandra.iterators.ConvertingPagedIterator;
+import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.workers.Worker;
 import com.exactpro.cradle.cassandra.workers.WorkerSupplies;
 import com.exactpro.cradle.intervals.Interval;
 import com.exactpro.cradle.intervals.IntervalsWorker;
+import com.exactpro.cradle.iterators.ConvertingIterator;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.UpdateNotAppliedException;
 import org.slf4j.Logger;
@@ -39,7 +40,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.CradleStorage.TIMEZONE_OFFSET;
@@ -83,14 +83,17 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
     }
 
     private Iterable<Interval> getIntervalsIterator(MappedAsyncPagingIterable<IntervalEntity> iterable, String queryInfo) {
-        return () -> new ConvertingPagedIterator<>(
-                iterable,
-                selectQueryExecutor,
-                0,
-                new AtomicInteger(0),
-                this::mapEntityToInterval,
-                converter::getEntity,
-                queryInfo);
+        return () -> {
+            PagedIterator<IntervalEntity> pagedIterator = new PagedIterator<>(iterable,
+                    selectQueryExecutor,
+                    converter::getEntity,
+                    queryInfo);
+
+            return new ConvertingIterator<>(
+                    pagedIterator,
+                    this::mapEntityToInterval);
+        };
+
     }
 
     @Override

@@ -99,7 +99,7 @@ public class TestEventEntityTest {
 
         RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
         config.ignoreFieldsMatchingRegexes("pageId", ".*\\.pageId", "error", ".*\\.error", "recDate", ".*\\.recDate", "lastStartTimestamp", ".*\\.lastStartTimestamp");
-
+config.ignoreAllOverriddenEquals();
         Assertions.assertThat(newEvent)
                 .usingRecursiveComparison(config)
                 .isEqualTo(event);

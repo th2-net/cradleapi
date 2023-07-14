@@ -16,9 +16,6 @@
 
 package com.exactpro.cradle.cassandra.retries;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;

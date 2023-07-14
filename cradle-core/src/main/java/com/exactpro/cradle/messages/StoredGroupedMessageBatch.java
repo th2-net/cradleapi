@@ -65,7 +65,8 @@ public class StoredGroupedMessageBatch {
         }
         this.messages.forEach(this::updateFirstLast);
         batchSize = MessagesSizeCalculator.calculateMessageBatchSize(this.messages);
-    }
+    this.bookId = pageId.getBookId();
+	}
 
     public String getGroup() {
         return group;
@@ -136,4 +137,32 @@ public class StoredGroupedMessageBatch {
             lastMessage = message;
         }
     }
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof StoredGroupedMessageBatch)) return false;
+		StoredGroupedMessageBatch that = (StoredGroupedMessageBatch) o;
+		return getBatchSize() == that.getBatchSize()
+				&& getBookId().equals(that.getBookId())
+				&& getGroup().equals(that.getGroup())
+				&& getMessages().equals(that.getMessages())
+				&& getRecDate().equals(that.getRecDate());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(getBookId(), getGroup(), getBatchSize(), getMessages(), getRecDate());
+	}
+
+	@Override
+	public String toString() {
+		return "StoredGroupedMessageBatch{" +
+				"bookId=" + bookId +
+				", group='" + group + '\'' +
+				", batchSize=" + batchSize +
+				", messages=" + messages +
+				", recDate=" + recDate +
+				'}';
+	}
 }

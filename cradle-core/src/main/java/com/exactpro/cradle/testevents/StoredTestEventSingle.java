@@ -17,9 +17,7 @@
 package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.messages.StoredMessageId;
@@ -87,5 +85,33 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 	@Override
 	public Instant getLastStartTimestamp() {
 		return getStartTimestamp();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof StoredTestEventSingle)) return false;
+		StoredTestEventSingle single = (StoredTestEventSingle) o;
+		return isSuccess() == single.isSuccess()
+				&& Objects.equals(getEndTimestamp(), single.getEndTimestamp())
+				&& Objects.equals(getMessages(), single.getMessages())
+				&& Arrays.equals(getContent(), single.getContent());
+	}
+
+	@Override
+	public int hashCode() {
+		int result = Objects.hash(getEndTimestamp(), isSuccess(), getMessages());
+		result = 31 * result + Arrays.hashCode(getContent());
+		return result;
+	}
+
+	@Override
+	public String toString() {
+		return "StoredTestEventSingle{" +
+				"endTimestamp=" + endTimestamp +
+				", success=" + success +
+				", messages=" + messages +
+				", content=" + Arrays.toString(content) +
+				'}';
 	}
 }
