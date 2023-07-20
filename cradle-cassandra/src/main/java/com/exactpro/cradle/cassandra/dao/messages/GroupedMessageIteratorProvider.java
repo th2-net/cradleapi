@@ -17,6 +17,7 @@
 package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.Order;
 import com.exactpro.cradle.PageId;
@@ -28,19 +29,27 @@ import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
 import com.exactpro.cradle.cassandra.workers.MessagesWorker;
+import com.exactpro.cradle.filters.FilterForGreater;
+import com.exactpro.cradle.filters.FilterForLess;
 import com.exactpro.cradle.iterators.ConvertingIterator;
 import com.exactpro.cradle.messages.GroupedMessageFilter;
 import com.exactpro.cradle.messages.StoredGroupedMessageBatch;
 import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_FIRST_MESSAGE_TIME;
 
 public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroupedMessageBatch>
 {
@@ -52,8 +61,9 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 	private final ExecutorService composingService;
 	private final SelectQueryExecutor selectQueryExecutor;
 	private final GroupedMessageFilter filter;
-	private final PageInfo firstPage;
-	private final PageInfo lastPage;
+	protected final FilterForGreater<Instant> leftBoundFilter;
+	protected final FilterForLess<Instant> rightBoundFilter;
+	protected PageInfo firstPage, lastPage;
 	private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
 	/** limit must be strictly positive ( limit greater than 0 ) */
 	private final int limit;
@@ -81,8 +91,8 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 		this.limit = filter.getLimit();
 		this.returned = new AtomicInteger();
 		// TODO: Get message batch before *from* timestamp
-		this.firstPage = FilterUtils.findFirstPage(filter.getPageId(), filter.getFrom(), book);
-		this.lastPage = FilterUtils.findLastPage(filter.getPageId(), filter.getTo(), book);
+		this.leftBoundFilter = createLeftBoundFilter(filter);
+		this.rightBoundFilter = createRightBoundFilter(filter);
 		this.order = order;
 
 		// Filter should be initialized last as it might use above initialized properties
@@ -94,10 +104,76 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 				book.getId().getName(),
 				getFirstPage().getId().getName(),
 				filter.getGroupName(),
-				filter.getFrom(),
-				filter.getTo(),
+				leftBoundFilter,
+				rightBoundFilter,
 				order,
 				filter.getLimit());
+	}
+
+	private FilterForGreater<Instant> createLeftBoundFilter(GroupedMessageFilter filter) throws CradleStorageException
+	{
+		FilterForGreater<Instant> result = filter.getFrom();
+		firstPage = FilterUtils.findFirstPage(filter.getPageId(), result, book);
+		Instant leftBoundFromPage = firstPage.getStarted();
+		if (result == null || (filter.getPageId() != null && leftBoundFromPage.isAfter(result.getValue())))
+			return FilterForGreater.forGreaterOrEquals(leftBoundFromPage);
+
+		// If the page wasn't specified in the filter, we should find a batch with a lower date,
+		// which may contain messages that satisfy the original condition
+		LocalDateTime leftBoundLocalDate = TimeUtils.toLocalTimestamp(result.getValue());
+		LocalTime nearestBatchTime = getNearestBatchTime(
+				firstPage,
+				filter.getGroupName(),
+				leftBoundLocalDate.toLocalDate(),
+				leftBoundLocalDate.toLocalTime());
+
+		if (nearestBatchTime != null)
+		{
+			Instant nearestBatchInstant = TimeUtils.toInstant(leftBoundLocalDate.toLocalDate(), nearestBatchTime);
+			if (nearestBatchInstant.isBefore(result.getValue()))
+				result = FilterForGreater.forGreaterOrEquals(nearestBatchInstant);
+			firstPage = FilterUtils.findFirstPage(filter.getPageId(), result, book);
+		}
+
+		return result;
+	}
+
+	private LocalTime getNearestBatchTime(PageInfo page, String groupAlias, LocalDate messageDate, LocalTime messageTime) throws CradleStorageException
+	{
+		while (page != null)
+		{
+			CompletableFuture<Row> future = op.getNearestTime(
+					page.getId().getBookId().getName(),
+					page.getId().getName(),
+					groupAlias,
+					messageDate,
+					messageTime,
+					readAttrs);
+			try
+			{
+				Row row = future.get();
+				if (row != null)
+					return row.getLocalTime(FIELD_FIRST_MESSAGE_TIME);
+			}
+			catch (Exception e)
+			{
+				throw new CradleStorageException("Error while getting left bound ", e);
+			}
+			if (TimeUtils.toLocalTimestamp(page.getStarted()).toLocalDate().isBefore(messageDate))
+				return null;
+			page = book.getPreviousPage(page.getStarted());
+		}
+
+		return null;
+	}
+
+	protected FilterForLess<Instant> createRightBoundFilter(GroupedMessageFilter filter)
+	{
+		FilterForLess<Instant> result = filter.getTo();
+		lastPage = FilterUtils.findLastPage(filter.getPageId(), result, book);
+		Instant endOfPage = lastPage.getEnded() == null ? Instant.now() : lastPage.getEnded();
+
+		return FilterForLess.forLessOrEquals(result == null || endOfPage.isBefore(result.getValue()) ? endOfPage : result.getValue());
 	}
 
 	protected CassandraGroupedMessageFilter createNextFilter(CassandraGroupedMessageFilter prevFilter, int updatedLimit) {

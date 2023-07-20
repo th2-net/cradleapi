@@ -19,24 +19,17 @@ package com.exactpro.cradle.cassandra.integration.messages;
 import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.cassandra.integration.BaseCradleCassandraTest;
-import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.messages.GroupedMessageBatchToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
-import org.assertj.core.api.Assertions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
 
-import static org.assertj.core.util.Lists.newArrayList;
-
-public class BaseSessionsApiTest extends BaseCradleCassandraTest {
-    private static final Logger logger = LoggerFactory.getLogger(BaseSessionsApiTest.class);
+public class BaseMessageApiTest extends BaseCradleCassandraTest {
+    private static final Logger logger = LoggerFactory.getLogger(BaseMessageApiTest.class);
 
     protected static final String GROUP1_NAME = "test_group1";
 
@@ -95,15 +88,24 @@ public class BaseSessionsApiTest extends BaseCradleCassandraTest {
             GroupedMessageBatchToStore b3 = new GroupedMessageBatchToStore(GROUP3_NAME, 1024, storeActionRejectionThreshold);
             b3.addMessage(generateMessage(SESSION_ALIAS4, Direction.FIRST, 25, 7L));
             b3.addMessage(generateMessage(SESSION_ALIAS5, Direction.SECOND, 26, 8L));
-            b3.addMessage(generateMessage(SESSION_ALIAS5, Direction.SECOND, 27, 9L));
-            b3.addMessage(generateMessage(SESSION_ALIAS6, Direction.SECOND, 28, 10L));
+            b3.addMessage(generateMessage(SESSION_ALIAS5, Direction.SECOND, 28, 9L));
+            b3.addMessage(generateMessage(SESSION_ALIAS6, Direction.SECOND, 29, 10L));
 
             //page 4
             GroupedMessageBatchToStore b4 = new GroupedMessageBatchToStore(GROUP4_NAME, 1024, storeActionRejectionThreshold);
             b4.addMessage(generateMessage(SESSION_ALIAS6, Direction.FIRST, 35, 11L));
-            b4.addMessage(generateMessage(SESSION_ALIAS6, Direction.SECOND, 46, 12L));
+            b4.addMessage(generateMessage(SESSION_ALIAS6, Direction.SECOND, 37, 12L));
 
-            List<GroupedMessageBatchToStore> data = List.of(b1, b2, b3, b4);
+            //page 5
+            GroupedMessageBatchToStore b5 = new GroupedMessageBatchToStore(GROUP3_NAME, 1024, storeActionRejectionThreshold);
+            b5.addMessage(generateMessage(SESSION_ALIAS6, Direction.FIRST, 45, 13L));
+            //page 6
+            b5.addMessage(generateMessage(SESSION_ALIAS6, Direction.SECOND, 52, 14L));
+
+            GroupedMessageBatchToStore b6 = new GroupedMessageBatchToStore(GROUP3_NAME, 1024, storeActionRejectionThreshold);
+            b6.addMessage(generateMessage(SESSION_ALIAS6, Direction.FIRST, 53, 15L));
+            b6.addMessage(generateMessage(SESSION_ALIAS6, Direction.SECOND, 55, 16L));
+            List<GroupedMessageBatchToStore> data = List.of(b1, b2, b3, b4, b5, b6);
 
             for (GroupedMessageBatchToStore el : data) {
                 storage.storeGroupedMessageBatch(el);
