@@ -116,6 +116,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		this.iterationCondition = iterationCondition;
 	}
 
+	//TODO refactor this method to assigns firstPage outside the method
 	protected FilterForGreater<Instant> createLeftBoundFilter(MessageFilter filter) throws CradleStorageException
 	{
 		FilterForGreater<Instant> result = filter.getTimestampFrom();
@@ -173,6 +174,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		return null;
 	}
 
+	//TODO refactor this method to assign last page outside of this method.
 	protected FilterForLess<Instant> createRightBoundFilter(MessageFilter filter)
 	{
 		FilterForLess<Instant> result = filter.getTimestampTo();
