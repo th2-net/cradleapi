@@ -92,7 +92,9 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 		this.returned = new AtomicInteger();
 		// TODO: Get message batch before *from* timestamp
 		this.leftBoundFilter = createLeftBoundFilter(filter);
+		this.firstPage = FilterUtils.findFirstPage(filter.getPageId(), leftBoundFilter, book);
 		this.rightBoundFilter = createRightBoundFilter(filter);
+		this.lastPage = FilterUtils.findLastPage(filter.getPageId(), rightBoundFilter, book);
 		this.order = order;
 
 		// Filter should be initialized last as it might use above initialized properties
@@ -113,8 +115,8 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 	private FilterForGreater<Instant> createLeftBoundFilter(GroupedMessageFilter filter) throws CradleStorageException
 	{
 		FilterForGreater<Instant> result = filter.getFrom();
-		firstPage = FilterUtils.findFirstPage(filter.getPageId(), result, book);
-		Instant leftBoundFromPage = firstPage.getStarted();
+		var firstPageLocal = FilterUtils.findFirstPage(filter.getPageId(), result, book);
+		Instant leftBoundFromPage = firstPageLocal.getStarted();
 		if (result == null || (filter.getPageId() != null && leftBoundFromPage.isAfter(result.getValue())))
 			return FilterForGreater.forGreaterOrEquals(leftBoundFromPage);
 
@@ -122,7 +124,7 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 		// which may contain messages that satisfy the original condition
 		LocalDateTime leftBoundLocalDate = TimeUtils.toLocalTimestamp(result.getValue());
 		LocalTime nearestBatchTime = getNearestBatchTime(
-				firstPage,
+				firstPageLocal,
 				filter.getGroupName(),
 				leftBoundLocalDate.toLocalDate(),
 				leftBoundLocalDate.toLocalTime());
@@ -132,7 +134,6 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 			Instant nearestBatchInstant = TimeUtils.toInstant(leftBoundLocalDate.toLocalDate(), nearestBatchTime);
 			if (nearestBatchInstant.isBefore(result.getValue()))
 				result = FilterForGreater.forGreaterOrEquals(nearestBatchInstant);
-			firstPage = FilterUtils.findFirstPage(filter.getPageId(), result, book);
 		}
 
 		return result;
@@ -170,8 +171,8 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 	protected FilterForLess<Instant> createRightBoundFilter(GroupedMessageFilter filter)
 	{
 		FilterForLess<Instant> result = filter.getTo();
-		lastPage = FilterUtils.findLastPage(filter.getPageId(), result, book);
-		Instant endOfPage = lastPage.getEnded() == null ? Instant.now() : lastPage.getEnded();
+		var lastPageLocal = FilterUtils.findLastPage(filter.getPageId(), result, book);
+		Instant endOfPage = lastPageLocal.getEnded() == null ? Instant.now() : lastPageLocal.getEnded();
 
 		return FilterForLess.forLessOrEquals(result == null || endOfPage.isBefore(result.getValue()) ? endOfPage : result.getValue());
 	}

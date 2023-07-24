@@ -33,7 +33,7 @@ public class GetGroupedMessageBatchesApiTest extends BaseMessageApiTest {
         generateData();
     }
 
-    @Test(description = "Get grouped messages withing interval with start time less than batch start time and end time more then batch end time")
+    @Test(description = "Get grouped messages within 1 page. Interval start time is less than batch start time and end time more then batch end time")
     public void getGroupedMessagesWithWideIntervalTest() throws CradleStorageException, IOException {
         GroupedMessageFilter filter = GroupedMessageFilter.builder()
                 .groupName(GROUP3_NAME)
@@ -47,7 +47,20 @@ public class GetGroupedMessageBatchesApiTest extends BaseMessageApiTest {
         Assertions.assertThat(resultAsList.get(0).getMessages().size()).isEqualTo(4);
     }
 
-    @Test(description = "Get grouped messages withing interval that covers 2 groups")
+    @Test(description = "Get grouped messages within 1 page. Interval start time is equal to batch end time.")
+    public void getGroupedMessagesWithIntervalAtEnd() throws CradleStorageException, IOException {
+        GroupedMessageFilter filter = GroupedMessageFilter.builder()
+                .groupName(GROUP3_NAME)
+                .bookId(bookId)
+                .timestampFrom().isGreaterThanOrEqualTo(dataStart.plus(29, ChronoUnit.MINUTES))
+                .timestampTo().isLessThan(dataStart.plus(30, ChronoUnit.MINUTES))
+                .build();
+        var actual = storage.getGroupedMessageBatches(filter);
+        var resultAsList = Lists.newArrayList(actual.asIterable());
+        Assertions.assertThat(resultAsList.size()).isEqualTo(1);
+        Assertions.assertThat(resultAsList.get(0).getMessages().size()).isEqualTo(4);
+    }
+    @Test(description = "Get grouped messages withing interval that covers multiple pages. First batch start time is equal to interval start and interval end time is after last batch end.")
     public void getGroupedMessagesWithWideIntervalTest2() throws CradleStorageException, IOException {
         GroupedMessageFilter filter = GroupedMessageFilter.builder()
                 .groupName(GROUP3_NAME)
@@ -65,7 +78,7 @@ public class GetGroupedMessageBatchesApiTest extends BaseMessageApiTest {
     }
 
 
-    @Test(description = "Get grouped messages withing interval that covers 2 groups")
+    @Test(description = "Get grouped messages withing interval that covers multiple pages. Interval start time is in the middle of the first batch and interval end is before the end of the last batch.")
     public void getGroupedMessagesWithWideIntervalTest4() throws CradleStorageException, IOException {
         GroupedMessageFilter filter = GroupedMessageFilter.builder()
                 .groupName(GROUP3_NAME)

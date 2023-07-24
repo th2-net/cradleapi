@@ -73,33 +73,47 @@ public class BaseMessageApiTest extends BaseCradleCassandraTest {
     protected void generateData() {
         try {
             GroupedMessageBatchToStore b1 = new GroupedMessageBatchToStore(GROUP1_NAME, 1024, storeActionRejectionThreshold);
-            //page 0
+            // page 0 contains 3 messages from batch 1 and 1 message from batch 2.
+            // contains 2 groups test_group1 and test_group2
+            // contains 2 session aliases test_session_alias1 and test_session_alias2
             b1.addMessage(generateMessage(SESSION_ALIAS1, Direction.FIRST, 2, 1L));
             b1.addMessage(generateMessage(SESSION_ALIAS1, Direction.SECOND, 3, 2L));
             b1.addMessage(generateMessage(SESSION_ALIAS2, Direction.SECOND, 6, 3L));
 
             GroupedMessageBatchToStore b2 = new GroupedMessageBatchToStore(GROUP2_NAME, 1024, storeActionRejectionThreshold);
             b2.addMessage(generateMessage(SESSION_ALIAS2, Direction.FIRST, 5, 4L));
-            //page 2
+
+            // page 1 contains 2 messages from batch 2.
+            // contains 1 group test_group2
+            // contains 2 session aliases test_session_alias3 and test_session_alias4
             b2.addMessage(generateMessage(SESSION_ALIAS3, Direction.SECOND, 18, 5L));
             b2.addMessage(generateMessage(SESSION_ALIAS4, Direction.SECOND, 19, 6L));
 
-            //page 3
+            // page 2 contains 4 messages from batch 3.
+            // contains 1 group test_group3
+            // contains 3 session aliases test_session_alias4, test_session_alias5 and test_session_alias6
             GroupedMessageBatchToStore b3 = new GroupedMessageBatchToStore(GROUP3_NAME, 1024, storeActionRejectionThreshold);
             b3.addMessage(generateMessage(SESSION_ALIAS4, Direction.FIRST, 25, 7L));
             b3.addMessage(generateMessage(SESSION_ALIAS5, Direction.SECOND, 26, 8L));
             b3.addMessage(generateMessage(SESSION_ALIAS5, Direction.SECOND, 28, 9L));
             b3.addMessage(generateMessage(SESSION_ALIAS6, Direction.SECOND, 29, 10L));
 
-            //page 4
+            // page 3 contains 2 messages from batch 4.
+            // contains 1 group test_group4
+            // contains 1 session alias test_session_alias6
             GroupedMessageBatchToStore b4 = new GroupedMessageBatchToStore(GROUP4_NAME, 1024, storeActionRejectionThreshold);
             b4.addMessage(generateMessage(SESSION_ALIAS6, Direction.FIRST, 35, 11L));
             b4.addMessage(generateMessage(SESSION_ALIAS6, Direction.SECOND, 37, 12L));
 
-            //page 5
+            // page 4 contains 1 message from batch 5.
+            // contains 1 group test_group3
+            // contains 1 session alias test_session_alias6
             GroupedMessageBatchToStore b5 = new GroupedMessageBatchToStore(GROUP3_NAME, 1024, storeActionRejectionThreshold);
             b5.addMessage(generateMessage(SESSION_ALIAS6, Direction.FIRST, 45, 13L));
-            //page 6
+
+            // page 5 contains 1 message from batch 5 and 2 messages from batch 6.
+            // contains 1 group test_group3
+            // contains 1 session alias test_session_alias6
             b5.addMessage(generateMessage(SESSION_ALIAS6, Direction.SECOND, 52, 14L));
 
             GroupedMessageBatchToStore b6 = new GroupedMessageBatchToStore(GROUP3_NAME, 1024, storeActionRejectionThreshold);
