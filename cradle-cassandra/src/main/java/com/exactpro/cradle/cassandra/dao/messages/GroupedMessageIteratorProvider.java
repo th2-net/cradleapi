@@ -90,7 +90,6 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 		this.filter = filter;
 		this.limit = filter.getLimit();
 		this.returned = new AtomicInteger();
-		// TODO: Get message batch before *from* timestamp
 		this.leftBoundFilter = createLeftBoundFilter(filter);
 		this.firstPage = FilterUtils.findFirstPage(filter.getPageId(), leftBoundFilter, book);
 		this.rightBoundFilter = createRightBoundFilter(filter);
@@ -112,6 +111,7 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 				filter.getLimit());
 	}
 
+	//TODO refactor or split this method to avoid findFirstPage calculation multiple times.
 	private FilterForGreater<Instant> createLeftBoundFilter(GroupedMessageFilter filter) throws CradleStorageException
 	{
 		FilterForGreater<Instant> result = filter.getFrom();
@@ -168,6 +168,7 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 		return null;
 	}
 
+	//TODO refactor or split this method to avoid findLastPage calculation multiple times.
 	protected FilterForLess<Instant> createRightBoundFilter(GroupedMessageFilter filter)
 	{
 		FilterForLess<Instant> result = filter.getTo();
