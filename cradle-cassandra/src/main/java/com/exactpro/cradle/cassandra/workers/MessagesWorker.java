@@ -344,33 +344,41 @@ public class MessagesWorker extends Worker {
                 }, composingService);
     }
 
-    public CompletableFuture<PageSessionEntity> storePageSession(MessageBatchToStore batch, PageId pageId) {
-        StoredMessageId batchId = batch.getId();
+    public CompletableFuture<PageSessionEntity> storePageSession(PageId pageId, String sessionAlias, Direction direction) {
         CassandraOperators operators = getOperators();
         CachedPageSession cachedPageSession = new CachedPageSession(pageId.toString(),
-                batchId.getSessionAlias(), batchId.getDirection().getLabel());
+                sessionAlias, direction.getLabel());
         if (!operators.getPageSessionsCache().store(cachedPageSession)) {
-            logger.debug("Skipped writing page/session of message batch '{}'", batchId);
+            logger.debug("Skipped writing page/session of page '{}', session alias '{}', direction '{}'", pageId, sessionAlias, direction);
             return CompletableFuture.completedFuture(null);
         }
 
-        logger.debug("Writing page/session of batch '{}'", batchId);
+        logger.debug("Writing page/session of page '{}', session alias '{}', direction '{}'", pageId, sessionAlias, direction);
 
-        return operators.getPageSessionsOperator().write(new PageSessionEntity(batchId, pageId), writeAttrs);
+        return operators.getPageSessionsOperator().write(
+                new PageSessionEntity(pageId.getBookId().getName(), pageId.getName(), sessionAlias, direction.getLabel()),
+                writeAttrs
+        );
+    }
+
+    public CompletableFuture<PageSessionEntity> storePageSession(MessageBatchToStore batch, PageId pageId) {
+        return storePageSession(pageId, batch.getSessionAlias(), batch.getDirection());
+    }
+
+    public CompletableFuture<SessionEntity> storeSession(BookId bookId, String sessionAlias) {
+        CassandraOperators operators = getOperators();
+        CachedSession cachedSession = new CachedSession(bookId.toString(), sessionAlias);
+        if (!operators.getSessionsCache().store(cachedSession)) {
+            logger.debug("Skipped writing book/session of book '{}', session alias '{}'", bookId, sessionAlias);
+            return CompletableFuture.completedFuture(null);
+        }
+        logger.debug("Writing book/session of book '{}', session alias '{}'", bookId, sessionAlias);
+
+        return operators.getSessionsOperator().write(new SessionEntity(bookId.toString(), sessionAlias), writeAttrs);
     }
 
     public CompletableFuture<SessionEntity> storeSession(MessageBatchToStore batch) {
-        StoredMessageId batchId = batch.getId();
-        BookId bookId = batchId.getBookId();
-        CassandraOperators operators = getOperators();
-        CachedSession cachedSession = new CachedSession(bookId.toString(), batch.getSessionAlias());
-        if (!operators.getSessionsCache().store(cachedSession)) {
-            logger.debug("Skipped writing book/session of message batch '{}'", batchId);
-            return CompletableFuture.completedFuture(null);
-        }
-        logger.debug("Writing book/session of batch '{}'", batchId);
-
-        return operators.getSessionsOperator().write(new SessionEntity(bookId.toString(), batch.getSessionAlias()), writeAttrs);
+        return storeSession(batch.getId().getBookId(), batch.getSessionAlias());
     }
 
     public CompletableFuture<Void> storeMessageBatch(MessageBatchToStore batch, PageId pageId) {

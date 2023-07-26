@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,15 @@
 package com.exactpro.cradle.cassandra;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.exactpro.cradle.*;
+import com.exactpro.cradle.BookCache;
+import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.BookInfo;
+import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.dao.books.BookEntity;
 import com.exactpro.cradle.cassandra.dao.books.PageEntity;
 import com.exactpro.cradle.errors.BookNotFoundException;
 import com.exactpro.cradle.utils.CradleStorageException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,9 +34,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 public class ReadThroughBookCache implements BookCache {
-    private static final Logger logger = LoggerFactory.getLogger(ReadThroughBookCache.class);
-
-    private final String UNSUPPORTED_SCHEMA_VERSION_FORMAT = "Unsupported schema version for the book \"%s\". Expected: %s, found: %s";
 
     private final CassandraOperators operators;
     private final Map<BookId, BookInfo> books;
@@ -70,11 +68,9 @@ public class ReadThroughBookCache implements BookCache {
         return books.containsKey(bookId);
     }
 
-    public Collection<PageInfo> loadPageInfo(BookId bookId, boolean loadRemoved) throws CradleStorageException
-    {
+    public Collection<PageInfo> loadPageInfo(BookId bookId, boolean loadRemoved) {
         Collection<PageInfo> result = new ArrayList<>();
-        for (PageEntity pageEntity : operators.getPageOperator().getAll(bookId.getName(), readAttrs))
-        {
+        for (PageEntity pageEntity : operators.getPageOperator().getAll(bookId.getName(), readAttrs)) {
             if (loadRemoved || pageEntity.getRemoved() == null) {
                 result.add(pageEntity.toPageInfo());
             }
@@ -90,7 +86,7 @@ public class ReadThroughBookCache implements BookCache {
         }
 
         if (!bookEntity.getSchemaVersion().equals(schemaVersion)) {
-            throw new CradleStorageException(String.format(UNSUPPORTED_SCHEMA_VERSION_FORMAT,
+            throw new CradleStorageException(String.format("Unsupported schema version for the book \"%s\". Expected: %s, found: %s",
                     bookEntity.getName(),
                     schemaVersion,
                     bookEntity.getSchemaVersion()));
