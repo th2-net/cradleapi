@@ -26,6 +26,7 @@ import com.exactpro.cradle.serialization.MessageCommonParams;
 import com.exactpro.cradle.serialization.MessageDeserializer;
 import com.exactpro.cradle.serialization.MessageSerializer;
 import com.exactpro.cradle.serialization.SerializedEntityData;
+import com.exactpro.cradle.serialization.SerializedMessageMetadata;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -66,9 +67,8 @@ public class MessageUtils
 	 *
 	 * @param batch to serialize
 	 * @return {@link SerializedEntityData} containing serialized messages.
-	 * @throws IOException if serialization failed
 	 */
-	public static SerializedEntityData serializeMessages(MessageBatchToStore batch) throws IOException {
+	public static SerializedEntityData<SerializedMessageMetadata> serializeMessages(MessageBatchToStore batch) {
 		return serializer.serializeBatch(batch);
 	}
 
@@ -77,19 +77,18 @@ public class MessageUtils
 	 *
 	 * @param batch to serialize
 	 * @return {@link SerializedEntityData} containing serialized messages.
-	 * @throws IOException if serialization failed
 	 */
-	public static SerializedEntityData serializeMessages(GroupedMessageBatchToStore batch) throws IOException {
+	public static SerializedEntityData<SerializedMessageMetadata> serializeMessages(GroupedMessageBatchToStore batch) {
 		return serializer.serializeBatch(batch);
 	}
 
 	/**
 	 * Serializes messages, skipping non-meaningful or calculable fields
+	 *
 	 * @param messages to serialize
 	 * @return {@link SerializedEntityData} containing serialized messages.
-	 * @throws IOException if serialization failed
 	 */
-	public static SerializedEntityData serializeMessages(Collection<StoredMessage> messages) throws IOException {
+	public static SerializedEntityData<SerializedMessageMetadata> serializeMessages(Collection<StoredMessage> messages) {
 		return serializer.serializeBatch(messages);
 	}
 

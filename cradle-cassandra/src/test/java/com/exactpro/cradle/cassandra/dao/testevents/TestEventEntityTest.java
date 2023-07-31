@@ -22,6 +22,7 @@ import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.SerializedEntity;
 import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.serialization.SerializedEntityMetadata;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
@@ -93,7 +94,7 @@ public class TestEventEntityTest {
 
     @Test(dataProvider = "events")
     public void eventEntity(TestEventToStore event) throws CradleStorageException, IOException, DataFormatException, CradleIdException, CompressException {
-        SerializedEntity<TestEventEntity> serializedEntity = TestEventEntityUtils.toSerializedEntity(event, page, CompressionType.ZLIB, 2000);
+        SerializedEntity<SerializedEntityMetadata, TestEventEntity> serializedEntity = TestEventEntityUtils.toSerializedEntity(event, page, CompressionType.ZLIB, 2000);
         TestEventEntity entity = serializedEntity.getEntity();
         StoredTestEvent newEvent = TestEventEntityUtils.toStoredTestEvent(entity, page);
 
