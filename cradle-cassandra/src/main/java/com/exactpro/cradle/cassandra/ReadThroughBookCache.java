@@ -26,6 +26,7 @@ import com.exactpro.cradle.cassandra.dao.books.PageEntity;
 import com.exactpro.cradle.errors.BookNotFoundException;
 import com.exactpro.cradle.utils.CradleStorageException;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -78,7 +79,19 @@ public class ReadThroughBookCache implements BookCache {
         return result;
     }
 
-    public BookInfo loadBook (BookId bookId) throws CradleStorageException {
+    @Override
+    public Collection<PageInfo> loadPageInfo(BookId bookId, LocalDateTime start, boolean loadRemoved) {
+        Collection<PageInfo> result = new ArrayList<>();
+        for (PageEntity pageEntity : operators.getPageOperator().get(
+                bookId.getName(), start.toLocalDate(), start.toLocalTime(), readAttrs)) {
+            if (loadRemoved || pageEntity.getRemoved() == null) {
+                result.add(pageEntity.toPageInfo());
+            }
+        }
+        return result;
+    }
+
+    public BookInfo loadBook(BookId bookId) throws CradleStorageException {
         BookEntity bookEntity = operators.getBookOperator().get(bookId.getName(), readAttrs);
 
         if (bookEntity == null) {

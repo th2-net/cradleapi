@@ -117,12 +117,9 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -347,6 +344,9 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	@Override
 	protected void doStoreMessageBatch(MessageBatchToStore batch, PageInfo page) throws IOException {
+		if (!settings.isStoreIndividualMessageSessions()) {
+			throw new IllegalStateException("Message batch can't be stored when store individual message sessions is false");
+		}
 		PageId pageId = page.getId();
 		try {
 			messagesWorker.storeMessageBatch(batch, pageId).get();
@@ -365,18 +365,16 @@ public class CassandraCradleStorage extends CradleStorage
 
 		try
 		{
-			messagesWorker.storeGroupedMessageBatch(batch, pageId).get();
-
 			if (settings.isStoreIndividualMessageSessions()) {
+				messagesWorker.storeGroupedMessageBatch(batch, pageId, false).get();
+
 				for (MessageBatchToStore b : batch.getSessionMessageBatches()) {
 					messagesWorker.storeMessageBatch(b, pageId).get();
 					messagesWorker.storeSession(b).get();
 					messagesWorker.storePageSession(b, pageId).get();
 				}
 			} else {
-				Map<Direction, Set<String>> sessions = getDirectionToSessionAliases(batch);
-				storeSessions(pageId, sessions).get();
-				storePageSessions(batch, sessions).get();
+				messagesWorker.storeGroupedMessageBatch(batch, pageId, true).get();
 			}
 		}
 		catch (Exception e)
@@ -387,6 +385,9 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<Void> doStoreMessageBatchAsync(MessageBatchToStore batch, PageInfo page) {
+		if (!settings.isStoreIndividualMessageSessions()) {
+			throw new IllegalStateException("Message batch can't be stored when store individual message sessions is false");
+		}
 		PageId pageId = page.getId();
 		return messagesWorker.storeMessageBatch(batch, pageId)
 				.thenComposeAsync((unused) -> messagesWorker.storeSession(batch), composingService)
@@ -400,22 +401,18 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		PageId pageId = page.getId();
 
-		CompletableFuture<Void> future =  messagesWorker.storeGroupedMessageBatch(batch, pageId);
-
 		if (settings.isStoreIndividualMessageSessions()) {
+			CompletableFuture<Void> future = messagesWorker.storeGroupedMessageBatch(batch, pageId, false);
 			for (MessageBatchToStore b : batch.getSessionMessageBatches()) {
 				future = future.thenComposeAsync((unused) -> messagesWorker.storeMessageBatch(b, pageId), composingService)
 						.thenComposeAsync((unused) -> messagesWorker.storeSession(b), composingService)
 						.thenComposeAsync((unused) -> messagesWorker.storePageSession(b, pageId), composingService)
 						.thenAccept(NOOP);
 			}
+			return future;
 		} else {
-			future = future.thenApplyAsync((unused) -> getDirectionToSessionAliases(batch), composingService)
-					.thenComposeAsync((sessions) -> storeSessions(pageId, sessions), composingService)
-					.thenComposeAsync((sessions) -> storePageSessions(batch, sessions), composingService)
-					.thenAccept(NOOP);
+			return messagesWorker.storeGroupedMessageBatch(batch, pageId, true);
 		}
-		return future;
 	}
 
 	@Override
@@ -955,36 +952,6 @@ public class CassandraCradleStorage extends CradleStorage
 		} catch (Exception e) {
 			throw new IOException("Error while getting " + queryInfo, e);
 		}
-	}
-
-	private CompletableFuture<Map<Direction, Set<String>>> storePageSessions(GroupedMessageBatchToStore batch, Map<Direction, Set<String>> sessions) {
-		return CompletableFuture.allOf(
-				sessions.values().stream()
-						.flatMap(Set::stream)
-						.distinct()
-						.map((sessionAlias) -> messagesWorker.storeSession(batch.getBookId(), sessionAlias))
-						.toArray(CompletableFuture[]::new)
-		).thenApply((unused) -> sessions);
-	}
-
-	private CompletableFuture<Map<Direction, Set<String>>> storeSessions(PageId pageId, Map<Direction, Set<String>> sessions) {
-		return CompletableFuture.allOf(
-				sessions.entrySet().stream()
-						.flatMap((entry) -> entry.getValue().stream()
-								.map((sessionAlias) -> messagesWorker.storePageSession(pageId, sessionAlias, entry.getKey()))
-						).toArray(CompletableFuture[]::new)
-		).thenApply((unused) -> sessions);
-	}
-
-	private static Map<Direction, Set<String>> getDirectionToSessionAliases(GroupedMessageBatchToStore batch) {
-		Map<Direction, Set<String>> sessions = new EnumMap<>(Direction.class);
-		for (Direction direction : Direction.values()) {
-			sessions.put(direction, new HashSet<>());
-		}
-		for (StoredMessage message : batch.getMessages()) {
-			sessions.get(message.getDirection()).add(message.getSessionAlias());
-		}
-		return sessions;
 	}
 
 	private CompletableFuture<CradleResultSet<String>> doGetSessionsAsync(BookId bookId, Interval interval, SessionRecordType recordType) throws CradleStorageException {

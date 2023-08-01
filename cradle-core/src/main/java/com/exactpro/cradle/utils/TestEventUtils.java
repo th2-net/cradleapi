@@ -26,6 +26,7 @@ import com.exactpro.cradle.serialization.EventBatchSerializer;
 import com.exactpro.cradle.serialization.EventMessageIdDeserializer;
 import com.exactpro.cradle.serialization.EventMessageIdSerializer;
 import com.exactpro.cradle.serialization.SerializedEntityData;
+import com.exactpro.cradle.serialization.SerializedEntityMetadata;
 import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEvent;
@@ -125,9 +126,8 @@ public class TestEventUtils {
      *
      * @param testEvents to serialize
      * @return array of bytes, containing serialized events
-     * @throws IOException if serialization failed
      */
-    public static SerializedEntityData serializeTestEvents(Collection<BatchedStoredTestEvent> testEvents) throws IOException {
+    public static SerializedEntityData<SerializedEntityMetadata> serializeTestEvents(Collection<BatchedStoredTestEvent> testEvents) {
         return serializer.serializeEventBatch(testEvents);
     }
 
@@ -137,7 +137,7 @@ public class TestEventUtils {
      * @param testEvent to serialize
      * @return array of bytes, containing serialized event
      */
-    public static SerializedEntityData serializeTestEvent(TestEventSingleToStore testEvent) {
+    public static SerializedEntityData<SerializedEntityMetadata> serializeTestEvent(TestEventSingleToStore testEvent) {
         return serializer.serializeEvent(testEvent);
     }
 
@@ -184,9 +184,8 @@ public class TestEventUtils {
      *
      * @param event whose content to get
      * @return {@link SerializedEntityData} containing test event content.
-     * @throws IOException if batch children serialization failed
      */
-    public static SerializedEntityData getTestEventContent(TestEventToStore event) throws IOException {
+    public static SerializedEntityData<SerializedEntityMetadata> getTestEventContent(TestEventToStore event) {
         if (event.isBatch()) {
             logger.trace("Serializing children of test event batch '{}'", event.getId());
             return serializeTestEvents(event.asBatch().getTestEvents());

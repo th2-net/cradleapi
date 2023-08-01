@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,19 @@ import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.SerializedEntity;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.serialization.SerializedEntityData;
-import com.exactpro.cradle.testevents.*;
-import com.exactpro.cradle.utils.*;
+import com.exactpro.cradle.serialization.SerializedEntityMetadata;
+import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
+import com.exactpro.cradle.testevents.StoredTestEvent;
+import com.exactpro.cradle.testevents.StoredTestEventBatch;
+import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.StoredTestEventSingle;
+import com.exactpro.cradle.testevents.TestEventToStore;
+import com.exactpro.cradle.utils.CompressException;
+import com.exactpro.cradle.utils.CompressionType;
+import com.exactpro.cradle.utils.CradleIdException;
+import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.TestEventUtils;
+import com.exactpro.cradle.utils.TimeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +71,7 @@ public class TestEventEntityUtils {
     }
 
 
-    private static byte[] restoreContent(TestEventEntity testEventEntity, StoredTestEventId eventId) throws IOException, DataFormatException, CompressException {
+    private static byte[] restoreContent(TestEventEntity testEventEntity, StoredTestEventId eventId) throws CompressException {
         ByteBuffer content = testEventEntity.getContent();
         if (content == null)
             return null;
@@ -74,9 +85,8 @@ public class TestEventEntityUtils {
     }
 
     private static Set<StoredMessageId> restoreMessages(TestEventEntity testEventEntity, BookId bookId)
-            throws IOException, DataFormatException, CradleIdException
-    {
-        ByteBuffer messages =  testEventEntity.getMessages();
+            throws IOException {
+        ByteBuffer messages = testEventEntity.getMessages();
         if (messages == null)
             return null;
 
@@ -85,8 +95,7 @@ public class TestEventEntityUtils {
     }
 
     private static Map<StoredTestEventId, Set<StoredMessageId>> restoreBatchMessages(TestEventEntity testEventEntity, BookId bookId)
-            throws IOException, DataFormatException, CradleIdException
-    {
+            throws IOException {
         ByteBuffer messages = testEventEntity.getMessages();
         if (messages == null)
             return null;
@@ -97,7 +106,7 @@ public class TestEventEntityUtils {
 
 
     private static StoredTestEventSingle toStoredTestEventSingle(TestEventEntity testEventEntity, PageId pageId, StoredTestEventId eventId, byte[] content)
-            throws IOException, CradleStorageException, DataFormatException, CradleIdException
+            throws IOException, CradleIdException
     {
         Set<StoredMessageId> messages = restoreMessages(testEventEntity, pageId.getBookId());
         return new StoredTestEventSingle(eventId, testEventEntity.getName(), testEventEntity.getType(), createParentId(testEventEntity),
@@ -105,7 +114,7 @@ public class TestEventEntityUtils {
     }
 
     private static StoredTestEventBatch toStoredTestEventBatch(TestEventEntity testEventEntity, PageId pageId, StoredTestEventId eventId, byte[] content)
-            throws IOException, CradleStorageException, DataFormatException, CradleIdException
+            throws IOException, CradleStorageException, CradleIdException
     {
         Collection<BatchedStoredTestEvent> children = TestEventUtils.deserializeTestEvents(content, eventId);
         Map<StoredTestEventId, Set<StoredMessageId>> messages = restoreBatchMessages(testEventEntity, pageId.getBookId());
@@ -113,24 +122,23 @@ public class TestEventEntityUtils {
                 children, messages, pageId, null, testEventEntity.getRecDate());
     }
 
-    public static Instant getEndTimestamp (TestEventEntity entity) {
+    public static Instant getEndTimestamp(TestEventEntity entity) {
         return TimeUtils.toInstant(entity.getEndDate(), entity.getEndTime());
     }
 
-    public static Instant getStartTimestamp(TestEventEntity entity)
-    {
+    public static Instant getStartTimestamp(TestEventEntity entity) {
         return TimeUtils.toInstant(entity.getStartDate(), entity.getStartTime());
     }
 
-    public static SerializedEntity<TestEventEntity> toSerializedEntity(TestEventToStore event,
-                                                                       PageId pageId,
-                                                                       CompressionType compressionType,
-                                                                       int maxUncompressedSize) throws IOException, CompressException {
+    public static SerializedEntity<SerializedEntityMetadata, TestEventEntity> toSerializedEntity(TestEventToStore event,
+                                                                                                 PageId pageId,
+                                                                                                 CompressionType compressionType,
+                                                                                                 int maxUncompressedSize) throws IOException, CompressException {
         TestEventEntity.TestEventEntityBuilder builder = TestEventEntity.builder();
 
         logger.debug("Creating entity from test event '{}'", event.getId());
 
-        SerializedEntityData serializedEntityData = TestEventUtils.getTestEventContent(event);
+        SerializedEntityData<SerializedEntityMetadata> serializedEntityData = TestEventUtils.getTestEventContent(event);
         byte[] content = serializedEntityData.getSerializedData();
         boolean compressed = false;
 

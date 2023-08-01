@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,22 +17,23 @@
 package com.exactpro.cradle.cassandra.dao;
 
 import com.exactpro.cradle.serialization.SerializedEntityData;
+import com.exactpro.cradle.serialization.SerializedEntityMetadata;
 
-public class SerializedEntity<T extends CradleEntity>{
+public class SerializedEntity<M extends SerializedEntityMetadata, E extends CradleEntity> {
 
-    private final SerializedEntityData serializedEntityData;
-    private final T entity;
+    private final SerializedEntityData<M> serializedEntityData;
+    private final E entity;
 
-    public SerializedEntity(SerializedEntityData serializedEntityData, T entity) {
+    public SerializedEntity(SerializedEntityData<M> serializedEntityData, E entity) {
         this.serializedEntityData = serializedEntityData;
         this.entity = entity;
     }
 
-    public SerializedEntityData getSerializedEntityData() {
+    public SerializedEntityData<M> getSerializedEntityData() {
         return serializedEntityData;
     }
 
-    public T getEntity() {
+    public E getEntity() {
         return entity;
     }
 }

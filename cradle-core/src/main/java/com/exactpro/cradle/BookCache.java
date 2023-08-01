@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package com.exactpro.cradle;
 
 import com.exactpro.cradle.utils.CradleStorageException;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 
 /*
@@ -27,11 +28,17 @@ import java.util.Collection;
  */
 
 public interface BookCache {
-    BookInfo getBook (BookId bookId) throws CradleStorageException;
-    boolean checkBook (BookId bookId);
+    BookInfo getBook(BookId bookId) throws CradleStorageException;
+
+    boolean checkBook(BookId bookId);
+
     Collection<PageInfo> loadPageInfo(BookId bookId, boolean loadRemoved) throws CradleStorageException;
 
-    BookInfo loadBook (BookId bookId) throws CradleStorageException;
-    void updateCachedBook (BookInfo bookInfo);
-    Collection<BookInfo> getCachedBooks ();
+    Collection<PageInfo> loadPageInfo(BookId bookId, LocalDateTime start, boolean loadRemoved) throws CradleStorageException;
+
+    BookInfo loadBook(BookId bookId) throws CradleStorageException;
+
+    void updateCachedBook(BookInfo bookInfo);
+
+    Collection<BookInfo> getCachedBooks();
 }

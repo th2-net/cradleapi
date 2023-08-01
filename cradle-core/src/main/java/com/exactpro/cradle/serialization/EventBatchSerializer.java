@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,13 +29,18 @@ import java.util.List;
 
 import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateBatchEventSize;
 import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateEventRecordSize;
-import static com.exactpro.cradle.serialization.Serialization.EventBatchConst.*;
-import static com.exactpro.cradle.serialization.SerializationUtils.*;
+import static com.exactpro.cradle.serialization.Serialization.EventBatchConst.EVENT_BATCH_ENT_MAGIC;
+import static com.exactpro.cradle.serialization.Serialization.EventBatchConst.EVENT_BATCH_MAGIC;
+import static com.exactpro.cradle.serialization.Serialization.EventBatchConst.EVENT_BATCH_PROTOCOL_VER;
+import static com.exactpro.cradle.serialization.SerializationUtils.printBody;
+import static com.exactpro.cradle.serialization.SerializationUtils.printInstant;
+import static com.exactpro.cradle.serialization.SerializationUtils.printSingleBoolean;
+import static com.exactpro.cradle.serialization.SerializationUtils.printString;
 
 public class EventBatchSerializer {
 
 
-	public byte[] serializeEventRecord (BatchedStoredTestEvent event) throws SerializationException {
+	public byte[] serializeEventRecord(BatchedStoredTestEvent event) {
 		ByteBuffer allocate = ByteBuffer.allocate(calculateEventRecordSize(event));
 		this.serializeEventRecord(event, allocate);
 		return allocate.array();
@@ -51,8 +56,8 @@ public class EventBatchSerializer {
 		printInstant(start, buffer);
 		printString(id_str, buffer);
 	}
-	
-	public void serializeEventRecord (BatchedStoredTestEvent event, ByteBuffer buffer) throws SerializationException {
+
+	public void serializeEventRecord(BatchedStoredTestEvent event, ByteBuffer buffer) {
 		buffer.putShort(EVENT_BATCH_ENT_MAGIC);
 
 		printId(event.getId(), buffer);
@@ -65,22 +70,22 @@ public class EventBatchSerializer {
 	}
 
 
-	public SerializedEntityData serializeEventBatch (Collection<BatchedStoredTestEvent> batch) throws SerializationException {
+	public SerializedEntityData<SerializedEntityMetadata> serializeEventBatch(Collection<BatchedStoredTestEvent> batch) {
 		SerializationBatchSizes sizes = calculateBatchEventSize(batch);
 		ByteBuffer buffer = ByteBuffer.allocate(sizes.total);
 		List<SerializedEntityMetadata> serializedEventMetadata = serializeEventBatch(batch, buffer, sizes);
 
-		return new SerializedEntityData(serializedEventMetadata, buffer.array());
+		return new SerializedEntityData<>(serializedEventMetadata, buffer.array());
 	}
 
-	public void serializeEventBatch (Collection<BatchedStoredTestEvent> batch, ByteBuffer buffer) throws SerializationException {
+	public void serializeEventBatch(Collection<BatchedStoredTestEvent> batch, ByteBuffer buffer) {
 		SerializationBatchSizes eventBatchSizes = calculateBatchEventSize(batch);
 		serializeEventBatch(batch, buffer, eventBatchSizes);
 	}
 
-	public List<SerializedEntityMetadata> serializeEventBatch (
+	public List<SerializedEntityMetadata> serializeEventBatch(
 			Collection<BatchedStoredTestEvent> batch, ByteBuffer buffer, SerializationBatchSizes eventBatchSizes
-	) throws SerializationException {
+	) {
 
 		List<SerializedEntityMetadata> serializedEventMetadata = new ArrayList<>(batch.size());
 
@@ -101,12 +106,12 @@ public class EventBatchSerializer {
 		return Collections.unmodifiableList(serializedEventMetadata);
 	}
 
-	public SerializedEntityData serializeEvent(TestEventSingleToStore testEvent) {
+	public SerializedEntityData<SerializedEntityMetadata> serializeEvent(TestEventSingleToStore testEvent) {
 		byte[] eventContent = testEvent.getContent();
 		SerializedEntityMetadata serializedEventMetadata = new SerializedEntityMetadata(
 				testEvent.getStartTimestamp(), eventContent == null ? 0 : eventContent.length
 		);
 
-		return new SerializedEntityData(Collections.singletonList(serializedEventMetadata), eventContent);
+		return new SerializedEntityData<>(Collections.singletonList(serializedEventMetadata), eventContent);
 	}
 }

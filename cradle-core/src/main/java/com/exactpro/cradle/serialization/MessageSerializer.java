@@ -37,52 +37,50 @@ import static com.exactpro.cradle.serialization.SerializationUtils.printInstant;
 import static com.exactpro.cradle.serialization.SerializationUtils.printString;
 
 public class MessageSerializer {
-	public SerializedEntityData serializeBatch(MessageBatchToStore batch) throws SerializationException {
+	public SerializedEntityData<SerializedMessageMetadata> serializeBatch(MessageBatchToStore batch) {
 		return serializeBatch(batch.getMessages(), batch.getBatchSize());
 	}
 
-	public SerializedEntityData serializeBatch(GroupedMessageBatchToStore batch) throws SerializationException {
+	public SerializedEntityData<SerializedMessageMetadata> serializeBatch(GroupedMessageBatchToStore batch) {
 		return serializeBatch(batch.getMessages(), batch.getBatchSize());
 	}
 
-	public SerializedEntityData serializeBatch(Collection<StoredMessage> batch) throws SerializationException {
+	public SerializedEntityData<SerializedMessageMetadata> serializeBatch(Collection<StoredMessage> batch) {
 		return serializeBatch(batch, MessagesSizeCalculator.calculateMessageBatchSize(batch));
 	}
 
-	private SerializedEntityData serializeBatch(Collection<StoredMessage> batch, int batchSize) throws SerializationException {
+	private SerializedEntityData<SerializedMessageMetadata> serializeBatch(Collection<StoredMessage> batch, int batchSize) {
 		ByteBuffer buffer = ByteBuffer.allocate(batchSize);
-		List<SerializedEntityMetadata> serializedMessageMetadata = this.serializeBatch(batch, buffer);
-		return new SerializedEntityData(serializedMessageMetadata, buffer.array());
+		List<SerializedMessageMetadata> serializedMessageMetadata = this.serializeBatch(batch, buffer);
+		return new SerializedEntityData<>(serializedMessageMetadata, buffer.array());
 	}
 
-	public List<SerializedEntityMetadata> serializeBatch(
+	public List<SerializedMessageMetadata> serializeBatch(
 			Collection<StoredMessage> batch, ByteBuffer buffer
-	) throws SerializationException {
-		List<SerializedEntityMetadata> serializedMessageMetadata = new ArrayList<>(batch.size());
+	) {
+		List<SerializedMessageMetadata> serializedMessageMetadata = new ArrayList<>(batch.size());
 
 		buffer.putInt(MESSAGE_BATCH_MAGIC);
 		buffer.put(MESSAGE_PROTOCOL_VER);
 
 		buffer.putInt(batch.size());
-		int i = 0;
 		for (StoredMessage message : batch) {
 			int messageSize = message.getSerializedSize() - MESSAGE_LENGTH_IN_BATCH;
 			buffer.putInt(messageSize);
 			this.serialize(message, buffer);
-			serializedMessageMetadata.add(new SerializedEntityMetadata(message.getTimestamp(), messageSize));
-			i++;
+			serializedMessageMetadata.add(new SerializedMessageMetadata(message.getSessionAlias(), message.getDirection(), message.getTimestamp(), messageSize));
 		}
 
 		return serializedMessageMetadata;
 	}
-	
-	public byte[] serialize(StoredMessage message) throws SerializationException {
+
+	public byte[] serialize(StoredMessage message) {
 		ByteBuffer b = ByteBuffer.allocate(MessagesSizeCalculator.calculateMessageSize(message));
 		this.serialize(message, b);
 		return b.array();
 	}
 
-	public void serialize(StoredMessage message, ByteBuffer buffer) throws SerializationException {
+	public void serialize(StoredMessage message, ByteBuffer buffer) {
 		buffer.putShort(MESSAGE_MAGIC);
 		StoredMessageId id = message.getId();
 		printString(id.getSessionAlias(), buffer);
