@@ -420,13 +420,22 @@ public class MessagesWorker extends Worker {
         });
     }
 
-    public CompletableFuture<Void> storeGroupedMessageBatch(GroupedMessageBatchToStore batchToStore, PageId pageId, boolean storeSession) {
+    public CompletableFuture<Void> storeGroupedMessageBatch(
+            GroupedMessageBatchToStore batchToStore,
+            PageId pageId,
+            boolean storeSessionMetadata
+    ) {
         BookId bookId = pageId.getBookId();
         GroupedMessageBatchOperator gmbOperator = getOperators().getGroupedMessageBatchOperator();
 
         return CompletableFuture.supplyAsync(() -> {
             try {
-                return GroupedMessageEntityUtils.toSerializedEntity(batchToStore, pageId, settings.getCompressionType(), settings.getMaxUncompressedMessageBatchSize());
+                return GroupedMessageEntityUtils.toSerializedEntity(
+                        batchToStore,
+                        pageId,
+                        settings.getCompressionType(),
+                        settings.getMaxUncompressedMessageBatchSize()
+                );
             } catch (Exception e) {
                 throw new CompletionException(e);
             }
@@ -452,7 +461,7 @@ public class MessagesWorker extends Worker {
                                 updateMessageWriteMetrics(entity, bookId);
                             }, composingService)
                     ), composingService);
-            if (storeSession) {
+            if (storeSessionMetadata) {
                 future = updateSessionStatistics(future, bookId, pageId, batchToStore, meta);
             }
             return future;
