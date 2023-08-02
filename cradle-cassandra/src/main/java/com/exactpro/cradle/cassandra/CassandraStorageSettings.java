@@ -49,7 +49,6 @@ public class CassandraStorageSettings extends CoreStorageSettings {
     public static final int DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS = 1000;
     public static final long DEFAULT_EVENT_BATCH_DURATION_MILLIS = 5_000;
     public static final long DEFAULT_TIMEOUT = 5000;
-    public static final boolean DEFAULT_STORE_INDIVIDUAL_MESSAGE_SESSIONS = true;
     public static final CompressionType DEFAULT_COMPRESSION_TYPE = CompressionType.ZLIB;
 
     @JsonIgnore
@@ -85,7 +84,6 @@ public class CassandraStorageSettings extends CoreStorageSettings {
 
     private long eventBatchDurationMillis = DEFAULT_EVENT_BATCH_DURATION_MILLIS;
 
-    private boolean storeIndividualMessageSessions = DEFAULT_STORE_INDIVIDUAL_MESSAGE_SESSIONS;
     private CompressionType compressionType = DEFAULT_COMPRESSION_TYPE;
 
     public CassandraStorageSettings() {
@@ -138,11 +136,11 @@ public class CassandraStorageSettings extends CoreStorageSettings {
         this.sessionStatisticsCacheSize = settings.getSessionStatisticsCacheSize();
         this.counterPersistenceInterval = settings.getCounterPersistenceInterval();
         this.composingServiceThreads = settings.getComposingServiceThreads();
-        this.bookRefreshIntervalMillis = settings.getBookRefreshIntervalMillis();
+        setBookRefreshIntervalMillis(settings.getBookRefreshIntervalMillis());
         this.eventBatchDurationMillis = settings.getEventBatchDurationMillis();
         this.eventBatchDurationCacheSize = settings.getEventBatchDurationCacheSize();
 
-        this.storeIndividualMessageSessions = settings.isStoreIndividualMessageSessions();
+        setStoreIndividualMessageSessions(settings.isStoreIndividualMessageSessions());
         this.compressionType = settings.getCompressionType();
     }
 
@@ -365,14 +363,6 @@ public class CassandraStorageSettings extends CoreStorageSettings {
         this.eventBatchDurationCacheSize = eventBatchDurationCacheSize;
     }
 
-    public boolean isStoreIndividualMessageSessions() {
-        return storeIndividualMessageSessions;
-    }
-
-    public void setStoreIndividualMessageSessions(boolean storeIndividualMessageSessions) {
-        this.storeIndividualMessageSessions = storeIndividualMessageSessions;
-    }
-
     public CompressionType getCompressionType() {
         return compressionType;
     }
@@ -409,9 +399,9 @@ public class CassandraStorageSettings extends CoreStorageSettings {
                 ", composingServiceThreads=" + composingServiceThreads +
                 ", multiRowResultExecutionPolicy=" + multiRowResultExecutionPolicy +
                 ", singleRowResultExecutionPolicy=" + singleRowResultExecutionPolicy +
-                ", bookRefreshIntervalMillis=" + bookRefreshIntervalMillis +
+                ", bookRefreshIntervalMillis=" + getBookRefreshIntervalMillis() +
                 ", eventBatchDurationMillis=" + eventBatchDurationMillis +
-                ", storeIndividualMessageSessions=" + storeIndividualMessageSessions +
+                ", storeIndividualMessageSessions=" + isStoreIndividualMessageSessions() +
                 ", compressionType=" + compressionType +
                 '}';
     }

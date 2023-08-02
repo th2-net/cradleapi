@@ -344,9 +344,6 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	@Override
 	protected void doStoreMessageBatch(MessageBatchToStore batch, PageInfo page) throws IOException {
-		if (!settings.isStoreIndividualMessageSessions()) {
-			throw new IllegalStateException("Message batch can't be stored when store individual message sessions is false");
-		}
 		PageId pageId = page.getId();
 		try {
 			messagesWorker.storeMessageBatch(batch, pageId).get();
@@ -385,9 +382,6 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<Void> doStoreMessageBatchAsync(MessageBatchToStore batch, PageInfo page) {
-		if (!settings.isStoreIndividualMessageSessions()) {
-			throw new IllegalStateException("Message batch can't be stored when store individual message sessions is false");
-		}
 		PageId pageId = page.getId();
 		return messagesWorker.storeMessageBatch(batch, pageId)
 				.thenComposeAsync((unused) -> messagesWorker.storeSession(batch), composingService)

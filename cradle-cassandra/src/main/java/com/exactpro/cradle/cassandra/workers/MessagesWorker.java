@@ -453,41 +453,45 @@ public class MessagesWorker extends Worker {
                             }, composingService)
                     ), composingService);
             if (storeSession) {
-                future = future.thenApplyAsync((unused) -> getDirectionToSessionAliases(batchToStore), composingService)
-                        .thenComposeAsync((sessions) -> storeSessions(pageId, sessions), composingService)
-                        .thenComposeAsync((sessions) -> storePageSessions(bookId, sessions), composingService)
-                        .thenApplyAsync((sessions) -> {
-                            for (Map.Entry<Direction, Set<String>> entry : sessions.entrySet()) {
-                                Direction direction = entry.getKey();
-                                Set<String> sessionAliases = entry.getValue();
-                                for (String sessionAlias : sessionAliases) {
-                                    List<SerializedMessageMetadata> streamMetadatas = meta.stream()
-                                            .filter((metadata) ->
-                                                    metadata.getDirection() == direction && Objects.equals(metadata.getSessionAlias(), sessionAlias)
-                                            ).collect(Collectors.toList());
-                                    messageStatisticsCollector.updateMessageBatchStatistics(bookId,
-                                            pageId.getName(),
-                                            sessionAlias,
-                                            direction.getLabel(),
-                                            streamMetadatas);
-                                    sessionStatisticsCollector.updateSessionStatistics(bookId,
-                                            pageId.getName(),
-                                            SessionRecordType.SESSION,
-                                            sessionAlias,
-                                            streamMetadatas);
-                                    updateMessageWriteMetrics(
-                                            new StreamLabel(bookId.getName(), sessionAlias, direction.getLabel()),
-                                            streamMetadatas.size(),
-                                            streamMetadatas.stream()
-                                                    .mapToInt(SerializedMessageMetadata::getSerializedEntitySize).sum()
-                                    );
-                                }
-                            }
-                            return null;
-                        }, composingService);
+                future = updateSessionStatistics(future, bookId, pageId, batchToStore, meta);
             }
             return future;
         });
+    }
+
+    private CompletableFuture<Void> updateSessionStatistics(CompletableFuture<Void> future, BookId bookId, PageId pageId, GroupedMessageBatchToStore batchToStore, List<SerializedMessageMetadata> meta) {
+        return future.thenApplyAsync((unused) -> getDirectionToSessionAliases(batchToStore), composingService)
+                .thenComposeAsync((sessions) -> storeSessions(pageId, sessions), composingService)
+                .thenComposeAsync((sessions) -> storePageSessions(bookId, sessions), composingService)
+                .thenApplyAsync((sessions) -> {
+                    for (Map.Entry<Direction, Set<String>> entry : sessions.entrySet()) {
+                        Direction direction = entry.getKey();
+                        Set<String> sessionAliases = entry.getValue();
+                        for (String sessionAlias : sessionAliases) {
+                            List<SerializedMessageMetadata> streamMetadatas = meta.stream()
+                                    .filter((metadata) ->
+                                            metadata.getDirection() == direction && Objects.equals(metadata.getSessionAlias(), sessionAlias)
+                                    ).collect(Collectors.toList());
+                            messageStatisticsCollector.updateMessageBatchStatistics(bookId,
+                                    pageId.getName(),
+                                    sessionAlias,
+                                    direction.getLabel(),
+                                    streamMetadatas);
+                            sessionStatisticsCollector.updateSessionStatistics(bookId,
+                                    pageId.getName(),
+                                    SessionRecordType.SESSION,
+                                    sessionAlias,
+                                    streamMetadatas);
+                            updateMessageWriteMetrics(
+                                    new StreamLabel(bookId.getName(), sessionAlias, direction.getLabel()),
+                                    streamMetadatas.size(),
+                                    streamMetadatas.stream()
+                                            .mapToInt(SerializedMessageMetadata::getSerializedEntitySize).sum()
+                            );
+                        }
+                    }
+                    return null;
+                }, composingService);
     }
 
     private static Map<Direction, Set<String>> getDirectionToSessionAliases(GroupedMessageBatchToStore batch) {
