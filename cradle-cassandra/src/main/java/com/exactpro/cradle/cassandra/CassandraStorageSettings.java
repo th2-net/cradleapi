@@ -16,11 +16,12 @@
 
 package com.exactpro.cradle.cassandra;
 
-import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.CradleStorage;
 import com.exactpro.cradle.cassandra.connection.NetworkTopologyStrategy;
 import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
+
+import java.time.Instant;
 
 import static com.exactpro.cradle.CradleStorage.DEFAULT_COMPOSING_SERVICE_THREADS;
 
@@ -44,7 +45,9 @@ public class CassandraStorageSettings extends CoreStorageSettings {
             DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS = 1000;
 	public static final long DEFAULT_EVENT_BATCH_DURATION_MILLIS = 5_000;
 
-
+    //we need to use Instant.ofEpochMilli(Long.MAX_VALUE) instead of Instant.MAX.
+    //when cassandra driver tries to convert Instant.MAX to milliseconds using toEpochMilli() it causes long overflow.
+    public static final Instant DEFAULT_PAGE_REMOVE_TIME = Instant.ofEpochMilli(Long.MAX_VALUE);
 
     private final NetworkTopologyStrategy networkTopologyStrategy;
     private final long timeout;

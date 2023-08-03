@@ -28,6 +28,8 @@ import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.utils.TimeUtils;
 
+import static com.exactpro.cradle.cassandra.CassandraStorageSettings.DEFAULT_PAGE_REMOVE_TIME;
+
 @Entity
 @CqlName(PageEntity.TABLE_NAME)
 @PropertyStrategy(mutable = false)
@@ -43,10 +45,6 @@ public class PageEntity {
 	public static final String FIELD_END_TIME = "end_time";
 	public static final String FIELD_UPDATED = "updated";
 	public static final String FIELD_REMOVED = "removed";
-
-	//we need to use Instant.ofEpochMilli(Long.MAX_VALUE) instead of Instant.MAX.
-	//when cassandra driver tries to convert Instant.MAX to milliseconds using toEpochMilli() it causes long overflow.
-	public static final Instant DEFAULT_REMOVED_TIME = Instant.ofEpochMilli(Long.MAX_VALUE);
 
 	@PartitionKey(0)
 	@CqlName(FIELD_BOOK)
@@ -101,7 +99,7 @@ public class PageEntity {
 		this.startTime = startedLdt.toLocalTime();
 		this.comment = comment;
 		this.updated = updated == null ? started : updated;
-		this.removed = DEFAULT_REMOVED_TIME;
+		this.removed = DEFAULT_PAGE_REMOVE_TIME;
 
 		if (ended != null) {
 			LocalDateTime endedLdt = TimeUtils.toLocalTimestamp(ended);
