@@ -1276,7 +1276,7 @@ public class CassandraCradleStorage extends CradleStorage
 		//remove page
 		LocalDateTime ldt = TimeUtils.toLocalTimestamp(pageInfo.getStarted());
 		if (pageInfo.getStarted().isAfter(Instant.now().plusMillis(pageActionRejectionThreshold))) {
-			operators.getPageOperator().remove(book, ldt.toLocalDate(), ldt.toLocalTime(), writeAttrs);
+			pageOperator.remove(book, ldt.toLocalDate(), ldt.toLocalTime(), writeAttrs);
 			/*
 				New last page might have non-null end,
 				need to update that

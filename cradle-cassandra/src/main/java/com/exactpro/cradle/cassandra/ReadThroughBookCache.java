@@ -25,6 +25,7 @@ import com.exactpro.cradle.utils.CradleStorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -75,7 +76,7 @@ public class ReadThroughBookCache implements BookCache {
         Collection<PageInfo> result = new ArrayList<>();
         for (PageEntity pageEntity : operators.getPageOperator().getAll(bookId.getName(), readAttrs))
         {
-            if (loadRemoved || pageEntity.getRemoved() == null) {
+            if (loadRemoved || pageEntity.getRemoved().equals(PageEntity.DEFAULT_REMOVED_TIME)) {
                 result.add(pageEntity.toPageInfo());
             }
         }
