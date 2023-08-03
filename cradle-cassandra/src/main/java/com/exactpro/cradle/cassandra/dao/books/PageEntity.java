@@ -43,6 +43,9 @@ public class PageEntity {
 	public static final String FIELD_END_TIME = "end_time";
 	public static final String FIELD_UPDATED = "updated";
 	public static final String FIELD_REMOVED = "removed";
+
+	//we need to use Instant.ofEpochMilli(Long.MAX_VALUE) instead of Instant.MAX.
+	//when cassandra driver tries to convert Instant.MAX to milliseconds using toEpochMilli() it causes long overflow.
 	public static final Instant DEFAULT_REMOVED_TIME = Instant.ofEpochMilli(Long.MAX_VALUE);
 
 	@PartitionKey(0)
