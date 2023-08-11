@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,114 +19,124 @@ package com.exactpro.cradle.messages;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
+import com.google.common.collect.Lists;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Stream;
+
+import static com.exactpro.cradle.serialization.MessagesSizeCalculator.MESSAGE_BATCH_CONST_VALUE;
+import static java.util.stream.Collectors.toCollection;
 
 public class StoredGroupedMessageBatch {
-	protected BookId bookId;
-	private final String group;
-	protected int batchSize;
-	protected final TreeSet<StoredMessage> messages;
-	private final Instant recDate;
+    protected BookId bookId;
+    private final String group;
+    protected int batchSize;
+    private final List<StoredMessage> messages;
+    private StoredMessage firstMessage;
+    private StoredMessage lastMessage;
+    private final Instant recDate;
 
-	public BookId getBookId() {
-		return bookId;
+    public BookId getBookId() {
+        return bookId;
+    }
+
+    public StoredGroupedMessageBatch(String group) {
+        this(group, null, null, null);
+    }
+
+    public StoredGroupedMessageBatch(String group, Collection<StoredMessage> messages, PageId pageId, Instant recDate) {
+        this.recDate = recDate;
+        this.group = group;
+        this.messages = messages == null || messages.isEmpty()
+                ? new ArrayList<>()
+                : messages.stream()
+                .map(msg -> Objects.equals(msg.getPageId(), pageId)
+                        ? msg
+                        : new StoredMessage(msg, msg.getId(), pageId)
+                ).collect(toCollection(ArrayList<StoredMessage>::new));
+        if (this.messages.isEmpty()) {
+            batchSize = MESSAGE_BATCH_CONST_VALUE;
+            return;
+        }
+        this.messages.forEach(this::updateFirstLast);
+        batchSize = MessagesSizeCalculator.calculateMessageBatchSize(this.messages);
+    this.bookId = pageId.getBookId();
 	}
 
-	public StoredGroupedMessageBatch(String group) {
-		this(group, null, null, null);
-	}
+    public String getGroup() {
+        return group;
+    }
 
-	public StoredGroupedMessageBatch(String group, Collection<StoredMessage> messages, PageId pageId, Instant recDate) {
-		this.recDate = recDate;
-		this.group = group;
-		this.messages = createMessagesCollection(messages, pageId);
-		if (messages == null || messages.isEmpty()) {
-			batchSize = MessagesSizeCalculator.calculateMessageBatchSize(Collections.emptyList()).total;
-			return;
-		}
-		batchSize = MessagesSizeCalculator.calculateMessageBatchSize(messages).total;
-		this.bookId = pageId.getBookId();
-	}
+    public int getMessageCount() {
+        return messages.size();
+    }
 
-	public String getGroup() {
-		return group;
-	}
-	public int getMessageCount() {
-		return messages.size();
-	}
+    public int getBatchSize() {
+        return batchSize;
+    }
 
-	public int getBatchSize() {
-		return batchSize;
-	}
+    public Collection<StoredMessage> getMessages() {
+        return Collections.unmodifiableCollection(messages);
+    }
 
-	public Collection<StoredMessage> getMessages() {
-		return Collections.unmodifiableCollection(messages);
-	}
+    public Collection<StoredMessage> getMessagesReverse() {
+        return Collections.unmodifiableCollection(Lists.reverse(messages));
+    }
 
-	public Collection<StoredMessage> getMessagesReverse()	{
-		return Collections.unmodifiableCollection(messages.descendingSet());
-	}
+    public StoredMessage getFirstMessage() {
+        return firstMessage;
+    }
 
-	public StoredMessage getFirstMessage() {
-		return !messages.isEmpty() ? messages.first() : null;
-	}
+    public StoredMessage getLastMessage() {
+        return lastMessage;
+    }
 
-	public StoredMessage getLastMessage() {
-		return !messages.isEmpty() ? messages.last() : null;
-	}
+    public Instant getFirstTimestamp() {
+        StoredMessage m = getFirstMessage();
+        return m != null ? m.getTimestamp() : null;
+    }
 
-	public Instant getFirstTimestamp() {
-		StoredMessage m = getFirstMessage();
-		return m != null ? m.getTimestamp() : null;
-	}
-
-	public Instant getLastTimestamp() {
-		StoredMessage m = getLastMessage();
-		return m != null ? m.getTimestamp() : null;
-	}
+    public Instant getLastTimestamp() {
+        StoredMessage m = getLastMessage();
+        return m != null ? m.getTimestamp() : null;
+    }
 
 
-	public Instant getRecDate() {
-		return recDate;
-	}
+    public Instant getRecDate() {
+        return recDate;
+    }
 
-	public boolean isEmpty() {
-		return messages.isEmpty();
-	}
+    public boolean isEmpty() {
+        return messages.isEmpty();
+    }
 
-	static class StoredMessageComparator implements Comparator<StoredMessage> {
+    protected Stream<StoredMessage> messagesStream() {
+        return messages.stream();
+    }
 
-		@Override
-		public int compare(StoredMessage o1, StoredMessage o2) {
-			int r;
+    protected void addMessage(StoredMessage message) {
+        messages.add(message);
+        updateFirstLast(message);
+    }
 
-			r = Comparator.comparing(StoredMessage::getTimestamp).compare(o1, o2);
-			if (r != 0)
-				return r;
+    protected void addMessages(Collection<StoredMessage> messages) {
+        this.messages.addAll(messages);
+        messages.forEach(this::updateFirstLast);
+    }
 
-			r = Comparator.comparing(StoredMessage::getSessionAlias).compare(o1, o2);
-			if (r != 0)
-				return r;
-
-			r = Comparator.comparing(StoredMessage::getDirection).compare(o1, o2);
-			if (r != 0)
-				return r;
-
-			return Comparator.comparingLong(StoredMessage::getSequence).compare(o1, o2);
-		}
-	}
-
-	protected TreeSet<StoredMessage> createMessagesCollection(Collection<StoredMessage> messages, PageId pageId)	{
-		if (messages == null)
-			return new TreeSet<>(new StoredMessageComparator());
-		
-		TreeSet<StoredMessage> result = new TreeSet<>(new StoredMessageComparator());
-		for (StoredMessage msg : messages)
-			result.add(new StoredMessage(msg, msg.getId(), pageId));
-		return result;
-	}
+    private void updateFirstLast(StoredMessage message) {
+        if (firstMessage == null || message.getTimestamp().isBefore(firstMessage.getTimestamp())) {
+            firstMessage = message;
+        }
+        if (lastMessage == null || message.getTimestamp().isAfter(lastMessage.getTimestamp())) {
+            lastMessage = message;
+        }
+    }
 
 	@Override
 	public boolean equals(Object o) {

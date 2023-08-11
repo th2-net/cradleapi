@@ -23,19 +23,52 @@ import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.exactpro.cradle.*;
+import com.exactpro.cradle.BookCache;
+import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.BookInfo;
+import com.exactpro.cradle.BookListEntry;
+import com.exactpro.cradle.BookManager;
+import com.exactpro.cradle.BookToAdd;
+import com.exactpro.cradle.CradleStorage;
+import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.EntityType;
+import com.exactpro.cradle.FrameType;
+import com.exactpro.cradle.PageId;
+import com.exactpro.cradle.PageInfo;
+import com.exactpro.cradle.SessionRecordType;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
 import com.exactpro.cradle.cassandra.counters.FrameInterval;
-import com.exactpro.cradle.cassandra.dao.*;
-import com.exactpro.cradle.cassandra.dao.books.*;
+import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
+import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
+import com.exactpro.cradle.cassandra.dao.CassandraOperators;
+import com.exactpro.cradle.cassandra.dao.books.BookEntity;
+import com.exactpro.cradle.cassandra.dao.books.PageEntity;
+import com.exactpro.cradle.cassandra.dao.books.PageNameEntity;
+import com.exactpro.cradle.cassandra.dao.books.PageNameOperator;
+import com.exactpro.cradle.cassandra.dao.books.PageOperator;
 import com.exactpro.cradle.cassandra.dao.intervals.CassandraIntervalsWorker;
-import com.exactpro.cradle.cassandra.dao.messages.*;
+import com.exactpro.cradle.cassandra.dao.messages.GroupEntity;
+import com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchOperator;
+import com.exactpro.cradle.cassandra.dao.messages.GroupsOperator;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchOperator;
+import com.exactpro.cradle.cassandra.dao.messages.PageGroupEntity;
+import com.exactpro.cradle.cassandra.dao.messages.PageGroupsIteratorProvider;
+import com.exactpro.cradle.cassandra.dao.messages.PageGroupsOperator;
+import com.exactpro.cradle.cassandra.dao.messages.PageSessionEntity;
+import com.exactpro.cradle.cassandra.dao.messages.PageSessionsIteratorProvider;
+import com.exactpro.cradle.cassandra.dao.messages.PageSessionsOperator;
+import com.exactpro.cradle.cassandra.dao.messages.SessionEntity;
+import com.exactpro.cradle.cassandra.dao.messages.SessionsOperator;
 import com.exactpro.cradle.cassandra.dao.statistics.EntityStatisticsIteratorProvider;
 import com.exactpro.cradle.cassandra.dao.statistics.MessageStatisticsIteratorProvider;
 import com.exactpro.cradle.cassandra.dao.statistics.MessageStatisticsOperator;
 import com.exactpro.cradle.cassandra.dao.statistics.SessionStatisticsOperator;
-import com.exactpro.cradle.cassandra.dao.testevents.*;
+import com.exactpro.cradle.cassandra.dao.testevents.PageScopeEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.PageScopesIteratorProvider;
+import com.exactpro.cradle.cassandra.dao.testevents.PageScopesOperator;
+import com.exactpro.cradle.cassandra.dao.testevents.ScopeEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
 import com.exactpro.cradle.cassandra.metrics.DriverMetrics;
@@ -56,7 +89,14 @@ import com.exactpro.cradle.counters.CounterSample;
 import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.intervals.IntervalsWorker;
 import com.exactpro.cradle.iterators.ConvertingIterator;
-import com.exactpro.cradle.messages.*;
+import com.exactpro.cradle.messages.GroupedMessageBatchToStore;
+import com.exactpro.cradle.messages.GroupedMessageFilter;
+import com.exactpro.cradle.messages.MessageBatchToStore;
+import com.exactpro.cradle.messages.MessageFilter;
+import com.exactpro.cradle.messages.StoredGroupedMessageBatch;
+import com.exactpro.cradle.messages.StoredMessage;
+import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
@@ -69,8 +109,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.time.*;
-import java.util.*;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -113,12 +162,15 @@ public class CassandraCradleStorage extends CradleStorage
 		this.pageActionRejectionThreshold = settings.calculatePageActionRejectionThreshold();
 
 		this.multiRowResultExecPolicy = settings.getMultiRowResultExecutionPolicy();
-		if (this.multiRowResultExecPolicy == null)
+		if (this.multiRowResultExecPolicy == null) {
 			this.multiRowResultExecPolicy = new PageSizeAdjustingPolicy(settings.getResultPageSize(), 2);
+		}
 
 		this.singleRowResultExecPolicy = settings.getSingleRowResultExecutionPolicy();
-		if (this.singleRowResultExecPolicy == null)
+		if (this.singleRowResultExecPolicy == null) {
 			this.singleRowResultExecPolicy = new FixedNumberRetryPolicy(5);
+		}
+		LOGGER.info("Created cassandra cradle storage via {}", storageSettings);
 	}
 
 	private static final Consumer<Object> NOOP = whatever -> {};
@@ -235,9 +287,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 	
 	@Override
-	protected void doAddPages(BookId bookId, List<PageInfo> pages, PageInfo lastPage)
-			throws CradleStorageException, IOException
-	{
+	protected void doAddPages(BookId bookId, List<PageInfo> pages, PageInfo lastPage) throws IOException {
 		PageOperator pageOp = operators.getPageOperator();
 		PageNameOperator pageNameOp = operators.getPageNameOperator();
 		
@@ -312,12 +362,13 @@ public class CassandraCradleStorage extends CradleStorage
 
 		try
 		{
-			messagesWorker.storeGroupedMessageBatch(batch, pageId).get();
-
-			for (MessageBatchToStore b: batch.getSessionMessageBatches()) {
-				messagesWorker.storeMessageBatch(b, pageId).get();
-				messagesWorker.storeSession(b).get();
-				messagesWorker.storePageSession(b, pageId).get();
+			messagesWorker.storeGroupedMessageBatch(batch, pageId, !settings.isStoreIndividualMessageSessions()).get();
+			if (settings.isStoreIndividualMessageSessions()) {
+				for (MessageBatchToStore b : batch.getSessionMessageBatches()) {
+					messagesWorker.storeMessageBatch(b, pageId).get();
+					messagesWorker.storeSession(b).get();
+					messagesWorker.storePageSession(b, pageId).get();
+				}
 			}
 		}
 		catch (Exception e)
@@ -341,14 +392,14 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		PageId pageId = page.getId();
 
-		CompletableFuture<Void> future =  messagesWorker.storeGroupedMessageBatch(batch, pageId);
-
-		// store individual session message batches
-		for (MessageBatchToStore b: batch.getSessionMessageBatches()) {
-			future = future.thenComposeAsync((unused) -> messagesWorker.storeMessageBatch(b, pageId), composingService)
-							.thenComposeAsync((unused) -> messagesWorker.storeSession(b), composingService)
-							.thenComposeAsync((unused) -> messagesWorker.storePageSession(b, pageId), composingService)
-							.thenAccept(NOOP);
+		CompletableFuture<Void> future = messagesWorker.storeGroupedMessageBatch(batch, pageId, !settings.isStoreIndividualMessageSessions());
+		if (settings.isStoreIndividualMessageSessions()) {
+			for (MessageBatchToStore b : batch.getSessionMessageBatches()) {
+				future = future.thenComposeAsync((unused) -> messagesWorker.storeMessageBatch(b, pageId), composingService)
+						.thenComposeAsync((unused) -> messagesWorker.storeSession(b), composingService)
+						.thenComposeAsync((unused) -> messagesWorker.storePageSession(b, pageId), composingService)
+						.thenAccept(NOOP);
+			}
 		}
 		return future;
 	}
@@ -821,7 +872,7 @@ public class CassandraCradleStorage extends CradleStorage
 						sum = sum.incrementedBy(res.next().getCounter());
 					}
 				} catch (CradleStorageException | IOException e) {
-					LOGGER.error("Error while getting {}, cause - {}", queryInfo, e.getCause());
+					LOGGER.error("Error while getting {}", queryInfo, e);
 				}
 			}
 
@@ -871,7 +922,7 @@ public class CassandraCradleStorage extends CradleStorage
 						sum = sum.incrementedBy(res.next().getCounter());
 					}
 				} catch (CradleStorageException | IOException e) {
-					LOGGER.error("Error while getting {}, cause - {}", queryInfo, e.getCause());
+					LOGGER.error("Error while getting {}", queryInfo, e);
 				}
 			}
 
@@ -885,17 +936,14 @@ public class CassandraCradleStorage extends CradleStorage
 				entityType.name(),
 				interval.getStart().toString(),
 				interval.getEnd().toString());
-		try
-		{
+		try {
 			return doGetCountAsync(bookId, entityType, interval).get();
-		}
-		catch (Exception e)
-		{
+		} catch (Exception e) {
 			throw new IOException("Error while getting " + queryInfo, e);
 		}
 	}
 
-	private CompletableFuture<CradleResultSet<String >> doGetSessionsAsync (BookId bookId, Interval interval, SessionRecordType recordType) throws CradleStorageException {
+	private CompletableFuture<CradleResultSet<String>> doGetSessionsAsync(BookId bookId, Interval interval, SessionRecordType recordType) throws CradleStorageException {
 		String queryInfo = String.format("%s Aliases in book %s from %s to %s",
 				recordType.name(),
 				bookId.getName(),

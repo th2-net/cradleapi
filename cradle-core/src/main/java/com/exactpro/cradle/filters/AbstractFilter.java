@@ -37,19 +37,16 @@ public abstract class AbstractFilter
 	private int limit;
 	private Order order = Order.DIRECT;
 
-	protected AbstractFilter(BookId bookId)
-	{
+	protected AbstractFilter(BookId bookId) {
 		this.bookId = bookId;
 	}
-	
-	protected AbstractFilter(BookId bookId, PageId pageId)
-	{
+
+	protected AbstractFilter(BookId bookId, PageId pageId) {
 		this(bookId);
 		this.pageId = pageId;
 	}
 
-	protected AbstractFilter(AbstractFilter copyFrom)
-	{
+	protected AbstractFilter(AbstractFilter copyFrom) {
 		this.bookId = copyFrom.getBookId();
 		this.pageId = copyFrom.getPageId();
 		this.from = copyFrom.getFrom();
@@ -62,81 +59,77 @@ public abstract class AbstractFilter
 		this.fetchParameters = copyFrom.getFetchParameters();
 	}
 
-	public BookId getBookId()
-	{
+	public BookId getBookId() {
 		return bookId;
 	}
 
-	public PageId getPageId()
-	{
+	public PageId getPageId() {
 		return pageId;
 	}
 
-	public void setPageId(PageId pageId)
-	{
+	public void setPageId(PageId pageId) {
 		this.pageId = pageId;
 	}
 
-	protected FilterForGreater<Instant> getFrom()
-	{
+	protected FilterForGreater<Instant> getFrom() {
 		return from;
 	}
 
-	protected void setFrom(FilterForGreater<Instant> from)
-	{
+	protected void setFrom(FilterForGreater<Instant> from) {
 		this.from = from;
 	}
 
 
-	protected FilterForLess<Instant> getTo()
-	{
+	protected FilterForLess<Instant> getTo() {
 		return to;
 	}
 
-	protected void setTo(FilterForLess<Instant> to)
-	{
+	protected void setTo(FilterForLess<Instant> to) {
 		this.to = to;
 	}
 
-	public int getLimit()
-	{
+	public int getLimit() {
 		return limit;
 	}
 
-	public void setLimit(int limit)
-	{
+	public void setLimit(int limit) {
 		if(limit < 0){
 			throw new IllegalArgumentException("Invalid limit value: " + limit + ". limit must be greater than 0 )");
 		}
 		this.limit = limit;
 	}
 
-	public Order getOrder()
-	{
+	public Order getOrder() {
 		return order;
 	}
 
-	public void setOrder(Order order)
-	{
+	public void setOrder(Order order) {
 		this.order = order == null ? Order.DIRECT : order;
 	}
 
 
-	public FetchParameters getFetchParameters()
-	{
+	public FetchParameters getFetchParameters() {
 		return fetchParameters;
 	}
 
-	public void setFetchParameters(FetchParameters fetchParameters)
-	{
+	public void setFetchParameters(FetchParameters fetchParameters) {
 		this.fetchParameters = fetchParameters;
 	}
 
-	protected void validate() throws CradleStorageException
-	{
-		if (bookId == null)
+	protected void validate() throws CradleStorageException {
+		if (bookId == null) {
 			throw new CradleStorageException("bookId is mandatory");
-		if (pageId != null && !pageId.getBookId().equals(bookId))
-			throw new CradleStorageException("pageId must be from book '"+bookId+"'");
+		}
+		if (pageId != null && !pageId.getBookId().equals(bookId)) {
+			throw new CradleStorageException("pageId must be from book '" + bookId + "'");
+		}
+		if (from != null && to != null) {
+			Instant fromValue = from.getValue();
+			Instant toValue = to.getValue();
+			if (fromValue.isAfter(toValue)) {
+				throw new CradleStorageException(String.format("'from' (%s) must be less or equal to 'to' (%s)",
+						fromValue, toValue));
+			}
+		}
 	}
 }

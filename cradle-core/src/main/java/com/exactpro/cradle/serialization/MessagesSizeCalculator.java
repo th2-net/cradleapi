@@ -74,19 +74,13 @@ public class MessagesSizeCalculator {
 		return (str != null ? str.getBytes(StandardCharsets.UTF_8).length : 0) + 4;
 	}
 
-	public static SerializationBatchSizes calculateMessageBatchSize(Collection<? extends CradleMessage> message) {
+	public static int calculateMessageBatchSize(Collection<? extends CradleMessage> message) {
+		var total = MESSAGE_BATCH_CONST_VALUE;
 
-		SerializationBatchSizes sizes = new SerializationBatchSizes(message.size());
-		sizes.total = MESSAGE_BATCH_CONST_VALUE;
-		
-		int i  = 0;
 		for (CradleMessage storedMessage : message) {
-			sizes.entities[i] = calculateMessageSize(storedMessage);
-			sizes.total += MESSAGE_LENGTH_IN_BATCH + sizes.entities[i];
-			i++;
+			total += storedMessage.getSerializedSize();
 		}
 
-		return sizes;
+		return total;
 	}
-	
 }

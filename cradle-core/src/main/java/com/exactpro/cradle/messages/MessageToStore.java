@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 package com.exactpro.cradle.messages;
 
-import java.util.Arrays;
-
-import com.exactpro.cradle.utils.CompressionUtils;
+import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.MessageUtils;
+
+import java.util.Arrays;
 
 /**
  * Object to hold information about one message prepared to be stored in Cradle
@@ -29,18 +29,34 @@ public class MessageToStore implements CradleMessage {
     private final StoredMessageId id;
     private final String protocol;
     private final byte[] content;
-    private MessageMetadata metadata;
+    private final MessageMetadata metadata;
+    private final int serializedSize;
 
-    MessageToStore(StoredMessageId id, String protocol, byte[] content) throws CradleStorageException {
+    private MessageToStore(StoredMessageId id, String protocol, byte[] content, MessageMetadata metadata, int serializedSize) throws CradleStorageException {
         this.id = id;
         this.protocol = protocol;
         this.content = content;
-        MessageUtils.validateMessage(this);
+        this.metadata = metadata;
+        if (serializedSize > 0) {
+            this.serializedSize = serializedSize;
+        } else {
+            MessageUtils.validateMessage(this);
+            this.serializedSize = MessagesSizeCalculator.calculateMessageSizeInBatch(this);
+        }
+    }
+
+    MessageToStore(StoredMessageId id, String protocol, byte[] content, MessageMetadata metadata) throws CradleStorageException {
+        this(id, protocol, content, metadata, -1);
     }
 
     public MessageToStore(MessageToStore copyFrom) throws CradleStorageException {
-        this(copyFrom.getId(), copyFrom.getProtocol(), copyFrom.getContent());
-        this.metadata = copyFrom.getMetadata() != null ? new MessageMetadata(copyFrom.getMetadata()) : null;
+        this(
+                copyFrom.getId(),
+                copyFrom.getProtocol(),
+                copyFrom.getContent(),
+                copyFrom.getMetadata() != null ? new MessageMetadata(copyFrom.getMetadata()) : null,
+                copyFrom.serializedSize
+        );
     }
 
     public static MessageToStoreBuilder builder() {
@@ -68,25 +84,19 @@ public class MessageToStore implements CradleMessage {
         return metadata;
     }
 
-    public void setMetadata(MessageMetadata metadata) {
-        this.metadata = metadata;
+    @Override
+    public int getSerializedSize() {
+        return serializedSize;
     }
-
-    public void addMetadata(String key, String value) {
-        if (metadata == null)
-            metadata = new MessageMetadata();
-        metadata.add(key, value);
-    }
-
 
     @Override
     public String toString() {
-        return new StringBuilder()
-                .append("MessageToStore{").append(CompressionUtils.EOL)
-                .append("id=").append(id).append(",").append(CompressionUtils.EOL)
-                .append("content=").append(Arrays.toString(content)).append(CompressionUtils.EOL)
-                .append("protocol=").append(protocol).append(",").append(CompressionUtils.EOL)
-                .append("metadata=").append(metadata).append(",").append(CompressionUtils.EOL)
-                .append("}").toString();
+        return "MessageToStore{" + System.lineSeparator() +
+                "id=" + id + "," + System.lineSeparator() +
+                "content=" + Arrays.toString(content) + System.lineSeparator() +
+                "protocol=" + protocol + "," + System.lineSeparator() +
+                "metadata=" + metadata + "," + System.lineSeparator() +
+                "serializedSize=" + serializedSize + "," + System.lineSeparator() +
+                "}";
     }
 }

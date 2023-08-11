@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,16 @@
 
 package com.exactpro.cradle.messages;
 
+import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.utils.CradleIdException;
+import com.exactpro.cradle.utils.EscapeUtils;
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
-
-import com.exactpro.cradle.Direction;
-import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.utils.CradleIdException;
-import com.exactpro.cradle.utils.EscapeUtils;
-
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Holds ID of a message stored in Cradle.

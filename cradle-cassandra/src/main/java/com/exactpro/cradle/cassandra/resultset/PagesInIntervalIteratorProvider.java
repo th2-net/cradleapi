@@ -24,6 +24,7 @@ import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.utils.TimeUtils;
 
 import java.time.Instant;
 import java.util.LinkedList;
@@ -68,7 +69,7 @@ public abstract class PagesInIntervalIteratorProvider<T> extends IteratorProvide
         Instant start = interval.getStart();
         Instant end = interval.getEnd();
 
-        return bookCache.loadPageInfo(bookId, false)
+        return bookCache.loadPageInfo(bookId, TimeUtils.toLocalTimestamp(interval.getStart()), false)
                 .stream()
                 .filter(page -> checkInterval(page, start, end))
                 .map(page -> page.getId().getName())
