@@ -21,7 +21,10 @@ import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.SerializedEntity;
 import com.exactpro.cradle.cassandra.utils.GroupedMessageEntityUtils;
-import com.exactpro.cradle.messages.*;
+import com.exactpro.cradle.messages.GroupedMessageBatchToStore;
+import com.exactpro.cradle.messages.MessageToStore;
+import com.exactpro.cradle.messages.StoredGroupedMessageBatch;
+import com.exactpro.cradle.serialization.SerializedMessageMetadata;
 import com.exactpro.cradle.utils.CompressException;
 import com.exactpro.cradle.utils.CompressionType;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -53,7 +56,7 @@ public class GroupedMessageBatchEntityTest {
                 .build();
         batch.addMessage(message);
 
-        SerializedEntity<GroupedMessageBatchEntity> serializedEntity = GroupedMessageEntityUtils.toSerializedEntity(batch, pageId, CompressionType.ZLIB, 10_000);
+        SerializedEntity<SerializedMessageMetadata, GroupedMessageBatchEntity> serializedEntity = GroupedMessageEntityUtils.toSerializedEntity(batch, pageId, CompressionType.ZLIB, 10_000);
 
         StoredGroupedMessageBatch storedBatch = new StoredGroupedMessageBatch(group, batch.getMessages(), pageId, null);
         StoredGroupedMessageBatch batchFromEntity = GroupedMessageEntityUtils.toStoredGroupedMessageBatch(serializedEntity.getEntity(), pageId);

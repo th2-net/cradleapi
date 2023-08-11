@@ -90,6 +90,7 @@ public abstract class CradleStorage {
     private final long pageActionRejectionThreshold;
 
     private final long storeActionRejectionThreshold;
+    private final boolean storeIndividualMessageSessions;
 
     public CradleStorage(
             ExecutorService composingService,
@@ -109,6 +110,7 @@ public abstract class CradleStorage {
 
         this.pageActionRejectionThreshold = settings.calculatePageActionRejectionThreshold();
         this.storeActionRejectionThreshold = settings.calculateStoreActionRejectionThreshold();
+        this.storeIndividualMessageSessions = settings.isStoreIndividualMessageSessions();
         entitiesFactory = new CradleEntitiesFactory(maxMessageBatchSize, maxTestEventBatchSize, storeActionRejectionThreshold);
     }
 
@@ -576,9 +578,13 @@ public abstract class CradleStorage {
      * @param batch data to write
      * @throws IOException            if data writing failed
      * @throws CradleStorageException if given parameters are invalid
+     * @throws IllegalStateException  if store individual message sessions is false
      */
     @Deprecated
     public final void storeMessageBatch(MessageBatchToStore batch) throws IOException, CradleStorageException {
+        if (!storeIndividualMessageSessions) {
+            throw new IllegalStateException("Message batch can't be stored when store individual message sessions is false");
+        }
         StoredMessageId id = batch.getId();
         logger.debug("Storing message batch {}", id);
         PageInfo page = findPage(id.getBookId(), id.getTimestamp());
@@ -609,10 +615,14 @@ public abstract class CradleStorage {
      * @return future to get know if storing was successful
      * @throws CradleStorageException if given parameters are invalid
      * @throws IOException            if data writing failed
+     * @throws IllegalStateException  if store individual message sessions is false
      */
     @Deprecated
     public final CompletableFuture<Void> storeMessageBatchAsync(MessageBatchToStore batch)
             throws CradleStorageException, IOException {
+        if (!storeIndividualMessageSessions) {
+            throw new IllegalStateException("Message batch can't be stored when store individual message sessions is false");
+        }
         StoredMessageId id = batch.getId();
         logger.debug("Storing message batch {} asynchronously", id);
         PageInfo page = findPage(id.getBookId(), id.getTimestamp());
@@ -1157,9 +1167,8 @@ public abstract class CradleStorage {
      * @param filter defines conditions to filter test events by
      * @return future to obtain result set to enumerate test events
      * @throws CradleStorageException if filter is invalid
-     * @throws IOException            if data retrieval failed
      */
-    public final CompletableFuture<CradleResultSet<StoredTestEvent>> getTestEventsAsync(TestEventFilter filter) throws CradleStorageException, IOException {
+    public final CompletableFuture<CradleResultSet<StoredTestEvent>> getTestEventsAsync(TestEventFilter filter) throws CradleStorageException {
         logger.debug("Asynchronously getting test events filtered by {}", filter);
         if (!checkFilter(filter))
             return CompletableFuture.completedFuture(new EmptyResultSet<>());
@@ -1423,9 +1432,8 @@ public abstract class CradleStorage {
      * @param comment  updated comment value for page
      * @return returns PageInfo of updated page
      * @throws CradleStorageException Page was edited but cache wasn't refreshed, try to refresh pages
-     * @throws IOException            if there is a problem with input/output
      */
-    public PageInfo updatePageComment(BookId bookId, String pageName, String comment) throws CradleStorageException, IOException {
+    public PageInfo updatePageComment(BookId bookId, String pageName, String comment) throws CradleStorageException {
         getBookCache().getBook(bookId);
         PageInfo updatedPageInfo = doUpdatePageComment(bookId, pageName, comment);
 
@@ -1447,9 +1455,8 @@ public abstract class CradleStorage {
      * @param newPageName name after update
      * @return returns PageInfo of updated page
      * @throws CradleStorageException Page was edited but cache wasn't refreshed, try to refresh pages
-     * @throws IOException            if there is a problem with input/output
      */
-    public PageInfo updatePageName(BookId bookId, String pageName, String newPageName) throws CradleStorageException, IOException {
+    public PageInfo updatePageName(BookId bookId, String pageName, String newPageName) throws CradleStorageException {
         getBookCache().getBook(bookId);
         PageInfo updatedPageInfo = doUpdatePageName(bookId, pageName, newPageName);
 
@@ -1483,7 +1490,7 @@ public abstract class CradleStorage {
      * @param interval Time interval
      * @return iterator of PageInfo
      */
-    public CompletableFuture<Iterator<PageInfo>> getPagesAsync(BookId bookId, Interval interval) throws CradleStorageException {
+    public CompletableFuture<Iterator<PageInfo>> getPagesAsync(BookId bookId, Interval interval) {
         return doGetPagesAsync(bookId, interval);
     }
 

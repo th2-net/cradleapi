@@ -25,6 +25,7 @@ import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.serialization.SerializedEntityData;
+import com.exactpro.cradle.serialization.SerializedMessageMetadata;
 import com.exactpro.cradle.utils.CompressException;
 import com.exactpro.cradle.utils.CompressionType;
 import com.exactpro.cradle.utils.MessageUtils;
@@ -41,16 +42,16 @@ import java.util.zip.DataFormatException;
 public class MessageBatchEntityUtils {
     private static final Logger logger = LoggerFactory.getLogger(MessageBatchEntityUtils.class);
 
-    public static SerializedEntity<MessageBatchEntity> toSerializedEntity(
+    public static SerializedEntity<SerializedMessageMetadata, MessageBatchEntity> toSerializedEntity(
             MessageBatchToStore batch,
             PageId pageId,
             CompressionType compressionType,
             int maxUncompressedSize
-    ) throws IOException, CompressException {
+    ) throws CompressException {
         logger.debug("Creating entity from message batch '{}'", batch.getId());
         MessageBatchEntity.MessageBatchEntityBuilder builder = MessageBatchEntity.builder();
 
-        SerializedEntityData serializedEntityData = MessageUtils.serializeMessages(batch);
+        SerializedEntityData<SerializedMessageMetadata> serializedEntityData = MessageUtils.serializeMessages(batch);
         byte[] batchContent = serializedEntityData.getSerializedData();
 
         builder.setUncompressedContentSize(batchContent.length);

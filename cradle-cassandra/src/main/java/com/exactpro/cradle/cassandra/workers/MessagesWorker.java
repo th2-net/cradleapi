@@ -53,7 +53,7 @@ import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.resultset.CradleResultSet;
-import com.exactpro.cradle.serialization.SerializedEntityMetadata;
+import com.exactpro.cradle.serialization.SerializedMessageMetadata;
 import com.exactpro.cradle.utils.CompressException;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TimeUtils;
@@ -66,13 +66,18 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.zip.DataFormatException;
 
 import static com.exactpro.cradle.CradleStorage.EMPTY_MESSAGE_INDEX;
@@ -180,11 +185,14 @@ public class MessagesWorker extends Worker {
 
     private static void updateMessageWriteMetrics(MessageBatchEntity entity, BookId bookId) {
         StreamLabel key = new StreamLabel(bookId.getName(), entity.getSessionAlias(), entity.getDirection());
-        MESSAGE_STORE_METRIC.inc(key, entity.getMessageCount());
-        MESSAGE_BATCH_STORE_METRIC.inc(key);
-        MESSAGE_STORE_UNCOMPRESSED_BYTES.inc(key, entity.getUncompressedContentSize());
+        updateMessageWriteMetrics(key, entity.getMessageCount(), entity.getUncompressedContentSize());
         MESSAGE_STORE_COMPRESSED_BYTES.inc(key, entity.getContentSize());
+    }
 
+    private static void updateMessageWriteMetrics(StreamLabel key, int count, int uncompressedContentSize) {
+        MESSAGE_STORE_METRIC.inc(key, count);
+        MESSAGE_BATCH_STORE_METRIC.inc(key);
+        MESSAGE_STORE_UNCOMPRESSED_BYTES.inc(key, uncompressedContentSize);
     }
 
     private static void updateMessageWriteMetrics(GroupedMessageBatchEntity entity, BookId bookId) {
@@ -344,33 +352,41 @@ public class MessagesWorker extends Worker {
                 }, composingService);
     }
 
-    public CompletableFuture<PageSessionEntity> storePageSession(MessageBatchToStore batch, PageId pageId) {
-        StoredMessageId batchId = batch.getId();
+    public CompletableFuture<PageSessionEntity> storePageSession(PageId pageId, String sessionAlias, Direction direction) {
         CassandraOperators operators = getOperators();
         CachedPageSession cachedPageSession = new CachedPageSession(pageId.toString(),
-                batchId.getSessionAlias(), batchId.getDirection().getLabel());
+                sessionAlias, direction.getLabel());
         if (!operators.getPageSessionsCache().store(cachedPageSession)) {
-            logger.debug("Skipped writing page/session of message batch '{}'", batchId);
+            logger.debug("Skipped writing page/session of page '{}', session alias '{}', direction '{}'", pageId, sessionAlias, direction);
             return CompletableFuture.completedFuture(null);
         }
 
-        logger.debug("Writing page/session of batch '{}'", batchId);
+        logger.debug("Writing page/session of page '{}', session alias '{}', direction '{}'", pageId, sessionAlias, direction);
 
-        return operators.getPageSessionsOperator().write(new PageSessionEntity(batchId, pageId), writeAttrs);
+        return operators.getPageSessionsOperator().write(
+                new PageSessionEntity(pageId.getBookId().getName(), pageId.getName(), sessionAlias, direction.getLabel()),
+                writeAttrs
+        );
+    }
+
+    public CompletableFuture<PageSessionEntity> storePageSession(MessageBatchToStore batch, PageId pageId) {
+        return storePageSession(pageId, batch.getSessionAlias(), batch.getDirection());
+    }
+
+    public CompletableFuture<SessionEntity> storeSession(BookId bookId, String sessionAlias) {
+        CassandraOperators operators = getOperators();
+        CachedSession cachedSession = new CachedSession(bookId.toString(), sessionAlias);
+        if (!operators.getSessionsCache().store(cachedSession)) {
+            logger.debug("Skipped writing book/session of book '{}', session alias '{}'", bookId, sessionAlias);
+            return CompletableFuture.completedFuture(null);
+        }
+        logger.debug("Writing book/session of book '{}', session alias '{}'", bookId, sessionAlias);
+
+        return operators.getSessionsOperator().write(new SessionEntity(bookId.toString(), sessionAlias), writeAttrs);
     }
 
     public CompletableFuture<SessionEntity> storeSession(MessageBatchToStore batch) {
-        StoredMessageId batchId = batch.getId();
-        BookId bookId = batchId.getBookId();
-        CassandraOperators operators = getOperators();
-        CachedSession cachedSession = new CachedSession(bookId.toString(), batch.getSessionAlias());
-        if (!operators.getSessionsCache().store(cachedSession)) {
-            logger.debug("Skipped writing book/session of message batch '{}'", batchId);
-            return CompletableFuture.completedFuture(null);
-        }
-        logger.debug("Writing book/session of batch '{}'", batchId);
-
-        return operators.getSessionsOperator().write(new SessionEntity(bookId.toString(), batch.getSessionAlias()), writeAttrs);
+        return storeSession(batch.getId().getBookId(), batch.getSessionAlias());
     }
 
     public CompletableFuture<Void> storeMessageBatch(MessageBatchToStore batch, PageId pageId) {
@@ -385,7 +401,7 @@ public class MessagesWorker extends Worker {
             }
         }, composingService).thenCompose(serializedEntity -> {
             MessageBatchEntity entity = serializedEntity.getEntity();
-            List<SerializedEntityMetadata> meta = serializedEntity.getSerializedEntityData().getSerializedEntityMetadata();
+            List<SerializedMessageMetadata> meta = serializedEntity.getSerializedEntityData().getSerializedEntityMetadata();
 
             return mbOperator.write(entity, writeAttrs)
                     .thenRunAsync(() -> {
@@ -404,22 +420,31 @@ public class MessagesWorker extends Worker {
         });
     }
 
-    public CompletableFuture<Void> storeGroupedMessageBatch(GroupedMessageBatchToStore batchToStore, PageId pageId) {
+    public CompletableFuture<Void> storeGroupedMessageBatch(
+            GroupedMessageBatchToStore batchToStore,
+            PageId pageId,
+            boolean storeSessionMetadata
+    ) {
         BookId bookId = pageId.getBookId();
         GroupedMessageBatchOperator gmbOperator = getOperators().getGroupedMessageBatchOperator();
 
         return CompletableFuture.supplyAsync(() -> {
             try {
-                return GroupedMessageEntityUtils.toSerializedEntity(batchToStore, pageId, settings.getCompressionType(), settings.getMaxUncompressedMessageBatchSize());
+                return GroupedMessageEntityUtils.toSerializedEntity(
+                        batchToStore,
+                        pageId,
+                        settings.getCompressionType(),
+                        settings.getMaxUncompressedMessageBatchSize()
+                );
             } catch (Exception e) {
                 throw new CompletionException(e);
             }
         }, composingService).thenCompose(serializedEntity -> {
             GroupedMessageBatchEntity entity = serializedEntity.getEntity();
-            List<SerializedEntityMetadata> meta = serializedEntity.getSerializedEntityData().getSerializedEntityMetadata();
+            List<SerializedMessageMetadata> meta = serializedEntity.getSerializedEntityData().getSerializedEntityMetadata();
 
-            return gmbOperator.write(entity, writeAttrs)
-                    .thenComposeAsync((value) -> CompletableFuture.allOf(
+            CompletableFuture<Void> future = gmbOperator.write(entity, writeAttrs)
+                    .thenRunAsync(() -> CompletableFuture.allOf(
                             storePageGroup(entity),
                             storeGroup(entity),
                             CompletableFuture.runAsync(() -> {
@@ -436,9 +461,77 @@ public class MessagesWorker extends Worker {
                                 updateMessageWriteMetrics(entity, bookId);
                             }, composingService)
                     ), composingService);
+            if (storeSessionMetadata) {
+                future = updateSessionStatistics(future, bookId, pageId, batchToStore, meta);
+            }
+            return future;
         });
     }
 
+    private CompletableFuture<Void> updateSessionStatistics(CompletableFuture<Void> future, BookId bookId, PageId pageId, GroupedMessageBatchToStore batchToStore, List<SerializedMessageMetadata> meta) {
+        return future.thenApplyAsync((unused) -> getDirectionToSessionAliases(batchToStore), composingService)
+                .thenComposeAsync((sessions) -> storeSessions(pageId, sessions), composingService)
+                .thenComposeAsync((sessions) -> storePageSessions(bookId, sessions), composingService)
+                .thenApplyAsync((sessions) -> {
+                    for (Map.Entry<Direction, Set<String>> entry : sessions.entrySet()) {
+                        Direction direction = entry.getKey();
+                        Set<String> sessionAliases = entry.getValue();
+                        for (String sessionAlias : sessionAliases) {
+                            List<SerializedMessageMetadata> streamMetadatas = meta.stream()
+                                    .filter((metadata) ->
+                                            metadata.getDirection() == direction && Objects.equals(metadata.getSessionAlias(), sessionAlias)
+                                    ).collect(Collectors.toList());
+                            messageStatisticsCollector.updateMessageBatchStatistics(bookId,
+                                    pageId.getName(),
+                                    sessionAlias,
+                                    direction.getLabel(),
+                                    streamMetadatas);
+                            sessionStatisticsCollector.updateSessionStatistics(bookId,
+                                    pageId.getName(),
+                                    SessionRecordType.SESSION,
+                                    sessionAlias,
+                                    streamMetadatas);
+                            updateMessageWriteMetrics(
+                                    new StreamLabel(bookId.getName(), sessionAlias, direction.getLabel()),
+                                    streamMetadatas.size(),
+                                    streamMetadatas.stream()
+                                            .mapToInt(SerializedMessageMetadata::getSerializedEntitySize).sum()
+                            );
+                        }
+                    }
+                    return null;
+                }, composingService);
+    }
+
+    private static Map<Direction, Set<String>> getDirectionToSessionAliases(GroupedMessageBatchToStore batch) {
+        Map<Direction, Set<String>> sessions = new EnumMap<>(Direction.class);
+        for (Direction direction : Direction.values()) {
+            sessions.put(direction, new HashSet<>());
+        }
+        for (StoredMessage message : batch.getMessages()) {
+            sessions.get(message.getDirection()).add(message.getSessionAlias());
+        }
+        return sessions;
+    }
+
+    private CompletableFuture<Map<Direction, Set<String>>> storeSessions(PageId pageId, Map<Direction, Set<String>> sessions) {
+        return CompletableFuture.allOf(
+                sessions.entrySet().stream()
+                        .flatMap((entry) -> entry.getValue().stream()
+                                .map((sessionAlias) -> storePageSession(pageId, sessionAlias, entry.getKey()))
+                        ).toArray(CompletableFuture[]::new)
+        ).thenApply((unused) -> sessions);
+    }
+
+    private CompletableFuture<Map<Direction, Set<String>>> storePageSessions(BookId bookId, Map<Direction, Set<String>> sessions) {
+        return CompletableFuture.allOf(
+                sessions.values().stream()
+                        .flatMap(Set::stream)
+                        .distinct()
+                        .map((sessionAlias) -> storeSession(bookId, sessionAlias))
+                        .toArray(CompletableFuture[]::new)
+        ).thenApply((unused) -> sessions);
+    }
 
     public long getBoundarySequence(String sessionAlias, Direction direction, BookInfo book, boolean first)
             throws CradleStorageException {

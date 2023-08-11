@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,5 +101,17 @@ public class PageInfo
 				&& Objects.equals(getComment(), pageInfo.getComment())
 				&& Objects.equals(getUpdated(), pageInfo.getUpdated())
 				&& Objects.equals(getRemoved(), pageInfo.getRemoved());
+	}
+
+	@Override
+	public String toString() {
+		return "PageInfo{" +
+				"id=" + id +
+				", started=" + started +
+				", ended=" + ended +
+				", comment='" + comment + '\'' +
+				", updated=" + updated +
+				", removed=" + removed +
+				'}';
 	}
 }

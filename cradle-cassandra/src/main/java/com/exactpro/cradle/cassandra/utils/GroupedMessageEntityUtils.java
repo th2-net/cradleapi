@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import com.exactpro.cradle.messages.GroupedMessageBatchToStore;
 import com.exactpro.cradle.messages.StoredGroupedMessageBatch;
 import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.serialization.SerializedEntityData;
+import com.exactpro.cradle.serialization.SerializedMessageMetadata;
 import com.exactpro.cradle.utils.CompressException;
 import com.exactpro.cradle.utils.CompressionType;
 import com.exactpro.cradle.utils.MessageUtils;
@@ -39,12 +40,12 @@ public class GroupedMessageEntityUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(GroupedMessageEntityUtils.class);
 
-    public static SerializedEntity<GroupedMessageBatchEntity> toSerializedEntity(
+    public static SerializedEntity<SerializedMessageMetadata, GroupedMessageBatchEntity> toSerializedEntity(
             GroupedMessageBatchToStore batch,
             PageId pageId,
             CompressionType compressionType,
             int maxUncompressedSize
-    ) throws IOException, CompressException {
+    ) throws CompressException {
 
         GroupedMessageBatchEntity.GroupedMessageBatchEntityBuilder builder = GroupedMessageBatchEntity.builder();
 
@@ -52,7 +53,7 @@ public class GroupedMessageEntityUtils {
 
         logger.debug("Creating entity from grouped message batch '{}'", group);
 
-        SerializedEntityData serializedEntityData = MessageUtils.serializeMessages(batch);
+        SerializedEntityData<SerializedMessageMetadata> serializedEntityData = MessageUtils.serializeMessages(batch);
 
         byte[] batchContent = serializedEntityData.getSerializedData();
 

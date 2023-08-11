@@ -25,6 +25,7 @@ import com.exactpro.cradle.cassandra.utils.MessageBatchEntityUtils;
 import com.exactpro.cradle.messages.MessageBatchToStore;
 import com.exactpro.cradle.messages.MessageToStore;
 import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.serialization.SerializedMessageMetadata;
 import com.exactpro.cradle.utils.CompressException;
 import com.exactpro.cradle.utils.CompressionType;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -53,7 +54,7 @@ public class MessageBatchEntityTest {
                 .build(), 200, new CoreStorageSettings().calculateStoreActionRejectionThreshold());
         StoredMessageBatch storedBatch = new StoredMessageBatch(batch.getMessages(), pageId, null);
 
-        SerializedEntity<MessageBatchEntity> serializedEntity = MessageBatchEntityUtils.toSerializedEntity(batch, pageId, CompressionType.ZLIB, 2000);
+        SerializedEntity<SerializedMessageMetadata, MessageBatchEntity> serializedEntity = MessageBatchEntityUtils.toSerializedEntity(batch, pageId, CompressionType.ZLIB, 2000);
         StoredMessageBatch batchFromEntity = MessageBatchEntityUtils.toStoredMessageBatch(serializedEntity.getEntity(), pageId);
 
         RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
