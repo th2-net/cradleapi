@@ -35,7 +35,6 @@ import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
 
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -73,12 +72,7 @@ public class DummyCradleStorage extends CradleStorage {
 			return null;
 		}
 
-		@Override
-		public Collection<PageInfo> loadPageInfo(BookId bookId, LocalDateTime start, boolean loadRemoved) {
-			return null;
-		}
-
-		@Override
+        @Override
 		public BookInfo loadBook(BookId bookId) {
 			return null;
 		}
