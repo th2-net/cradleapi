@@ -75,12 +75,13 @@ public abstract class PagesInIntervalIteratorProvider<T> extends IteratorProvide
                 .collect(Collectors.toCollection(LinkedList::new));
     }
 
-    private boolean checkInterval(PageInfo page, Instant start, Instant end) {
+    public static boolean checkInterval(PageInfo page, Instant start, Instant end) {
         var pageStart = page.getStarted();
         Objects.requireNonNull(pageStart, String.format("Page \"%s\" has null start time", page.getId().getName()));
         var pageEnd = page.getEnded();
+        //noinspection ReplaceNullCheck
         if (pageEnd == null) {
-            return pageStart.isAfter(start) && pageStart.isBefore(end);
+            return !pageStart.isBefore(start) && !pageStart.isAfter(end);
         } else {
             return !pageEnd.isBefore(start) && !pageStart.isAfter(end);
         }
