@@ -24,7 +24,6 @@ import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.TimeUtils;
 
 import java.time.Instant;
 import java.util.LinkedList;
@@ -69,19 +68,20 @@ public abstract class PagesInIntervalIteratorProvider<T> extends IteratorProvide
         Instant start = interval.getStart();
         Instant end = interval.getEnd();
 
-        return bookCache.loadPageInfo(bookId, TimeUtils.toLocalTimestamp(interval.getStart()), false)
+        return bookCache.loadPageInfo(bookId, false)
                 .stream()
                 .filter(page -> checkInterval(page, start, end))
                 .map(page -> page.getId().getName())
                 .collect(Collectors.toCollection(LinkedList::new));
     }
 
-    private boolean checkInterval(PageInfo page, Instant start, Instant end) {
+    public static boolean checkInterval(PageInfo page, Instant start, Instant end) {
         var pageStart = page.getStarted();
         Objects.requireNonNull(pageStart, String.format("Page \"%s\" has null start time", page.getId().getName()));
         var pageEnd = page.getEnded();
+        //noinspection ReplaceNullCheck
         if (pageEnd == null) {
-            return pageStart.isAfter(start) && pageStart.isBefore(end);
+            return !pageStart.isBefore(start) && !pageStart.isAfter(end);
         } else {
             return !pageEnd.isBefore(start) && !pageStart.isAfter(end);
         }

@@ -17,7 +17,6 @@ package com.exactpro.cradle;
 
 import com.exactpro.cradle.utils.CradleStorageException;
 
-import java.time.LocalDateTime;
 import java.util.Collection;
 
 /*
@@ -33,8 +32,6 @@ public interface BookCache {
     boolean checkBook(BookId bookId);
 
     Collection<PageInfo> loadPageInfo(BookId bookId, boolean loadRemoved) throws CradleStorageException;
-
-    Collection<PageInfo> loadPageInfo(BookId bookId, LocalDateTime start, boolean loadRemoved) throws CradleStorageException;
 
     BookInfo loadBook(BookId bookId) throws CradleStorageException;
 
