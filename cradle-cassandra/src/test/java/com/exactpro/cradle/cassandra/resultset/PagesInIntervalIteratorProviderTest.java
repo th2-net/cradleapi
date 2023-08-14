@@ -35,7 +35,12 @@ public class PagesInIntervalIteratorProviderTest {
     public void defaultPageVsIncludedInterval() {
         PageInfo pageInfo = new PageInfo(new PageId(bookId, "test-page"), Instant.EPOCH, null, null);
 
-        assertTrue(checkInterval(pageInfo, Instant.EPOCH, Instant.now()));
+        assertTrue(checkInterval(pageInfo, pageInfo.getStarted(), Instant.now()), "in.st = p.st, in.en = p.en");
+        assertTrue(checkInterval(pageInfo, pageInfo.getStarted().plusNanos(1), Instant.now()), "in.st = p.st + 1, in.en = p.en");
+        assertTrue(checkInterval(pageInfo, pageInfo.getStarted(), pageInfo.getStarted()), "in.st = p.st, in.en = p.st");
+        assertTrue(checkInterval(pageInfo, pageInfo.getStarted().minusNanos(1), pageInfo.getStarted()), "in.st = p.st - 1, in.en = p.st");
+        assertTrue(checkInterval(pageInfo, Instant.now(), Instant.now()), "in.st = p.en, in.en = p.en");
+        assertFalse(checkInterval(pageInfo, pageInfo.getStarted().minusNanos(1), pageInfo.getStarted().minusNanos(1)), "in.st = p.st - 1, in.en = p.st - 1");
     }
 
     @Test
@@ -52,7 +57,6 @@ public class PagesInIntervalIteratorProviderTest {
         assertTrue(checkInterval(pageInfo, pageInfo.getEnded(), pageInfo.getEnded().plusNanos(1)), "in.st = p.en, in.en = p.en + 1");
         assertFalse(checkInterval(pageInfo, pageInfo.getStarted().minusNanos(1), pageInfo.getStarted().minusNanos(1)), "in.st = p.st - 1, in.en = p.st - 1");
         assertFalse(checkInterval(pageInfo, pageInfo.getEnded().plusNanos(1), pageInfo.getEnded().plusNanos(1)), "in.st = p.en + 1, in.en = p.en + 1");
-
-
     }
+
 }
