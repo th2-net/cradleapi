@@ -33,6 +33,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+import static com.exactpro.cradle.cassandra.CassandraStorageSettings.DEFAULT_PAGE_REMOVE_TIME;
+
 public class ReadThroughBookCache implements BookCache {
 
     private final CassandraOperators operators;
@@ -71,7 +73,7 @@ public class ReadThroughBookCache implements BookCache {
     public Collection<PageInfo> loadPageInfo(BookId bookId, boolean loadRemoved) {
         Collection<PageInfo> result = new ArrayList<>();
         for (PageEntity pageEntity : operators.getPageOperator().getAll(bookId.getName(), readAttrs)) {
-            if (loadRemoved || pageEntity.getRemoved() == null) {
+            if (loadRemoved || pageEntity.getRemoved().equals(DEFAULT_PAGE_REMOVE_TIME)) {
                 result.add(pageEntity.toPageInfo());
             }
         }

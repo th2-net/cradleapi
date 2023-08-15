@@ -23,6 +23,8 @@ import com.exactpro.cradle.utils.CompressionType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.time.Instant;
+
 import static com.exactpro.cradle.CradleStorage.DEFAULT_COMPOSING_SERVICE_THREADS;
 import static com.exactpro.cradle.CradleStorage.DEFAULT_MAX_MESSAGE_BATCH_SIZE;
 import static com.exactpro.cradle.CradleStorage.DEFAULT_MAX_TEST_EVENT_BATCH_SIZE;
@@ -50,6 +52,10 @@ public class CassandraStorageSettings extends CoreStorageSettings {
     public static final long DEFAULT_EVENT_BATCH_DURATION_MILLIS = 5_000;
     public static final long DEFAULT_TIMEOUT = 5000;
     public static final CompressionType DEFAULT_COMPRESSION_TYPE = CompressionType.ZLIB;
+
+    //we need to use Instant.ofEpochMilli(Long.MAX_VALUE) instead of Instant.MAX.
+    //when cassandra driver tries to convert Instant.MAX to milliseconds using toEpochMilli() it causes long overflow.
+    public static final Instant DEFAULT_PAGE_REMOVE_TIME = Instant.ofEpochMilli(Long.MAX_VALUE);
 
     @JsonIgnore
     private NetworkTopologyStrategy networkTopologyStrategy;

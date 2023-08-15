@@ -28,6 +28,8 @@ import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.utils.TimeUtils;
 
+import static com.exactpro.cradle.cassandra.CassandraStorageSettings.DEFAULT_PAGE_REMOVE_TIME;
+
 @Entity
 @CqlName(PageEntity.TABLE_NAME)
 @PropertyStrategy(mutable = false)
@@ -47,24 +49,24 @@ public class PageEntity {
 	@PartitionKey(0)
 	@CqlName(FIELD_BOOK)
 	private final String book;
-	
+
 	@ClusteringColumn(0)
 	@CqlName(FIELD_START_DATE)
 	private final LocalDate startDate;
-	
+
 	@ClusteringColumn(1)
 	@CqlName(FIELD_START_TIME)
 	private final LocalTime startTime;
-	
+
 	@CqlName(FIELD_NAME)
 	private final String name;
-	
+
 	@CqlName(FIELD_COMMENT)
 	private final String comment;
-	
+
 	@CqlName(FIELD_END_DATE)
 	private final LocalDate endDate;
-	
+
 	@CqlName(FIELD_END_TIME)
 	private final LocalTime endTime;
 
@@ -86,19 +88,19 @@ public class PageEntity {
 		this.updated = updated;
 		this.removed = removed;
 	}
-	
+
 	public PageEntity(String book, String name, Instant started, String comment, Instant ended, Instant updated)	{
 
 		LocalDateTime startedLdt = TimeUtils.toLocalTimestamp(started);
-		
+
 		this.book = book;
 		this.name = name;
 		this.startDate = startedLdt.toLocalDate();
 		this.startTime = startedLdt.toLocalTime();
 		this.comment = comment;
-		this.updated = updated;
-		this.removed = null;
-		
+		this.updated = updated == null ? started : updated;
+		this.removed = DEFAULT_PAGE_REMOVE_TIME;
+
 		if (ended != null) {
 			LocalDateTime endedLdt = TimeUtils.toLocalTimestamp(ended);
 			this.endDate = endedLdt.toLocalDate();
@@ -108,12 +110,12 @@ public class PageEntity {
 			this.endTime = null;
 		}
 	}
-	
+
 	public PageEntity(PageInfo pageInfo) {
 		this(pageInfo.getId().getBookId().getName(), pageInfo.getId().getName(), pageInfo.getStarted(), pageInfo.getComment(), pageInfo.getEnded(), pageInfo.getUpdated());
 	}
-	
-	
+
+
 	public String getBook() {
 		return book;
 	}
