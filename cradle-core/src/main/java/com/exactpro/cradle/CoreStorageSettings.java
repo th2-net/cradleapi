@@ -16,9 +16,21 @@
 
 package com.exactpro.cradle;
 
+import com.exactpro.cradle.messages.GroupedMessageBatchToStore;
+import com.exactpro.cradle.messages.MessageBatchToStore;
+
+@SuppressWarnings("unused")
 public class CoreStorageSettings {
-    protected static final long DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS = 60000;
-    protected long bookRefreshIntervalMillis = DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS;
+    public static final long DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS = 60000;
+    public static final boolean DEFAULT_STORE_INDIVIDUAL_MESSAGE_SESSIONS = true;
+    private long bookRefreshIntervalMillis = DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS;
+
+    /**
+     * if `true`, the {@link CradleStorage#storeGroupedMessageBatch} method converts {@link GroupedMessageBatchToStore} to {@link MessageBatchToStore} and stores them.
+     * if `false`, the {@link CradleStorage#storeGroupedMessageBatch} method stores only {@link GroupedMessageBatchToStore},
+     * also the {@link CradleStorage#storeMessageBatch} and {@link CradleStorage#storeMessageBatchAsync} methods throws {@link  IllegalStateException}
+     */
+    private boolean storeIndividualMessageSessions = DEFAULT_STORE_INDIVIDUAL_MESSAGE_SESSIONS;
 
     public long getBookRefreshIntervalMillis() {
         return bookRefreshIntervalMillis;
@@ -28,11 +40,19 @@ public class CoreStorageSettings {
         this.bookRefreshIntervalMillis = bookRefreshIntervalMillis;
     }
 
-    public long calculatePageActionRejectionThreshold(){
+    public long calculatePageActionRejectionThreshold() {
         return this.bookRefreshIntervalMillis * 2;
     }
 
-    public long calculateStoreActionRejectionThreshold(){
+    public long calculateStoreActionRejectionThreshold() {
         return this.bookRefreshIntervalMillis;
+    }
+
+    public boolean isStoreIndividualMessageSessions() {
+        return storeIndividualMessageSessions;
+    }
+
+    public void setStoreIndividualMessageSessions(boolean storeIndividualMessageSessions) {
+        this.storeIndividualMessageSessions = storeIndividualMessageSessions;
     }
 }

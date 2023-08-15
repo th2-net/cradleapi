@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import java.time.Instant;
 import java.util.*;
 
+import static com.exactpro.cradle.serialization.MessagesSizeCalculator.MESSAGE_BATCH_CONST_VALUE;
+
 public class StoredMessageBatch implements MessageBatch
 {
 	protected StoredMessageId id;
@@ -40,11 +42,11 @@ public class StoredMessageBatch implements MessageBatch
 		this.recDate = recDate;
 		this.messages = createMessagesList(messages, pageId);
 		if (messages == null || messages.isEmpty()) {
-			batchSize = MessagesSizeCalculator.calculateMessageBatchSize(Collections.emptyList()).total;
+			batchSize = MESSAGE_BATCH_CONST_VALUE;
 			return;
 		}
 		id = this.messages.get(0).getId();
-		batchSize = MessagesSizeCalculator.calculateMessageBatchSize(messages).total;
+		batchSize = MessagesSizeCalculator.calculateMessageBatchSize(messages);
 	}
 
 	@Override

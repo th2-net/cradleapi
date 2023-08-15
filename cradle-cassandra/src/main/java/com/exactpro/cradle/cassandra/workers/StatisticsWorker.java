@@ -17,16 +17,30 @@ package com.exactpro.cradle.cassandra.workers;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
+import com.datastax.oss.driver.shaded.guava.common.util.concurrent.ThreadFactoryBuilder;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.EntityType;
 import com.exactpro.cradle.FrameType;
 import com.exactpro.cradle.SessionRecordType;
-import com.exactpro.cradle.cassandra.counters.*;
+import com.exactpro.cradle.cassandra.counters.BookStatisticsRecordsCaches;
+import com.exactpro.cradle.cassandra.counters.EntityStatisticsCollector;
+import com.exactpro.cradle.cassandra.counters.MessageStatisticsCollector;
+import com.exactpro.cradle.cassandra.counters.SessionList;
+import com.exactpro.cradle.cassandra.counters.SessionStatisticsCollector;
+import com.exactpro.cradle.cassandra.counters.TimeFrameRecord;
+import com.exactpro.cradle.cassandra.counters.TimeFrameRecordCache;
+import com.exactpro.cradle.cassandra.counters.TimeFrameRecordSamples;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
-import com.exactpro.cradle.cassandra.dao.statistics.*;
+import com.exactpro.cradle.cassandra.dao.statistics.EntityStatisticsEntity;
+import com.exactpro.cradle.cassandra.dao.statistics.EntityStatisticsOperator;
+import com.exactpro.cradle.cassandra.dao.statistics.MessageStatisticsEntity;
+import com.exactpro.cradle.cassandra.dao.statistics.MessageStatisticsOperator;
+import com.exactpro.cradle.cassandra.dao.statistics.SessionStatisticsEntity;
+import com.exactpro.cradle.cassandra.dao.statistics.SessionStatisticsOperator;
 import com.exactpro.cradle.cassandra.utils.LimitedCache;
 import com.exactpro.cradle.counters.Counter;
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
+import com.exactpro.cradle.serialization.SerializedMessageMetadata;
 import com.exactpro.th2.taskutils.FutureTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +49,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -43,6 +62,8 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
     private static final Logger logger = LoggerFactory.getLogger(StatisticsWorker.class);
     private static final int MAX_BATCH_STATEMENTS = 16384;
+
+    private static final ThreadFactory THREAD_FACTORY = new ThreadFactoryBuilder().setNameFormat("cradle-statistics-worker-%d").build();
 
     private final FutureTracker<AsyncResultSet> futures;
     private final CassandraOperators operators;
@@ -58,6 +79,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
         this.interval = persistenceInterval;
         this.bookCounterCaches = new ConcurrentHashMap<>();
         this.isEnabled = (interval != 0);
+        logger.info("Statistics worker status is {}", this.isEnabled);
     }
 
     private ScheduledExecutorService executorService;
@@ -68,7 +90,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
         }
 
         logger.info("Starting executor for StatisticsWorker");
-        executorService = Executors.newScheduledThreadPool(1);
+        executorService = Executors.newScheduledThreadPool(1, THREAD_FACTORY);
         executorService.scheduleAtFixedRate(this, 0, interval, TimeUnit.MILLISECONDS);
         logger.info("StatisticsWorker executor started");
     }
@@ -85,7 +107,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
             logger.info("Waiting statistics cache depletion");
             while (bookCounterCachesNotEmpty())
                 try {
-                    Thread.sleep(100);
+                    Thread.sleep(100); // FIXME: find another way to wait the empty cache state
                 } catch (InterruptedException e) {
                     logger.error("Interrupted while waiting statistics cache depletion");
                 }
@@ -96,7 +118,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
         executorService.shutdown();
         try {
             logger.debug("Waiting StatisticsWorker jobs to complete");
-            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
+            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS); // FIXME: limit await timeout
             logger.debug("StatisticsWorker shutdown complete");
         } catch (InterruptedException e) {
             logger.error("Interrupted while waiting jobs to complete");
@@ -116,7 +138,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
     }
 
 
-    private void updateCounters(TimeFrameRecordCache<Counter> counters, Collection<SerializedEntityMetadata> batchMetadata) {
+    private void updateCounters(TimeFrameRecordCache<Counter> counters, Collection<? extends SerializedEntityMetadata> batchMetadata) {
         batchMetadata.forEach(meta -> {
             Counter counter = new Counter(1, meta.getSerializedEntitySize());
             for (FrameType t : FrameType.values()) {
@@ -127,7 +149,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
 
     @Override
-    public void updateEntityBatchStatistics(BookId bookId, BookStatisticsRecordsCaches.EntityKey entityKey, Collection<SerializedEntityMetadata> batchMetadata) {
+    public void updateEntityBatchStatistics(BookId bookId, BookStatisticsRecordsCaches.EntityKey entityKey, Collection<? extends SerializedEntityMetadata> batchMetadata) {
 
         if (!isEnabled)
             return;
@@ -140,7 +162,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
 
     @Override
-    public void updateMessageBatchStatistics(BookId bookId, String page, String sessionAlias, String direction, Collection<SerializedEntityMetadata> batchMetadata) {
+    public void updateMessageBatchStatistics(BookId bookId, String page, String sessionAlias, String direction, Collection<SerializedMessageMetadata> batchMetadata) {
 
         if (!isEnabled)
             return;
@@ -155,7 +177,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
     }
 
     @Override
-    public void updateSessionStatistics(BookId bookId, String page, SessionRecordType recordType, String session, Collection<SerializedEntityMetadata> batchMetadata) {
+    public void updateSessionStatistics(BookId bookId, String page, SessionRecordType recordType, String session, Collection<SerializedMessageMetadata> batchMetadata) {
 
         if (!isEnabled)
             return;

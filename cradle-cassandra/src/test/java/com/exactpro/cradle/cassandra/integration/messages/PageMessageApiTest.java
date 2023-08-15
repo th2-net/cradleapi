@@ -28,7 +28,7 @@ import java.util.Set;
 
 import static org.assertj.core.util.Lists.newArrayList;
 
-public class PageSessionsApiTest extends BaseSessionsApiTest {
+public class PageMessageApiTest extends BaseMessageApiTest {
 
     @BeforeClass
     public void startUp() throws IOException, InterruptedException, CradleStorageException {

@@ -33,6 +33,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
+
 /**
  * Iterator provider which provides different iterators for each
  * page that is the given interval of time and belongs the given book
@@ -75,14 +77,10 @@ public abstract class PagesInIntervalIteratorProvider<T> extends IteratorProvide
                 .collect(Collectors.toCollection(LinkedList::new));
     }
 
-    private boolean checkInterval(PageInfo page, Instant start, Instant end) {
+    public static boolean checkInterval(PageInfo page, Instant start, Instant end) {
         var pageStart = page.getStarted();
         Objects.requireNonNull(pageStart, String.format("Page \"%s\" has null start time", page.getId().getName()));
-        var pageEnd = page.getEnded();
-        if (pageEnd == null) {
-            return pageStart.isAfter(start) && pageStart.isBefore(end);
-        } else {
-            return !pageEnd.isBefore(start) && !pageStart.isAfter(end);
-        }
+        var pageEnd = defaultIfNull(page.getEnded(), Instant.MAX);
+        return !pageEnd.isBefore(start) && !pageStart.isAfter(end);
     }
 }

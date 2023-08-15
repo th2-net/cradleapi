@@ -34,73 +34,61 @@ public abstract class AbstractFilterBuilder<T extends AbstractFilterBuilder<T,R>
 	private int limit;
 	private Order order = Order.DIRECT;
 
-	public BookId getBookId()
-	{
+	public BookId getBookId() {
 		return bookId;
 	}
 
-	public PageId getPageId()
-	{
+	public PageId getPageId() {
 		return pageId;
 	}
 
-	public FetchParameters getFetchParameters()
-	{
+	public FetchParameters getFetchParameters() {
 		return fetchParameters;
 	}
 
-	public FilterForGreater<Instant> getTimestampFrom()
-	{
+	public FilterForGreater<Instant> getTimestampFrom() {
 		return timestampFrom;
 	}
 
-	public FilterForLess<Instant> getTimestampTo()
-	{
+	public FilterForLess<Instant> getTimestampTo() {
 		return timestampTo;
 	}
 
-	public int getLimit()
-	{
+	public int getLimit() {
 		return limit;
 	}
 
-	public Order getOrder()
-	{
+	public Order getOrder() {
 		return order;
 	}
 
 	@SuppressWarnings("unchecked")
-	public T bookId(BookId bookId)
-	{
+	public T bookId(BookId bookId) {
 		this.bookId = bookId;
 		return (T) this;
 	}
 
 	@SuppressWarnings("unchecked")
-	public T pageId(PageId pageId)
-	{
+	public T pageId(PageId pageId) {
 		this.pageId = pageId;
 		return (T) this;
 	}
 
 	@SuppressWarnings("unchecked")
-	public T fetchParameters(FetchParameters fetchParameters)
-	{
+	public T fetchParameters(FetchParameters fetchParameters) {
 		this.fetchParameters = fetchParameters;
 		return (T) this;
 	}
 
 	@SuppressWarnings("unchecked")
-	public FilterForGreaterBuilder<Instant, T> timestampFrom()
-	{
+	public FilterForGreaterBuilder<Instant, T> timestampFrom() {
 		FilterForGreater<Instant> f = new FilterForGreater<>();
 		timestampFrom = f;
 		return new FilterForGreaterBuilder<>(f, (T) this);
 	}
 
 	@SuppressWarnings("unchecked")
-	public FilterForLessBuilder<Instant, T> timestampTo()
-	{
+	public FilterForLessBuilder<Instant, T> timestampTo() {
 		FilterForLess<Instant> f = new FilterForLess<>();
 		timestampTo = f;
 		return new FilterForLessBuilder<>(f, (T) this);
@@ -112,21 +100,18 @@ public abstract class AbstractFilterBuilder<T extends AbstractFilterBuilder<T,R>
 	 * @return the same builder instance to continue building chain
 	 */
 	@SuppressWarnings("unchecked")
-	public T limit(int limit)
-	{
+	public T limit(int limit) {
 		this.limit = limit;
 		return (T) this;
 	}
 
 	@SuppressWarnings("unchecked")
-	public T order(Order order)
-	{
+	public T order(Order order) {
 		this.order = order;
 		return (T) this;
 	}
 
-	protected void reset()
-	{
+	protected void reset() {
 		bookId = null;
 		pageId = null;
 		fetchParameters = null;
@@ -136,15 +121,14 @@ public abstract class AbstractFilterBuilder<T extends AbstractFilterBuilder<T,R>
 		order = Order.DIRECT;
 	}
 
-	public R build() throws CradleStorageException
-	{
+	public R build() throws CradleStorageException {
 		R instance = createFilterInstance();
 		instance.setFetchParameters(fetchParameters);
 		instance.setFrom(timestampFrom);
 		instance.setTo(timestampTo);
 		instance.setLimit(limit);
 		instance.setOrder(order);
-
+		instance.validate();
 		return instance;
 	}
 

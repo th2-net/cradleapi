@@ -31,45 +31,45 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
 public abstract class Worker {
-	// Metric Labels
-	public static final String BOOK_ID = "book_id";
-	public static final String SESSION_ALIAS = "session_alias";
-	public static final String SCOPE = "scope";
-	public static final String DIRECTION = "direction";
+    // Metric Labels
+    public static final String BOOK_ID = "book_id";
+    public static final String SESSION_ALIAS_OR_GROUP = "session_alias_or_group";
+    public static final String SCOPE = "scope";
+    public static final String DIRECTION = "direction";
 
-	protected final CassandraStorageSettings settings;
-	private final CassandraOperators operators;
-	protected final ExecutorService composingService;
-	protected final BookCache bookCache;
-	protected final SelectQueryExecutor selectQueryExecutor;
-	protected final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
-			readAttrs;
+    protected final CassandraStorageSettings settings;
+    private final CassandraOperators operators;
+    protected final ExecutorService composingService;
+    protected final BookCache bookCache;
+    protected final SelectQueryExecutor selectQueryExecutor;
+    protected final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
+            readAttrs;
 
-	public Worker(WorkerSupplies workerSupplies) {
-		this.settings = workerSupplies.getSettings();
-		this.operators = workerSupplies.getOperators();
-		this.composingService = workerSupplies.getComposingService();
-		this.bookCache = workerSupplies.getBookCache();
-		this.selectQueryExecutor = workerSupplies.getSelectExecutor();
-		this.writeAttrs = workerSupplies.getWriteAttrs();
-		this.readAttrs = workerSupplies.getReadAttrs();
-	}
+    public Worker(WorkerSupplies workerSupplies) {
+        this.settings = workerSupplies.getSettings();
+        this.operators = workerSupplies.getOperators();
+        this.composingService = workerSupplies.getComposingService();
+        this.bookCache = workerSupplies.getBookCache();
+        this.selectQueryExecutor = workerSupplies.getSelectExecutor();
+        this.writeAttrs = workerSupplies.getWriteAttrs();
+        this.readAttrs = workerSupplies.getReadAttrs();
+    }
 
-	protected CassandraOperators getOperators() {
-		return operators;
-	}
+    protected CassandraOperators getOperators() {
+        return operators;
+    }
 
-	protected BookInfo getBook(BookId bookId) throws CradleStorageException	{
-		return bookCache.getBook(bookId);
-	}
+    protected BookInfo getBook(BookId bookId) throws CradleStorageException {
+        return bookCache.getBook(bookId);
+    }
 
-	protected Function<BoundStatementBuilder, BoundStatementBuilder> composeReadAttrs(FetchParameters fetchParams) {
-		if (fetchParams == null)
-			return readAttrs;
+    protected Function<BoundStatementBuilder, BoundStatementBuilder> composeReadAttrs(FetchParameters fetchParams) {
+        if (fetchParams == null)
+            return readAttrs;
 
-		int fetchSize = fetchParams.getFetchSize();
-		long timeout = fetchParams.getTimeout();
-		return readAttrs.andThen(builder -> fetchSize > 0 ? builder.setPageSize(fetchSize) : builder)
-				.andThen(builder -> timeout > 0 ? builder.setTimeout(Duration.ofMillis(timeout)) : builder);
-	}
+        int fetchSize = fetchParams.getFetchSize();
+        long timeout = fetchParams.getTimeout();
+        return readAttrs.andThen(builder -> fetchSize > 0 ? builder.setPageSize(fetchSize) : builder)
+                .andThen(builder -> timeout > 0 ? builder.setTimeout(Duration.ofMillis(timeout)) : builder);
+    }
 }

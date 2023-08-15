@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,14 @@ import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.SerializedEntity;
 import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
-import com.exactpro.cradle.messages.*;
+import com.exactpro.cradle.messages.MessageBatchToStore;
+import com.exactpro.cradle.messages.StoredMessage;
+import com.exactpro.cradle.messages.StoredMessageBatch;
+import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.serialization.SerializedEntityData;
-import com.exactpro.cradle.utils.CompressionUtils;
+import com.exactpro.cradle.serialization.SerializedMessageMetadata;
+import com.exactpro.cradle.utils.CompressException;
+import com.exactpro.cradle.utils.CompressionType;
 import com.exactpro.cradle.utils.MessageUtils;
 import com.exactpro.cradle.utils.TimeUtils;
 import org.slf4j.Logger;
@@ -37,21 +42,23 @@ import java.util.zip.DataFormatException;
 public class MessageBatchEntityUtils {
     private static final Logger logger = LoggerFactory.getLogger(MessageBatchEntityUtils.class);
 
-    public static SerializedEntity<MessageBatchEntity> toSerializedEntity(MessageBatchToStore batch,
-                                                                          PageId pageId,
-                                                                          int maxUncompressedSize) throws IOException
-    {
+    public static SerializedEntity<SerializedMessageMetadata, MessageBatchEntity> toSerializedEntity(
+            MessageBatchToStore batch,
+            PageId pageId,
+            CompressionType compressionType,
+            int maxUncompressedSize
+    ) throws CompressException {
         logger.debug("Creating entity from message batch '{}'", batch.getId());
         MessageBatchEntity.MessageBatchEntityBuilder builder = MessageBatchEntity.builder();
 
-        SerializedEntityData serializedEntityData = MessageUtils.serializeMessages(batch.getMessages());
+        SerializedEntityData<SerializedMessageMetadata> serializedEntityData = MessageUtils.serializeMessages(batch);
         byte[] batchContent = serializedEntityData.getSerializedData();
 
         builder.setUncompressedContentSize(batchContent.length);
         boolean compressed = batchContent.length > maxUncompressedSize;
         if (compressed) {
             logger.trace("Compressing content of message batch '{}'", batch.getId());
-            batchContent = CompressionUtils.compressData(batchContent);
+            batchContent = compressionType.compress(batchContent);
         }
         builder.setContentSize(batchContent.length);
 
@@ -80,8 +87,7 @@ public class MessageBatchEntityUtils {
 
 
     public static StoredMessageBatch toStoredMessageBatch(MessageBatchEntity entity, PageId pageId)
-                                                                throws DataFormatException, IOException
-    {
+            throws DataFormatException, IOException, CompressException {
         StoredMessageId batchId = createId(entity, pageId.getBookId());
         logger.debug("Creating message batch '{}' from entity", batchId);
 
@@ -93,16 +99,14 @@ public class MessageBatchEntityUtils {
 
     private static StoredMessageId createId(MessageBatchEntity entity, BookId bookId) {
         return new StoredMessageId(bookId,
-                                    entity.getSessionAlias(),
-                                    Direction.byLabel(entity.getDirection()),
-                                    TimeUtils.toInstant(entity.getFirstMessageDate(), entity.getFirstMessageTime()),
-                                    entity.getSequence());
+                entity.getSessionAlias(),
+                Direction.byLabel(entity.getDirection()),
+                TimeUtils.toInstant(entity.getFirstMessageDate(), entity.getFirstMessageTime()),
+                entity.getSequence());
     }
 
 
-    private static byte[] restoreContent(MessageBatchEntity entity, StoredMessageId messageBatchId)
-                                                                throws DataFormatException, IOException
-    {
+    private static byte[] restoreContent(MessageBatchEntity entity, StoredMessageId messageBatchId) throws CompressException {
         ByteBuffer content = entity.getContent();
         if (content == null)
             return null;
@@ -110,7 +114,7 @@ public class MessageBatchEntityUtils {
         byte[] result = content.array();
         if (entity.isCompressed()) {
             logger.trace("Decompressing content of message batch '{}'", messageBatchId);
-            return CompressionUtils.decompressData(result);
+            return CompressionType.decompressData(result);
         }
         return result;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.exactpro.cradle.messages;
 
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 
 import java.time.Instant;
 
@@ -81,5 +82,12 @@ public interface CradleMessage {
     public default long getSequence() {
         StoredMessageId id = getId();
         return id != null ? id.getSequence() : null;
+    }
+
+    /**
+     * @return serialized size of this message in bytes when it'll be added to batch
+     */
+    default int getSerializedSize() {
+        return MessagesSizeCalculator.calculateMessageSizeInBatch(this);
     }
 }

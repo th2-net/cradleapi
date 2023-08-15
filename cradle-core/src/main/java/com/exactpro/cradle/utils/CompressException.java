@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,12 @@
 
 package com.exactpro.cradle.utils;
 
-import java.io.IOException;
-import java.util.Random;
-import java.util.zip.DataFormatException;
+public class CompressException extends Exception {
+    public CompressException(String message) {
+        super(message);
+    }
 
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
-public class CompressionUtilsTest
-{
-	@Test
-	public void compressDecompress() throws IOException, DataFormatException
-	{
-		byte[] bytes = new byte[CompressionUtils.BUFFER_SIZE*3];
-		new Random().nextBytes(bytes);
-		byte[] compressed = CompressionUtils.compressData(bytes);
-		Assert.assertEquals(CompressionUtils.decompressData(compressed), bytes, "Compressed/decompressed data");
-	}
+    public CompressException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

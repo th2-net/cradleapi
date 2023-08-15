@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,11 @@
 
 package com.exactpro.cradle.cassandra.dao.messages;
 
-import com.datastax.oss.driver.api.mapper.annotations.*;
+import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
+import com.datastax.oss.driver.api.mapper.annotations.CqlName;
+import com.datastax.oss.driver.api.mapper.annotations.Entity;
+import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import com.datastax.oss.driver.api.mapper.annotations.PropertyStrategy;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.messages.StoredMessageId;
 
@@ -33,6 +37,7 @@ public class PageSessionEntity {
 	public static final String FIELD_SESSION_ALIAS = "session_alias";
 	public static final String FIELD_DIRECTION = "direction";
 
+	@SuppressWarnings("DefaultAnnotationParam")
 	@PartitionKey(0)
 	@CqlName(FIELD_BOOK)
 	private final String book;
@@ -41,6 +46,7 @@ public class PageSessionEntity {
 	@CqlName(FIELD_PAGE)
 	private final String page;
 
+	@SuppressWarnings("DefaultAnnotationParam")
 	@ClusteringColumn(0)
 	@CqlName(FIELD_SESSION_ALIAS)
 	private final String sessionAlias;
@@ -57,21 +63,21 @@ public class PageSessionEntity {
 	}
 
 	public PageSessionEntity(StoredMessageId messageId, PageId pageId) {
-		this.book = messageId.getBookId().getName();
-		this.page = pageId.getName();
-		this.sessionAlias = messageId.getSessionAlias();
-		this.direction = messageId.getDirection().getLabel();
+		this(messageId.getBookId().getName(), pageId.getName(), messageId.getSessionAlias(), messageId.getDirection().getLabel());
 	}
 
-	public String getBook()	{
+	public String getBook() {
 		return book;
 	}
+
 	public String getPage() {
 		return page;
 	}
-	public String getSessionAlias()	{
+
+	public String getSessionAlias() {
 		return sessionAlias;
 	}
+
 	public String getDirection() {
 		return direction;
 	}

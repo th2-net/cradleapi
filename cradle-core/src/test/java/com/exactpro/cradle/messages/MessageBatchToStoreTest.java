@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,375 +33,354 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 
-public class MessageBatchToStoreTest
-{
-	private final int MAX_SIZE = 1024*1024;
-	
-	private MessageToStoreBuilder builder;
-	private BookId book;
-	private String sessionAlias;
-	private Direction direction;
-	private Instant timestamp;
-	private String protocol;
-	private byte[] messageContent;
+public class MessageBatchToStoreTest {
+    private final int MAX_SIZE = 1024 * 1024;
 
-	private final long storeActionRejectionThreshold = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
+    private MessageToStoreBuilder builder;
+    private BookId book;
+    private String sessionAlias;
+    private Direction direction;
+    private Instant timestamp;
+    private String protocol;
+    private byte[] messageContent;
 
-	@BeforeClass
-	public void prepare()
-	{
-		builder = new MessageToStoreBuilder();
-		book = new BookId("book1");
-		sessionAlias = "Session1";
-		direction = Direction.FIRST;
-		timestamp = Instant.now().minus(1, ChronoUnit.DAYS);
-		protocol = "protocol";
-		messageContent = "Message text".getBytes();
-	}
-	
-	@DataProvider(name = "multiple messages")
-	public Object[][] multipleMessages()
-	{
-		Direction d = Direction.FIRST;
-		long seq = 10;
-		return new Object[][]
-				{
-					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
-							new IdData(new BookId(book.getName()+"X"), sessionAlias, d, timestamp, seq+1))},             //Different books
-					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
-							new IdData(book, sessionAlias+"X", d, timestamp, seq+1))},             //Different sessions
-					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
-							new IdData(book, sessionAlias, Direction.SECOND, timestamp, seq+1))},  //Different directions
-					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq),
-							new IdData(book, sessionAlias, d, timestamp.minusMillis(1), seq))},    //Timestamp is less than previous
-					{Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq), 
-							new IdData(book, sessionAlias, d, timestamp, seq),                     //Sequence is not incremented
-							new IdData(book, sessionAlias, d, timestamp, seq-1))},        //Sequence is less than previous
-				};
-	}
-	
-	@DataProvider(name = "invalid messages")
-	public Object[][] invalidMessages()
-	{
-		return new Object[][]
-				{
-					{builder},                                                                                       //Empty message
-					{builder.bookId(null)},																			 //Null book
-					{builder.bookId(new BookId(""))},														 //Empty book
-					{builder.bookId(book)},                                                                          //Only book is set
-					{builder.bookId(book).sessionAlias(null).direction(null).timestamp(null)},               		 //Null session is set
-					{builder.bookId(book).sessionAlias("").direction(null).timestamp(null)},               		 	 //Empty session is set
-					{builder.bookId(book).sessionAlias(sessionAlias).direction(null).timestamp(null)},               //Only book and session are set
-					{builder.bookId(book).sessionAlias(sessionAlias).direction(direction).timestamp(null)},          //Only book, session and direction are set
-					{builder.bookId(book).sessionAlias(sessionAlias).direction(direction).timestamp(Instant.now())}  //Content is not set
-				};
-	}
-	
-	
-	@Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Batch has not enough space to hold given message")
-	public void batchContentIsLimited() throws CradleStorageException
-	{
-		byte[] content = new byte[5000];
-		MessageBatchToStore batch = MessageBatchToStore.singleton(builder
-				.bookId(book)
-				.sessionAlias(sessionAlias)
-				.direction(direction)
-				.sequence(1)
-				.timestamp(timestamp)
-				.content(content)
-				.build(), MAX_SIZE, storeActionRejectionThreshold);
-		for (int i = 0; i <= (MAX_SIZE/content.length)+1; i++)
-			batch.addMessage(builder
-					.bookId(book)
-					.sessionAlias(sessionAlias)
-					.direction(direction)
-					.timestamp(timestamp)
-					.content(content)
-					.build());
-	}
+    private final long storeActionRejectionThreshold = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
 
-	@Test
-	public void batchIsFull1() throws CradleStorageException
-	{
-		MessageBatchToStore fullBySizeBatch = MessageBatchToStoreJoinTest.createFullBySizeBatch(book, sessionAlias,
-				1, direction, timestamp, protocol);
+    @BeforeClass
+    public void prepare() {
+        builder = new MessageToStoreBuilder();
+        book = new BookId("book1");
+        sessionAlias = "Session1";
+        direction = Direction.FIRST;
+        timestamp = Instant.now().minus(1, ChronoUnit.DAYS);
+        protocol = "protocol";
+        messageContent = "Message text".getBytes();
+    }
 
-		Assert.assertTrue(fullBySizeBatch.isFull(), "Batch indicates it is full");
-		Assert.assertEquals(fullBySizeBatch.getBatchSize(), MessageBatchToStoreJoinTest.MAX_SIZE);
-		Assert.assertEquals(fullBySizeBatch.getSpaceLeft(), 0);
-	}
+    @DataProvider(name = "multiple messages")
+    public Object[][] multipleMessages() {
+        Direction d = Direction.FIRST;
+        long seq = 10;
+        return new Object[][]
+                {
+                        {Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq),
+                                new IdData(new BookId(book.getName() + "X"), sessionAlias, d, timestamp, seq + 1))},             //Different books
+                        {Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq),
+                                new IdData(book, sessionAlias + "X", d, timestamp, seq + 1))},             //Different sessions
+                        {Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq),
+                                new IdData(book, sessionAlias, Direction.SECOND, timestamp, seq + 1))},  //Different directions
+                        {Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq),
+                                new IdData(book, sessionAlias, d, timestamp.minusMillis(1), seq))},    //Timestamp is less than previous
+                        {Arrays.asList(new IdData(book, sessionAlias, d, timestamp, seq),
+                                new IdData(book, sessionAlias, d, timestamp, seq),                     //Sequence is not incremented
+                                new IdData(book, sessionAlias, d, timestamp, seq - 1))},        //Sequence is less than previous
+                };
+    }
 
-	@Test
-	public void batchIsFull() throws CradleStorageException
-	{
-		byte[] content = new byte[MAX_SIZE/2];
-		MessageToStore message = builder
-				.bookId(book)
-				.sessionAlias(sessionAlias)
-				.direction(direction)
-				.sequence(1)
-				.timestamp(timestamp)
-				.protocol(protocol)
-				.content(content)
-				.build();
-		MessageBatchToStore batch = MessageBatchToStore.singleton(message, MAX_SIZE, storeActionRejectionThreshold);
-		batch.addMessage(builder
-				.bookId(book)
-				.sessionAlias(sessionAlias)
-				.direction(direction)
-				.timestamp(timestamp)
-				.protocol(protocol)
-				.content(new byte[MAX_SIZE - MessagesSizeCalculator.MESSAGE_BATCH_CONST_VALUE
-						- MessagesSizeCalculator.MESSAGE_LENGTH_IN_BATCH * 2
-						- MessagesSizeCalculator.MESSAGE_SIZE_CONST_VALUE * 2
-						- MessagesSizeCalculator.calculateStringSize(sessionAlias) * 2
-						- MessagesSizeCalculator.calculateStringSize(direction.getLabel()) * 2
-						- MessagesSizeCalculator.calculateStringSize(protocol) * 2
-						- content.length])
-				.build());
-
-		Assert.assertTrue(batch.isFull(), "Batch indicates it is full");
-	}
-	
-	@Test
-	public void batchCountsSpaceLeft() throws CradleStorageException
-	{
-		byte[] content = new byte[MAX_SIZE / 2];
-		MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE, storeActionRejectionThreshold);
-		long left = batch.getSpaceLeft();
-
-		MessageToStore msg = builder
-				.bookId(book)
-				.sessionAlias(sessionAlias)
-				.direction(direction)
-				.sequence(1)
-				.timestamp(timestamp)
-				.content(content)
-				.build();
-
-		batch.addMessage(msg);
-		
-		Assert.assertEquals(batch.getSpaceLeft(), left - MessagesSizeCalculator.calculateMessageSizeInBatch(msg), "Batch counts space left");
-	}
-	
-	@Test
-	public void batchChecksSpaceLeft() throws CradleStorageException
-	{
-		byte[] content = new byte[MAX_SIZE/2];
-		MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE, storeActionRejectionThreshold);
-		
-		MessageToStore msg = builder
-				.bookId(book)
-				.sessionAlias(sessionAlias)
-				.direction(direction)
-				.sequence(1)
-				.timestamp(timestamp)
-				.content(content)
-				.build();
-		batch.addMessage(msg);
-
-		Assert.assertFalse(batch.hasSpace(msg), "Batch shows if it has space to hold given message");
-	}
+    @DataProvider(name = "invalid messages")
+    public Object[][] invalidMessages() {
+        return new Object[][]
+                {
+                        {builder},                                                                                       //Empty message
+                        {builder.bookId(null)},                                                                             //Null book
+                        {builder.bookId(new BookId(""))},                                                         //Empty book
+                        {builder.bookId(book)},                                                                          //Only book is set
+                        {builder.bookId(book).sessionAlias(null).direction(null).timestamp(null)},                     //Null session is set
+                        {builder.bookId(book).sessionAlias("").direction(null).timestamp(null)},                         //Empty session is set
+                        {builder.bookId(book).sessionAlias(sessionAlias).direction(null).timestamp(null)},               //Only book and session are set
+                        {builder.bookId(book).sessionAlias(sessionAlias).direction(direction).timestamp(null)},          //Only book, session and direction are set
+                        {builder.bookId(book).sessionAlias(sessionAlias).direction(direction).timestamp(Instant.now())}  //Content is not set
+                };
+    }
 
 
-	@Test(expectedExceptions = {IllegalArgumentException.class},
-			expectedExceptionsMessageRegExp = "illegal sequence -?\\d+ for book1:Session1:1")
-	public void batchChecksFirstMessage() throws CradleStorageException
-	{
-		MessageBatchToStore.singleton(builder
-				.bookId(book)
-				.sessionAlias(sessionAlias)
-				.direction(direction)
-				.sequence(-1)
-				.timestamp(timestamp)
-				.content(messageContent)
-				.build(), MAX_SIZE, storeActionRejectionThreshold);
-	}
-	
-	@Test(dataProvider = "multiple messages",
-			expectedExceptions = {CradleStorageException.class},
-			expectedExceptionsMessageRegExp = ".*, but in your message it is .*")
-	public void batchConsistency(List<IdData> ids) throws CradleStorageException
-	{
-		MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE, storeActionRejectionThreshold);
-		for (IdData id : ids)
-		{
-			batch.addMessage(builder
-					.bookId(id.book)
-					.sessionAlias(id.sessionAlias)
-					.direction(id.direction)
-					.sequence(id.sequence)
-					.timestamp(id.timestamp)
-					.content(messageContent)
-					.build());
-		}
-	}
-	
-	@Test(dataProvider = "invalid messages",
-			expectedExceptions = {CradleStorageException.class},
-			expectedExceptionsMessageRegExp = "Message must .*")
-	public void messageValidation(MessageToStoreBuilder builder) throws CradleStorageException
-	{
-		MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE, storeActionRejectionThreshold);
-		batch.addMessage(builder.build());
-	}
-	
-	@Test
-	public void sequenceAutoIncrement() throws CradleStorageException
-	{
-		long seq = 10;
-		MessageBatchToStore batch = MessageBatchToStore.singleton(builder
-				.bookId(book)
-				.sessionAlias(sessionAlias)
-				.direction(direction)
-				.sequence(seq)
-				.timestamp(timestamp)
-				.content(messageContent)
-				.build(), MAX_SIZE, storeActionRejectionThreshold);
-		
-		StoredMessage msg1 = batch.addMessage(builder
-				.bookId(book)
-				.sessionAlias(sessionAlias)
-				.direction(direction)
-				.timestamp(timestamp)
-				.content(messageContent)
-				.build());
-		
-		StoredMessage msg2 = batch.addMessage(builder
-				.bookId(book)
-				.sessionAlias(sessionAlias)
-				.direction(direction)
-				.timestamp(timestamp)
-				.content(messageContent)
-				.build());
-		
-		Assert.assertEquals(msg1.getSequence(), seq+1, "1st and 2nd messages should have ordered sequence numbers");
-		Assert.assertEquals(msg2.getSequence(), msg1.getSequence()+1, "2nd and 3rd messages should have ordered sequence numbers");
-	}
-	
-	@Test
-	public void sequenceGapsAllowed() throws CradleStorageException
-	{
-		long seq = 10;
-		MessageBatchToStore batch = MessageBatchToStore.singleton(builder
-				.bookId(book)
-				.sessionAlias(sessionAlias)
-				.direction(direction)
-				.sequence(seq)
-				.timestamp(timestamp)
-				.content(messageContent)
-				.build(), MAX_SIZE, storeActionRejectionThreshold);
-		
-		batch.addMessage(builder
-				.bookId(book)
-				.sessionAlias(sessionAlias)
-				.direction(direction)
-				.sequence(seq+10)
-				.timestamp(timestamp)
-				.content(messageContent)
-				.build());
-	}
-	
-	@Test
-	public void correctMessageId() throws CradleStorageException
-	{
-		long seq = 10;
-		MessageBatchToStore batch = MessageBatchToStore.singleton(builder
-				.bookId(book)
-				.sessionAlias(sessionAlias)
-				.direction(direction)
-				.sequence(seq)
-				.timestamp(timestamp)
-				.content(messageContent)
-				.build(), MAX_SIZE, storeActionRejectionThreshold);
-		StoredMessage msg = batch.addMessage(builder
-				.bookId(book)
-				.sessionAlias(sessionAlias)
-				.direction(direction)
-				.timestamp(timestamp)
-				.content(messageContent)
-				.build());
-		Assert.assertEquals(msg.getId(), new StoredMessageId(book, sessionAlias, direction, timestamp, seq+1));
-	}
-	
-	@Test
-	public void batchShowsLastTimestamp() throws CradleStorageException
-	{
-		Instant timestamp = Instant.ofEpochSecond(1000);
-		MessageBatchToStore batch = MessageBatchToStore.singleton(builder
-				.bookId(book)
-				.sessionAlias(sessionAlias)
-				.direction(direction)
-				.sequence(1)
-				.timestamp(timestamp)
-				.content(messageContent)
-				.build(), MAX_SIZE, storeActionRejectionThreshold);
-		
-		batch.addMessage(builder
-				.bookId(book)
-				.sessionAlias(sessionAlias)
-				.direction(direction)
-				.timestamp(timestamp.plusSeconds(10))
-				.content(messageContent)
-				.build());
-		
-		Instant lastTimestamp = batch.getLastTimestamp();
-		
-		batch.addMessage(builder
-				.bookId(book)
-				.sessionAlias(sessionAlias)
-				.direction(direction)
-				.timestamp(timestamp.plusSeconds(20))
-				.content(messageContent)
-				.build());
-		
-		Assert.assertNotEquals(batch.getLastTimestamp(), lastTimestamp, "Last timestamp is from last added message");
-	}
-	
-	@Test
-	public void batchSerialization() throws CradleStorageException, IOException
-	{
-		MessageBatchToStore batch = MessageBatchToStore.singleton(builder
-				.bookId(book)
-				.sessionAlias(sessionAlias)
-				.direction(direction)
-				.sequence(0)
-				.timestamp(timestamp)
-				.metadata("md", "some value")
-				.content(messageContent)
-				.build(), MAX_SIZE, storeActionRejectionThreshold);
-		StoredMessage storedMsg = batch.getFirstMessage();
-		byte[] bytes = MessageUtils.serializeMessages(batch.getMessages()).getSerializedData();
-		StoredMessage msg = MessageUtils.deserializeMessages(bytes, batch.id).iterator().next();
-		Assert.assertEquals(msg, storedMsg, "Message should be completely serialized/deserialized");
-	}
-	
-	
-	static class IdData
-	{
-		final BookId book;
-		final String sessionAlias;
-		final Direction direction;
-		final Instant timestamp;
-		final long sequence;
-		
-		public IdData(BookId book, String sessionAlias, Direction direction, Instant timestamp, long sequence)
-		{
-			this.book = book;
-			this.sessionAlias = sessionAlias;
-			this.direction = direction;
-			this.timestamp = timestamp;
-			this.sequence = sequence;
-		}
-		
-		@Override
-		public String toString()
-		{
-			return book+StoredMessageId.ID_PARTS_DELIMITER
-					+sessionAlias+StoredMessageId.ID_PARTS_DELIMITER
-					+direction.getLabel()+StoredMessageId.ID_PARTS_DELIMITER
-					+StoredMessageIdUtils.timestampToString(timestamp)+StoredMessageId.ID_PARTS_DELIMITER
-					+sequence;
-		}
-	}
+    @Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = "Batch has not enough space to hold given message")
+    public void batchContentIsLimited() throws CradleStorageException {
+        byte[] content = new byte[5000];
+        MessageBatchToStore batch = MessageBatchToStore.singleton(builder
+                .bookId(book)
+                .sessionAlias(sessionAlias)
+                .direction(direction)
+                .sequence(1)
+                .timestamp(timestamp)
+                .content(content)
+                .build(), MAX_SIZE, storeActionRejectionThreshold);
+        for (int i = 0; i <= (MAX_SIZE / content.length) + 1; i++)
+            batch.addMessage(builder
+                    .bookId(book)
+                    .sessionAlias(sessionAlias)
+                    .direction(direction)
+                    .timestamp(timestamp)
+                    .content(content)
+                    .build());
+    }
+
+    @Test
+    public void batchIsFull1() throws CradleStorageException {
+        MessageBatchToStore fullBySizeBatch = MessageBatchToStoreJoinTest.createFullBySizeBatch(book, sessionAlias,
+                1, direction, timestamp, protocol);
+
+        Assert.assertTrue(fullBySizeBatch.isFull(), "Batch indicates it is full");
+        Assert.assertEquals(fullBySizeBatch.getBatchSize(), MessageBatchToStoreJoinTest.MAX_SIZE);
+        Assert.assertEquals(fullBySizeBatch.getSpaceLeft(), 0);
+    }
+
+    @Test
+    public void batchIsFull() throws CradleStorageException {
+        byte[] content = new byte[MAX_SIZE / 2];
+        MessageToStore message = builder
+                .bookId(book)
+                .sessionAlias(sessionAlias)
+                .direction(direction)
+                .sequence(1)
+                .timestamp(timestamp)
+                .protocol(protocol)
+                .content(content)
+                .build();
+        MessageBatchToStore batch = MessageBatchToStore.singleton(message, MAX_SIZE, storeActionRejectionThreshold);
+        batch.addMessage(builder
+                .bookId(book)
+                .sessionAlias(sessionAlias)
+                .direction(direction)
+                .timestamp(timestamp)
+                .protocol(protocol)
+                .content(new byte[MAX_SIZE - MessagesSizeCalculator.MESSAGE_BATCH_CONST_VALUE
+                        - MessagesSizeCalculator.MESSAGE_LENGTH_IN_BATCH * 2
+                        - MessagesSizeCalculator.MESSAGE_SIZE_CONST_VALUE * 2
+                        - MessagesSizeCalculator.calculateStringSize(sessionAlias) * 2
+                        - MessagesSizeCalculator.calculateStringSize(direction.getLabel()) * 2
+                        - MessagesSizeCalculator.calculateStringSize(protocol) * 2
+                        - content.length])
+                .build());
+
+        Assert.assertTrue(batch.isFull(), "Batch indicates it is full");
+    }
+
+    @Test
+    public void batchCountsSpaceLeft() throws CradleStorageException {
+        byte[] content = new byte[MAX_SIZE / 2];
+        MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE, storeActionRejectionThreshold);
+        long left = batch.getSpaceLeft();
+
+        MessageToStore msg = builder
+                .bookId(book)
+                .sessionAlias(sessionAlias)
+                .direction(direction)
+                .sequence(1)
+                .timestamp(timestamp)
+                .content(content)
+                .build();
+
+        batch.addMessage(msg);
+
+        Assert.assertEquals(batch.getSpaceLeft(), left - MessagesSizeCalculator.calculateMessageSizeInBatch(msg), "Batch counts space left");
+    }
+
+    @Test
+    public void batchChecksSpaceLeft() throws CradleStorageException {
+        byte[] content = new byte[MAX_SIZE / 2];
+        MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE, storeActionRejectionThreshold);
+
+        MessageToStore msg = builder
+                .bookId(book)
+                .sessionAlias(sessionAlias)
+                .direction(direction)
+                .sequence(1)
+                .timestamp(timestamp)
+                .content(content)
+                .build();
+        batch.addMessage(msg);
+
+        Assert.assertFalse(batch.hasSpace(msg), "Batch shows if it has space to hold given message");
+    }
+
+
+    @Test(expectedExceptions = {IllegalArgumentException.class},
+            expectedExceptionsMessageRegExp = "illegal sequence -?\\d+ for book1:Session1:1")
+    public void batchChecksFirstMessage() throws CradleStorageException {
+        MessageBatchToStore.singleton(builder
+                .bookId(book)
+                .sessionAlias(sessionAlias)
+                .direction(direction)
+                .sequence(-1)
+                .timestamp(timestamp)
+                .content(messageContent)
+                .build(), MAX_SIZE, storeActionRejectionThreshold);
+    }
+
+    @Test(dataProvider = "multiple messages",
+            expectedExceptions = {CradleStorageException.class},
+            expectedExceptionsMessageRegExp = ".*, but in your message it is .*")
+    public void batchConsistency(List<IdData> ids) throws CradleStorageException {
+        MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE, storeActionRejectionThreshold);
+        for (IdData id : ids) {
+            batch.addMessage(builder
+                    .bookId(id.book)
+                    .sessionAlias(id.sessionAlias)
+                    .direction(id.direction)
+                    .sequence(id.sequence)
+                    .timestamp(id.timestamp)
+                    .content(messageContent)
+                    .build());
+        }
+    }
+
+    @Test(dataProvider = "invalid messages",
+            expectedExceptions = {CradleStorageException.class},
+            expectedExceptionsMessageRegExp = "Message must .*")
+    public void messageValidation(MessageToStoreBuilder builder) throws CradleStorageException {
+        MessageBatchToStore batch = new MessageBatchToStore(MAX_SIZE, storeActionRejectionThreshold);
+        batch.addMessage(builder.build());
+    }
+
+    @Test
+    public void sequenceAutoIncrement() throws CradleStorageException {
+        long seq = 10;
+        MessageBatchToStore batch = MessageBatchToStore.singleton(builder
+                .bookId(book)
+                .sessionAlias(sessionAlias)
+                .direction(direction)
+                .sequence(seq)
+                .timestamp(timestamp)
+                .content(messageContent)
+                .build(), MAX_SIZE, storeActionRejectionThreshold);
+
+        StoredMessage msg1 = batch.addMessage(builder
+                .bookId(book)
+                .sessionAlias(sessionAlias)
+                .direction(direction)
+                .timestamp(timestamp)
+                .content(messageContent)
+                .build());
+
+        StoredMessage msg2 = batch.addMessage(builder
+                .bookId(book)
+                .sessionAlias(sessionAlias)
+                .direction(direction)
+                .timestamp(timestamp)
+                .content(messageContent)
+                .build());
+
+        Assert.assertEquals(msg1.getSequence(), seq + 1, "1st and 2nd messages should have ordered sequence numbers");
+        Assert.assertEquals(msg2.getSequence(), msg1.getSequence() + 1, "2nd and 3rd messages should have ordered sequence numbers");
+    }
+
+    @Test
+    public void sequenceGapsAllowed() throws CradleStorageException {
+        long seq = 10;
+        MessageBatchToStore batch = MessageBatchToStore.singleton(builder
+                .bookId(book)
+                .sessionAlias(sessionAlias)
+                .direction(direction)
+                .sequence(seq)
+                .timestamp(timestamp)
+                .content(messageContent)
+                .build(), MAX_SIZE, storeActionRejectionThreshold);
+
+        batch.addMessage(builder
+                .bookId(book)
+                .sessionAlias(sessionAlias)
+                .direction(direction)
+                .sequence(seq + 10)
+                .timestamp(timestamp)
+                .content(messageContent)
+                .build());
+    }
+
+    @Test
+    public void correctMessageId() throws CradleStorageException {
+        long seq = 10;
+        MessageBatchToStore batch = MessageBatchToStore.singleton(builder
+                .bookId(book)
+                .sessionAlias(sessionAlias)
+                .direction(direction)
+                .sequence(seq)
+                .timestamp(timestamp)
+                .content(messageContent)
+                .build(), MAX_SIZE, storeActionRejectionThreshold);
+        StoredMessage msg = batch.addMessage(builder
+                .bookId(book)
+                .sessionAlias(sessionAlias)
+                .direction(direction)
+                .timestamp(timestamp)
+                .content(messageContent)
+                .build());
+        Assert.assertEquals(msg.getId(), new StoredMessageId(book, sessionAlias, direction, timestamp, seq + 1));
+    }
+
+    @Test
+    public void batchShowsLastTimestamp() throws CradleStorageException {
+        Instant timestamp = Instant.ofEpochSecond(1000);
+        MessageBatchToStore batch = MessageBatchToStore.singleton(builder
+                .bookId(book)
+                .sessionAlias(sessionAlias)
+                .direction(direction)
+                .sequence(1)
+                .timestamp(timestamp)
+                .content(messageContent)
+                .build(), MAX_SIZE, storeActionRejectionThreshold);
+
+        batch.addMessage(builder
+                .bookId(book)
+                .sessionAlias(sessionAlias)
+                .direction(direction)
+                .timestamp(timestamp.plusSeconds(10))
+                .content(messageContent)
+                .build());
+
+        Instant lastTimestamp = batch.getLastTimestamp();
+
+        batch.addMessage(builder
+                .bookId(book)
+                .sessionAlias(sessionAlias)
+                .direction(direction)
+                .timestamp(timestamp.plusSeconds(20))
+                .content(messageContent)
+                .build());
+
+        Assert.assertNotEquals(batch.getLastTimestamp(), lastTimestamp, "Last timestamp is from last added message");
+    }
+
+    @Test
+    public void batchSerialization() throws CradleStorageException, IOException {
+        MessageBatchToStore batch = MessageBatchToStore.singleton(builder
+                .bookId(book)
+                .sessionAlias(sessionAlias)
+                .direction(direction)
+                .sequence(0)
+                .timestamp(timestamp)
+                .metadata("md", "some value")
+                .content(messageContent)
+                .build(), MAX_SIZE, storeActionRejectionThreshold);
+        StoredMessage storedMsg = batch.getFirstMessage();
+        byte[] bytes = MessageUtils.serializeMessages(batch).getSerializedData();
+        StoredMessage msg = MessageUtils.deserializeMessages(bytes, batch.id).iterator().next();
+        Assert.assertEquals(msg, storedMsg, "Message should be completely serialized/deserialized");
+    }
+
+
+    static class IdData {
+        final BookId book;
+        final String sessionAlias;
+        final Direction direction;
+        final Instant timestamp;
+        final long sequence;
+
+        public IdData(BookId book, String sessionAlias, Direction direction, Instant timestamp, long sequence) {
+            this.book = book;
+            this.sessionAlias = sessionAlias;
+            this.direction = direction;
+            this.timestamp = timestamp;
+            this.sequence = sequence;
+        }
+
+        @Override
+        public String toString() {
+            return book + StoredMessageId.ID_PARTS_DELIMITER
+                    + sessionAlias + StoredMessageId.ID_PARTS_DELIMITER
+                    + direction.getLabel() + StoredMessageId.ID_PARTS_DELIMITER
+                    + StoredMessageIdUtils.timestampToString(timestamp) + StoredMessageId.ID_PARTS_DELIMITER
+                    + sequence;
+        }
+    }
 }
