@@ -127,14 +127,12 @@ public class ReadThroughBookCacheTest {
     @Test
     public void testGetBookPreviousFormat() throws BookNotFoundException {
         doReturn(previousFormatPages.iterator()).when(pagingIterable).iterator();
-        doReturn(previousFormatPages.iterator()).when(pagingIterable).iterator();
 
         assertEquals(cache.getBook(bookId).getId(), bookId);
     }
 
     @Test
     public void testGetBookNewFormat() throws BookNotFoundException {
-        doReturn(newFormatPages.iterator()).when(pagingIterable).iterator();
         doReturn(newFormatPages.iterator()).when(pagingIterable).iterator();
 
         assertEquals(cache.getBook(bookId).getId(), bookId);
