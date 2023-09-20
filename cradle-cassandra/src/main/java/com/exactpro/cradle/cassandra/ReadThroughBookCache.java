@@ -73,7 +73,7 @@ public class ReadThroughBookCache implements BookCache {
     public Collection<PageInfo> loadPageInfo(BookId bookId, boolean loadRemoved) {
         Collection<PageInfo> result = new ArrayList<>();
         for (PageEntity pageEntity : operators.getPageOperator().getAll(bookId.getName(), readAttrs)) {
-            if (loadRemoved || pageEntity.getRemoved().equals(DEFAULT_PAGE_REMOVE_TIME)) {
+            if (loadRemoved || pageEntity.getRemoved() == null || pageEntity.getRemoved().equals(DEFAULT_PAGE_REMOVE_TIME)) {
                 result.add(pageEntity.toPageInfo());
             }
         }
