@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,11 +46,11 @@ public class PageEntity {
 	public static final String FIELD_UPDATED = "updated";
 	public static final String FIELD_REMOVED = "removed";
 
-	@PartitionKey(0)
+	@PartitionKey()
 	@CqlName(FIELD_BOOK)
 	private final String book;
 
-	@ClusteringColumn(0)
+	@ClusteringColumn()
 	@CqlName(FIELD_START_DATE)
 	private final LocalDate startDate;
 
@@ -145,8 +145,9 @@ public class PageEntity {
 	}
 
 	public PageInfo toPageInfo() {
-		return new PageInfo(new PageId(new BookId(book), name),
-				TimeUtils.toInstant(getStartDate(), getStartTime()),
+		Instant start = TimeUtils.toInstant(getStartDate(), getStartTime());
+		return new PageInfo(new PageId(new BookId(book), start, name),
+				start,
 				TimeUtils.toInstant(getEndDate(), getEndTime()),
 				getComment(),
 				getUpdated(),

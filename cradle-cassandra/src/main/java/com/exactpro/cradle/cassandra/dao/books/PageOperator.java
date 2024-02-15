@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.datastax.oss.driver.api.mapper.entity.saving.NullSavingStrategy;
 
+//TODO: implement getFirstPage / getLastPage methods
+
 @Dao
 public interface PageOperator {
 	@Select
@@ -41,6 +43,16 @@ public interface PageOperator {
 				FIELD_BOOK +"=:book AND " +
 			    "(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") > (:startDate, :startTime)")
 	PagingIterable<PageEntity> get(String book, LocalDate startDate, LocalTime startTime,
+								   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+	@Query("SELECT * FROM ${qualifiedTableId} " +
+			"WHERE " +
+			FIELD_BOOK +"=:book AND " +
+			"(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") >= (:startDate, :startTime) " +
+			"AND " +
+			"(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") <= (:endDate, :endTime)")
+	PagingIterable<PageEntity> get(String book, LocalDate startDate, LocalTime startTime,
+								   LocalDate endDate, LocalTime endTime,
 								   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Update(nullSavingStrategy = NullSavingStrategy.SET_TO_NULL)

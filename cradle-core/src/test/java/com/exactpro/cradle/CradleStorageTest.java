@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ public class CradleStorageTest {
     }
 
     private PageInfo createPage(BookId bookId, String name, Instant start, Instant end) {
-        PageId pageId = new PageId(bookId, name);
+        PageId pageId = new PageId(bookId, start, name);
         return new PageInfo(pageId, start, end, null, null, null);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,27 +52,27 @@ public abstract class BaseCradleCassandraTest {
 
     private static final List<PageInfo> DEFAULT_PAGES = List.of(
             new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX + 0),
+                    new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START, DEFAULT_PAGE_PREFIX + 0),
                     DEFAULT_DATA_START,
                     DEFAULT_DATA_START.plus(10, ChronoUnit.MINUTES), ""),
             new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX + 1),
+                    new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(10, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 1),
                     DEFAULT_DATA_START.plus(10, ChronoUnit.MINUTES),
                     DEFAULT_DATA_START.plus(20, ChronoUnit.MINUTES), ""),
             new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX + 2),
+                    new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(20, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 2),
                     DEFAULT_DATA_START.plus(20, ChronoUnit.MINUTES),
                     DEFAULT_DATA_START.plus(30, ChronoUnit.MINUTES), ""),
             new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX + 3),
+                    new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(30, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 3),
                     DEFAULT_DATA_START.plus(30, ChronoUnit.MINUTES),
                     DEFAULT_DATA_START.plus(40, ChronoUnit.MINUTES), ""),
             new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX + 4),
+                    new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(40, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 4),
                     DEFAULT_DATA_START.plus(40, ChronoUnit.MINUTES),
                     DEFAULT_DATA_START.plus(50, ChronoUnit.MINUTES), ""),
             new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX + 5),
+                    new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(50, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 5),
                     DEFAULT_DATA_START.plus(50, ChronoUnit.MINUTES),
                     DEFAULT_DATA_START.plus(60, ChronoUnit.MINUTES), ""));
 

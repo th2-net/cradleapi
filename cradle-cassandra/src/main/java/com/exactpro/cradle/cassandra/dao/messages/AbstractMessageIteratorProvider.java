@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -188,8 +188,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 	{
 		if (filter.getOrder() == Order.DIRECT) {
 			return new CassandraStoredMessageFilter(
-					firstPage.getId().getBookId().getName(),
-					firstPage.getId().getName(),
+					firstPage.getId(),
 					filter.getSessionAlias(),
 					filter.getDirection().getLabel(),
 					leftBoundFilter,
@@ -198,8 +197,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 					filter.getOrder());
 		} else {
 			return new CassandraStoredMessageFilter(
-					lastPage.getId().getBookId().getName(),
-					lastPage.getId().getName(),
+					lastPage.getId(),
 					filter.getSessionAlias(),
 					filter.getDirection().getLabel(),
 					leftBoundFilter,
@@ -213,7 +211,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 
 	protected CassandraStoredMessageFilter createNextFilter(CassandraStoredMessageFilter prevFilter, int updatedLimit)
 	{
-		PageInfo oldPage = book.getPage(new PageId(book.getId(), prevFilter.getPage()));
+		PageInfo oldPage = book.getPage(prevFilter.getPageId());
 		PageInfo newPage;
 
 		if (filter.getOrder() == Order.DIRECT) {
@@ -230,8 +228,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		}
 
 		return new CassandraStoredMessageFilter(
-				newPage.getId().getBookId().getName(),
-				newPage.getId().getName(),
+				newPage.getId(),
 				prevFilter.getSessionAlias(),
 				prevFilter.getDirection(),
 				leftBoundFilter,
@@ -259,7 +256,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 	}
 
 	protected Iterator<StoredMessageBatch> getBatchedIterator (MappedAsyncPagingIterable<MessageBatchEntity> resultSet) {
-		PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
+		PageId pageId = cassandraFilter.getPageId();
 		// Updated limit should be smaller, since we already got entities from previous batch
 		cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(),0));
 

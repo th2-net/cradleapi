@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@ import java.util.Objects;
 public class PageInfo
 {
 	private final PageId id;
-	private final Instant started,
-			ended;
+	private final Instant started;
+	private final Instant ended;
 	private final String comment;
 	private final Instant updated;
 	private final Instant removed;

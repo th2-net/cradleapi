@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -136,7 +136,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 		logger.debug("Getting next iterator for '{}' by filter {}", getRequestInfo(), cassandraFilter);
 		return op.getByFilter(cassandraFilter, selectQueryExecutor, getRequestInfo(), readAttrs)
 				.thenApplyAsync(resultSet -> {
-					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
+					PageId pageId = cassandraFilter.getPageId();
 					cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(),0));
 
 					PagedIterator<TestEventEntity> pagedIterator = new PagedIterator<>(
@@ -174,8 +174,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 
 		String parentId = getParentIdString(filter);
 		return new CassandraTestEventFilter(
-				book.getId().getName(),
-				firstPage.getId().getName(),
+				firstPage.getId(),
 				filter.getScope(),
 				newFrom,
 				filter.getStartTimestampTo(),
@@ -187,7 +186,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 
 	private CassandraTestEventFilter createNextFilter(CassandraTestEventFilter prevFilter, Integer updatedLimit) {
 
-		PageInfo prevPage = book.getPage(new PageId(book.getId(), prevFilter.getPage()));
+		PageInfo prevPage = book.getPage(prevFilter.getPageId());
 		if (prevPage == lastPage)
 			return null;
 
@@ -199,8 +198,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 			nextPage = book.getPreviousPage(prevPage.getStarted());
 
 		return new CassandraTestEventFilter(
-				book.getId().getName(),
-				nextPage.getId().getName(),
+				nextPage.getId(),
 				prevFilter.getScope(),
 				prevFilter.getStartTimestampFrom(),
 				prevFilter.getStartTimestampTo(),

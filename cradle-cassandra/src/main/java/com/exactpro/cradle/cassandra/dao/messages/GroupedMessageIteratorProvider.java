@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,8 +102,7 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 
 	private CassandraGroupedMessageFilter createInitialFilter(GroupedMessageFilter filter) {
 		return new CassandraGroupedMessageFilter(
-				book.getId().getName(),
-				getFirstPage().getId().getName(),
+				getFirstPage().getId(),
 				filter.getGroupName(),
 				leftBoundFilter,
 				rightBoundFilter,
@@ -179,15 +178,14 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 	}
 
 	protected CassandraGroupedMessageFilter createNextFilter(CassandraGroupedMessageFilter prevFilter, int updatedLimit) {
-		PageInfo prevPage = book.getPage(new PageId(book.getId(), prevFilter.getPage()));
+		PageInfo prevPage = book.getPage(prevFilter.getPageId());
 		if (prevPage.equals(getLastPage()))
 			return null;
 
 		PageInfo nextPage = getNextPage(prevPage.getStarted());
 
 		return new CassandraGroupedMessageFilter(
-				book.getId().getName(),
-				nextPage.getId().getName(),
+				nextPage.getId(),
 				prevFilter.getGroupName(),
 				prevFilter.getMessageTimeFrom(),
 				prevFilter.getMessageTimeTo(),
@@ -208,7 +206,7 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 		return op.getByFilter(cassandraFilter, selectQueryExecutor, getRequestInfo(), readAttrs)
 				.thenApplyAsync(resultSet ->
 				{
-					PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
+					PageId pageId = cassandraFilter.getPageId();
 					// Updated limit should be smaller, since we already got entities from previous batch
 					cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(), 0));
 

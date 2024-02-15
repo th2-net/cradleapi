@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle;
 
+import java.time.Instant;
 import java.util.Objects;
 
 import com.exactpro.cradle.utils.EscapeUtils;
@@ -28,11 +29,13 @@ public class PageId
 	public static final String DELIMITER = EscapeUtils.DELIMITER_STR;
 	
 	private final BookId bookId;
+	private final Instant start;
 	private final String name;
-	
-	public PageId(BookId bookId, String pageName)
+
+	public PageId(BookId bookId, Instant start, String pageName)
 	{
 		this.bookId = bookId;
+		this.start = start;
 		this.name = pageName;
 	}
 	
@@ -41,7 +44,11 @@ public class PageId
 	{
 		return bookId;
 	}
-	
+
+	public Instant getStart() {
+		return start;
+	}
+
 	public String getName()
 	{
 		return name;
@@ -51,7 +58,7 @@ public class PageId
 	@Override
 	public int hashCode()
 	{
-		return Objects.hash(bookId, name);
+		return Objects.hash(bookId, start, name);
 	}
 	
 	@Override
@@ -64,13 +71,13 @@ public class PageId
 		if (getClass() != obj.getClass())
 			return false;
 		PageId other = (PageId) obj;
-		return Objects.equals(bookId, other.bookId) && Objects.equals(name, other.name);
+		return Objects.equals(bookId, other.bookId) && Objects.equals(start, other.start) && Objects.equals(name, other.name);
 	}
 	
 	
 	@Override
 	public String toString()
 	{
-		return EscapeUtils.escape(bookId.toString())+DELIMITER+EscapeUtils.escape(name);
+		return EscapeUtils.escape(bookId.toString())+DELIMITER+EscapeUtils.escape(start.toString())+DELIMITER+EscapeUtils.escape(name);
 	}
 }

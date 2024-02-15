@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.querybuilder.relation.MultiColumnRelationBuilder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
 import com.exactpro.cradle.Order;
+import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.CassandraFilter;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
 import com.exactpro.cradle.filters.ComparisonOperation;
@@ -35,8 +35,13 @@ import java.util.List;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.tuple;
-
-import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.*;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_BOOK;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_DIRECTION;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_FIRST_MESSAGE_DATE;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_FIRST_MESSAGE_TIME;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_PAGE;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_SEQUENCE;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_SESSION_ALIAS;
 
 public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatchEntity>
 {
@@ -44,7 +49,9 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 			TIME_FROM = "timeFrom", TIME_TO = "timeTo",
 			SEQ_FROM = "seqFrom", SEQ_TO = "seqTo";
 
-	private final String book, page, sessionAlias, direction;
+	private final String sessionAlias;
+	private final String direction;
+	private final PageId pageId;
 
 	private final FilterForGreater<Instant> messageTimeFrom;
 	private final FilterForLess<Instant> messageTimeTo;
@@ -55,25 +62,10 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 
 	private final Order order;
 
-	public CassandraStoredMessageFilter(String book, String page, String sessionAlias, String direction,
-										FilterForGreater<Instant> messageTimeFrom, FilterForLess<Instant> messageTimeTo)
-	{
-		this.book = book;
-		this.page = page;
-		this.sessionAlias = sessionAlias;
-		this.direction = direction;
-		this.messageTimeFrom = messageTimeFrom;
-		this.messageTimeTo = messageTimeTo;
-		this.sequence = null;
-		this.limit = 0;
-		this.order = Order.DIRECT;
-	}
-
-	public CassandraStoredMessageFilter(String book, String page, String sessionAlias, String direction,
+	public CassandraStoredMessageFilter(PageId pageId, String sessionAlias, String direction,
 										FilterForGreater<Instant> messageTimeFrom, FilterForLess<Instant> messageTimeTo, int limit, Order order)
 	{
-		this.book = book;
-		this.page = page;
+		this.pageId = pageId;
 		this.sessionAlias = sessionAlias;
 		this.direction = direction;
 		this.messageTimeFrom = messageTimeFrom;
@@ -118,8 +110,8 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	public BoundStatementBuilder bindParameters(BoundStatementBuilder builder)
 	{
 		builder = builder
-				.setString(FIELD_BOOK, book)
-				.setString(FIELD_PAGE, page)
+				.setString(FIELD_BOOK, pageId.getBookId().getName())
+				.setString(FIELD_PAGE, pageId.getName())
 				.setString(FIELD_SESSION_ALIAS, sessionAlias)
 				.setString(FIELD_DIRECTION, direction);
 		
@@ -137,12 +129,16 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 
 	public String getBook()
 	{
-		return book;
+		return pageId.getBookId().getName();
 	}
 
 	public String getPage()
 	{
-		return page;
+		return pageId.getName();
+	}
+
+	public PageId getPageId() {
+		return pageId;
 	}
 
 	public String getSessionAlias()
@@ -166,10 +162,8 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	public String toString()
 	{
 		List<String> result = new ArrayList<>(10);
-		if (book != null)
-			result.add("book=" + book);
-		if (page != null)
-			result.add("page=" + page);
+		if (pageId != null)
+			result.add("pageId=" + pageId);
 		if (sessionAlias != null)
 			result.add("sessionAlias=" + sessionAlias);
 		if (direction != null)

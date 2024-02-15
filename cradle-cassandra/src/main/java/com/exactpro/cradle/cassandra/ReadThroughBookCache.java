@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,10 @@ import com.exactpro.cradle.cassandra.dao.books.PageEntity;
 import com.exactpro.cradle.errors.BookNotFoundException;
 import com.exactpro.cradle.utils.CradleStorageException;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -73,6 +77,23 @@ public class ReadThroughBookCache implements BookCache {
     public Collection<PageInfo> loadPageInfo(BookId bookId, boolean loadRemoved) {
         Collection<PageInfo> result = new ArrayList<>();
         for (PageEntity pageEntity : operators.getPageOperator().getAll(bookId.getName(), readAttrs)) {
+            if (loadRemoved || pageEntity.getRemoved() == null || pageEntity.getRemoved().equals(DEFAULT_PAGE_REMOVE_TIME)) {
+                result.add(pageEntity.toPageInfo());
+            }
+        }
+        return result;
+    }
+
+    public Collection<PageInfo> loadPageInfo(BookId bookId, Instant start, Instant end, boolean loadRemoved) {
+        Collection<PageInfo> result = new ArrayList<>();
+        for (PageEntity pageEntity : operators.getPageOperator().get(
+                bookId.getName(),
+                LocalDate.ofInstant(start, ZoneOffset.UTC),
+                LocalTime.ofInstant(start, ZoneOffset.UTC),
+                LocalDate.ofInstant(end, ZoneOffset.UTC),
+                LocalTime.ofInstant(end, ZoneOffset.UTC),
+                readAttrs
+        )) {
             if (loadRemoved || pageEntity.getRemoved() == null || pageEntity.getRemoved().equals(DEFAULT_PAGE_REMOVE_TIME)) {
                 result.add(pageEntity.toPageInfo());
             }

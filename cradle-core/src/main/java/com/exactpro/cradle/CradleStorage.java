@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1438,7 +1438,7 @@ public abstract class CradleStorage {
         PageInfo updatedPageInfo = doUpdatePageComment(bookId, pageName, comment);
 
         try {
-            updatePage(new PageId(bookId, pageName), updatedPageInfo);
+            updatePage(updatedPageInfo.getId(), updatedPageInfo);
         } catch (Exception e) {
             logger.error("Page was edited but cache wasn't refreshed, try to refresh pages");
             throw e;
@@ -1461,7 +1461,22 @@ public abstract class CradleStorage {
         PageInfo updatedPageInfo = doUpdatePageName(bookId, pageName, newPageName);
 
         try {
-            updatePage(new PageId(bookId, pageName), updatedPageInfo);
+            // FIXME: implement search in data base
+            updatePage(new PageId(bookId, null, pageName), updatedPageInfo);
+        } catch (Exception e) {
+            logger.error("Page was edited but cache wasn't refreshed, try to refresh pages");
+            throw e;
+        }
+
+        return updatedPageInfo;
+    }
+
+    public PageInfo updatePageName(BookId bookId, Instant pageStart, String pageName, String newPageName) throws CradleStorageException {
+        getBookCache().getBook(bookId);
+        PageInfo updatedPageInfo = doUpdatePageName(bookId, pageName, newPageName);
+
+        try {
+            updatePage(new PageId(bookId, pageStart, pageName), updatedPageInfo);
         } catch (Exception e) {
             logger.error("Page was edited but cache wasn't refreshed, try to refresh pages");
             throw e;
@@ -1589,7 +1604,7 @@ public abstract class CradleStorage {
                 throw new CradleStorageException("Duplicated page name: '" + page.getName() + "'");
             names.add(name);
 
-            if (book.getPage(new PageId(bookId, name)) != null)
+            if (book.getPage(new PageId(bookId, page.getStart(), name)) != null)
                 throw new CradleStorageException("Page '" + name + "' is already present in book '" + bookId + "'");
 
             if (prevPage != null) {
@@ -1597,7 +1612,7 @@ public abstract class CradleStorage {
                     throw new CradleStorageException("Unordered pages: page '" + name + "' should start after page '" + prevPage.getName() + "'");
                 }
 
-                result.add(new PageInfo(new PageId(bookId, prevPage.getName()),
+                result.add(new PageInfo(new PageId(bookId, prevPage.getStart(), prevPage.getName()),
                         prevPage.getStart(),
                         checkCollisionAndGetPageEnd(book, prevPage, page.getStart()),
                         prevPage.getComment()));
@@ -1606,7 +1621,7 @@ public abstract class CradleStorage {
         }
 
         if (prevPage != null) {
-            result.add(new PageInfo(new PageId(bookId, prevPage.getName()),
+            result.add(new PageInfo(new PageId(bookId, prevPage.getStart(), prevPage.getName()),
                     prevPage.getStart(),
                     checkCollisionAndGetPageEnd(book, prevPage, null),
                     prevPage.getComment()));
