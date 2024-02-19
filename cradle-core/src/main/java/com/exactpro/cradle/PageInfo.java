@@ -106,7 +106,6 @@ public class PageInfo
 		if (o == null || getClass() != o.getClass()) return false;
 		PageInfo pageInfo = (PageInfo) o;
 		return getId().equals(pageInfo.getId())
-				&& getStarted().equals(pageInfo.getStarted())
 				&& Objects.equals(getEnded(), pageInfo.getEnded())
 				&& Objects.equals(getComment(), pageInfo.getComment())
 				&& Objects.equals(getUpdated(), pageInfo.getUpdated())

@@ -186,13 +186,6 @@ public class BookInfo
 		invalidate(page.getId().getStart());
 	}
 
-	void addPages(Collection<PageInfo> pages) {
-		pages.stream()
-				.map(pageInfo -> getEpochDay(pageInfo.getId().getStart()))
-				.distinct()
-				.forEach(this::invalidate);
-	}
-
 	private void invalidate(long epochDay) {
 		hotCache.invalidate(epochDay);
 		randomAccessCache.invalidate(epochDay);
@@ -346,9 +339,6 @@ public class BookInfo
 	private static PageInterval create(Collection<PageInfo> pages) {
 		PageInterval pageInterval = new PageInterval();
 		for (PageInfo page : pages) {
-			if (page.getRemoved() != null) {
-				continue;
-			}
 			pageInterval.add(page);
 		}
 		return pageInterval;

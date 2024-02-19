@@ -86,12 +86,16 @@ public class ReadThroughBookCache implements BookCache {
 
     public Collection<PageInfo> loadPageInfo(BookId bookId, Instant start, Instant end, boolean loadRemoved) {
         Collection<PageInfo> result = new ArrayList<>();
+        LocalDate startDate = start != null ? LocalDate.ofInstant(start, ZoneOffset.UTC) : LocalDate.MIN;
+        LocalTime startTime = start != null ? LocalTime.ofInstant(start, ZoneOffset.UTC) : LocalTime.MIN;
+        LocalDate endDate = end != null ? LocalDate.ofInstant(end, ZoneOffset.UTC) : LocalDate.MAX;
+        LocalTime endTime = end != null ? LocalTime.ofInstant(end, ZoneOffset.UTC) : LocalTime.MAX;
         for (PageEntity pageEntity : operators.getPageOperator().get(
                 bookId.getName(),
-                LocalDate.ofInstant(start, ZoneOffset.UTC),
-                LocalTime.ofInstant(start, ZoneOffset.UTC),
-                LocalDate.ofInstant(end, ZoneOffset.UTC),
-                LocalTime.ofInstant(end, ZoneOffset.UTC),
+                startDate,
+                startTime,
+                endDate,
+                endTime,
                 readAttrs
         )) {
             if (loadRemoved || pageEntity.getRemoved() == null || pageEntity.getRemoved().equals(DEFAULT_PAGE_REMOVE_TIME)) {

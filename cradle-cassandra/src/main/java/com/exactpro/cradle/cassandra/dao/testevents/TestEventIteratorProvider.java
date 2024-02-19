@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -187,8 +188,9 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 	private CassandraTestEventFilter createNextFilter(CassandraTestEventFilter prevFilter, Integer updatedLimit) {
 
 		PageInfo prevPage = book.getPage(prevFilter.getPageId());
-		if (prevPage == lastPage)
+		if (Objects.equals(prevPage, lastPage)) {
 			return null;
+		}
 
 		// calculate next page according to filter order
 		PageInfo nextPage;
