@@ -55,7 +55,7 @@ public class ReadThroughBookCache implements BookCache {
         this.schemaVersion = schemaVersion;
     }
 
-    public BookInfo getBook (BookId bookId) throws BookNotFoundException {
+    public BookInfo getBook(BookId bookId) throws BookNotFoundException {
         try {
             return books.computeIfAbsent(bookId, bookId1 -> {
                 try {
@@ -101,6 +101,30 @@ public class ReadThroughBookCache implements BookCache {
         return result;
     }
 
+    public PageInfo loadLastPageInfo(BookId bookId, boolean loadRemoved) {
+        for (PageEntity pageEntity : operators.getPageOperator().getLast(
+                bookId.getName(),
+                readAttrs
+        )) {
+            if (loadRemoved || pageEntity.getRemoved() == null || pageEntity.getRemoved().equals(DEFAULT_PAGE_REMOVE_TIME)) {
+                return pageEntity.toPageInfo();
+            }
+        }
+        return null;
+    }
+
+    public PageInfo loadFirstPageInfo(BookId bookId, boolean loadRemoved) {
+        for (PageEntity pageEntity : operators.getPageOperator().getFirst(
+                bookId.getName(),
+                readAttrs
+        )) {
+            if (loadRemoved || pageEntity.getRemoved() == null || pageEntity.getRemoved().equals(DEFAULT_PAGE_REMOVE_TIME)) {
+                return pageEntity.toPageInfo();
+            }
+        }
+        return null;
+    }
+
     public BookInfo loadBook(BookId bookId) throws CradleStorageException {
         BookEntity bookEntity = operators.getBookOperator().get(bookId.getName(), readAttrs);
 
@@ -118,16 +142,33 @@ public class ReadThroughBookCache implements BookCache {
         return toBookInfo(bookEntity);
     }
 
-    private BookInfo toBookInfo(BookEntity entity) throws CradleStorageException {
-        BookId bookId = new BookId(entity.getName());
-        Collection<PageInfo> pages = loadPageInfo(bookId, false);
-
-        return new BookInfo(new BookId(entity.getName()), entity.getFullName(), entity.getDesc(), entity.getCreated(), pages);
+    private Collection<PageInfo> loadPageInfo(BookId bookId, Instant start, Instant end) {
+        return loadPageInfo(bookId, start, end, false);
     }
 
-    @Override
-    public void updateCachedBook(BookInfo bookInfo) {
-        books.put(bookInfo.getId(), bookInfo);
+    private PageInfo loadLastPageInfo(BookId bookId) {
+        return  loadLastPageInfo(bookId, false);
+    }
+
+    private PageInfo loadFirstPageInfo(BookId bookId) {
+        return loadFirstPageInfo(bookId, false);
+    }
+
+    private BookInfo toBookInfo(BookEntity entity) throws CradleStorageException {
+        try {
+            return new BookInfo(
+                    new BookId(entity.getName()),
+                    entity.getFullName(),
+                    entity.getDesc(),
+                    entity.getCreated(),
+                    10, //FIXME: configurable
+                    this::loadPageInfo,
+                    this::loadFirstPageInfo,
+                    this::loadLastPageInfo
+            );
+        } catch (RuntimeException e) {
+            throw new CradleStorageException("Inconsistent state of book '"+entity.getName(), e);
+        }
     }
 
     @Override

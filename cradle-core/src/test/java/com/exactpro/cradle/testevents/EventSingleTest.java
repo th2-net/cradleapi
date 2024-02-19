@@ -22,6 +22,8 @@ import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.PageInfo;
+import com.exactpro.cradle.TestPageLoader;
+import com.exactpro.cradle.TestPagesLoader;
 import com.exactpro.cradle.TestUtils;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -35,6 +37,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class EventSingleTest {
@@ -113,21 +116,31 @@ public class EventSingleTest {
             expectedExceptions = {CradleStorageException.class})
     public void eventValidation(TestEventSingleToStoreBuilder builder, String errorMessage) throws CradleStorageException {
         try {
-            BookInfo bookInfo = new BookInfo(
-                    BOOK,
-                    null,
-                    null,
-                    START_TIMESTAMP,
-                    Collections.singleton(new PageInfo(
-                            new PageId(null, null, null),
-                            START_TIMESTAMP,
-                            START_TIMESTAMP,
-                            null)));
+            BookInfo bookInfo = createBookInfo();
             TestEventUtils.validateTestEvent(builder.build(), bookInfo, storeActionRejectionThreshold);
             Assertions.fail("Invalid message passed validation");
         } catch (CradleStorageException e) {
             TestUtils.handleException(e, errorMessage);
         }
+    }
+
+    private static BookInfo createBookInfo() {
+        List<PageInfo> pages = List.of(new PageInfo(
+                new PageId(null, START_TIMESTAMP, null),
+                START_TIMESTAMP,
+                START_TIMESTAMP,
+                null,
+                null)
+        );
+        return new BookInfo(
+                BOOK,
+                null,
+                null,
+                START_TIMESTAMP,
+                1,
+                new TestPagesLoader(pages),
+                new TestPageLoader(pages, true),
+                new TestPageLoader(pages, false));
     }
 
     @Test

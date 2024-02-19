@@ -49,6 +49,10 @@ public class PageId
 		return start;
 	}
 
+	/**
+	 * @deprecated name has been moved to {@link PageInfo#getName()}
+	 */
+	@Deprecated
 	public String getName()
 	{
 		return name;
@@ -58,7 +62,7 @@ public class PageId
 	@Override
 	public int hashCode()
 	{
-		return Objects.hash(bookId, start, name);
+		return Objects.hash(bookId, start);
 	}
 	
 	@Override
@@ -71,13 +75,13 @@ public class PageId
 		if (getClass() != obj.getClass())
 			return false;
 		PageId other = (PageId) obj;
-		return Objects.equals(bookId, other.bookId) && Objects.equals(start, other.start) && Objects.equals(name, other.name);
+		return Objects.equals(bookId, other.bookId) && Objects.equals(start, other.start);
 	}
 	
 	
 	@Override
 	public String toString()
 	{
-		return EscapeUtils.escape(bookId.toString())+DELIMITER+EscapeUtils.escape(start.toString())+DELIMITER+EscapeUtils.escape(name);
+		return EscapeUtils.escape(bookId.toString())+DELIMITER+EscapeUtils.escape(start.toString());
 	}
 }

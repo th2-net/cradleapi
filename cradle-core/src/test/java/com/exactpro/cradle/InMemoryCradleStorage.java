@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,9 @@ import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -43,23 +45,35 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Dummy implementation of CradleStorage that does nothing and serves as a stub
+ * In memory implementation of CradleStorage that does nothing and serves as a stub
  */
-public class DummyCradleStorage extends CradleStorage {
-	static class DummyBookCache implements BookCache {
+public class InMemoryCradleStorage extends CradleStorage {
 
-		Map<BookId, BookInfo> books;
+	static class InMemoryBookCache implements BookCache {
 
-		DummyBookCache() {
-			books = new ConcurrentHashMap<>();
+		private final Map<BookId, InMemoryBook> inMemoryStorage;
+		private final Map<BookId, BookInfo> cache;
+
+		InMemoryBookCache(Map<BookId, InMemoryBook> inMemoryStorage) {
+			this.inMemoryStorage = inMemoryStorage;
+			cache = new ConcurrentHashMap<>();
 		}
 
 		@Override
 		public BookInfo getBook(BookId bookId) throws CradleStorageException {
-			if (!books.containsKey(bookId)) {
+			BookInfo bookInfo = cache.computeIfAbsent(bookId, (key) ->
+			{
+				InMemoryBook inMemoryBook = inMemoryStorage.get(bookId);
+				if (inMemoryBook == null) {
+					return null;
+				}
+
+				return inMemoryBook.bookInfo;
+			});
+			if (bookInfo == null) {
 				throw new CradleStorageException(String.format("Book %s is unknown", bookId.getName()));
 			}
-			return books.get(bookId);
+			return bookInfo;
 		}
 
 		@Override
@@ -78,17 +92,36 @@ public class DummyCradleStorage extends CradleStorage {
 		}
 	}
 
-	private final DummyBookCache dummyBookCache;
+	static class InMemoryBook {
+		private final List<PageInfo> pages = new ArrayList<>();
+		private final BookInfo bookInfo;
+
+		private InMemoryBook(BookToAdd bookToAdd) {
+			this.bookInfo = new BookInfo(new BookId(bookToAdd.getName()),
+					bookToAdd.getFullName(),
+					bookToAdd.getDesc(),
+					bookToAdd.getCreated(),
+					1,
+					new TestPagesLoader(pages),
+					new TestPageLoader(pages, true),
+					new TestPageLoader(pages, false)
+			);
+		}
+	}
+
+	private final Map<BookId, InMemoryBook> inMemoryStorage = new HashMap<>();
+
+	private final InMemoryBookCache inMemoryBookCache;
 
 	@Override
 	protected BookCache getBookCache() {
-		return dummyBookCache;
+		return inMemoryBookCache;
 	}
 
-	public DummyCradleStorage() throws CradleStorageException
+	public InMemoryCradleStorage() throws CradleStorageException
 	{
 		super();
-		dummyBookCache = new DummyBookCache();
+		inMemoryBookCache = new InMemoryBookCache(inMemoryStorage);
 	}
 
 
@@ -111,13 +144,28 @@ public class DummyCradleStorage extends CradleStorage {
 	}
 
 	@Override
-	protected void doAddBook(BookToAdd newBook, BookId bookId)
-	{
+	protected void doAddBook(BookToAdd newBook, BookId newBookId) {
+		inMemoryStorage.compute(newBookId, ((bookId, previous) -> {
+			if (previous != null) {
+				throw new IllegalStateException("Book '"+ bookId +"' is already exist");
+			}
+			return new InMemoryBook(newBook);
+		}));
 	}
 
 	@Override
 	protected void doAddPages(BookId bookId, List<PageInfo> pages, PageInfo lastPage) {
-	}
+        try {
+			List<PageInfo> inMemoryPages = inMemoryStorage.get(bookId).pages;
+			if (lastPage != null) {
+				inMemoryPages.set(inMemoryPages.size() - 1, lastPage);
+			}
+			inMemoryPages.addAll(pages);
+			inMemoryBookCache.getBook(bookId).invalidate();
+        } catch (CradleStorageException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 	@Override
 	protected Collection<PageInfo> doLoadPages(BookId bookId) {

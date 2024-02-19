@@ -27,25 +27,28 @@ public class PageInfo
 	private final PageId id;
 	private final Instant started;
 	private final Instant ended;
+	private final String name;
 	private final String comment;
 	private final Instant updated;
 	private final Instant removed;
 
-	public PageInfo(PageId id, Instant started, Instant ended, String comment, Instant updated, Instant removed)
+	public PageInfo(PageId id, Instant started, Instant ended, String name, String comment, Instant updated, Instant removed)
 	{
 		this.id = id;
 		this.started = started;
 		this.ended = ended;
+		this.name = name;
 		this.comment = comment;
 		this.updated = updated;
 		this.removed = removed;
 	}
 
-	public PageInfo(PageId id, Instant started, Instant ended, String comment)
+	public PageInfo(PageId id, Instant started, Instant ended, String name, String comment)
 	{
 		this.id = id;
 		this.started = started;
 		this.ended = ended;
+		this.name = name;
 		this.comment = comment;
 		this.updated = null;
 		this.removed = null;
@@ -56,7 +59,10 @@ public class PageInfo
 	{
 		return id;
 	}
-	
+	/**
+	 * @deprecated name has been moved to {@link PageId#getStart()}
+	 */
+	@Deprecated
 	public Instant getStarted()
 	{
 		return started;
@@ -66,7 +72,11 @@ public class PageInfo
 	{
 		return ended;
 	}
-	
+
+	public String getName() {
+		return name;
+	}
+
 	public String getComment()
 	{
 		return comment;
@@ -82,7 +92,7 @@ public class PageInfo
 
 	public static PageInfo ended(PageInfo page, Instant endTimestamp)
 	{
-		return page == null ? null : new PageInfo(page.getId(), page.getStarted(), endTimestamp, page.getComment(), page.getUpdated(), page.getRemoved());
+		return page == null ? null : new PageInfo(page.getId(), page.getId().getStart(), endTimestamp, page.getName(), page.getComment(), page.getUpdated(), page.getRemoved());
 	}
 
 	public boolean isValidFor(Instant timestamp) {
@@ -107,8 +117,8 @@ public class PageInfo
 	public String toString() {
 		return "PageInfo{" +
 				"id=" + id +
-				", started=" + started +
 				", ended=" + ended +
+				", name='" + name + '\'' +
 				", comment='" + comment + '\'' +
 				", updated=" + updated +
 				", removed=" + removed +

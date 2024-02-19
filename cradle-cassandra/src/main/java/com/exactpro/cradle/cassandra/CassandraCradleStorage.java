@@ -1,5 +1,5 @@
 /*
- *  Copyright 2023 Exactpro (Exactpro Systems Limited)
+ *  Copyright 2023-2024 Exactpro (Exactpro Systems Limited)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -294,13 +294,13 @@ public class CassandraCradleStorage extends CradleStorage
 		String bookName = bookId.getName();
 		for (PageInfo page : pages)
 		{
-			String pageName = page.getId().getName();
+			String pageName = page.getName();
 			try
 			{
-				PageNameEntity nameEntity = new PageNameEntity(bookName, pageName, page.getStarted(), page.getComment(), page.getEnded());
+				PageNameEntity nameEntity = new PageNameEntity(bookName, pageName, page.getId().getStart(), page.getComment(), page.getEnded());
 				if (!pageNameOp.writeNew(nameEntity, writeAttrs).wasApplied())
 					throw new IOException("Query to insert page '"+nameEntity.getName()+"' was not applied. Probably, page already exists");
-				PageEntity entity = new PageEntity(bookName, pageName, page.getStarted(), page.getComment(), page.getEnded(), page.getUpdated());
+				PageEntity entity = new PageEntity(bookName, pageName, page.getId().getStart(), page.getComment(), page.getEnded(), page.getUpdated());
 				pageOp.write(entity, writeAttrs);
 			}
 			catch (IOException e)

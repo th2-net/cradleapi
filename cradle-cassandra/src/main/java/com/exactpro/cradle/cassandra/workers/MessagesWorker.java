@@ -242,9 +242,9 @@ public class MessagesWorker extends Worker {
             LocalTime messageTime, long sequence, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs
     ) {
         String queryInfo = format("get nearest time and sequence before %s for page '%s'",
-                TimeUtils.toInstant(messageDate, messageTime), page.getId().getName());
+                TimeUtils.toInstant(messageDate, messageTime), page.getName());
         return selectQueryExecutor.executeSingleRowResultQuery(
-                        () -> mbOperator.getNearestBatchTimeAndSequenceBefore(page.getId().getBookId().getName(), page.getId().getName(), sessionAlias,
+                        () -> mbOperator.getNearestBatchTimeAndSequenceBefore(page.getId().getBookId().getName(), page.getName(), sessionAlias,
                                 direction, messageDate, messageTime, sequence, readAttrs), Function.identity(), queryInfo)
                 .thenComposeAsync(row ->
                 {

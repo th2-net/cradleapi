@@ -54,27 +54,27 @@ public abstract class BaseCradleCassandraTest {
             new PageInfo(
                     new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START, DEFAULT_PAGE_PREFIX + 0),
                     DEFAULT_DATA_START,
-                    DEFAULT_DATA_START.plus(10, ChronoUnit.MINUTES), ""),
+                    DEFAULT_DATA_START.plus(10, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 0, ""),
             new PageInfo(
                     new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(10, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 1),
                     DEFAULT_DATA_START.plus(10, ChronoUnit.MINUTES),
-                    DEFAULT_DATA_START.plus(20, ChronoUnit.MINUTES), ""),
+                    DEFAULT_DATA_START.plus(20, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 0, ""),
             new PageInfo(
                     new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(20, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 2),
                     DEFAULT_DATA_START.plus(20, ChronoUnit.MINUTES),
-                    DEFAULT_DATA_START.plus(30, ChronoUnit.MINUTES), ""),
+                    DEFAULT_DATA_START.plus(30, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 0, ""),
             new PageInfo(
                     new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(30, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 3),
                     DEFAULT_DATA_START.plus(30, ChronoUnit.MINUTES),
-                    DEFAULT_DATA_START.plus(40, ChronoUnit.MINUTES), ""),
+                    DEFAULT_DATA_START.plus(40, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 0, ""),
             new PageInfo(
                     new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(40, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 4),
                     DEFAULT_DATA_START.plus(40, ChronoUnit.MINUTES),
-                    DEFAULT_DATA_START.plus(50, ChronoUnit.MINUTES), ""),
+                    DEFAULT_DATA_START.plus(50, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 0, ""),
             new PageInfo(
                     new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(50, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 5),
                     DEFAULT_DATA_START.plus(50, ChronoUnit.MINUTES),
-                    DEFAULT_DATA_START.plus(60, ChronoUnit.MINUTES), ""));
+                    DEFAULT_DATA_START.plus(60, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 0, ""));
 
 
     protected List<PageInfo> pages = DEFAULT_PAGES;
@@ -113,8 +113,8 @@ public abstract class BaseCradleCassandraTest {
                     bookId,
                     DEFAULT_PAGES.stream().map(
                             el -> new PageToAdd(
-                                    el.getId().getName(),
-                                    el.getStarted(),
+                                    el.getName(),
+                                    el.getId().getStart(),
                                     el.getComment())).collect(Collectors.toList()));
         }
     }

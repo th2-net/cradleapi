@@ -33,6 +33,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.List;
 
 import static org.testng.Assert.assertEquals;
 
@@ -55,23 +56,19 @@ public class CradleStorageTest {
 
     @BeforeMethod
     public void prepare() throws CradleStorageException, IOException {
-        storage = new DummyCradleStorage();
+        storage = new InMemoryCradleStorage();
         storage.init(false);
         storage.addBook(new BookToAdd(BOOK, BOOK_START));
 
         BookId bookId = new BookId(BOOK);
-        BookInfo bookInfo = storage.getBookCache().getBook(bookId);
-        bookInfo.addPage(createPage(bookId, "page1", PAGE1_START, PAGE2_START));
-        bookInfo.addPage(createPage(bookId, "page2", PAGE2_START, PAGE3_START));
-        bookInfo.addPage(createPage(bookId, "page3", PAGE3_START, null));
+        storage.addPages(bookId, List.of(
+                new PageToAdd("page1", PAGE1_START, null),
+                new PageToAdd("page2", PAGE2_START, null),
+                new PageToAdd("page3", PAGE3_START, null)
+        ));
 
         builder = new MessageToStoreBuilder();
 
-    }
-
-    private PageInfo createPage(BookId bookId, String name, Instant start, Instant end) {
-        PageId pageId = new PageId(bookId, start, name);
-        return new PageInfo(pageId, start, end, null, null, null);
     }
 
     private MessageToStore createMessage(BookId book, String sessionAlias, Direction direction, int sequence, Instant timestamp) throws CradleStorageException {

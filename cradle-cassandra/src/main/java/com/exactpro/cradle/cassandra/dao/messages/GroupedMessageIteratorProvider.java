@@ -144,7 +144,7 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 		{
 			CompletableFuture<Row> future = op.getNearestTime(
 					page.getId().getBookId().getName(),
-					page.getId().getName(),
+					page.getName(),
 					groupAlias,
 					messageDate,
 					messageTime,

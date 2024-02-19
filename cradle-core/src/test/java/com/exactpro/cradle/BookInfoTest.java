@@ -21,10 +21,11 @@ import javax.annotation.Nullable;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.Collectors;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 
@@ -44,7 +45,7 @@ public class BookInfoTest {
             current = current.plus(1, ChronoUnit.HOURS);
             PAGES.add(createPageInfo(previous, current));
         } while (current.isBefore(end));
-        PAGES.add(createPageInfo(current, null));
+        PAGES.add(createPageInfo(current, current));
     }
 
     @Test
@@ -54,13 +55,16 @@ public class BookInfoTest {
 
         assertNull(bookInfo.getFirstPage());
         assertNull(bookInfo.getLastPage());
+        assertEquals(bookInfo.getPages(), Collections.emptyList());
 
         for (int i = 0; i < PAGES.size(); i++) {
-            operateSource.add(PAGES.get(i));
+            PageInfo newPage = PAGES.get(i);
+            operateSource.add(newPage);
             bookInfo.invalidate();
 
             assertSame(bookInfo.getFirstPage(), PAGES.get(0), "iteration - " + i);
-            assertSame(bookInfo.getLastPage(), PAGES.get(i), "iteration - " + i);
+            assertSame(bookInfo.getLastPage(), newPage, "iteration - " + i);
+            assertEquals(bookInfo.getPages(), PAGES.subList(0, i + 1), "iteration - " + i);
 
             for (int j = i; j >= 0; j--) {
                 PageInfo source = PAGES.get(j);
@@ -81,11 +85,13 @@ public class BookInfoTest {
         }
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void removePageTest() {
         List<PageInfo> operateSource = new ArrayList<>(PAGES);
         BookInfo bookInfo = createBookInfo(operateSource);
 
+        assertEquals(bookInfo.getPages(), operateSource);
         int iteration = 0;
         while (!operateSource.isEmpty()) {
             iteration++;
@@ -94,6 +100,7 @@ public class BookInfoTest {
 
             assertSame(bookInfo.getPage(pageForRemove.getId()), pageForRemove, "iteration - " + iteration);
             assertSame(bookInfo.findPage(pageForRemove.getId().getStart()), pageForRemove, "iteration - " + iteration);
+            assertEquals(bookInfo.getPages(), operateSource, "iteration - " + iteration);
 
             operateSource.remove(index);
             bookInfo.removePage(pageForRemove.getId());
@@ -109,17 +116,19 @@ public class BookInfoTest {
 
     @Test
     public void addPageTest() {
-        BookInfo bookInfo = createBookInfo(new ArrayList<>());
+        ArrayList<PageInfo> pages = new ArrayList<>();
+        BookInfo bookInfo = createBookInfo(pages);
 
         assertNull(bookInfo.getFirstPage());
         assertNull(bookInfo.getLastPage());
 
         for (int i = 0; i < PAGES.size(); i++) {
-            bookInfo.addPage(PAGES.get(i));
+            PageInfo page = PAGES.get(i);
+            pages.add(page);
+            bookInfo.addPage(page);
 
-            PageInfo page = PAGES.get(0);
-            assertNull(bookInfo.getFirstPage(), "iteration - " + i);
-            assertNull(bookInfo.getLastPage(), "iteration - " + i);
+            assertSame(bookInfo.getFirstPage(), pages.get(0), "iteration - " + i);
+            assertSame(bookInfo.getLastPage(), pages.get(pages.size() - 1), "iteration - " + i);
             assertSame(bookInfo.getPage(page.getId()), page, "iteration - " + i);
             assertSame(bookInfo.findPage(page.getId().getStart()), page, "iteration - " + i);
         }
@@ -131,15 +140,14 @@ public class BookInfoTest {
                 "test-full-name",
                 "test-description",
                 Instant.EPOCH,
-                (bookId, start, end) -> pages.stream()
-                        .filter(page -> !start.isAfter(page.getStarted()) && !end.isBefore(page.getStarted()))
-                        .collect(Collectors.toList()),
-                bookId -> pages.isEmpty() ? null : pages.get(0),
-                bookId -> pages.isEmpty() ? null : pages.get(pages.size() - 1)
+                1,
+                new TestPagesLoader(pages),
+                new TestPageLoader(pages, true),
+                new TestPageLoader(pages, false)
         );
     }
 
     private static PageInfo createPageInfo(Instant start, @Nullable Instant end) {
-        return new PageInfo(new PageId(BOOK_ID, start, start.toString()), start, end, "test-comment");
+        return new PageInfo(new PageId(BOOK_ID, start, start.toString()), start, end, "test-name", "test-comment");
     }
 }

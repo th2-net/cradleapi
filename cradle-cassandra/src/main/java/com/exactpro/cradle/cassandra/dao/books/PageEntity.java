@@ -30,6 +30,7 @@ import com.exactpro.cradle.utils.TimeUtils;
 
 import static com.exactpro.cradle.cassandra.CassandraStorageSettings.DEFAULT_PAGE_REMOVE_TIME;
 
+@SuppressWarnings("DefaultAnnotationParam")
 @Entity
 @CqlName(PageEntity.TABLE_NAME)
 @PropertyStrategy(mutable = false)
@@ -46,11 +47,11 @@ public class PageEntity {
 	public static final String FIELD_UPDATED = "updated";
 	public static final String FIELD_REMOVED = "removed";
 
-	@PartitionKey()
+	@PartitionKey(0)
 	@CqlName(FIELD_BOOK)
 	private final String book;
 
-	@ClusteringColumn()
+	@ClusteringColumn(0)
 	@CqlName(FIELD_START_DATE)
 	private final LocalDate startDate;
 
@@ -112,7 +113,7 @@ public class PageEntity {
 	}
 
 	public PageEntity(PageInfo pageInfo) {
-		this(pageInfo.getId().getBookId().getName(), pageInfo.getId().getName(), pageInfo.getStarted(), pageInfo.getComment(), pageInfo.getEnded(), pageInfo.getUpdated());
+		this(pageInfo.getId().getBookId().getName(), pageInfo.getName(), pageInfo.getId().getStart(), pageInfo.getComment(), pageInfo.getEnded(), pageInfo.getUpdated());
 	}
 
 
@@ -149,6 +150,7 @@ public class PageEntity {
 		return new PageInfo(new PageId(new BookId(book), start, name),
 				start,
 				TimeUtils.toInstant(getEndDate(), getEndTime()),
+				name,
 				getComment(),
 				getUpdated(),
 				getRemoved());

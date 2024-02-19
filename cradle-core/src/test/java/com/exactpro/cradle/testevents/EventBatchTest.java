@@ -22,6 +22,8 @@ import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.PageInfo;
+import com.exactpro.cradle.TestPageLoader;
+import com.exactpro.cradle.TestPagesLoader;
 import com.exactpro.cradle.TestUtils;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.serialization.EventsSizeCalculator;
@@ -37,6 +39,7 @@ import org.testng.asserts.SoftAssert;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -283,22 +286,32 @@ public class EventBatchTest {
     public void batchEventValidation(TestEventSingleToStoreBuilder builder, String errorMessage) throws CradleStorageException {
         try {
             var singleEvent = builder.build();
-            BookInfo bookInfo = new BookInfo(
-                    BOOK,
-                    null,
-                    null,
-                    START_TIMESTAMP,
-                    Collections.singleton(new PageInfo(
-                            new PageId(null, null, null),
-                            START_TIMESTAMP,
-                            START_TIMESTAMP,
-                            null)));
+            BookInfo bookInfo = createBookInfo();
             TestEventUtils.validateTestEvent(singleEvent, bookInfo, storeActionRejectionThreshold);
             batch.addTestEvent(singleEvent);
             Assertions.fail("Invalid message passed validation");
         } catch (CradleStorageException e) {
             TestUtils.handleException(e, errorMessage);
         }
+    }
+
+    private static BookInfo createBookInfo() {
+        List<PageInfo> pages = List.of(new PageInfo(
+                new PageId(null, START_TIMESTAMP, null),
+                START_TIMESTAMP,
+                START_TIMESTAMP,
+                null,
+                null)
+        );
+        return new BookInfo(
+                BOOK,
+                null,
+                null,
+                START_TIMESTAMP,
+                1,
+                new TestPagesLoader(pages),
+                new TestPageLoader(pages, true),
+                new TestPageLoader(pages, false));
     }
 
     @Test

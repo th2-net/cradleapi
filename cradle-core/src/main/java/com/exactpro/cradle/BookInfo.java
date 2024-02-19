@@ -16,13 +16,6 @@
 
 package com.exactpro.cradle;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-
-import com.exactpro.cradle.utils.CradleStorageException;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import org.apache.commons.lang3.concurrent.AtomicInitializer;
@@ -30,7 +23,15 @@ import org.apache.commons.lang3.concurrent.ConcurrentException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 
 /**
  * Information about a book
@@ -38,6 +39,7 @@ import javax.annotation.Nullable;
 public class BookInfo
 {
 	private static final Logger LOGGER = LoggerFactory.getLogger(BookInfo.class);
+	private static final int HOT_CACHE_SIZE = 2;
 	private static final int SECONDS_IN_DAY = 60 * 60 * 24;
 	private static final int MILLISECONDS_IN_DAY = SECONDS_IN_DAY * 1_000;
 	private static final IPageInterval EMPTY_PAGE_INTERVAL = new EmptyPageInterval();
@@ -46,22 +48,19 @@ public class BookInfo
 			desc;
 	private final Instant created;
 
-	private final LoadingCache<Long, IPageInterval> operateCache;
+	private final LoadingCache<Long, IPageInterval> hotCache;
 	private final LoadingCache<Long, IPageInterval> randomAccessCache;
 
-	private final Map<PageId, PageInfo> pages;
-	private final TreeMap<Instant, PageInfo> orderedPages;
-
-	// AtomicInitializer call initialize method again if previous value is null
+    // AtomicInitializer call initialize method again if previous value is null
 	private final AtomicInitializer<PageInfo> firstPage;
 	private final PagesLoader pagesLoader;
 	private final PageLoader lastPagesLoader;
 
-	@SuppressWarnings("ResultOfMethodCallIgnored")
 	public BookInfo(BookId id,
 					String fullName,
 					String desc,
 					Instant created,
+					int cacheSize,
 					PagesLoader pagesLoader,
 					PageLoader firstPageLoader,
 					PageLoader lastPageLoader) {
@@ -72,63 +71,23 @@ public class BookInfo
 		this.pagesLoader = pagesLoader;
 		this.lastPagesLoader = lastPageLoader;
 
-		this.firstPage = new AtomicInitializer<>() {
-            @Override
-            protected PageInfo initialize() {
-                return firstPageLoader.load(id);
-            }
-        };
-
-		this.operateCache = Caffeine.newBuilder()
-				.maximumSize(2)
+        this.firstPage = new AtomicInitializer<>() {
+			@Override
+			protected PageInfo initialize() {
+				return firstPageLoader.load(id);
+			}
+		};
+		this.hotCache = Caffeine.newBuilder()
+				.maximumSize(HOT_CACHE_SIZE)
 				.build(this::createPageInterval);
-
-		long currentEpochDay = currentEpochDay();
-		this.operateCache.get(currentEpochDay - 1);
-		this.operateCache.get(currentEpochDay);
 
 		this.randomAccessCache = Caffeine.newBuilder()
-				.maximumSize(10) // TODO: parametrised and weight option
+				.maximumSize(cacheSize)
 				.build(this::createPageInterval);
 
-		this.pages = null;
-		this.orderedPages = null;
+		initializeHotCache();
 	}
 
-	public BookInfo(BookId id, String fullName, String desc, Instant created, Collection<PageInfo> pages) throws CradleStorageException
-	{
-		this.id = id;
-		this.fullName = fullName;
-		this.desc = desc;
-		this.created = created;
-		this.pages = new ConcurrentHashMap<>();
-		this.orderedPages = new TreeMap<>();
-		this.pagesLoader = null;
-		this.operateCache = null;
-		this.randomAccessCache = null;
-		this.firstPage = null;
-		this.lastPagesLoader = null;
-
-		if (pages == null)
-			return;
-		
-		PageInfo notEndedPage = null;
-		for (PageInfo p : pages)
-		{
-			this.pages.put(p.getId(), p);
-			this.orderedPages.put(p.getStarted(), p);
-			if (p.getEnded() == null)
-			{
-				if (notEndedPage != null)
-					throw new CradleStorageException("Inconsistent state of book '"+id+"': "
-							+ "page '"+ notEndedPage.getId().getName()+"' is not ended, "
-							+ "but '"+p.getId().getName()+"' is not ended as well");
-				notEndedPage = p;
-			}
-		}
-	}
-	
-	
 	public BookId getId()
 	{
 		return id;
@@ -149,12 +108,15 @@ public class BookInfo
 		return created;
 	}
 
-	@Deprecated
+	/**
+	 * Requests pages from {@link PagesLoader} with book id and null start/end
+	 * @return all ordered pages related to book id
+	 */
 	public Collection<PageInfo> getPages()
 	{
-		return Collections.unmodifiableCollection(orderedPages.values());
+		return pagesLoader.load(id, null, null);
 	}
-	
+
 	public @Nullable PageInfo getFirstPage()
 	{
         try {
@@ -198,50 +160,56 @@ public class BookInfo
 				: getPageInterval(epochDate - 1).previous(startTimestamp);
 	}
 
-	@SuppressWarnings("ResultOfMethodCallIgnored")
 	void invalidate() {
-		operateCache.invalidateAll();
+		// FIXME: invalidate initializer
+		hotCache.invalidateAll();
 		randomAccessCache.invalidateAll();
-		long currentEpochDate = currentEpochDay();
-		operateCache.get(currentEpochDate - 1);
-		operateCache.get(currentEpochDate);
 	}
-	
-	void removePage(PageId pageId) {
-		long epochDate = getEpochDay(pageId.getStart());
-		long currentEpochDate = currentEpochDay();
-		LoadingCache<Long, IPageInterval> cache = currentEpochDate - epochDate < 2
-				? operateCache
-				: randomAccessCache;
 
-		IPageInterval pageInterval = cache.getIfPresent(epochDate);
-		if (pageInterval != null) {
-			pageInterval.remove(pageId);
-		}
+	void invalidate(Instant timestamp) {
+		long epochDay = getEpochDay(timestamp);
+		invalidate(epochDay);
+	}
+
+	void invalidate(Collection<Instant> timestamps) {
+		timestamps.stream()
+				.map(BookInfo::getEpochDay)
+				.distinct()
+				.forEach(this::invalidate);
+	}
+
+	void removePage(PageId pageId) {
+		invalidate(pageId.getStart());
 	}
 	
 	void addPage(PageInfo page) {
-		long epochDate = getEpochDay(page.getId().getStart());
-		long currentEpochDate = currentEpochDay();
-		LoadingCache<Long, IPageInterval> cache = currentEpochDate - epochDate < 2
-				? operateCache
-				: randomAccessCache;
-
-		cache.get(epochDate, key -> new PageInterval()).add(page);
+		invalidate(page.getId().getStart());
 	}
 
-	@FunctionalInterface
-	public interface PagesLoader {
-		/**
-		 * @return page info collection from start to end date time. Both borders are included
-		 */
-		Collection<PageInfo> load(BookId bookId, Instant start, Instant end);
+	void addPages(Collection<PageInfo> pages) {
+		pages.stream()
+				.map(pageInfo -> getEpochDay(pageInfo.getId().getStart()))
+				.distinct()
+				.forEach(this::invalidate);
+	}
+
+	private void invalidate(long epochDay) {
+		hotCache.invalidate(epochDay);
+		randomAccessCache.invalidate(epochDay);
+	}
+
+	@SuppressWarnings("ResultOfMethodCallIgnored")
+	private void initializeHotCache() {
+		long currentEpochDay = currentEpochDay();
+		for (int shift = HOT_CACHE_SIZE - 1; shift >= 0; shift--) {
+			this.hotCache.get(currentEpochDay - shift);
+		}
 	}
 
 	private IPageInterval getPageInterval(long epochDate) {
 		long currentEpochDate = currentEpochDay();
 		IPageInterval pageInterval = currentEpochDate - epochDate < 2
-				? operateCache.get(epochDate)
+				? hotCache.get(epochDate)
 				: randomAccessCache.get(epochDate);
 		return pageInterval != null
 				? pageInterval
@@ -273,9 +241,18 @@ public class BookInfo
 	}
 
 	@FunctionalInterface
+	public interface PagesLoader {
+		/**
+		 * @return ordered page info collection from start to end date time. Both borders are included
+		 */
+		@Nonnull
+		Collection<PageInfo> load(@Nonnull BookId bookId, @Nullable Instant start, @Nullable Instant end);
+	}
+
+	@FunctionalInterface
 	public interface PageLoader {
 		@Nullable
-		PageInfo load(BookId bookId);
+		PageInfo load(@Nonnull BookId bookId);
 	}
 
 	private interface IPageInterval {
@@ -286,10 +263,6 @@ public class BookInfo
 		PageInfo next(Instant startTimestamp);
 
 		PageInfo previous(Instant startTimestamp);
-
-		void remove(PageId pageId);
-
-		void add(PageInfo page);
 	}
 
 	private static final class EmptyPageInterval implements IPageInterval {
@@ -311,16 +284,6 @@ public class BookInfo
 		@Override
 		public PageInfo previous(Instant startTimestamp) {
 			return null;
-		}
-
-		@Override
-		public void remove(PageId pageId) {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public void add(PageInfo page) {
-			throw new UnsupportedOperationException();
 		}
 	}
 
@@ -354,25 +317,24 @@ public class BookInfo
 			return result != null ? result.getValue() : null;
 		}
 
-		@Override
-		public void remove(PageId pageId) {
-			pageById.remove(pageId);
-			pageByInstant.remove(pageId.getStart());
-		}
+		private void add(PageInfo page) {
+//			if (page.getEnded() == null) {
+//				throw new IllegalStateException(
+//						"Page with '" + page.getId() + "' id hasn't got ended time"
+//				);
+//			}
 
-		@Override
-		public void add(PageInfo page) {
 			PageInfo previous = pageById.put(page.getId(), page);
 			if (previous != null) {
 				throw new IllegalStateException(
-						"Page with '" + page.getId() + "' ID is duplicated, previous: " +
+						"Page with '" + page.getId() + "' id is duplicated, previous: " +
 								previous + ", current: " + page
 				);
 			}
-			previous = pageByInstant.put(page.getStarted(), page);
+			previous = pageByInstant.put(page.getId().getStart(), page);
 			if (previous != null) {
 				throw new IllegalStateException(
-						"Page with '" + page.getStarted() + "' start time is duplicated, previous: " +
+						"Page with '" + page.getId().getStart() + "' start time is duplicated, previous: " +
 								previous + ", current: " + page
 				);
 			}

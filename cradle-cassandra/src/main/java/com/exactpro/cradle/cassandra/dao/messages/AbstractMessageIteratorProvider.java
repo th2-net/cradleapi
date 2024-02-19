@@ -150,7 +150,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		{
 			CompletableFuture<Row> future = op.getNearestTime(
 					page.getId().getBookId().getName(),
-					page.getId().getName(),
+					page.getName(),
 					sessionAlias,
 					direction,
 					messageDate,

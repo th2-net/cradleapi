@@ -55,6 +55,25 @@ public interface PageOperator {
 								   LocalDate endDate, LocalTime endTime,
 								   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
+	@Query("SELECT * FROM ${qualifiedTableId} " +
+			"WHERE " +
+			FIELD_BOOK +"=:book " +
+			"ORDER BY " +
+			FIELD_START_DATE + " DESC, " +
+			FIELD_START_TIME + " DESC " +
+			"LIMIT 1")
+	PagingIterable<PageEntity> getLast(String book, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+	@Query("SELECT * FROM ${qualifiedTableId} " +
+			"WHERE " +
+			FIELD_BOOK +"=:book " +
+			"ORDER BY " +
+			FIELD_START_DATE + " ASC, " +
+			FIELD_START_TIME + " ASC " +
+			"LIMIT 1")
+	PagingIterable<PageEntity> getFirst(String book, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+
 	@Update(nullSavingStrategy = NullSavingStrategy.SET_TO_NULL)
 	ResultSet update(PageEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
