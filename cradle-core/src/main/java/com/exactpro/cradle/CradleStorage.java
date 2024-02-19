@@ -979,7 +979,9 @@ public abstract class CradleStorage {
     public final CradleResultSet<StoredGroupedMessageBatch> getGroupedMessageBatches(GroupedMessageFilter filter)
             throws CradleStorageException, IOException {
         logger.debug("Filtering grouped message batches by {}", filter);
-        checkAbstractFilter(filter); // FIXME why checkFilter isn't call
+        if (!checkFilter(filter)) {
+            return new EmptyResultSet<>();
+        }
 
         BookInfo book = getBookCache().getBook(filter.getBookId());
         CradleResultSet<StoredGroupedMessageBatch> result = doGetGroupedMessageBatches(filter, book);
@@ -1021,7 +1023,9 @@ public abstract class CradleStorage {
      */
     public final CompletableFuture<CradleResultSet<StoredGroupedMessageBatch>> getGroupedMessageBatchesAsync(GroupedMessageFilter filter) throws CradleStorageException {
         logger.debug("Asynchronously getting grouped message batches filtered by {}", filter);
-        checkAbstractFilter(filter); // FIXME why checkFilter isn't call
+        if (!checkFilter(filter)) {
+            return CompletableFuture.completedFuture(new EmptyResultSet<>());
+        }
 
         BookInfo book = getBookCache().getBook(filter.getBookId());
         CompletableFuture<CradleResultSet<StoredGroupedMessageBatch>> result = doGetGroupedMessageBatchesAsync(filter, book);
@@ -1431,11 +1435,11 @@ public abstract class CradleStorage {
      * @throws CradleStorageException Page was edited but cache wasn't refreshed, try to refresh pages
      */
     public PageInfo updatePageComment(BookId bookId, String pageName, String comment) throws CradleStorageException {
-        getBookCache().getBook(bookId);
         PageInfo updatedPageInfo = doUpdatePageComment(bookId, pageName, comment);
 
         try {
-            updatePage(updatedPageInfo.getId(), updatedPageInfo);
+            BookInfo bookInfo = getBookCache().getBook(bookId);
+            bookInfo.invalidate(updatedPageInfo.getStarted());
         } catch (Exception e) {
             logger.error("Page was edited but cache wasn't refreshed, try to refresh pages");
             throw e;
@@ -1454,25 +1458,11 @@ public abstract class CradleStorage {
      * @throws CradleStorageException Page was edited but cache wasn't refreshed, try to refresh pages
      */
     public PageInfo updatePageName(BookId bookId, String pageName, String newPageName) throws CradleStorageException {
-        getBookCache().getBook(bookId);
         PageInfo updatedPageInfo = doUpdatePageName(bookId, pageName, newPageName);
 
         try {
-            // FIXME: implement search in data base
-            updatePage(new PageId(bookId, null, pageName), updatedPageInfo);
-        } catch (Exception e) {
-            logger.error("Page was edited but cache wasn't refreshed, try to refresh pages");
-            throw e;
-        }
-
-        return updatedPageInfo;
-    }
-
-    public PageInfo updatePageName(BookId bookId, Instant pageStart, String pageName, String newPageName) throws CradleStorageException {
-        PageInfo updatedPageInfo = doUpdatePageName(bookId, pageName, newPageName);
-
-        try {
-            updatePage(new PageId(bookId, pageStart, pageName), updatedPageInfo);
+            BookInfo bookInfo = getBookCache().getBook(bookId);
+            bookInfo.invalidate(updatedPageInfo.getStarted());
         } catch (Exception e) {
             logger.error("Page was edited but cache wasn't refreshed, try to refresh pages");
             throw e;
@@ -1529,11 +1519,6 @@ public abstract class CradleStorage {
      */
     public CompletableFuture<CradleResultSet<String>> getScopesAsync(BookId bookId, Interval interval) throws CradleStorageException {
         return doGetScopesAsync(bookId, interval);
-    }
-
-    private void updatePage(PageId pageId, PageInfo updatedPageInfo) throws CradleStorageException {
-        BookInfo bookInfo = getBookCache().getBook(pageId.getBookId());
-        bookInfo.invalidate(pageId.getStart()); // TODO: check usage
     }
 
     public final void updateEventStatus(StoredTestEvent event, boolean success) throws IOException {
@@ -1624,6 +1609,13 @@ public abstract class CradleStorage {
         return true;
     }
 
+    private boolean checkFilter(GroupedMessageFilter filter) throws CradleStorageException {
+        checkAbstractFilter(filter);
+
+        //TODO: add more checks
+        return true;
+    }
+
     private void checkAbstractFilter(AbstractFilter filter) throws CradleStorageException {
         BookInfo book = getBookCache().getBook(filter.getBookId());
         if (filter.getPageId() != null) {
@@ -1632,8 +1624,8 @@ public abstract class CradleStorage {
     }
 
     private boolean checkFilter(TestEventFilter filter) throws CradleStorageException {
-        BookInfo book = getBookCache().getBook(filter.getBookId());
         checkAbstractFilter(filter);
+        BookInfo book = getBookCache().getBook(filter.getBookId());
 
         if (filter.getParentId() != null && !book.getId().equals(filter.getParentId().getBookId()))
             throw new CradleStorageException("Requested book (" + book.getId() + ") doesn't match book of requested parent (" + filter.getParentId() + ")");
@@ -1678,10 +1670,10 @@ public abstract class CradleStorage {
     }
 
     public void checkPage(PageId pageId, BookId bookFromId) throws CradleStorageException {
-        BookInfo book = getBookCache().getBook(bookFromId);
-        if (!bookFromId.equals(pageId.getBookId())) { // TODO: strange check - always false
+        if (!bookFromId.equals(pageId.getBookId())) {
             throw new CradleStorageException("Requested book (" + bookFromId + ") doesn't match book of requested page (" + pageId.getBookId() + ")");
         }
+        BookInfo book = getBookCache().getBook(bookFromId);
         if (book.getPage(pageId) == null) {
             throw new CradleStorageException("Page '" + pageId + "' is unknown");
         }

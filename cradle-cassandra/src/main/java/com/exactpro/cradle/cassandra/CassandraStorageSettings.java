@@ -33,6 +33,7 @@ import static com.exactpro.cradle.CradleStorage.DEFAULT_MAX_TEST_EVENT_BATCH_SIZ
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CassandraStorageSettings extends CoreStorageSettings {
     public static final String SCHEMA_VERSION = "5.3.0";
+    public static final int RANDOM_ACCESS_CACHE_SIZE = 10;
 
     public static final CassandraConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = CassandraConsistencyLevel.LOCAL_QUORUM;
     public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1;
@@ -66,6 +67,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
     private CassandraConsistencyLevel readConsistencyLevel = DEFAULT_CONSISTENCY_LEVEL;
     private String keyspace;
     private String schemaVersion = SCHEMA_VERSION;
+    private int randomAccessCacheSize = RANDOM_ACCESS_CACHE_SIZE;
     private int keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
 
     private int maxParallelQueries = DEFAULT_MAX_PARALLEL_QUERIES; // FIXME: remove
@@ -122,6 +124,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
 
         this.keyspace = settings.getKeyspace();
         this.schemaVersion = settings.getSchemaVersion();
+        this.randomAccessCacheSize = settings.getRandomAccessCacheSize();
 
         this.keyspaceReplicationFactor = settings.getKeyspaceReplicationFactor();
         this.maxParallelQueries = settings.getMaxParallelQueries();
@@ -194,6 +197,10 @@ public class CassandraStorageSettings extends CoreStorageSettings {
 
     public String getSchemaVersion() {
         return schemaVersion;
+    }
+
+    public int getRandomAccessCacheSize() {
+        return randomAccessCacheSize;
     }
 
     public int getKeyspaceReplicationFactor() {
@@ -386,6 +393,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
                 ", readConsistencyLevel=" + readConsistencyLevel +
                 ", keyspace='" + keyspace + '\'' +
                 ", schemaVersion='" + schemaVersion + '\'' +
+                ", randomAccessCacheSize='" + randomAccessCacheSize + '\'' +
                 ", keyspaceReplicationFactor=" + keyspaceReplicationFactor +
                 ", maxParallelQueries=" + maxParallelQueries +
                 ", resultPageSize=" + resultPageSize +

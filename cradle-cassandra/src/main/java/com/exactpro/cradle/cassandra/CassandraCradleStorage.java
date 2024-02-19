@@ -211,7 +211,7 @@ public class CassandraCradleStorage extends CradleStorage
 					.setTimeout(timeout)
 					.setPageSize(resultPageSize);
 			operators = createOperators(connection.getSession(), settings);
-			bookCache = new ReadThroughBookCache(operators, readAttrs, settings.getSchemaVersion());
+			bookCache = new ReadThroughBookCache(operators, readAttrs, settings.getSchemaVersion(), settings.getRandomAccessCacheSize());
 			bookManager = new BookManager(getBookCache(), settings.getBookRefreshIntervalMillis());
 			bookManager.start();
 
