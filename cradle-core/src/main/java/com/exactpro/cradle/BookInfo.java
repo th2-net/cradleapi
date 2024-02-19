@@ -18,8 +18,6 @@ package com.exactpro.cradle;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import org.apache.commons.lang3.concurrent.AtomicInitializer;
-import org.apache.commons.lang3.concurrent.ConcurrentException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Information about a book
@@ -52,9 +51,10 @@ public class BookInfo
 	private final LoadingCache<Long, IPageInterval> randomAccessCache;
 
     // AtomicInitializer call initialize method again if previous value is null
-	private final AtomicInitializer<PageInfo> firstPage;
+	private final AtomicReference<PageInfo> firstPage = new AtomicReference<>();
 	private final PagesLoader pagesLoader;
-	private final PageLoader lastPagesLoader;
+	private final PageLoader firstPageLoader;
+	private final PageLoader lastPageLoader;
 
 	public BookInfo(BookId id,
 					String fullName,
@@ -69,14 +69,9 @@ public class BookInfo
 		this.desc = desc;
 		this.created = created;
 		this.pagesLoader = pagesLoader;
-		this.lastPagesLoader = lastPageLoader;
+		this.firstPageLoader = firstPageLoader;
+		this.lastPageLoader = lastPageLoader;
 
-        this.firstPage = new AtomicInitializer<>() {
-			@Override
-			protected PageInfo initialize() {
-				return firstPageLoader.load(id);
-			}
-		};
 		this.hotCache = Caffeine.newBuilder()
 				.maximumSize(HOT_CACHE_SIZE)
 				.build(this::createPageInterval);
@@ -84,8 +79,6 @@ public class BookInfo
 		this.randomAccessCache = Caffeine.newBuilder()
 				.maximumSize(cacheSize)
 				.build(this::createPageInterval);
-
-		initializeHotCache();
 	}
 
 	public BookId getId()
@@ -119,17 +112,22 @@ public class BookInfo
 
 	public @Nullable PageInfo getFirstPage()
 	{
-        try {
-            return firstPage.get();
-        } catch (ConcurrentException e) {
-			LOGGER.error("Unexpected exception during first page lazy initialization", e);
-            return null;
-        }
+		PageInfo result = firstPage.get();
+
+		if (result == null) {
+			result = firstPageLoader.load(id);
+			if (!firstPage.compareAndSet(null, result)) {
+				// another thread has initialized the reference
+				result = firstPage.get();
+			}
+		}
+
+		return result;
     }
 	
 	public @Nullable PageInfo getLastPage()
 	{
-		return lastPagesLoader.load(id);
+		return lastPageLoader.load(id);
 	}
 	
 	public PageInfo getPage(PageId pageId)
@@ -161,7 +159,7 @@ public class BookInfo
 	}
 
 	void invalidate() {
-		// FIXME: invalidate initializer
+		firstPage.set(null);
 		hotCache.invalidateAll();
 		randomAccessCache.invalidateAll();
 	}
@@ -189,14 +187,6 @@ public class BookInfo
 	private void invalidate(long epochDay) {
 		hotCache.invalidate(epochDay);
 		randomAccessCache.invalidate(epochDay);
-	}
-
-	@SuppressWarnings("ResultOfMethodCallIgnored")
-	private void initializeHotCache() {
-		long currentEpochDay = currentEpochDay();
-		for (int shift = HOT_CACHE_SIZE - 1; shift >= 0; shift--) {
-			this.hotCache.get(currentEpochDay - shift);
-		}
 	}
 
 	private IPageInterval getPageInterval(long epochDate) {
@@ -300,13 +290,13 @@ public class BookInfo
 
 		@Override
 		public PageInfo next(Instant startTimestamp) {
-			Entry<Instant, PageInfo> result = pageByInstant.ceilingEntry(startTimestamp.plus(1, ChronoUnit.NANOS));
+			Entry<Instant, PageInfo> result = pageByInstant.higherEntry(startTimestamp);
 			return result != null ? result.getValue() : null;
 		}
 
 		@Override
 		public PageInfo previous(Instant startTimestamp) {
-			Entry<Instant, PageInfo> result = pageByInstant.floorEntry(startTimestamp.minus(1, ChronoUnit.NANOS));
+			Entry<Instant, PageInfo> result = pageByInstant.lowerEntry(startTimestamp);
 			return result != null ? result.getValue() : null;
 		}
 

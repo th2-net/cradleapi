@@ -1469,7 +1469,6 @@ public abstract class CradleStorage {
     }
 
     public PageInfo updatePageName(BookId bookId, Instant pageStart, String pageName, String newPageName) throws CradleStorageException {
-        getBookCache().getBook(bookId);
         PageInfo updatedPageInfo = doUpdatePageName(bookId, pageName, newPageName);
 
         try {

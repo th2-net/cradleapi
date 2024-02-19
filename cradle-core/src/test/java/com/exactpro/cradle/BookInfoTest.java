@@ -32,10 +32,10 @@ import static org.testng.Assert.assertSame;
 public class BookInfoTest {
     public static Random RANDOM = new Random();
     public static final BookId BOOK_ID = new BookId("test-book");
-    public static final List<PageInfo> PAGES;
+    private static final List<PageInfo> PAGES;
 
     static {
-        PAGES = new ArrayList<>();
+        List<PageInfo> pages = new ArrayList<>();
         Instant start = Instant.now().minus(7, ChronoUnit.DAYS);
         Instant end = Instant.now();
         Instant current = start;
@@ -43,9 +43,11 @@ public class BookInfoTest {
         do {
             previous = current;
             current = current.plus(1, ChronoUnit.HOURS);
-            PAGES.add(createPageInfo(previous, current));
+            pages.add(createPageInfo(previous, current));
         } while (current.isBefore(end));
-        PAGES.add(createPageInfo(current, current));
+        pages.add(createPageInfo(current, current));
+
+        PAGES = Collections.unmodifiableList(pages);
     }
 
     @Test
