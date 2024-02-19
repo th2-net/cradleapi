@@ -498,7 +498,6 @@ public abstract class CradleStorage {
      * @param bookId ID of the book whose pages to refresh
      * @return refreshed book information
      * @throws CradleStorageException if given bookId is unknown
-     * @throws IOException            if page data reading failed
      */
     public BookInfo refreshPages(BookId bookId) throws CradleStorageException {
         logger.info("Refreshing pages of book '{}'", bookId);
@@ -1604,9 +1603,7 @@ public abstract class CradleStorage {
                 }
 
                 result.add(new PageInfo(new PageId(bookId, prevPage.getStart(), prevPage.getName()),
-                        prevPage.getStart(),
                         checkCollisionAndGetPageEnd(book, prevPage, page.getStart()),
-                        prevPage.getName(),
                         prevPage.getComment()));
             }
             prevPage = page;
@@ -1614,9 +1611,7 @@ public abstract class CradleStorage {
 
         if (prevPage != null) {
             result.add(new PageInfo(new PageId(bookId, prevPage.getStart(), prevPage.getName()),
-                    prevPage.getStart(),
                     checkCollisionAndGetPageEnd(book, prevPage, null),
-                    prevPage.getName(),
                     prevPage.getComment()));
         }
 

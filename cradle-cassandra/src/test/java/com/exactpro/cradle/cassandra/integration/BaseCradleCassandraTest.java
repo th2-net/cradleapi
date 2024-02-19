@@ -53,35 +53,28 @@ public abstract class BaseCradleCassandraTest {
     private static final List<PageInfo> DEFAULT_PAGES = List.of(
             new PageInfo(
                     new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START, DEFAULT_PAGE_PREFIX + 0),
-                    DEFAULT_DATA_START,
-                    DEFAULT_DATA_START.plus(10, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 0, ""),
+                    DEFAULT_DATA_START.plus(10, ChronoUnit.MINUTES), ""),
             new PageInfo(
                     new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(10, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 1),
-                    DEFAULT_DATA_START.plus(10, ChronoUnit.MINUTES),
-                    DEFAULT_DATA_START.plus(20, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 1, ""),
+                    DEFAULT_DATA_START.plus(20, ChronoUnit.MINUTES), ""),
             new PageInfo(
                     new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(20, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 2),
-                    DEFAULT_DATA_START.plus(20, ChronoUnit.MINUTES),
-                    DEFAULT_DATA_START.plus(30, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 2, ""),
+                    DEFAULT_DATA_START.plus(30, ChronoUnit.MINUTES), ""),
             new PageInfo(
                     new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(30, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 3),
-                    DEFAULT_DATA_START.plus(30, ChronoUnit.MINUTES),
-                    DEFAULT_DATA_START.plus(40, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 3, ""),
+                    DEFAULT_DATA_START.plus(40, ChronoUnit.MINUTES), ""),
             new PageInfo(
                     new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(40, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 4),
-                    DEFAULT_DATA_START.plus(40, ChronoUnit.MINUTES),
-                    DEFAULT_DATA_START.plus(50, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 4, ""),
+                    DEFAULT_DATA_START.plus(50, ChronoUnit.MINUTES), ""),
             new PageInfo(
                     new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(50, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 5),
-                    DEFAULT_DATA_START.plus(50, ChronoUnit.MINUTES),
-                    DEFAULT_DATA_START.plus(60, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 5, ""));
+                    DEFAULT_DATA_START.plus(60, ChronoUnit.MINUTES), ""));
 
 
     protected List<PageInfo> pages = DEFAULT_PAGES;
     protected CqlSession session;
     protected CassandraCradleStorage storage;
     protected Instant dataStart = DEFAULT_DATA_START;
-    protected Instant dataEnd = DEFAULT_DATA_END;
     protected BookId bookId = DEFAULT_BOOK_ID;
 
     /*

@@ -72,7 +72,7 @@ public class EventBatchTest {
     }
 
     @DataProvider(name = "batch invalid events")
-    public Object[][] batchInvalidEvents() throws CradleStorageException {
+    public Object[][] batchInvalidEvents() {
         Object[][] batchEvents = new Object[][]
                 {
                         {validEvent().parentId(null),                                                                      //No parent ID
@@ -205,7 +205,7 @@ public class EventBatchTest {
         batch.addTestEvent(eventBuilder.id(eventId).name(DUMMY_NAME).parentId(batch.getParentId()).build());
     }
 
-    @Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = ".* '.*\\:XXX' .* stored in this batch .*")
+    @Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = ".* '.*:XXX' .* stored in this batch .*")
     public void externalReferences() throws CradleStorageException {
         StoredTestEventId parentId = new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "1");
         batch.addTestEvent(eventBuilder.id(parentId)
@@ -299,8 +299,6 @@ public class EventBatchTest {
         List<PageInfo> pages = List.of(new PageInfo(
                 new PageId(null, START_TIMESTAMP, null),
                 START_TIMESTAMP,
-                START_TIMESTAMP,
-                null,
                 null)
         );
         return new BookInfo(

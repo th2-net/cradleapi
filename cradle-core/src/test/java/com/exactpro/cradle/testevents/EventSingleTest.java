@@ -128,8 +128,6 @@ public class EventSingleTest {
         List<PageInfo> pages = List.of(new PageInfo(
                 new PageId(null, START_TIMESTAMP, null),
                 START_TIMESTAMP,
-                START_TIMESTAMP,
-                null,
                 null)
         );
         return new BookInfo(

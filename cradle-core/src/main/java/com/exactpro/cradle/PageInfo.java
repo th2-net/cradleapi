@@ -25,30 +25,24 @@ import java.util.Objects;
 public class PageInfo
 {
 	private final PageId id;
-	private final Instant started;
 	private final Instant ended;
-	private final String name;
 	private final String comment;
 	private final Instant updated;
 	private final Instant removed;
 
-	public PageInfo(PageId id, Instant started, Instant ended, String name, String comment, Instant updated, Instant removed)
+	public PageInfo(PageId id, Instant ended, String comment, Instant updated, Instant removed)
 	{
 		this.id = id;
-		this.started = started;
 		this.ended = ended;
-		this.name = name;
 		this.comment = comment;
 		this.updated = updated;
 		this.removed = removed;
 	}
 
-	public PageInfo(PageId id, Instant started, Instant ended, String name, String comment)
+	public PageInfo(PageId id, Instant ended, String comment)
 	{
 		this.id = id;
-		this.started = started;
 		this.ended = ended;
-		this.name = name;
 		this.comment = comment;
 		this.updated = null;
 		this.removed = null;
@@ -59,22 +53,10 @@ public class PageInfo
 	{
 		return id;
 	}
-	/**
-	 * @deprecated name has been moved to {@link PageId#getStart()}
-	 */
-	@Deprecated
-	public Instant getStarted()
-	{
-		return started;
-	}
-	
+
 	public Instant getEnded()
 	{
 		return ended;
-	}
-
-	public String getName() {
-		return name;
 	}
 
 	public String getComment()
@@ -90,13 +72,23 @@ public class PageInfo
 		return removed;
 	}
 
+
+	public Instant getStarted()
+	{
+		return id.getStart();
+	}
+
+	public String getName() {
+		return id.getName();
+	}
+
 	public static PageInfo ended(PageInfo page, Instant endTimestamp)
 	{
-		return page == null ? null : new PageInfo(page.getId(), page.getId().getStart(), endTimestamp, page.getName(), page.getComment(), page.getUpdated(), page.getRemoved());
+		return page == null ? null : new PageInfo(page.getId(), endTimestamp, page.getComment(), page.getUpdated(), page.getRemoved());
 	}
 
 	public boolean isValidFor(Instant timestamp) {
-	    return (started == null || !started.isAfter(timestamp)) &&
+	    return (getStarted() == null || !getStarted().isAfter(timestamp)) &&
 				(ended == null || ended.isAfter(timestamp));
 	}
 
@@ -117,7 +109,6 @@ public class PageInfo
 		return "PageInfo{" +
 				"id=" + id +
 				", ended=" + ended +
-				", name='" + name + '\'' +
 				", comment='" + comment + '\'' +
 				", updated=" + updated +
 				", removed=" + removed +

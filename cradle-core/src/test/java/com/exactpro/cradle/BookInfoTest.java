@@ -85,7 +85,6 @@ public class BookInfoTest {
         }
     }
 
-    @SuppressWarnings("deprecation")
     @Test
     public void removePageTest() {
         List<PageInfo> operateSource = new ArrayList<>(PAGES);
@@ -148,6 +147,6 @@ public class BookInfoTest {
     }
 
     private static PageInfo createPageInfo(Instant start, @Nullable Instant end) {
-        return new PageInfo(new PageId(BOOK_ID, start, start.toString()), start, end, "test-name", "test-comment");
+        return new PageInfo(new PageId(BOOK_ID, start, start.toString()), end, "test-comment");
     }
 }

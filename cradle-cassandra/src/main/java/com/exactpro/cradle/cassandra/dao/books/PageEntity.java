@@ -148,9 +148,7 @@ public class PageEntity {
 	public PageInfo toPageInfo() {
 		Instant start = TimeUtils.toInstant(getStartDate(), getStartTime());
 		return new PageInfo(new PageId(new BookId(book), start, name),
-				start,
 				TimeUtils.toInstant(getEndDate(), getEndTime()),
-				name,
 				getComment(),
 				getUpdated(),
 				getRemoved());

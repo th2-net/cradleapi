@@ -33,7 +33,7 @@ public class PagesInIntervalIteratorProviderTest {
 
     @Test
     public void defaultPageVsIncludedInterval() {
-        PageInfo pageInfo = new PageInfo(new PageId(bookId, Instant.EPOCH, "test-page"), Instant.EPOCH,null, "test-page", null);
+        PageInfo pageInfo = new PageInfo(new PageId(bookId, Instant.EPOCH, "test-page"), null, null);
 
         assertTrue(checkInterval(pageInfo, pageInfo.getId().getStart(), Instant.now()), "in.st = p.st, in.en = p.en");
         assertTrue(checkInterval(pageInfo, pageInfo.getId().getStart().plusNanos(1), Instant.now()), "in.st = p.st + 1, in.en = p.en");
@@ -46,7 +46,7 @@ public class PagesInIntervalIteratorProviderTest {
     @Test
     public void onePageVsIntervals() {
         Instant now = Instant.now();
-        PageInfo pageInfo = new PageInfo(new PageId(bookId, now, "test-page"), now, now.plusSeconds(1), "test-page", null);
+        PageInfo pageInfo = new PageInfo(new PageId(bookId, now, "test-page"), now.plusSeconds(1), null);
 
         assertTrue(checkInterval(pageInfo, pageInfo.getId().getStart(), pageInfo.getEnded()), "in.st = p.st, in.en = p.en");
         assertTrue(checkInterval(pageInfo, pageInfo.getId().getStart().plusNanos(1), pageInfo.getEnded()), "in.st = p.st + 1, in.en = p.en");
