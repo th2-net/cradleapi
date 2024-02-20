@@ -192,3 +192,16 @@ A test event can have a reference to its parent, thus forming a hierarchical str
 Events in a batch can have a reference only to the parent of the batch or other test events from the same batch. Events outside the batch should not reference events within the batch.
 
 Test events have mandatory parameters that are verified when storing an event. These are: id, name (for non-batch events), start timestamp.
+
+## Metrics
+
+* cradle_page_cache_page_request_total (type: Counter, labels: book, cache, method) - Page requests number from cache
+  * cache: HOT, RANDOM
+  * method: GET, NEXT, PREVIOUS, FIND
+* cradle_page_cache_invalidate_total (type: Counter, labels: book, cache, cause) - Cache invalidates
+  * cache: HOT, RANDOM
+  * cause: EXPLICIT, REPLACED, COLLECTED, EXPIRED, SIZE
+* cradle_page_cache_page_loads_total (type: Summary, labels: book, cache) - Page loads number to cache
+  *_count - loaded page day intervals 
+  *_sum - loaded pages
+  * cache: HOT, RANDOM

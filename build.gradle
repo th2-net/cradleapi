@@ -55,6 +55,10 @@ subprojects {
     targetCompatibility = JavaVersion.VERSION_11 //Java version to generate classes for.
     compileJava.options.debugOptions.debugLevel = 'source,lines,vars' // Include debug information
 
+    dependencies {
+        implementation 'io.prometheus:simpleclient_dropwizard:0.16.0'
+    }
+
     jar {
         manifest {
             attributes(

@@ -19,7 +19,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
 
-public class TestPageLoader implements BookInfo.PageLoader {
+public class TestPageLoader implements PageLoader {
 
     private final List<PageInfo> pages;
     private final boolean first;

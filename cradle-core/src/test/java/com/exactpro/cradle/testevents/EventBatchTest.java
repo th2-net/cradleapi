@@ -297,7 +297,7 @@ public class EventBatchTest {
 
     private static BookInfo createBookInfo() {
         List<PageInfo> pages = List.of(new PageInfo(
-                new PageId(null, START_TIMESTAMP, null),
+                new PageId(BOOK, START_TIMESTAMP, "test-page"),
                 START_TIMESTAMP,
                 null)
         );

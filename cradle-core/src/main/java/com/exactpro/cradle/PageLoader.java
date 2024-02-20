@@ -17,26 +17,9 @@ package com.exactpro.cradle;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.time.Instant;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
 
-public class TestPagesLoader implements PagesLoader {
-
-    private final List<PageInfo> pages;
-
-    public TestPagesLoader(List<PageInfo> pages) {
-        this.pages = pages;
-    }
-
-    @Nonnull
-    @Override
-    public Collection<PageInfo> load(@Nonnull BookId bookId, @Nullable Instant start, @Nullable Instant end) {
-        return pages.stream()
-                .filter(page -> (start == null || !start.isAfter(page.getId().getStart()))
-                        && (end == null || !end.isBefore(page.getStarted()))
-                )
-                .collect(Collectors.toList());
-    }
+@FunctionalInterface
+public interface PageLoader {
+    @Nullable
+    PageInfo load(@Nonnull BookId bookId);
 }

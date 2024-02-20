@@ -21,6 +21,10 @@ import java.util.Objects;
 
 import com.exactpro.cradle.utils.EscapeUtils;
 
+import javax.annotation.Nonnull;
+
+import static java.util.Objects.requireNonNull;
+
 /**
  * Identifier of the page within a book
  */
@@ -28,27 +32,30 @@ public class PageId
 {
 	public static final String DELIMITER = EscapeUtils.DELIMITER_STR;
 	
-	private final BookId bookId;
-	private final Instant start;
-	private final String name;
+	private final @Nonnull BookId bookId;
+	private final @Nonnull Instant start;
+	private final @Nonnull String name;
 
 	public PageId(BookId bookId, Instant start, String pageName)
 	{
-		this.bookId = bookId;
-		this.start = start;
-		this.name = pageName;
+		this.bookId = requireNonNull(bookId, "Book id can't be null");
+		this.start = requireNonNull(start, "Start timestamp can't be null");
+		this.name = requireNonNull(pageName, "Page name can't be null");
 	}
 	
 	
+	@Nonnull
 	public BookId getBookId()
 	{
 		return bookId;
 	}
 
+	@Nonnull
 	public Instant getStart() {
 		return start;
 	}
 
+	@Nonnull
 	public String getName()
 	{
 		return name;
