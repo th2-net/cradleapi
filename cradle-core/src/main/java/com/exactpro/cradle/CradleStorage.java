@@ -470,7 +470,7 @@ public abstract class CradleStorage {
         if (bookLastPage != null
                 && bookLastPage.getEnded() == null
                 && lastPageToAdd != null
-                && lastPageToAdd.getId().getStart().isAfter(bookLastPage.getId().getStart())) {
+                && lastPageToAdd.getStarted().isAfter(bookLastPage.getId().getStart())) {
 
             endedPage = PageInfo.ended(bookLastPage, toAdd.get(0).getId().getStart());
         }
@@ -1548,13 +1548,13 @@ public abstract class CradleStorage {
             throw new CradleStorageException(String.format("Can't add new page in book %s, it collided with current page %s %s-%s",
                     book.getId().getName(),
                     pageInBookBeforeStart.getName(),
-                    pageInBookBeforeStart.getId().getStart(),
+                    pageInBookBeforeStart.getStarted(),
                     pageInBookBeforeStart.getEnded()));
         }
 
         PageInfo pageInBookAfterStart = book.getNextPage(page.getStart());
 
-        return pageInBookAfterStart == null ? defaultPageEnd : pageInBookAfterStart.getId().getStart();
+        return pageInBookAfterStart == null ? defaultPageEnd : pageInBookAfterStart.getStarted();
     }
 
     private List<PageInfo> checkAndConvertPages(List<PageToAdd> pages, BookInfo book) throws CradleStorageException {
@@ -1642,7 +1642,7 @@ public abstract class CradleStorage {
 
         if (filter.getPageId() != null) {
             PageInfo page = book.getPage(filter.getPageId());
-            Instant pageStarted = page.getId().getStart(),
+            Instant pageStarted = page.getStarted(),
                     pageEnded = page.getEnded();
 
             if (timeFrom != null && pageEnded != null && timeFrom.isAfter(pageEnded)) {

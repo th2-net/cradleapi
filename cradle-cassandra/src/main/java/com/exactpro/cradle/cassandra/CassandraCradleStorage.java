@@ -211,7 +211,7 @@ public class CassandraCradleStorage extends CradleStorage
 					.setTimeout(timeout)
 					.setPageSize(resultPageSize);
 			operators = createOperators(connection.getSession(), settings);
-			bookCache = new ReadThroughBookCache(operators, readAttrs, settings.getSchemaVersion(), settings.getRandomAccessCacheSize());
+			bookCache = new ReadThroughBookCache(operators, readAttrs, settings.getSchemaVersion(), settings.getRandomAccessDaysCacheSize());
 			bookManager = new BookManager(getBookCache(), settings.getBookRefreshIntervalMillis());
 			bookManager.start();
 
@@ -297,10 +297,10 @@ public class CassandraCradleStorage extends CradleStorage
 			String pageName = page.getName();
 			try
 			{
-				PageNameEntity nameEntity = new PageNameEntity(bookName, pageName, page.getId().getStart(), page.getComment(), page.getEnded());
+				PageNameEntity nameEntity = new PageNameEntity(bookName, pageName, page.getStarted(), page.getComment(), page.getEnded());
 				if (!pageNameOp.writeNew(nameEntity, writeAttrs).wasApplied())
 					throw new IOException("Query to insert page '"+nameEntity.getName()+"' was not applied. Probably, page already exists");
-				PageEntity entity = new PageEntity(bookName, pageName, page.getId().getStart(), page.getComment(), page.getEnded(), page.getUpdated());
+				PageEntity entity = new PageEntity(bookName, pageName, page.getStarted(), page.getComment(), page.getEnded(), page.getUpdated());
 				pageOp.write(entity, writeAttrs);
 			}
 			catch (IOException e)

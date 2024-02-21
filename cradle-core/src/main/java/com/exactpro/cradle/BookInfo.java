@@ -33,6 +33,7 @@ import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -68,8 +69,8 @@ public class BookInfo
     // AtomicInitializer call initialize method again if previous value is null
 	private final AtomicReference<PageInfo> firstPage = new AtomicReference<>();
 	private final PagesLoader pagesLoader;
-	private final PageLoader firstPageLoader;
-	private final PageLoader lastPageLoader;
+	private final Function<BookId, PageInfo> firstPageLoader;
+	private final Function<BookId, PageInfo> lastPageLoader;
 
 	public BookInfo(BookId id,
 					String fullName,
@@ -77,8 +78,8 @@ public class BookInfo
 					Instant created,
 					int cacheSize,
 					PagesLoader pagesLoader,
-					PageLoader firstPageLoader,
-					PageLoader lastPageLoader) {
+					Function<BookId, PageInfo> firstPageLoader,
+					Function<BookId, PageInfo> lastPageLoader) {
 		this.id = id;
 		this.fullName = fullName;
 		this.desc = desc;
@@ -144,7 +145,7 @@ public class BookInfo
 		PageInfo result = firstPage.get();
 
 		if (result == null) {
-			result = firstPageLoader.load(id);
+			result = firstPageLoader.apply(id);
 			if (!firstPage.compareAndSet(null, result)) {
 				// another thread has initialized the reference
 				result = firstPage.get();
@@ -156,7 +157,7 @@ public class BookInfo
 	
 	public @Nullable PageInfo getLastPage()
 	{
-		return lastPageLoader.load(id);
+		return lastPageLoader.apply(id);
 	}
 	
 	public PageInfo getPage(PageId pageId)
@@ -232,7 +233,8 @@ public class BookInfo
 		long firstEpochDay = getEpochDay(firstPage.getStarted());
 		if (epochDay < firstEpochDay) {
 			return null;
-		} else if (epochDay > firstEpochDay) {
+		}
+		if (epochDay > firstEpochDay) {
 			for (long previousEpochDay = epochDay - 1; previousEpochDay >= firstEpochDay; previousEpochDay--) {
 				IPageInterval previousPageInterval = getPageInterval(previousEpochDay);
 				if (previousPageInterval.size() == 0) {
@@ -249,15 +251,14 @@ public class BookInfo
 				return previousPageInfo;
 			}
 			throw new IllegalStateException(
-					"First page is before requested timestamp, but neither cache doesn't contain appropriate page, requested: " +
-							timestamp + ", first page: " + firstPage.getStarted()
-			);
-		} else {
-			throw new IllegalStateException(
-					"First page is in the same day as requested timestamp, but cache couldn't find appropriate page, requested: " +
+					"First page is before requested timestamp, but neither cache contains appropriate page, requested: " +
 							timestamp + ", first page: " + firstPage.getStarted()
 			);
 		}
+		throw new IllegalStateException(
+				"First page is in the same day as requested timestamp, but cache couldn't find appropriate page, requested: " +
+						timestamp + ", first page: " + firstPage.getStarted()
+		);
 	}
 
 	public PageInfo getNextPage(Instant startTimestamp)
@@ -288,6 +289,7 @@ public class BookInfo
 		return pageInterval.previous(startTimestamp);
 	}
 
+	// TODO: maybe change to refresh where cache is invalidated and reloaded
 	void invalidate() {
 		firstPage.set(null);
 		hotCache.invalidateAll();
@@ -492,10 +494,10 @@ public class BookInfo
 								previous + ", current: " + page
 				);
 			}
-			previous = pageByInstant.put(page.getId().getStart(), page);
+			previous = pageByInstant.put(page.getStarted(), page);
 			if (previous != null) {
 				throw new IllegalStateException(
-						"Page with '" + page.getId().getStart() + "' start time is duplicated, previous: " +
+						"Page with '" + page.getStarted() + "' start time is duplicated, previous: " +
 								previous + ", current: " + page
 				);
 			}

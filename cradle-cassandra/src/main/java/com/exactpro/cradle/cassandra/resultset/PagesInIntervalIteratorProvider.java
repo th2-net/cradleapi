@@ -78,7 +78,7 @@ public abstract class PagesInIntervalIteratorProvider<T> extends IteratorProvide
     }
 
     public static boolean checkInterval(PageInfo page, Instant start, Instant end) {
-        var pageStart = page.getId().getStart();
+        var pageStart = page.getStarted();
         Objects.requireNonNull(pageStart, String.format("Page \"%s\" has null start time", page.getName()));
         var pageEnd = defaultIfNull(page.getEnded(), Instant.MAX);
         return !pageEnd.isBefore(start) && !pageStart.isAfter(end);

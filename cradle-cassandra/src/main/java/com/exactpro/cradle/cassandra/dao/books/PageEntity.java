@@ -113,7 +113,7 @@ public class PageEntity {
 	}
 
 	public PageEntity(PageInfo pageInfo) {
-		this(pageInfo.getId().getBookId().getName(), pageInfo.getName(), pageInfo.getId().getStart(), pageInfo.getComment(), pageInfo.getEnded(), pageInfo.getUpdated());
+		this(pageInfo.getId().getBookId().getName(), pageInfo.getName(), pageInfo.getStarted(), pageInfo.getComment(), pageInfo.getEnded(), pageInfo.getUpdated());
 	}
 
 

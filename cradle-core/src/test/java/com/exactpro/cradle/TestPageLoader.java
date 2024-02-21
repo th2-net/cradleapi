@@ -15,11 +15,10 @@
  */
 package com.exactpro.cradle;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.List;
+import java.util.function.Function;
 
-public class TestPageLoader implements PageLoader {
+public class TestPageLoader implements Function<BookId, PageInfo> {
 
     private final List<PageInfo> pages;
     private final boolean first;
@@ -29,9 +28,8 @@ public class TestPageLoader implements PageLoader {
         this.first = first;
     }
 
-    @Nullable
     @Override
-    public PageInfo load(@Nonnull BookId bookId) {
+    public PageInfo apply(BookId bookId) {
         return first
                 ? pages.isEmpty() ? null : pages.get(0)
                 : pages.isEmpty() ? null : pages.get(pages.size() - 1);

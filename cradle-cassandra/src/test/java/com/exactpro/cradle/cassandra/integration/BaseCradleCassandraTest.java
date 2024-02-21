@@ -107,7 +107,7 @@ public abstract class BaseCradleCassandraTest {
                     DEFAULT_PAGES.stream().map(
                             el -> new PageToAdd(
                                     el.getName(),
-                                    el.getId().getStart(),
+                                    el.getStarted(),
                                     el.getComment())).collect(Collectors.toList()));
         }
     }
