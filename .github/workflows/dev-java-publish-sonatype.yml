@@ -6,6 +6,17 @@ on:
     - version-*
 
 jobs:
+  api-compatibility-check-core:
+    uses: th2-net/.github/.github/workflows/japi-compliance-checker.yml@main
+    with:
+      projectPath: ./cradle-core
+      targetJarUrl: https://s01.oss.sonatype.org/content/repositories/releases/com/exactpro/th2/cradle-core/5.0.2-dev/cradle-core-5.0.2-dev.jar
+  api-compatibility-check-cassandra:
+    uses: th2-net/.github/.github/workflows/japi-compliance-checker.yml@main
+    with:
+      projectPath: ./cradle-cassandra
+      continueOnError: true
+      targetJarUrl: https://s01.oss.sonatype.org/content/repositories/releases/com/exactpro/th2/cradle-cassandra/5.0.2-dev/cradle-cassandra-5.0.2-dev.jar
   build-job:
     uses: th2-net/.github/.github/workflows/compound-java-dev.yml@main
     with:
