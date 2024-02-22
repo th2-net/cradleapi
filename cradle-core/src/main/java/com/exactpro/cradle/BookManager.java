@@ -77,7 +77,7 @@ public class BookManager
 					try {
 						BookInfo bookInfo = bookCache.getBook(bookId);
 						logger.info("Refreshing book {}", bookInfo.getId().getName());
-						bookInfo.invalidate();
+						bookInfo.refresh();
 					} catch (CradleStorageException e) {
 						logger.error("Refresher could not get new book info for {}: {}", bookId.getName(), e.getMessage());
 					}

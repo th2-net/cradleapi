@@ -49,11 +49,8 @@ public class MessageBatchesIteratorProvider extends AbstractMessageIteratorProvi
 
 	@Override
 	public CompletableFuture<Iterator<StoredMessageBatch>> nextIterator() {
-		PageInfo nextPage = pageProvider.next();
+		PageInfo nextPage = nextPage();
 		if (nextPage == null) {
-			return CompletableFuture.completedFuture(null);
-		}
-		if (!performNextIteratorChecks()) {
 			return CompletableFuture.completedFuture(null);
 		}
 

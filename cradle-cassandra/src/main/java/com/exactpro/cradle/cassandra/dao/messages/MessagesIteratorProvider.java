@@ -46,11 +46,8 @@ public class MessagesIteratorProvider extends AbstractMessageIteratorProvider<St
 
 	@Override
 	public CompletableFuture<Iterator<StoredMessage>> nextIterator() {
-		PageInfo nextPage = pageProvider.next();
+		PageInfo nextPage = nextPage();
 		if (nextPage == null) {
-			return CompletableFuture.completedFuture(null);
-		}
-		if (!performNextIteratorChecks()) {
 			return CompletableFuture.completedFuture(null);
 		}
 

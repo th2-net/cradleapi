@@ -31,7 +31,6 @@ import com.exactpro.cradle.cassandra.dao.messages.sequences.SequenceRangeExtract
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
-import com.exactpro.cradle.cassandra.utils.ThreadSafeProvider;
 import com.exactpro.cradle.cassandra.workers.MessagesWorker;
 import com.exactpro.cradle.filters.FilterForAny;
 import com.exactpro.cradle.filters.FilterForGreater;
@@ -47,6 +46,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -55,6 +56,8 @@ import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.Order.REVERSE;
@@ -65,7 +68,7 @@ import static java.util.Objects.requireNonNull;
 
 abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvider<T> {
 
-	private static final Logger logger = LoggerFactory.getLogger(AbstractMessageIteratorProvider.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractMessageIteratorProvider.class);
 	protected final MessageBatchOperator op;
 	protected final MessageBatchEntityConverter converter;
 	protected final BookInfo book;
@@ -80,9 +83,13 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 	protected final AtomicInteger returned;
 	protected final MessageBatchIteratorFilter<MessageBatchEntity> batchFilter;
 	protected final MessageBatchIteratorCondition<MessageBatchEntity> iterationCondition;
-	// FIXME: potential concurrency problem
-	protected TakeWhileIterator<MessageBatchEntity> takeWhileIterator;
-	protected final ThreadSafeProvider<PageInfo> pageProvider;
+
+	private final Lock lock = new ReentrantLock();
+	@GuardedBy("lock")
+	private final Iterator<PageInfo> pageProvider;
+	@GuardedBy("lock")
+	// only get / set operation are guarded by lock
+	private TakeWhileIterator<MessageBatchEntity> takeWhileIterator;
 
 	public AbstractMessageIteratorProvider(String requestInfo, MessageFilter filter, CassandraOperators operators, BookInfo book,
 										   ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
@@ -118,12 +125,10 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		this.batchFilter = batchFilter;
 		this.iterationCondition = iterationCondition;
 
-		this.pageProvider = new ThreadSafeProvider<>(
-				book.getPages(
-						requireNonNull(leftBoundFilter.getValue()),
-						requireNonNull(rightBoundFilter.getValue()),
-						filter.getOrder()
-				)
+		this.pageProvider = book.getPages(
+				requireNonNull(leftBoundFilter.getValue()),
+				requireNonNull(rightBoundFilter.getValue()),
+				filter.getOrder()
 		);
 	}
 
@@ -213,19 +218,23 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 				filter.getOrder());
 	}
 
-	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-	protected boolean performNextIteratorChecks () {
-		if (takeWhileIterator != null && takeWhileIterator.isHalted()) {
-			logger.debug("Iterator was interrupted because iterator condition was not met");
-			return false;
-		}
+	protected @Nullable PageInfo nextPage() {
+		lock.lock();
+		try {
+			if (takeWhileIterator != null && takeWhileIterator.isHalted()) {
+				LOGGER.debug("Iterator was interrupted because iterator condition was not met");
+				return null;
+			}
 
-		if (limit > 0 && returned.get() >= limit) {
-			logger.debug("Filtering interrupted because limit for records to return ({}) is reached ({})", limit, returned);
-			return false;
-		}
+			if (limit > 0 && returned.get() >= limit) {
+				LOGGER.debug("Filtering interrupted because limit for records to return ({}) is reached ({})", limit, returned);
+				return null;
+			}
 
-		return true;
+			return pageProvider.hasNext() ? pageProvider.next() : null;
+		} finally {
+			lock.unlock();
+		}
 	}
 
 	protected Iterator<StoredMessageBatch> getBatchedIterator(PageId pageId,
@@ -238,14 +247,20 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		FilteringIterator<MessageBatchEntity> filteringIterator = new FilteringIterator<>(
 				pagedIterator,
 				batchFilter::test);
-		// We need to store this iterator since
-		// it gives info whether or no iterator was halted
-		takeWhileIterator = new TakeWhileIterator<>(
-				filteringIterator,
-				iterationCondition);
 
-		return new ConvertingIterator<>(
-				takeWhileIterator, entity ->
-				MessagesWorker.mapMessageBatchEntity(pageId, entity));
+		lock.lock();
+		try {
+			// We need to store this iterator since
+			// it gives info whether or no iterator was halted
+			takeWhileIterator = new TakeWhileIterator<>(
+					filteringIterator,
+					iterationCondition);
+
+			return new ConvertingIterator<>(
+					takeWhileIterator, entity ->
+					MessagesWorker.mapMessageBatchEntity(pageId, entity));
+		} finally {
+			lock.unlock();
+		}
 	}
 }

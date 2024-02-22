@@ -36,13 +36,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static com.exactpro.cradle.BookInfoMetrics.CacheName.HOT;
 import static com.exactpro.cradle.BookInfoMetrics.CacheName.RANDOM;
 import static com.exactpro.cradle.BookInfoMetrics.RequestMethod.FIND;
 import static com.exactpro.cradle.BookInfoMetrics.RequestMethod.GET;
-import static com.exactpro.cradle.BookInfoMetrics.RequestMethod.NEXT;
-import static com.exactpro.cradle.BookInfoMetrics.RequestMethod.PREVIOUS;
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Collections.unmodifiableNavigableMap;
@@ -57,6 +56,7 @@ public class BookInfo
 	private static final int HOT_CACHE_SIZE = 2;
 	private static final int SECONDS_IN_DAY = 60 * 60 * 24;
 	private static final int MILLISECONDS_IN_DAY = SECONDS_IN_DAY * 1_000;
+	private static final long MAX_EPOCH_DAY = getEpochDay(Instant.MAX);
 	private static final IPageInterval EMPTY_PAGE_INTERVAL = new EmptyPageInterval();
 	private final BookId id;
 	private final String fullName,
@@ -168,11 +168,22 @@ public class BookInfo
 	}
 
 	/**
-	 * Requests page iterator using cache. Iterator lazy loads pages into cache.
+	 * Requests page iterator using cache.
+	 * @param leftBoundTimestamp inclusive minimal timestamp. Start time of first page is used if passed value is null
+	 * @param rightBoundTimestamp inclusive maximum timestamp. Start time of last page is used if passed value is null
 	 */
 	public Iterator<PageInfo> getPages(@Nullable Instant leftBoundTimestamp,
 									   @Nullable Instant rightBoundTimestamp,
 									   @Nonnull Order order) {
+		if (leftBoundTimestamp != null &&
+				rightBoundTimestamp != null &&
+				leftBoundTimestamp.isAfter(rightBoundTimestamp)) {
+			throw new IllegalArgumentException(
+					"Left bound '" + leftBoundTimestamp +
+							"' must be <= right bound '" + rightBoundTimestamp + "'"
+			);
+		}
+
 		Instant leftTimestamp = calculateBound(leftBoundTimestamp, this::getFirstPage);
 		if (leftTimestamp == null) {
 			return emptyIterator();
@@ -182,12 +193,6 @@ public class BookInfo
 			return emptyIterator();
 		}
 
-		if (leftTimestamp.isAfter(rightTimestamp)) {
-			throw new IllegalArgumentException(
-					"Left bound '" + leftBoundTimestamp + " -> " + leftTimestamp +
-							"' must be <= right bound '" + rightBoundTimestamp + " -> " + rightTimestamp + "'"
-			);
-		}
 		long leftBoundEpochDay = getEpochDay(leftTimestamp);
 		long rightBoundEpochDay = getEpochDay(rightTimestamp);
 
@@ -207,13 +212,29 @@ public class BookInfo
                 throw new IllegalStateException("Unexpected value: " + order);
         }
 		return builder.build()
-				.flatMap(epochDay -> getPageInterval(epochDay).getPages(leftTimestamp, rightTimestamp, order))
+				.flatMap(epochDay -> getPageInterval(epochDay).stream(leftTimestamp, rightTimestamp, order))
 				.iterator();
 	}
 
+	/**
+	 * Searches page covered passed timestamp.
+	 * Coverage schema: `[start, end)`
+	 *   - start page timestamp included
+	 *   - end page timestamp excluded
+	 */
 	public PageInfo findPage(Instant timestamp) {
-		// Search in the page interval related to the timestamp
 		long epochDay = getEpochDay(timestamp);
+		if (epochDay < 0) {
+			return null;
+		}
+		if (epochDay >= MAX_EPOCH_DAY) {
+			PageInfo lastPage = getLastPage();
+			if (lastPage != null && lastPage.getEnded() == null) {
+				return lastPage;
+			}
+			return null;
+		}
+		// Search in the page interval related to the timestamp
 		IPageInterval pageInterval = getPageInterval(epochDay);
 		PageInfo pageInfo = pageInterval.find(timestamp);
 		METRICS.incRequest(id.getName(), pageInterval.getCacheName(), FIND);
@@ -261,39 +282,21 @@ public class BookInfo
 		);
 	}
 
-	public PageInfo getNextPage(Instant startTimestamp)
-	{
-		long epochDate = getEpochDay(startTimestamp);
-		IPageInterval pageInterval = getPageInterval(epochDate);
-		METRICS.incRequest(id.getName(), pageInterval.getCacheName(), NEXT);
-		PageInfo currentInterval = pageInterval.next(startTimestamp);
-		if (currentInterval != null) {
-			return currentInterval;
-		}
-		pageInterval = getPageInterval(epochDate + 1);
-		METRICS.incRequest(id.getName(), pageInterval.getCacheName(), NEXT);
-		return pageInterval.next(startTimestamp);
-	}
-
-	public PageInfo getPreviousPage(Instant startTimestamp)
-	{
-		long epochDate = getEpochDay(startTimestamp);
-		IPageInterval pageInterval = getPageInterval(epochDate);
-		METRICS.incRequest(id.getName(), pageInterval.getCacheName(), PREVIOUS);
-		PageInfo currentInterval = pageInterval.previous(startTimestamp);
-		if (currentInterval != null) {
-			return currentInterval;
-		}
-		pageInterval = getPageInterval(epochDate - 1);
-		METRICS.incRequest(id.getName(), pageInterval.getCacheName(), PREVIOUS);
-		return pageInterval.previous(startTimestamp);
-	}
-
-	// TODO: maybe change to refresh where cache is invalidated and reloaded
-	void invalidate() {
+	/**
+	 * Refreshes: first page and hot cache
+	 * Invalidates: random access cache
+	 */
+	void refresh() {
 		firstPage.set(null);
 		hotCache.invalidateAll();
 		randomAccessCache.invalidateAll();
+		
+		getFirstPage();
+		long currentEpochDay = currentEpochDay();
+		for (int shift = HOT_CACHE_SIZE - 1; shift >= 0; shift--) {
+			//noinspection ResultOfMethodCallIgnored
+			this.hotCache.get(currentEpochDay - shift);
+		}
 	}
 
 	void invalidate(Instant timestamp) {
@@ -301,8 +304,8 @@ public class BookInfo
 		invalidate(epochDay);
 	}
 
-	void invalidate(Collection<Instant> timestamps) {
-		timestamps.stream()
+	void invalidate(Iterable<Instant> timestamps) {
+		StreamSupport.stream(timestamps.spliterator(), false)
 				.map(BookInfo::getEpochDay)
 				.distinct()
 				.forEach(this::invalidate);
@@ -330,7 +333,8 @@ public class BookInfo
 
 	private IPageInterval getPageInterval(long epochDate) {
 		long currentEpochDay = currentEpochDay();
-		IPageInterval pageInterval = currentEpochDay - epochDate < 2
+		long diff = currentEpochDay - epochDate;
+		IPageInterval pageInterval = 0 <= diff && diff < 2
 				? hotCache.get(epochDate)
 				: randomAccessCache.get(epochDate);
 		return pageInterval != null
@@ -369,11 +373,7 @@ public class BookInfo
 
 		PageInfo find(Instant timestamp);
 
-		PageInfo next(Instant startTimestamp);
-
-		PageInfo previous(Instant startTimestamp);
-
-		Stream<PageInfo> getPages(Instant leftBoundTimestamp, Instant rightBoundTimestamp, Order order);
+		Stream<PageInfo> stream(Instant leftBoundTimestamp, Instant rightBoundTimestamp, Order order);
 	}
 
 	private static final class EmptyPageInterval implements IPageInterval {
@@ -398,17 +398,7 @@ public class BookInfo
 		}
 
 		@Override
-		public PageInfo next(Instant startTimestamp) {
-			return null;
-		}
-
-		@Override
-		public PageInfo previous(Instant startTimestamp) {
-			return null;
-		}
-
-		@Override
-		public Stream<PageInfo> getPages(Instant leftBoundTimestamp, Instant rightBoundTimestamp, Order order) {
+		public Stream<PageInfo> stream(Instant leftBoundTimestamp, Instant rightBoundTimestamp, Order order) {
 			return Stream.empty();
 		}
 	}
@@ -446,21 +436,9 @@ public class BookInfo
 		}
 
 		@Override
-		public PageInfo next(Instant startTimestamp) {
-			Entry<Instant, PageInfo> result = pageByInstant.higherEntry(startTimestamp);
-			return result != null ? result.getValue() : null;
-		}
-
-		@Override
-		public PageInfo previous(Instant startTimestamp) {
-			Entry<Instant, PageInfo> result = pageByInstant.lowerEntry(startTimestamp);
-			return result != null ? result.getValue() : null;
-		}
-
-		@Override
-		public Stream<PageInfo> getPages(@Nonnull Instant leftBoundTimestamp,
-										   @Nonnull Instant rightBoundTimestamp,
-										   @Nonnull Order order) {
+		public Stream<PageInfo> stream(@Nonnull Instant leftBoundTimestamp,
+									   @Nonnull Instant rightBoundTimestamp,
+									   @Nonnull Order order) {
 			Instant start = pageByInstant.floorKey(leftBoundTimestamp);
 			NavigableMap<Instant, PageInfo> subMap = pageByInstant.subMap(
 					start == null ? leftBoundTimestamp : start, true,

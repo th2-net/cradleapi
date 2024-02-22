@@ -504,7 +504,7 @@ public abstract class CradleStorage {
     public BookInfo refreshPages(BookId bookId) throws CradleStorageException {
         logger.info("Refreshing pages of book '{}'", bookId);
         BookInfo book = getBookCache().getBook(bookId);
-        book.invalidate();
+        book.refresh();
         return book;
     }
 

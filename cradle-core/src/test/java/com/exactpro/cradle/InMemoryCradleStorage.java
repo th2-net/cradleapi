@@ -161,7 +161,7 @@ public class InMemoryCradleStorage extends CradleStorage {
 				inMemoryPages.set(inMemoryPages.size() - 1, lastPage);
 			}
 			inMemoryPages.addAll(pages);
-			inMemoryBookCache.getBook(bookId).invalidate();
+			inMemoryBookCache.getBook(bookId).refresh();
         } catch (CradleStorageException e) {
             throw new RuntimeException(e);
         }
