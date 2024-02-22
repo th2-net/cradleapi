@@ -205,3 +205,8 @@ Test events have mandatory parameters that are verified when storing an event. T
   *_count - loaded page day intervals 
   *_sum - loaded pages
   * cache: HOT, RANDOM
+
+## Release notes
+
+### 5.2.0
+* Added page cache for each book to avoid memory leak

@@ -54,6 +54,11 @@ public class PageInfo
 		return id;
 	}
 
+	public Instant getStarted()
+	{
+		return id.getStart();
+	}
+
 	public Instant getEnded()
 	{
 		return ended;
@@ -72,11 +77,6 @@ public class PageInfo
 		return removed;
 	}
 
-
-	public Instant getStarted()
-	{
-		return id.getStart();
-	}
 
 	public String getBookName() {
 		return id.getBookId().getName();

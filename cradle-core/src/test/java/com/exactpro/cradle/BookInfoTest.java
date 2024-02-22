@@ -111,8 +111,17 @@ public class BookInfoTest {
                     assertSame(bookInfo.findPage(source.getEnded().minus(1, NANOS)), source, "iteration - " + addIndex + '.' + checkIndex);
                 }
 
+                if (checkIndex > 0) {
+                    assertSame(bookInfo.getPreviousPage(source.getId().getStart()), PAGES.get(checkIndex - 1), "iteration - " + addIndex + '.' + checkIndex);
+                } else {
+                    assertNull(bookInfo.getPreviousPage(source.getId().getStart()), "iteration - " + addIndex + '.' + checkIndex + ", timestamp: " + source.getId().getStart());
+                }
+
                 if (checkIndex < addIndex) {
+                    assertSame(bookInfo.getNextPage(source.getId().getStart()), PAGES.get(checkIndex + 1), "iteration - " + addIndex + '.' + checkIndex);
                     assertSame(bookInfo.findPage(source.getEnded()), PAGES.get(checkIndex + 1), "iteration - " + addIndex + '.' + checkIndex);
+                } else {
+                    assertNull(bookInfo.getNextPage(source.getId().getStart()), "iteration - " + addIndex + '.' + checkIndex + ", timestamp: " + source.getId().getStart());
                 }
             }
         }

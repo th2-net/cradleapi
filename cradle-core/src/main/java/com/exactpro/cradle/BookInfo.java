@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -42,6 +43,8 @@ import static com.exactpro.cradle.BookInfoMetrics.CacheName.HOT;
 import static com.exactpro.cradle.BookInfoMetrics.CacheName.RANDOM;
 import static com.exactpro.cradle.BookInfoMetrics.RequestMethod.FIND;
 import static com.exactpro.cradle.BookInfoMetrics.RequestMethod.GET;
+import static com.exactpro.cradle.BookInfoMetrics.RequestMethod.NEXT;
+import static com.exactpro.cradle.BookInfoMetrics.RequestMethod.PREVIOUS;
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Collections.unmodifiableNavigableMap;
@@ -282,6 +285,57 @@ public class BookInfo
 		);
 	}
 
+	public PageInfo getNextPage(Instant startTimestamp)
+	{
+		long epochDate = getEpochDay(startTimestamp);
+		IPageInterval pageInterval = getPageInterval(epochDate);
+		METRICS.incRequest(id.getName(), pageInterval.getCacheName(), NEXT);
+		PageInfo currentInterval = pageInterval.next(startTimestamp);
+		if (currentInterval != null) {
+			return currentInterval;
+		}
+		pageInterval = getPageInterval(epochDate + 1);
+		METRICS.incRequest(id.getName(), pageInterval.getCacheName(), NEXT);
+		return pageInterval.next(startTimestamp);
+	}
+
+	public PageInfo getPreviousPage(Instant startTimestamp)
+	{
+		long epochDate = getEpochDay(startTimestamp);
+		IPageInterval pageInterval = getPageInterval(epochDate);
+		METRICS.incRequest(id.getName(), pageInterval.getCacheName(), PREVIOUS);
+		PageInfo currentInterval = pageInterval.previous(startTimestamp);
+		if (currentInterval != null) {
+			return currentInterval;
+		}
+		pageInterval = getPageInterval(epochDate - 1);
+		METRICS.incRequest(id.getName(), pageInterval.getCacheName(), PREVIOUS);
+		return pageInterval.previous(startTimestamp);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		BookInfo bookInfo = (BookInfo) o;
+		return Objects.equals(id, bookInfo.id);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(id);
+	}
+
+	@Override
+	public String toString() {
+		return "BookInfo{" +
+				"id=" + id +
+				", fullName='" + fullName + '\'' +
+				", desc='" + desc + '\'' +
+				", created=" + created +
+				'}';
+	}
+
 	/**
 	 * Refreshes: first page and hot cache
 	 * Invalidates: random access cache
@@ -373,6 +427,10 @@ public class BookInfo
 
 		PageInfo find(Instant timestamp);
 
+		PageInfo next(Instant startTimestamp);
+
+		PageInfo previous(Instant startTimestamp);
+
 		Stream<PageInfo> stream(Instant leftBoundTimestamp, Instant rightBoundTimestamp, Order order);
 	}
 
@@ -394,6 +452,16 @@ public class BookInfo
 
 		@Override
 		public PageInfo find(Instant timestamp) {
+			return null;
+		}
+
+		@Override
+		public PageInfo next(Instant startTimestamp) {
+			return null;
+		}
+
+		@Override
+		public PageInfo previous(Instant startTimestamp) {
 			return null;
 		}
 
@@ -432,6 +500,18 @@ public class BookInfo
 		public PageInfo find(Instant timestamp)
 		{
 			Entry<Instant, PageInfo> result = pageByInstant.floorEntry(timestamp);
+			return result != null ? result.getValue() : null;
+		}
+
+		@Override
+		public PageInfo next(Instant startTimestamp) {
+			Entry<Instant, PageInfo> result = pageByInstant.higherEntry(startTimestamp);
+			return result != null ? result.getValue() : null;
+		}
+
+		@Override
+		public PageInfo previous(Instant startTimestamp) {
+			Entry<Instant, PageInfo> result = pageByInstant.lowerEntry(startTimestamp);
 			return result != null ? result.getValue() : null;
 		}
 
