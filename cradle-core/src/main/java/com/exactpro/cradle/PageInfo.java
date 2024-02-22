@@ -78,6 +78,10 @@ public class PageInfo
 		return id.getStart();
 	}
 
+	public String getBookName() {
+		return id.getBookId().getName();
+	}
+
 	public String getName() {
 		return id.getName();
 	}
@@ -87,9 +91,15 @@ public class PageInfo
 		return page == null ? null : new PageInfo(page.getId(), endTimestamp, page.getComment(), page.getUpdated(), page.getRemoved());
 	}
 
+	public boolean isNotValidFor(Instant timestamp) {
+	    return (getStarted() != null && getStarted().isAfter(timestamp)) ||
+				(ended != null && !ended.isAfter(timestamp));
+	}
+
+	// Backward compatibility
+	@SuppressWarnings("unused")
 	public boolean isValidFor(Instant timestamp) {
-	    return (getStarted() == null || !getStarted().isAfter(timestamp)) &&
-				(ended == null || ended.isAfter(timestamp));
+		return !isNotValidFor(timestamp);
 	}
 
 	@Override

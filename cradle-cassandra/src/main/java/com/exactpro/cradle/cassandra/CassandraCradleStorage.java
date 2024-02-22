@@ -73,7 +73,6 @@ import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
 import com.exactpro.cradle.cassandra.metrics.DriverMetrics;
 import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
-import com.exactpro.cradle.cassandra.resultset.SessionsStatisticsIteratorProvider;
 import com.exactpro.cradle.cassandra.retries.FixedNumberRetryPolicy;
 import com.exactpro.cradle.cassandra.retries.PageSizeAdjustingPolicy;
 import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
@@ -943,29 +942,6 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 	}
 
-	private CompletableFuture<CradleResultSet<String>> doGetSessionsAsync(BookId bookId, Interval interval, SessionRecordType recordType) throws CradleStorageException {
-		String queryInfo = String.format("%s Aliases in book %s from %s to %s",
-				recordType.name(),
-				bookId.getName(),
-				interval.getStart().toString(),
-				interval.getEnd().toString());
-
-		List<FrameInterval> frameIntervals = StorageUtils.sliceInterval(interval);
-
-		SessionsStatisticsIteratorProvider iteratorProvider = new SessionsStatisticsIteratorProvider(
-				queryInfo,
-				operators,
-				getBookCache().getBook(bookId),
-				composingService,
-				selectExecutor,
-				readAttrs,
-				frameIntervals,
-				recordType);
-
-		return iteratorProvider.nextIterator()
-				.thenApplyAsync(it -> new CassandraCradleResultSet<>(it, iteratorProvider));
-	}
-
 	@Override
 	protected CompletableFuture<CradleResultSet<String>> doGetSessionAliasesAsync(BookId bookId, Interval interval) throws CradleStorageException {
 		String queryInfo = String.format("Session Aliases in book %s from pages that fall within %s to %s",
@@ -1311,8 +1287,8 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	protected void removePageData(PageInfo pageInfo) throws CradleStorageException {
 
-		String book = pageInfo.getId().getBookId().getName();
-		String page = pageInfo.getId().getName();
+		String book = pageInfo.getBookName();
+		String page = pageInfo.getName();
 
 		// remove sessions
 		operators.getPageSessionsOperator().remove(book, page, writeAttrs);

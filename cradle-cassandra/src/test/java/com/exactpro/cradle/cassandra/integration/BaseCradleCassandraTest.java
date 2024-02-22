@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
  * use tests with embedded cassandra without
  * actually calling any of init or utility methods
  */
+// TODO: implement tests for empty storage
 public abstract class BaseCradleCassandraTest {
     protected static final String DEFAULT_PAGE_PREFIX = "test_page_";
     protected static final BookId DEFAULT_BOOK_ID = new BookId("test_book");

@@ -67,6 +67,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
 
+import static com.exactpro.cradle.Order.DIRECT;
+
 /**
  * Storage which holds information about all data sent or received and test events.
  */
@@ -644,7 +646,7 @@ public abstract class CradleStorage {
         boolean singlePageBatch = true;
         for (var message : batch.getMessages()) {
             Instant ts = message.getTimestamp();
-            if (!lastPage.isValidFor(ts)) {
+            if (lastPage.isNotValidFor(ts)) {
                 lastPage = findPage(bookId, ts);
                 singlePageBatch = false;
             }
@@ -734,7 +736,7 @@ public abstract class CradleStorage {
 
         Map<StoredTestEventId, StoredTestEventId> idMappings = new HashMap<>();
         batch.getTestEvents().forEach((e) -> {
-            if (!page.isValidFor(e.getStartTimestamp())) {
+            if (page.isNotValidFor(e.getStartTimestamp())) {
                 StoredTestEventId id = e.getId();
                 idMappings.put(id, new StoredTestEventId(id.getBookId(), id.getScope(), page.getEnded().minusNanos(1), id.getId()));
             }
@@ -1540,7 +1542,8 @@ public abstract class CradleStorage {
     }
 
     private Instant checkCollisionAndGetPageEnd(BookInfo book, PageToAdd page, Instant defaultPageEnd) throws CradleStorageException {
-        PageInfo pageInBookBeforeStart = book.findPage(page.getStart());
+        Iterator<PageInfo> pageIterator = book.getPages(page.getStart(), null, DIRECT);
+        PageInfo pageInBookBeforeStart = pageIterator.hasNext() ? pageIterator.next() : null;
 
         if (pageInBookBeforeStart != null
                 && pageInBookBeforeStart.getEnded() != null
@@ -1552,9 +1555,7 @@ public abstract class CradleStorage {
                     pageInBookBeforeStart.getEnded()));
         }
 
-        PageInfo pageInBookAfterStart = book.getNextPage(page.getStart());
-
-        return pageInBookAfterStart == null ? defaultPageEnd : pageInBookAfterStart.getStarted();
+        return pageIterator.hasNext() ? pageIterator.next().getStarted() : defaultPageEnd;
     }
 
     private List<PageInfo> checkAndConvertPages(List<PageToAdd> pages, BookInfo book) throws CradleStorageException {

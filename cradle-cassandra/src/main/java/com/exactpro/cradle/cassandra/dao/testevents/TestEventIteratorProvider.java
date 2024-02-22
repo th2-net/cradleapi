@@ -18,8 +18,6 @@ package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookInfo;
-import com.exactpro.cradle.Order;
-import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.EventBatchDurationWorker;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
@@ -27,10 +25,9 @@ import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityCo
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
-import com.exactpro.cradle.cassandra.utils.FilterUtils;
+import com.exactpro.cradle.cassandra.utils.ThreadSafeProvider;
 import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.filters.FilterForGreater;
-import com.exactpro.cradle.filters.FilterForLess;
 import com.exactpro.cradle.iterators.ConvertingIterator;
 import com.exactpro.cradle.iterators.FilteringIterator;
 import com.exactpro.cradle.iterators.LimitedIterator;
@@ -40,15 +37,19 @@ import com.exactpro.cradle.testevents.TestEventFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.time.Instant;
 import java.util.Iterator;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
+import static com.exactpro.cradle.cassandra.utils.FilterUtils.findFirstPage;
+import static com.exactpro.cradle.cassandra.utils.FilterUtils.findFirstTimestamp;
+import static com.exactpro.cradle.cassandra.utils.FilterUtils.findLastTimestamp;
 import static com.exactpro.cradle.cassandra.workers.EventsWorker.mapTestEventEntity;
+import static java.lang.Math.max;
 
 public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent> {
 	/*
@@ -59,21 +60,20 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 	 * If the ending page was queried, no more queries will be done, meaning the end of data
 	 */
 
-	private static final Logger logger = LoggerFactory.getLogger(TestEventIteratorProvider.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(TestEventIteratorProvider.class);
 
 	private final TestEventOperator op;
-	private final BookInfo book;
-	private final ExecutorService composingService;
+    private final ExecutorService composingService;
 	private final SelectQueryExecutor selectQueryExecutor;
 	private final TestEventEntityConverter entityConverter;
-	private final PageInfo firstPage, lastPage;
 	private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
 	/** limit must be strictly positive ( limit greater than 0 ) */
 	private final int limit;
-	private final AtomicInteger returned;
-	private CassandraTestEventFilter cassandraFilter;
-	private final EventBatchDurationWorker eventBatchDurationWorker;
-	private final Instant actualFrom;
+	private final AtomicInteger returned = new AtomicInteger();
+    private final Instant actualFrom;
+	private final ThreadSafeProvider<PageInfo> pageProvider;
+	private final TestEventFilter filter;
+	private final FilterForGreater<Instant> leftBoundFilter;
 
 	public TestEventIteratorProvider(String requestInfo, TestEventFilter filter, CassandraOperators operators, BookInfo book,
 									 ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
@@ -83,63 +83,42 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 		super(requestInfo);
 		this.op = operators.getTestEventOperator();
 		this.entityConverter = operators.getTestEventEntityConverter();
-		this.book = book;
-		this.composingService = composingService;
+        this.composingService = composingService;
 		this.selectQueryExecutor = selectQueryExecutor;
-
-		// setup first & last pages according to filter order
-		PageInfo pageFrom = FilterUtils.findFirstPage(filter.getPageId(), effectiveStartTimestampFrom(filter), book);
-		PageInfo pageTo = FilterUtils.findLastPage(filter.getPageId(), effectiveStartTimestampTo(filter), book);
-		Order order = filter.getOrder();
-		this.firstPage = (order == Order.DIRECT) ? pageFrom : pageTo;
-		this.lastPage = (order == Order.DIRECT) ? pageTo : pageFrom;
-
-		this.eventBatchDurationWorker = eventBatchDurationWorker;
 		this.actualFrom = actualFrom;
-
 		this.readAttrs = readAttrs;
 		this.limit = filter.getLimit();
-		this.returned = new AtomicInteger();
-		this.cassandraFilter = createInitialFilter(filter);
-	}
+		this.leftBoundFilter = createLeftBoundFilter(book, eventBatchDurationWorker, actualFrom, readAttrs, filter);
+		this.filter = filter;
 
-
-	private FilterForGreater<Instant> effectiveStartTimestampFrom(TestEventFilter filter) {
-		if (filter.getOrder() == Order.DIRECT && filter.getId() != null) {
-			FilterForGreater<Instant> result = new FilterForGreater<>(filter.getId().getStartTimestamp());
-			result.setGreaterOrEquals();
-			return result;
-		}
-		return filter.getStartTimestampFrom();
-	}
-
-
-	private FilterForLess<Instant> effectiveStartTimestampTo(TestEventFilter filter) {
-		if (filter.getOrder() == Order.REVERSE && filter.getId() != null) {
-			FilterForLess<Instant> result = new FilterForLess<>(filter.getId().getStartTimestamp());
-			result.setLessOrEquals();
-			return result;
-		}
-		return filter.getStartTimestampTo();
+		this.pageProvider = new ThreadSafeProvider<>(
+				book.getPages(
+						// we must calculate the first timestamp by origin filter because
+						// left bound filter is calculated according to max duration of event batch on the first page
+						findFirstTimestamp(filter.getPageId(), filter.getStartTimestampFrom(), book),
+						findLastTimestamp(filter.getPageId(), filter.getStartTimestampTo(), book),
+						filter.getOrder()
+				)
+		);
 	}
 
 	@Override
 	public CompletableFuture<Iterator<StoredTestEvent>> nextIterator() {
-
-		if (cassandraFilter == null)
-			return CompletableFuture.completedFuture(null);
-
-		if (limit > 0 && returned.get() >= limit) {
-			logger.debug("Filtering interrupted because limit for records to return ({}) is reached ({})", limit, returned);
+		PageInfo nextPage = pageProvider.next();
+		if (nextPage == null) {
 			return CompletableFuture.completedFuture(null);
 		}
+
+		if (limit > 0 && returned.get() >= limit) {
+			LOGGER.debug("Filtering interrupted because limit for records to return ({}) is reached ({})", limit, returned);
+			return CompletableFuture.completedFuture(null);
+		}
+
+		CassandraTestEventFilter cassandraFilter = createFilter(nextPage, max(limit - returned.get(), 0));
 		
-		logger.debug("Getting next iterator for '{}' by filter {}", getRequestInfo(), cassandraFilter);
+		LOGGER.debug("Getting next iterator for '{}' by filter {}", getRequestInfo(), cassandraFilter);
 		return op.getByFilter(cassandraFilter, selectQueryExecutor, getRequestInfo(), readAttrs)
 				.thenApplyAsync(resultSet -> {
-					PageId pageId = cassandraFilter.getPageId();
-					cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(),0));
-
 					PagedIterator<TestEventEntity> pagedIterator = new PagedIterator<>(
 							resultSet,
 							selectQueryExecutor,
@@ -147,7 +126,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 							getRequestInfo());
 					ConvertingIterator<TestEventEntity, StoredTestEvent> convertingIterator = new ConvertingIterator<>(
 							pagedIterator, entity ->
-							mapTestEventEntity(pageId, entity));
+							mapTestEventEntity(nextPage.getId(), entity));
 					FilteringIterator<StoredTestEvent> filteringIterator = new FilteringIterator<>(
 							convertingIterator,
 							convertedEntity -> !convertedEntity.getLastStartTimestamp().isBefore(actualFrom));
@@ -157,59 +136,17 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 				}, composingService);
 	}
 
-
-	private CassandraTestEventFilter createInitialFilter(TestEventFilter filter) {
-		/*
-			Only initial filter needs to be adjusted with max duration,
-			since `createNextFilter` just passes timestamps from previous to next filters
-		 */
-		long duration = eventBatchDurationWorker.getMaxDuration(filter.getBookId().getName(), firstPage.getId().getName(), filter.getScope(), readAttrs);
-		FilterForGreater<Instant> newFrom;
-
-		ComparisonOperation operation = filter.getStartTimestampFrom() == null ? ComparisonOperation.GREATER : filter.getStartTimestampFrom().getOperation();
-		if (operation.equals(ComparisonOperation.GREATER)) {
-			newFrom = FilterForGreater.forGreater(actualFrom.minusMillis(duration));
-		} else {
-			newFrom = FilterForGreater.forGreaterOrEquals(actualFrom.minusMillis(duration));
-		}
-
-		String parentId = getParentIdString(filter);
+	private CassandraTestEventFilter createFilter(@Nonnull PageInfo pageInfo, int updatedLimit) {
 		return new CassandraTestEventFilter(
-				firstPage.getId(),
+				pageInfo.getId(),
 				filter.getScope(),
-				newFrom,
+				leftBoundFilter,
 				filter.getStartTimestampTo(),
 				filter.getId(),
-				parentId,
-				filter.getLimit(),
+				getParentIdString(filter),
+				updatedLimit,
 				filter.getOrder());
 	}
-
-	private CassandraTestEventFilter createNextFilter(CassandraTestEventFilter prevFilter, Integer updatedLimit) {
-
-		PageInfo prevPage = book.getPage(prevFilter.getPageId());
-		if (Objects.equals(prevPage, lastPage)) {
-			return null;
-		}
-
-		// calculate next page according to filter order
-		PageInfo nextPage;
-		if (prevFilter.getOrder() == Order.DIRECT)
-			nextPage = book.getNextPage(prevPage.getStarted());
-		else
-			nextPage = book.getPreviousPage(prevPage.getStarted());
-
-		return new CassandraTestEventFilter(
-				nextPage.getId(),
-				prevFilter.getScope(),
-				prevFilter.getStartTimestampFrom(),
-				prevFilter.getStartTimestampTo(),
-				prevFilter.getId(),
-				prevFilter.getParentId(),
-				updatedLimit,
-				prevFilter.getOrder());
-	}
-
 
 	private String getParentIdString(TestEventFilter filter) {
 
@@ -221,5 +158,21 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 			return parentId.toString();
 
 		return null;
+	}
+
+	private static FilterForGreater<Instant> createLeftBoundFilter(BookInfo bookInfo, EventBatchDurationWorker eventBatchDurationWorker, Instant actualFrom, Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs, TestEventFilter filter) {
+		/*
+			Only initial filter needs to be adjusted with max duration,
+			since `createNextFilter` just passes timestamps from previous to next filters
+		 */
+		PageInfo firstPage = findFirstPage(filter.getPageId(), filter.getStartTimestampFrom(), bookInfo);
+		long duration = eventBatchDurationWorker.getMaxDuration(filter.getBookId().getName(), firstPage.getName(), filter.getScope(), readAttrs);
+
+        ComparisonOperation operation = filter.getStartTimestampFrom() == null ? ComparisonOperation.GREATER : filter.getStartTimestampFrom().getOperation();
+		if (operation.equals(ComparisonOperation.GREATER)) {
+			return FilterForGreater.forGreater(actualFrom.minusMillis(duration));
+		} else {
+			return FilterForGreater.forGreaterOrEquals(actualFrom.minusMillis(duration));
+		}
 	}
 }

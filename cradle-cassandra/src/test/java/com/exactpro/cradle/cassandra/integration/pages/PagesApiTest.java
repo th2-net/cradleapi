@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2023-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ public class PagesApiTest extends BaseCradleCassandraTest {
         try {
             var result = storage.getAllPages(bookId);
             var autoPagesNonNull = result.stream()
-                    .filter(pageInfo -> pageInfo.getId().getName().startsWith("autoPageNotNull-"))
+                    .filter(pageInfo -> pageInfo.getName().startsWith("autoPageNotNull-"))
                     .collect(Collectors.toList());
             Assertions.assertThat(autoPagesNonNull.size()).isEqualTo(4);
             autoPagesNonNull.forEach(pageInfo -> {

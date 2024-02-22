@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,6 +68,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.EnumMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -81,6 +82,8 @@ import java.util.stream.Collectors;
 import java.util.zip.DataFormatException;
 
 import static com.exactpro.cradle.CradleStorage.EMPTY_MESSAGE_INDEX;
+import static com.exactpro.cradle.Order.DIRECT;
+import static com.exactpro.cradle.Order.REVERSE;
 import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_FIRST_MESSAGE_TIME;
 import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_LAST_SEQUENCE;
 import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_SEQUENCE;
@@ -244,7 +247,7 @@ public class MessagesWorker extends Worker {
         String queryInfo = format("get nearest time and sequence before %s for page '%s'",
                 TimeUtils.toInstant(messageDate, messageTime), page.getName());
         return selectQueryExecutor.executeSingleRowResultQuery(
-                        () -> mbOperator.getNearestBatchTimeAndSequenceBefore(page.getId().getBookId().getName(), page.getName(), sessionAlias,
+                        () -> mbOperator.getNearestBatchTimeAndSequenceBefore(page.getBookName(), page.getName(), sessionAlias,
                                 direction, messageDate, messageTime, sequence, readAttrs), Function.identity(), queryInfo)
                 .thenComposeAsync(row ->
                 {
@@ -536,11 +539,12 @@ public class MessagesWorker extends Worker {
     public long getBoundarySequence(String sessionAlias, Direction direction, BookInfo book, boolean first)
             throws CradleStorageException {
         MessageBatchOperator mbOp = getOperators().getMessageBatchOperator();
-        PageInfo currentPage = first ? book.getFirstPage() : book.getLastPage();
+        Iterator<PageInfo> pageIterator = book.getPages(null, null, first ? DIRECT : REVERSE);
+        PageInfo currentPage = pageIterator.hasNext() ? pageIterator.next() : null;
         Row row = null;
 
         while (row == null && currentPage != null) {
-            String page = currentPage.getId().getName();
+            String page = currentPage.getName();
             String bookName = book.getId().getName();
             String queryInfo = format("get %s sequence for book '%s' page '%s', session alias '%s', " +
                     "direction '%s'", (first ? "first" : "last"), bookName, page, sessionAlias, direction);
@@ -553,9 +557,9 @@ public class MessagesWorker extends Worker {
                 throw new CradleStorageException("Error occurs while " + queryInfo, e);
             }
 
-            if (row == null)
-                currentPage = first ? book.getNextPage(currentPage.getStarted())
-                        : book.getPreviousPage(currentPage.getStarted());
+            if (row == null) {
+                currentPage = pageIterator.hasNext() ? pageIterator.next() : null;
+            }
         }
         if (row == null) {
             logger.debug("There is no messages yet in book '{}' with session alias '{}' and direction '{}'",
