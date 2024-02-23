@@ -136,6 +136,34 @@ public class BookInfoTest {
         assertEquals(newArrayList(iterator), operateSource);
     }
 
+    @Test
+    public void getAllPagesInReverseOrderTest() {
+        List<PageInfo> source = new ArrayList<>(PAGES);
+        BookInfo bookInfo = createBookInfo(source, 1);
+
+        Iterator<PageInfo> iterator = bookInfo.getPages(null, null, Order.REVERSE);
+        assertEquals(newArrayList(iterator), Lists.reverse(source));
+    }
+
+    @Test(dataProvider = "orders")
+    public void getPagesByOneTimestamp(Order order) {
+        PageInfo pageInfo = PAGES.get(0);
+        List<PageInfo> operateSource = List.of(pageInfo);
+        BookInfo bookInfo = createBookInfo(operateSource, 1);
+
+        assertEquals(
+                newArrayList(bookInfo.getPages(null, pageInfo.getStarted().minus(1, NANOS), order)),
+                emptyList(),
+                "End timestamp before first page start"
+        );
+
+        assertEquals(
+                newArrayList(bookInfo.getPages(pageInfo.getEnded().plus(1, NANOS), null, order)),
+                emptyList(),
+                "Start timestamp after last page end"
+        );
+    }
+
     @Test(dataProvider = "orders")
     // ... ps   |      |   ps  ps ...
     public void getPagesByPointTest(Order order) {
@@ -251,15 +279,6 @@ public class BookInfoTest {
                 operateSource.get(2),
                 "Max timestamp"
         );
-    }
-
-    @Test
-    public void getAllPagesInReverseOrderTest() {
-        List<PageInfo> source = new ArrayList<>(PAGES);
-        BookInfo bookInfo = createBookInfo(source, 1);
-
-        Iterator<PageInfo> iterator = bookInfo.getPages(null, null, Order.REVERSE);
-        assertEquals(newArrayList(iterator), Lists.reverse(source));
     }
 
 

@@ -31,8 +31,6 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.datastax.oss.driver.api.mapper.entity.saving.NullSavingStrategy;
 
-//TODO: implement getFirstPage / getLastPage methods
-
 @Dao
 public interface PageOperator {
 	@Select

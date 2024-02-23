@@ -413,6 +413,10 @@ public abstract class CradleStorage {
         return doListBooks();
     }
 
+    public BookInfo getBook(BookId bookId) throws CradleStorageException {
+        return getBookCache().getBook(bookId);
+    }
+
     /**
      * @return collection of books currently available in storage
      */

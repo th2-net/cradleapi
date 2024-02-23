@@ -245,7 +245,7 @@ public class BookInfo
 			return pageInfo;
 		}
 
-		// Search in page intervals before the timestamp
+		// Check first page
 		PageInfo firstPage = getFirstPage();
 		if (firstPage == null) {
 			return null;
@@ -254,6 +254,16 @@ public class BookInfo
 			return null;
 		}
 
+		// Check last page
+		PageInfo lastPage = getLastPage();
+		if (lastPage == null) {
+			return null;
+		}
+		if (lastPage.getEnded() != null && timestamp.isAfter(lastPage.getEnded())) {
+			return null;
+		}
+
+		// Search in page intervals before the timestamp
 		long firstEpochDay = getEpochDay(firstPage.getStarted());
 		if (epochDay < firstEpochDay) {
 			return null;
@@ -500,7 +510,17 @@ public class BookInfo
 		public PageInfo find(Instant timestamp)
 		{
 			Entry<Instant, PageInfo> result = pageByInstant.floorEntry(timestamp);
-			return result != null ? result.getValue() : null;
+			if (result == null) {
+				return null;
+			}
+			PageInfo pageInfo = result.getValue();
+			if (pageInfo.getEnded() == null) {
+				return pageInfo;
+			}
+			if (timestamp.isAfter(pageInfo.getEnded())) {
+				return null;
+			}
+			return pageInfo;
 		}
 
 		@Override

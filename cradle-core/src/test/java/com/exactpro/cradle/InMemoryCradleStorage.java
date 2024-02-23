@@ -37,12 +37,14 @@ import com.exactpro.cradle.utils.CradleStorageException;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * In memory implementation of CradleStorage that does nothing and serves as a stub
@@ -56,7 +58,7 @@ public class InMemoryCradleStorage extends CradleStorage {
 
 		InMemoryBookCache(Map<BookId, InMemoryBook> inMemoryStorage) {
 			this.inMemoryStorage = inMemoryStorage;
-			cache = new ConcurrentHashMap<>();
+			this.cache = new ConcurrentHashMap<>();
 		}
 
 		@Override
@@ -78,17 +80,24 @@ public class InMemoryCradleStorage extends CradleStorage {
 
 		@Override
 		public boolean checkBook(BookId bookId) {
-			return false;
+			return cache.containsKey(bookId);
 		}
 
 		@Override
 		public Collection<PageInfo> loadPageInfo(BookId bookId, boolean loadRemoved) {
-			return null;
+			InMemoryBook inMemoryBook = inMemoryStorage.get(bookId);
+			if (inMemoryBook == null) {
+				return Collections.emptyList();
+			}
+
+			return inMemoryBook.pages.stream()
+					.filter(pageInfo -> loadRemoved || pageInfo.getRemoved() == null)
+					.collect(Collectors.toList());
 		}
 
 		@Override
 		public Collection<BookInfo> getCachedBooks() {
-			return null;
+			return Collections.unmodifiableCollection(cache.values());
 		}
 	}
 
