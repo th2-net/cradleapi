@@ -25,7 +25,6 @@ import com.exactpro.cradle.cassandra.dao.testevents.converters.TestEventEntityCo
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
-import com.exactpro.cradle.cassandra.utils.ThreadSafeProvider;
 import com.exactpro.cradle.filters.ComparisonOperation;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.iterators.ConvertingIterator;
@@ -71,7 +70,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 	private final int limit;
 	private final AtomicInteger returned = new AtomicInteger();
     private final Instant actualFrom;
-	private final ThreadSafeProvider<PageInfo> pageProvider;
+	private final Iterator<PageInfo> pageProvider;
 	private final TestEventFilter filter;
 	private final FilterForGreater<Instant> leftBoundFilter;
 
@@ -91,23 +90,21 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 		this.leftBoundFilter = createLeftBoundFilter(book, eventBatchDurationWorker, actualFrom, readAttrs, filter);
 		this.filter = filter;
 
-		this.pageProvider = new ThreadSafeProvider<>(
-				book.getPages(
-						// we must calculate the first timestamp by origin filter because
-						// left bound filter is calculated according to max duration of event batch on the first page
-						findFirstTimestamp(filter.getPageId(), filter.getStartTimestampFrom(), book),
-						findLastTimestamp(filter.getPageId(), filter.getStartTimestampTo(), book),
-						filter.getOrder()
-				)
+		this.pageProvider = book.getPages(
+			// we must calculate the first timestamp by origin filter because
+			// left bound filter is calculated according to max duration of event batch on the first page
+			findFirstTimestamp(filter.getPageId(), filter.getStartTimestampFrom(), book),
+			findLastTimestamp(filter.getPageId(), filter.getStartTimestampTo(), book),
+			filter.getOrder()
 		);
 	}
 
 	@Override
 	public CompletableFuture<Iterator<StoredTestEvent>> nextIterator() {
-		PageInfo nextPage = pageProvider.next();
-		if (nextPage == null) {
+		if (!pageProvider.hasNext()) {
 			return CompletableFuture.completedFuture(null);
 		}
+		PageInfo nextPage = pageProvider.next();
 
 		if (limit > 0 && returned.get() >= limit) {
 			LOGGER.debug("Filtering interrupted because limit for records to return ({}) is reached ({})", limit, returned);

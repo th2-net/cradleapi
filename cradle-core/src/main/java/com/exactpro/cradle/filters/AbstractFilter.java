@@ -52,7 +52,7 @@ public abstract class AbstractFilter
 		this.from = copyFrom.getFrom();
 		this.to = copyFrom.getTo();
 		if(copyFrom.getLimit() < 0){
-			throw new IllegalArgumentException("Invalid limit value: " + copyFrom.getLimit() + ". limit must be greater than 0 )");
+			throw new IllegalArgumentException("Invalid limit value: " + copyFrom.getLimit() + ". limit must be greater than 0");
 		}
 		this.limit = copyFrom.getLimit();
 		this.order = copyFrom.getOrder();
@@ -94,7 +94,7 @@ public abstract class AbstractFilter
 
 	public void setLimit(int limit) {
 		if(limit < 0){
-			throw new IllegalArgumentException("Invalid limit value: " + limit + ". limit must be greater than 0 )");
+			throw new IllegalArgumentException("Invalid limit value: " + limit + ". limit must be greater than 0");
 		}
 		this.limit = limit;
 	}

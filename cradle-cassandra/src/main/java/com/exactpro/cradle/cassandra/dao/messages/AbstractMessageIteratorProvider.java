@@ -47,7 +47,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.annotation.concurrent.GuardedBy;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -56,8 +55,6 @@ import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.Order.REVERSE;
@@ -84,10 +81,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 	protected final MessageBatchIteratorFilter<MessageBatchEntity> batchFilter;
 	protected final MessageBatchIteratorCondition<MessageBatchEntity> iterationCondition;
 
-	private final Lock lock = new ReentrantLock();
-	@GuardedBy("lock")
 	private final Iterator<PageInfo> pageProvider;
-	@GuardedBy("lock")
 	// only get / set operation are guarded by lock
 	private TakeWhileIterator<MessageBatchEntity> takeWhileIterator;
 
@@ -219,22 +213,17 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 	}
 
 	protected @Nullable PageInfo nextPage() {
-		lock.lock();
-		try {
-			if (takeWhileIterator != null && takeWhileIterator.isHalted()) {
-				LOGGER.debug("Iterator was interrupted because iterator condition was not met");
-				return null;
-			}
-
-			if (limit > 0 && returned.get() >= limit) {
-				LOGGER.debug("Filtering interrupted because limit for records to return ({}) is reached ({})", limit, returned);
-				return null;
-			}
-
-			return pageProvider.hasNext() ? pageProvider.next() : null;
-		} finally {
-			lock.unlock();
+		if (takeWhileIterator != null && takeWhileIterator.isHalted()) {
+			LOGGER.debug("Iterator was interrupted because iterator condition was not met");
+			return null;
 		}
+
+		if (limit > 0 && returned.get() >= limit) {
+			LOGGER.debug("Filtering interrupted because limit for records to return ({}) is reached ({})", limit, returned);
+			return null;
+		}
+
+		return pageProvider.hasNext() ? pageProvider.next() : null;
 	}
 
 	protected Iterator<StoredMessageBatch> getBatchedIterator(PageId pageId,
@@ -248,19 +237,14 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 				pagedIterator,
 				batchFilter::test);
 
-		lock.lock();
-		try {
-			// We need to store this iterator since
-			// it gives info whether or no iterator was halted
-			takeWhileIterator = new TakeWhileIterator<>(
-					filteringIterator,
-					iterationCondition);
+		// We need to store this iterator since
+		// it gives info whether or no iterator was halted
+		takeWhileIterator = new TakeWhileIterator<>(
+				filteringIterator,
+				iterationCondition);
 
-			return new ConvertingIterator<>(
-					takeWhileIterator, entity ->
-					MessagesWorker.mapMessageBatchEntity(pageId, entity));
-		} finally {
-			lock.unlock();
-		}
+		return new ConvertingIterator<>(
+				takeWhileIterator, entity ->
+				MessagesWorker.mapMessageBatchEntity(pageId, entity));
 	}
 }

@@ -26,7 +26,6 @@ import com.exactpro.cradle.cassandra.dao.messages.converters.GroupedMessageBatch
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
-import com.exactpro.cradle.cassandra.utils.ThreadSafeProvider;
 import com.exactpro.cradle.cassandra.workers.MessagesWorker;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
@@ -68,7 +67,7 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 	private final GroupedMessageFilter filter;
 	protected final FilterForGreater<Instant> leftBoundFilter;
 	protected final FilterForLess<Instant> rightBoundFilter;
-	private final ThreadSafeProvider<PageInfo> pageProvider;
+	private final Iterator<PageInfo> pageProvider;
 	private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
 	/** limit must be strictly positive ( limit greater than 0 ) */
 	private final int limit;
@@ -96,12 +95,10 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 		this.returned = new AtomicInteger();
 		this.leftBoundFilter = createLeftBoundFilter(filter);
 		this.rightBoundFilter = createRightBoundFilter(filter);
-		this.pageProvider = new ThreadSafeProvider<>(
-			book.getPages(
-				leftBoundFilter.getValue(),
-				rightBoundFilter.getValue(),
-				order
-			)
+		this.pageProvider = book.getPages(
+			leftBoundFilter.getValue(),
+			rightBoundFilter.getValue(),
+			order
 		);
 		this.order = order;
 	}
@@ -174,10 +171,10 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 
 	@Override
 	public CompletableFuture<Iterator<StoredGroupedMessageBatch>> nextIterator() {
-		PageInfo nextPage = pageProvider.next();
-		if (nextPage == null) {
+		if (!pageProvider.hasNext()) {
 			return CompletableFuture.completedFuture(null);
 		}
+		PageInfo nextPage = pageProvider.next();
 
 		if (limit > 0 && returned.get() >= limit) {
 			logger.debug("Filtering interrupted because limit for records to return ({}) is reached ({})", limit, returned);

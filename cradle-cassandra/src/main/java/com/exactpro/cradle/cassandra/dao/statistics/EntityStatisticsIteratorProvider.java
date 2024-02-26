@@ -25,7 +25,6 @@ import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
-import com.exactpro.cradle.cassandra.utils.ThreadSafeProvider;
 import com.exactpro.cradle.counters.CounterSample;
 import com.exactpro.cradle.iterators.ConvertingIterator;
 
@@ -45,7 +44,7 @@ public class EntityStatisticsIteratorProvider extends IteratorProvider<CounterSa
     private final FrameType frameType;
     private final FrameInterval frameInterval;
     private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
-    private final ThreadSafeProvider<PageInfo> pageProvider;
+    private final Iterator<PageInfo> pageProvider;
     public EntityStatisticsIteratorProvider(String requestInfo, CassandraOperators operators, BookInfo book,
                                             ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
                                             EntityType entityType,
@@ -60,21 +59,19 @@ public class EntityStatisticsIteratorProvider extends IteratorProvider<CounterSa
         this.frameType = frameType;
         this.frameInterval = frameInterval;
         this.readAttrs = readAttrs;
-        this.pageProvider = new ThreadSafeProvider<>(
-                book.getPages(
-                        frameInterval.getInterval().getStart(),
-                        frameInterval.getInterval().getEnd(),
-                        DIRECT
-                )
+        this.pageProvider = book.getPages(
+            frameInterval.getInterval().getStart(),
+            frameInterval.getInterval().getEnd(),
+            DIRECT
         );
     }
 
     @Override
     public CompletableFuture<Iterator<CounterSample>> nextIterator() {
-        PageInfo pageInfo = pageProvider.next();
-        if(pageInfo == null){
+        if(!pageProvider.hasNext()){
             return CompletableFuture.completedFuture(null);
         }
+        PageInfo pageInfo = pageProvider.next();
 
         Instant actualStart = frameInterval.getFrameType().getFrameStart(frameInterval.getInterval().getStart());
         Instant actualEnd = frameInterval.getFrameType().getFrameEnd(frameInterval.getInterval().getEnd());
