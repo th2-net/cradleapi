@@ -171,7 +171,7 @@ public class BookInfo
 	}
 
 	/**
-	 * Requests page iterator using cache.
+	 * Requests page iterator using cache. Iterator lazy loads pages into cache when requested day isn't in there.
 	 * @param leftBoundTimestamp inclusive minimal timestamp. Start time of first page is used if passed value is null
 	 * @param rightBoundTimestamp inclusive maximum timestamp. Start time of last page is used if passed value is null
 	 */
