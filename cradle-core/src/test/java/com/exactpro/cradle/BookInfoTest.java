@@ -146,7 +146,7 @@ public class BookInfoTest {
     }
 
     @Test(dataProvider = "orders")
-    public void getPagesByOneTimestamp(Order order) {
+    public void getPagesWithEmptyResult(Order order) {
         PageInfo pageInfo = PAGES.get(0);
         List<PageInfo> operateSource = List.of(pageInfo);
         BookInfo bookInfo = createBookInfo(operateSource, 1);
@@ -156,11 +156,15 @@ public class BookInfoTest {
                 emptyList(),
                 "End timestamp before first page start"
         );
-
         assertEquals(
                 newArrayList(bookInfo.getPages(pageInfo.getEnded().plus(1, NANOS), null, order)),
                 emptyList(),
                 "Start timestamp after last page end"
+        );
+        assertEquals(
+                newArrayList(bookInfo.getPages(pageInfo.getEnded(), pageInfo.getStarted(), order)),
+                emptyList(),
+                "Start > end timestamp after last page end"
         );
     }
 

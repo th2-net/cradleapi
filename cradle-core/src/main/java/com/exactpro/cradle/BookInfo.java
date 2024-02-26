@@ -181,10 +181,8 @@ public class BookInfo
 		if (leftBoundTimestamp != null &&
 				rightBoundTimestamp != null &&
 				leftBoundTimestamp.isAfter(rightBoundTimestamp)) {
-			throw new IllegalArgumentException(
-					"Left bound '" + leftBoundTimestamp +
-							"' must be <= right bound '" + rightBoundTimestamp + "'"
-			);
+			LOGGER.warn("Left bound '{}' should be <= right bound '{}'", leftBoundTimestamp, rightBoundTimestamp);
+			return emptyIterator();
 		}
 
 		Instant leftTimestamp = calculateBound(leftBoundTimestamp, this::getFirstPage);
@@ -358,8 +356,7 @@ public class BookInfo
 		getFirstPage();
 		long currentEpochDay = currentEpochDay();
 		for (int shift = HOT_CACHE_SIZE - 1; shift >= 0; shift--) {
-			//noinspection ResultOfMethodCallIgnored
-			this.hotCache.get(currentEpochDay - shift);
+            this.hotCache.get(currentEpochDay - shift);
 		}
 	}
 
@@ -559,12 +556,6 @@ public class BookInfo
 		Map<PageId, PageInfo> pageById = new HashMap<>();
 		TreeMap<Instant, PageInfo> pageByInstant = new TreeMap<>();
 		for (PageInfo page : pages) {
-			//			if (page.getEnded() == null) {
-//				throw new IllegalStateException(
-//						"Page with '" + page.getId() + "' id hasn't got ended time"
-//				);
-//			}
-
 			PageInfo previous = pageById.put(page.getId(), page);
 			if (previous != null) {
 				throw new IllegalStateException(
