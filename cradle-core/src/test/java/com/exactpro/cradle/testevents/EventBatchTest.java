@@ -52,6 +52,7 @@ import static com.exactpro.cradle.testevents.EventSingleTest.SCOPE;
 import static com.exactpro.cradle.testevents.EventSingleTest.START_TIMESTAMP;
 import static com.exactpro.cradle.testevents.EventSingleTest.batchParentId;
 import static com.exactpro.cradle.testevents.EventSingleTest.validEvent;
+import static java.time.temporal.ChronoUnit.NANOS;
 
 public class EventBatchTest {
     private final int MAX_SIZE = 1024;
@@ -298,7 +299,7 @@ public class EventBatchTest {
     private static BookInfo createBookInfo() {
         List<PageInfo> pages = List.of(new PageInfo(
                 new PageId(BOOK, START_TIMESTAMP, "test-page"),
-                START_TIMESTAMP,
+                START_TIMESTAMP.plus(1, NANOS),
                 null)
         );
         return new BookInfo(

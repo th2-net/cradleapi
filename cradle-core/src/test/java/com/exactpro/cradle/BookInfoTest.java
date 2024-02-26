@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Function;
 
 import static com.exactpro.cradle.Order.DIRECT;
 import static com.exactpro.cradle.Order.REVERSE;
@@ -136,13 +137,95 @@ public class BookInfoTest {
         assertEquals(newArrayList(iterator), operateSource);
     }
 
+    @Test(dataProvider = "orders")
+    public void getPagesTest(Order order) {
+        PageInfo pageInfo = PAGES.get(1);
+        List<PageInfo> operateSource = new ArrayList<>(PAGES.subList(0, 3));
+        BookInfo bookInfo = createBookInfo(operateSource, 1);
+
+        Function<List<PageInfo>, List<PageInfo>> optionalReverse = origin -> {
+            if (order == REVERSE) {
+                return Lists.reverse(origin);
+            }
+            return origin;
+        };
+
+        assertEquals(
+                newArrayList(bookInfo.getPages(pageInfo.getStarted().minus(1, NANOS), pageInfo.getEnded().minus(1, NANOS), order)),
+                optionalReverse.apply(operateSource.subList(0,2)),
+                "Pages where start (-1) to end (-1) timestamps"
+        );
+        assertEquals(
+                newArrayList(bookInfo.getPages(pageInfo.getStarted(), pageInfo.getEnded().minus(1, NANOS), order)),
+                optionalReverse.apply(operateSource.subList(1,2)),
+                "Pages where start (0) to end (-1) timestamps"
+        );
+        assertEquals(
+                newArrayList(bookInfo.getPages(pageInfo.getStarted().plus(1, NANOS), pageInfo.getEnded().minus(1, NANOS), order)),
+                optionalReverse.apply(operateSource.subList(1,2)),
+                "Pages where start (+1) to end (-1) timestamps"
+        );
+
+        assertEquals(
+                newArrayList(bookInfo.getPages(pageInfo.getStarted().minus(1, NANOS), pageInfo.getEnded(), order)),
+                optionalReverse.apply(operateSource.subList(0,3)),
+                "Pages where start (-1) to end (0) timestamps"
+        );
+        assertEquals(
+                newArrayList(bookInfo.getPages(pageInfo.getStarted(), pageInfo.getEnded(), order)),
+                optionalReverse.apply(operateSource.subList(1,3)),
+                "Pages where start (0) to end (0) timestamps"
+        );
+        assertEquals(
+                newArrayList(bookInfo.getPages(pageInfo.getStarted().plus(1, NANOS), pageInfo.getEnded(), order)),
+                optionalReverse.apply(operateSource.subList(1,3)),
+                "Pages where start (+1) to end (0) timestamps"
+        );
+
+        assertEquals(
+                newArrayList(bookInfo.getPages(pageInfo.getStarted().minus(1, NANOS), pageInfo.getEnded().plus(1, NANOS), order)),
+                optionalReverse.apply(operateSource.subList(0,3)),
+                "Pages where start (-1) to end (+1) timestamps"
+        );
+        assertEquals(
+                newArrayList(bookInfo.getPages(pageInfo.getStarted(), pageInfo.getEnded().plus(1, NANOS), order)),
+                optionalReverse.apply(operateSource.subList(1,3)),
+                "Pages where start (0) to end (-1) timestamps"
+        );
+        assertEquals(
+                newArrayList(bookInfo.getPages(pageInfo.getStarted().plus(1, NANOS), pageInfo.getEnded().plus(1, NANOS), order)),
+                optionalReverse.apply(operateSource.subList(1,3)),
+                "Pages where start (+1) to end (+1) timestamps"
+        );
+    }
+
     @Test
     public void getAllPagesInReverseOrderTest() {
-        List<PageInfo> source = new ArrayList<>(PAGES);
-        BookInfo bookInfo = createBookInfo(source, 1);
+        PageInfo pageInfo = PAGES.get(1);
+        List<PageInfo> operateSource = new ArrayList<>(PAGES);
+        BookInfo bookInfo = createBookInfo(operateSource, 1);
 
-        Iterator<PageInfo> iterator = bookInfo.getPages(null, null, Order.REVERSE);
-        assertEquals(newArrayList(iterator), Lists.reverse(source));
+        Iterator<PageInfo> iterator = bookInfo.getPages(null, null, REVERSE);
+        assertEquals(newArrayList(iterator), Lists.reverse(operateSource));
+
+        assertEquals(
+                newArrayList(bookInfo.getPages(pageInfo.getStarted(), pageInfo.getEnded(), REVERSE)),
+                Lists.reverse(operateSource.subList(1,3)),
+                "Pages from start to end timestamps"
+        );
+    }
+
+    @Test
+    public void getPagesInReverseOrderTest() {
+        PageInfo pageInfo = PAGES.get(1);
+        List<PageInfo> operateSource = new ArrayList<>(PAGES.subList(0, 3));
+        BookInfo bookInfo = createBookInfo(operateSource, 1);
+
+        assertEquals(
+                newArrayList(bookInfo.getPages(pageInfo.getStarted(), pageInfo.getEnded(), REVERSE)),
+                Lists.reverse(operateSource.subList(1,3)),
+                "Pages from start to end timestamps"
+        );
     }
 
     @Test(dataProvider = "orders")

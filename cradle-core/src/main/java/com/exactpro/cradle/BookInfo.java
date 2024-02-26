@@ -194,6 +194,11 @@ public class BookInfo
 			return emptyIterator();
 		}
 
+		if (leftTimestamp.isAfter(rightTimestamp)) {
+			LOGGER.warn("Left calculated bound '{}' should be <= right calculated bound '{}'", leftTimestamp, rightTimestamp);
+			return emptyIterator();
+		}
+
 		long leftBoundEpochDay = getEpochDay(leftTimestamp);
 		long rightBoundEpochDay = getEpochDay(rightTimestamp);
 
@@ -257,7 +262,7 @@ public class BookInfo
 		if (lastPage == null) {
 			return null;
 		}
-		if (lastPage.getEnded() != null && timestamp.isAfter(lastPage.getEnded())) {
+		if (lastPage.getEnded() != null && !timestamp.isBefore(lastPage.getEnded())) {
 			return null;
 		}
 
@@ -378,7 +383,7 @@ public class BookInfo
 			if (pageInfo != null) {
 				return pageInfo.getStarted();
 			}
-			return null;
+			return origin;
 		}
 		PageInfo pageInfo = supplier.get();
 		if (pageInfo == null) {
@@ -513,7 +518,7 @@ public class BookInfo
 			if (pageInfo.getEnded() == null) {
 				return pageInfo;
 			}
-			if (timestamp.isAfter(pageInfo.getEnded())) {
+			if (!timestamp.isBefore(pageInfo.getEnded())) { // the last page has end timestamp
 				return null;
 			}
 			return pageInfo;
