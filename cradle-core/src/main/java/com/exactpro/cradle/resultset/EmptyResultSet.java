@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,12 @@
 
 package com.exactpro.cradle.resultset;
 
-public class EmptyResultSet<T> implements CradleResultSet<T>
-{
+public class EmptyResultSet<T> implements CradleResultSet<T> {
+	@SuppressWarnings("rawtypes")
+	public static final EmptyResultSet EMPTY_RESULT_SET = new EmptyResultSet();
+
+	private EmptyResultSet() { }
+
 	@Override
 	public boolean hasNext()
 	{
@@ -28,5 +32,10 @@ public class EmptyResultSet<T> implements CradleResultSet<T>
 	public T next()
 	{
 		return null;
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T> EmptyResultSet<T> emptyResultSet() {
+		return (EmptyResultSet<T>) EMPTY_RESULT_SET;
 	}
 }

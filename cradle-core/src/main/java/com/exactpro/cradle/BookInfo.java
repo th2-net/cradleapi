@@ -218,10 +218,10 @@ public class BookInfo
 	}
 
 	/**
-	 * Searches page covered passed timestamp.
-	 * Coverage schema: `[start, end)`
-	 *   - start page timestamp included
-	 *   - end page timestamp excluded
+	 * Searches for a page that contains the specified timestamp.
+	 * Page contains the timestamp if it is inside the following interval `[start, end)` where:
+	 *   - start - page start timestamp included
+	 *   - end - page end timestamp excluded
 	 */
 	public PageInfo findPage(Instant timestamp) {
 		long epochDay = getEpochDay(timestamp);
@@ -395,9 +395,8 @@ public class BookInfo
 	private IPageInterval getPageInterval(long epochDate) {
 		long currentEpochDay = currentEpochDay();
 		long diff = currentEpochDay - epochDate;
-		IPageInterval pageInterval = 0 <= diff && diff < 2
-				? hotCache.get(epochDate)
-				: randomAccessCache.get(epochDate);
+        LoadingCache<Long, IPageInterval> cache = 0 <= diff && diff < 2 ? hotCache : randomAccessCache;
+		IPageInterval pageInterval = cache.get(epochDate);
 		return pageInterval != null
 				? pageInterval
 				: EMPTY_PAGE_INTERVAL;

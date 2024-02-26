@@ -47,7 +47,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * In memory implementation of CradleStorage that does nothing and serves as a stub
+ * In memory implementation of CradleStorage that holds book and pages in memory
  */
 public class InMemoryCradleStorage extends CradleStorage {
 

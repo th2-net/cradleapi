@@ -33,7 +33,6 @@ import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.resultset.CradleResultSet;
-import com.exactpro.cradle.resultset.EmptyResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
@@ -68,6 +67,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
 
 import static com.exactpro.cradle.Order.DIRECT;
+import static com.exactpro.cradle.resultset.EmptyResultSet.emptyResultSet;
 
 /**
  * Storage which holds information about all data sent or received and test events.
@@ -922,7 +922,7 @@ public abstract class CradleStorage {
     public final CradleResultSet<StoredMessage> getMessages(MessageFilter filter) throws IOException, CradleStorageException {
         logger.debug("Filtering messages by {}", filter);
         if (!checkFilter(filter))
-            return new EmptyResultSet<>();
+            return emptyResultSet();
 
         BookInfo book = getBookCache().getBook(filter.getBookId());
         CradleResultSet<StoredMessage> result = doGetMessages(filter, book);
@@ -940,7 +940,7 @@ public abstract class CradleStorage {
     public final CompletableFuture<CradleResultSet<StoredMessage>> getMessagesAsync(MessageFilter filter) throws CradleStorageException {
         logger.debug("Asynchronously getting messages filtered by {}", filter);
         if (!checkFilter(filter))
-            return CompletableFuture.completedFuture(new EmptyResultSet<>());
+            return CompletableFuture.completedFuture(emptyResultSet());
 
         BookInfo book = getBookCache().getBook(filter.getBookId());
         CompletableFuture<CradleResultSet<StoredMessage>> result = doGetMessagesAsync(filter, book);
@@ -965,7 +965,7 @@ public abstract class CradleStorage {
     public final CradleResultSet<StoredMessageBatch> getMessageBatches(MessageFilter filter) throws IOException, CradleStorageException {
         logger.debug("Filtering message batches by {}", filter);
         if (!checkFilter(filter))
-            return new EmptyResultSet<>();
+            return emptyResultSet();
 
         BookInfo book = getBookCache().getBook(filter.getBookId());
         CradleResultSet<StoredMessageBatch> result = doGetMessageBatches(filter, book);
@@ -986,7 +986,7 @@ public abstract class CradleStorage {
             throws CradleStorageException, IOException {
         logger.debug("Filtering grouped message batches by {}", filter);
         if (!checkFilter(filter)) {
-            return new EmptyResultSet<>();
+            return emptyResultSet();
         }
 
         BookInfo book = getBookCache().getBook(filter.getBookId());
@@ -1006,7 +1006,7 @@ public abstract class CradleStorage {
     public final CompletableFuture<CradleResultSet<StoredMessageBatch>> getMessageBatchesAsync(MessageFilter filter) throws CradleStorageException {
         logger.debug("Asynchronously getting message batches filtered by {}", filter);
         if (!checkFilter(filter))
-            return CompletableFuture.completedFuture(new EmptyResultSet<>());
+            return CompletableFuture.completedFuture(emptyResultSet());
 
         BookInfo book = getBookCache().getBook(filter.getBookId());
         CompletableFuture<CradleResultSet<StoredMessageBatch>> result = doGetMessageBatchesAsync(filter, book);
@@ -1030,7 +1030,7 @@ public abstract class CradleStorage {
     public final CompletableFuture<CradleResultSet<StoredGroupedMessageBatch>> getGroupedMessageBatchesAsync(GroupedMessageFilter filter) throws CradleStorageException {
         logger.debug("Asynchronously getting grouped message batches filtered by {}", filter);
         if (!checkFilter(filter)) {
-            return CompletableFuture.completedFuture(new EmptyResultSet<>());
+            return CompletableFuture.completedFuture(emptyResultSet());
         }
 
         BookInfo book = getBookCache().getBook(filter.getBookId());
@@ -1160,7 +1160,7 @@ public abstract class CradleStorage {
     public final CradleResultSet<StoredTestEvent> getTestEvents(TestEventFilter filter) throws CradleStorageException, IOException {
         logger.debug("Filtering test events by {}", filter);
         if (!checkFilter(filter))
-            return new EmptyResultSet<>();
+            return emptyResultSet();
 
         BookInfo book = getBookCache().getBook(filter.getBookId());
         CradleResultSet<StoredTestEvent> result = doGetTestEvents(filter, book);
@@ -1178,7 +1178,7 @@ public abstract class CradleStorage {
     public final CompletableFuture<CradleResultSet<StoredTestEvent>> getTestEventsAsync(TestEventFilter filter) throws CradleStorageException {
         logger.debug("Asynchronously getting test events filtered by {}", filter);
         if (!checkFilter(filter))
-            return CompletableFuture.completedFuture(new EmptyResultSet<>());
+            return CompletableFuture.completedFuture(emptyResultSet());
 
         BookInfo book = getBookCache().getBook(filter.getBookId());
         CompletableFuture<CradleResultSet<StoredTestEvent>> result = doGetTestEventsAsync(filter, book);
