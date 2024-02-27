@@ -29,7 +29,6 @@ import com.exactpro.cradle.utils.CradleStorageException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,6 +37,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.CassandraStorageSettings.DEFAULT_PAGE_REMOVE_TIME;
+import static com.exactpro.cradle.cassandra.utils.StorageUtils.toLocalDate;
+import static com.exactpro.cradle.cassandra.utils.StorageUtils.toLocalTime;
 
 public class ReadThroughBookCache implements BookCache {
 
@@ -88,10 +89,10 @@ public class ReadThroughBookCache implements BookCache {
 
     public Collection<PageInfo> loadPageInfo(BookId bookId, Instant start, Instant end, boolean loadRemoved) {
         Collection<PageInfo> result = new ArrayList<>();
-        LocalDate startDate = start != null ? LocalDate.ofInstant(start, ZoneOffset.UTC) : LocalDate.MIN;
-        LocalTime startTime = start != null ? LocalTime.ofInstant(start, ZoneOffset.UTC) : LocalTime.MIN;
-        LocalDate endDate = end != null ? LocalDate.ofInstant(end, ZoneOffset.UTC) : LocalDate.MAX;
-        LocalTime endTime = end != null ? LocalTime.ofInstant(end, ZoneOffset.UTC) : LocalTime.MAX;
+        LocalDate startDate = start != null ? toLocalDate(start) : LocalDate.MIN;
+        LocalTime startTime = start != null ? toLocalTime(start) : LocalTime.MIN;
+        LocalDate endDate = end != null ? toLocalDate(end) : LocalDate.MAX;
+        LocalTime endTime = end != null ? toLocalTime(end) : LocalTime.MAX;
         for (PageEntity pageEntity : operators.getPageOperator().get(
                 bookId.getName(),
                 startDate,

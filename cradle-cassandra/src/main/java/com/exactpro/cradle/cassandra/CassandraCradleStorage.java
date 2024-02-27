@@ -127,6 +127,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.exactpro.cradle.cassandra.utils.StorageUtils.toLocalDate;
+import static com.exactpro.cradle.cassandra.utils.StorageUtils.toLocalTime;
+
 public class CassandraCradleStorage extends CradleStorage
 {
 	private final Logger LOGGER = LoggerFactory.getLogger(CassandraCradleStorage.class);
@@ -1347,23 +1350,25 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<Iterator<PageInfo>> doGetPagesAsync (BookId bookId, Interval interval) {
+		Instant start = interval.getStart();
+		Instant end = interval.getEnd();
 		String queryInfo = String.format(
 				"Getting pages for book %s between  %s - %s ",
 				bookId.getName(),
-				interval.getStart(),
-				interval.getEnd());
+				start,
+				end);
 
 		PageEntity startPage = operators.getPageOperator()
 				.getPageForLessOrEqual(
 						bookId.getName(),
-						LocalDate.ofInstant(interval.getStart(), TIMEZONE_OFFSET),
-						LocalTime.ofInstant(interval.getStart(), TIMEZONE_OFFSET),
+						toLocalDate(start),
+						toLocalTime(start),
 						readAttrs).one();
 
 		LocalDate startDate = startPage == null ? LocalDate.MIN : startPage.getStartDate();
 		LocalTime startTime = startPage == null ? LocalTime.MIN : startPage.getStartTime();
-		LocalDate endDate = LocalDate.ofInstant(interval.getEnd(), TIMEZONE_OFFSET);
-		LocalTime endTime = LocalTime.ofInstant(interval.getEnd(), TIMEZONE_OFFSET);
+		LocalDate endDate = toLocalDate(end);
+		LocalTime endTime = toLocalTime(end);
 
 		return operators.getPageOperator().getPagesForInterval(
 				bookId.getName(),
@@ -1384,16 +1389,15 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected Iterator<PageInfo> doGetPages(BookId bookId, Interval interval) throws CradleStorageException {
-		String queryInfo = String.format(
-				"Getting pages for book %s between  %s - %s ",
-				bookId.getName(),
-				interval.getStart(),
-				interval.getEnd());
-
 		try {
 			return doGetPagesAsync(bookId, interval).get();
 		} catch (InterruptedException | ExecutionException e) {
-			throw new CradleStorageException("Error while " + queryInfo, e);
+			String error = String.format(
+					"Error while Getting pages for book %s between  %s - %s ",
+					bookId.getName(),
+					interval.getStart(),
+					interval.getEnd());
+			throw new CradleStorageException(error, e);
 		}
 	}
 }

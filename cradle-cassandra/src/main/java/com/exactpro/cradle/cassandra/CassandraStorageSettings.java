@@ -54,9 +54,13 @@ public class CassandraStorageSettings extends CoreStorageSettings {
     public static final long DEFAULT_TIMEOUT = 5000;
     public static final CompressionType DEFAULT_COMPRESSION_TYPE = CompressionType.ZLIB;
 
+    //we need to use Instant.EPOCH instead of Instant.MIN.
+    //when cassandra driver tries to convert Instant.MIN to milliseconds using toEpochMilli() it causes long overflow.
+    public static final Instant MIN_EPOCH_INSTANT = Instant.EPOCH;
     //we need to use Instant.ofEpochMilli(Long.MAX_VALUE) instead of Instant.MAX.
     //when cassandra driver tries to convert Instant.MAX to milliseconds using toEpochMilli() it causes long overflow.
-    public static final Instant DEFAULT_PAGE_REMOVE_TIME = Instant.ofEpochMilli(Long.MAX_VALUE);
+    public static final Instant MAX_EPOCH_INSTANT = Instant.ofEpochMilli(Long.MAX_VALUE);
+    public static final Instant DEFAULT_PAGE_REMOVE_TIME = MAX_EPOCH_INSTANT;
 
     @JsonIgnore
     private NetworkTopologyStrategy networkTopologyStrategy;

@@ -17,8 +17,8 @@
 package com.exactpro.cradle.cassandra.integration.pages;
 
 import com.exactpro.cradle.cassandra.integration.BaseCradleCassandraTest;
+import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.utils.CradleStorageException;
-import org.assertj.core.api.Assertions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.BeforeClass;
@@ -27,7 +27,12 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Spliterator;
 import java.util.stream.Collectors;
+
+import static java.util.Spliterators.spliteratorUnknownSize;
+import static java.util.stream.StreamSupport.stream;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class PagesApiTest extends BaseCradleCassandraTest {
     private static final Logger logger = LoggerFactory.getLogger(PagesApiTest.class);
@@ -63,11 +68,30 @@ public class PagesApiTest extends BaseCradleCassandraTest {
             var autoPagesNonNull = result.stream()
                     .filter(pageInfo -> pageInfo.getName().startsWith("autoPageNotNull-"))
                     .collect(Collectors.toList());
-            Assertions.assertThat(autoPagesNonNull.size()).isEqualTo(4);
+            assertThat(autoPagesNonNull.size()).isEqualTo(4);
             autoPagesNonNull.forEach(pageInfo -> {
-                Assertions.assertThat(pageInfo.getComment()).isNotNull();
-                Assertions.assertThat(pageInfo.getUpdated()).isNotNull();
-                Assertions.assertThat(pageInfo.getRemoved()).isNotNull();
+                assertThat(pageInfo.getComment()).isNotNull();
+                assertThat(pageInfo.getUpdated()).isNotNull();
+                assertThat(pageInfo.getRemoved()).isNotNull();
+            });
+        } catch (CradleStorageException e) {
+            logger.error(e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    @Test(description = "Gets pages from the max interval (MIN, MAX), filters them using name and their default values are not null")
+    public void testPagesByMaxInterval() throws CradleStorageException {
+        try {
+            var result = storage.getPages(bookId, new Interval(Instant.MIN, Instant.MAX));
+            var autoPagesNonNull = stream(spliteratorUnknownSize(result, Spliterator.ORDERED), false)
+                    .filter(pageInfo -> pageInfo.getName().startsWith("autoPageNotNull-"))
+                    .collect(Collectors.toList());
+            assertThat(autoPagesNonNull.size()).isEqualTo(4);
+            autoPagesNonNull.forEach(pageInfo -> {
+                assertThat(pageInfo.getComment()).isNotNull();
+                assertThat(pageInfo.getUpdated()).isNotNull();
+                assertThat(pageInfo.getRemoved()).isNotNull();
             });
         } catch (CradleStorageException e) {
             logger.error(e.getMessage(), e);
