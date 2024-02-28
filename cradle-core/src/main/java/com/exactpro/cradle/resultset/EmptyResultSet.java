@@ -17,8 +17,7 @@
 package com.exactpro.cradle.resultset;
 
 public class EmptyResultSet<T> implements CradleResultSet<T> {
-	@SuppressWarnings("rawtypes")
-	public static final EmptyResultSet EMPTY_RESULT_SET = new EmptyResultSet();
+	public static final EmptyResultSet<Object> EMPTY_RESULT_SET = new EmptyResultSet<>();
 
 	private EmptyResultSet() { }
 

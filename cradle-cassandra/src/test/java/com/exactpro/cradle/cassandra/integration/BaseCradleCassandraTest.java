@@ -22,14 +22,18 @@ import com.exactpro.cradle.cassandra.CassandraCradleStorage;
 import com.exactpro.cradle.messages.MessageToStore;
 import com.exactpro.cradle.testevents.*;
 import com.exactpro.cradle.utils.CradleStorageException;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -161,4 +165,12 @@ public abstract class BaseCradleCassandraTest {
         return batch;
     }
 
+    @NotNull
+    protected static Map<PageId, PageInfo> toMap(Collection<PageInfo> result) {
+        return result.stream()
+                .collect(Collectors.toMap(
+                        PageInfo::getId,
+                        Function.identity()
+                ));
+    }
 }

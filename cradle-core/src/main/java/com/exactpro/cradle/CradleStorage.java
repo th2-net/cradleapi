@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -1546,7 +1547,7 @@ public abstract class CradleStorage {
     }
 
     private Instant checkCollisionAndGetPageEnd(BookInfo book, PageToAdd page, Instant defaultPageEnd) throws CradleStorageException {
-        Iterator<PageInfo> pageIterator = book.getPages(page.getStart(), null, DIRECT);
+        Iterator<PageInfo> pageIterator = book.getPages(page.getStart().minus(1, ChronoUnit.NANOS), null, DIRECT);
         PageInfo pageInBookBeforeStart = pageIterator.hasNext() ? pageIterator.next() : null;
 
         if (pageInBookBeforeStart != null
