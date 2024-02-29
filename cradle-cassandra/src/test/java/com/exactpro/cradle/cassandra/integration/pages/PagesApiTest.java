@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle.cassandra.integration.pages;
 
+import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.integration.BaseCradleCassandraTest;
 import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -27,9 +28,12 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Spliterator;
 import java.util.stream.Collectors;
 
+import static java.time.temporal.ChronoUnit.NANOS;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -97,5 +101,15 @@ public class PagesApiTest extends BaseCradleCassandraTest {
             logger.error(e.getMessage(), e);
             throw e;
         }
+    }
+
+    @Test(description = "Try to add page with start timestamp between already existed page",
+            expectedExceptions = CradleStorageException.class,
+            expectedExceptionsMessageRegExp = "Can't add new page in book.*"
+    )
+    public void testAddPageInTheMiddleOfExist() throws CradleStorageException, IOException {
+        List<PageInfo> allPages = new ArrayList<>(storage.getAllPages(bookId));
+        PageInfo pageInfo = allPages.get(allPages.size() - 2);
+        storage.addPage(bookId, "invalid-page", pageInfo.getStarted().plus(1, NANOS), null);
     }
 }
