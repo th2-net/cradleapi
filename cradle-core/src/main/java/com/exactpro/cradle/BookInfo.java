@@ -44,8 +44,10 @@ import static com.exactpro.cradle.BookInfoMetrics.CacheName.HOT;
 import static com.exactpro.cradle.BookInfoMetrics.CacheName.RANDOM;
 import static com.exactpro.cradle.BookInfoMetrics.RequestMethod.FIND;
 import static com.exactpro.cradle.BookInfoMetrics.RequestMethod.GET;
+import static com.exactpro.cradle.BookInfoMetrics.RequestMethod.ITERATE;
 import static com.exactpro.cradle.BookInfoMetrics.RequestMethod.NEXT;
 import static com.exactpro.cradle.BookInfoMetrics.RequestMethod.PREVIOUS;
+import static com.exactpro.cradle.BookInfoMetrics.RequestMethod.REFRESH;
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Collections.unmodifiableNavigableMap;
@@ -61,6 +63,11 @@ public class BookInfo {
     private static final int MILLISECONDS_IN_DAY = SECONDS_IN_DAY * 1_000;
     private static final long MAX_EPOCH_DAY = getEpochDay(Instant.MAX);
     private static final IPageInterval EMPTY_PAGE_INTERVAL = new EmptyPageInterval();
+
+    static {
+        METRICS.setPageCacheSize("", HOT, HOT_CACHE_SIZE);
+    }
+
     private final BookId id;
     private final String fullName,
             desc;
@@ -94,24 +101,14 @@ public class BookInfo {
         this.hotCache = Caffeine.newBuilder()
                 .maximumSize(HOT_CACHE_SIZE)
                 .removalListener((epochDay, pageInterval, cause) -> METRICS.incInvalidate(id.getName(), HOT, cause))
-                .build(epochDay -> {
-                    IPageInterval pageInterval = createPageInterval(HOT, epochDay);
-                    if (pageInterval != null) {
-                        METRICS.incLoads(id.getName(), pageInterval.getCacheName(), pageInterval.size());
-                    }
-                    return pageInterval;
-                });
+                .build(epochDay -> createPageInterval(HOT, epochDay));
 
         this.randomAccessCache = Caffeine.newBuilder()
                 .maximumSize(cacheSize)
                 .removalListener((epochDay, pageInterval, cause) -> METRICS.incInvalidate(id.getName(), RANDOM, cause))
-                .build(epochDay -> {
-                    IPageInterval pageInterval = createPageInterval(RANDOM, epochDay);
-                    if (pageInterval != null) {
-                        METRICS.incLoads(id.getName(), pageInterval.getCacheName(), pageInterval.size());
-                    }
-                    return pageInterval;
-                });
+                .build(epochDay -> createPageInterval(RANDOM, epochDay));
+
+        METRICS.setPageCacheSize(id.getName(), RANDOM, cacheSize);
     }
 
     public BookId getId() {
@@ -159,7 +156,6 @@ public class BookInfo {
 
     public PageInfo getPage(PageId pageId) {
         IPageInterval pageInterval = getPageInterval(pageId.getStart());
-        METRICS.incRequest(id.getName(), pageInterval.getCacheName(), GET);
         return pageInterval.get(pageId);
     }
 
@@ -237,7 +233,6 @@ public class BookInfo {
         // Search in the page interval related to the timestamp
         IPageInterval pageInterval = getPageInterval(epochDay);
         PageInfo pageInfo = pageInterval.find(timestamp);
-        METRICS.incRequest(id.getName(), pageInterval.getCacheName(), FIND);
         if (pageInfo != null) {
             return pageInfo;
         }
@@ -272,10 +267,8 @@ public class BookInfo {
                     // page interval without new pages
                     continue;
                 }
-                PageInfo previousPageInfo = previousPageInterval.find(timestamp);
-                METRICS.incRequest(id.getName(), previousPageInterval.getCacheName(), FIND);
                 // sP1 ... | ... eP1 ^ ... gap ... sP2 ... |
-                return previousPageInfo;
+                return previousPageInterval.find(timestamp);
             }
             throw new IllegalStateException(
                     "First page is before requested timestamp, but neither cache contains appropriate page, requested: " +
@@ -290,26 +283,22 @@ public class BookInfo {
     public PageInfo getNextPage(Instant startTimestamp) {
         long epochDate = getEpochDay(startTimestamp);
         IPageInterval pageInterval = getPageInterval(epochDate);
-        METRICS.incRequest(id.getName(), pageInterval.getCacheName(), NEXT);
         PageInfo currentInterval = pageInterval.next(startTimestamp);
         if (currentInterval != null) {
             return currentInterval;
         }
         pageInterval = getPageInterval(epochDate + 1);
-        METRICS.incRequest(id.getName(), pageInterval.getCacheName(), NEXT);
         return pageInterval.next(startTimestamp);
     }
 
     public PageInfo getPreviousPage(Instant startTimestamp) {
         long epochDate = getEpochDay(startTimestamp);
         IPageInterval pageInterval = getPageInterval(epochDate);
-        METRICS.incRequest(id.getName(), pageInterval.getCacheName(), PREVIOUS);
         PageInfo currentInterval = pageInterval.previous(startTimestamp);
         if (currentInterval != null) {
             return currentInterval;
         }
         pageInterval = getPageInterval(epochDate - 1);
-        METRICS.incRequest(id.getName(), pageInterval.getCacheName(), PREVIOUS);
         return pageInterval.previous(startTimestamp);
     }
 
@@ -342,7 +331,9 @@ public class BookInfo {
      */
     void refresh() {
         firstPage.set(null);
+        METRICS.incRequest(id.getName(), HOT, REFRESH);
         hotCache.invalidateAll();
+        METRICS.incRequest(id.getName(), RANDOM, REFRESH);
         randomAccessCache.invalidateAll();
 
         getFirstPage();
@@ -403,7 +394,12 @@ public class BookInfo {
         Instant start = toInstant(epochDay);
         Instant end = start.plus(1, ChronoUnit.DAYS).minus(1, ChronoUnit.NANOS);
         Collection<PageInfo> loaded = pagesLoader.load(id, start, end);
-        return loaded.isEmpty() ? null : create(id, start, cacheName, loaded);
+        if (loaded.isEmpty()) {
+            return null;
+        }
+        // We shouldn't register metric to avoid the `loads` >> `requests` case
+        METRICS.incLoads(id.getName(), cacheName, loaded.size());
+        return create(id, start, cacheName, loaded);
     }
 
     private static long currentEpochDay() {
@@ -419,8 +415,6 @@ public class BookInfo {
     }
 
     private interface IPageInterval {
-        BookInfoMetrics.CacheName getCacheName();
-
         int size();
 
         PageInfo get(PageId pageId);
@@ -435,10 +429,6 @@ public class BookInfo {
     }
 
     private static final class EmptyPageInterval implements IPageInterval {
-        @Override
-        public BookInfoMetrics.CacheName getCacheName() {
-            return null;
-        }
 
         @Override
         public int size() {
@@ -472,18 +462,16 @@ public class BookInfo {
     }
 
     private static class PageInterval implements IPageInterval {
+        private final BookId bookId;
         private final BookInfoMetrics.CacheName cacheName;
         private final Map<PageId, PageInfo> pageById;
         private final NavigableMap<Instant, PageInfo> pageByInstant;
 
-        private PageInterval(BookInfoMetrics.CacheName cacheName, Map<PageId, PageInfo> pageById, NavigableMap<Instant, PageInfo> pageByInstant) {
+        private PageInterval(BookId bookId, BookInfoMetrics.CacheName cacheName, Map<PageId, PageInfo> pageById, NavigableMap<Instant, PageInfo> pageByInstant) {
+            this.bookId = bookId;
             this.cacheName = cacheName;
             this.pageById = pageById;
             this.pageByInstant = pageByInstant;
-        }
-
-        public BookInfoMetrics.CacheName getCacheName() {
-            return cacheName;
         }
 
         @Override
@@ -493,11 +481,13 @@ public class BookInfo {
 
         @Override
         public PageInfo get(PageId pageId) {
+            METRICS.incRequest(bookId.getName(), cacheName, GET);
             return pageById.get(pageId);
         }
 
         @Override
         public PageInfo find(Instant timestamp) {
+            METRICS.incRequest(bookId.getName(), cacheName, FIND);
             Entry<Instant, PageInfo> result = pageByInstant.floorEntry(timestamp);
             if (result == null) {
                 return null;
@@ -514,12 +504,14 @@ public class BookInfo {
 
         @Override
         public PageInfo next(Instant startTimestamp) {
+            METRICS.incRequest(bookId.getName(), cacheName, NEXT);
             Entry<Instant, PageInfo> result = pageByInstant.higherEntry(startTimestamp);
             return result != null ? result.getValue() : null;
         }
 
         @Override
         public PageInfo previous(Instant startTimestamp) {
+            METRICS.incRequest(bookId.getName(), cacheName, PREVIOUS);
             Entry<Instant, PageInfo> result = pageByInstant.lowerEntry(startTimestamp);
             return result != null ? result.getValue() : null;
         }
@@ -528,6 +520,7 @@ public class BookInfo {
         public Stream<PageInfo> stream(@Nonnull Instant leftBoundTimestamp,
                                        @Nonnull Instant rightBoundTimestamp,
                                        @Nonnull Order order) {
+            METRICS.incRequest(bookId.getName(), cacheName, ITERATE);
             Instant start = pageByInstant.floorKey(leftBoundTimestamp);
             NavigableMap<Instant, PageInfo> subMap = pageByInstant.subMap(
                     start == null ? leftBoundTimestamp : start, true,
@@ -569,7 +562,7 @@ public class BookInfo {
         }
         LOGGER.debug("Loaded {} pages for the book {}, {}", pages.size(), id, start);
         return new PageInterval(
-                cacheName,
+                id, cacheName,
                 unmodifiableMap(pageById),
                 unmodifiableNavigableMap(pageByInstant)
         );

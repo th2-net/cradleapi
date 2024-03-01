@@ -17,6 +17,7 @@ package com.exactpro.cradle;
 
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import io.prometheus.client.Counter;
+import io.prometheus.client.Gauge;
 import io.prometheus.client.Summary;
 
 import java.util.Map;
@@ -28,6 +29,13 @@ public class BookInfoMetrics {
     private static final String BOOK_LABEL = "book";
     private static final String CACHE_NAME_LABEL = "cache";
     private static final String INVALIDATE_CAUSE_LABEL = "cause";
+    private static final Gauge PAGE_CACHE_SIZE_GAUGE = Gauge.build()
+            .name("cradle_page_cache_size")
+            .help("Size of page cache")
+            .labelNames(BOOK_LABEL, CACHE_NAME_LABEL)
+            .register();
+
+    private static final Map<LoadsKey, Gauge.Child> PAGE_CACHE_SIZE_MAP = new ConcurrentHashMap<>();
     private static final Counter PAGE_REQUEST_COUNTER = Counter.build()
             .name("cradle_page_cache_page_request_total")
             .help("Page requests number from cache")
@@ -48,6 +56,15 @@ public class BookInfoMetrics {
             .register();
 
     private static final Map<LoadsKey, Summary.Child> PAGE_LOADS_MAP = new ConcurrentHashMap<>();
+
+    public void setPageCacheSize(String book, CacheName cacheName, int value) {
+        if (cacheName == null) {
+            return;
+        }
+        PAGE_CACHE_SIZE_MAP.computeIfAbsent(
+                new LoadsKey(book, cacheName), key -> PAGE_CACHE_SIZE_GAUGE.labels(key.toLabels())
+        ).set(value);
+    }
 
     public void incRequest(String book, CacheName cacheName, RequestMethod method) {
         if (cacheName == null) {
@@ -76,7 +93,9 @@ public class BookInfoMetrics {
         GET,
         NEXT,
         PREVIOUS,
-        FIND
+        FIND,
+        ITERATE,
+        REFRESH,
     }
     public enum CacheName {
         HOT,
