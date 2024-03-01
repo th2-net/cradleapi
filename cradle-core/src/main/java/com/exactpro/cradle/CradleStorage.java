@@ -51,7 +51,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -59,6 +58,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -68,6 +68,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
 
 import static com.exactpro.cradle.Order.DIRECT;
+import static com.exactpro.cradle.Order.REVERSE;
 import static com.exactpro.cradle.resultset.EmptyResultSet.emptyResultSet;
 
 /**
@@ -1547,20 +1548,22 @@ public abstract class CradleStorage {
     }
 
     private Instant checkCollisionAndGetPageEnd(BookInfo book, PageToAdd page, Instant defaultPageEnd) throws CradleStorageException {
-        Iterator<PageInfo> pageIterator = book.getPages(page.getStart().minus(1, ChronoUnit.NANOS), null, DIRECT);
-        PageInfo pageInBookBeforeStart = pageIterator.hasNext() ? pageIterator.next() : null;
+        Iterator<PageInfo> reverseIterator = book.getPages(null, page.getStart(), REVERSE);
+        PageInfo pageBefore = reverseIterator.hasNext() ? reverseIterator.next() : null;
 
-        if (pageInBookBeforeStart != null
-                && pageInBookBeforeStart.getEnded() != null
-                && pageInBookBeforeStart.getEnded().isAfter(page.getStart())) {
+        if (pageBefore != null
+                && pageBefore.getEnded() != null
+                && pageBefore.getEnded().isAfter(page.getStart())) {
             throw new CradleStorageException(String.format("Can't add new page in book %s, it collided with current page %s %s-%s",
                     book.getId().getName(),
-                    pageInBookBeforeStart.getName(),
-                    pageInBookBeforeStart.getStarted(),
-                    pageInBookBeforeStart.getEnded()));
+                    pageBefore.getName(),
+                    pageBefore.getStarted(),
+                    pageBefore.getEnded()));
         }
 
-        return pageIterator.hasNext() ? pageIterator.next().getStarted() : defaultPageEnd;
+        Iterator<PageInfo> directIterator = book.getPages(page.getStart(), null, DIRECT);
+        PageInfo pageAfter = directIterator.hasNext() ? directIterator.next() : null;
+        return pageAfter == null || Objects.equals(pageAfter, pageBefore) ? defaultPageEnd : pageAfter.getStarted();
     }
 
     private List<PageInfo> checkAndConvertPages(List<PageToAdd> pages, BookInfo book) throws CradleStorageException {
