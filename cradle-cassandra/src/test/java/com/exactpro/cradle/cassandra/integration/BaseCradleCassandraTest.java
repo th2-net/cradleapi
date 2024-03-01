@@ -168,7 +168,7 @@ public abstract class BaseCradleCassandraTest {
     @NotNull
     protected static Map<PageId, PageInfo> toMap(Collection<PageInfo> result) {
         return result.stream()
-                .collect(Collectors.toMap(
+                .collect(Collectors.toImmutableMap(
                         PageInfo::getId,
                         Function.identity()
                 ));
