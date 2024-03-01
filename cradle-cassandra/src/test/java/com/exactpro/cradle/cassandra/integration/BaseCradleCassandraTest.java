@@ -84,7 +84,7 @@ public abstract class BaseCradleCassandraTest {
 
     /*
         Following method should be used in beforeClass if extending class
-        wants to implement it's own logic of initializing books and pages
+        wants to implement its own logic of initializing books and pages
      */
     protected void startUp() throws IOException, InterruptedException, CradleStorageException {
         startUp(false);
@@ -168,7 +168,7 @@ public abstract class BaseCradleCassandraTest {
     @NotNull
     protected static Map<PageId, PageInfo> toMap(Collection<PageInfo> result) {
         return result.stream()
-                .collect(Collectors.toImmutableMap(
+                .collect(Collectors.toUnmodifiableMap(
                         PageInfo::getId,
                         Function.identity()
                 ));
