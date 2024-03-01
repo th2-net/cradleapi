@@ -61,7 +61,7 @@ public class BookInfoTest {
         pages.add(createPageInfo(current, null));
 
         // Add random gap
-        int index = RANDOM.nextInt(1, pages.size() - 1);
+        int index = RANDOM.nextInt(pages.size() - 2) + 1;
         PageInfo pageInfo = pages.remove(index);
 
         PAGES = Collections.unmodifiableList(pages);
