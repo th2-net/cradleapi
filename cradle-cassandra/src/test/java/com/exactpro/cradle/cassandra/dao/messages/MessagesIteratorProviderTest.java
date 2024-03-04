@@ -22,14 +22,13 @@ import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.messages.MessageFilter;
 import com.exactpro.cradle.utils.CradleStorageException;
-import junit.framework.TestCase;
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
 import java.time.Instant;
 import java.util.Collections;
 
-public class MessagesIteratorProviderTest extends TestCase {
+public class MessagesIteratorProviderTest {
     protected static final BookId DEFAULT_BOOK_ID = new BookId("test_book");
     private static final String FIRST_SESSION_ALIAS = "test_session_alias";
 
