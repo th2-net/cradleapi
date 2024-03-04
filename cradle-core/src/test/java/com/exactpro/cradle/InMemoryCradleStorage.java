@@ -111,10 +111,10 @@ public class InMemoryCradleStorage extends CradleStorage {
 					bookToAdd.getDesc(),
 					bookToAdd.getCreated(),
 					1,
-					new TestPagesLoader(pages),
-					new TestPageLoader(pages, true),
-					new TestPageLoader(pages, false)
-			);
+					Long.MAX_VALUE,
+                    new TestPagesLoader(pages),
+                    new TestPageLoader(pages, true),
+                    new TestPageLoader(pages, false));
 		}
 	}
 

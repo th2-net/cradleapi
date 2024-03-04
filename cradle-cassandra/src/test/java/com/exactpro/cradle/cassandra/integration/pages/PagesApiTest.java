@@ -191,6 +191,29 @@ public class PagesApiTest extends BaseCradleCassandraTest {
         }
     }
 
+    @Test(description = "Try to rename page before page action reject threshold",
+            expectedExceptions = CradleStorageException.class,
+            expectedExceptionsMessageRegExp = "You can only rename pages which start more than.*"
+    )
+    public void testRenamePageBeforeThreshold() throws CradleStorageException, IOException {
+        try {
+            // Preparation
+            BookId testBookId = new BookId("testRenamePageBeforeThreshold");
+            Instant testBookStart = Instant.now().minus(10, ChronoUnit.DAYS);
+            PageId pageId1 = new PageId(testBookId, Instant.now().plus(BOOK_REFRESH_INTERVAL_MILLIS * PAGE_ACTION_REJECTION_THRESHOLD_FACTOR,
+                    MILLIS), "page1");
+            storage.addBook(new BookToAdd(testBookId.getName(), testBookStart));
+            storage.addPage(testBookId, pageId1.getName(), pageId1.getStart(), null);
+            assertEquals(storage.getAllPages(testBookId).size(), 1);
+
+            // Test
+            storage.updatePageName(testBookId, pageId1.getName(), pageId1.getName() + "-new");
+        } catch (IOException | CradleStorageException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
+        }
+    }
+
     @Test(description = "Try to add page with start timestamp between already existed page",
             expectedExceptions = CradleStorageException.class,
             expectedExceptionsMessageRegExp = "Can't add new page in book.*"

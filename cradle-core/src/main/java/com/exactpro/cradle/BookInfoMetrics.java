@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class BookInfoMetrics {
     private static final String REQUEST_METHOD_LABEL = "method";
-    private static final String BOOK_LABEL = "book";
+    private static final String BOOK_LABEL = "bookId";
     private static final String CACHE_NAME_LABEL = "cache";
     private static final String INVALIDATE_CAUSE_LABEL = "cause";
     private static final Gauge PAGE_CACHE_SIZE_GAUGE = Gauge.build()
@@ -57,33 +57,33 @@ public class BookInfoMetrics {
 
     private static final Map<LoadsKey, Summary.Child> PAGE_LOADS_MAP = new ConcurrentHashMap<>();
 
-    public void setPageCacheSize(String book, CacheName cacheName, int value) {
+    public void setPageCacheSize(BookId bookIdId, CacheName cacheName, int value) {
         if (cacheName == null) {
             return;
         }
         PAGE_CACHE_SIZE_MAP.computeIfAbsent(
-                new LoadsKey(book, cacheName), key -> PAGE_CACHE_SIZE_GAUGE.labels(key.toLabels())
+                new LoadsKey(bookIdId, cacheName), key -> PAGE_CACHE_SIZE_GAUGE.labels(key.toLabels())
         ).set(value);
     }
 
-    public void incRequest(String book, CacheName cacheName, RequestMethod method) {
+    public void incRequest(BookId bookId, CacheName cacheName, RequestMethod method) {
         if (cacheName == null) {
             return;
         }
 
         PAGE_REQUEST_MAP.computeIfAbsent(
-                new PageRequestKey(book, cacheName, method), key -> PAGE_REQUEST_COUNTER.labels(key.toLabels())
+                new PageRequestKey(bookId, cacheName, method), key -> PAGE_REQUEST_COUNTER.labels(key.toLabels())
         ).inc();
     }
 
-    public void incInvalidate(String book, CacheName cacheName, RemovalCause cause) {
+    public void incInvalidate(BookId bookId, CacheName cacheName, RemovalCause cause) {
         INVALIDATE_CACHE_MAP.computeIfAbsent(
-                new InvalidateKey(book, cacheName, cause), key -> INVALIDATE_CACHE_COUNTER.labels(key.toLabels())
+                new InvalidateKey(bookId, cacheName, cause), key -> INVALIDATE_CACHE_COUNTER.labels(key.toLabels())
         ).inc();
     }
 
-    public void incLoads(String book, CacheName cacheName, int value) {
-        LoadsKey loadsKey = new LoadsKey(book, cacheName);
+    public void incLoads(BookId bookIdId, CacheName cacheName, int value) {
+        LoadsKey loadsKey = new LoadsKey(bookIdId, cacheName);
         PAGE_LOADS_MAP.computeIfAbsent(
                 loadsKey, key -> PAGE_LOADS_COUNTER.labels(key.toLabels())
         ).observe(value);
@@ -103,16 +103,16 @@ public class BookInfoMetrics {
     }
 
     private static class LoadsKey {
-        private final String book;
+        private final BookId bookIdId;
         private final CacheName cacheName;
 
-        private LoadsKey(String book, CacheName cacheName) {
-            this.book = book;
+        private LoadsKey(BookId bookIdId, CacheName cacheName) {
+            this.bookIdId = bookIdId;
             this.cacheName = cacheName;
         }
 
         private String[] toLabels() {
-            return new String[] {book, cacheName.name()};
+            return new String[] {bookIdId.getName(), cacheName.name()};
         }
 
         @Override
@@ -120,27 +120,27 @@ public class BookInfoMetrics {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             LoadsKey that = (LoadsKey) o;
-            return Objects.equals(book, that.book) && cacheName == that.cacheName;
+            return Objects.equals(bookIdId, that.bookIdId) && cacheName == that.cacheName;
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(book, cacheName);
+            return Objects.hash(bookIdId, cacheName);
         }
     }
     private static class InvalidateKey {
-        private final String book;
+        private final BookId bookId;
         private final CacheName cacheName;
         private final RemovalCause cause;
 
-        private InvalidateKey(String book, CacheName cacheName, RemovalCause cause) {
-            this.book = book;
+        private InvalidateKey(BookId bookId, CacheName cacheName, RemovalCause cause) {
+            this.bookId = bookId;
             this.cacheName = cacheName;
             this.cause = cause;
         }
 
         private String[] toLabels() {
-            return new String[] {book, cacheName.name(), cause.name()};
+            return new String[] {bookId.getName(), cacheName.name(), cause.name()};
         }
 
         @Override
@@ -148,28 +148,28 @@ public class BookInfoMetrics {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             InvalidateKey that = (InvalidateKey) o;
-            return Objects.equals(book, that.book) && cacheName == that.cacheName && cause == that.cause;
+            return Objects.equals(bookId, that.bookId) && cacheName == that.cacheName && cause == that.cause;
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(book, cacheName, cause);
+            return Objects.hash(bookId, cacheName, cause);
         }
     }
 
     private static class PageRequestKey {
-        private final String book;
+        private final BookId bookId;
         private final CacheName cacheName;
         private final RequestMethod method;
 
-        private PageRequestKey(String book, CacheName cacheName, RequestMethod method) {
-            this.book = book;
+        private PageRequestKey(BookId bookId, CacheName cacheName, RequestMethod method) {
+            this.bookId = bookId;
             this.cacheName = cacheName;
             this.method = method;
         }
 
         private String[] toLabels() {
-            return new String[] {book, cacheName.name(), method.name()};
+            return new String[] {bookId.getName(), cacheName.name(), method.name()};
         }
 
         @Override
@@ -177,12 +177,12 @@ public class BookInfoMetrics {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             PageRequestKey that = (PageRequestKey) o;
-            return Objects.equals(book, that.book) && method == that.method && cacheName == that.cacheName;
+            return Objects.equals(bookId, that.bookId) && method == that.method && cacheName == that.cacheName;
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(book, method, cacheName);
+            return Objects.hash(bookId, method, cacheName);
         }
     }
 }

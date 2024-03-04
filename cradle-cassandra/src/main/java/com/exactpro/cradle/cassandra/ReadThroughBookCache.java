@@ -46,16 +46,18 @@ public class ReadThroughBookCache implements BookCache {
     private final Map<BookId, BookInfo> books;
     private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
     private final String schemaVersion;
-    private final int randomAccessCacheSize;
+    private final int raCacheSize;
+    private final long raCacheInvalidateInterval;
 
     public ReadThroughBookCache(CassandraOperators operators,
                                 Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs,
-                                String schemaVersion, int randomAccessCacheSize) {
+                                String schemaVersion, int raCacheSize, long raCacheInvalidateInterval) {
         this.operators = operators;
         this.books = new ConcurrentHashMap<>();
         this.readAttrs = readAttrs;
         this.schemaVersion = schemaVersion;
-        this.randomAccessCacheSize = randomAccessCacheSize;
+        this.raCacheSize = raCacheSize;
+        this.raCacheInvalidateInterval = raCacheInvalidateInterval;
     }
 
     public BookInfo getBook(BookId bookId) throws BookNotFoundException {
@@ -168,11 +170,11 @@ public class ReadThroughBookCache implements BookCache {
                     entity.getFullName(),
                     entity.getDesc(),
                     entity.getCreated(),
-                    randomAccessCacheSize,
+                    raCacheSize,
+                    raCacheInvalidateInterval,
                     this::loadPageInfo,
                     this::loadFirstPageInfo,
-                    this::loadLastPageInfo
-            );
+                    this::loadLastPageInfo);
         } catch (RuntimeException e) {
             throw new CradleStorageException("Inconsistent state of book '"+entity.getName(), e);
         }

@@ -62,7 +62,7 @@ public class ReadThroughBookCacheTest {
     private final BookOperator bookOperator = mock(BookOperator.class);
     private final CassandraOperators operators = mock(CassandraOperators.class);
     private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs = mock(Function.class);
-    private final ReadThroughBookCache cache = new ReadThroughBookCache(operators, readAttrs, schemaVersion, 1);
+    private final ReadThroughBookCache cache = new ReadThroughBookCache(operators, readAttrs, schemaVersion, 1, Long.MAX_VALUE);
 
     List<PageEntity> previousFormatPages = List.of(
             new PageEntity(bookId.getName(),

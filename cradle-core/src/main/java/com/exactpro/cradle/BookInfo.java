@@ -33,6 +33,7 @@ import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -64,8 +65,10 @@ public class BookInfo {
     private static final long MAX_EPOCH_DAY = getEpochDay(Instant.MAX);
     private static final IPageInterval EMPTY_PAGE_INTERVAL = new EmptyPageInterval();
 
+    private static final BookId EMPTY_BOOK_ID = new BookId("");
+
     static {
-        METRICS.setPageCacheSize("", HOT, HOT_CACHE_SIZE);
+        METRICS.setPageCacheSize(EMPTY_BOOK_ID, HOT, HOT_CACHE_SIZE);
     }
 
     private final BookId id;
@@ -82,11 +85,20 @@ public class BookInfo {
     private final Function<BookId, PageInfo> firstPageLoader;
     private final Function<BookId, PageInfo> lastPageLoader;
 
+    /**
+     * This class provides access to pages related to the {@code id} book id.
+     * Two cache ara used internally to hold pages relate to day interval
+     * * Hot cache holds pages for the current and previous day. It can be refreshed by the {@link #refresh()} method
+     * * Random access cache holds pages for days in the past. Book info invalidates this cache with the {@code raCacheInvalidateInterval} interval
+     * @param raCacheSize - random access cache size. How many days of pages should be cached for the past.
+     * @param raCacheInvalidateInterval - invalidate interval in millisecond for random access cache.
+     */
     public BookInfo(BookId id,
                     String fullName,
                     String desc,
                     Instant created,
-                    int cacheSize,
+                    int raCacheSize,
+                    long raCacheInvalidateInterval,
                     PagesLoader pagesLoader,
                     Function<BookId, PageInfo> firstPageLoader,
                     Function<BookId, PageInfo> lastPageLoader) {
@@ -100,15 +112,16 @@ public class BookInfo {
 
         this.hotCache = Caffeine.newBuilder()
                 .maximumSize(HOT_CACHE_SIZE)
-                .removalListener((epochDay, pageInterval, cause) -> METRICS.incInvalidate(id.getName(), HOT, cause))
+                .removalListener((epochDay, pageInterval, cause) -> METRICS.incInvalidate(id, HOT, cause))
                 .build(epochDay -> createPageInterval(HOT, epochDay));
 
         this.randomAccessCache = Caffeine.newBuilder()
-                .maximumSize(cacheSize)
-                .removalListener((epochDay, pageInterval, cause) -> METRICS.incInvalidate(id.getName(), RANDOM, cause))
+                .maximumSize(raCacheSize)
+                .expireAfterWrite(raCacheInvalidateInterval, TimeUnit.MILLISECONDS)
+                .removalListener((epochDay, pageInterval, cause) -> METRICS.incInvalidate(id, RANDOM, cause))
                 .build(epochDay -> createPageInterval(RANDOM, epochDay));
 
-        METRICS.setPageCacheSize(id.getName(), RANDOM, cacheSize);
+        METRICS.setPageCacheSize(id, RANDOM, raCacheSize);
     }
 
     public BookId getId() {
@@ -331,10 +344,8 @@ public class BookInfo {
      */
     void refresh() {
         firstPage.set(null);
-        METRICS.incRequest(id.getName(), HOT, REFRESH);
+        METRICS.incRequest(id, HOT, REFRESH);
         hotCache.invalidateAll();
-        METRICS.incRequest(id.getName(), RANDOM, REFRESH);
-        randomAccessCache.invalidateAll();
 
         getFirstPage();
         long currentEpochDay = currentEpochDay();
@@ -394,11 +405,10 @@ public class BookInfo {
         Instant start = toInstant(epochDay);
         Instant end = start.plus(1, ChronoUnit.DAYS).minus(1, ChronoUnit.NANOS);
         Collection<PageInfo> loaded = pagesLoader.load(id, start, end);
+        METRICS.incLoads(id, cacheName, loaded.size());
         if (loaded.isEmpty()) {
             return null;
         }
-        // We shouldn't register metric to avoid the `loads` >> `requests` case
-        METRICS.incLoads(id.getName(), cacheName, loaded.size());
         return create(id, start, cacheName, loaded);
     }
 
@@ -481,13 +491,13 @@ public class BookInfo {
 
         @Override
         public PageInfo get(PageId pageId) {
-            METRICS.incRequest(bookId.getName(), cacheName, GET);
+            METRICS.incRequest(bookId, cacheName, GET);
             return pageById.get(pageId);
         }
 
         @Override
         public PageInfo find(Instant timestamp) {
-            METRICS.incRequest(bookId.getName(), cacheName, FIND);
+            METRICS.incRequest(bookId, cacheName, FIND);
             Entry<Instant, PageInfo> result = pageByInstant.floorEntry(timestamp);
             if (result == null) {
                 return null;
@@ -504,14 +514,14 @@ public class BookInfo {
 
         @Override
         public PageInfo next(Instant startTimestamp) {
-            METRICS.incRequest(bookId.getName(), cacheName, NEXT);
+            METRICS.incRequest(bookId, cacheName, NEXT);
             Entry<Instant, PageInfo> result = pageByInstant.higherEntry(startTimestamp);
             return result != null ? result.getValue() : null;
         }
 
         @Override
         public PageInfo previous(Instant startTimestamp) {
-            METRICS.incRequest(bookId.getName(), cacheName, PREVIOUS);
+            METRICS.incRequest(bookId, cacheName, PREVIOUS);
             Entry<Instant, PageInfo> result = pageByInstant.lowerEntry(startTimestamp);
             return result != null ? result.getValue() : null;
         }
@@ -520,7 +530,7 @@ public class BookInfo {
         public Stream<PageInfo> stream(@Nonnull Instant leftBoundTimestamp,
                                        @Nonnull Instant rightBoundTimestamp,
                                        @Nonnull Order order) {
-            METRICS.incRequest(bookId.getName(), cacheName, ITERATE);
+            METRICS.incRequest(bookId, cacheName, ITERATE);
             Instant start = pageByInstant.floorKey(leftBoundTimestamp);
             NavigableMap<Instant, PageInfo> subMap = pageByInstant.subMap(
                     start == null ? leftBoundTimestamp : start, true,

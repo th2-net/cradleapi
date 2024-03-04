@@ -308,9 +308,9 @@ public class EventBatchTest {
                 null,
                 START_TIMESTAMP,
                 1,
+                Long.MAX_VALUE,
                 new TestPagesLoader(pages),
-                new TestPageLoader(pages, true),
-                new TestPageLoader(pages, false));
+                new TestPageLoader(pages, true), new TestPageLoader(pages, false));
     }
 
     @Test

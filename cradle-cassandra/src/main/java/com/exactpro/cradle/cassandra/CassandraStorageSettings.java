@@ -34,6 +34,8 @@ import static com.exactpro.cradle.CradleStorage.DEFAULT_MAX_TEST_EVENT_BATCH_SIZ
 public class CassandraStorageSettings extends CoreStorageSettings {
     public static final String SCHEMA_VERSION = "5.3.0";
     public static final int RANDOM_ACCESS_DAYS_CACHE_SIZE = 10;
+    /** One day in milliseconds */
+    public static final long RANDOM_ACCESS_DAYS_CACHE_INVALIDATE_INTERVAL = 24 * 60 * 60 * 1_000;
 
     public static final CassandraConsistencyLevel DEFAULT_CONSISTENCY_LEVEL = CassandraConsistencyLevel.LOCAL_QUORUM;
     public static final int DEFAULT_KEYSPACE_REPL_FACTOR = 1;
@@ -72,6 +74,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
     private String keyspace;
     private String schemaVersion = SCHEMA_VERSION;
     private int randomAccessDaysCacheSize = RANDOM_ACCESS_DAYS_CACHE_SIZE;
+    private long randomAccessDaysInvalidateInterval = RANDOM_ACCESS_DAYS_CACHE_INVALIDATE_INTERVAL;
     private int keyspaceReplicationFactor = DEFAULT_KEYSPACE_REPL_FACTOR;
 
     private int maxParallelQueries = DEFAULT_MAX_PARALLEL_QUERIES; // FIXME: remove
@@ -129,6 +132,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
         this.keyspace = settings.getKeyspace();
         this.schemaVersion = settings.getSchemaVersion();
         this.randomAccessDaysCacheSize = settings.getRandomAccessDaysCacheSize();
+        this.randomAccessDaysInvalidateInterval = settings.getRandomAccessDaysInvalidateInterval();
 
         this.keyspaceReplicationFactor = settings.getKeyspaceReplicationFactor();
         this.maxParallelQueries = settings.getMaxParallelQueries();
@@ -205,6 +209,10 @@ public class CassandraStorageSettings extends CoreStorageSettings {
 
     public int getRandomAccessDaysCacheSize() {
         return randomAccessDaysCacheSize;
+    }
+
+    public long getRandomAccessDaysInvalidateInterval() {
+        return randomAccessDaysInvalidateInterval;
     }
 
     public int getKeyspaceReplicationFactor() {
@@ -398,6 +406,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
                 ", keyspace='" + keyspace + '\'' +
                 ", schemaVersion='" + schemaVersion + '\'' +
                 ", randomAccessDaysCacheSize='" + randomAccessDaysCacheSize + '\'' +
+                ", randomAccessDaysInvalidateInterval='" + randomAccessDaysInvalidateInterval + '\'' +
                 ", keyspaceReplicationFactor=" + keyspaceReplicationFactor +
                 ", maxParallelQueries=" + maxParallelQueries +
                 ", resultPageSize=" + resultPageSize +

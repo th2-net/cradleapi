@@ -85,7 +85,7 @@ public class BookInfoTest {
         for (int addIndex = 0; addIndex < PAGES.size(); addIndex++) {
             PageInfo newPage = PAGES.get(addIndex);
             operateSource.add(newPage);
-            bookInfo.refresh();
+            bookInfo.invalidate(newPage.getStarted());
 
             assertSame(bookInfo.getFirstPage(), PAGES.get(0), "iteration - " + addIndex);
             assertSame(bookInfo.getLastPage(), newPage, "iteration - " + addIndex);
@@ -547,10 +547,10 @@ public class BookInfoTest {
                 "test-description",
                 Instant.EPOCH,
                 cacheSize,
+                Long.MAX_VALUE,
                 new TestPagesLoader(pages),
                 new TestPageLoader(pages, true),
-                new TestPageLoader(pages, false)
-        );
+                new TestPageLoader(pages, false));
     }
 
     private static PageInfo createPageInfo(Instant start, @Nullable Instant end) {
