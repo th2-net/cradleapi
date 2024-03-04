@@ -185,12 +185,11 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		return FilterForLess.forLessOrEquals(result == null || endOfPage.isBefore(result.getValue()) ? endOfPage : result.getValue());
 	}
 
-	protected CassandraStoredMessageFilter createInitialFilter(MessageFilter filter)
-	{
+	protected CassandraStoredMessageFilter createInitialFilter(MessageFilter filter) {
 		if (filter.getOrder() == Order.DIRECT) {
 			return new CassandraStoredMessageFilter(
-					firstPage.getId().getBookId().getName(),
-					firstPage.getId().getName(),
+					book.getId().getName(),
+					firstPage != null ? firstPage.getId().getName() : null,
 					filter.getSessionAlias(),
 					filter.getDirection().getLabel(),
 					leftBoundFilter,
@@ -199,8 +198,8 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 					filter.getOrder());
 		} else {
 			return new CassandraStoredMessageFilter(
-					lastPage.getId().getBookId().getName(),
-					lastPage.getId().getName(),
+					book.getId().getName(),
+					lastPage != null ? lastPage.getId().getName() : null,
 					filter.getSessionAlias(),
 					filter.getDirection().getLabel(),
 					leftBoundFilter,
@@ -208,8 +207,6 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 					filter.getLimit(),
 					filter.getOrder());
 		}
-
-
 	}
 
 	protected CassandraStoredMessageFilter createNextFilter(CassandraStoredMessageFilter prevFilter, int updatedLimit)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.exactpro.cradle.testevents;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -54,7 +55,7 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 		super(id, name, type, parentId, pageId, error, recDate);
 		
 		Map<StoredTestEventId, BatchedStoredTestEvent> allEvents = new LinkedHashMap<>();
-		Collection<BatchedStoredTestEvent> roots = new ArrayList<>();
+		List<BatchedStoredTestEvent> roots = new ArrayList<>();
 		Map<StoredTestEventId, Collection<BatchedStoredTestEvent>> childrenPerEvent = new LinkedHashMap<>();
 		Map<StoredTestEventId, Set<StoredMessageId>> batchMessages = new HashMap<>();
 		Instant end = null;
@@ -78,7 +79,7 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 				
 				Set<StoredMessageId> eventMessages = messages != null ? messages.get(child.getId()) : null;
 				if (eventMessages != null)
-					batchMessages.put(child.getId(), Collections.unmodifiableSet(new HashSet<>(eventMessages)));
+					batchMessages.put(child.getId(), Set.copyOf(eventMessages));
 				
 				Instant eventEnd = child.getEndTimestamp();
 				if (eventEnd != null)
@@ -93,7 +94,7 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 		}
 		
 		this.events = Collections.unmodifiableMap(allEvents);
-		this.rootEvents = Collections.unmodifiableCollection(roots);
+		this.rootEvents = Collections.unmodifiableList(roots);
 		this.children = Collections.unmodifiableMap(childrenPerEvent);
 		this.messages = Collections.unmodifiableMap(batchMessages);
 		this.endTimestamp = end;
@@ -123,7 +124,7 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 	public Set<StoredMessageId> getMessages()
 	{
 		Set<StoredMessageId> result = new HashSet<>();
-		messages.values().forEach(c -> result.addAll(c));
+		messages.values().forEach(result::addAll);
 		return result;
 	}
 	

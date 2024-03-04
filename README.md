@@ -192,3 +192,9 @@ A test event can have a reference to its parent, thus forming a hierarchical str
 Events in a batch can have a reference only to the parent of the batch or other test events from the same batch. Events outside the batch should not reference events within the batch.
 
 Test events have mandatory parameters that are verified when storing an event. These are: id, name (for non-batch events), start timestamp.
+
+## Changes
+
+### 5.1.5
+
+* fixed: NullPointerException on AbstractMessageIteratorProvider creation for book with no pages in it.
