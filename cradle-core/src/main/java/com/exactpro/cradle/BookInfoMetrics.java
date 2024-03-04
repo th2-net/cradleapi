@@ -97,6 +97,7 @@ public class BookInfoMetrics {
         ITERATE,
         REFRESH,
     }
+
     public enum CacheName {
         HOT,
         RANDOM
@@ -112,7 +113,7 @@ public class BookInfoMetrics {
         }
 
         private String[] toLabels() {
-            return new String[] {bookIdId.getName(), cacheName.name()};
+            return new String[]{bookIdId.getName(), cacheName.name()};
         }
 
         @Override
@@ -128,6 +129,7 @@ public class BookInfoMetrics {
             return Objects.hash(bookIdId, cacheName);
         }
     }
+
     private static class InvalidateKey {
         private final BookId bookId;
         private final CacheName cacheName;
@@ -140,7 +142,7 @@ public class BookInfoMetrics {
         }
 
         private String[] toLabels() {
-            return new String[] {bookId.getName(), cacheName.name(), cause.name()};
+            return new String[]{bookId.getName(), cacheName.name(), cause.name()};
         }
 
         @Override
@@ -169,7 +171,7 @@ public class BookInfoMetrics {
         }
 
         private String[] toLabels() {
-            return new String[] {bookId.getName(), cacheName.name(), method.name()};
+            return new String[]{bookId.getName(), cacheName.name(), method.name()};
         }
 
         @Override

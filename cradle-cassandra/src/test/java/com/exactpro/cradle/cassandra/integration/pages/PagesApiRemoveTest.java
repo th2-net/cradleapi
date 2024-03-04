@@ -24,7 +24,6 @@ import com.exactpro.cradle.PageToAdd;
 import com.exactpro.cradle.cassandra.integration.BaseCradleCassandraTest;
 import com.exactpro.cradle.cassandra.integration.CassandraCradleHelper;
 import com.exactpro.cradle.utils.CradleStorageException;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.BeforeClass;
@@ -35,11 +34,8 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static java.time.temporal.ChronoUnit.HOURS;
@@ -53,11 +49,11 @@ public class PagesApiRemoveTest extends BaseCradleCassandraTest {
     private static final BookId BOOK_ID = new BookId(PagesApiRemoveTest.class.getSimpleName() + "Book");
     private static final Instant BOOK_START = Instant.now().minus(10, ChronoUnit.DAYS);
     private static final List<PageId> PAGE_IDS = List.of(
-        new PageId(BOOK_ID, Instant.now().minus(5, ChronoUnit.DAYS), "page1"),
-        new PageId(BOOK_ID, Instant.now().minus(4, ChronoUnit.DAYS), "page2"),
-        new PageId(BOOK_ID, Instant.now(), "page3"),
-        new PageId(BOOK_ID, Instant.now().plus(1, HOURS), "page4"),
-        new PageId(BOOK_ID, Instant.now().plus(1, ChronoUnit.DAYS), "page5")
+            new PageId(BOOK_ID, Instant.now().minus(5, ChronoUnit.DAYS), "page1"),
+            new PageId(BOOK_ID, Instant.now().minus(4, ChronoUnit.DAYS), "page2"),
+            new PageId(BOOK_ID, Instant.now(), "page3"),
+            new PageId(BOOK_ID, Instant.now().plus(1, HOURS), "page4"),
+            new PageId(BOOK_ID, Instant.now().plus(1, ChronoUnit.DAYS), "page5")
     );
 
     @BeforeClass

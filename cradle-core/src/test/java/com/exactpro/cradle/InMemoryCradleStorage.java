@@ -51,392 +51,381 @@ import java.util.stream.Collectors;
  */
 public class InMemoryCradleStorage extends CradleStorage {
 
-	static class InMemoryBookCache implements BookCache {
+    static class InMemoryBookCache implements BookCache {
 
-		private final Map<BookId, InMemoryBook> inMemoryStorage;
-		private final Map<BookId, BookInfo> cache;
+        private final Map<BookId, InMemoryBook> inMemoryStorage;
+        private final Map<BookId, BookInfo> cache;
 
-		InMemoryBookCache(Map<BookId, InMemoryBook> inMemoryStorage) {
-			this.inMemoryStorage = inMemoryStorage;
-			this.cache = new ConcurrentHashMap<>();
-		}
+        InMemoryBookCache(Map<BookId, InMemoryBook> inMemoryStorage) {
+            this.inMemoryStorage = inMemoryStorage;
+            this.cache = new ConcurrentHashMap<>();
+        }
 
-		@Override
-		public BookInfo getBook(BookId bookId) throws CradleStorageException {
-			BookInfo bookInfo = cache.computeIfAbsent(bookId, (key) ->
-			{
-				InMemoryBook inMemoryBook = inMemoryStorage.get(bookId);
-				if (inMemoryBook == null) {
-					return null;
-				}
+        @Override
+        public BookInfo getBook(BookId bookId) throws CradleStorageException {
+            BookInfo bookInfo = cache.computeIfAbsent(bookId, (key) ->
+            {
+                InMemoryBook inMemoryBook = inMemoryStorage.get(bookId);
+                if (inMemoryBook == null) {
+                    return null;
+                }
 
-				return inMemoryBook.bookInfo;
-			});
-			if (bookInfo == null) {
-				throw new CradleStorageException(String.format("Book %s is unknown", bookId.getName()));
-			}
-			return bookInfo;
-		}
+                return inMemoryBook.bookInfo;
+            });
+            if (bookInfo == null) {
+                throw new CradleStorageException(String.format("Book %s is unknown", bookId.getName()));
+            }
+            return bookInfo;
+        }
 
-		@Override
-		public boolean checkBook(BookId bookId) {
-			return cache.containsKey(bookId);
-		}
+        @Override
+        public boolean checkBook(BookId bookId) {
+            return cache.containsKey(bookId);
+        }
 
-		@Override
-		public Collection<PageInfo> loadPageInfo(BookId bookId, boolean loadRemoved) {
-			InMemoryBook inMemoryBook = inMemoryStorage.get(bookId);
-			if (inMemoryBook == null) {
-				return Collections.emptyList();
-			}
+        @Override
+        public Collection<PageInfo> loadPageInfo(BookId bookId, boolean loadRemoved) {
+            InMemoryBook inMemoryBook = inMemoryStorage.get(bookId);
+            if (inMemoryBook == null) {
+                return Collections.emptyList();
+            }
 
-			return inMemoryBook.pages.stream()
-					.filter(pageInfo -> loadRemoved || pageInfo.getRemoved() == null)
-					.collect(Collectors.toList());
-		}
+            return inMemoryBook.pages.stream()
+                    .filter(pageInfo -> loadRemoved || pageInfo.getRemoved() == null)
+                    .collect(Collectors.toList());
+        }
 
-		@Override
-		public Collection<BookInfo> getCachedBooks() {
-			return Collections.unmodifiableCollection(cache.values());
-		}
-	}
+        @Override
+        public Collection<BookInfo> getCachedBooks() {
+            return Collections.unmodifiableCollection(cache.values());
+        }
+    }
 
-	static class InMemoryBook {
-		private final List<PageInfo> pages = new ArrayList<>();
-		private final BookInfo bookInfo;
+    static class InMemoryBook {
+        private final List<PageInfo> pages = new ArrayList<>();
+        private final BookInfo bookInfo;
 
-		private InMemoryBook(BookToAdd bookToAdd) {
-			this.bookInfo = new BookInfo(new BookId(bookToAdd.getName()),
-					bookToAdd.getFullName(),
-					bookToAdd.getDesc(),
-					bookToAdd.getCreated(),
-					1,
-					Long.MAX_VALUE,
+        private InMemoryBook(BookToAdd bookToAdd) {
+            this.bookInfo = new BookInfo(new BookId(bookToAdd.getName()),
+                    bookToAdd.getFullName(),
+                    bookToAdd.getDesc(),
+                    bookToAdd.getCreated(),
+                    1,
+                    Long.MAX_VALUE,
                     new TestPagesLoader(pages),
                     new TestPageLoader(pages, true),
                     new TestPageLoader(pages, false));
-		}
-	}
+        }
+    }
 
-	private final Map<BookId, InMemoryBook> inMemoryStorage = new HashMap<>();
+    private final Map<BookId, InMemoryBook> inMemoryStorage = new HashMap<>();
 
-	private final InMemoryBookCache inMemoryBookCache;
+    private final InMemoryBookCache inMemoryBookCache;
 
-	@Override
-	protected BookCache getBookCache() {
-		return inMemoryBookCache;
-	}
+    @Override
+    protected BookCache getBookCache() {
+        return inMemoryBookCache;
+    }
 
-	public InMemoryCradleStorage() throws CradleStorageException
-	{
-		super();
-		inMemoryBookCache = new InMemoryBookCache(inMemoryStorage);
-	}
+    public InMemoryCradleStorage() throws CradleStorageException {
+        super();
+        inMemoryBookCache = new InMemoryBookCache(inMemoryStorage);
+    }
 
 
-	@Override
-	protected void doInit(boolean prepareStorage) {
-	}
+    @Override
+    protected void doInit(boolean prepareStorage) {
+    }
 
-	@Override
-	protected void doDispose() {
-	}
+    @Override
+    protected void doDispose() {
+    }
 
-	@Override
-	protected Collection<PageInfo> doGetAllPages(BookId bookId) {
-		return null;
-	}
+    @Override
+    protected Collection<PageInfo> doGetAllPages(BookId bookId) {
+        return null;
+    }
 
-	@Override
-	protected Collection<BookListEntry> doListBooks() {
-		return null;
-	}
+    @Override
+    protected Collection<BookListEntry> doListBooks() {
+        return null;
+    }
 
-	@Override
-	protected void doAddBook(BookToAdd newBook, BookId newBookId) {
-		inMemoryStorage.compute(newBookId, ((bookId, previous) -> {
-			if (previous != null) {
-				throw new IllegalStateException("Book '"+ bookId +"' is already exist");
-			}
-			return new InMemoryBook(newBook);
-		}));
-	}
+    @Override
+    protected void doAddBook(BookToAdd newBook, BookId newBookId) {
+        inMemoryStorage.compute(newBookId, ((bookId, previous) -> {
+            if (previous != null) {
+                throw new IllegalStateException("Book '" + bookId + "' is already exist");
+            }
+            return new InMemoryBook(newBook);
+        }));
+    }
 
-	@Override
-	protected void doAddPages(BookId bookId, List<PageInfo> pages, PageInfo lastPage) {
+    @Override
+    protected void doAddPages(BookId bookId, List<PageInfo> pages, PageInfo lastPage) {
         try {
-			List<PageInfo> inMemoryPages = inMemoryStorage.get(bookId).pages;
-			if (lastPage != null) {
-				inMemoryPages.set(inMemoryPages.size() - 1, lastPage);
-			}
-			inMemoryPages.addAll(pages);
-			inMemoryBookCache.getBook(bookId).refresh();
+            List<PageInfo> inMemoryPages = inMemoryStorage.get(bookId).pages;
+            if (lastPage != null) {
+                inMemoryPages.set(inMemoryPages.size() - 1, lastPage);
+            }
+            inMemoryPages.addAll(pages);
+            inMemoryBookCache.getBook(bookId).refresh();
         } catch (CradleStorageException e) {
             throw new RuntimeException(e);
         }
     }
 
-	@Override
-	protected Collection<PageInfo> doLoadPages(BookId bookId) {
-		return null;
-	}
+    @Override
+    protected Collection<PageInfo> doLoadPages(BookId bookId) {
+        return null;
+    }
 
-	@Override
-	protected void doRemovePage(PageInfo page) {
-	}
+    @Override
+    protected void doRemovePage(PageInfo page) {
+    }
 
-	@Override
-	protected void doStoreMessageBatch(MessageBatchToStore batch, PageInfo page) {
-	}
+    @Override
+    protected void doStoreMessageBatch(MessageBatchToStore batch, PageInfo page) {
+    }
 
-	@Override
-	protected void doStoreGroupedMessageBatch(GroupedMessageBatchToStore batch, PageInfo page) {
+    @Override
+    protected void doStoreGroupedMessageBatch(GroupedMessageBatchToStore batch, PageInfo page) {
 
-	}
+    }
 
-	@Override
-	protected CompletableFuture<Void> doStoreMessageBatchAsync(MessageBatchToStore batch,
-			PageInfo page)
-	{
-		return CompletableFuture.completedFuture(null);
-	}
+    @Override
+    protected CompletableFuture<Void> doStoreMessageBatchAsync(MessageBatchToStore batch,
+                                                               PageInfo page) {
+        return CompletableFuture.completedFuture(null);
+    }
 
-	@Override
-	protected CompletableFuture<Void> doStoreGroupedMessageBatchAsync(GroupedMessageBatchToStore batch, PageInfo page) {
-		return null;
-	}
+    @Override
+    protected CompletableFuture<Void> doStoreGroupedMessageBatchAsync(GroupedMessageBatchToStore batch, PageInfo page) {
+        return null;
+    }
 
-	@Override
-	protected void doStoreTestEvent(TestEventToStore event, PageInfo page) {
-	}
-	
-	@Override
-	protected CompletableFuture<Void> doStoreTestEventAsync(TestEventToStore event, PageInfo page)
-	{
-		return CompletableFuture.completedFuture(null);
-	}
+    @Override
+    protected void doStoreTestEvent(TestEventToStore event, PageInfo page) {
+    }
 
-	@Override
-	protected void doUpdateParentTestEvents(TestEventToStore event) {
-	}
-	
-	@Override
-	protected CompletableFuture<Void> doUpdateParentTestEventsAsync(TestEventToStore event)
-	{
-		return CompletableFuture.completedFuture(null);
-	}
+    @Override
+    protected CompletableFuture<Void> doStoreTestEventAsync(TestEventToStore event, PageInfo page) {
+        return CompletableFuture.completedFuture(null);
+    }
 
-	@Override
-	protected void doUpdateEventStatus(StoredTestEvent event, boolean success) {
-	}
-	
-	@Override
-	protected CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEvent event, boolean success)
-	{
-		return CompletableFuture.completedFuture(null);
-	}
+    @Override
+    protected void doUpdateParentTestEvents(TestEventToStore event) {
+    }
+
+    @Override
+    protected CompletableFuture<Void> doUpdateParentTestEventsAsync(TestEventToStore event) {
+        return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    protected void doUpdateEventStatus(StoredTestEvent event, boolean success) {
+    }
+
+    @Override
+    protected CompletableFuture<Void> doUpdateEventStatusAsync(StoredTestEvent event, boolean success) {
+        return CompletableFuture.completedFuture(null);
+    }
 
 
-	@Override
-	protected StoredMessage doGetMessage(StoredMessageId id, PageId pageId) {
-		return null;
-	}
-	
-	@Override
-	protected CompletableFuture<StoredMessage> doGetMessageAsync(StoredMessageId id, PageId pageId)
-	{
-		return CompletableFuture.completedFuture(null);
-	}
+    @Override
+    protected StoredMessage doGetMessage(StoredMessageId id, PageId pageId) {
+        return null;
+    }
 
-	@Override
-	protected StoredMessageBatch doGetMessageBatch(StoredMessageId id, PageId pageId) {
-		return null;
-	}
-	
-	@Override
-	protected CompletableFuture<StoredMessageBatch> doGetMessageBatchAsync(StoredMessageId id, PageId pageId)
-	{
-		return CompletableFuture.completedFuture(null);
-	}
+    @Override
+    protected CompletableFuture<StoredMessage> doGetMessageAsync(StoredMessageId id, PageId pageId) {
+        return CompletableFuture.completedFuture(null);
+    }
 
-	@Override
-	protected CradleResultSet<StoredMessage> doGetMessages(MessageFilter filter, BookInfo book) {
-		return null;
-	}
-	
-	@Override
-	protected CompletableFuture<CradleResultSet<StoredMessage>> doGetMessagesAsync(MessageFilter filter,
-			BookInfo book)
-	{
-		return CompletableFuture.completedFuture(null);
-	}
+    @Override
+    protected StoredMessageBatch doGetMessageBatch(StoredMessageId id, PageId pageId) {
+        return null;
+    }
 
-	@Override
-	protected CradleResultSet<StoredMessageBatch> doGetMessageBatches(MessageFilter filter, BookInfo book) {
-		return null;
-	}
+    @Override
+    protected CompletableFuture<StoredMessageBatch> doGetMessageBatchAsync(StoredMessageId id, PageId pageId) {
+        return CompletableFuture.completedFuture(null);
+    }
 
-	@Override
-	protected CradleResultSet<StoredGroupedMessageBatch> doGetGroupedMessageBatches(GroupedMessageFilter filter,
-																					BookInfo book) {
-		return null;
-	}
+    @Override
+    protected CradleResultSet<StoredMessage> doGetMessages(MessageFilter filter, BookInfo book) {
+        return null;
+    }
 
-	@Override
-	protected CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetMessageBatchesAsync(MessageFilter filter,
-			BookInfo book)
-	{
-		return CompletableFuture.completedFuture(null);
-	}
+    @Override
+    protected CompletableFuture<CradleResultSet<StoredMessage>> doGetMessagesAsync(MessageFilter filter,
+                                                                                   BookInfo book) {
+        return CompletableFuture.completedFuture(null);
+    }
 
-	@Override
-	protected CompletableFuture<CradleResultSet<StoredGroupedMessageBatch>> doGetGroupedMessageBatchesAsync(
-			GroupedMessageFilter filter, BookInfo book) {
-		return null;
-	}
+    @Override
+    protected CradleResultSet<StoredMessageBatch> doGetMessageBatches(MessageFilter filter, BookInfo book) {
+        return null;
+    }
+
+    @Override
+    protected CradleResultSet<StoredGroupedMessageBatch> doGetGroupedMessageBatches(GroupedMessageFilter filter,
+                                                                                    BookInfo book) {
+        return null;
+    }
+
+    @Override
+    protected CompletableFuture<CradleResultSet<StoredMessageBatch>> doGetMessageBatchesAsync(MessageFilter filter,
+                                                                                              BookInfo book) {
+        return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    protected CompletableFuture<CradleResultSet<StoredGroupedMessageBatch>> doGetGroupedMessageBatchesAsync(
+            GroupedMessageFilter filter, BookInfo book) {
+        return null;
+    }
 
 
-	@Override
-	protected long doGetLastSequence(String sessionAlias, Direction direction, BookId bookId) {
-		return 0;
-	}
+    @Override
+    protected long doGetLastSequence(String sessionAlias, Direction direction, BookId bookId) {
+        return 0;
+    }
 
-	@Override
-	protected long doGetFirstSequence(String sessionAlias, Direction direction, BookId bookId) {
-		return 0;
-	}
+    @Override
+    protected long doGetFirstSequence(String sessionAlias, Direction direction, BookId bookId) {
+        return 0;
+    }
 
-	@Override
-	protected Collection<String> doGetSessionAliases(BookId bookId) {
-		return null;
-	}
+    @Override
+    protected Collection<String> doGetSessionAliases(BookId bookId) {
+        return null;
+    }
 
-	@Override
-	protected Collection<String> doGetGroups(BookId bookId) {
-		return null;
-	}
-
-
-	@Override
-	protected StoredTestEvent doGetTestEvent(StoredTestEventId id, PageId pageId) {
-		return null;
-	}
-	
-	@Override
-	protected CompletableFuture<StoredTestEvent> doGetTestEventAsync(StoredTestEventId ids, PageId pageId)
-	{
-		return CompletableFuture.completedFuture(null);
-	}
-
-	@Override
-	protected CradleResultSet<StoredTestEvent> doGetTestEvents(TestEventFilter filter, BookInfo book) {
-		return null;
-	}
-
-	@Override
-	protected CompletableFuture<CradleResultSet<StoredTestEvent>> doGetTestEventsAsync(TestEventFilter filter, BookInfo book) {
-		return CompletableFuture.completedFuture(null);
-	}
+    @Override
+    protected Collection<String> doGetGroups(BookId bookId) {
+        return null;
+    }
 
 
-	@Override
-	protected Collection<String> doGetScopes(BookId bookId) {
-		return null;
-	}
+    @Override
+    protected StoredTestEvent doGetTestEvent(StoredTestEventId id, PageId pageId) {
+        return null;
+    }
 
-	@Override
-	protected CradleResultSet<String> doGetScopes(BookId bookId, Interval interval) {
-		return null;
-	}
+    @Override
+    protected CompletableFuture<StoredTestEvent> doGetTestEventAsync(StoredTestEventId ids, PageId pageId) {
+        return CompletableFuture.completedFuture(null);
+    }
 
-	@Override
-	protected CompletableFuture<CradleResultSet<String>> doGetScopesAsync(BookId bookId, Interval interval) {
-		return null;
-	}
+    @Override
+    protected CradleResultSet<StoredTestEvent> doGetTestEvents(TestEventFilter filter, BookInfo book) {
+        return null;
+    }
 
-	@Override
-	protected CompletableFuture<CradleResultSet<CounterSample>> doGetMessageCountersAsync(BookId bookId, String sessionAlias, Direction direction, FrameType frameType, Interval interval) {
-		return null;
-	}
+    @Override
+    protected CompletableFuture<CradleResultSet<StoredTestEvent>> doGetTestEventsAsync(TestEventFilter filter, BookInfo book) {
+        return CompletableFuture.completedFuture(null);
+    }
 
-	@Override
-	protected CradleResultSet<CounterSample> doGetMessageCounters(BookId bookId, String sessionAlias, Direction direction, FrameType frameType, Interval interval) {
-		return null;
-	}
 
-	@Override
-	protected CompletableFuture<CradleResultSet<CounterSample>> doGetCountersAsync(BookId bookId, EntityType entityType, FrameType frameType, Interval interval) {
-		return null;
-	}
+    @Override
+    protected Collection<String> doGetScopes(BookId bookId) {
+        return null;
+    }
 
-	@Override
-	protected CradleResultSet<CounterSample> doGetCounters(BookId bookId, EntityType entityType, FrameType frameType, Interval interval) {
-		return null;
-	}
+    @Override
+    protected CradleResultSet<String> doGetScopes(BookId bookId, Interval interval) {
+        return null;
+    }
 
-	@Override
-	protected CompletableFuture<Counter> doGetMessageCountAsync(BookId bookId, String sessionAlias, Direction direction, Interval interval) {
-		return null;
-	}
+    @Override
+    protected CompletableFuture<CradleResultSet<String>> doGetScopesAsync(BookId bookId, Interval interval) {
+        return null;
+    }
 
-	@Override
-	protected Counter doGetMessageCount(BookId bookId, String sessionAlias, Direction direction, Interval interval) {
-		return null;
-	}
+    @Override
+    protected CompletableFuture<CradleResultSet<CounterSample>> doGetMessageCountersAsync(BookId bookId, String sessionAlias, Direction direction, FrameType frameType, Interval interval) {
+        return null;
+    }
 
-	@Override
-	protected CompletableFuture<Counter> doGetCountAsync(BookId bookId, EntityType entityType, Interval interval) {
-		return null;
-	}
+    @Override
+    protected CradleResultSet<CounterSample> doGetMessageCounters(BookId bookId, String sessionAlias, Direction direction, FrameType frameType, Interval interval) {
+        return null;
+    }
 
-	@Override
-	protected Counter doGetCount(BookId bookId, EntityType entityType, Interval interval) {
-		return null;
-	}
+    @Override
+    protected CompletableFuture<CradleResultSet<CounterSample>> doGetCountersAsync(BookId bookId, EntityType entityType, FrameType frameType, Interval interval) {
+        return null;
+    }
 
-	@Override
-	protected CompletableFuture<CradleResultSet<String>> doGetSessionAliasesAsync(BookId bookId, Interval interval) {
-		return null;
-	}
+    @Override
+    protected CradleResultSet<CounterSample> doGetCounters(BookId bookId, EntityType entityType, FrameType frameType, Interval interval) {
+        return null;
+    }
 
-	@Override
-	protected CradleResultSet<String> doGetSessionAliases(BookId bookId, Interval interval) {
-		return null;
-	}
+    @Override
+    protected CompletableFuture<Counter> doGetMessageCountAsync(BookId bookId, String sessionAlias, Direction direction, Interval interval) {
+        return null;
+    }
 
-	@Override
-	protected CompletableFuture<CradleResultSet<String>> doGetSessionGroupsAsync(BookId bookId, Interval interval) {
-		return null;
-	}
+    @Override
+    protected Counter doGetMessageCount(BookId bookId, String sessionAlias, Direction direction, Interval interval) {
+        return null;
+    }
 
-	@Override
-	protected CradleResultSet<String> doGetSessionGroups(BookId bookId, Interval interval) {
-		return null;
-	}
+    @Override
+    protected CompletableFuture<Counter> doGetCountAsync(BookId bookId, EntityType entityType, Interval interval) {
+        return null;
+    }
 
-	@Override
-	protected PageInfo doUpdatePageComment(BookId bookId, String pageName, String comment) {
-		return null;
-	}
+    @Override
+    protected Counter doGetCount(BookId bookId, EntityType entityType, Interval interval) {
+        return null;
+    }
 
-	@Override
-	protected PageInfo doUpdatePageName(BookId bookId, String pageName, String newPageName) {
-		return null;
-	}
+    @Override
+    protected CompletableFuture<CradleResultSet<String>> doGetSessionAliasesAsync(BookId bookId, Interval interval) {
+        return null;
+    }
 
-	@Override
-	protected Iterator<PageInfo> doGetPages(BookId bookId, Interval interval) {
-		return null;
-	}
+    @Override
+    protected CradleResultSet<String> doGetSessionAliases(BookId bookId, Interval interval) {
+        return null;
+    }
 
-	@Override
-	protected CompletableFuture<Iterator<PageInfo>> doGetPagesAsync(BookId bookId, Interval interval) {
-		return null;
-	}
+    @Override
+    protected CompletableFuture<CradleResultSet<String>> doGetSessionGroupsAsync(BookId bookId, Interval interval) {
+        return null;
+    }
 
-	@Override
-	public IntervalsWorker getIntervalsWorker()
-	{
-		return null;
-	}
+    @Override
+    protected CradleResultSet<String> doGetSessionGroups(BookId bookId, Interval interval) {
+        return null;
+    }
+
+    @Override
+    protected PageInfo doUpdatePageComment(BookId bookId, String pageName, String comment) {
+        return null;
+    }
+
+    @Override
+    protected PageInfo doUpdatePageName(BookId bookId, String pageName, String newPageName) {
+        return null;
+    }
+
+    @Override
+    protected Iterator<PageInfo> doGetPages(BookId bookId, Interval interval) {
+        return null;
+    }
+
+    @Override
+    protected CompletableFuture<Iterator<PageInfo>> doGetPagesAsync(BookId bookId, Interval interval) {
+        return null;
+    }
+
+    @Override
+    public IntervalsWorker getIntervalsWorker() {
+        return null;
+    }
 }

@@ -141,49 +141,49 @@ public class BookInfoTest {
 
         assertEquals(
                 newArrayList(bookInfo.getPages(time2.minus(1, NANOS), time3.minus(1, NANOS), order)),
-                optionalReverse(order, operateSource.subList(0,2)),
+                optionalReverse(order, operateSource.subList(0, 2)),
                 "Pages where start (-1) to end (-1) timestamps"
         );
         assertEquals(
                 newArrayList(bookInfo.getPages(time2, time3.minus(1, NANOS), order)),
-                optionalReverse(order, operateSource.subList(1,2)),
+                optionalReverse(order, operateSource.subList(1, 2)),
                 "Pages where start (0) to end (-1) timestamps"
         );
         assertEquals(
                 newArrayList(bookInfo.getPages(time2.plus(1, NANOS), time3.minus(1, NANOS), order)),
-                optionalReverse(order, operateSource.subList(1,2)),
+                optionalReverse(order, operateSource.subList(1, 2)),
                 "Pages where start (+1) to end (-1) timestamps"
         );
 
         assertEquals(
                 newArrayList(bookInfo.getPages(time2.minus(1, NANOS), time3, order)),
-                optionalReverse(order, operateSource.subList(0,3)),
+                optionalReverse(order, operateSource.subList(0, 3)),
                 "Pages where start (-1) to end (0) timestamps"
         );
         assertEquals(
                 newArrayList(bookInfo.getPages(time2, time3, order)),
-                optionalReverse(order, operateSource.subList(1,3)),
+                optionalReverse(order, operateSource.subList(1, 3)),
                 "Pages where start (0) to end (0) timestamps"
         );
         assertEquals(
                 newArrayList(bookInfo.getPages(time2.plus(1, NANOS), time3, order)),
-                optionalReverse(order, operateSource.subList(1,3)),
+                optionalReverse(order, operateSource.subList(1, 3)),
                 "Pages where start (+1) to end (0) timestamps"
         );
 
         assertEquals(
                 newArrayList(bookInfo.getPages(time2.minus(1, NANOS), time3.plus(1, NANOS), order)),
-                optionalReverse(order, operateSource.subList(0,3)),
+                optionalReverse(order, operateSource.subList(0, 3)),
                 "Pages where start (-1) to end (+1) timestamps"
         );
         assertEquals(
                 newArrayList(bookInfo.getPages(time2, time3.plus(1, NANOS), order)),
-                optionalReverse(order, operateSource.subList(1,3)),
+                optionalReverse(order, operateSource.subList(1, 3)),
                 "Pages where start (0) to end (-1) timestamps"
         );
         assertEquals(
                 newArrayList(bookInfo.getPages(time2.plus(1, NANOS), time3.plus(1, NANOS), order)),
-                optionalReverse(order, operateSource.subList(1,3)),
+                optionalReverse(order, operateSource.subList(1, 3)),
                 "Pages where start (+1) to end (+1) timestamps"
         );
     }
@@ -202,7 +202,7 @@ public class BookInfoTest {
 
         assertEquals(
                 newArrayList(bookInfo.getPages(time2.minus(1, NANOS), time3.minus(1, NANOS), order)),
-                optionalReverse(order, operateSource.subList(0,1)),
+                optionalReverse(order, operateSource.subList(0, 1)),
                 "Pages where start (-1) to end (-1) timestamps"
         );
         assertEquals(
@@ -218,33 +218,33 @@ public class BookInfoTest {
 
         assertEquals(
                 newArrayList(bookInfo.getPages(time2.minus(1, NANOS), time3, order)),
-                optionalReverse(order, operateSource.subList(0,2)),
+                optionalReverse(order, operateSource.subList(0, 2)),
                 "Pages where start (-1) to end (0) timestamps"
         );
         assertEquals(
                 newArrayList(bookInfo.getPages(time2, time3, order)),
-                optionalReverse(order, operateSource.subList(1,2)),
+                optionalReverse(order, operateSource.subList(1, 2)),
                 "Pages where start (0) to end (0) timestamps"
         );
         assertEquals(
                 newArrayList(bookInfo.getPages(time2.plus(1, NANOS), time3, order)),
-                optionalReverse(order, operateSource.subList(1,2)),
+                optionalReverse(order, operateSource.subList(1, 2)),
                 "Pages where start (+1) to end (0) timestamps"
         );
 
         assertEquals(
                 newArrayList(bookInfo.getPages(time2.minus(1, NANOS), time3.plus(1, NANOS), order)),
-                optionalReverse(order, operateSource.subList(0,2)),
+                optionalReverse(order, operateSource.subList(0, 2)),
                 "Pages where start (-1) to end (+1) timestamps"
         );
         assertEquals(
                 newArrayList(bookInfo.getPages(time2, time3.plus(1, NANOS), order)),
-                optionalReverse(order, operateSource.subList(1,2)),
+                optionalReverse(order, operateSource.subList(1, 2)),
                 "Pages where start (0) to end (-1) timestamps"
         );
         assertEquals(
                 newArrayList(bookInfo.getPages(time2.plus(1, NANOS), time3.plus(1, NANOS), order)),
-                optionalReverse(order, operateSource.subList(1,2)),
+                optionalReverse(order, operateSource.subList(1, 2)),
                 "Pages where start (+1) to end (+1) timestamps"
         );
     }
@@ -610,7 +610,7 @@ public class BookInfoTest {
                 Instant.parse("2024-02-14T23:00:00Z")
         );
 
-        return new Object[][] {
+        return new Object[][]{
                 {DIRECT, case1},
                 {DIRECT, case2},
                 {DIRECT, case3},
