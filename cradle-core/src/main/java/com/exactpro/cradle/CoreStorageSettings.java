@@ -22,6 +22,7 @@ import com.exactpro.cradle.messages.MessageBatchToStore;
 @SuppressWarnings("unused")
 public class CoreStorageSettings {
     public static final long DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS = 60000;
+    public static final int PAGE_ACTION_REJECTION_THRESHOLD_FACTOR = 2;
     public static final boolean DEFAULT_STORE_INDIVIDUAL_MESSAGE_SESSIONS = true;
     private long bookRefreshIntervalMillis = DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS;
 
@@ -41,7 +42,7 @@ public class CoreStorageSettings {
     }
 
     public long calculatePageActionRejectionThreshold() {
-        return this.bookRefreshIntervalMillis * 2;
+        return this.bookRefreshIntervalMillis * PAGE_ACTION_REJECTION_THRESHOLD_FACTOR;
     }
 
     public long calculateStoreActionRejectionThreshold() {
