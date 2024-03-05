@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class BookInfoMetrics {
     private static final String REQUEST_METHOD_LABEL = "method";
-    private static final String BOOK_LABEL = "bookId";
+    private static final String BOOK_LABEL = "book";
     private static final String CACHE_NAME_LABEL = "cache";
     private static final String INVALIDATE_CAUSE_LABEL = "cause";
     private static final Gauge PAGE_CACHE_SIZE_GAUGE = Gauge.build()
