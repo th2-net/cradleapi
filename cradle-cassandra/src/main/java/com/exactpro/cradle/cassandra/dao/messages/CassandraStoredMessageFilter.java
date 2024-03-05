@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.querybuilder.relation.MultiColumnRelationBuilder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
 import com.exactpro.cradle.Order;
 import com.exactpro.cradle.cassandra.dao.CassandraFilter;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
@@ -84,14 +83,16 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	}
 
 	@Override
-	public Select addConditions(Select select)
-	{
+	public Select addConditions(Select select) {
 		select = select
 				.whereColumn(FIELD_BOOK).isEqualTo(bindMarker())
-				.whereColumn(FIELD_PAGE).isEqualTo(bindMarker())
 				.whereColumn(FIELD_SESSION_ALIAS).isEqualTo(bindMarker())
 				.whereColumn(FIELD_DIRECTION).isEqualTo(bindMarker());
-		
+
+		if (page != null) {
+			select = select.whereColumn(FIELD_PAGE).isEqualTo(bindMarker());
+		}
+
 		if (sequence != null)
 			select = addMessageIdConditions(select);
 		else
@@ -115,14 +116,16 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	}
 
 	@Override
-	public BoundStatementBuilder bindParameters(BoundStatementBuilder builder)
-	{
+	public BoundStatementBuilder bindParameters(BoundStatementBuilder builder) {
 		builder = builder
 				.setString(FIELD_BOOK, book)
-				.setString(FIELD_PAGE, page)
 				.setString(FIELD_SESSION_ALIAS, sessionAlias)
 				.setString(FIELD_DIRECTION, direction);
-		
+
+		if (page != null) {
+			builder = builder.setString(FIELD_PAGE, page);
+		}
+
 		if (sequence != null)
 			builder = bindMessageIdParameters(builder);
 		else

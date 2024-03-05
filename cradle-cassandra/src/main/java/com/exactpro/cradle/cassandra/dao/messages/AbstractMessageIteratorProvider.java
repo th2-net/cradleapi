@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,11 +117,14 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 	}
 
 	//TODO refactor this method to assigns firstPage outside the method
-	protected FilterForGreater<Instant> createLeftBoundFilter(MessageFilter filter) throws CradleStorageException
-	{
+	protected FilterForGreater<Instant> createLeftBoundFilter(MessageFilter filter) throws CradleStorageException {
 		FilterForGreater<Instant> result = filter.getTimestampFrom();
 		firstPage = FilterUtils.findFirstPage(filter.getPageId(), result, book);
-		Instant leftBoundFromPage = firstPage.getStarted();
+
+		if (result == null && firstPage == null)
+			return null;
+
+		Instant leftBoundFromPage = firstPage == null ? Instant.MIN : firstPage.getStarted();
 		if (result == null || (filter.getPageId() != null && leftBoundFromPage.isAfter(result.getValue())))
 			return FilterForGreater.forGreaterOrEquals(leftBoundFromPage);
 
@@ -132,8 +135,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 				filter.getDirection().getLabel(), leftBoundLocalDate.toLocalDate(),
 				leftBoundLocalDate.toLocalTime());
 
-		if (nearestBatchTime != null)
-		{
+		if (nearestBatchTime != null) {
 			Instant nearestBatchInstant = TimeUtils.toInstant(leftBoundLocalDate.toLocalDate(), nearestBatchTime);
 			if (nearestBatchInstant.isBefore(result.getValue()))
 				result = FilterForGreater.forGreaterOrEquals(nearestBatchInstant);
@@ -175,21 +177,19 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 	}
 
 	//TODO refactor this method to assign last page outside of this method.
-	protected FilterForLess<Instant> createRightBoundFilter(MessageFilter filter)
-	{
+	protected FilterForLess<Instant> createRightBoundFilter(MessageFilter filter) {
 		FilterForLess<Instant> result = filter.getTimestampTo();
 		lastPage = FilterUtils.findLastPage(filter.getPageId(), result, book);
-		Instant endOfPage = lastPage.getEnded() == null ? Instant.now() : lastPage.getEnded();
+		Instant endOfPage = lastPage == null || lastPage.getEnded() == null ? Instant.now() : lastPage.getEnded();
 
 		return FilterForLess.forLessOrEquals(result == null || endOfPage.isBefore(result.getValue()) ? endOfPage : result.getValue());
 	}
 
-	protected CassandraStoredMessageFilter createInitialFilter(MessageFilter filter)
-	{
+	protected CassandraStoredMessageFilter createInitialFilter(MessageFilter filter) {
 		if (filter.getOrder() == Order.DIRECT) {
 			return new CassandraStoredMessageFilter(
-					firstPage.getId().getBookId().getName(),
-					firstPage.getId().getName(),
+					book.getId().getName(),
+					firstPage != null ? firstPage.getId().getName() : null,
 					filter.getSessionAlias(),
 					filter.getDirection().getLabel(),
 					leftBoundFilter,
@@ -198,8 +198,8 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 					filter.getOrder());
 		} else {
 			return new CassandraStoredMessageFilter(
-					lastPage.getId().getBookId().getName(),
-					lastPage.getId().getName(),
+					book.getId().getName(),
+					lastPage != null ? lastPage.getId().getName() : null,
 					filter.getSessionAlias(),
 					filter.getDirection().getLabel(),
 					leftBoundFilter,
@@ -207,8 +207,6 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 					filter.getLimit(),
 					filter.getOrder());
 		}
-
-
 	}
 
 	protected CassandraStoredMessageFilter createNextFilter(CassandraStoredMessageFilter prevFilter, int updatedLimit)
@@ -240,22 +238,22 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 				filter.getOrder());
 	}
 
-	protected boolean performNextIteratorChecks () {
+	protected boolean interruptIteratorChecks () {
 		if (cassandraFilter == null) {
-			return false;
+			return true;
 		}
 
 		if (takeWhileIterator != null && takeWhileIterator.isHalted()) {
 			logger.debug("Iterator was interrupted because iterator condition was not met");
-			return false;
+			return true;
 		}
 
 		if (limit > 0 && returned.get() >= limit) {
 			logger.debug("Filtering interrupted because limit for records to return ({}) is reached ({})", limit, returned);
-			return false;
+			return true;
 		}
 
-		return true;
+		return false;
 	}
 
 	protected Iterator<StoredMessageBatch> getBatchedIterator (MappedAsyncPagingIterable<MessageBatchEntity> resultSet) {
