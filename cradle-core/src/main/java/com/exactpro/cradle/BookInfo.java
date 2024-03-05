@@ -409,6 +409,10 @@ public class BookInfo {
         if (loaded.isEmpty()) {
             return null;
         }
+        // We shouldn't register `load` when day page interval (interval in the next) is empty because don't register `request` for empty interval.
+        // `EmptyPageInterval` handles `requests` for empty interval and doesn't register `request`
+        // `loads` and `requests` are required for calculating hit / miss rate
+        METRICS.incLoads(id, cacheName, loaded.size());
         return create(id, start, cacheName, loaded);
     }
 
