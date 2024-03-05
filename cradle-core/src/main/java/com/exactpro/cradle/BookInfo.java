@@ -405,7 +405,6 @@ public class BookInfo {
         Instant start = toInstant(epochDay);
         Instant end = start.plus(1, ChronoUnit.DAYS).minus(1, ChronoUnit.NANOS);
         Collection<PageInfo> loaded = pagesLoader.load(id, start, end);
-        METRICS.incLoads(id, cacheName, loaded.size());
         if (loaded.isEmpty()) {
             return null;
         }
