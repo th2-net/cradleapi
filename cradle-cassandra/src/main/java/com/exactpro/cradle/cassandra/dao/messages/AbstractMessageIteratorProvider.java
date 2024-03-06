@@ -31,6 +31,7 @@ import com.exactpro.cradle.cassandra.dao.messages.sequences.SequenceRangeExtract
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
+import com.exactpro.cradle.cassandra.utils.StorageUtils;
 import com.exactpro.cradle.cassandra.workers.MessagesWorker;
 import com.exactpro.cradle.filters.FilterForAny;
 import com.exactpro.cradle.filters.FilterForGreater;
@@ -141,7 +142,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 
 		// If the page wasn't specified in the filter, we should find a batch with a lower date,
 		// which may contain messages that satisfy the original condition
-		LocalDateTime leftBoundLocalDate = TimeUtils.toLocalTimestamp(result.getValue());
+		LocalDateTime leftBoundLocalDate = StorageUtils.toLocalDateTime(result.getValue());
 		LocalTime nearestBatchTime = getNearestBatchTime(leftBoundFromPage, filter.getSessionAlias(),
 				filter.getDirection().getLabel(), leftBoundLocalDate.toLocalDate(),
 				leftBoundLocalDate.toLocalTime());
@@ -182,7 +183,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 			} catch (Exception e) {
 				throw new CradleStorageException("Error while getting left bound ", e);
 			}
-			if (TimeUtils.toLocalTimestamp(page.getStarted()).toLocalDate().isBefore(messageDate)) {
+			if (StorageUtils.toLocalDateTime(page.getStarted()).toLocalDate().isBefore(messageDate)) {
 				return null;
 			}
 		}

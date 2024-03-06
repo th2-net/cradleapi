@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -142,5 +143,17 @@ public class StorageUtils {
             return LocalTime.MAX;
         }
         return LocalTime.ofInstant(instant, TIMEZONE_OFFSET);
+    }
+
+    public static LocalDateTime toLocalDateTime(Instant instant) {
+        if (instant.isBefore(MIN_EPOCH_INSTANT)) {
+            LOGGER.trace("Replaces {} by {}", instant, MIN_EPOCH_INSTANT);
+            return LocalDateTime.MIN;
+        }
+        if (instant.isAfter(MAX_EPOCH_INSTANT)) {
+            LOGGER.trace("Replaces {} by {}", instant, MAX_EPOCH_INSTANT);
+            return LocalDateTime.MAX;
+        }
+        return LocalDateTime.ofInstant(instant, TIMEZONE_OFFSET);
     }
 }

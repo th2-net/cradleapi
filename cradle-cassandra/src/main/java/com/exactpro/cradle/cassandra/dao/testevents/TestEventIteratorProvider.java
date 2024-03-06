@@ -163,9 +163,12 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 			since `createNextFilter` just passes timestamps from previous to next filters
 		 */
 		PageInfo firstPage = findFirstPage(filter.getPageId(), filter.getStartTimestampFrom(), bookInfo);
-		long duration = eventBatchDurationWorker.getMaxDuration(filter.getBookId().getName(), firstPage.getName(), filter.getScope(), readAttrs);
+		long duration = 0;
+		if (firstPage != null) {
+			duration = eventBatchDurationWorker.getMaxDuration(filter.getBookId().getName(), firstPage.getName(), filter.getScope(), readAttrs);
+		}
 
-        ComparisonOperation operation = filter.getStartTimestampFrom() == null ? ComparisonOperation.GREATER : filter.getStartTimestampFrom().getOperation();
+		ComparisonOperation operation = filter.getStartTimestampFrom() == null ? ComparisonOperation.GREATER : filter.getStartTimestampFrom().getOperation();
 		if (operation.equals(ComparisonOperation.GREATER)) {
 			return FilterForGreater.forGreater(actualFrom.minusMillis(duration));
 		} else {
