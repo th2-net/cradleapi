@@ -41,8 +41,7 @@ public class MessageBatchesIteratorProvider extends AbstractMessageIteratorProvi
 
 	public MessageBatchesIteratorProvider(String requestInfo, MessageFilter filter, CassandraOperators operators, BookInfo book,
 										  ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
-										  Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException
-	{
+										  Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) throws CradleStorageException {
 		super(requestInfo, filter, operators, book, composingService, selectQueryExecutor, readAttrs);
 	}
 

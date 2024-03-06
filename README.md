@@ -211,3 +211,9 @@ Test events have mandatory parameters that are verified when storing an event. T
 
 ### 5.2.0
 * Added page cache for each book to avoid memory leak
+
+## Changes
+
+### 5.1.5
+
+* fixed: NullPointerException on AbstractMessageIteratorProvider creation for book with no pages in it.

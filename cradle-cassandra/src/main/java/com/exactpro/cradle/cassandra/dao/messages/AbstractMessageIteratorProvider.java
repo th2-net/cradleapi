@@ -190,8 +190,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		return null;
 	}
 
-	protected FilterForLess<Instant> createRightBoundFilter(MessageFilter filter)
-	{
+	protected FilterForLess<Instant> createRightBoundFilter(MessageFilter filter) {
 		FilterForLess<Instant> result = filter.getTimestampTo();
 		Instant lastTimestamp = findLastTimestamp(filter.getPageId(), result, book);
 		Instant endTimestamp = lastTimestamp == null ? Instant.now() : lastTimestamp;
