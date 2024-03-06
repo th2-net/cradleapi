@@ -118,6 +118,18 @@ public class BookInfoTest {
     }
 
     @Test(dataProvider = "orders")
+    public void emptyBookTest(Order order) {
+        BookInfo bookInfo = createBookInfo(emptyList(), 1);
+
+        assertNull(bookInfo.getFirstPage());
+        assertNull(bookInfo.getLastPage());
+        assertEquals(newArrayList(bookInfo.getPages()), emptyList());
+        assertEquals(newArrayList(bookInfo.getPages(Instant.MIN, Instant.MAX, order)), emptyList());
+        assertNull(bookInfo.findPage(Instant.now()));
+        assertNull(bookInfo.getPage(PAGES.get(0).getId()));
+    }
+
+    @Test(dataProvider = "orders")
     public void getAllPagesTest(Order order) {
         List<PageInfo> operateSource = new ArrayList<>(PAGES);
         BookInfo bookInfo = createBookInfo(operateSource, 1);

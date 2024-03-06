@@ -188,6 +188,10 @@ public class BookInfo {
             return emptyIterator();
         }
 
+        if (getFirstPage() == null) {
+            return emptyIterator();
+        }
+
         Instant leftTimestamp = calculateBound(leftBoundTimestamp, this::getFirstPage);
         if (leftTimestamp == null) {
             return emptyIterator();

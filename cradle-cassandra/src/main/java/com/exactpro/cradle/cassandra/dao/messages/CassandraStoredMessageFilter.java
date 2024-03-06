@@ -79,12 +79,9 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	public Select addConditions(Select select) {
 		select = select
 				.whereColumn(FIELD_BOOK).isEqualTo(bindMarker())
+				.whereColumn(FIELD_PAGE).isEqualTo(bindMarker())
 				.whereColumn(FIELD_SESSION_ALIAS).isEqualTo(bindMarker())
 				.whereColumn(FIELD_DIRECTION).isEqualTo(bindMarker());
-
-		if (page != null) {
-			select = select.whereColumn(FIELD_PAGE).isEqualTo(bindMarker());
-		}
 
 		if (sequence != null)
 			select = addMessageIdConditions(select);
@@ -115,10 +112,6 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 				.setString(FIELD_PAGE, pageId.getName())
 				.setString(FIELD_SESSION_ALIAS, sessionAlias)
 				.setString(FIELD_DIRECTION, direction);
-
-		if (page != null) {
-			builder = builder.setString(FIELD_PAGE, page);
-		}
 
 		if (sequence != null)
 			builder = bindMessageIdParameters(builder);
