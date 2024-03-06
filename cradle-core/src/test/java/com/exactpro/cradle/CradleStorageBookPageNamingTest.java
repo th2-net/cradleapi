@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2022-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 public class CradleStorageBookPageNamingTest {
 
@@ -33,7 +34,7 @@ public class CradleStorageBookPageNamingTest {
     @BeforeMethod
     public void prepare() throws CradleStorageException, IOException
     {
-        storage = new DummyCradleStorage();
+        storage = new InMemoryCradleStorage();
         storage.init(false);
         storage.addBook(new BookToAdd(BOOK_ID.getName(), START_TIMESTAMP));
     }
@@ -102,10 +103,11 @@ public class CradleStorageBookPageNamingTest {
     @Test
     public void validPageName() throws IOException, CradleStorageException
     {
-        storage.addPage(BOOK_ID, "pag-~e", Instant.now(), "comment");
-        storage.addPage(BOOK_ID, "pa`ge 2_", Instant.now(), "comment");
-        storage.addPage(BOOK_ID, "'page=_3", Instant.now(), "comment");
-        storage.addPage(BOOK_ID, "4\"pa++ge", Instant.now(), "comment");
-        storage.addPage(BOOK_ID, "pag%%e1", Instant.now(), "comment");
+        Instant now = Instant.now();
+        storage.addPage(BOOK_ID, "pag-~e", now, "comment");
+        storage.addPage(BOOK_ID, "pa`ge 2_", now.plus(1, ChronoUnit.HOURS), "comment");
+        storage.addPage(BOOK_ID, "'page=_3", now.plus(2, ChronoUnit.HOURS), "comment");
+        storage.addPage(BOOK_ID, "4\"pa++ge", now.plus(3, ChronoUnit.HOURS), "comment");
+        storage.addPage(BOOK_ID, "pag%%e1", now.plus(4, ChronoUnit.HOURS), "comment");
     }
 }

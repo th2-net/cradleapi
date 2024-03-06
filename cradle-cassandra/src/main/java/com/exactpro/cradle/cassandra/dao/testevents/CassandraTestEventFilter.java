@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ package com.exactpro.cradle.cassandra.dao.testevents;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
 import com.exactpro.cradle.Order;
+import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.CassandraFilter;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
 import com.exactpro.cradle.filters.ComparisonOperation;
@@ -28,12 +28,20 @@ import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 
+import javax.annotation.Nonnull;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
-import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.*;
+import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.FIELD_BOOK;
+import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.FIELD_ID;
+import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.FIELD_PAGE;
+import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.FIELD_PARENT_ID;
+import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.FIELD_SCOPE;
+import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.FIELD_START_DATE;
+import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.FIELD_START_TIME;
+import static java.util.Objects.requireNonNull;
 
 public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity> {
     private static final String START_DATE_FROM = "startDateFrom";
@@ -42,7 +50,8 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
     private static final String START_TIME_TO = "startTimeTo";
     private static final String ID = "id";
 
-    private final String book, page, scope;
+    private final @Nonnull String scope;
+    private final @Nonnull PageId pageId;
     private final FilterForGreater<Instant> startTimestampFrom;
     private final FilterForLess<Instant> startTimestampTo;
     private final String parentId;
@@ -52,13 +61,12 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
     private final int limit;
     private final Order order;
 
-    public CassandraTestEventFilter(String book, String page, String scope,
+    public CassandraTestEventFilter(PageId pageId, String scope,
                                     FilterForGreater<Instant> startTimestampFrom, FilterForLess<Instant> startTimestampTo,
                                     StoredTestEventId id,
                                     String parentId, int limit, Order order) {
-        this.book = book;
-        this.page = page;
-        this.scope = scope;
+        this.pageId = requireNonNull(pageId, "page id can't be null because book and page names are part of partition");
+        this.scope = requireNonNull(scope, "scope can't be null because it is part of partition");
         this.startTimestampFrom = startTimestampFrom;
         this.startTimestampTo = startTimestampTo;
         this.id = id;
@@ -110,8 +118,8 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
     @Override
     public BoundStatementBuilder bindParameters(BoundStatementBuilder builder) {
         builder = builder
-                .setString(FIELD_BOOK, book)
-                .setString(FIELD_PAGE, page)
+                .setString(FIELD_BOOK, pageId.getBookId().getName())
+                .setString(FIELD_PAGE, pageId.getName())
                 .setString(FIELD_SCOPE, scope);
 
         if (startTimestampFrom != null)
@@ -133,16 +141,19 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
         return builder;
     }
 
-
-    public String getBook() {
-        return book;
+    public @Nonnull PageId getPageId() {
+        return pageId;
     }
 
-    public String getPage() {
-        return page;
+    public @Nonnull String getBook() {
+        return pageId.getBookId().getName();
     }
 
-    public String getScope() {
+    public @Nonnull String getPage() {
+        return pageId.getName();
+    }
+
+    public @Nonnull String getScope() {
         return scope;
     }
 
@@ -169,12 +180,8 @@ public class CassandraTestEventFilter implements CassandraFilter<TestEventEntity
     @Override
     public String toString() {
         List<String> result = new ArrayList<>(10);
-        if (book != null)
-            result.add("book=" + book);
-        if (page != null)
-            result.add("page=" + page);
-        if (scope != null)
-            result.add("scope=" + scope);
+        result.add("pageId=" + pageId);
+        result.add("scope=" + scope);
         if (startTimestampFrom != null)
             result.add("timestampFrom" + startTimestampFrom);
         if (startTimestampTo != null)

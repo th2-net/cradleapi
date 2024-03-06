@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,10 +51,9 @@ public class MessageBatchIteratorProviderTest extends BaseCradleCassandraTest {
 
     private final long storeActionRejectionThreshold = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
 
-    private List<GroupedMessageBatchToStore> data;
     private Map<MessageBatchIteratorProviderTest.StoredMessageKey, List<StoredMessageBatch>> storedData;
     private CassandraOperators operators;
-    private ExecutorService composingService = Executors.newSingleThreadExecutor();
+    private final ExecutorService composingService = Executors.newFixedThreadPool(3);
 
     @BeforeClass
     public void startUp () throws IOException, InterruptedException, CradleStorageException {
@@ -67,11 +66,6 @@ public class MessageBatchIteratorProviderTest extends BaseCradleCassandraTest {
     private static class StoredMessageKey {
         private final String sessionAlias;
         private final Direction direction;
-
-        public StoredMessageKey (StoredMessage message) {
-            this.sessionAlias = message.getSessionAlias();
-            this.direction = message.getDirection();
-        }
 
         public StoredMessageKey (String sessionAlias, Direction direction) {
             this.sessionAlias = sessionAlias;
@@ -100,7 +94,7 @@ public class MessageBatchIteratorProviderTest extends BaseCradleCassandraTest {
         }
     }
 
-    private void setUpOperators() throws IOException, InterruptedException {
+    private void setUpOperators() {
         CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(session).build();
         operators = new CassandraOperators(dataMapper, CassandraCradleHelper.getInstance().getStorageSettings());
     }
@@ -130,7 +124,7 @@ public class MessageBatchIteratorProviderTest extends BaseCradleCassandraTest {
             b3.addMessage(generateMessage(FIRST_SESSION_ALIAS, Direction.FIRST, 27, 11L));
             b3.addMessage(generateMessage(SECOND_SESSION_ALIAS, Direction.SECOND, 28, 12L));
 
-            data = List.of(b1, b2, b3);
+            List<GroupedMessageBatchToStore> data = List.of(b1, b2, b3);
             storedData = new HashMap<>();
             BookInfo bookInfo = storage.refreshBook(bookId.getName());
             for (GroupedMessageBatchToStore groupedBatch : data) {

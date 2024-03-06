@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,23 +15,16 @@
  */
 package com.exactpro.cradle;
 
-import com.exactpro.cradle.utils.CradleStorageException;
-
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.time.Instant;
 import java.util.Collection;
 
-/*
-    Interface which should be implemented along with
-    CradleStorage's implementations, cache should be used
-    for getting books and pages and should be updated
-    on write
- */
-
-public interface BookCache {
-    BookInfo getBook(BookId bookId) throws CradleStorageException;
-
-    boolean checkBook(BookId bookId);
-
-    Collection<PageInfo> loadPageInfo(BookId bookId, boolean loadRemoved) throws CradleStorageException;
-
-    Collection<BookInfo> getCachedBooks();
+@FunctionalInterface
+public interface PagesLoader {
+    /**
+     * @return ordered page info collection from start to end date time. Both borders are included
+     */
+    @Nonnull
+    Collection<PageInfo> load(@Nonnull BookId bookId, @Nullable Instant start, @Nullable Instant end);
 }

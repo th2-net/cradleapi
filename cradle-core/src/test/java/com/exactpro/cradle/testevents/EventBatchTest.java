@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.PageInfo;
+import com.exactpro.cradle.TestPageLoader;
+import com.exactpro.cradle.TestPagesLoader;
 import com.exactpro.cradle.TestUtils;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.serialization.EventsSizeCalculator;
@@ -37,6 +39,7 @@ import org.testng.asserts.SoftAssert;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -49,6 +52,7 @@ import static com.exactpro.cradle.testevents.EventSingleTest.SCOPE;
 import static com.exactpro.cradle.testevents.EventSingleTest.START_TIMESTAMP;
 import static com.exactpro.cradle.testevents.EventSingleTest.batchParentId;
 import static com.exactpro.cradle.testevents.EventSingleTest.validEvent;
+import static java.time.temporal.ChronoUnit.NANOS;
 
 public class EventBatchTest {
     private final int MAX_SIZE = 1024;
@@ -69,7 +73,7 @@ public class EventBatchTest {
     }
 
     @DataProvider(name = "batch invalid events")
-    public Object[][] batchInvalidEvents() throws CradleStorageException {
+    public Object[][] batchInvalidEvents() {
         Object[][] batchEvents = new Object[][]
                 {
                         {validEvent().parentId(null),                                                                      //No parent ID
@@ -202,7 +206,7 @@ public class EventBatchTest {
         batch.addTestEvent(eventBuilder.id(eventId).name(DUMMY_NAME).parentId(batch.getParentId()).build());
     }
 
-    @Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = ".* '.*\\:XXX' .* stored in this batch .*")
+    @Test(expectedExceptions = {CradleStorageException.class}, expectedExceptionsMessageRegExp = ".* '.*:XXX' .* stored in this batch .*")
     public void externalReferences() throws CradleStorageException {
         StoredTestEventId parentId = new StoredTestEventId(BOOK, SCOPE, START_TIMESTAMP, "1");
         batch.addTestEvent(eventBuilder.id(parentId)
@@ -283,22 +287,30 @@ public class EventBatchTest {
     public void batchEventValidation(TestEventSingleToStoreBuilder builder, String errorMessage) throws CradleStorageException {
         try {
             var singleEvent = builder.build();
-            BookInfo bookInfo = new BookInfo(
-                    BOOK,
-                    null,
-                    null,
-                    START_TIMESTAMP,
-                    Collections.singleton(new PageInfo(
-                            new PageId(null, null),
-                            START_TIMESTAMP,
-                            START_TIMESTAMP,
-                            null)));
+            BookInfo bookInfo = createBookInfo();
             TestEventUtils.validateTestEvent(singleEvent, bookInfo, storeActionRejectionThreshold);
             batch.addTestEvent(singleEvent);
             Assertions.fail("Invalid message passed validation");
         } catch (CradleStorageException e) {
             TestUtils.handleException(e, errorMessage);
         }
+    }
+
+    private static BookInfo createBookInfo() {
+        List<PageInfo> pages = List.of(new PageInfo(
+                new PageId(BOOK, START_TIMESTAMP, "test-page"),
+                START_TIMESTAMP.plus(1, NANOS),
+                null)
+        );
+        return new BookInfo(
+                BOOK,
+                null,
+                null,
+                START_TIMESTAMP,
+                1,
+                Long.MAX_VALUE,
+                new TestPagesLoader(pages),
+                new TestPageLoader(pages, true), new TestPageLoader(pages, false));
     }
 
     @Test

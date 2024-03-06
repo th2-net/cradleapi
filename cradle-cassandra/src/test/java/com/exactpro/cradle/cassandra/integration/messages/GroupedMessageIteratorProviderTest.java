@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,9 @@
 
 package com.exactpro.cradle.cassandra.integration.messages;
 
-import com.exactpro.cradle.*;
+import com.exactpro.cradle.CoreStorageSettings;
+import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.Order;
 import com.exactpro.cradle.cassandra.dao.messages.GroupedMessageIteratorProvider;
 import com.exactpro.cradle.cassandra.integration.BaseCradleCassandraTest;
 import com.exactpro.cradle.cassandra.integration.CassandraCradleHelper;
@@ -26,9 +28,10 @@ import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.filters.FilterForGreater;
-import com.exactpro.cradle.messages.*;
+import com.exactpro.cradle.messages.GroupedMessageBatchToStore;
+import com.exactpro.cradle.messages.GroupedMessageFilter;
+import com.exactpro.cradle.messages.StoredGroupedMessageBatch;
 import com.exactpro.cradle.utils.CradleStorageException;
-import org.assertj.core.api.Assertions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.BeforeClass;
@@ -42,6 +45,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+
 public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest {
 
     private static final Logger logger = LoggerFactory.getLogger(GroupedMessageIteratorProviderTest.class);
@@ -51,10 +57,9 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
 
     private final long storeActionRejectionThreshold = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
 
-    private List<GroupedMessageBatchToStore> data;
     private List<StoredGroupedMessageBatch> storedData;
     private CassandraOperators operators;
-    private ExecutorService composingService = Executors.newSingleThreadExecutor();
+    private final ExecutorService composingService = Executors.newFixedThreadPool(3);
 
     @BeforeClass
     public void startUp () throws IOException, InterruptedException, CradleStorageException {
@@ -64,7 +69,7 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
         generateData();
     }
 
-    private void setUpOperators() throws IOException, InterruptedException {
+    private void setUpOperators() {
         CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(session).build();
         operators = new CassandraOperators(dataMapper, CassandraCradleHelper.getInstance().getStorageSettings());
     }
@@ -84,7 +89,7 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
             b3.addMessage(generateMessage(FIRST_SESSION_ALIAS, Direction.FIRST, 25, 5L));
             b3.addMessage(generateMessage(SECOND_SESSION_ALIAS, Direction.SECOND, 25, 6L));
 
-            data = List.of(b1, b2, b3);
+            List<GroupedMessageBatchToStore> data = List.of(b1, b2, b3);
             storedData = List.of(
                     MessageTestUtils.groupedMessageBatchToStored(pages.get(0).getId(), null, b1),
                     MessageTestUtils.groupedMessageBatchToStored(pages.get(1).getId(), null, b2),
@@ -128,7 +133,7 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
             Iterable<StoredGroupedMessageBatch> actual =  rsFuture.get().asIterable();
             List<StoredGroupedMessageBatch> expected = storedData;
 
-            Assertions.assertThat(actual)
+            assertThat(actual)
                     .usingElementComparatorIgnoringFields("recDate")
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException e) {
@@ -150,7 +155,7 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
             Iterable<StoredGroupedMessageBatch> actual =  rsFuture.get().asIterable();
             List<StoredGroupedMessageBatch> expected = storedData.subList(0, 2);
 
-            Assertions.assertThat(actual)
+            assertThat(actual)
                     .usingElementComparatorIgnoringFields("recDate")
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException e) {
@@ -172,7 +177,7 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
             Iterable<StoredGroupedMessageBatch> actual =  rsFuture.get().asIterable();
             List<StoredGroupedMessageBatch> expected = storedData.subList(1, 3);
 
-            Assertions.assertThat(actual)
+            assertThat(actual)
                     .usingElementComparatorIgnoringFields("recDate")
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException e) {
@@ -183,21 +188,8 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
 
     @Test(description = "Tries to get grouped messages by filter which has negative limit, should end with exception")
     public void tryToGetGroupedMessagesWithNegativeLimitTest () {
-
-        try {
-            GroupedMessageFilter groupedMessageFilter = new GroupedMessageFilter(bookId, GROUP_NAME);
-            groupedMessageFilter.setLimit(-1);
-            GroupedMessageIteratorProvider iteratorProvider = createIteratorProvider(groupedMessageFilter);
-
-            CompletableFuture<CassandraCradleResultSet<StoredGroupedMessageBatch>> rsFuture = iteratorProvider.nextIterator()
-                    .thenApplyAsync(r -> new CassandraCradleResultSet<>(r, iteratorProvider), composingService);
-
-            Iterable<StoredGroupedMessageBatch> actual =  rsFuture.get().asIterable();
-
-            Assertions.fail("Exception wasn't thrown while getting messages with negative limit");
-        } catch (Exception e) {
-            // Test passed
-        }
+        Throwable throwable = catchThrowable(() -> new GroupedMessageFilter(bookId, GROUP_NAME).setLimit(-1));
+        assertThat(throwable).hasMessage("Invalid limit value: -1. limit must be greater than 0");
     }
 
     @Test(description = "Gets grouped messages from iterator provider starting with second page and limit 1")
@@ -214,7 +206,7 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
             Iterable<StoredGroupedMessageBatch> actual =  rsFuture.get().asIterable();
             List<StoredGroupedMessageBatch> expected = storedData.subList(1, 2);
 
-            Assertions.assertThat(actual)
+            assertThat(actual)
                     .usingElementComparatorIgnoringFields("recDate")
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException e) {
@@ -237,7 +229,7 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
             Iterable<StoredGroupedMessageBatch> actual =  rsFuture.get().asIterable();
             List<StoredGroupedMessageBatch> expected = storedData.subList(1, 2);
 
-            Assertions.assertThat(actual)
+            assertThat(actual)
                     .usingElementComparatorIgnoringFields("recDate")
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException e) {
@@ -260,7 +252,7 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
             Iterable<StoredGroupedMessageBatch> actual =  rsFuture.get().asIterable();
             List<StoredGroupedMessageBatch> expected = Collections.emptyList();
 
-            Assertions.assertThat(actual)
+            assertThat(actual)
                     .usingElementComparatorIgnoringFields("recDate")
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException e) {

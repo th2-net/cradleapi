@@ -1,5 +1,5 @@
 /*
- *  Copyright 2023 Exactpro (Exactpro Systems Limited)
+ *  Copyright 2023-2024 Exactpro (Exactpro Systems Limited)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -33,26 +33,27 @@ public class PagesInIntervalIteratorProviderTest {
 
     @Test
     public void defaultPageVsIncludedInterval() {
-        PageInfo pageInfo = new PageInfo(new PageId(bookId, "test-page"), Instant.EPOCH, null, null);
+        PageInfo pageInfo = new PageInfo(new PageId(bookId, Instant.EPOCH, "test-page"), null, null);
 
         assertTrue(checkInterval(pageInfo, pageInfo.getStarted(), Instant.now()), "in.st = p.st, in.en = p.en");
         assertTrue(checkInterval(pageInfo, pageInfo.getStarted().plusNanos(1), Instant.now()), "in.st = p.st + 1, in.en = p.en");
-        assertTrue(checkInterval(pageInfo, pageInfo.getStarted(), pageInfo.getStarted()), "in.st = p.st, in.en = p.st");
-        assertTrue(checkInterval(pageInfo, pageInfo.getStarted().minusNanos(1), pageInfo.getStarted()), "in.st = p.st - 1, in.en = p.st");
+        assertTrue(checkInterval(pageInfo, pageInfo.getStarted(), pageInfo.getId().getStart()), "in.st = p.st, in.en = p.st");
+        assertTrue(checkInterval(pageInfo, pageInfo.getStarted().minusNanos(1), pageInfo.getId().getStart()), "in.st = p.st - 1, in.en = p.st");
         assertTrue(checkInterval(pageInfo, Instant.now(), Instant.now()), "in.st = p.en, in.en = p.en");
         assertFalse(checkInterval(pageInfo, pageInfo.getStarted().minusNanos(1), pageInfo.getStarted().minusNanos(1)), "in.st = p.st - 1, in.en = p.st - 1");
     }
 
     @Test
     public void onePageVsIntervals() {
-        PageInfo pageInfo = new PageInfo(new PageId(bookId, "test-page"), Instant.now(), Instant.now().plusSeconds(1), null);
+        Instant now = Instant.now();
+        PageInfo pageInfo = new PageInfo(new PageId(bookId, now, "test-page"), now.plusSeconds(1), null);
 
         assertTrue(checkInterval(pageInfo, pageInfo.getStarted(), pageInfo.getEnded()), "in.st = p.st, in.en = p.en");
         assertTrue(checkInterval(pageInfo, pageInfo.getStarted().plusNanos(1), pageInfo.getEnded()), "in.st = p.st + 1, in.en = p.en");
         assertTrue(checkInterval(pageInfo, pageInfo.getStarted(), pageInfo.getEnded().minusNanos(1)), "in.st = p.st, in.en = p.en - 1");
         assertTrue(checkInterval(pageInfo, pageInfo.getStarted().plusNanos(1), pageInfo.getEnded().minusNanos(1)), "in.st = p.st + 1, in.en = p.en - 1");
-        assertTrue(checkInterval(pageInfo, pageInfo.getStarted(), pageInfo.getStarted()), "in.st = p.st, in.en = p.st");
-        assertTrue(checkInterval(pageInfo, pageInfo.getStarted().minusNanos(1), pageInfo.getStarted()), "in.st = p.st - 1, in.en = p.st");
+        assertTrue(checkInterval(pageInfo, pageInfo.getStarted(), pageInfo.getId().getStart()), "in.st = p.st, in.en = p.st");
+        assertTrue(checkInterval(pageInfo, pageInfo.getStarted().minusNanos(1), pageInfo.getId().getStart()), "in.st = p.st - 1, in.en = p.st");
         assertTrue(checkInterval(pageInfo, pageInfo.getEnded(), pageInfo.getEnded()), "in.st = p.en, in.en = p.en");
         assertTrue(checkInterval(pageInfo, pageInfo.getEnded(), pageInfo.getEnded().plusNanos(1)), "in.st = p.en, in.en = p.en + 1");
         assertFalse(checkInterval(pageInfo, pageInfo.getStarted().minusNanos(1), pageInfo.getStarted().minusNanos(1)), "in.st = p.st - 1, in.en = p.st - 1");

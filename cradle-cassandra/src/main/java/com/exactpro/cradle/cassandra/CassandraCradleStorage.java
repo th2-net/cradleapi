@@ -1,5 +1,5 @@
 /*
- *  Copyright 2023 Exactpro (Exactpro Systems Limited)
+ *  Copyright 2023-2024 Exactpro (Exactpro Systems Limited)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -73,7 +73,6 @@ import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
 import com.exactpro.cradle.cassandra.metrics.DriverMetrics;
 import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
-import com.exactpro.cradle.cassandra.resultset.SessionsStatisticsIteratorProvider;
 import com.exactpro.cradle.cassandra.retries.FixedNumberRetryPolicy;
 import com.exactpro.cradle.cassandra.retries.PageSizeAdjustingPolicy;
 import com.exactpro.cradle.cassandra.retries.SelectExecutionPolicy;
@@ -127,6 +126,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.exactpro.cradle.cassandra.utils.StorageUtils.toLocalDate;
+import static com.exactpro.cradle.cassandra.utils.StorageUtils.toLocalTime;
 
 public class CassandraCradleStorage extends CradleStorage
 {
@@ -211,7 +213,11 @@ public class CassandraCradleStorage extends CradleStorage
 					.setTimeout(timeout)
 					.setPageSize(resultPageSize);
 			operators = createOperators(connection.getSession(), settings);
-			bookCache = new ReadThroughBookCache(operators, readAttrs, settings.getSchemaVersion());
+			bookCache = new ReadThroughBookCache(operators,
+					readAttrs,
+					settings.getSchemaVersion(),
+					settings.getRandomAccessDaysCacheSize(),
+					settings.getRandomAccessDaysInvalidateInterval());
 			bookManager = new BookManager(getBookCache(), settings.getBookRefreshIntervalMillis());
 			bookManager.start();
 
@@ -294,12 +300,12 @@ public class CassandraCradleStorage extends CradleStorage
 		String bookName = bookId.getName();
 		for (PageInfo page : pages)
 		{
-			String pageName = page.getId().getName();
+			String pageName = page.getName();
 			try
 			{
 				PageNameEntity nameEntity = new PageNameEntity(bookName, pageName, page.getStarted(), page.getComment(), page.getEnded());
 				if (!pageNameOp.writeNew(nameEntity, writeAttrs).wasApplied())
-					throw new IOException("Query to insert page '"+nameEntity.getName()+"' was not applied. Probably, page already exists");
+					throw new IOException("Query to insert page '"+nameEntity.getName()+"' book '" + bookId.getName() + "' was not applied. Probably, page already exists");
 				PageEntity entity = new PageEntity(bookName, pageName, page.getStarted(), page.getComment(), page.getEnded(), page.getUpdated());
 				pageOp.write(entity, writeAttrs);
 			}
@@ -943,29 +949,6 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 	}
 
-	private CompletableFuture<CradleResultSet<String>> doGetSessionsAsync(BookId bookId, Interval interval, SessionRecordType recordType) throws CradleStorageException {
-		String queryInfo = String.format("%s Aliases in book %s from %s to %s",
-				recordType.name(),
-				bookId.getName(),
-				interval.getStart().toString(),
-				interval.getEnd().toString());
-
-		List<FrameInterval> frameIntervals = StorageUtils.sliceInterval(interval);
-
-		SessionsStatisticsIteratorProvider iteratorProvider = new SessionsStatisticsIteratorProvider(
-				queryInfo,
-				operators,
-				getBookCache().getBook(bookId),
-				composingService,
-				selectExecutor,
-				readAttrs,
-				frameIntervals,
-				recordType);
-
-		return iteratorProvider.nextIterator()
-				.thenApplyAsync(it -> new CassandraCradleResultSet<>(it, iteratorProvider));
-	}
-
 	@Override
 	protected CompletableFuture<CradleResultSet<String>> doGetSessionAliasesAsync(BookId bookId, Interval interval) throws CradleStorageException {
 		String queryInfo = String.format("Session Aliases in book %s from pages that fall within %s to %s",
@@ -1311,8 +1294,8 @@ public class CassandraCradleStorage extends CradleStorage
 	
 	protected void removePageData(PageInfo pageInfo) throws CradleStorageException {
 
-		String book = pageInfo.getId().getBookId().getName();
-		String page = pageInfo.getId().getName();
+		String book = pageInfo.getBookName();
+		String page = pageInfo.getName();
 
 		// remove sessions
 		operators.getPageSessionsOperator().remove(book, page, writeAttrs);
@@ -1371,23 +1354,25 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected CompletableFuture<Iterator<PageInfo>> doGetPagesAsync (BookId bookId, Interval interval) {
+		Instant start = interval.getStart();
+		Instant end = interval.getEnd();
 		String queryInfo = String.format(
 				"Getting pages for book %s between  %s - %s ",
 				bookId.getName(),
-				interval.getStart(),
-				interval.getEnd());
+				start,
+				end);
 
 		PageEntity startPage = operators.getPageOperator()
 				.getPageForLessOrEqual(
 						bookId.getName(),
-						LocalDate.ofInstant(interval.getStart(), TIMEZONE_OFFSET),
-						LocalTime.ofInstant(interval.getStart(), TIMEZONE_OFFSET),
+						toLocalDate(start),
+						toLocalTime(start),
 						readAttrs).one();
 
 		LocalDate startDate = startPage == null ? LocalDate.MIN : startPage.getStartDate();
 		LocalTime startTime = startPage == null ? LocalTime.MIN : startPage.getStartTime();
-		LocalDate endDate = LocalDate.ofInstant(interval.getEnd(), TIMEZONE_OFFSET);
-		LocalTime endTime = LocalTime.ofInstant(interval.getEnd(), TIMEZONE_OFFSET);
+		LocalDate endDate = toLocalDate(end);
+		LocalTime endTime = toLocalTime(end);
 
 		return operators.getPageOperator().getPagesForInterval(
 				bookId.getName(),
@@ -1408,16 +1393,15 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected Iterator<PageInfo> doGetPages(BookId bookId, Interval interval) throws CradleStorageException {
-		String queryInfo = String.format(
-				"Getting pages for book %s between  %s - %s ",
-				bookId.getName(),
-				interval.getStart(),
-				interval.getEnd());
-
 		try {
 			return doGetPagesAsync(bookId, interval).get();
 		} catch (InterruptedException | ExecutionException e) {
-			throw new CradleStorageException("Error while " + queryInfo, e);
+			String error = String.format(
+					"Error while Getting pages for book %s between  %s - %s ",
+					bookId.getName(),
+					interval.getStart(),
+					interval.getEnd());
+			throw new CradleStorageException(error, e);
 		}
 	}
 }

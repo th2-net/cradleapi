@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2023-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,13 +73,13 @@ public abstract class PagesInIntervalIteratorProvider<T> extends IteratorProvide
         return bookCache.loadPageInfo(bookId, false)
                 .stream()
                 .filter(page -> checkInterval(page, start, end))
-                .map(page -> page.getId().getName())
+                .map(PageInfo::getName)
                 .collect(Collectors.toCollection(LinkedList::new));
     }
 
     public static boolean checkInterval(PageInfo page, Instant start, Instant end) {
         var pageStart = page.getStarted();
-        Objects.requireNonNull(pageStart, String.format("Page \"%s\" has null start time", page.getId().getName()));
+        Objects.requireNonNull(pageStart, String.format("Page \"%s\" has null start time", page.getName()));
         var pageEnd = defaultIfNull(page.getEnded(), Instant.MAX);
         return !pageEnd.isBefore(start) && !pageStart.isAfter(end);
     }

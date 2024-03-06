@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2022-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,8 @@ import static com.exactpro.cradle.cassandra.TestUtils.createContent;
 public class GroupedMessageBatchEntityTest {
     @Test
     public void validationTest() throws IOException, DataFormatException, CradleStorageException, CompressException {
-        PageId pageId = new PageId(new BookId("Test_Book_1"), "Test_Page_1");
+        Instant timestamp = Instant.parse("2022-06-10T23:59:58.987Z");
+        PageId pageId = new PageId(new BookId("Test_Book_1"), timestamp, "Test_Page_1");
         String group = "test-group";
 
         GroupedMessageBatchToStore batch = new GroupedMessageBatchToStore(group, 10_000, new CoreStorageSettings().calculateStoreActionRejectionThreshold());
@@ -49,7 +50,7 @@ public class GroupedMessageBatchEntityTest {
                 .bookId(pageId.getBookId())
                 .sessionAlias("TEST_Session")
                 .direction(Direction.FIRST)
-                .timestamp(Instant.parse("2022-06-10T23:59:58.987Z"))
+                .timestamp(timestamp)
                 .sequence(1)
                 .content(createContent(40))
                 .metadata("key_test", "value_test")

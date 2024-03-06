@@ -1,15 +1,31 @@
+/*
+ * Copyright 2022-2024 Exactpro (Exactpro Systems Limited)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.exactpro.cradle.cassandra.dao.statistics;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.exactpro.cradle.*;
+import com.exactpro.cradle.BookInfo;
+import com.exactpro.cradle.EntityType;
+import com.exactpro.cradle.FrameType;
+import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.counters.FrameInterval;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
-import com.exactpro.cradle.cassandra.utils.FilterUtils;
 import com.exactpro.cradle.counters.CounterSample;
-import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.iterators.ConvertingIterator;
 
 import java.time.Instant;
@@ -18,16 +34,17 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
+import static com.exactpro.cradle.Order.DIRECT;
+
 public class EntityStatisticsIteratorProvider extends IteratorProvider<CounterSample> {
-    private CassandraOperators operators;
-    private BookInfo book;
-    private ExecutorService composingService;
-    private SelectQueryExecutor selectQueryExecutor;
-    private EntityType entityType;
-    private FrameType frameType;
-    private FrameInterval frameInterval;
-    private Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
-    private PageInfo currentPage;
+    private final CassandraOperators operators;
+    private final ExecutorService composingService;
+    private final SelectQueryExecutor selectQueryExecutor;
+    private final EntityType entityType;
+    private final FrameType frameType;
+    private final FrameInterval frameInterval;
+    private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
+    private final Iterator<PageInfo> pageProvider;
     public EntityStatisticsIteratorProvider(String requestInfo, CassandraOperators operators, BookInfo book,
                                             ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
                                             EntityType entityType,
@@ -36,21 +53,25 @@ public class EntityStatisticsIteratorProvider extends IteratorProvider<CounterSa
                                             Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs) {
         super(requestInfo);
         this.operators = operators;
-        this.book = book;
         this.composingService = composingService;
         this.selectQueryExecutor = selectQueryExecutor;
         this.entityType = entityType;
         this.frameType = frameType;
         this.frameInterval = frameInterval;
         this.readAttrs = readAttrs;
-        this.currentPage = FilterUtils.findFirstPage(null, FilterForGreater.forGreater(frameInterval.getInterval().getStart()),book);
+        this.pageProvider = book.getPages(
+            frameInterval.getInterval().getStart(),
+            frameInterval.getInterval().getEnd(),
+            DIRECT
+        );
     }
 
     @Override
     public CompletableFuture<Iterator<CounterSample>> nextIterator() {
-        if(currentPage == null || frameInterval.getInterval().getEnd().isBefore(currentPage.getStarted()) ){
+        if(!pageProvider.hasNext()){
             return CompletableFuture.completedFuture(null);
         }
+        PageInfo pageInfo = pageProvider.next();
 
         Instant actualStart = frameInterval.getFrameType().getFrameStart(frameInterval.getInterval().getStart());
         Instant actualEnd = frameInterval.getFrameType().getFrameEnd(frameInterval.getInterval().getEnd());
@@ -59,16 +80,14 @@ public class EntityStatisticsIteratorProvider extends IteratorProvider<CounterSa
         EntityStatisticsEntityConverter entityStatsConverter = operators.getEntityStatisticsEntityConverter();
 
         return entityStatsOperator.getStatistics(
-                        currentPage.getId().getBookId().getName(),
-                        currentPage.getId().getName(),
+                        pageInfo.getBookName(),
+                        pageInfo.getName(),
 						entityType.getValue(),
 						frameType.getValue(),
 						actualStart,
 						actualEnd,
 						readAttrs)
 				.thenApplyAsync(rs -> {
-                            currentPage = book.getNextPage(currentPage.getStarted());
-
                             PagedIterator<EntityStatisticsEntity> pagedIterator =  new PagedIterator<>(
                                     rs,
                                     selectQueryExecutor,

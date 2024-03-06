@@ -21,6 +21,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.querybuilder.relation.MultiColumnRelationBuilder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.exactpro.cradle.Order;
+import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.CassandraFilter;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
 import com.exactpro.cradle.filters.ComparisonOperation;
@@ -28,14 +29,21 @@ import com.exactpro.cradle.filters.FilterForAny;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
 
+import javax.annotation.Nonnull;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.tuple;
-
-import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.*;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_BOOK;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_DIRECTION;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_FIRST_MESSAGE_DATE;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_FIRST_MESSAGE_TIME;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_PAGE;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_SEQUENCE;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_SESSION_ALIAS;
+import static java.util.Objects.requireNonNull;
 
 public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatchEntity>
 {
@@ -43,7 +51,9 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 			TIME_FROM = "timeFrom", TIME_TO = "timeTo",
 			SEQ_FROM = "seqFrom", SEQ_TO = "seqTo";
 
-	private final String book, page, sessionAlias, direction;
+	private final @Nonnull String sessionAlias;
+	private final @Nonnull String direction;
+	private final @Nonnull PageId pageId;
 
 	private final FilterForGreater<Instant> messageTimeFrom;
 	private final FilterForLess<Instant> messageTimeTo;
@@ -54,27 +64,12 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 
 	private final Order order;
 
-	public CassandraStoredMessageFilter(String book, String page, String sessionAlias, String direction,
-										FilterForGreater<Instant> messageTimeFrom, FilterForLess<Instant> messageTimeTo)
-	{
-		this.book = book;
-		this.page = page;
-		this.sessionAlias = sessionAlias;
-		this.direction = direction;
-		this.messageTimeFrom = messageTimeFrom;
-		this.messageTimeTo = messageTimeTo;
-		this.sequence = null;
-		this.limit = 0;
-		this.order = Order.DIRECT;
-	}
-
-	public CassandraStoredMessageFilter(String book, String page, String sessionAlias, String direction,
+	public CassandraStoredMessageFilter(PageId pageId, String sessionAlias, String direction,
 										FilterForGreater<Instant> messageTimeFrom, FilterForLess<Instant> messageTimeTo, int limit, Order order)
 	{
-		this.book = book;
-		this.page = page;
-		this.sessionAlias = sessionAlias;
-		this.direction = direction;
+		this.pageId = requireNonNull(pageId, "page id can't be null because book and page names are part of partition");
+		this.sessionAlias = requireNonNull(sessionAlias, "session alias can't be null because it is part of partition");
+		this.direction = requireNonNull(direction, "direction can't be null because it is part of partition");
 		this.messageTimeFrom = messageTimeFrom;
 		this.messageTimeTo = messageTimeTo;
 		this.sequence = null;
@@ -86,12 +81,9 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	public Select addConditions(Select select) {
 		select = select
 				.whereColumn(FIELD_BOOK).isEqualTo(bindMarker())
+				.whereColumn(FIELD_PAGE).isEqualTo(bindMarker())
 				.whereColumn(FIELD_SESSION_ALIAS).isEqualTo(bindMarker())
 				.whereColumn(FIELD_DIRECTION).isEqualTo(bindMarker());
-
-		if (page != null) {
-			select = select.whereColumn(FIELD_PAGE).isEqualTo(bindMarker());
-		}
 
 		if (sequence != null)
 			select = addMessageIdConditions(select);
@@ -118,13 +110,10 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	@Override
 	public BoundStatementBuilder bindParameters(BoundStatementBuilder builder) {
 		builder = builder
-				.setString(FIELD_BOOK, book)
+				.setString(FIELD_BOOK, pageId.getBookId().getName())
+				.setString(FIELD_PAGE, pageId.getName())
 				.setString(FIELD_SESSION_ALIAS, sessionAlias)
 				.setString(FIELD_DIRECTION, direction);
-
-		if (page != null) {
-			builder = builder.setString(FIELD_PAGE, page);
-		}
 
 		if (sequence != null)
 			builder = bindMessageIdParameters(builder);
@@ -138,23 +127,23 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 		return builder;
 	}
 
-	public String getBook()
-	{
-		return book;
+	public @Nonnull String getBook() {
+		return pageId.getBookId().getName();
 	}
 
-	public String getPage()
-	{
-		return page;
+	public @Nonnull String getPage() {
+		return pageId.getName();
 	}
 
-	public String getSessionAlias()
-	{
+	public @Nonnull PageId getPageId() {
+		return pageId;
+	}
+
+	public @Nonnull String getSessionAlias() {
 		return sessionAlias;
 	}
 
-	public String getDirection()
-	{
+	public @Nonnull String getDirection() {
 		return direction;
 	}
 
@@ -169,14 +158,9 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	public String toString()
 	{
 		List<String> result = new ArrayList<>(10);
-		if (book != null)
-			result.add("book=" + book);
-		if (page != null)
-			result.add("page=" + page);
-		if (sessionAlias != null)
-			result.add("sessionAlias=" + sessionAlias);
-		if (direction != null)
-			result.add("direction=" + direction);
+        result.add("pageId=" + pageId);
+        result.add("sessionAlias=" + sessionAlias);
+        result.add("direction=" + direction);
 		if (messageTimeFrom != null)
 			result.add("timestamp" + messageTimeFrom);
 		if (messageTimeTo != null)

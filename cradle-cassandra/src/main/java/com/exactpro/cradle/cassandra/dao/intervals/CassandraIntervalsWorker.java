@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.CradleStorage.TIMEZONE_OFFSET;
+import static com.exactpro.cradle.cassandra.utils.StorageUtils.toLocalDate;
+import static com.exactpro.cradle.cassandra.utils.StorageUtils.toLocalTime;
 
 public class CassandraIntervalsWorker extends Worker implements IntervalsWorker {
 
@@ -119,15 +121,15 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
 
         IntervalEntity.IntervalEntityBuilder builder = IntervalEntity.builder()
                 .setBook(interval.getBookId().getName())
-                .setStartDate(LocalDate.ofInstant(interval.getStart(), TIMEZONE_OFFSET))
-                .setStartTime(LocalTime.ofInstant(interval.getStart(), TIMEZONE_OFFSET))
+                .setStartDate(toLocalDate(interval.getStart()))
+                .setStartTime(toLocalTime(interval.getStart()))
                 .setCrawlerName(interval.getCrawlerName())
                 .setCrawlerType(interval.getCrawlerType())
                 .setCrawlerVersion(interval.getCrawlerVersion())
-                .setEndDate(LocalDate.ofInstant(interval.getEnd(), TIMEZONE_OFFSET))
-                .setEndTime(LocalTime.ofInstant(interval.getEnd(), TIMEZONE_OFFSET))
-                .setLastUpdateDate(LocalDate.ofInstant(interval.getLastUpdate(), TIMEZONE_OFFSET))
-                .setLastUpdateTime(LocalTime.ofInstant(interval.getLastUpdate(), TIMEZONE_OFFSET))
+                .setEndDate(toLocalDate(interval.getEnd()))
+                .setEndTime(toLocalTime(interval.getEnd()))
+                .setLastUpdateDate(toLocalDate(interval.getLastUpdate()))
+                .setLastUpdateTime(toLocalTime(interval.getLastUpdate()))
                 .setRecoveryState(interval.getRecoveryState())
                 .setProcessed(interval.isProcessed());
 
@@ -142,9 +144,9 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
 
     @Override
     public Iterable<Interval> getIntervalsPerDay(BookId bookId, Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws CradleStorageException {
-        LocalDate date = LocalDate.ofInstant(from, TIMEZONE_OFFSET);
-        LocalTime fromTime = LocalTime.ofInstant(from, TIMEZONE_OFFSET);
-        LocalTime toTime = LocalTime.ofInstant(to, TIMEZONE_OFFSET);
+        LocalDate date = toLocalDate(from);
+        LocalTime fromTime = toLocalTime(from);
+        LocalTime toTime = toLocalTime(to);
 
         String queryInfo = String.format("Getting intervals for crawler %s:%s for day %s between times %s-%s in book %s",
                 crawlerName,
@@ -164,9 +166,9 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
 
     @Override
     public CompletableFuture<Iterable<Interval>> getIntervalsPerDayAsync(BookId bookId, Instant from, Instant to, String crawlerName, String crawlerVersion, String crawlerType) throws CradleStorageException {
-        LocalDate date = LocalDate.ofInstant(from, TIMEZONE_OFFSET);
-        LocalTime fromTime = LocalTime.ofInstant(from, TIMEZONE_OFFSET);
-        LocalTime toTime = LocalTime.ofInstant(to, TIMEZONE_OFFSET);
+        LocalDate date = toLocalDate(from);
+        LocalTime fromTime = toLocalTime(from);
+        LocalTime toTime = toLocalTime(to);
 
         String queryInfo = String.format("Getting intervals for crawler %s:%s for day %s between times %s-%s in book %s",
                 crawlerName,
@@ -200,7 +202,7 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
 
             Iterable<Interval> result = new ArrayList<>();
 
-            if (fromDateTime.toLocalDate().compareTo(toDateTime.toLocalDate()) == 0)
+            if (fromDateTime.toLocalDate().isEqual(toDateTime.toLocalDate()))
             {
                 return getIntervalsPerDay(bookId, from, to, crawlerName, crawlerVersion, crawlerType);
             }
@@ -300,8 +302,8 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
 
         LocalDateTime dateTime = LocalDateTime.ofInstant(newLastUpdateTime, TIMEZONE_OFFSET);
 
-        LocalDate startDate = LocalDate.ofInstant(interval.getStart(), TIMEZONE_OFFSET);
-        LocalTime startTime = LocalTime.ofInstant(interval.getStart(), TIMEZONE_OFFSET);
+        LocalDate startDate = toLocalDate(interval.getStart());
+        LocalTime startTime = toLocalTime(interval.getStart());
 
         LocalDate newDate = dateTime.toLocalDate();
         LocalTime newTime = dateTime.toLocalTime();
@@ -352,8 +354,8 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
         LocalTime newLastUpdateTime = newLastUpdateDateTime.toLocalTime();
         LocalDate newLastUpdateDate = newLastUpdateDateTime.toLocalDate();
 
-        LocalDate startDate = LocalDate.ofInstant(interval.getStart(), TIMEZONE_OFFSET);
-        LocalTime startTime = LocalTime.ofInstant(interval.getStart(), TIMEZONE_OFFSET);
+        LocalDate startDate = toLocalDate(interval.getStart());
+        LocalTime startTime = toLocalTime(interval.getStart());
 
         LocalDate oldUpdateDate = LocalDate.from(interval.getLastUpdate().atOffset(TIMEZONE_OFFSET));
         LocalTime oldUpdateTime = LocalTime.from(interval.getLastUpdate().atOffset(TIMEZONE_OFFSET));
@@ -403,8 +405,8 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
         LocalDate newLastUpdateDate = newLastUpdateDateTime.toLocalDate();
 
 
-        LocalDate startDate = LocalDate.ofInstant(interval.getStart(), TIMEZONE_OFFSET);
-        LocalTime startTime = LocalTime.ofInstant(interval.getStart(), TIMEZONE_OFFSET);
+        LocalDate startDate = toLocalDate(interval.getStart());
+        LocalTime startTime = toLocalTime(interval.getStart());
 
         LocalDate oldUpdateDate = LocalDate.from(interval.getLastUpdate().atOffset(TIMEZONE_OFFSET));
         LocalTime oldUpdateTime = LocalTime.from(interval.getLastUpdate().atOffset(TIMEZONE_OFFSET));

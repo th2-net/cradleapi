@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import com.exactpro.cradle.utils.TimeUtils;
 
 import static com.exactpro.cradle.cassandra.CassandraStorageSettings.DEFAULT_PAGE_REMOVE_TIME;
 
+@SuppressWarnings("DefaultAnnotationParam")
 @Entity
 @CqlName(PageEntity.TABLE_NAME)
 @PropertyStrategy(mutable = false)
@@ -112,7 +113,7 @@ public class PageEntity {
 	}
 
 	public PageEntity(PageInfo pageInfo) {
-		this(pageInfo.getId().getBookId().getName(), pageInfo.getId().getName(), pageInfo.getStarted(), pageInfo.getComment(), pageInfo.getEnded(), pageInfo.getUpdated());
+		this(pageInfo.getBookName(), pageInfo.getName(), pageInfo.getStarted(), pageInfo.getComment(), pageInfo.getEnded(), pageInfo.getUpdated());
 	}
 
 
@@ -145,8 +146,8 @@ public class PageEntity {
 	}
 
 	public PageInfo toPageInfo() {
-		return new PageInfo(new PageId(new BookId(book), name),
-				TimeUtils.toInstant(getStartDate(), getStartTime()),
+		Instant start = TimeUtils.toInstant(getStartDate(), getStartTime());
+		return new PageInfo(new PageId(new BookId(book), start, name),
 				TimeUtils.toInstant(getEndDate(), getEndTime()),
 				getComment(),
 				getUpdated(),
