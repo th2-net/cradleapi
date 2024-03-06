@@ -26,6 +26,7 @@ import com.exactpro.cradle.cassandra.utils.FilterUtils;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
 
+import javax.annotation.Nonnull;
 import java.time.Instant;
 import java.util.StringJoiner;
 
@@ -39,10 +40,11 @@ import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEnti
 import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_FIRST_MESSAGE_DATE;
 import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_FIRST_MESSAGE_TIME;
 import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_PAGE;
+import static java.util.Objects.requireNonNull;
 
 public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMessageBatchEntity> {
-    private final String groupName;
-    private final PageId pageId;
+    private final @Nonnull String groupName;
+    private final @Nonnull PageId pageId;
 
     /** limit must be strictly positive ( limit greater than 0 ) */
     private final int limit;
@@ -56,8 +58,8 @@ public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMes
                                          FilterForLess<Instant> messageTimeTo,
                                          Order order,
                                          int limit) {
-        this.pageId = pageId;
-        this.groupName = groupName;
+        this.pageId = requireNonNull(pageId, "page id can't be null because book and page names are part of partition");
+        this.groupName = requireNonNull(groupName, "group name can't be null because it is part of partition");
         this.messageTimeFrom = messageTimeFrom;
         this.messageTimeTo = messageTimeTo;
         this.order = order;
@@ -106,19 +108,19 @@ public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMes
         return builder;
     }
 
-    public PageId getPageId() {
+    public @Nonnull PageId getPageId() {
         return pageId;
     }
 
-    public String getBook() {
+    public @Nonnull String getBook() {
         return pageId.getBookId().getName();
     }
 
-    public String getPage() {
+    public @Nonnull String getPage() {
         return pageId.getName();
     }
 
-    public String getGroupName() {
+    public @Nonnull String getGroupName() {
         return groupName;
     }
 

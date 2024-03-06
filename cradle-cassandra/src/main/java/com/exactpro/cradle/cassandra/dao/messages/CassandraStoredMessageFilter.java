@@ -29,6 +29,7 @@ import com.exactpro.cradle.filters.FilterForAny;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
 
+import javax.annotation.Nonnull;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +43,7 @@ import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIEL
 import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_PAGE;
 import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_SEQUENCE;
 import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_SESSION_ALIAS;
+import static java.util.Objects.requireNonNull;
 
 public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatchEntity>
 {
@@ -49,9 +51,9 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 			TIME_FROM = "timeFrom", TIME_TO = "timeTo",
 			SEQ_FROM = "seqFrom", SEQ_TO = "seqTo";
 
-	private final String sessionAlias;
-	private final String direction;
-	private final PageId pageId;
+	private final @Nonnull String sessionAlias;
+	private final @Nonnull String direction;
+	private final @Nonnull PageId pageId;
 
 	private final FilterForGreater<Instant> messageTimeFrom;
 	private final FilterForLess<Instant> messageTimeTo;
@@ -65,9 +67,9 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	public CassandraStoredMessageFilter(PageId pageId, String sessionAlias, String direction,
 										FilterForGreater<Instant> messageTimeFrom, FilterForLess<Instant> messageTimeTo, int limit, Order order)
 	{
-		this.pageId = pageId;
-		this.sessionAlias = sessionAlias;
-		this.direction = direction;
+		this.pageId = requireNonNull(pageId, "page id can't be null because book and page names are part of partition");
+		this.sessionAlias = requireNonNull(sessionAlias, "session alias can't be null because it is part of partition");
+		this.direction = requireNonNull(direction, "direction can't be null because it is part of partition");
 		this.messageTimeFrom = messageTimeFrom;
 		this.messageTimeTo = messageTimeTo;
 		this.sequence = null;
@@ -125,27 +127,23 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 		return builder;
 	}
 
-	public String getBook()
-	{
+	public @Nonnull String getBook() {
 		return pageId.getBookId().getName();
 	}
 
-	public String getPage()
-	{
+	public @Nonnull String getPage() {
 		return pageId.getName();
 	}
 
-	public PageId getPageId() {
+	public @Nonnull PageId getPageId() {
 		return pageId;
 	}
 
-	public String getSessionAlias()
-	{
+	public @Nonnull String getSessionAlias() {
 		return sessionAlias;
 	}
 
-	public String getDirection()
-	{
+	public @Nonnull String getDirection() {
 		return direction;
 	}
 
@@ -160,12 +158,9 @@ public class CassandraStoredMessageFilter implements CassandraFilter<MessageBatc
 	public String toString()
 	{
 		List<String> result = new ArrayList<>(10);
-		if (pageId != null)
-			result.add("pageId=" + pageId);
-		if (sessionAlias != null)
-			result.add("sessionAlias=" + sessionAlias);
-		if (direction != null)
-			result.add("direction=" + direction);
+        result.add("pageId=" + pageId);
+        result.add("sessionAlias=" + sessionAlias);
+        result.add("direction=" + direction);
 		if (messageTimeFrom != null)
 			result.add("timestamp" + messageTimeFrom);
 		if (messageTimeTo != null)
