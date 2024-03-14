@@ -36,6 +36,7 @@ import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
+import com.exactpro.cradle.testevents.TestEventBatchToStoreBuilder;
 import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.TestEventSingleToStore;
 import com.exactpro.cradle.testevents.TestEventSingleToStoreBuilder;
@@ -753,8 +754,9 @@ public abstract class CradleStorage {
 
         logger.warn("Batch contains events from different pages, aligning event timestamps to first event's page's end ({})", event.getId());
 
-        TestEventBatchToStore newBatch = entitiesFactory.testEventBatch(event.getId(), event.getName(), event.getParentId());
-        newBatch.setType(event.getType());
+        TestEventBatchToStoreBuilder newBatch = entitiesFactory.testEventBatchBuilder()
+                .id(event.getId())
+                .parentId(event.getParentId());
 
         for (var e : batch.getTestEvents()) {
             TestEventSingleToStore newEvent = new TestEventSingleToStoreBuilder(storeActionRejectionThreshold)
@@ -770,7 +772,7 @@ public abstract class CradleStorage {
             newBatch.addTestEvent(newEvent);
         }
 
-        return newBatch;
+        return newBatch.build();
     }
 
     /**
@@ -786,7 +788,7 @@ public abstract class CradleStorage {
         logger.debug("Storing test event {}", id);
         PageInfo page = findPage(id.getBookId(), id.getStartTimestamp());
 
-        TestEventUtils.validateTestEvent(event, getBookCache().getBook(id.getBookId()), storeActionRejectionThreshold);
+        TestEventUtils.validateTestEvent(event, getBookCache().getBook(id.getBookId()));
         final TestEventToStore alignedEvent = alignEventTimestampsToPage(event, page);
 
         doStoreTestEvent(alignedEvent, page);
@@ -812,7 +814,7 @@ public abstract class CradleStorage {
         logger.debug("Storing test event {} asynchronously", id);
         PageInfo page = findPage(id.getBookId(), id.getStartTimestamp());
 
-        TestEventUtils.validateTestEvent(event, getBookCache().getBook(id.getBookId()), storeActionRejectionThreshold);
+        TestEventUtils.validateTestEvent(event, getBookCache().getBook(id.getBookId()));
         final TestEventToStore alignedEvent = alignEventTimestampsToPage(event, page);
 
         CompletableFuture<Void> result = doStoreTestEventAsync(alignedEvent, page);

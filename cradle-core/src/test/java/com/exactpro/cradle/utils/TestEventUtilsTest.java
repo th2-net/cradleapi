@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
+import com.exactpro.cradle.testevents.TestEventBatchToStoreBuilder;
 import com.exactpro.cradle.testevents.TestEventSingleToStoreBuilder;
 import org.testng.annotations.Test;
 
@@ -35,11 +36,9 @@ public class TestEventUtilsTest {
         StoredTestEventId batchId = new StoredTestEventId(book, scope, Instant.now(), "BatchID");
         long storeActionRejectionThreshold = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
 
-        TestEventBatchToStore batch = new TestEventBatchToStore(batchId,
-                "Batch",
-                parentId,
-                1024,
-                storeActionRejectionThreshold);
+        TestEventBatchToStoreBuilder batch = TestEventBatchToStore.batchBuilder(1024, storeActionRejectionThreshold)
+                .id(batchId)
+                .parentId(parentId);
 
         batch.addTestEvent(new TestEventSingleToStoreBuilder(storeActionRejectionThreshold)
                 .id(book, scope, Instant.now(), "EventID")
@@ -47,7 +46,7 @@ public class TestEventUtilsTest {
                 .parentId(parentId)
                 .build());
 
-        byte[] bytes = TestEventUtils.serializeTestEvents(batch.getTestEvents()).getSerializedData();
+        byte[] bytes = TestEventUtils.serializeTestEvents(batch.build()).getSerializedData();
         TestEventUtils.deserializeTestEvents(bytes, batchId);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,9 @@
 package com.exactpro.cradle.testevents;
 
 import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.TestEventUtils;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.time.Instant;
 
 import static com.exactpro.cradle.CoreStorageSettings.DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS;
@@ -27,18 +28,25 @@ import static com.exactpro.cradle.CoreStorageSettings.DEFAULT_BOOK_REFRESH_INTER
  * Holds basic information about test event prepared to be stored in Cradle. Events extend this class with additional data
  */
 public abstract class TestEventToStore implements TestEvent {
-    protected final StoredTestEventId id;
-    protected final String name;
-    protected final StoredTestEventId parentId;
-    protected String type;
-    protected Instant endTimestamp;
-    protected boolean success;
+    protected @Nonnull final StoredTestEventId id;
+    protected @Nonnull final String name;
+    protected @Nullable final StoredTestEventId parentId;
+    protected @Nonnull final String type;
+    protected @Nullable final Instant endTimestamp;
+    protected final boolean success;
 
-    public TestEventToStore(StoredTestEventId id, String name, StoredTestEventId parentId, long storeActionRejectionThreshold) throws CradleStorageException {
-        this.id = id;
-        this.name = name;
+    TestEventToStore(@Nonnull StoredTestEventId id,
+                            @Nonnull String name,
+                            @Nullable StoredTestEventId parentId,
+                            @Nonnull String type,
+                            @Nullable Instant endTimestamp,
+                            boolean success) throws CradleStorageException {
+        this.id = requireNonNull(id, "Id can't be null");
+        this.name = requireNonNull(name, "Name can't be null");
+        this.type = requireNonNull(type, "Type can't be null");
+        this.endTimestamp = endTimestamp;
         this.parentId = parentId;
-        TestEventUtils.validateTestEvent(this, storeActionRejectionThreshold);
+        this.success = success;
     }
 
     public static TestEventSingleToStoreBuilder singleBuilder(long storeActionRejectionThreshold) {
@@ -57,32 +65,32 @@ public abstract class TestEventToStore implements TestEvent {
         return batchBuilder(maxBatchSize, DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS);
     }
 
+    @Nonnull
     @Override
     public StoredTestEventId getId() {
         return id;
     }
 
+    @Nonnull
     @Override
     public String getName() {
         return name;
     }
 
+    @Nullable
     @Override
     public StoredTestEventId getParentId() {
         return parentId;
     }
 
 
+    @Nonnull
     @Override
     public String getType() {
         return type;
     }
 
-    public void setType(String type) {
-        this.type = type;
-    }
-
-
+    @Nullable
     @Override
     public Instant getEndTimestamp() {
         return endTimestamp;
@@ -108,5 +116,12 @@ public abstract class TestEventToStore implements TestEvent {
 
     public final TestEventBatchToStore asBatch() {
         return (TestEventBatchToStore) this;
+    }
+
+    protected static <T> T requireNonNull(T obj, String message) throws CradleStorageException {
+        if (obj == null) {
+            throw new CradleStorageException(message);
+        }
+        return obj;
     }
 }

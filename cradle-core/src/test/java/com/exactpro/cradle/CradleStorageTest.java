@@ -215,8 +215,8 @@ public class CradleStorageTest {
     }
 
     private void verifyTestEvent(TestEventBatchToStore actual, TestEventBatchToStore expected, String name, Instant expectedTimestamp) {
-        BatchedStoredTestEvent aEvent = actual.getTestEvents().stream().filter((e) -> name.equals(e.getName())).findFirst().get();
-        BatchedStoredTestEvent eEvent = expected.getTestEvents().stream().filter((e) -> name.equals(e.getName())).findFirst().get();
+        BatchedStoredTestEvent aEvent = actual.getTestEvents().stream().filter((e) -> name.equals(e.getName())).findFirst().orElseThrow();
+        BatchedStoredTestEvent eEvent = expected.getTestEvents().stream().filter((e) -> name.equals(e.getName())).findFirst().orElseThrow();
 
         StoredTestEventId aId = aEvent.getId();
         StoredTestEventId eId = eEvent.getId();
@@ -226,7 +226,7 @@ public class CradleStorageTest {
 
         assertEquals(aEvent.getBatchId(), eEvent.getBatchId());
         assertEquals(aEvent.getType(), eEvent.getType());
-        assertEquals(aEvent.getParentId(), aEvent.getParentId());
+        assertEquals(aEvent.getParentId(), eEvent.getParentId());
         assertEquals(aEvent.isSuccess(), eEvent.isSuccess());
         assertEquals(aEvent.getContent(), eEvent.getContent());
         assertEquals(aEvent.getEndTimestamp(), eEvent.getEndTimestamp());
@@ -239,38 +239,36 @@ public class CradleStorageTest {
         BookId bookId = new BookId(BOOK);
 
         StoredTestEventId batchId = new StoredTestEventId(bookId, "test-scope", PAGE1_START, "batch-id");
-        TestEventBatchToStore batch = new TestEventBatchToStoreBuilder(1_000_000, storeActionRejectionThreshold)
+        TestEventBatchToStoreBuilder batchBuilder = new TestEventBatchToStoreBuilder(1_000_000, storeActionRejectionThreshold)
                 .id(batchId)
-                .name("test-batch")
-                .parentId(new StoredTestEventId(bookId, "test-scope", PAGE1_START, "batch-parent-id"))
-                .type("batch-type")
-                .build();
+                .parentId(new StoredTestEventId(bookId, "test-scope", PAGE1_START, "batch-parent-id"));
 
         // page1
-        TestEventSingleToStore e1 = createEvent("evt-1", PAGE1_START.plusMillis(10), null, batch.getParentId(), true);
-        batch.addTestEvent(e1);
+        TestEventSingleToStore e1 = createEvent("evt-1", PAGE1_START.plusMillis(10), null, batchBuilder.getParentId(), true);
+        batchBuilder.addTestEvent(e1);
 
         TestEventSingleToStore e2 = createEvent("evt-2", PAGE1_START.plusMillis(15), PAGE1_START.plusSeconds(2), e1.getId(), false);
-        batch.addTestEvent(e2);
+        batchBuilder.addTestEvent(e2);
 
         // page2
-        TestEventSingleToStore e3 = createEvent("evt-3", PAGE2_START.plusMillis(20), PAGE3_START.plusSeconds(5), batch.getParentId(), true);
-        batch.addTestEvent(e3);
+        TestEventSingleToStore e3 = createEvent("evt-3", PAGE2_START.plusMillis(20), PAGE3_START.plusSeconds(5), batchBuilder.getParentId(), true);
+        batchBuilder.addTestEvent(e3);
 
         TestEventSingleToStore e4 = createEvent("evt-4", PAGE2_START.plusMillis(20), null, e1.getId(), true);
-        batch.addTestEvent(e4);
+        batchBuilder.addTestEvent(e4);
 
         // page3
-        TestEventSingleToStore e5 = createEvent("evt-5", PAGE3_START.plusMillis(30), PAGE3_START.plusSeconds(2), batch.getParentId(), true);
-        batch.addTestEvent(e5);
+        TestEventSingleToStore e5 = createEvent("evt-5", PAGE3_START.plusMillis(30), PAGE3_START.plusSeconds(2), batchBuilder.getParentId(), true);
+        batchBuilder.addTestEvent(e5);
 
         TestEventSingleToStore e6 = createEvent("evt-6", PAGE3_START.plusMillis(130), null, e4.getId(), false);
-        batch.addTestEvent(e6);
+        batchBuilder.addTestEvent(e6);
 
         TestEventSingleToStore e7 = createEvent("evt-7", PAGE3_START.plusMillis(230), null, e5.getId(), true);
-        batch.addTestEvent(e7);
+        batchBuilder.addTestEvent(e7);
 
 
+        TestEventBatchToStore batch = batchBuilder.build();
         TestEventBatchToStore alignedBatch = (TestEventBatchToStore) storage.alignEventTimestampsToPage(batch, storage.findPage(BOOK_ID, e1.getStartTimestamp()));
         verifyEventBatch(alignedBatch, batch);
         Instant end = PAGE2_START.minusNanos(1);
@@ -290,38 +288,36 @@ public class CradleStorageTest {
         BookId bookId = new BookId(BOOK);
 
         StoredTestEventId batchId = new StoredTestEventId(bookId, "test-scope", PAGE1_START, "batch-id");
-        TestEventBatchToStore batch = new TestEventBatchToStoreBuilder(1_000_000, storeActionRejectionThreshold)
+        TestEventBatchToStoreBuilder batchBuilder = new TestEventBatchToStoreBuilder(1_000_000, storeActionRejectionThreshold)
                 .id(batchId)
-                .name("test-batch")
-                .parentId(new StoredTestEventId(bookId, "test-scope", PAGE1_START, "batch-parent-id"))
-                .type("batch-type")
-                .build();
+                .parentId(new StoredTestEventId(bookId, "test-scope", PAGE1_START, "batch-parent-id"));
 
         // page1
-        TestEventSingleToStore e1 = createEvent("evt-1", PAGE1_START.plusMillis(10), null, batch.getParentId(), true);
-        batch.addTestEvent(e1);
+        TestEventSingleToStore e1 = createEvent("evt-1", PAGE1_START.plusMillis(10), null, batchBuilder.getParentId(), true);
+        batchBuilder.addTestEvent(e1);
 
         TestEventSingleToStore e2 = createEvent("evt-2", PAGE1_START.plusMillis(15), PAGE1_START.plusSeconds(2), e1.getId(), false);
-        batch.addTestEvent(e2);
+        batchBuilder.addTestEvent(e2);
 
         // page2
-        TestEventSingleToStore e3 = createEvent("evt-3", PAGE1_START.plusMillis(30), PAGE3_START.plusSeconds(5), batch.getParentId(), true);
-        batch.addTestEvent(e3);
+        TestEventSingleToStore e3 = createEvent("evt-3", PAGE1_START.plusMillis(30), PAGE3_START.plusSeconds(5), batchBuilder.getParentId(), true);
+        batchBuilder.addTestEvent(e3);
 
         TestEventSingleToStore e4 = createEvent("evt-4", PAGE1_START.plusMillis(32), null, e1.getId(), true);
-        batch.addTestEvent(e4);
+        batchBuilder.addTestEvent(e4);
 
         // page3
-        TestEventSingleToStore e5 = createEvent("evt-5", PAGE1_START.plusMillis(190), PAGE3_START.plusSeconds(2), batch.getParentId(), true);
-        batch.addTestEvent(e5);
+        TestEventSingleToStore e5 = createEvent("evt-5", PAGE1_START.plusMillis(190), PAGE3_START.plusSeconds(2), batchBuilder.getParentId(), true);
+        batchBuilder.addTestEvent(e5);
 
         TestEventSingleToStore e6 = createEvent("evt-6", PAGE1_START.plusMillis(130), null, e4.getId(), false);
-        batch.addTestEvent(e6);
+        batchBuilder.addTestEvent(e6);
 
         TestEventSingleToStore e7 = createEvent("evt-7", PAGE1_START.plusMillis(230), null, e5.getId(), true);
-        batch.addTestEvent(e7);
+        batchBuilder.addTestEvent(e7);
 
 
+        TestEventBatchToStore batch = batchBuilder.build();
         TestEventBatchToStore alignedBatch = (TestEventBatchToStore) storage.alignEventTimestampsToPage(batch, storage.findPage(BOOK_ID, e1.getStartTimestamp()));
         verifyEventBatch(alignedBatch, batch);
         verifyTestEvent(alignedBatch, batch, "evt-1", null);

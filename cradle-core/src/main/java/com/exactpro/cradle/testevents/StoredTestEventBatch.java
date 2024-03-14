@@ -16,25 +16,24 @@
 
 package com.exactpro.cradle.testevents;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
 /**
  * Holds information about batch of test events stored in Cradle.
- * Events stored in the batch can refer to each other to form a hierarchy. No references to these events are possible outside of the batch and vice versa.
+ * Events stored in the batch can refer to each other to form a hierarchy. No references to these events are possible outside the batch and vice versa.
  * Root events in the batch should reference batch's parent.
  */
 public class StoredTestEventBatch extends StoredTestEvent implements TestEventBatch
@@ -50,14 +49,12 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 	public StoredTestEventBatch(StoredTestEventId id, String name, String type, StoredTestEventId parentId,
 			Collection<BatchedStoredTestEvent> batchEvents, 
 			Map<StoredTestEventId, Set<StoredMessageId>> messages, 
-			PageId pageId, String error, Instant recDate) throws CradleStorageException
-	{
+			PageId pageId, String error, Instant recDate) throws CradleStorageException {
 		super(id, name, type, parentId, pageId, error, recDate);
 		
 		Map<StoredTestEventId, BatchedStoredTestEvent> allEvents = new LinkedHashMap<>();
 		List<BatchedStoredTestEvent> roots = new ArrayList<>();
 		Map<StoredTestEventId, Collection<BatchedStoredTestEvent>> childrenPerEvent = new LinkedHashMap<>();
-		Map<StoredTestEventId, Set<StoredMessageId>> batchMessages = new HashMap<>();
 		Instant end = null;
 		boolean success = true;
 		if (batchEvents != null)
@@ -70,16 +67,12 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 				
 				boolean isRoot = Objects.equals(eventParentId, getParentId());
 				
-				BatchedStoredTestEvent child = new BatchedStoredTestEvent(event, this, pageId);
+				BatchedStoredTestEvent child = new BatchedStoredTestEvent(event, this, pageId, event.getSize());
 				allEvents.put(child.getId(), child);
 				if (!isRoot)
 					childrenPerEvent.computeIfAbsent(eventParentId, k -> new ArrayList<>()).add(child);
 				else
 					roots.add(child);
-				
-				Set<StoredMessageId> eventMessages = messages != null ? messages.get(child.getId()) : null;
-				if (eventMessages != null)
-					batchMessages.put(child.getId(), Set.copyOf(eventMessages));
 				
 				Instant eventEnd = child.getEndTimestamp();
 				if (eventEnd != null)
@@ -96,7 +89,7 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 		this.events = Collections.unmodifiableMap(allEvents);
 		this.rootEvents = Collections.unmodifiableList(roots);
 		this.children = Collections.unmodifiableMap(childrenPerEvent);
-		this.messages = Collections.unmodifiableMap(batchMessages);
+		this.messages = Collections.unmodifiableMap(messages);
 		this.endTimestamp = end;
 		this.success = success;
 		getLastStartTimestamp();

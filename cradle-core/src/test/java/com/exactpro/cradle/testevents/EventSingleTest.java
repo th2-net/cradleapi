@@ -117,7 +117,7 @@ public class EventSingleTest {
     public void eventValidation(TestEventSingleToStoreBuilder builder, String errorMessage) throws CradleStorageException {
         try {
             BookInfo bookInfo = createBookInfo();
-            TestEventUtils.validateTestEvent(builder.build(), bookInfo, storeActionRejectionThreshold);
+            TestEventUtils.validateTestEvent(builder.build(), bookInfo);
             Assertions.fail("Invalid message passed validation");
         } catch (CradleStorageException e) {
             TestUtils.handleException(e, errorMessage);
@@ -143,23 +143,20 @@ public class EventSingleTest {
 
     @Test
     public void passedEvent() throws CradleStorageException {
-        TestEventSingleToStore event = eventBuilder
-                .id(DUMMY_ID)
+        eventBuilder.id(DUMMY_ID)
                 .name(DUMMY_NAME)
                 .content("Test content".getBytes())
                 .build();
-        TestEventUtils.validateTestEvent(event, storeActionRejectionThreshold);
     }
 
     @Test
     public void storedEventMessagesAreIndependent() throws CradleStorageException {
-        TestEventSingleToStore event = validEvent().message(new StoredMessageId(BOOK, "Session1", Direction.FIRST, START_TIMESTAMP, 1))
-                .message(new StoredMessageId(BOOK, "Session2", Direction.SECOND, START_TIMESTAMP, 2))
-                .build();
-        StoredTestEvent stored = StoredTestEvent.single(event, null);
+        TestEventSingleToStoreBuilder eventBuilder = validEvent().message(new StoredMessageId(BOOK, "Session1", Direction.FIRST, START_TIMESTAMP, 1))
+                .message(new StoredMessageId(BOOK, "Session2", Direction.SECOND, START_TIMESTAMP, 2));
+        StoredTestEvent stored = StoredTestEvent.single(eventBuilder.build(), null);
 
         StoredMessageId newMessage = new StoredMessageId(BOOK, "Session3", Direction.FIRST, START_TIMESTAMP, 3);
-        event.getMessages().add(newMessage);
+        eventBuilder.message(newMessage);
         Assert.assertFalse(stored.getMessages().contains(newMessage), "messages in stored event contain new message");
     }
 }

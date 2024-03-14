@@ -112,14 +112,14 @@ public class EventMessageIdSerializer {
 
 	private static void writeIdsStart(Set<StoredMessageId> ids, DataOutputStream dos) throws IOException
 	{
-		dos.writeByte(VERSION);
+		dos.writeByte(VERSION_1);
 		dos.writeByte(SINGLE_EVENT_LINKS);
 		dos.writeInt(ids.size());
 	}
 
 	private static void writeIdsStart(Map<StoredTestEventId, Set<StoredMessageId>> ids, DataOutputStream dos) throws IOException
 	{
-		dos.writeByte(VERSION);
+		dos.writeByte(VERSION_1);
 		dos.writeByte(BATCH_LINKS);
 		dos.writeInt(ids.size());
 	}

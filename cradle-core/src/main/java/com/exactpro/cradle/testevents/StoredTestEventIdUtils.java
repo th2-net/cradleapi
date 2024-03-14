@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import com.exactpro.cradle.utils.TimeUtils;
  */
 public class StoredTestEventIdUtils
 {
+	private StoredTestEventIdUtils() { }
 	public static List<String> splitParts(String id) throws CradleIdException
 	{
 		List<String> parts;
@@ -80,5 +81,12 @@ public class StoredTestEventIdUtils
 	public static String timestampToString(Instant timestamp)
 	{
 		return TimeUtils.toIdTimestamp(timestamp);
+	}
+
+	public static String logId(TestEvent event) {
+		return event.getBookId().getName() + ':' +
+				event.getScope() + ':' +
+				event.getStartTimestamp() + ':' +
+				event.getId() + " - " + event.getName();
 	}
 }

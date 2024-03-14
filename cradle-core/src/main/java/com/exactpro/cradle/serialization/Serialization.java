@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,97 @@ public class Serialization {
 	
 	public static class EventMessageIdsConst {
 
-		public static final byte VERSION = 1;
+		/**
+		 * <pre>
+		 * Structure {@link #BATCH_LINKS}:
+		 *  1B: version
+		 *  1B: event type {@link #BATCH_LINKS}
+		 *  4B: number of events for batch
+		 *  session alias to short number mappings:
+		 *    2B: mapping size
+		 *    for each item:
+		 *    	2B + nB: session alias length in bytes
+		 *    	2B: short number
+		 *  for each event:
+		 *    nB: scope length in bytes
+		 *    12B: timestamp
+		 *    2B + nB: id length in bytes
+		 *    4B: number of message ids
+		 *    for each session alias:
+		 *		2B: session alias short number
+		 *		for each direction:
+		 *		  1B: direction
+		 *		  4B: number of message ids related to the direction
+		 *		  for each message id:
+		 *			12B: timestamp
+		 *		    8B: sequence
+		 *		  1B: {@link #END_OF_DATA}
+		 * ---
+		 * Structure {@link #SINGLE_EVENT_LINKS}:
+		 *   1B: version
+		 *   1B: event type {@link #SINGLE_EVENT_LINKS}
+		 *   4B: number of message ids
+		 *   if (ids.size = 1)
+		 *     2B + nB: session alias length in bytes
+		 *     1B: direction
+		 *     12B: timestamp
+		 *     8B: sequence
+		 *   else
+		 *      for each session alias:
+		 *        2B + nB: session alias length in bytes
+		 *        for each direction:
+		 *	  	    1B: direction
+		 *	  	    4B: number of message ids related to the direction
+		 *	  	    for each message id:
+		 *	  	      12B: timestamp
+		 *	  	      8B: sequence
+		 *	  	    1B: {@link #END_OF_DATA}
+  		 * </pre>
+		 */
+		public static final byte VERSION_1 = 1;/**
+		 * <pre>
+		 * Structure {@link #BATCH_LINKS}:
+		 *  1B: version
+		 *  1B: event type {@link #BATCH_LINKS}
+		 *  2B: number of events for batch
+		 *  session alias to short number mappings:
+		 *    2B: mapping size
+		 *    for each item:
+		 *    	2B + nB: session alias length in bytes
+		 *    	2B: short number
+		 *  for each event:
+		 *    12B: timestamp
+		 *    2B + nB: id length in bytes
+		 *    2B: number of message ids
+		 *    for each message ids:
+		 *		2B: session alias short number
+		 *		1B: direction
+		 *		12B: timestamp
+		 *		8B: sequence
+		 * ---
+		 * Structure {@link #SINGLE_EVENT_LINKS}:
+		 *   1B: version
+		 *   1B: event type {@link #SINGLE_EVENT_LINKS}
+		 *   2B: number of message ids
+		 *   if (ids.size = 1)
+		 *     2B + nB: session alias length in bytes
+		 *     1B: direction
+		 *     12B: timestamp
+		 *     8B: sequence
+		 *   else
+		 *     session alias to short number mappings:
+		 *       2B: mapping size
+		 *       for each item:
+		 *    	   2B + nB: session alias length in bytes
+		 *    	   2B: short number
+		 *     for each message ids:
+		 *		 2B: session alias short number
+		 *		 1B: direction
+		 *		 12B: timestamp
+		 *		 8B: sequence
+		 * </pre>
+		 */
+		public static final byte VERSION_2 = 2;
 		public static final	byte SINGLE_EVENT_LINKS = 1;
 		public static final	byte BATCH_LINKS = 2;
 		public static final	byte END_OF_DATA = 0;

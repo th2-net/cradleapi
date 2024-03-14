@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -155,7 +155,7 @@ public class TestEventEntityUtils {
             builder.setContentSize(content.length);
         }
 
-        byte[] messages = TestEventUtils.serializeLinkedMessageIds(event);
+        ByteBuffer messages = TestEventUtils.serializeLinkedMessageIds(event);
 
         StoredTestEventId parentId = event.getParentId();
         LocalDateTime start = TimeUtils.toLocalTimestamp(event.getStartTimestamp());
@@ -176,8 +176,9 @@ public class TestEventEntityUtils {
             builder.setEventCount(event.asBatch().getTestEventsCount());
         builder.setEndTimestamp(event.getEndTimestamp());
 
-        if (messages != null)
-            builder.setMessages(ByteBuffer.wrap(messages));
+        if (messages != null) {
+            builder.setMessages(messages);
+        }
 
         builder.setCompressed(compressed);
         //TODO: this.setLabels(event.getLabels());

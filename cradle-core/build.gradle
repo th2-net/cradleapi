@@ -1,3 +1,7 @@
+plugins {
+    id "me.champeau.jmh" version "0.7.2"
+}
+
 dependencies {
     api platform('com.exactpro.th2:bom:4.5.0')
 
@@ -9,6 +13,9 @@ dependencies {
     implementation 'org.lz4:lz4-java:1.8.0'
 
     implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+
+    jmh 'org.openjdk.jmh:jmh-core:1.37'
+    jmh 'org.openjdk.jmh:jmh-generator-annprocess:1.37'
 
     testImplementation 'org.apache.logging.log4j:log4j-slf4j2-impl'
     testImplementation 'org.apache.logging.log4j:log4j-core'
@@ -24,6 +31,14 @@ jar {
     manifest {
         attributes("Specification-Title": "Cradle Core")
     }
+}
+
+jmh {
+    jmhTimeout = "1m"
+    iterations = 3
+    fork = 2
+    warmupIterations = 3
+    warmupForks = 2
 }
 
 dependencyCheck {
