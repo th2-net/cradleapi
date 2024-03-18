@@ -23,9 +23,8 @@ import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.serialization.EventBatchCommonParams;
 import com.exactpro.cradle.serialization.EventBatchDeserializer;
 import com.exactpro.cradle.serialization.EventBatchSerializer;
-import com.exactpro.cradle.serialization.EventMessageIdDeserializer;
-import com.exactpro.cradle.serialization.EventMessageIdSerializer;
-import com.exactpro.cradle.serialization.EventMessageIdSerializer2;
+import com.exactpro.cradle.serialization.version1.EventMessageIdDeserializer;
+import com.exactpro.cradle.serialization.version2.EventMessageIdSerializer;
 import com.exactpro.cradle.serialization.SerializedEntityData;
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
 import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
@@ -154,24 +153,16 @@ public class TestEventUtils {
 
     public static ByteBuffer serializeLinkedMessageIds(TestEventToStore event) {
         if (event.isBatch()) {
-            return EventMessageIdSerializer2.serializeBatchLinkedMessageIds(event.asBatch().getEventsWithAttachedMessages());
+            return EventMessageIdSerializer.serializeBatchLinkedMessageIds(event.asBatch().getEventsWithAttachedMessages());
         }
-        return EventMessageIdSerializer2.serializeLinkedMessageIds(event.asSingle().getMessages());
+        return EventMessageIdSerializer.serializeLinkedMessageIds(event.asSingle().getMessages());
     }
 
     public static Set<StoredMessageId> deserializeLinkedMessageIds(byte[] bytes, BookId bookId) throws IOException {
         return EventMessageIdDeserializer.deserializeLinkedMessageIds(bytes, bookId);
     }
 
-    public static byte[] serializeLinkedMessageIds(Set<StoredMessageId> messageIds) throws IOException {
-        return EventMessageIdSerializer.serializeLinkedMessageIds(messageIds);
-    }
-
     public static Map<StoredTestEventId, Set<StoredMessageId>> deserializeBatchLinkedMessageIds(byte[] bytes, BookId bookId) throws IOException {
         return EventMessageIdDeserializer.deserializeBatchLinkedMessageIds(bytes, bookId);
-    }
-
-    public static byte[] serializeBatchLinkedMessageIds(Map<StoredTestEventId, Set<StoredMessageId>> ids) throws IOException {
-        return EventMessageIdSerializer.serializeBatchLinkedMessageIds(ids);
     }
 }

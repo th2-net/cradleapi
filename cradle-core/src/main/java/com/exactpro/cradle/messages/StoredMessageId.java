@@ -112,8 +112,8 @@ public class StoredMessageId implements Serializable {
         if (getClass() != obj.getClass())
             return false;
         StoredMessageId other = (StoredMessageId) obj;
-        return Objects.equals(timestamp, other.timestamp) &&
-                sequence == other.sequence &&
+        return sequence == other.sequence &&
+                Objects.equals(timestamp, other.timestamp) &&
                 Objects.equals(sessionAlias, other.sessionAlias) &&
                 direction == other.direction &&
                 Objects.equals(bookId, other.bookId);

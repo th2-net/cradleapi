@@ -83,7 +83,8 @@ public class Serialization {
 		 *	  	    1B: {@link #END_OF_DATA}
   		 * </pre>
 		 */
-		public static final byte VERSION_1 = 1;/**
+		public static final byte VERSION_1 = 1;
+		/**
 		 * <pre>
 		 * Structure {@link #BATCH_LINKS}:
 		 *  1B: version

@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.serialization;
+package com.exactpro.cradle.serialization.version1;
 
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.serialization.SerializationException;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.utils.CradleSerializationUtils;
 

@@ -44,6 +44,13 @@ public class CradleSerializationUtils
 		dis.readFully(bytes);
 		return new String(bytes);
 	}
+
+	public static String readString(ByteBuffer buffer) {
+		int length = buffer.getShort();
+		byte[] bytes = new byte[length];
+		buffer.get(bytes);
+		return new String(bytes);
+	}
 	
 	
 	public static void writeInstant(Instant i, DataOutputStream dos) throws IOException
@@ -60,5 +67,9 @@ public class CradleSerializationUtils
 	public static Instant readInstant(DataInputStream dis) throws IOException
 	{
 		return Instant.ofEpochSecond(dis.readLong(), dis.readInt());
+	}
+
+	public static Instant readInstant(ByteBuffer buffer) {
+		return Instant.ofEpochSecond(buffer.getLong(), buffer.getInt());
 	}
 }
