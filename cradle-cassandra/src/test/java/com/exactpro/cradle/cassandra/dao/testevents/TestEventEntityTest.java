@@ -65,8 +65,8 @@ public class TestEventEntityTest {
         TestEventBatchToStore batch = TestEventBatchToStore.builder(1024, storeActionRejectionThreshold)
                 .id(new StoredTestEventId(book, scope, startTimestamp, "BatchId"))
                 .parentId(parentId)
+                .addTestEvent(prepareSingle().content(createContent(contentLength)).build())
                 .build();
-        batch.addTestEvent(prepareSingle().content(createContent(contentLength)).build());
         return new Object[][]
                 {
                         {prepareSingle().content(createContent(contentLength)).build()},

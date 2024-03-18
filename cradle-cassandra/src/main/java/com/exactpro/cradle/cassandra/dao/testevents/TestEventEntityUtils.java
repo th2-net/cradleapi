@@ -172,8 +172,9 @@ public class TestEventEntityUtils {
         builder.setName(event.getName());
         builder.setType(event.getType());
         builder.setParentId(parentId != null ? parentId.toString() : "");  //Empty string for absent parentId allows using index to get root events
-        if (event.isBatch())
-            builder.setEventCount(event.asBatch().getTestEventsCount());
+        if (event.isBatch()) {
+            builder.setEventCount(event.asBatch().getTestEvents().size());
+        }
         builder.setEndTimestamp(event.getEndTimestamp());
 
         if (messages != null) {

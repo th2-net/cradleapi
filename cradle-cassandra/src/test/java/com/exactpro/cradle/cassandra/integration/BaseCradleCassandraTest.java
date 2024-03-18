@@ -144,14 +144,12 @@ public abstract class BaseCradleCassandraTest {
     protected TestEventToStore generateTestEvent (String scope, Instant start, long batchDuration, long eventDuration) throws CradleStorageException {
         StoredTestEventId parentId = new StoredTestEventId(bookId, scope, start, UUID.randomUUID().toString());
         StoredTestEventId id = new StoredTestEventId(bookId, scope, start, UUID.randomUUID().toString());
-        TestEventBatchToStore batch = new TestEventBatchToStoreBuilder(100*1024, storeActionRejectionThreshold)
-                .name(EVENT_NAME)
+        TestEventBatchToStoreBuilder builder = new TestEventBatchToStoreBuilder(100 * 1024, storeActionRejectionThreshold)
                 .id(id)
-                .parentId(parentId)
-                .build();
+                .parentId(parentId);
 
         for (long i = 0; i < batchDuration; i += eventDuration) {
-            batch.addTestEvent(new TestEventSingleToStoreBuilder(storeActionRejectionThreshold)
+            builder.addTestEvent(new TestEventSingleToStoreBuilder(storeActionRejectionThreshold)
                     .content(CONTENT.getBytes(StandardCharsets.UTF_8))
                     .id(bookId, scope, start.plusMillis(i), UUID.randomUUID().toString())
                     .endTimestamp(start.plusMillis(i + eventDuration))
@@ -161,7 +159,7 @@ public abstract class BaseCradleCassandraTest {
                     .build());
         }
 
-        return batch;
+        return builder.build();
     }
 
     @NotNull

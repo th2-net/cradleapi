@@ -68,4 +68,8 @@ public class TestEventSingleToStore extends TestEventToStore implements TestEven
     public int getSize() {
         return size;
     }
+
+    public boolean hasMessages() {
+        return !messages.isEmpty();
+    }
 }

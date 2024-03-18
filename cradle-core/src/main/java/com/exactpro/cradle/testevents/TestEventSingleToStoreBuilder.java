@@ -78,10 +78,6 @@ public class TestEventSingleToStoreBuilder extends TestEventToStoreBuilder {
     }
 
     public TestEventSingleToStoreBuilder endTimestamp(Instant endTimestamp) {
-        if (endTimestamp != null && endTimestamp.isBefore(id.getStartTimestamp())) {
-            throw new IllegalArgumentException("Test event cannot end (" + endTimestamp +
-                    ") sooner than it started (" + id.getStartTimestamp() + ')');
-        }
         checkEndTimestamp(id, endTimestamp);
         this.endTimestamp = endTimestamp;
         return this;

@@ -415,7 +415,7 @@ public class CassandraCradleStorage extends CradleStorage
 		PageId pageId = page.getId();
 		try
 		{
-			eventsWorker.storeEvent(event, pageId);
+			eventsWorker.storeEvent(event, pageId).get();
 			eventsWorker.storeScope(event).get();
 			eventsWorker.storePageScope(event, pageId).get();
 		}

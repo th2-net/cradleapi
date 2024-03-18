@@ -193,7 +193,7 @@ public class CradleStorageTest {
 
 
     private void verifyEventBatch(TestEventBatchToStore actual, TestEventBatchToStore expected) {
-        assertEquals(actual.getTestEventsCount(), expected.getTestEventsCount());
+        assertEquals(actual.getTestEvents().size(), expected.getTestEvents().size());
         assertEquals(actual.getId(), expected.getId());
         assertEquals(actual.getName(), expected.getName());
         assertEquals(actual.getParentId(), expected.getParentId());
@@ -215,8 +215,8 @@ public class CradleStorageTest {
     }
 
     private void verifyTestEvent(TestEventBatchToStore actual, TestEventBatchToStore expected, String name, Instant expectedTimestamp) {
-        BatchedStoredTestEvent aEvent = actual.getTestEvents().stream().filter((e) -> name.equals(e.getName())).findFirst().orElseThrow();
-        BatchedStoredTestEvent eEvent = expected.getTestEvents().stream().filter((e) -> name.equals(e.getName())).findFirst().orElseThrow();
+        TestEventSingleToStore aEvent = actual.getTestEvents().stream().filter((e) -> name.equals(e.getName())).findFirst().orElseThrow();
+        TestEventSingleToStore eEvent = expected.getTestEvents().stream().filter((e) -> name.equals(e.getName())).findFirst().orElseThrow();
 
         StoredTestEventId aId = aEvent.getId();
         StoredTestEventId eId = eEvent.getId();
@@ -224,7 +224,7 @@ public class CradleStorageTest {
         assertEquals(aId.getScope(), eId.getScope());
         assertEquals(aId.getStartTimestamp(), expectedTimestamp == null ? eId.getStartTimestamp() : expectedTimestamp);
 
-        assertEquals(aEvent.getBatchId(), eEvent.getBatchId());
+        assertEquals(actual.getId(), expected.getId());
         assertEquals(aEvent.getType(), eEvent.getType());
         assertEquals(aEvent.getParentId(), eEvent.getParentId());
         assertEquals(aEvent.isSuccess(), eEvent.isSuccess());

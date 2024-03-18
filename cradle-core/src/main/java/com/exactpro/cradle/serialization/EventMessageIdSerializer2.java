@@ -19,9 +19,13 @@ package com.exactpro.cradle.serialization;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.TestEventBatchToStore;
+import com.exactpro.cradle.testevents.TestEventSingleToStore;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -80,8 +84,8 @@ public class EventMessageIdSerializer2 {
 		}
 	}
 
-	public static ByteBuffer serializeBatchLinkedMessageIds(Map<StoredTestEventId, Set<StoredMessageId>> ids) {
-		if (ids == null || ids.isEmpty()) {
+	public static ByteBuffer serializeBatchLinkedMessageIds(Collection<TestEventSingleToStore> eventsWithAttachedMessages) {
+		if (eventsWithAttachedMessages.isEmpty()) {
 			return null;
 		}
 
@@ -89,9 +93,12 @@ public class EventMessageIdSerializer2 {
 		// 1B: version, 1B: event type, 2B: number of events, 2B: mapping size
 		final Counter size = new Counter(6);
 		Counter counter = new Counter();
-		for (Map.Entry<StoredTestEventId, Set<StoredMessageId>> entry : ids.entrySet()) {
-			StoredTestEventId eventId = entry.getKey();
-			Set<StoredMessageId> msgIds = entry.getValue();
+		for (TestEventSingleToStore event : eventsWithAttachedMessages) {
+			if (!event.hasMessages()) {
+				continue;
+			}
+			StoredTestEventId eventId = event.getId();
+			Set<StoredMessageId> msgIds = event.getMessages();
 			// 12B: timestamp, 2B + nB: id length in bytes, 2B: number of message ids
 			size.inc(16 + eventId.getId().getBytes().length);
 
@@ -107,11 +114,11 @@ public class EventMessageIdSerializer2 {
 		}
 
 		ByteBuffer buffer = ByteBuffer.allocate(size.num);
-		writeIdsStart((short) ids.size(), buffer);
+		writeIdsStart((short) eventsWithAttachedMessages.size(), buffer);
 		writeMapping(aliasMapping, buffer);
-		for (Map.Entry<StoredTestEventId, Set<StoredMessageId>> entry : ids.entrySet()) {
-			StoredTestEventId eventId = entry.getKey();
-			Set<StoredMessageId> msgIds = entry.getValue();
+		for (TestEventSingleToStore event : eventsWithAttachedMessages) {
+			StoredTestEventId eventId = event.getId();
+			Set<StoredMessageId> msgIds = event.getMessages();
 
 			writeInstant(eventId.getStartTimestamp(), buffer);
 			writeString(eventId.getId(), buffer);

@@ -21,8 +21,11 @@ import com.exactpro.cradle.serialization.EventsSizeCalculator;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -33,10 +36,12 @@ import static com.exactpro.cradle.serialization.EventsSizeCalculator.getRecordSi
  */
 public class TestEventBatchToStoreBuilder extends TestEventToStoreBuilder {
     private final int maxBatchSize;
-    private final Map<StoredTestEventId, TestEventSingleToStore> events = new LinkedHashMap<>();
+    private final Set<StoredTestEventId> eventIds = new HashSet<>();
+    private final List<TestEventSingleToStore> eventsWithAttachedMessages = new ArrayList<>();
+    private final List<TestEventSingleToStore> events = new ArrayList<>();
     private int batchSize = EventsSizeCalculator.EVENT_BATCH_LEN_CONST;
     private boolean success = true;
-    private Instant endTimestamp = Instant.MIN;
+    private Instant endTimestamp = null;
 
     public TestEventBatchToStoreBuilder(int maxBatchSize, long storeActionRejectionThreshold) {
         super(storeActionRejectionThreshold);
@@ -45,7 +50,7 @@ public class TestEventBatchToStoreBuilder extends TestEventToStoreBuilder {
 
 
     public TestEventBatchToStoreBuilder id(StoredTestEventId id) {
-        checkEvents(id, events.values());
+        checkEvents(id, events);
         super.id(id);
         return this;
     }
@@ -61,7 +66,7 @@ public class TestEventBatchToStoreBuilder extends TestEventToStoreBuilder {
     }
 
     public TestEventBatchToStoreBuilder parentId(StoredTestEventId parentId) {
-        checkParentEventIds(parentId, events.keySet(), events.values());
+        checkParentEventIds(parentId, eventIds, events);
         super.parentId(parentId);
         return this;
     }
@@ -86,20 +91,24 @@ public class TestEventBatchToStoreBuilder extends TestEventToStoreBuilder {
             throw new CradleStorageException("Event being added to batch must have a parent. "
                     + "It can be parent of the batch itself or another event already stored in this batch");
         }
-        checkParentEventId(this.parentId, events.keySet(), parentId);
+        checkParentEventId(this.parentId, eventIds, parentId);
 
         if (!event.isSuccess()) {
             success = false;
         }
         Instant endTimestamp = event.getEndTimestamp();
-        if (endTimestamp != null && this.endTimestamp.isBefore(endTimestamp)) {
+        if (endTimestamp != null && (this.endTimestamp == null || this.endTimestamp.isBefore(endTimestamp))) {
             this.endTimestamp = endTimestamp;
         }
 
-        if (events.putIfAbsent(event.getId(), event) != null) {
+        if (!eventIds.add(event.getId())) {
             throw new CradleStorageException("Test event with ID '" + event.getId() + "' is already present in batch");
         }
+        events.add(event);
         batchSize += currEventSize;
+        if (event.hasMessages()) {
+            eventsWithAttachedMessages.add(event);
+        }
         return this;
     }
 
@@ -141,12 +150,14 @@ public class TestEventBatchToStoreBuilder extends TestEventToStoreBuilder {
 
     public TestEventBatchToStore build() throws CradleStorageException {
         try {
+
             return new TestEventBatchToStore(
                     id,
                     parentId,
                     endTimestamp,
                     success,
                     events,
+                    eventsWithAttachedMessages,
                     batchSize
             );
         } finally {
@@ -158,7 +169,9 @@ public class TestEventBatchToStoreBuilder extends TestEventToStoreBuilder {
         super.reset();
         batchSize = EventsSizeCalculator.EVENT_BATCH_LEN_CONST;
         success = true;
-        endTimestamp = Instant.MIN;
+        endTimestamp = null;
+        eventsWithAttachedMessages.clear();
+        eventIds.clear();
         events.clear();
     }
 

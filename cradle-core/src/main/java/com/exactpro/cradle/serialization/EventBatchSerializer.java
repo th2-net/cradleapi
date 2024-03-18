@@ -41,7 +41,7 @@ import static com.exactpro.cradle.serialization.SerializationUtils.printString;
 public class EventBatchSerializer {
 
 
-	public byte[] serializeEventRecord(BatchedStoredTestEvent event) {
+	public byte[] serializeEventRecord(TestEventSingleToStore event) {
 		ByteBuffer allocate = ByteBuffer.allocate(getEventRecordSize(event));
 		this.serializeEventRecord(event, allocate);
 		return allocate.array();
@@ -58,7 +58,7 @@ public class EventBatchSerializer {
 		printString(id_str, buffer);
 	}
 
-	public void serializeEventRecord(BatchedStoredTestEvent event, ByteBuffer buffer) {
+	public void serializeEventRecord(TestEventSingleToStore event, ByteBuffer buffer) {
 		buffer.putShort(EVENT_BATCH_ENT_MAGIC);
 
 		printId(event.getId(), buffer);
@@ -71,7 +71,7 @@ public class EventBatchSerializer {
 	}
 
 
-	public SerializedEntityData<SerializedEntityMetadata> serializeEventBatch(Collection<BatchedStoredTestEvent> batch) {
+	public SerializedEntityData<SerializedEntityMetadata> serializeEventBatch(Collection<TestEventSingleToStore> batch) {
 		SerializationBatchSizes sizes = calculateBatchEventSize(batch);
 		ByteBuffer buffer = ByteBuffer.allocate(sizes.total);
 		List<SerializedEntityMetadata> serializedEventMetadata = serializeEventBatch(batch, buffer, sizes);
@@ -87,13 +87,13 @@ public class EventBatchSerializer {
 		return new SerializedEntityData<>(serializedEventMetadata, buffer.array());
 	}
 
-	public void serializeEventBatch(Collection<BatchedStoredTestEvent> batch, ByteBuffer buffer) {
+	public void serializeEventBatch(Collection<TestEventSingleToStore> batch, ByteBuffer buffer) {
 		SerializationBatchSizes eventBatchSizes = calculateBatchEventSize(batch);
 		serializeEventBatch(batch, buffer, eventBatchSizes);
 	}
 
 	public List<SerializedEntityMetadata> serializeEventBatch(
-			Collection<BatchedStoredTestEvent> batch, ByteBuffer buffer, SerializationBatchSizes eventBatchSizes
+			Collection<TestEventSingleToStore> batch, ByteBuffer buffer, SerializationBatchSizes eventBatchSizes
 	) {
 
 		List<SerializedEntityMetadata> serializedEventMetadata = new ArrayList<>(batch.size());
@@ -103,11 +103,11 @@ public class EventBatchSerializer {
 
 		buffer.putInt(batch.size());
 		int i = 0;
-		for (BatchedStoredTestEvent event : batch) {
+		for (TestEventSingleToStore event : batch) {
 			int eventSize = eventBatchSizes.entities[i];
 
 			buffer.putInt(eventSize);
-			this.serializeEventRecord(event, buffer);
+			serializeEventRecord(event, buffer);
 			serializedEventMetadata.add(new SerializedEntityMetadata(event.getStartTimestamp(), eventSize));
 			i++;
 		}

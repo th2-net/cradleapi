@@ -154,7 +154,7 @@ public class TestEventUtils {
 
     public static ByteBuffer serializeLinkedMessageIds(TestEventToStore event) {
         if (event.isBatch()) {
-            return EventMessageIdSerializer2.serializeBatchLinkedMessageIds(event.asBatch().getBatchMessages());
+            return EventMessageIdSerializer2.serializeBatchLinkedMessageIds(event.asBatch().getEventsWithAttachedMessages());
         }
         return EventMessageIdSerializer2.serializeLinkedMessageIds(event.asSingle().getMessages());
     }

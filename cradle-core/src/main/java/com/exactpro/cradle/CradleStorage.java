@@ -35,6 +35,7 @@ import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.StoredTestEventIdUtils;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
 import com.exactpro.cradle.testevents.TestEventBatchToStoreBuilder;
 import com.exactpro.cradle.testevents.TestEventFilter;
@@ -71,6 +72,7 @@ import java.util.stream.Collectors;
 import static com.exactpro.cradle.Order.DIRECT;
 import static com.exactpro.cradle.Order.REVERSE;
 import static com.exactpro.cradle.resultset.EmptyResultSet.emptyResultSet;
+import static com.exactpro.cradle.testevents.StoredTestEventIdUtils.track;
 
 /**
  * Storage which holds information about all data sent or received and test events.
@@ -810,15 +812,17 @@ public abstract class CradleStorage {
      */
     public final CompletableFuture<Void> storeTestEventAsync(TestEventToStore event) throws IOException, CradleStorageException {
 
+        track(event, "storing event");
         StoredTestEventId id = event.getId();
         logger.debug("Storing test event {} asynchronously", id);
         PageInfo page = findPage(id.getBookId(), id.getStartTimestamp());
 
         TestEventUtils.validateTestEvent(event, getBookCache().getBook(id.getBookId()));
         final TestEventToStore alignedEvent = alignEventTimestampsToPage(event, page);
-
+        track(event, "aligned event");
         CompletableFuture<Void> result = doStoreTestEventAsync(alignedEvent, page);
         result.whenCompleteAsync((r, error) -> {
+            track(event, "stored event");
             if (error != null)
                 logger.error("Error while storing test event " + id + " asynchronously", error);
             else
@@ -829,15 +833,18 @@ public abstract class CradleStorage {
             return result;
 
         return result.thenComposeAsync(r -> {
-            logger.debug("Updating parents of test event {} asynchronously", id);
-            CompletableFuture<Void> result2 = doUpdateParentTestEventsAsync(alignedEvent);
-            result2.whenCompleteAsync((r2, error) -> {
-                if (error != null)
-                    logger.error("Error while updating parents of test event " + id + " asynchronously", error);
-                else
-                    logger.debug("Parents of test event {} have been updated asynchronously", alignedEvent.getId());
-            }, composingService);
-            return result2;
+            try(AutoCloseable ignored = StoredTestEventIdUtils.Statistic.measure("update-parent")) {
+                logger.debug("Updating parents of test event {} asynchronously", id);
+                CompletableFuture<Void> result2 = doUpdateParentTestEventsAsync(alignedEvent);
+                result2.whenCompleteAsync((r2, error) -> {
+                    track(event, "updated parent");
+                    if (error != null)
+                        logger.error("Error while updating parents of test event " + id + " asynchronously", error);
+                    else
+                        logger.debug("Parents of test event {} have been updated asynchronously", alignedEvent.getId());
+                }, composingService);
+                return result2;
+            } catch (Exception e) { throw new RuntimeException(e); }
         }, composingService);
     }
 

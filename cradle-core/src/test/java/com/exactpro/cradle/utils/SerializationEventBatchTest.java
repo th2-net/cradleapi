@@ -21,8 +21,9 @@ import com.exactpro.cradle.serialization.EventBatchDeserializer;
 import com.exactpro.cradle.serialization.EventBatchSerializer;
 import com.exactpro.cradle.serialization.SerializationException;
 import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
-import com.exactpro.cradle.testevents.BatchedStoredTestEventBuilder;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.TestEventSingleToStore;
+import com.exactpro.cradle.testevents.TestEventSingleToStoreBuilder;
 import org.assertj.core.api.Assertions;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -35,6 +36,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import static com.exactpro.cradle.CoreStorageSettings.DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS;
 import static com.exactpro.cradle.TestUtils.generateUnicodeString;
 import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateBatchEventSize;
 import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateEventRecordSize;
@@ -42,8 +44,8 @@ import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateEv
 public class SerializationEventBatchTest {
 
 	@Test
-	public void checkSize1() throws SerializationException {
-		BatchedStoredTestEvent build = createBatchedStoredTestEvent("Test even1234567890", createCommonParams());
+	public void checkSize1() throws CradleStorageException {
+		TestEventSingleToStore build = createBatchedStoredTestEvent("Test even1234567890", createCommonParams());
 		EventBatchSerializer serializer = new EventBatchSerializer();
 		ByteBuffer buffer = ByteBuffer.allocate(10_000);
 		serializer.serializeEventRecord(build, buffer);
@@ -51,8 +53,8 @@ public class SerializationEventBatchTest {
 	}
 
 	@Test
-	public void checkSize2() throws SerializationException {
-		Collection<BatchedStoredTestEvent> build = createBatchEvents();
+	public void checkSize2() throws CradleStorageException {
+		Collection<TestEventSingleToStore> build = createBatchEvents();
 		EventBatchSerializer serializer = new EventBatchSerializer();
 		ByteBuffer buffer = ByteBuffer.allocate(10_000);
 		serializer.serializeEventBatch(build, buffer);
@@ -61,9 +63,9 @@ public class SerializationEventBatchTest {
 
 
 	@Test
-	public void serializeDeserialize() throws SerializationException {
+	public void serializeDeserialize() throws SerializationException, CradleStorageException {
 		EventBatchCommonParams commonParams = createCommonParams();
-		BatchedStoredTestEvent build = createBatchedStoredTestEvent("Test even1234567890", commonParams);
+		TestEventSingleToStore build = createBatchedStoredTestEvent("Test even1234567890", commonParams);
 		EventBatchSerializer serializer = new EventBatchSerializer();
 		byte[] serialize = serializer.serializeEventRecord(build);
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
@@ -75,7 +77,7 @@ public class SerializationEventBatchTest {
 	@Test
 	public void serializeDeserialize2() throws Exception {
 		EventBatchCommonParams commonParams = createCommonParams();
-		List<BatchedStoredTestEvent> build = createBatchEvents(commonParams);
+		List<TestEventSingleToStore> build = createBatchEvents(commonParams);
 		EventBatchSerializer serializer = new EventBatchSerializer();
 		byte[] serialize = serializer.serializeEventBatch(build).getSerializedData();
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
@@ -88,7 +90,7 @@ public class SerializationEventBatchTest {
 		EventBatchCommonParams commonParams = createCommonParams();
 		String name = generateUnicodeString((1 << 18), 50);
 		String content = generateUnicodeString((1 << 19), 10);
-		BatchedStoredTestEvent build = createBatchedStoredTestEventWithContent(name, commonParams, content);
+		TestEventSingleToStore build = createBatchedStoredTestEventWithContent(name, commonParams, content);
 		EventBatchSerializer serializer = new EventBatchSerializer();
 		byte[] serialized = serializer.serializeEventRecord(build);
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
@@ -96,30 +98,30 @@ public class SerializationEventBatchTest {
 		Assertions.assertThat(deserialized).usingRecursiveComparison().isEqualTo(build);
 	}
 
-	static BatchedStoredTestEvent createBatchedStoredTestEvent(String name, EventBatchCommonParams commonParams) {
+	static TestEventSingleToStore createBatchedStoredTestEvent(String name, EventBatchCommonParams commonParams) throws CradleStorageException {
 		return createBatchedStoredTestEventWithContent(name, commonParams, "Message");
 	}
 
-	static BatchedStoredTestEvent createBatchedStoredTestEventWithContent(String name, EventBatchCommonParams commonParams, String content) {
-		BatchedStoredTestEventBuilder builder = new BatchedStoredTestEventBuilder();
-		builder.setSuccess(true);
+	static TestEventSingleToStore createBatchedStoredTestEventWithContent(String name, EventBatchCommonParams commonParams, String content) throws CradleStorageException {
+		TestEventSingleToStoreBuilder builder = TestEventSingleToStore.builder(DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS);
+		builder.success(true);
 		Instant startTime = Instant.parse("2007-12-03T10:15:30.00Z");
 		String scope = commonParams.getScope();
-		builder.setEndTimestamp(Instant.parse("2007-12-03T10:15:31.00Z"));
-		builder.setId(new StoredTestEventId(commonParams.getBookId(), scope, startTime, UUID.randomUUID().toString()));
-		builder.setParentId(new StoredTestEventId(commonParams.getBookId(), scope, startTime, UUID.randomUUID().toString()));
-		builder.setName(name);
-		builder.setType(name + " ----");
-		builder.setContent(content.repeat(10).getBytes(StandardCharsets.UTF_8));
+		builder.endTimestamp(Instant.parse("2007-12-03T10:15:31.00Z"));
+		builder.id(new StoredTestEventId(commonParams.getBookId(), scope, startTime, UUID.randomUUID().toString()));
+		builder.parentId(new StoredTestEventId(commonParams.getBookId(), scope, startTime, UUID.randomUUID().toString()));
+		builder.name(name);
+		builder.type(name + " ----");
+		builder.content(content.repeat(10).getBytes(StandardCharsets.UTF_8));
 		return builder.build();
 	}
 
-	static List<BatchedStoredTestEvent> createBatchEvents() {
+	static List<TestEventSingleToStore> createBatchEvents() throws CradleStorageException {
 		return createBatchEvents(createCommonParams());
 	}
 
-	static List<BatchedStoredTestEvent> createBatchEvents(EventBatchCommonParams commonParams) {
-		ArrayList<BatchedStoredTestEvent> objects = new ArrayList<>(3);
+	static List<TestEventSingleToStore> createBatchEvents(EventBatchCommonParams commonParams) throws CradleStorageException {
+		ArrayList<TestEventSingleToStore> objects = new ArrayList<>(3);
 		objects.add(createBatchedStoredTestEvent("batch1", commonParams));
 		objects.add(createBatchedStoredTestEvent("batch2", commonParams));
 		objects.add(createBatchedStoredTestEvent("batch3", commonParams));

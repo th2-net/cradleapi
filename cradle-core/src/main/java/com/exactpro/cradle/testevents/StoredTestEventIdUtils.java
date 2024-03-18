@@ -20,11 +20,17 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.EscapeUtils;
 import com.exactpro.cradle.utils.TimeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Utilities to parse {@link StoredTestEventId} from its string representation which consists of timestamp:uniqueId
@@ -89,4 +95,72 @@ public class StoredTestEventIdUtils
 				event.getStartTimestamp() + ':' +
 				event.getId() + " - " + event.getName();
 	}
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(StoredTestEventIdUtils.class);
+
+	public static void track(String id, String text) {
+//		LOGGER.error("Track: " + text + ' ' + id + ' ' + System.nanoTime());
+	}
+	public static void track(TestEventToStore event, String text) {
+//		String id;
+//		if (event.isBatch()) {
+//			id = event.asBatch().getTestEvents().iterator().next().getId().getId();
+//		} else {
+//			id = event.id.getId();
+//		}
+//		track(id, text);
+	}
+
+	public static class Statistic {
+		private static final Map<String, MeasureData> DATA = new ConcurrentHashMap<>();
+
+		public static AutoCloseable measure(String measureName) {
+			MeasureData measureData = DATA.computeIfAbsent(measureName, MeasureData::new);
+			return measureData.measure();
+		}
+	}
+
+	private static class MeasureData {
+		public static final int NANOS_IN_SECOND = 1_000_000_000;
+		private final Lock lock = new ReentrantLock();
+		private final String name;
+		private double count = 0;
+		private long sum = 0;
+		private long lastPrint = System.nanoTime();
+        private MeasureData(String name) {
+            this.name = name;
+        }
+
+		public AutoCloseable measure() {
+			return new Measure();
+		}
+
+		public void update(long now, long duration) {
+			lock.lock();
+			try {
+				count++;
+				sum += duration;
+				if (now - lastPrint > NANOS_IN_SECOND) {
+					LOGGER.error("Track (" + name + ") count: " + count + ", sum: " + sum +
+							", rate: " + (count/sum*NANOS_IN_SECOND + " times/sec"));
+					count = 0;
+					sum = 0;
+					lastPrint = now;
+				}
+			} finally {
+				lock.unlock();
+			}
+		}
+
+		private class Measure implements AutoCloseable {
+			private final long start = System.nanoTime();
+
+			@Override
+			public void close() {
+				long now = System.nanoTime();
+				update(now, now - start);
+			}
+		}
+    }
+
 }

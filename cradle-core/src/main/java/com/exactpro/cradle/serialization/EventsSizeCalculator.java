@@ -20,6 +20,7 @@ import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
 import com.exactpro.cradle.testevents.TestEventSingle;
+import com.exactpro.cradle.testevents.TestEventSingleToStore;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -79,14 +80,14 @@ public class EventsSizeCalculator {
 		return str != null ? str.getBytes(StandardCharsets.UTF_8).length : 0;
 	}
 
-	public static SerializationBatchSizes calculateBatchEventSize(Collection<BatchedStoredTestEvent> events) {
+	public static SerializationBatchSizes calculateBatchEventSize(Collection<TestEventSingleToStore> events) {
 
 		SerializationBatchSizes sizes = new SerializationBatchSizes(events.size());
 		sizes.total = EVENT_BATCH_LEN_CONST;
 
 		int i  = 0;
-		for (BatchedStoredTestEvent storedEvent : events) {
-			sizes.entities[i] = getEventRecordSize(storedEvent);
+		for (TestEventSingleToStore event : events) {
+			sizes.entities[i] = getEventRecordSize(event);
 			sizes.total += ENTITY_LENGTH_IN_BATCH + sizes.entities[i];
 			i++;
 		}

@@ -24,9 +24,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -35,57 +34,34 @@ import java.util.Set;
  * Events stored in the batch can refer to each other to form a hierarchy. No references to these events are possible outside the batch and vice versa.
  * Root events in the batch should reference batch's parent.
  */
-public class TestEventBatchToStore extends TestEventToStore implements TestEventBatch {
-    private final Map<StoredTestEventId, BatchedStoredTestEvent> events;
-    private final Collection<BatchedStoredTestEvent> rootEvents;
-    private final Map<StoredTestEventId, Collection<BatchedStoredTestEvent>> children;
-    private final Map<StoredTestEventId, Set<StoredMessageId>> messages;
-    private final Set<StoredMessageId> batchMessages;
+public class TestEventBatchToStore extends TestEventToStore {
+    private final Collection<TestEventSingleToStore> eventsWithAttachedMessages;
+    private final Collection<TestEventSingleToStore> events;
     private final int batchSize;
-
     TestEventBatchToStore(@Nonnull StoredTestEventId id,
                           @Nonnull StoredTestEventId parentId,
-                          @Nonnull Instant endTimestamp,
+                          Instant endTimestamp,
                           boolean success,
-                          @Nonnull Map<StoredTestEventId, TestEventSingleToStore> events,
+                          Collection<TestEventSingleToStore> events,
+                          Collection<TestEventSingleToStore> eventsWithAttachedMessages,
                           int batchSize) throws CradleStorageException {
         super(id,
                 "",
                 requireNonNull(parentId, "Parent event id can't be null"),
                 "",
-                requireNonNull(endTimestamp, "End timestamp can't be null"),
+                endTimestamp,
                 success
         );
-
-        Map<StoredTestEventId, BatchedStoredTestEvent> idToEvent = new LinkedHashMap<>();
-        Collection<BatchedStoredTestEvent> rootEvents = new ArrayList<>();
-        Map<StoredTestEventId, Collection<BatchedStoredTestEvent>> children = new HashMap<>();
-        Map<StoredTestEventId, Set<StoredMessageId>> messages = new HashMap<>();
-        Set<StoredMessageId> batchMessages = new HashSet<>();
-
-        for (TestEventSingleToStore event : events.values()) {
-            BatchedStoredTestEvent batchedEvent = new BatchedStoredTestEvent(event, this, null, event.getSize());
-            if(idToEvent.putIfAbsent(event.getId(), batchedEvent) != null) {
-                throw new CradleStorageException("Test event with ID '" + event.getId() + "' is already present in batch");
-            }
-            messages.put(event.getId(), event.getMessages());
-            batchMessages.addAll(event.getMessages());
-
-            if(parentId.equals(event.getParentId())) {
-                rootEvents.add(batchedEvent);
-            } else {
-                children.computeIfAbsent(parentId, k -> new ArrayList<>()).add(batchedEvent);
-            }
+        if (events == null || events.isEmpty()) {
+            throw new CradleStorageException("Batch " + id + " is empty");
         }
-
-        this.events = Collections.unmodifiableMap(idToEvent);
-        this.rootEvents = Collections.unmodifiableCollection(rootEvents);
-        this.children = Collections.unmodifiableMap(children);
-        this.messages = Collections.unmodifiableMap(messages);
-        this.batchMessages = Collections.unmodifiableSet(batchMessages);
+        if (batchSize < 1) {
+            throw new CradleStorageException("Batch " + id + " size can't be negative " + batchSize);
+        }
+        this.events = List.copyOf(events);
         this.batchSize = batchSize;
+        this.eventsWithAttachedMessages = List.copyOf(eventsWithAttachedMessages);
     }
-
 
     public static TestEventBatchToStoreBuilder builder(int maxBatchSize, long storeActionRejectionThreshold) {
         return new TestEventBatchToStoreBuilder(maxBatchSize, storeActionRejectionThreshold);
@@ -95,49 +71,19 @@ public class TestEventBatchToStore extends TestEventToStore implements TestEvent
     @SuppressWarnings("ConstantConditions")
     @Override
     public Set<StoredMessageId> getMessages() {
-        return batchMessages;
+        throw new UnsupportedOperationException();
     }
 
-    @Override
+    public Collection<TestEventSingleToStore> getEventsWithAttachedMessages() {
+        return eventsWithAttachedMessages;
+    }
+
     public int getTestEventsCount() {
         return events.size();
     }
 
-    @Override
-    public BatchedStoredTestEvent getTestEvent(StoredTestEventId id) {
-        return events.get(id);
-    }
-
-    @Override
-    public Collection<BatchedStoredTestEvent> getTestEvents() {
-        return events.values();
-    }
-
-    @Override
-    public Collection<BatchedStoredTestEvent> getRootTestEvents() {
-        return rootEvents;
-    }
-
-    @Override
-    public Map<StoredTestEventId, Set<StoredMessageId>> getBatchMessages() {
-        return messages;
-    }
-
-    @Override
-    public boolean hasChildren(StoredTestEventId parentId) {
-        return children.containsKey(parentId);
-    }
-
-    @Override
-    public Collection<BatchedStoredTestEvent> getChildren(StoredTestEventId parentId) {
-        Collection<BatchedStoredTestEvent> result = children.get(parentId);
-        return result != null ? Collections.unmodifiableCollection(result) : Collections.emptyList();
-    }
-
-    @Override
-    public Set<StoredMessageId> getMessages(StoredTestEventId eventId) {
-        Set<StoredMessageId> result = messages.get(eventId);
-        return result != null ? result : Collections.emptySet();
+    public Collection<TestEventSingleToStore> getTestEvents() {
+        return events;
     }
 
     /**

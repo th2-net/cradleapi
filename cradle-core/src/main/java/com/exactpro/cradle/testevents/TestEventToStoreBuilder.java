@@ -86,5 +86,8 @@ public abstract class TestEventToStoreBuilder {
         if (!id.getBookId().equals(parentId.getBookId())) {
             throw new IllegalArgumentException("Test event and its parent must be from the same book");
         }
+        if (!id.getScope().equals(parentId.getScope())) {
+            throw new IllegalArgumentException("Test event and its parent must be from the same scope");
+        }
     }
 }

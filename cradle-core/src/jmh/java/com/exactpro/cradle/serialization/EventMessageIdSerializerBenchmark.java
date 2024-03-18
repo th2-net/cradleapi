@@ -95,7 +95,7 @@ public class EventMessageIdSerializerBenchmark {
     @Benchmark
     @BenchmarkMode({Throughput})
     public void benchmarkSerializeBatchLinkedMessageIds2(EventBatchState state) throws IOException {
-        EventMessageIdSerializer2.serializeBatchLinkedMessageIds(state.eventIdToMessageIds);
+//        EventMessageIdSerializer2.serializeBatchLinkedMessageIds(state.eventIdToMessageIds);
     }
 
     @Benchmark

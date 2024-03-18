@@ -59,10 +59,10 @@ public abstract class StoredTestEvent implements TestEvent
 		return new StoredTestEventSingle(event, pageId);
 	}
 	
-	public static StoredTestEventBatch batch(TestEventBatchToStore event, PageId pageId) throws CradleStorageException
-	{
-		return new StoredTestEventBatch(event, pageId);
-	}
+//	public static StoredTestEventBatch batch(TestEventBatchToStore event, PageId pageId) throws CradleStorageException
+//	{
+//		return new StoredTestEventBatch(event, pageId);
+//	}
 	
 	
 	@Override
