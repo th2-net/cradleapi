@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.serialization;
+package com.exactpro.cradle.serialization.version1;
 
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.TestEventSingleToStore;
 import com.exactpro.cradle.utils.CradleSerializationUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -27,6 +28,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -73,30 +75,31 @@ public class EventMessageIdSerializer {
 		return result;
 	}
 
-	public static byte[] serializeBatchLinkedMessageIds(Map<StoredTestEventId, Set<StoredMessageId>> ids)
+	public static byte[] serializeBatchLinkedMessageIds(Collection<TestEventSingleToStore> eventsWithAttachedMessages)
 			throws IOException
 	{
-		if (ids == null || ids.isEmpty())
-			return null;
+		if (eventsWithAttachedMessages == null || eventsWithAttachedMessages.isEmpty()) {
+            return null;
+        }
 
 		byte[] result;
 		try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			 DataOutputStream dos = new DataOutputStream(baos))
 		{
-			writeIdsStart(ids, dos);
+			writeIdsStart(eventsWithAttachedMessages, dos);
 
-			Map<String, Integer> mapping = getSessions(ids);
+			Map<String, Integer> mapping = getSessions(eventsWithAttachedMessages);
 			writeMapping(mapping, dos);
-			for (Map.Entry<StoredTestEventId, Set<StoredMessageId>> eventMessages : ids.entrySet())
+			for (TestEventSingleToStore eventMessages : eventsWithAttachedMessages)
 			{
-				StoredTestEventId eventId = eventMessages.getKey();
+				StoredTestEventId eventId = eventMessages.getId();
 				CradleSerializationUtils.writeString(eventId.getScope(), dos);
 				CradleSerializationUtils.writeInstant(eventId.getStartTimestamp(), dos);
 				CradleSerializationUtils.writeString(eventId.getId(), dos);
 
-				dos.writeInt(eventMessages.getValue().size());
+				dos.writeInt(eventMessages.getMessages().size());
 
-				Map<String, Pair<List<StoredMessageId>, List<StoredMessageId>>> bySession = divideIdsBySession(eventMessages.getValue());
+				Map<String, Pair<List<StoredMessageId>, List<StoredMessageId>>> bySession = divideIdsBySession(eventMessages.getMessages());
 				for (Map.Entry<String, Pair<List<StoredMessageId>, List<StoredMessageId>>> sessionIds : bySession.entrySet())
 				{
 					dos.writeShort(mapping.get(sessionIds.getKey()));
@@ -112,16 +115,16 @@ public class EventMessageIdSerializer {
 
 	private static void writeIdsStart(Set<StoredMessageId> ids, DataOutputStream dos) throws IOException
 	{
-		dos.writeByte(VERSION);
+		dos.writeByte(VERSION_1);
 		dos.writeByte(SINGLE_EVENT_LINKS);
 		dos.writeInt(ids.size());
 	}
 
-	private static void writeIdsStart(Map<StoredTestEventId, Set<StoredMessageId>> ids, DataOutputStream dos) throws IOException
+	private static void writeIdsStart(Collection<TestEventSingleToStore> eventsWithAttachedMessages, DataOutputStream dos) throws IOException
 	{
-		dos.writeByte(VERSION);
+		dos.writeByte(VERSION_1);
 		dos.writeByte(BATCH_LINKS);
-		dos.writeInt(ids.size());
+		dos.writeInt(eventsWithAttachedMessages.size());
 	}
 
 	private static void writeMapping(Map<String, Integer> mapping, DataOutputStream dos) throws IOException
@@ -151,10 +154,10 @@ public class EventMessageIdSerializer {
 		return result;
 	}
 
-	private static Map<String, Integer> getSessions(Map<StoredTestEventId, Set<StoredMessageId>> ids)
+	private static Map<String, Integer> getSessions(Collection<TestEventSingleToStore> eventsWithAttachedMessages)
 	{
 		Set<String> sessions = new HashSet<>();
-		ids.values().forEach(messageIds -> messageIds.forEach(id -> sessions.add(id.getSessionAlias())));
+		eventsWithAttachedMessages.forEach(event -> event.getMessages().forEach(id -> sessions.add(id.getSessionAlias())));
 
 		Map<String, Integer> result = new HashMap<>();
 		for (String session : sessions)
@@ -166,9 +169,9 @@ public class EventMessageIdSerializer {
 	{
 		List<StoredMessageId> first = firstSecondIds.getLeft(),
 				second = firstSecondIds.getRight();
-		if (first != null && first.size() > 0)
+		if (first != null && !first.isEmpty())
 			writeDirectionIds(Direction.FIRST, first, dos);
-		if (second != null && second.size() > 0)
+		if (second != null && !second.isEmpty())
 			writeDirectionIds(Direction.SECOND, second, dos);
 		dos.writeByte(END_OF_DATA);
 	}

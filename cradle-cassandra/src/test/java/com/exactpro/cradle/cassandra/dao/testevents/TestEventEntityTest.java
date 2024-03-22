@@ -33,7 +33,7 @@ import com.exactpro.cradle.utils.CompressException;
 import com.exactpro.cradle.utils.CompressionType;
 import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
-import org.assertj.core.api.Assertions;
+import com.exactpro.cradle.utils.TestEventUtils;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -44,7 +44,10 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.zip.DataFormatException;
 
+import static com.exactpro.cradle.CoreStorageSettings.DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS;
+import static com.exactpro.cradle.CradleStorage.DEFAULT_MAX_TEST_EVENT_BATCH_SIZE;
 import static com.exactpro.cradle.cassandra.TestUtils.createContent;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestEventEntityTest {
     private final BookId book = new BookId("Book1");
@@ -65,8 +68,8 @@ public class TestEventEntityTest {
         TestEventBatchToStore batch = TestEventBatchToStore.builder(1024, storeActionRejectionThreshold)
                 .id(new StoredTestEventId(book, scope, startTimestamp, "BatchId"))
                 .parentId(parentId)
+                .addTestEvent(prepareSingle().content(createContent(contentLength)).build())
                 .build();
-        batch.addTestEvent(prepareSingle().content(createContent(contentLength)).build());
         return new Object[][]
                 {
                         {prepareSingle().content(createContent(contentLength)).build()},
@@ -101,8 +104,20 @@ public class TestEventEntityTest {
         RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
         config.ignoreFieldsMatchingRegexes("pageId", ".*\\.pageId", "error", ".*\\.error", "recDate", ".*\\.recDate", "lastStartTimestamp", ".*\\.lastStartTimestamp");
 config.ignoreAllOverriddenEquals();
-        Assertions.assertThat(newEvent)
+        assertThat(toTestEventToStore(newEvent))
                 .usingRecursiveComparison(config)
                 .isEqualTo(event);
+    }
+
+    private static TestEventToStore toTestEventToStore(StoredTestEvent storedEvent) throws CradleStorageException {
+        if (storedEvent.isBatch()) {
+            return TestEventUtils.toTestEventBatchToStore(storedEvent.asBatch(),
+                    DEFAULT_MAX_TEST_EVENT_BATCH_SIZE,
+                    DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS);
+        } else if (storedEvent.isSingle()) {
+            return TestEventUtils.toTestEventSingleToStore(storedEvent.asSingle(),
+                    DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS);
+        }
+        throw new IllegalArgumentException("Unsupportable stored test event kind");
     }
 }

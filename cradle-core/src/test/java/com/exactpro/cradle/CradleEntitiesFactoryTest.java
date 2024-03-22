@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,14 @@ import com.exactpro.cradle.messages.MessageBatchToStore;
 import com.exactpro.cradle.serialization.EventsSizeCalculator;
 import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import com.exactpro.cradle.testevents.StoredTestEventId;
-import com.exactpro.cradle.testevents.TestEventBatchToStore;
-import com.exactpro.cradle.utils.CradleStorageException;
+import com.exactpro.cradle.testevents.TestEventBatchToStoreBuilder;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.time.Instant;
+
+import static org.testng.Assert.assertEquals;
 
 public class CradleEntitiesFactoryTest {
     private final int maxMessageBatchSize = 123,
@@ -41,21 +42,19 @@ public class CradleEntitiesFactoryTest {
     @Test
     public void createMessageBatch() {
         MessageBatchToStore batch = factory.messageBatch();
-        Assert.assertEquals(batch.getSpaceLeft(), maxMessageBatchSize - MessagesSizeCalculator.MESSAGE_BATCH_CONST_VALUE,
+        assertEquals(batch.getSpaceLeft(), maxMessageBatchSize - MessagesSizeCalculator.MESSAGE_BATCH_CONST_VALUE,
                 "CradleEntitiesFactory creates MessageBatchToStore with maximum size defined in factory constructor");
     }
 
     @Test
-    public void createTestEventBatch() throws CradleStorageException {
+    public void createTestEventBatch() {
         BookId bookId = new BookId("Book1");
         String scope = "Scope1";
         Instant timestamp = Instant.EPOCH;
-        TestEventBatchToStore batch = factory.testEventBatchBuilder()
+        TestEventBatchToStoreBuilder batchBuilder = factory.testEventBatchBuilder()
                 .id(bookId, scope, timestamp, "test_event1")
-                .name("test_event")
-                .parentId(new StoredTestEventId(bookId, scope, timestamp.plusNanos(1), "parent_event1"))
-                .build();
-        Assert.assertEquals(batch.getSpaceLeft(), maxEventBatchSize -
+                .parentId(new StoredTestEventId(bookId, scope, timestamp.plusNanos(1), "parent_event1"));
+        assertEquals(batchBuilder.getSpaceLeft(), maxEventBatchSize -
                         EventsSizeCalculator.EVENT_BATCH_LEN_CONST,
                 "CradleEntitiesFactory creates TestEventBatchToStore with maximum size defined in factory constructor");
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ public class StoredMessageId implements Serializable {
     private final Direction direction;
     private final Instant timestamp;
     private final long sequence;
+    private final int hash;
 
     public StoredMessageId(BookId bookId, String sessionAlias, Direction direction, Instant timestamp, long sequence) {
         this.bookId = bookId;
@@ -52,6 +53,7 @@ public class StoredMessageId implements Serializable {
                     sequence, bookId, sessionAlias, direction.getLabel()));
         }
         this.sequence = sequence;
+        this.hash = Objects.hash(bookId, sessionAlias, direction, timestamp, sequence);
     }
 
 
@@ -97,7 +99,7 @@ public class StoredMessageId implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(bookId, sessionAlias, direction, timestamp, sequence);
+        return hash;
     }
 
 
@@ -110,8 +112,10 @@ public class StoredMessageId implements Serializable {
         if (getClass() != obj.getClass())
             return false;
         StoredMessageId other = (StoredMessageId) obj;
-        return Objects.equals(bookId, other.bookId) && Objects.equals(sessionAlias, other.sessionAlias)
-                && direction == other.direction && Objects.equals(timestamp, other.timestamp)
-                && sequence == other.sequence;
+        return sequence == other.sequence &&
+                Objects.equals(timestamp, other.timestamp) &&
+                Objects.equals(sessionAlias, other.sessionAlias) &&
+                direction == other.direction &&
+                Objects.equals(bookId, other.bookId);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,31 +16,45 @@
 
 package com.exactpro.cradle.testevents;
 
-import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.serialization.EventsSizeCalculator;
 import com.exactpro.cradle.utils.CradleStorageException;
-import com.exactpro.cradle.utils.TestEventUtils;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.Set;
+
 
 /**
  * Holds information about single (individual) test event prepared to be stored in Cradle
  */
 public class TestEventSingleToStore extends TestEventToStore implements TestEventSingle {
-    private Set<StoredMessageId> messages;
-    private byte[] content;
+    private @Nonnull final Set<StoredMessageId> messages;
+    private @Nonnull final byte[] content;
+    private final int size;
 
-    public TestEventSingleToStore(StoredTestEventId id, String name, StoredTestEventId parentId, long storeActionRejectionThreshold) throws CradleStorageException {
-        super(id, name, parentId, storeActionRejectionThreshold);
+    TestEventSingleToStore(@Nonnull StoredTestEventId id,
+                                  @Nonnull String name,
+                                  @Nullable StoredTestEventId parentId,
+                                  @Nonnull String type,
+                                  @Nullable Instant endTimestamp,
+                                  boolean success,
+                                  @Nonnull Set<StoredMessageId> messages,
+                                  @Nonnull byte[] content) throws CradleStorageException {
+        super(id, name, parentId, type, endTimestamp, success);
+        this.messages = Set.copyOf(requireNonNull(messages, "Messages can't be null"));
+        this.content = requireNonNull(content, "Content can't be null");
+        // Size calculation must be last instruction because function uses other class fields
+        this.size = EventsSizeCalculator.calculateEventRecordSize(this);
     }
-
 
     public static TestEventSingleToStoreBuilder builder(long storeActionRejectionThreshold) {
         return new TestEventSingleToStoreBuilder(storeActionRejectionThreshold);
     }
 
 
+    @Nonnull
     @Override
     public Set<StoredMessageId> getMessages() {
         return messages;
@@ -51,34 +65,11 @@ public class TestEventSingleToStore extends TestEventToStore implements TestEven
         return content;
     }
 
-    public void setContent(byte[] content) {
-        this.content = content;
+    public int getSize() {
+        return size;
     }
 
-
-    public void setEndTimestamp(Instant endTimestamp) throws CradleStorageException {
-        this.endTimestamp = endTimestamp;
-        TestEventUtils.validateTestEventEndDate(this);
-    }
-
-    public void setSuccess(boolean success) {
-        this.success = success;
-    }
-
-    public void setMessages(Set<StoredMessageId> messages) throws CradleStorageException {
-        validateAttachedMessageIds(messages);
-        this.messages = messages;
-    }
-
-    private void validateAttachedMessageIds(Set<StoredMessageId> ids) throws CradleStorageException {
-        if (ids == null)
-            return;
-        BookId eventBookId = getId().getBookId();
-        for (StoredMessageId id : ids) {
-            BookId messageBookId = id.getBookId();
-            if (!eventBookId.equals(messageBookId))
-                throw new CradleStorageException("Book of message (" +
-                        messageBookId + ") differs from the event book (" + eventBookId + ")");
-        }
+    public boolean hasMessages() {
+        return !messages.isEmpty();
     }
 }

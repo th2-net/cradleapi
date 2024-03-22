@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,9 +41,11 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 	
 	private final transient TestEventBatch batch;
 	private final transient PageId pageId;
+
+	/** size is positive when event stores otherwise negative */
+	private final transient int size;
 	
-	public BatchedStoredTestEvent(TestEventSingle event, TestEventBatch batch, PageId pageId)
-	{
+	public BatchedStoredTestEvent(TestEventSingle event, TestEventBatch batch, PageId pageId, int size) {
 		this.id = event.getId();
 		this.name = event.getName();
 		this.type = event.getType();
@@ -51,18 +53,12 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 		
 		this.endTimestamp = event.getEndTimestamp();
 		this.success = event.isSuccess();
-		
-		byte[] eventContent = event.getContent();
-		if (eventContent == null)
-			this.content = null;
-		else
-		{
-			this.content = new byte[eventContent.length];
-			System.arraycopy(eventContent, 0, this.content, 0, this.content.length);
-		}
-		
+
+		this.content = event.getContent();
+
 		this.batch = batch;
 		this.pageId = pageId;
+		this.size = size;
 	}
 
 	protected BatchedStoredTestEvent(StoredTestEventId id, String name, String type, StoredTestEventId parentId,
@@ -77,6 +73,7 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 		this.content = content;
 		this.batch = batch;
 		this.pageId = pageId;
+		this.size = -1;
 	}
 
 	@Override
@@ -128,24 +125,28 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 	{
 		return content;
 	}
-	
+
+	@Override
+	public int getSize() {
+		return size;
+	}
 
 	public PageId getPageId()
 	{
 		return pageId;
 	}
-	
+
 	public StoredTestEventId getBatchId()
 	{
 		return batch.getId();
 	}
-	
+
 	public boolean hasChildren()
 	{
 		return batch.hasChildren(getId());
 	}
-	
-	public Collection<BatchedStoredTestEvent> getChildren()
+
+	public Collection<? extends TestEventSingle> getChildren()
 	{
 		return batch.getChildren(getId());
 	}

@@ -65,7 +65,7 @@ public class BookInfo {
     private static final long MAX_EPOCH_DAY = getEpochDay(Instant.MAX);
     private static final IPageInterval EMPTY_PAGE_INTERVAL = new EmptyPageInterval();
 
-    private static final BookId EMPTY_BOOK_ID = new BookId("");
+    private static final BookId EMPTY_BOOK_ID = new BookId("th2-internal-empty-book");
 
     static {
         METRICS.setPageCacheSize(EMPTY_BOOK_ID, HOT, HOT_CACHE_SIZE);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,5 +21,10 @@ public class SerializationBatchSizes {
 	public int[] entities;
 	SerializationBatchSizes(int size) {
 		this.entities = new int[size];
+	}
+
+	SerializationBatchSizes(int total, int[] entities) {
+		this.total = total;
+		this.entities = entities;
 	}
 }

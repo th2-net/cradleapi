@@ -117,7 +117,6 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
                     storedTestEvent = new StoredTestEventSingle(eventToStore.asSingle(), pageId);
                 }
 
-
                 storedData.computeIfAbsent(eventToStore.getScope(), e -> new ArrayList<>())
                         .add(storedTestEvent);
             }

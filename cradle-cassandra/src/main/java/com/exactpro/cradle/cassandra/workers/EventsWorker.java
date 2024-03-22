@@ -38,6 +38,7 @@ import com.exactpro.cradle.resultset.CradleResultSet;
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.StoredTestEventIdUtils;
 import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CompressException;
@@ -59,6 +60,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.zip.DataFormatException;
 
+import static com.exactpro.cradle.testevents.StoredTestEventIdUtils.track;
 import static java.util.Objects.requireNonNull;
 
 public class EventsWorker extends Worker {
@@ -144,40 +146,48 @@ public class EventsWorker extends Worker {
         TestEventOperator op = getOperators().getTestEventOperator();
         BookStatisticsRecordsCaches.EntityKey key = new BookStatisticsRecordsCaches.EntityKey(pageId.getName(), EntityType.EVENT);
 
+        track(event, "wait serialize");
         return CompletableFuture.supplyAsync(() -> {
-            try {
-                return TestEventEntityUtils.toSerializedEntity(event, pageId, settings.getCompressionType(), settings.getMaxUncompressedMessageBatchSize());
+            try (AutoCloseable ignored = StoredTestEventIdUtils.Statistic.measure("serialize")) {
+                track(event, "serializing");
+                var serializedEntity = TestEventEntityUtils.toSerializedEntity(event, pageId, settings.getCompressionType(), settings.getMaxUncompressedMessageBatchSize());
+                track(event, "serialized");
+                return serializedEntity;
             } catch (Exception e) {
                 throw new CompletionException(e);
             }
         }, composingService).thenCompose(serializedEntity -> {
+            AutoCloseable measure = StoredTestEventIdUtils.Statistic.measure("write");
             TestEventEntity entity = serializedEntity.getEntity();
             List<SerializedEntityMetadata> meta = serializedEntity.getSerializedEntityData().getSerializedEntityMetadata();
 
             return op.write(entity, writeAttrs)
+                    .thenRun(() -> { try { measure.close(); } catch (Exception e) { throw new RuntimeException(e); }})
                     .thenAcceptAsync(result -> {
-                        try {
-                            Instant firstTimestamp = meta.get(0).getTimestamp();
-                            Instant lastStartTimestamp = firstTimestamp;
-                            for (SerializedEntityMetadata el : meta) {
-                                if (el.getTimestamp() != null) {
-                                    if (firstTimestamp.isAfter(el.getTimestamp())) {
-                                        firstTimestamp = el.getTimestamp();
-                                    }
-                                    if (lastStartTimestamp.isBefore(el.getTimestamp())) {
-                                        lastStartTimestamp = el.getTimestamp();
+                        try(AutoCloseable ignored = StoredTestEventIdUtils.Statistic.measure("update-statistics")) {
+                            try {
+                                Instant firstTimestamp = meta.get(0).getTimestamp();
+                                Instant lastStartTimestamp = firstTimestamp;
+                                for (SerializedEntityMetadata el : meta) {
+                                    if (el.getTimestamp() != null) {
+                                        if (firstTimestamp.isAfter(el.getTimestamp())) {
+                                            firstTimestamp = el.getTimestamp();
+                                        }
+                                        if (lastStartTimestamp.isBefore(el.getTimestamp())) {
+                                            lastStartTimestamp = el.getTimestamp();
+                                        }
                                     }
                                 }
+                                durationWorker.updateMaxDuration(pageId, entity.getScope(),
+                                        Duration.between(firstTimestamp, lastStartTimestamp).toMillis(),
+                                        writeAttrs);
+                            } catch (CradleStorageException e) {
+                                logger.error("Exception while updating max duration {}", e.getMessage());
                             }
-                            durationWorker.updateMaxDuration(pageId, entity.getScope(),
-                                    Duration.between(firstTimestamp, lastStartTimestamp).toMillis(),
-                                    writeAttrs);
-                        } catch (CradleStorageException e) {
-                            logger.error("Exception while updating max duration {}", e.getMessage());
-                        }
 
-                        entityStatisticsCollector.updateEntityBatchStatistics(pageId.getBookId(), key, meta);
-                        updateEventWriteMetrics(entity, pageId.getBookId());
+                            entityStatisticsCollector.updateEntityBatchStatistics(pageId.getBookId(), key, meta);
+                            updateEventWriteMetrics(entity, pageId.getBookId());
+                        } catch (Exception e) { throw new RuntimeException(e); }
                     }, composingService);
         });
     }

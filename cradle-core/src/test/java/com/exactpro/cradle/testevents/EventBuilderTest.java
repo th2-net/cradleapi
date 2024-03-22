@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,16 @@ import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
-import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
 import java.time.Instant;
+import java.util.List;
+
+import static com.exactpro.cradle.CoreStorageSettings.DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertSame;
+import static org.testng.Assert.assertTrue;
 
 public class EventBuilderTest {
     private final BookId bookId = new BookId("Book1");
@@ -36,7 +42,7 @@ public class EventBuilderTest {
         TestEventSingleToStoreBuilder builder = new TestEventSingleToStoreBuilder(storeActionRejectionThreshold);
         builder.id(bookId, "Scope1", Instant.now(), "123")
                 .name("Event1")
-                .parentId(new StoredTestEventId(bookId, "Scope2", Instant.EPOCH, "234"))
+                .parentId(new StoredTestEventId(bookId, "Scope1", Instant.EPOCH, "234"))
                 .type("Type1")
                 .success(true)
                 .endTimestamp(Instant.now())
@@ -44,7 +50,7 @@ public class EventBuilderTest {
                 .content("Dummy event".getBytes())
                 .build();
 
-        Assertions.assertThat(builder)
+        assertThat(builder)
                 .usingRecursiveComparison()
                 .isEqualTo(new TestEventSingleToStoreBuilder(storeActionRejectionThreshold));
     }
@@ -53,14 +59,40 @@ public class EventBuilderTest {
     public void batchBuilderIsReset() throws CradleStorageException {
         int maxSize = 1024;
         TestEventBatchToStoreBuilder builder = new TestEventBatchToStoreBuilder(maxSize, storeActionRejectionThreshold);
+        StoredTestEventId parentId = new StoredTestEventId(bookId, "Scope1", Instant.EPOCH, "234");
         builder.id(bookId, "Scope1", Instant.now(), "123")
-                .name("Event1")
-                .parentId(new StoredTestEventId(bookId, "Scope2", Instant.EPOCH, "234"))
-                .type("Type1")
+                .parentId(parentId)
+                .addTestEvent(TestEventSingleToStore.builder(DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS)
+                        .id(bookId, "Scope1", Instant.now(), "456")
+                        .name("test-event")
+                        .parentId(parentId)
+                        .build())
                 .build();
 
-        Assertions.assertThat(builder)
+        assertThat(builder)
                 .usingRecursiveComparison()
                 .isEqualTo(new TestEventBatchToStoreBuilder(maxSize, storeActionRejectionThreshold));
+    }
+
+    @Test
+    public void batchBuilderTest() throws CradleStorageException {
+        int maxSize = 1024;
+        StoredTestEventId parentId = new StoredTestEventId(bookId, "Scope1", Instant.EPOCH, "234");
+        TestEventBatchToStoreBuilder builder = new TestEventBatchToStoreBuilder(maxSize, storeActionRejectionThreshold)
+                .id(bookId, "Scope1", Instant.now(), "123")
+                .parentId(parentId);
+        TestEventSingleToStore event = TestEventSingleToStore.builder(DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS)
+                .id(bookId, "Scope1", Instant.now(), "456")
+                .name("test-event")
+                .parentId(parentId)
+                .message(new StoredMessageId(bookId, "session-alias", Direction.SECOND, Instant.now(), 1))
+                .build();
+        TestEventBatchToStore batch = builder.addTestEvent(event)
+                .build();
+
+        assertSame(batch.getParentId(), parentId);
+        assertTrue(batch.isSuccess());
+        assertEquals(batch.getTestEvents(), List.of(event));
+        assertEquals(batch.getEventsWithAttachedMessages(), List.of(event));
     }
 }

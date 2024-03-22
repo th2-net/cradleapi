@@ -14,6 +14,7 @@ dependencies {
     testImplementation 'org.apache.logging.log4j:log4j-core'
     testImplementation 'org.testng:testng:7.9.0'
     testImplementation 'org.assertj:assertj-core:3.25.3'
+    testImplementation 'commons-codec:commons-codec:1.16.1'
 }
 
 test {

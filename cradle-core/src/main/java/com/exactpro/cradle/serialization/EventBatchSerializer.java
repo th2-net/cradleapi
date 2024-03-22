@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 package com.exactpro.cradle.serialization;
 
-import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.TestEventBatchToStore;
 import com.exactpro.cradle.testevents.TestEventSingleToStore;
 
 import java.nio.ByteBuffer;
@@ -28,7 +28,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateBatchEventSize;
-import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateEventRecordSize;
+import static com.exactpro.cradle.serialization.EventsSizeCalculator.getEventRecordSize;
 import static com.exactpro.cradle.serialization.Serialization.EventBatchConst.EVENT_BATCH_ENT_MAGIC;
 import static com.exactpro.cradle.serialization.Serialization.EventBatchConst.EVENT_BATCH_MAGIC;
 import static com.exactpro.cradle.serialization.Serialization.EventBatchConst.EVENT_BATCH_PROTOCOL_VER;
@@ -40,8 +40,8 @@ import static com.exactpro.cradle.serialization.SerializationUtils.printString;
 public class EventBatchSerializer {
 
 
-	public byte[] serializeEventRecord(BatchedStoredTestEvent event) {
-		ByteBuffer allocate = ByteBuffer.allocate(calculateEventRecordSize(event));
+	public byte[] serializeEventRecord(TestEventSingleToStore event) {
+		ByteBuffer allocate = ByteBuffer.allocate(getEventRecordSize(event));
 		this.serializeEventRecord(event, allocate);
 		return allocate.array();
 	}
@@ -57,7 +57,7 @@ public class EventBatchSerializer {
 		printString(id_str, buffer);
 	}
 
-	public void serializeEventRecord(BatchedStoredTestEvent event, ByteBuffer buffer) {
+	public void serializeEventRecord(TestEventSingleToStore event, ByteBuffer buffer) {
 		buffer.putShort(EVENT_BATCH_ENT_MAGIC);
 
 		printId(event.getId(), buffer);
@@ -70,7 +70,7 @@ public class EventBatchSerializer {
 	}
 
 
-	public SerializedEntityData<SerializedEntityMetadata> serializeEventBatch(Collection<BatchedStoredTestEvent> batch) {
+	public SerializedEntityData<SerializedEntityMetadata> serializeEventBatch(Collection<TestEventSingleToStore> batch) {
 		SerializationBatchSizes sizes = calculateBatchEventSize(batch);
 		ByteBuffer buffer = ByteBuffer.allocate(sizes.total);
 		List<SerializedEntityMetadata> serializedEventMetadata = serializeEventBatch(batch, buffer, sizes);
@@ -78,13 +78,21 @@ public class EventBatchSerializer {
 		return new SerializedEntityData<>(serializedEventMetadata, buffer.array());
 	}
 
-	public void serializeEventBatch(Collection<BatchedStoredTestEvent> batch, ByteBuffer buffer) {
+	public SerializedEntityData<SerializedEntityMetadata> serializeEventBatch(TestEventBatchToStore batch) {
+		SerializationBatchSizes sizes = EventsSizeCalculator.getBatchEventSize(batch);
+		ByteBuffer buffer = ByteBuffer.allocate(sizes.total);
+		List<SerializedEntityMetadata> serializedEventMetadata = serializeEventBatch(batch.getTestEvents(), buffer, sizes);
+
+		return new SerializedEntityData<>(serializedEventMetadata, buffer.array());
+	}
+
+	public void serializeEventBatch(Collection<TestEventSingleToStore> batch, ByteBuffer buffer) {
 		SerializationBatchSizes eventBatchSizes = calculateBatchEventSize(batch);
 		serializeEventBatch(batch, buffer, eventBatchSizes);
 	}
 
 	public List<SerializedEntityMetadata> serializeEventBatch(
-			Collection<BatchedStoredTestEvent> batch, ByteBuffer buffer, SerializationBatchSizes eventBatchSizes
+			Collection<TestEventSingleToStore> batch, ByteBuffer buffer, SerializationBatchSizes eventBatchSizes
 	) {
 
 		List<SerializedEntityMetadata> serializedEventMetadata = new ArrayList<>(batch.size());
@@ -94,11 +102,11 @@ public class EventBatchSerializer {
 
 		buffer.putInt(batch.size());
 		int i = 0;
-		for (BatchedStoredTestEvent event : batch) {
+		for (TestEventSingleToStore event : batch) {
 			int eventSize = eventBatchSizes.entities[i];
 
 			buffer.putInt(eventSize);
-			this.serializeEventRecord(event, buffer);
+			serializeEventRecord(event, buffer);
 			serializedEventMetadata.add(new SerializedEntityMetadata(event.getStartTimestamp(), eventSize));
 			i++;
 		}

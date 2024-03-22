@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,16 +39,10 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 		
 		this.endTimestamp = endTimestamp;
 		this.success = success;
-		
-		if (eventContent == null)
-			this.content = null;
-		else
-		{
-			this.content = new byte[eventContent.length];
-			System.arraycopy(eventContent, 0, this.content, 0, this.content.length);
-		}
-		
-		this.messages = eventMessages != null && eventMessages.size() > 0 ? Collections.unmodifiableSet(new HashSet<>(eventMessages)) : null;
+
+		this.content = eventContent;
+
+		this.messages = eventMessages != null && !eventMessages.isEmpty() ? Set.copyOf(eventMessages) : null;
 	}
 	
 	public StoredTestEventSingle(TestEventSingle event, PageId pageId)
@@ -85,6 +79,11 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 	@Override
 	public Instant getLastStartTimestamp() {
 		return getStartTimestamp();
+	}
+
+	@Override
+	public int getSize() {
+		return -1;
 	}
 
 	@Override

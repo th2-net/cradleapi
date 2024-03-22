@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,10 @@ public class BookId implements Serializable
 	private static final long serialVersionUID = -8051161407486679704L;
 	private final String name;
 	
-	public BookId(String name)
-	{
+	public BookId(String name) {
+		if (StringUtils.isEmpty(name)) {
+			throw new IllegalArgumentException("Book name can't be empty");
+		}
 		this.name = StringUtils.lowerCase(name);
 	}
 	

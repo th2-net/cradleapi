@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,21 +36,21 @@ public interface TestEventBatch extends TestEvent
 	 * @param id of test event to get from batch
 	 * @return test event for given ID, if it is present in the batch, null otherwise
 	 */
-	BatchedStoredTestEvent getTestEvent(StoredTestEventId id);
+	TestEventSingle getTestEvent(StoredTestEventId id);
 	/**
 	 * @return collection of test events stored in the batch
 	 */
-	Collection<BatchedStoredTestEvent> getTestEvents();
+	Collection<? extends TestEventSingle> getTestEvents();
 	/**
 	 * @return collection of root test events stored in the batch
 	 */
-	Collection<BatchedStoredTestEvent> getRootTestEvents();
+	Collection<? extends TestEventSingle> getRootTestEvents();
 	/**
 	 * @return map of event IDs stored in the batch and the corresponding message IDs
 	 */
 	Map<StoredTestEventId, Set<StoredMessageId>> getBatchMessages();
 	
 	boolean hasChildren(StoredTestEventId parentId);
-	Collection<BatchedStoredTestEvent> getChildren(StoredTestEventId parentId);
+	Collection<? extends TestEventSingle> getChildren(StoredTestEventId parentId);
 	Set<StoredMessageId> getMessages(StoredTestEventId eventId);
 }

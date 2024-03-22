@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,15 @@
 
 package com.exactpro.cradle.serialization;
 
-import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.TestEventBatchToStore;
 import com.exactpro.cradle.testevents.TestEventSingle;
+import com.exactpro.cradle.testevents.TestEventSingleToStore;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+
+import static com.exactpro.cradle.testevents.StoredTestEventIdUtils.logId;
 
 public class EventsSizeCalculator {
 
@@ -54,29 +57,36 @@ public class EventsSizeCalculator {
 	private final static int ENTITY_LENGTH_IN_BATCH = 4;
 	
 
-	public static int calculateEventRecordSize(TestEventSingle message) {
-		return EVENT_RECORD_CONST + lenId(message.getId()) + lenStr(message.getName()) + lenStr(message.getType())
-				+ lenId(message.getParentId()) + (message.getContent() != null ? message.getContent().length : 0);
+	public static int calculateEventRecordSize(TestEventSingle event) {
+		return EVENT_RECORD_CONST + lenId(event.getId()) + lenStr(event.getName()) + lenStr(event.getType())
+				+ lenId(event.getParentId()) + (event.getContent() != null ? event.getContent().length : 0);
 
+	}
+
+	public static int getEventRecordSize(TestEventSingle event) {
+		if (event.getSize() > 0) {
+			return event.getSize();
+		}
+		throw new IllegalStateException("Event '" + logId(event) + "' isn't prepared for store");
 	}
 
 
 	private static int lenId(StoredTestEventId id) {
-		return id != null && id.getId() != null ? lenStr(id.getId()) : 0;
+		return id != null ? lenStr(id.getId()) : 0;
 	}
 
 	private static int lenStr(String str) {
 		return str != null ? str.getBytes(StandardCharsets.UTF_8).length : 0;
 	}
 
-	public static SerializationBatchSizes calculateBatchEventSize(Collection<BatchedStoredTestEvent> events) {
-		
+	public static SerializationBatchSizes calculateBatchEventSize(Collection<TestEventSingleToStore> events) {
+
 		SerializationBatchSizes sizes = new SerializationBatchSizes(events.size());
 		sizes.total = EVENT_BATCH_LEN_CONST;
 
 		int i  = 0;
-		for (BatchedStoredTestEvent storedMessage : events) {
-			sizes.entities[i] = EventsSizeCalculator.calculateEventRecordSize(storedMessage);
+		for (TestEventSingleToStore event : events) {
+			sizes.entities[i] = getEventRecordSize(event);
 			sizes.total += ENTITY_LENGTH_IN_BATCH + sizes.entities[i];
 			i++;
 		}
@@ -84,7 +94,20 @@ public class EventsSizeCalculator {
 		return sizes;
 	}
 
+	public static SerializationBatchSizes getBatchEventSize(TestEventBatchToStore batch) {
+		return new SerializationBatchSizes(batch.getBatchSize(), batch.getTestEvents().stream()
+				.mapToInt(TestEventSingleToStore::getSize)
+				.toArray());
+	}
+
 	public static int calculateRecordSizeInBatch(TestEventSingle event) {
 		return calculateEventRecordSize(event) + ENTITY_LENGTH_IN_BATCH;
+	}
+
+	public static int getRecordSizeInBatch(TestEventSingle event) {
+		if (event.getSize() > 0) {
+			return event.getSize() + ENTITY_LENGTH_IN_BATCH;
+		}
+		throw new IllegalStateException("Event '" + logId(event) + "' isn't prepared for store");
 	}
 }

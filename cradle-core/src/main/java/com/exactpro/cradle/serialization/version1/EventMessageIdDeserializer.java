@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.exactpro.cradle.serialization;
+package com.exactpro.cradle.serialization.version1;
 
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.messages.StoredMessageId;
+import com.exactpro.cradle.serialization.SerializationException;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.utils.CradleSerializationUtils;
 
@@ -42,9 +43,9 @@ public class EventMessageIdDeserializer {
 			 DataInputStream dis = new DataInputStream(bais))
 		{
 			byte version = dis.readByte();
-			if (version != VERSION)
+			if (version != VERSION_1)
 				throw new SerializationException(String.format(NOT_SUPPORTED_PROTOCOL_FORMAT, "linkedMessageIds",
-						VERSION, version));
+                        VERSION_1, version));
 			byte mark = dis.readByte();
 			if (mark != SINGLE_EVENT_LINKS)
 				throw new IOException("Unexpected data mark. Expected "+SINGLE_EVENT_LINKS+", got "+mark);
@@ -80,9 +81,9 @@ public class EventMessageIdDeserializer {
 			 DataInputStream dis = new DataInputStream(bais))
 		{
 			byte version = dis.readByte();
-			if (version != VERSION)
+			if (version != VERSION_1)
 				throw new SerializationException(String.format(NOT_SUPPORTED_PROTOCOL_FORMAT, "batchLinkedMessages",
-						VERSION, version));
+                        VERSION_1, version));
 			byte mark = dis.readByte();
 			if (mark != BATCH_LINKS)
 				throw new IOException("Unexpected data mark. Expected "+BATCH_LINKS+", got "+mark);

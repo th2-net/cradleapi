@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,9 @@ public class TimeUtils
 	
 	public static String toIdTimestamp(Instant instant)
 	{
-		return ID_TIMESTAMP_FORMAT.format(toLocalTimestamp(instant));
+		// TODO: test and remove redundant line
+//		return ID_TIMESTAMP_FORMAT.format(toLocalTimestamp(instant));
+		return ID_TIMESTAMP_FORMAT.format(instant);
 	}
 
 	public static Instant toInstant(LocalDate localDate, LocalTime localTime)
