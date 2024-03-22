@@ -23,14 +23,17 @@ import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.serialization.EventBatchCommonParams;
 import com.exactpro.cradle.serialization.EventBatchDeserializer;
 import com.exactpro.cradle.serialization.EventBatchSerializer;
-import com.exactpro.cradle.serialization.version1.EventMessageIdDeserializer;
-import com.exactpro.cradle.serialization.version2.EventMessageIdSerializer;
+import com.exactpro.cradle.serialization.SerializationException;
 import com.exactpro.cradle.serialization.SerializedEntityData;
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
+import com.exactpro.cradle.serialization.version2.EventMessageIdSerializer;
 import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEvent;
+import com.exactpro.cradle.testevents.TestEventBatch;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
+import com.exactpro.cradle.testevents.TestEventBatchToStoreBuilder;
+import com.exactpro.cradle.testevents.TestEventSingle;
 import com.exactpro.cradle.testevents.TestEventSingleToStore;
 import com.exactpro.cradle.testevents.TestEventToStore;
 import org.slf4j.Logger;
@@ -39,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -158,11 +162,77 @@ public class TestEventUtils {
         return EventMessageIdSerializer.serializeLinkedMessageIds(event.asSingle().getMessages());
     }
 
-    public static Set<StoredMessageId> deserializeLinkedMessageIds(byte[] bytes, BookId bookId) throws IOException {
-        return EventMessageIdDeserializer.deserializeLinkedMessageIds(bytes, bookId);
+    public static Set<StoredMessageId> deserializeLinkedMessageIds(ByteBuffer buffer,
+                                                                   BookId bookId) throws IOException {
+        if (buffer == null) {
+            return Collections.emptySet();
+        }
+        byte version = peekVersion(buffer);
+        switch (version) {
+            case 1:
+                return com.exactpro.cradle.serialization.version1.EventMessageIdDeserializer.deserializeLinkedMessageIds(buffer.array(), bookId);
+            case 2:
+                return com.exactpro.cradle.serialization.version2.EventMessageIdDeserializer.deserializeLinkedMessageIds(buffer, bookId);
+            default:
+                throw new SerializationException("Unsupported version " + version + " buffer: " + buffer);
+        }
     }
 
-    public static Map<StoredTestEventId, Set<StoredMessageId>> deserializeBatchLinkedMessageIds(byte[] bytes, BookId bookId) throws IOException {
-        return EventMessageIdDeserializer.deserializeBatchLinkedMessageIds(bytes, bookId);
+    public static Map<StoredTestEventId, Set<StoredMessageId>> deserializeBatchLinkedMessageIds(ByteBuffer buffer,
+                                                                                                BookId bookId,
+                                                                                                String scope) throws IOException {
+        if (buffer == null) {
+            return Collections.emptyMap();
+        }
+        byte version = peekVersion(buffer);
+        switch (version) {
+            case 1:
+                return com.exactpro.cradle.serialization.version1.EventMessageIdDeserializer.deserializeBatchLinkedMessageIds(buffer.array(), bookId);
+            case 2:
+                return com.exactpro.cradle.serialization.version2.EventMessageIdDeserializer.deserializeBatchLinkedMessageIds(buffer, bookId, scope);
+            default:
+                throw new SerializationException("Unsupported version " + version + " buffer: " + buffer);
+        }
+    }
+
+    public static TestEventSingleToStore toTestEventSingleToStore(TestEventSingle event, long storeActionRejectionThreshold) throws CradleStorageException {
+        return TestEventSingleToStore.singleBuilder(storeActionRejectionThreshold)
+                .id(event.getId())
+                .parentId(event.getParentId())
+                .name(event.getName())
+                .type(event.getType())
+                .endTimestamp(event.getEndTimestamp())
+                .success(event.isSuccess())
+                .messages(event.getMessages())
+                .content(event.getContent())
+                .build();
+    }
+
+    public static TestEventBatchToStore toTestEventBatchToStore(TestEventBatch batch, int maxBatchSize, long storeActionRejectionThreshold) throws CradleStorageException {
+        TestEventBatchToStoreBuilder builder = TestEventBatchToStore.builder(maxBatchSize, storeActionRejectionThreshold)
+                .id(batch.getId())
+                .parentId(batch.getParentId());
+        batch.getTestEvents().stream()
+                .map(event -> {
+                    try {
+                        return toTestEventSingleToStore(event, storeActionRejectionThreshold);
+                    } catch (CradleStorageException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).forEach(event -> {
+                    try {
+                        builder.addTestEvent(event);
+                    } catch (CradleStorageException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+        return builder.build();
+    }
+
+    private static byte peekVersion(ByteBuffer buffer) {
+        int position = buffer.position();
+        byte version = buffer.get();
+        buffer.position(position);
+        return version;
     }
 }

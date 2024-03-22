@@ -16,6 +16,13 @@
 
 package com.exactpro.cradle.testevents;
 
+import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.utils.CradleIdException;
+import com.exactpro.cradle.utils.EscapeUtils;
+import com.exactpro.cradle.utils.TimeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
@@ -24,13 +31,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
-import com.exactpro.cradle.BookId;
-import com.exactpro.cradle.utils.CradleIdException;
-import com.exactpro.cradle.utils.EscapeUtils;
-import com.exactpro.cradle.utils.TimeUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Utilities to parse {@link StoredTestEventId} from its string representation which consists of timestamp:uniqueId
@@ -162,5 +162,4 @@ public class StoredTestEventIdUtils
 			}
 		}
     }
-
 }

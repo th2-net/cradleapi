@@ -146,7 +146,7 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 		return batch.hasChildren(getId());
 	}
 
-	public Collection<BatchedStoredTestEvent> getChildren()
+	public Collection<? extends TestEventSingle> getChildren()
 	{
 		return batch.getChildren(getId());
 	}

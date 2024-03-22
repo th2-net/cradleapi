@@ -16,7 +16,6 @@
 
 package com.exactpro.cradle.serialization;
 
-import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
 import com.exactpro.cradle.testevents.TestEventSingle;
@@ -97,7 +96,7 @@ public class EventsSizeCalculator {
 
 	public static SerializationBatchSizes getBatchEventSize(TestEventBatchToStore batch) {
 		return new SerializationBatchSizes(batch.getBatchSize(), batch.getTestEvents().stream()
-				.mapToInt(EventsSizeCalculator::getRecordSizeInBatch)
+				.mapToInt(TestEventSingleToStore::getSize)
 				.toArray());
 	}
 

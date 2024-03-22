@@ -24,6 +24,7 @@ import com.exactpro.cradle.testevents.StoredTestEventId;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -40,12 +41,11 @@ import static com.exactpro.cradle.utils.CradleSerializationUtils.readString;
 
 public class EventMessageIdDeserializer {
 
-    public static Set<StoredMessageId> deserializeLinkedMessageIds(byte[] bytes, BookId bookId) throws SerializationException {
-        if (bytes == null || bytes.length == 0) {
-            return null;
+    public static Set<StoredMessageId> deserializeLinkedMessageIds(ByteBuffer buffer,
+                                                                   BookId bookId) throws SerializationException {
+        if (buffer == null) {
+            return Collections.emptySet();
         }
-
-        ByteBuffer buffer = ByteBuffer.wrap(bytes);
 
         byte version = buffer.get();
         if (version != VERSION_2) {
@@ -76,14 +76,13 @@ public class EventMessageIdDeserializer {
         return result;
     }
 
-    public static Map<StoredTestEventId, Set<StoredMessageId>> deserializeBatchLinkedMessageIds(byte[] bytes,
+    public static Map<StoredTestEventId, Set<StoredMessageId>> deserializeBatchLinkedMessageIds(ByteBuffer buffer,
                                                                                                 BookId bookId,
                                                                                                 String scope) throws SerializationException {
-        if (bytes == null || bytes.length == 0) {
-            return null;
+        if (buffer == null) {
+            return Collections.emptyMap();
         }
 
-        ByteBuffer buffer = ByteBuffer.wrap(bytes);
         byte version = buffer.get();
         if (version != VERSION_2) {
             throw new SerializationException(String.format(NOT_SUPPORTED_PROTOCOL_FORMAT, "batchLinkedMessages",

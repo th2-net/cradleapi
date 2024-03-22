@@ -56,9 +56,6 @@ import static com.exactpro.cradle.testevents.EventSingleTest.validEvent;
 import static java.time.temporal.ChronoUnit.NANOS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertSame;
-import static org.testng.Assert.assertTrue;
 
 public class EventBatchTest {
     private final int MAX_SIZE = 1024;
@@ -77,7 +74,7 @@ public class EventBatchTest {
     }
 
     @DataProvider(name = "batch invalid events")
-    public Object[][] batchInvalidEvents() throws CradleStorageException {
+    public Object[][] batchInvalidEvents() {
         Object[][] batchEvents = new Object[][]
                 {
                         {validEvent().parentId(null),                                                                      //No parent ID
@@ -333,7 +330,8 @@ public class EventBatchTest {
         batchBuilder.addTestEvent(event2);
 
         SoftAssert soft = new SoftAssert();
-        soft.assertSame(List.of(event1), batch.getTestEvents());
+        soft.assertEquals(batch.getTestEvents().size(), 1);
+        soft.assertSame(event1, batch.getTestEvents().iterator().next());
         soft.assertTrue(batch.isSuccess());
         soft.assertEquals(batch.getEndTimestamp(), end);
         soft.assertAll();

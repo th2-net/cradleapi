@@ -112,15 +112,13 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
                 StoredTestEvent storedTestEvent;
 
                 if (eventToStore.isBatch()) {
-                    // FIXME: correct test
-//                    storedTestEvent = new StoredTestEventBatch(eventToStore.asBatch(), pageId);
+                    storedTestEvent = new StoredTestEventBatch(eventToStore.asBatch(), pageId);
                 } else {
                     storedTestEvent = new StoredTestEventSingle(eventToStore.asSingle(), pageId);
                 }
 
-                    // FIXME: correct test
-//                storedData.computeIfAbsent(eventToStore.getScope(), e -> new ArrayList<>())
-//                        .add(storedTestEvent);
+                storedData.computeIfAbsent(eventToStore.getScope(), e -> new ArrayList<>())
+                        .add(storedTestEvent);
             }
         } catch (CradleStorageException | IOException e) {
             logger.error("Error while generating data:", e);

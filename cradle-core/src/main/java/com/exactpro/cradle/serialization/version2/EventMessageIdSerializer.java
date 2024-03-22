@@ -54,6 +54,7 @@ public class EventMessageIdSerializer {
             buffer.put(msgId.getDirection() == Direction.FIRST ? DIRECTION_FIRST : DIRECTION_SECOND);
             writeInstant(msgId.getTimestamp(), buffer);
             buffer.putLong(msgId.getSequence());
+            buffer.flip();
             return buffer;
         } else {
             Map<String, Short> aliasMapping = new HashMap<>();
@@ -66,12 +67,16 @@ public class EventMessageIdSerializer {
             writeIdsStart((short) msgIds.size(), SINGLE_EVENT_LINKS, buffer);
             writeMapping(aliasMapping, buffer);
             writeMessageIds(msgIds, aliasMapping, buffer);
+            buffer.flip();
             return buffer;
         }
     }
 
-    public static ByteBuffer serializeBatchLinkedMessageIds(Collection<TestEventSingleToStore> eventsWithAttachedMessages) {
-        if (eventsWithAttachedMessages.isEmpty()) {
+    /**
+     * @param events must have attached message ids
+     */
+    public static ByteBuffer serializeBatchLinkedMessageIds(Collection<TestEventSingleToStore> events) {
+        if (events.isEmpty()) {
             return null;
         }
 
@@ -79,21 +84,24 @@ public class EventMessageIdSerializer {
         // 1B: version, 1B: event type, 2B: number of events, 2B: mapping size
         final Counter size = new Counter(6);
         Counter counter = new Counter();
-        for (TestEventSingleToStore event : eventsWithAttachedMessages) {
+        for (TestEventSingleToStore event : events) {
             if (!event.hasMessages()) {
                 continue;
             }
             StoredTestEventId eventId = event.getId();
             Set<StoredMessageId> msgIds = event.getMessages();
+            if (msgIds.isEmpty()) {
+                throw new SecurityException("Event " + eventId + " hasn't got attached messages");
+            }
             // 12B: timestamp, 2B + nB: id length in bytes, 2B: number of message ids
             size.inc(16 + eventId.getId().getBytes().length);
             collectMapping(msgIds, aliasMapping, size, counter);
         }
 
         ByteBuffer buffer = ByteBuffer.allocate(size.num);
-        writeIdsStart((short) eventsWithAttachedMessages.size(), BATCH_LINKS, buffer);
+        writeIdsStart((short) events.size(), BATCH_LINKS, buffer);
         writeMapping(aliasMapping, buffer);
-        for (TestEventSingleToStore event : eventsWithAttachedMessages) {
+        for (TestEventSingleToStore event : events) {
             StoredTestEventId eventId = event.getId();
             Set<StoredMessageId> msgIds = event.getMessages();
 
@@ -102,6 +110,7 @@ public class EventMessageIdSerializer {
             buffer.putShort((short) msgIds.size());
             writeMessageIds(msgIds, aliasMapping, buffer);
         }
+        buffer.flip();
         return buffer;
     }
 

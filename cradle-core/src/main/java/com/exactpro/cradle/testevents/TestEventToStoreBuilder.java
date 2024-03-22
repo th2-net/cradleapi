@@ -58,6 +58,9 @@ public abstract class TestEventToStoreBuilder {
     }
 
     public TestEventToStoreBuilder parentId(StoredTestEventId parentId) {
+        if (parentId == null) {
+            return this;
+        }
         checkParentEventId(this.id, parentId);
         this.parentId = parentId;
         return this;

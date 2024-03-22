@@ -16,7 +16,6 @@
 
 package com.exactpro.cradle.serialization;
 
-import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
 import com.exactpro.cradle.testevents.TestEventSingleToStore;

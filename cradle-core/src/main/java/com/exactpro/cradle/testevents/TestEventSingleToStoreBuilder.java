@@ -68,16 +68,25 @@ public class TestEventSingleToStoreBuilder extends TestEventToStoreBuilder {
     }
 
     public TestEventSingleToStoreBuilder parentId(StoredTestEventId parentId) {
+        if (parentId == null) {
+            return this;
+        }
         super.parentId(parentId);
         return this;
     }
 
     public TestEventSingleToStoreBuilder type(String type) {
-        this.type = type == null ? "" : type;
+        if (type == null) {
+            return this;
+        }
+        this.type = type;
         return this;
     }
 
     public TestEventSingleToStoreBuilder endTimestamp(Instant endTimestamp) {
+        if (endTimestamp == null) {
+            return this;
+        }
         checkEndTimestamp(id, endTimestamp);
         this.endTimestamp = endTimestamp;
         return this;
@@ -89,19 +98,28 @@ public class TestEventSingleToStoreBuilder extends TestEventToStoreBuilder {
     }
 
     public TestEventSingleToStoreBuilder messages(Set<StoredMessageId> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return this;
+        }
         checkMessageIds(this.id, ids);
         this.messages.addAll(ids);
         return this;
     }
 
     public TestEventSingleToStoreBuilder message(StoredMessageId id) {
+        if (id == null) {
+            return this;
+        }
         checkMessageId(this.id, id);
         this.messages.add(id);
         return this;
     }
 
     public TestEventSingleToStoreBuilder content(byte[] content) {
-        this.content = content == null ? EMPTY_CONTENT : content;
+        if (content == null) {
+            return this;
+        }
+        this.content = content;
         return this;
     }
 

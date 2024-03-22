@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,11 +35,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.exactpro.cradle.CoreStorageSettings.DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS;
 import static com.exactpro.cradle.TestUtils.generateUnicodeString;
 import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateBatchEventSize;
 import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateEventRecordSize;
+import static com.exactpro.cradle.utils.TestEventUtils.toTestEventSingleToStore;
 
 public class SerializationEventBatchTest {
 
@@ -70,7 +72,8 @@ public class SerializationEventBatchTest {
 		byte[] serialize = serializer.serializeEventRecord(build);
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
 		BatchedStoredTestEvent deserialize = deserializer.deserializeBatchEntry(serialize, commonParams);
-		Assertions.assertThat(deserialize).usingRecursiveComparison().isEqualTo(build);
+		Assertions.assertThat(toTestEventSingleToStore(deserialize, DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS))
+				.usingRecursiveComparison().isEqualTo(build);
 	}
 
 
@@ -82,7 +85,13 @@ public class SerializationEventBatchTest {
 		byte[] serialize = serializer.serializeEventBatch(build).getSerializedData();
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
 		List<BatchedStoredTestEvent> deserialize = deserializer.deserializeBatchEntries(serialize, commonParams);
-		Assertions.assertThat(build).usingRecursiveFieldByFieldElementComparator().isEqualTo(deserialize);
+		Assertions.assertThat(deserialize.stream().map(event -> {
+                    try {
+                        return toTestEventSingleToStore(event, DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS);
+                    } catch (CradleStorageException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).collect(Collectors.toList())).usingRecursiveFieldByFieldElementComparator().isEqualTo(build);
 	}
 
 	@Test
@@ -95,7 +104,8 @@ public class SerializationEventBatchTest {
 		byte[] serialized = serializer.serializeEventRecord(build);
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
 		BatchedStoredTestEvent deserialized = deserializer.deserializeBatchEntry(serialized, commonParams);
-		Assertions.assertThat(deserialized).usingRecursiveComparison().isEqualTo(build);
+		Assertions.assertThat(toTestEventSingleToStore(deserialized, DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS))
+				.usingRecursiveComparison().isEqualTo(build);
 	}
 
 	static TestEventSingleToStore createBatchedStoredTestEvent(String name, EventBatchCommonParams commonParams) throws CradleStorageException {

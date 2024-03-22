@@ -38,28 +38,28 @@ import java.util.Set;
  */
 public class StoredTestEventBatch extends StoredTestEvent implements TestEventBatch
 {
-	private final Map<StoredTestEventId, BatchedStoredTestEvent> events;
-	private final Collection<BatchedStoredTestEvent> rootEvents;
-	private final Map<StoredTestEventId, Collection<BatchedStoredTestEvent>> children;
+	private final Map<StoredTestEventId, TestEventSingle> events;
+	private final Collection<TestEventSingle> rootEvents;
+	private final Map<StoredTestEventId, Collection<TestEventSingle>> children;
 	private final Map<StoredTestEventId, Set<StoredMessageId>> messages;
 	private final Instant endTimestamp;
 	private final boolean success;
 	private Instant lastStartTimestamp;
 
 	public StoredTestEventBatch(StoredTestEventId id, String name, String type, StoredTestEventId parentId,
-			Collection<BatchedStoredTestEvent> batchEvents, 
+			Collection<? extends TestEventSingle> batchEvents,
 			Map<StoredTestEventId, Set<StoredMessageId>> messages, 
 			PageId pageId, String error, Instant recDate) throws CradleStorageException {
 		super(id, name, type, parentId, pageId, error, recDate);
 		
-		Map<StoredTestEventId, BatchedStoredTestEvent> allEvents = new LinkedHashMap<>();
-		List<BatchedStoredTestEvent> roots = new ArrayList<>();
-		Map<StoredTestEventId, Collection<BatchedStoredTestEvent>> childrenPerEvent = new LinkedHashMap<>();
+		Map<StoredTestEventId, TestEventSingle> allEvents = new LinkedHashMap<>();
+		List<TestEventSingle> roots = new ArrayList<>();
+		Map<StoredTestEventId, Collection<TestEventSingle>> childrenPerEvent = new LinkedHashMap<>();
 		Instant end = null;
 		boolean success = true;
 		if (batchEvents != null)
 		{
-			for (BatchedStoredTestEvent event : batchEvents)
+			for (TestEventSingle event : batchEvents)
 			{
 				StoredTestEventId eventParentId = event.getParentId();
 				if (eventParentId == null)
@@ -129,19 +129,19 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 	}
 	
 	@Override
-	public BatchedStoredTestEvent getTestEvent(StoredTestEventId id)
+	public TestEventSingle getTestEvent(StoredTestEventId id)
 	{
 		return events.get(id);
 	}
 	
 	@Override
-	public Collection<BatchedStoredTestEvent> getTestEvents()
+	public Collection<? extends TestEventSingle> getTestEvents()
 	{
 		return events.values();
 	}
 	
 	@Override
-	public Collection<BatchedStoredTestEvent> getRootTestEvents()
+	public Collection<TestEventSingle> getRootTestEvents()
 	{
 		return rootEvents;
 	}
@@ -159,9 +159,9 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 	}
 	
 	@Override
-	public Collection<BatchedStoredTestEvent> getChildren(StoredTestEventId parentId)
+	public Collection<TestEventSingle> getChildren(StoredTestEventId parentId)
 	{
-		Collection<BatchedStoredTestEvent> result = children.get(parentId);
+		Collection<TestEventSingle> result = children.get(parentId);
 		return result != null ? Collections.unmodifiableCollection(result) : Collections.emptyList();
 	}
 	
@@ -177,7 +177,7 @@ public class StoredTestEventBatch extends StoredTestEvent implements TestEventBa
 		if (lastStartTimestamp == null) {
 			lastStartTimestamp = getStartTimestamp();
 
-			for (BatchedStoredTestEvent el : getTestEvents()) {
+			for (TestEventSingle el : getTestEvents()) {
 				lastStartTimestamp = lastStartTimestamp.isBefore(el.getStartTimestamp()) ? el.getStartTimestamp() : lastStartTimestamp;
 			}
 

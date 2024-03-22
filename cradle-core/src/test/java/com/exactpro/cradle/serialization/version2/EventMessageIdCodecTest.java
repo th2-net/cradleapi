@@ -82,10 +82,10 @@ public class EventMessageIdCodecTest {
 
         ByteBuffer buffer = serializeBatchLinkedMessageIds(source);
         assertNotNull(buffer);
-        assertEquals(buffer.position(), buffer.limit());
+        assertEquals(buffer.position(), 0);
         assertEquals(buffer.capacity(), buffer.limit());
         // Result can't be checked because TestEventSingleToStore class uses hash set to hold StoredMessageId
-        assertThat(deserializeBatchLinkedMessageIds(buffer.array(), BOOK_ID, SCOPE)).usingRecursiveComparison()
+        assertThat(deserializeBatchLinkedMessageIds(buffer, BOOK_ID, SCOPE)).usingRecursiveComparison()
                 .isEqualTo(source.stream().collect(Collectors.toMap(
                         TestEventSingleToStore::getId,
                         TestEventSingleToStore::getMessages
@@ -107,7 +107,7 @@ public class EventMessageIdCodecTest {
                 )
         );
 
-        assertThat(deserializeBatchLinkedMessageIds(decodeHex(SERIALIZED_EVENTS), BOOK_ID, SCOPE))
+        assertThat(deserializeBatchLinkedMessageIds(ByteBuffer.wrap(decodeHex(SERIALIZED_EVENTS)), BOOK_ID, SCOPE))
                 .usingRecursiveComparison().isEqualTo(target);
     }
 
@@ -121,7 +121,7 @@ public class EventMessageIdCodecTest {
         source.add(new StoredMessageId(BOOK_ID, "test-session-alias-2", SECOND, timestamp, 4));
 
         ByteBuffer buffer = serializeLinkedMessageIds(source);
-        assertEquals(buffer.position(), buffer.limit());
+        assertEquals(buffer.position(), 0);
         assertEquals(buffer.capacity(), buffer.limit());
         assertEquals(encodeHexString(buffer.array()), SERIALIZED_MESSAGE_IDS);
     }
@@ -136,7 +136,7 @@ public class EventMessageIdCodecTest {
                 new StoredMessageId(BOOK_ID, "test-session-alias-2", SECOND, timestamp, 4)
         );
 
-        assertThat(deserializeLinkedMessageIds(decodeHex(SERIALIZED_MESSAGE_IDS), BOOK_ID))
+        assertThat(deserializeLinkedMessageIds(ByteBuffer.wrap(decodeHex(SERIALIZED_MESSAGE_IDS)), BOOK_ID))
                 .usingRecursiveComparison().isEqualTo(target);
     }
 
@@ -148,7 +148,7 @@ public class EventMessageIdCodecTest {
         );
 
         ByteBuffer buffer = serializeLinkedMessageIds(source);
-        assertEquals(buffer.position(), buffer.limit());
+        assertEquals(buffer.position(), 0);
         assertEquals(buffer.capacity(), buffer.limit());
         assertEquals(encodeHexString(buffer.array()), SERIALIZED_MESSAGE_ID);
     }
@@ -160,7 +160,7 @@ public class EventMessageIdCodecTest {
                 new StoredMessageId(BOOK_ID, "test-session-alias-1", FIRST, timestamp, 1)
         );
 
-        assertThat(deserializeLinkedMessageIds(decodeHex(SERIALIZED_MESSAGE_ID), BOOK_ID))
+        assertThat(deserializeLinkedMessageIds(ByteBuffer.wrap(decodeHex(SERIALIZED_MESSAGE_ID)), BOOK_ID))
                 .usingRecursiveComparison().isEqualTo(target);
     }
 }

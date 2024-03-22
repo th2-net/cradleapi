@@ -42,6 +42,7 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.zip.DataFormatException;
@@ -56,7 +57,9 @@ public class TestEventEntityUtils {
         logger.trace("Creating test event '{}' from entity", eventId);
 
         byte[] content = restoreContent(testEventEntity, eventId);
-        return testEventEntity.isEventBatch() ? toStoredTestEventBatch(testEventEntity, pageId, eventId, content) : toStoredTestEventSingle(testEventEntity, pageId, eventId, content);
+        return testEventEntity.isEventBatch()
+                ? toStoredTestEventBatch(testEventEntity, pageId, eventId, content)
+                : toStoredTestEventSingle(testEventEntity, pageId, eventId, content);
     }
 
 
@@ -87,21 +90,21 @@ public class TestEventEntityUtils {
     private static Set<StoredMessageId> restoreMessages(TestEventEntity testEventEntity, BookId bookId)
             throws IOException {
         ByteBuffer messages = testEventEntity.getMessages();
-        if (messages == null)
-            return null;
+        if (messages == null) {
+            return Collections.emptySet();
+        }
 
-        byte[] result = messages.array();
-        return TestEventUtils.deserializeLinkedMessageIds(result, bookId);
+        return TestEventUtils.deserializeLinkedMessageIds(messages, bookId);
     }
 
-    private static Map<StoredTestEventId, Set<StoredMessageId>> restoreBatchMessages(TestEventEntity testEventEntity, BookId bookId)
+    private static Map<StoredTestEventId, Set<StoredMessageId>> restoreBatchMessages(TestEventEntity testEventEntity, BookId bookId, String scope)
             throws IOException {
         ByteBuffer messages = testEventEntity.getMessages();
-        if (messages == null)
-            return null;
+        if (messages == null) {
+            return Collections.emptyMap();
+        }
 
-        byte[] result = messages.array();
-        return TestEventUtils.deserializeBatchLinkedMessageIds(result, bookId);
+        return TestEventUtils.deserializeBatchLinkedMessageIds(messages, bookId, scope);
     }
 
 
@@ -117,7 +120,7 @@ public class TestEventEntityUtils {
             throws IOException, CradleStorageException, CradleIdException
     {
         Collection<BatchedStoredTestEvent> children = TestEventUtils.deserializeTestEvents(content, eventId);
-        Map<StoredTestEventId, Set<StoredMessageId>> messages = restoreBatchMessages(testEventEntity, pageId.getBookId());
+        Map<StoredTestEventId, Set<StoredMessageId>> messages = restoreBatchMessages(testEventEntity, pageId.getBookId(), eventId.getScope());
         return new StoredTestEventBatch(eventId, testEventEntity.getName(), testEventEntity.getType(), createParentId(testEventEntity),
                 children, messages, pageId, null, testEventEntity.getRecDate());
     }
@@ -133,7 +136,7 @@ public class TestEventEntityUtils {
     public static SerializedEntity<SerializedEntityMetadata, TestEventEntity> toSerializedEntity(TestEventToStore event,
                                                                                                  PageId pageId,
                                                                                                  CompressionType compressionType,
-                                                                                                 int maxUncompressedSize) throws IOException, CompressException {
+                                                                                                 int maxUncompressedSize) throws CompressException {
         TestEventEntity.TestEventEntityBuilder builder = TestEventEntity.builder();
 
         logger.debug("Creating entity from test event '{}'", event.getId());
