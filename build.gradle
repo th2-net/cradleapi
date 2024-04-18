@@ -1,35 +1,16 @@
 plugins {
-    id "io.github.gradle-nexus.publish-plugin" version "1.3.0"
-    id "org.owasp.dependencycheck" version "9.0.9"
-    id 'signing'
-}
-
-ext {
-    sharedDir = file("${project.rootDir}/shared")
+    id "com.exactpro.th2.gradle.base" version "0.0.5"
+    id "com.exactpro.th2.gradle.publish" version "0.0.5"
 }
 
 allprojects {
     version = release_version
     group = 'com.exactpro.th2'
-
-    dependencyCheck {
-        formats = ['SARIF', 'JSON', 'HTML']
-        failBuildOnCVSS = 5
-        suppressionFile = "${rootDir}/suppressions.xml"
-        analyzers {
-            assemblyEnabled = false
-            nugetconfEnabled = false
-            nodeEnabled = false
-        }
-    }
-
 }
 
 subprojects {
     apply plugin: 'java-library'
     apply plugin: 'maven-publish'
-    apply plugin: 'signing'
-    apply plugin: 'org.owasp.dependencycheck'
 
     repositories {
         mavenCentral()
@@ -48,9 +29,6 @@ subprojects {
         }
     }
 
-
-    defaultTasks 'build'
-
     sourceCompatibility = JavaVersion.VERSION_11 //Java version compatibility to use when compiling Java source.
     targetCompatibility = JavaVersion.VERSION_11 //Java version to generate classes for.
     compileJava.options.debugOptions.debugLevel = 'source,lines,vars' // Include debug information
@@ -58,122 +36,4 @@ subprojects {
     dependencies {
         implementation 'io.prometheus:simpleclient_dropwizard:0.16.0'
     }
-
-    jar {
-        manifest {
-            attributes(
-                    'Created-By': "${System.getProperty('java.version')} (${System.getProperty('java.vendor')})",
-                    'Specification-Title': '',
-                    'Specification-Vendor': 'Exactpro Systems LLC',
-                    'Implementation-Title': project.archivesBaseName,
-                    'Implementation-Vendor': 'Exactpro Systems LLC',
-                    'Implementation-Vendor-Id': 'com.exactpro',
-                    'Implementation-Version': project.version,
-                    'Implementation-Version-Date': getDate()
-            )
-        }
-    }
-
-    java {
-        withJavadocJar()
-        withSourcesJar()
-    }
-
-    // conditionals for publications
-    tasks.withType(PublishToMavenRepository).configureEach {
-        onlyIf {
-            (repository == publishing.repositories.nexusRepository &&
-                    project.hasProperty('nexus_user') &&
-                    project.hasProperty('nexus_password') &&
-                    project.hasProperty('nexus_url')) ||
-                    (repository == publishing.repositories.sonatype &&
-                            project.hasProperty('sonatypeUsername') &&
-                            project.hasProperty('sonatypePassword'))
-        }
-    }
-    tasks.withType(Sign).configureEach {
-        onlyIf {
-            project.hasProperty('signingKey') &&
-                    project.hasProperty('signingPassword')
-        }
-    }
-    // disable running task 'initializeSonatypeStagingRepository' on a gitlab
-    tasks.configureEach { task ->
-        if (task.name == 'initializeSonatypeStagingRepository' &&
-                !(project.hasProperty('sonatypeUsername') && project.hasProperty('sonatypePassword'))
-        ) {
-            task.enabled = false
-        }
-    }
-
-    publishing {
-        publications {
-            mavenJava(MavenPublication) {
-                from(components.java)
-                pom {
-                    name = project.name
-                    packaging = 'jar'
-                    description = rootProject.description
-                    url = vcs_url
-                    scm {
-                        url = vcs_url
-                    }
-                    licenses {
-                        license {
-                            name = 'The Apache License, Version 2.0'
-                            url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                        }
-                    }
-                    developers {
-                        developer {
-                            id = 'developer'
-                            name = 'developer'
-                            email = 'developer@exactpro.com'
-                        }
-                    }
-                    scm {
-                        url = vcs_url
-                    }
-                }
-            }
-        }
-        repositories {
-            //Nexus repo to publish from gitlab
-            maven {
-                name = 'nexusRepository'
-                credentials {
-                    username = project.findProperty('nexus_user')
-                    password = project.findProperty('nexus_password')
-                }
-                url = project.findProperty('nexus_url')
-            }
-        }
-    }
-
-    signing {
-        String signingKey = findProperty("signingKey")
-        String signingPassword = findProperty("signingPassword")
-        useInMemoryPgpKeys(signingKey, signingPassword)
-        sign publishing.publications.mavenJava
-    }
-
-}
-nexusPublishing {
-    repositories {
-        sonatype {
-            nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/"))
-            snapshotRepositoryUrl.set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
-        }
-    }
-}
-tasks.register("listProjects") {
-    doLast {
-        subprojects.forEach { println(it.name) }
-    }
-}
-
-static def getDate() {
-    def date = new Date()
-    def formattedDate = date.format('yyyyMMdd-HH:mm:ss.SSS')
-    return formattedDate
 }
