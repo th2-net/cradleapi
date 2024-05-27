@@ -16,16 +16,16 @@ dependencies {
     implementation 'com.google.guava:guava'
 
     // this section is required to bypass failing vulnerability check caused by cassandra driver's transitive dependencies
-    annotationProcessor platform('com.exactpro.th2:bom:4.5.0')
+    annotationProcessor platform('com.exactpro.th2:bom:4.6.1')
     annotationProcessor "com.datastax.oss:java-driver-mapper-processor"
     // ---
 
-    testImplementation 'org.testng:testng:7.9.0'
-    testImplementation 'org.assertj:assertj-core:3.25.3'
+    testImplementation 'org.testng:testng:7.10.2'
+    testImplementation 'org.assertj:assertj-core:3.26.0'
     testImplementation "org.apache.logging.log4j:log4j-slf4j2-impl"
     testImplementation 'org.apache.logging.log4j:log4j-core'
-    testImplementation 'org.mockito:mockito-core:5.10.0'
-    testImplementation 'org.testcontainers:cassandra:1.19.6'
+    testImplementation 'org.mockito:mockito-core:5.12.0'
+    testImplementation 'org.testcontainers:cassandra:1.19.8'
 }
 
 def gen_dir = 'build/generated/sources/annotationProcessor/main'
