@@ -153,7 +153,7 @@ public class SelectQueryExecutor
 			CompletableFuture.runAsync(
 							() -> logger.debug("Retrying request ({}) '{}' and CL {} with delay {}ms after error: '{}'",
 									retryCount + 1, queryInfo, stmt.getConsistencyLevel(), delay, error.getMessage()),
-							CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS))
+							CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS, composingService))
 					.thenComposeAsync(r -> session.executeAsync(stmt), composingService)
 					.thenApplyAsync(AsyncPagingIterable::one, composingService)
 					.thenApplyAsync(row -> row == null ? null : mapper.apply(row), composingService)
@@ -189,7 +189,7 @@ public class SelectQueryExecutor
 			CompletableFuture.runAsync(
 							() -> logger.debug("Retrying request ({}) '{}' and CL {} with delay {}ms after error: '{}'",
 									retryCount + 1, queryInfo, stmt.getConsistencyLevel(), delay, error.getMessage()),
-							CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS))
+							CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS, composingService))
 					.thenComposeAsync(r -> session.executeAsync(stmt), composingService)
 					.thenApplyAsync(row -> row.map(mapper), composingService)
 					.whenCompleteAsync(
