@@ -57,7 +57,7 @@ public class SelectQueryExecutor
 	{
 		CompletableFuture<T> f = new CompletableFuture<>();
 		query.get()
-				.whenCompleteAsync((result, error) -> onCompleteSingle(result, error, f, mapper, queryInfo, 0));
+				.whenCompleteAsync((result, error) -> onCompleteSingle(result, error, f, mapper, queryInfo, 0), composingService);
 		return f;
 	}
 

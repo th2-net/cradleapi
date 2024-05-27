@@ -71,6 +71,6 @@ public class PageSessionsIteratorProvider extends PagesInIntervalIteratorProvide
                     PageSessionEntity::getSessionAlias);
 
             return new UniqueIterator<>(convertingIterator, registry);
-        });
+        }, composingService);
     }
 }

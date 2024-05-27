@@ -69,6 +69,6 @@ public class PageScopesIteratorProvider extends PagesInIntervalIteratorProvider<
                     PageScopeEntity::getScope);
 
             return new UniqueIterator<>(convertingIterator, registry);
-        });
+        }, composingService);
     }
 }

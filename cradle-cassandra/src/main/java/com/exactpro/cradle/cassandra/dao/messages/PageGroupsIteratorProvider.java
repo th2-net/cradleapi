@@ -72,6 +72,6 @@ public class PageGroupsIteratorProvider extends PagesInIntervalIteratorProvider<
                     PageGroupEntity::getGroup);
 
             return new UniqueIterator<>(convertingIterator, registry);
-        });
+        }, composingService);
     }
 }
