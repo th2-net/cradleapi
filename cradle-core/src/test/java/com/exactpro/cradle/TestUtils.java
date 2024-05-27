@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,20 @@
 
 package com.exactpro.cradle;
 
-import org.testng.Assert;
-
 import com.exactpro.cradle.utils.CradleStorageException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.testng.Assert.assertTrue;
 
 public class TestUtils
 {
+	private static final Logger LOGGER = LoggerFactory.getLogger(TestUtils.class);
 	public static void handleException(CradleStorageException e, String errorMessage) throws CradleStorageException
 	{
+		LOGGER.error(e.getMessage(), e);
 		String msg = e.getMessage();
-		Assert.assertTrue(msg.contains(errorMessage), "error '"+msg+"' contains '"+errorMessage+"'");
+		assertTrue(msg.contains(errorMessage), "error '" + msg + "' contains '" + errorMessage + "'");
 		throw e;
 	}
 

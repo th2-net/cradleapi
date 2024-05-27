@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,9 @@ import com.exactpro.cradle.filters.FilterByField;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
 import com.exactpro.cradle.utils.TimeUtils;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public class FilterUtils
 {
@@ -195,8 +198,7 @@ public class FilterUtils
 				? FilterForLess.forLess(ldt.toLocalTime())
 				: FilterForLess.forLessOrEquals(ldt.toLocalTime());
 	}
-	
-	
+
 	/**
 	 * Finds page to start filtering from
 	 * @param pageId specified in filter. Can be null
@@ -241,5 +243,88 @@ public class FilterUtils
 				return page;
 		}
 		return book.getLastPage();
+	}
+
+	/**
+	 * Finds timestamp to start filtering from
+	 * @param pageId specified in filter. Can be null
+	 * @param timestampFrom specified in filter. Can be null
+	 * @param book to filter data from
+	 * @return timestamp to start filtering from.
+	 * If pageId is specified, it will be start timestamp of that page.
+	 * else if timestampFrom is specified, it will be return.
+	 * else if first page of the book exist, it will be return.
+	 * else null
+	 */
+	public static @Nullable Instant findFirstTimestamp(@Nullable PageId pageId,
+											 @Nullable Instant timestampFrom,
+											 @Nonnull BookInfo book) {
+		if (pageId != null) {
+			return pageId.getStart();
+		}
+		if (timestampFrom != null) {
+			return timestampFrom;
+		}
+		PageInfo firstPage = book.getFirstPage();
+		return firstPage == null ? null : firstPage.getStarted();
+	}
+
+	/**
+	 * Finds timestamp to start filtering from
+	 * @param pageId specified in filter. Can be null
+	 * @param timestampFrom specified in filter. Can be null
+	 * @param book to filter data from
+	 * @return timestamp to start filtering from.
+	 * If pageId is specified, it will be start timestamp of that page.
+	 * else if timestampFrom is specified, it will be return.
+	 * else if first page of the book exist, it will be return.
+	 * else null
+	 */
+	public static @Nullable Instant findFirstTimestamp(@Nullable PageId pageId,
+													   @Nullable FilterForGreater<Instant> timestampFrom,
+													   @Nonnull BookInfo book) {
+		return findFirstTimestamp(pageId, timestampFrom == null ? null : timestampFrom.getValue(), book);
+	}
+
+	/**
+	 * Finds timestamp to end filtering at
+	 * @param pageId specified in filter. Can be null
+	 * @param timestampTo specified in filter. Can be null
+	 * @param book to filter data from
+	 * @return page to end filtering at.
+	 * If pageId is specified, it will be end timestamp of that page.
+	 * else if timestampTo is specified, it will be return.
+	 * else if last page of the book exist, it will be return.
+	 * else null
+	 */
+	public static @Nullable Instant findLastTimestamp(@Nullable PageId pageId,
+													 @Nullable Instant timestampTo,
+													 @Nonnull BookInfo book)
+	{
+		if (pageId != null) {
+			return book.getPage(pageId).getEnded();
+		}
+		if (timestampTo != null) {
+			return timestampTo;
+		}
+		PageInfo lastPage = book.getLastPage();
+		return lastPage == null ? null : lastPage.getEnded();
+	}
+
+	/**
+	 * Finds timestamp to end filtering at
+	 * @param pageId specified in filter. Can be null
+	 * @param timestampTo specified in filter. Can be null
+	 * @param book to filter data from
+	 * @return page to end filtering at.
+	 * If pageId is specified, it will be start timestamp of that page.
+	 * else if timestampTo is specified, it will be return.
+	 * else if last page of the book exist, it will be return.
+	 * else null
+	 */
+	public static @Nullable Instant findLastTimestamp(@Nullable PageId pageId,
+											@Nullable FilterForLess<Instant> timestampTo,
+											@Nonnull BookInfo book) {
+		return findLastTimestamp(pageId, timestampTo == null ? null : timestampTo.getValue(), book);
 	}
 }

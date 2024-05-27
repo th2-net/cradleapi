@@ -193,6 +193,25 @@ Events in a batch can have a reference only to the parent of the batch or other 
 
 Test events have mandatory parameters that are verified when storing an event. These are: id, name (for non-batch events), start timestamp.
 
+## Metrics
+
+* `cradle_page_cache_size`               (type: Gauge,   labels: book, cache)         - Size of page cache.
+* `cradle_page_cache_page_request_total` (type: Counter, labels: book, cache, method) - Page requests number from cache
+* `cradle_page_cache_invalidate_total`   (type: Counter, labels: book, cache, cause)  - Cache invalidates
+* `cradle_page_cache_page_loads_total`   (type: Summary, labels: book, cache)         - Page loads number to cache
+  * `_count` - loaded page day intervals
+  * `_sum` - loaded pages
+
+### Labels:
+  * cache: HOT, RANDOM
+  * method: GET, NEXT, PREVIOUS, FIND, ITERATE, REFRESH
+  * cause: EXPLICIT, REPLACED, COLLECTED, EXPIRED, SIZE
+
+## Release notes
+
+### 5.2.0
+* Added page cache for each book to avoid memory leak
+
 ## Changes
 
 ### 5.1.5

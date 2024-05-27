@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,19 +33,20 @@ import java.io.IOException;
 
 public class CassandraCradleHelper {
 
-    private static final Logger logger = LoggerFactory.getLogger(CassandraCradleHelper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CassandraCradleHelper.class);
 
-    private static String CASSANDRA_IMAGE = "cassandra:3.11.13";
-    public static String LOCAL_DATACENTER_NAME = "datacenter1";
-    public static String KEYSPACE_NAME = "test_keyspace";
-    public static int TIMEOUT = 5000;
-    public static int RESULT_PAGE_SIZE = 5;
-    public static int PERSISTENCE_INTERVAL = 0;
+    private static final String CASSANDRA_IMAGE = "cassandra:3.11.13";
+    public static final String LOCAL_DATACENTER_NAME = "datacenter1";
+    public static final long BOOK_REFRESH_INTERVAL_MILLIS = 60_000;
+    public static final String KEYSPACE_NAME = "test_keyspace";
+    public static final int TIMEOUT = 5000;
+    public static final int RESULT_PAGE_SIZE = 5;
+    public static final int PERSISTENCE_INTERVAL = 0;
 
     private CqlSession session;
     private CassandraConnectionSettings connectionSettings;
     private CassandraCradleStorage storage;
-    private CassandraStorageSettings storageSettings;
+    protected CassandraStorageSettings storageSettings;
 
     private static CassandraContainer<?> cassandra;
 
@@ -84,7 +85,7 @@ public class CassandraCradleHelper {
                     cassandra.getFirstMappedPort(),
                     LOCAL_DATACENTER_NAME);
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
             throw e;
         }
     }
@@ -98,11 +99,13 @@ public class CassandraCradleHelper {
             storageSettings.setResultPageSize(RESULT_PAGE_SIZE);
             storageSettings.setKeyspace(KEYSPACE_NAME);
             storageSettings.setCounterPersistenceInterval(PERSISTENCE_INTERVAL);
+            storageSettings.setBookRefreshIntervalMillis(BOOK_REFRESH_INTERVAL_MILLIS);
+
 
             CassandraCradleManager manager = new CassandraCradleManager(connectionSettings, storageSettings, true);
             storage = (CassandraCradleStorage) manager.getStorage();
         } catch (CradleStorageException | IOException e) {
-            logger.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
         }
     }
 

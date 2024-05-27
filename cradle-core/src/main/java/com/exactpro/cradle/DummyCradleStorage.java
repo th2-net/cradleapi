@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,16 +70,6 @@ public class DummyCradleStorage extends CradleStorage {
 		@Override
 		public Collection<PageInfo> loadPageInfo(BookId bookId, boolean loadRemoved) {
 			return null;
-		}
-
-        @Override
-		public BookInfo loadBook(BookId bookId) {
-			return null;
-		}
-
-		@Override
-		public void updateCachedBook(BookInfo bookInfo) {
-			books.put(bookInfo.getId(), bookInfo);
 		}
 
 		@Override

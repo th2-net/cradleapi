@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,23 @@
 package com.exactpro.cradle.cassandra.integration.testevents;
 
 import com.exactpro.cradle.BookInfo;
-import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.PageId;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventIteratorProvider;
-import com.exactpro.cradle.cassandra.integration.BaseCradleCassandraTest;
-import com.exactpro.cradle.cassandra.integration.CassandraCradleHelper;
 import com.exactpro.cradle.cassandra.EventBatchDurationWorker;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventIteratorProvider;
+import com.exactpro.cradle.cassandra.integration.BaseCradleCassandraTest;
+import com.exactpro.cradle.cassandra.integration.CassandraCradleHelper;
 import com.exactpro.cradle.cassandra.resultset.CassandraCradleResultSet;
 import com.exactpro.cradle.cassandra.retries.PageSizeAdjustingPolicy;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.filters.FilterForGreater;
-import com.exactpro.cradle.testevents.*;
+import com.exactpro.cradle.testevents.StoredTestEvent;
+import com.exactpro.cradle.testevents.StoredTestEventBatch;
+import com.exactpro.cradle.testevents.StoredTestEventSingle;
+import com.exactpro.cradle.testevents.TestEventFilter;
+import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.util.Lists;
@@ -40,17 +43,18 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import static com.exactpro.cradle.cassandra.CassandraStorageSettings.DEFAULT_RESULT_PAGE_SIZE;
 
 public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
 
@@ -65,7 +69,7 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
     private final List<TestEventToStore> data = new ArrayList<>();
     private Map<String, List<StoredTestEvent>> storedData;
     private CassandraOperators operators;
-    private final ExecutorService composingService = Executors.newSingleThreadExecutor();
+    private final ExecutorService composingService = Executors.newFixedThreadPool(3);
     private EventBatchDurationWorker eventBatchDurationWorker;
 
     @BeforeClass
@@ -162,7 +166,7 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
         }
     }
 
-    private void setUpOperators() throws IOException, InterruptedException {
+    private void setUpOperators() {
         CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(session).build();
         operators = new CassandraOperators(dataMapper, CassandraCradleHelper.getInstance().getStorageSettings());
     }

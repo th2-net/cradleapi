@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,26 +25,23 @@ import java.util.Objects;
 public class PageInfo
 {
 	private final PageId id;
-	private final Instant started,
-			ended;
+	private final Instant ended;
 	private final String comment;
 	private final Instant updated;
 	private final Instant removed;
 
-	public PageInfo(PageId id, Instant started, Instant ended, String comment, Instant updated, Instant removed)
+	public PageInfo(PageId id, Instant ended, String comment, Instant updated, Instant removed)
 	{
 		this.id = id;
-		this.started = started;
 		this.ended = ended;
 		this.comment = comment;
 		this.updated = updated;
 		this.removed = removed;
 	}
 
-	public PageInfo(PageId id, Instant started, Instant ended, String comment)
+	public PageInfo(PageId id, Instant ended, String comment)
 	{
 		this.id = id;
-		this.started = started;
 		this.ended = ended;
 		this.comment = comment;
 		this.updated = null;
@@ -56,17 +53,17 @@ public class PageInfo
 	{
 		return id;
 	}
-	
+
 	public Instant getStarted()
 	{
-		return started;
+		return id.getStart();
 	}
-	
+
 	public Instant getEnded()
 	{
 		return ended;
 	}
-	
+
 	public String getComment()
 	{
 		return comment;
@@ -80,14 +77,29 @@ public class PageInfo
 		return removed;
 	}
 
-	public static PageInfo ended(PageInfo page, Instant endTimestamp)
-	{
-		return page == null ? null : new PageInfo(page.getId(), page.getStarted(), endTimestamp, page.getComment(), page.getUpdated(), page.getRemoved());
+
+	public String getBookName() {
+		return id.getBookId().getName();
 	}
 
+	public String getName() {
+		return id.getName();
+	}
+
+	public static PageInfo ended(PageInfo page, Instant endTimestamp)
+	{
+		return page == null ? null : new PageInfo(page.getId(), endTimestamp, page.getComment(), page.getUpdated(), page.getRemoved());
+	}
+
+	public boolean isNotValidFor(Instant timestamp) {
+	    return (getStarted() != null && getStarted().isAfter(timestamp)) ||
+				(ended != null && !ended.isAfter(timestamp));
+	}
+
+	// Backward compatibility
+	@SuppressWarnings("unused")
 	public boolean isValidFor(Instant timestamp) {
-	    return (started == null || !started.isAfter(timestamp)) &&
-				(ended == null || ended.isAfter(timestamp));
+		return !isNotValidFor(timestamp);
 	}
 
 	@Override
@@ -96,7 +108,6 @@ public class PageInfo
 		if (o == null || getClass() != o.getClass()) return false;
 		PageInfo pageInfo = (PageInfo) o;
 		return getId().equals(pageInfo.getId())
-				&& getStarted().equals(pageInfo.getStarted())
 				&& Objects.equals(getEnded(), pageInfo.getEnded())
 				&& Objects.equals(getComment(), pageInfo.getComment())
 				&& Objects.equals(getUpdated(), pageInfo.getUpdated())
@@ -107,7 +118,6 @@ public class PageInfo
 	public String toString() {
 		return "PageInfo{" +
 				"id=" + id +
-				", started=" + started +
 				", ended=" + ended +
 				", comment='" + comment + '\'' +
 				", updated=" + updated +

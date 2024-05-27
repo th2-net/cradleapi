@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,10 +49,9 @@ public class MessageIteratorProviderTest extends BaseCradleCassandraTest {
 
     private final long storeActionRejectionThreshold = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
 
-    private List<GroupedMessageBatchToStore> data;
     private Map<StoredMessageKey, List<StoredMessage>> storedData;
     private CassandraOperators operators;
-    private ExecutorService composingService = Executors.newSingleThreadExecutor();
+    private final ExecutorService composingService = Executors.newFixedThreadPool(3);
 
     @BeforeClass
     public void startUp () throws IOException, InterruptedException, CradleStorageException {
@@ -98,7 +97,7 @@ public class MessageIteratorProviderTest extends BaseCradleCassandraTest {
         }
     }
 
-    private void setUpOperators() throws IOException, InterruptedException {
+    private void setUpOperators() {
         CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(session).build();
         operators = new CassandraOperators(dataMapper, CassandraCradleHelper.getInstance().getStorageSettings());
     }
@@ -122,7 +121,7 @@ public class MessageIteratorProviderTest extends BaseCradleCassandraTest {
             b3.addMessage(generateMessage(FIRST_SESSION_ALIAS, Direction.FIRST, 25, 5L));
             b3.addMessage(generateMessage(SECOND_SESSION_ALIAS, Direction.SECOND, 25, 6L));
 
-            data = List.of(b1, b2, b3);
+            List<GroupedMessageBatchToStore> data = List.of(b1, b2, b3);
             storedData = new HashMap<>();
             BookInfo bookInfo = storage.refreshBook(bookId.getName());
             for (GroupedMessageBatchToStore batch : data) {

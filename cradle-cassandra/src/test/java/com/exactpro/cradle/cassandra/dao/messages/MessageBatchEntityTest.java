@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ import static com.exactpro.cradle.cassandra.TestUtils.createContent;
 public class MessageBatchEntityTest {
     @Test
     public void messageEntity() throws IOException, DataFormatException, CradleStorageException, CompressException {
-        PageId pageId = new PageId(new BookId("Test_Book_1"), "Test_Page_1");
+        PageId pageId = new PageId(new BookId("Test_Book_1"), Instant.now(), "Test_Page_1");
         MessageBatchToStore batch = MessageBatchToStore.singleton(MessageToStore.builder()
                 .bookId(pageId.getBookId())
                 .sessionAlias("TEST_Session")

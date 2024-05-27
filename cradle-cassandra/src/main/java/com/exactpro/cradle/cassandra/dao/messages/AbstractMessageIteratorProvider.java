@@ -20,7 +20,6 @@ import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.exactpro.cradle.BookInfo;
-import com.exactpro.cradle.Order;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
@@ -32,7 +31,7 @@ import com.exactpro.cradle.cassandra.dao.messages.sequences.SequenceRangeExtract
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.resultset.IteratorProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
-import com.exactpro.cradle.cassandra.utils.FilterUtils;
+import com.exactpro.cradle.cassandra.utils.StorageUtils;
 import com.exactpro.cradle.cassandra.workers.MessagesWorker;
 import com.exactpro.cradle.filters.FilterForAny;
 import com.exactpro.cradle.filters.FilterForGreater;
@@ -47,6 +46,8 @@ import com.exactpro.cradle.utils.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -57,11 +58,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
+import static com.exactpro.cradle.Order.REVERSE;
 import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_FIRST_MESSAGE_TIME;
+import static com.exactpro.cradle.cassandra.utils.FilterUtils.findFirstTimestamp;
+import static com.exactpro.cradle.cassandra.utils.FilterUtils.findLastTimestamp;
+import static java.util.Objects.requireNonNull;
 
 abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvider<T> {
 
-	private static final Logger logger = LoggerFactory.getLogger(AbstractMessageIteratorProvider.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractMessageIteratorProvider.class);
 	protected final MessageBatchOperator op;
 	protected final MessageBatchEntityConverter converter;
 	protected final BookInfo book;
@@ -69,16 +74,17 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 	protected final SelectQueryExecutor selectQueryExecutor;
 	protected final FilterForGreater<Instant> leftBoundFilter;
 	protected final FilterForLess<Instant> rightBoundFilter;
-	protected PageInfo firstPage, lastPage;
 	protected final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
 	protected final MessageFilter filter;
 	/** limit must be strictly positive ( limit greater than 0 ) */
 	protected final int limit;
 	protected final AtomicInteger returned;
-	protected CassandraStoredMessageFilter cassandraFilter;
 	protected final MessageBatchIteratorFilter<MessageBatchEntity> batchFilter;
 	protected final MessageBatchIteratorCondition<MessageBatchEntity> iterationCondition;
-	protected TakeWhileIterator<MessageBatchEntity> takeWhileIterator;
+
+	private final Iterator<PageInfo> pageProvider;
+	// only get / set operation are guarded by lock
+	private TakeWhileIterator<MessageBatchEntity> takeWhileIterator;
 
 	public AbstractMessageIteratorProvider(String requestInfo, MessageFilter filter, CassandraOperators operators, BookInfo book,
 										   ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
@@ -96,7 +102,6 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		this.returned = new AtomicInteger();
 		this.leftBoundFilter = createLeftBoundFilter(filter);
 		this.rightBoundFilter = createRightBoundFilter(filter);
-		this.cassandraFilter = createInitialFilter(filter);
 
 		FilterForAny<Long> sequenceFilter = filter.getSequence();
 		MessageBatchIteratorFilter<MessageBatchEntity> batchFilter;
@@ -114,153 +119,115 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 
 		this.batchFilter = batchFilter;
 		this.iterationCondition = iterationCondition;
+
+		this.pageProvider = book.getPages(
+				requireNonNull(leftBoundFilter.getValue()),
+				requireNonNull(rightBoundFilter.getValue()),
+				filter.getOrder()
+		);
 	}
 
-	//TODO refactor this method to assigns firstPage outside the method
 	protected FilterForGreater<Instant> createLeftBoundFilter(MessageFilter filter) throws CradleStorageException {
 		FilterForGreater<Instant> result = filter.getTimestampFrom();
-		firstPage = FilterUtils.findFirstPage(filter.getPageId(), result, book);
-
-		if (result == null && firstPage == null)
-			return null;
-
-		Instant leftBoundFromPage = firstPage == null ? Instant.MIN : firstPage.getStarted();
-		if (result == null || (filter.getPageId() != null && leftBoundFromPage.isAfter(result.getValue())))
+		Instant leftBoundFromPage = findFirstTimestamp(filter.getPageId(), result, book);
+		if (leftBoundFromPage == null) {
+			if (result != null) {
+				return result;
+			}
+			return FilterForGreater.forGreaterOrEquals(Instant.MIN);
+		}
+		if (result == null || (filter.getPageId() != null && leftBoundFromPage.isAfter(result.getValue()))) {
 			return FilterForGreater.forGreaterOrEquals(leftBoundFromPage);
+		}
 
 		// If the page wasn't specified in the filter, we should find a batch with a lower date,
 		// which may contain messages that satisfy the original condition
-		LocalDateTime leftBoundLocalDate = TimeUtils.toLocalTimestamp(result.getValue());
-		LocalTime nearestBatchTime = getNearestBatchTime(firstPage, filter.getSessionAlias(),
+		LocalDateTime leftBoundLocalDate = StorageUtils.toLocalDateTime(result.getValue());
+		LocalTime nearestBatchTime = getNearestBatchTime(leftBoundFromPage, filter.getSessionAlias(),
 				filter.getDirection().getLabel(), leftBoundLocalDate.toLocalDate(),
 				leftBoundLocalDate.toLocalTime());
 
 		if (nearestBatchTime != null) {
 			Instant nearestBatchInstant = TimeUtils.toInstant(leftBoundLocalDate.toLocalDate(), nearestBatchTime);
-			if (nearestBatchInstant.isBefore(result.getValue()))
+			if (nearestBatchInstant.isBefore(result.getValue())) {
 				result = FilterForGreater.forGreaterOrEquals(nearestBatchInstant);
-			firstPage = FilterUtils.findFirstPage(filter.getPageId(), result, book);
+			}
 		}
-		
 		return result;
 	}
 
-	private LocalTime getNearestBatchTime(PageInfo page, String sessionAlias, String direction,
-			LocalDate messageDate, LocalTime messageTime) throws CradleStorageException
-	{
-		while (page != null)
-		{
+	private LocalTime getNearestBatchTime(Instant timestamp,
+										  String sessionAlias,
+										  String direction,
+										  LocalDate messageDate,
+										  LocalTime messageTime) throws CradleStorageException {
+		if (timestamp == null) {
+			return null;
+		}
+		Iterator<PageInfo> pageInfoIterator = book.getPages(null, timestamp, REVERSE);
+		while (pageInfoIterator.hasNext()) {
+			PageInfo page = pageInfoIterator.next();
 			CompletableFuture<Row> future = op.getNearestTime(
-					page.getId().getBookId().getName(),
-					page.getId().getName(),
+					page.getBookName(),
+					page.getName(),
 					sessionAlias,
 					direction,
 					messageDate,
 					messageTime,
 					readAttrs);
-			try
-			{
+			try {
 				Row row = future.get();
-				if (row != null)
+				if (row != null) {
 					return row.getLocalTime(FIELD_FIRST_MESSAGE_TIME);
-			}
-			catch (Exception e)
-			{
+				}
+			} catch (Exception e) {
 				throw new CradleStorageException("Error while getting left bound ", e);
 			}
-			if (TimeUtils.toLocalTimestamp(page.getStarted()).toLocalDate().isBefore(messageDate))
+			if (StorageUtils.toLocalDateTime(page.getStarted()).toLocalDate().isBefore(messageDate)) {
 				return null;
-			page = book.getPreviousPage(page.getStarted());
+			}
 		}
 
 		return null;
 	}
 
-	//TODO refactor this method to assign last page outside of this method.
 	protected FilterForLess<Instant> createRightBoundFilter(MessageFilter filter) {
 		FilterForLess<Instant> result = filter.getTimestampTo();
-		lastPage = FilterUtils.findLastPage(filter.getPageId(), result, book);
-		Instant endOfPage = lastPage == null || lastPage.getEnded() == null ? Instant.now() : lastPage.getEnded();
+		Instant lastTimestamp = findLastTimestamp(filter.getPageId(), result, book);
+		Instant endTimestamp = lastTimestamp == null ? Instant.now() : lastTimestamp;
 
-		return FilterForLess.forLessOrEquals(result == null || endOfPage.isBefore(result.getValue()) ? endOfPage : result.getValue());
+		return FilterForLess.forLessOrEquals(result == null || endTimestamp.isBefore(result.getValue())
+				? endTimestamp
+				: result.getValue());
 	}
 
-	protected CassandraStoredMessageFilter createInitialFilter(MessageFilter filter) {
-		if (filter.getOrder() == Order.DIRECT) {
-			return new CassandraStoredMessageFilter(
-					book.getId().getName(),
-					firstPage != null ? firstPage.getId().getName() : null,
-					filter.getSessionAlias(),
-					filter.getDirection().getLabel(),
-					leftBoundFilter,
-					rightBoundFilter,
-					filter.getLimit(),
-					filter.getOrder());
-		} else {
-			return new CassandraStoredMessageFilter(
-					book.getId().getName(),
-					lastPage != null ? lastPage.getId().getName() : null,
-					filter.getSessionAlias(),
-					filter.getDirection().getLabel(),
-					leftBoundFilter,
-					rightBoundFilter,
-					filter.getLimit(),
-					filter.getOrder());
-		}
-	}
-
-	protected CassandraStoredMessageFilter createNextFilter(CassandraStoredMessageFilter prevFilter, int updatedLimit)
-	{
-		PageInfo oldPage = book.getPage(new PageId(book.getId(), prevFilter.getPage()));
-		PageInfo newPage;
-
-		if (filter.getOrder() == Order.DIRECT) {
-			if (oldPage.equals(lastPage))
-				return null;
-
-			newPage = book.getNextPage(oldPage.getStarted());
-		} else {
-			if (oldPage.equals(firstPage)) {
-				return null;
-			}
-
-			newPage = book.getPreviousPage(oldPage.getStarted());
-		}
-
+	protected CassandraStoredMessageFilter createFilter(@Nonnull PageInfo pageInfo, int updatedLimit) {
 		return new CassandraStoredMessageFilter(
-				newPage.getId().getBookId().getName(),
-				newPage.getId().getName(),
-				prevFilter.getSessionAlias(),
-				prevFilter.getDirection(),
+				pageInfo.getId(),
+				filter.getSessionAlias(),
+				filter.getDirection().getLabel(),
 				leftBoundFilter,
 				rightBoundFilter,
 				updatedLimit,
 				filter.getOrder());
 	}
 
-	protected boolean interruptIteratorChecks () {
-		if (cassandraFilter == null) {
-			return true;
-		}
-
+	protected @Nullable PageInfo nextPage() {
 		if (takeWhileIterator != null && takeWhileIterator.isHalted()) {
-			logger.debug("Iterator was interrupted because iterator condition was not met");
-			return true;
+			LOGGER.debug("Iterator was interrupted because iterator condition was not met");
+			return null;
 		}
 
 		if (limit > 0 && returned.get() >= limit) {
-			logger.debug("Filtering interrupted because limit for records to return ({}) is reached ({})", limit, returned);
-			return true;
+			LOGGER.debug("Filtering interrupted because limit for records to return ({}) is reached ({})", limit, returned);
+			return null;
 		}
 
-		return false;
+		return pageProvider.hasNext() ? pageProvider.next() : null;
 	}
 
-	protected Iterator<StoredMessageBatch> getBatchedIterator (MappedAsyncPagingIterable<MessageBatchEntity> resultSet) {
-		PageId pageId = new PageId(book.getId(), cassandraFilter.getPage());
-		// Updated limit should be smaller, since we already got entities from previous batch
-		cassandraFilter = createNextFilter(cassandraFilter, Math.max(limit - returned.get(),0));
-
+	protected Iterator<StoredMessageBatch> getBatchedIterator(PageId pageId,
+															  MappedAsyncPagingIterable<MessageBatchEntity> resultSet) {
 		PagedIterator<MessageBatchEntity> pagedIterator = new PagedIterator<>(
 				resultSet,
 				selectQueryExecutor,
@@ -269,6 +236,7 @@ abstract public class AbstractMessageIteratorProvider<T> extends IteratorProvide
 		FilteringIterator<MessageBatchEntity> filteringIterator = new FilteringIterator<>(
 				pagedIterator,
 				batchFilter::test);
+
 		// We need to store this iterator since
 		// it gives info whether or no iterator was halted
 		takeWhileIterator = new TakeWhileIterator<>(

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ public class TestEventUtils {
             PageInfo pageInfo = bookInfo.findPage(event.getParentId().getStartTimestamp());
             if (pageInfo == null) {
                 throw new CradleStorageException(
-                        String.format("Test event's parent event's startTimestamp is %s , could not find corresponding page in book %s",
+                        String.format("Test event's parent event's startTimestamp is %s, could not find corresponding page in book %s",
                                 event.getParentId().getStartTimestamp(),
                                 bookInfo.getId()));
             }

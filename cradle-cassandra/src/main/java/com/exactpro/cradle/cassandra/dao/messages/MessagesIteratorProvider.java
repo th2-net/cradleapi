@@ -18,6 +18,7 @@ package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookInfo;
+import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.messages.MessageFilter;
@@ -31,6 +32,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
+import static java.lang.Math.max;
+
 public class MessagesIteratorProvider extends AbstractMessageIteratorProvider<StoredMessage> {
 	private static final Logger logger = LoggerFactory.getLogger(MessagesIteratorProvider.class);
 
@@ -42,13 +45,16 @@ public class MessagesIteratorProvider extends AbstractMessageIteratorProvider<St
 
 	@Override
 	public CompletableFuture<Iterator<StoredMessage>> nextIterator() {
-		if (interruptIteratorChecks()) {
+		PageInfo nextPage = nextPage();
+		if (nextPage == null) {
 			return CompletableFuture.completedFuture(null);
 		}
 
+		CassandraStoredMessageFilter cassandraFilter = createFilter(nextPage, max(limit - returned.get(), 0));
+
 		logger.debug("Getting next iterator for '{}' by filter {}", getRequestInfo(), cassandraFilter);
 		return op.getByFilter(cassandraFilter, selectQueryExecutor, getRequestInfo(), readAttrs)
-				.thenApplyAsync(this::getBatchedIterator, composingService)
+				.thenApplyAsync(resultSet -> getBatchedIterator(nextPage.getId(), resultSet), composingService)
 				.thenApplyAsync(it -> new FilteredMessageIterator(it, filter, limit, returned), composingService);
 	}
 }

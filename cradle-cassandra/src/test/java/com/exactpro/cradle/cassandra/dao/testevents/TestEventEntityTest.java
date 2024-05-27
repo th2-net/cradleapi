@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ import static com.exactpro.cradle.cassandra.TestUtils.createContent;
 
 public class TestEventEntityTest {
     private final BookId book = new BookId("Book1");
-    private final PageId page = new PageId(book, "Page1");
+    private final PageId page = new PageId(book, Instant.now(), "Page1");
     private final String scope = "Scope1";
     private final Instant startTimestamp = Instant.now();
 

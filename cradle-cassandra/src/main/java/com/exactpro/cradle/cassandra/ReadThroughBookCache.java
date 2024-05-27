@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,9 @@ import com.exactpro.cradle.cassandra.dao.books.PageEntity;
 import com.exactpro.cradle.errors.BookNotFoundException;
 import com.exactpro.cradle.utils.CradleStorageException;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,6 +37,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.CassandraStorageSettings.DEFAULT_PAGE_REMOVE_TIME;
+import static com.exactpro.cradle.cassandra.utils.StorageUtils.toLocalDate;
+import static com.exactpro.cradle.cassandra.utils.StorageUtils.toLocalTime;
 
 public class ReadThroughBookCache implements BookCache {
 
@@ -41,17 +46,21 @@ public class ReadThroughBookCache implements BookCache {
     private final Map<BookId, BookInfo> books;
     private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
     private final String schemaVersion;
+    private final int raCacheSize;
+    private final long raCacheInvalidateInterval;
 
     public ReadThroughBookCache(CassandraOperators operators,
                                 Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs,
-                                String schemaVersion) {
+                                String schemaVersion, int raCacheSize, long raCacheInvalidateInterval) {
         this.operators = operators;
         this.books = new ConcurrentHashMap<>();
         this.readAttrs = readAttrs;
         this.schemaVersion = schemaVersion;
+        this.raCacheSize = raCacheSize;
+        this.raCacheInvalidateInterval = raCacheInvalidateInterval;
     }
 
-    public BookInfo getBook (BookId bookId) throws BookNotFoundException {
+    public BookInfo getBook(BookId bookId) throws BookNotFoundException {
         try {
             return books.computeIfAbsent(bookId, bookId1 -> {
                 try {
@@ -80,6 +89,51 @@ public class ReadThroughBookCache implements BookCache {
         return result;
     }
 
+    public Collection<PageInfo> loadPageInfo(BookId bookId, Instant start, Instant end, boolean loadRemoved) {
+        Collection<PageInfo> result = new ArrayList<>();
+        LocalDate startDate = start != null ? toLocalDate(start) : LocalDate.MIN;
+        LocalTime startTime = start != null ? toLocalTime(start) : LocalTime.MIN;
+        LocalDate endDate = end != null ? toLocalDate(end) : LocalDate.MAX;
+        LocalTime endTime = end != null ? toLocalTime(end) : LocalTime.MAX;
+        for (PageEntity pageEntity : operators.getPageOperator().get(
+                bookId.getName(),
+                startDate,
+                startTime,
+                endDate,
+                endTime,
+                readAttrs
+        )) {
+            if (loadRemoved || pageEntity.getRemoved() == null || pageEntity.getRemoved().equals(DEFAULT_PAGE_REMOVE_TIME)) {
+                result.add(pageEntity.toPageInfo());
+            }
+        }
+        return result;
+    }
+
+    public PageInfo loadLastPageInfo(BookId bookId, boolean loadRemoved) {
+        for (PageEntity pageEntity : operators.getPageOperator().getLast(
+                bookId.getName(),
+                readAttrs
+        )) {
+            if (loadRemoved || pageEntity.getRemoved() == null || pageEntity.getRemoved().equals(DEFAULT_PAGE_REMOVE_TIME)) {
+                return pageEntity.toPageInfo();
+            }
+        }
+        return null;
+    }
+
+    public PageInfo loadFirstPageInfo(BookId bookId, boolean loadRemoved) {
+        for (PageEntity pageEntity : operators.getPageOperator().getFirst(
+                bookId.getName(),
+                readAttrs
+        )) {
+            if (loadRemoved || pageEntity.getRemoved() == null || pageEntity.getRemoved().equals(DEFAULT_PAGE_REMOVE_TIME)) {
+                return pageEntity.toPageInfo();
+            }
+        }
+        return null;
+    }
+
     public BookInfo loadBook(BookId bookId) throws CradleStorageException {
         BookEntity bookEntity = operators.getBookOperator().get(bookId.getName(), readAttrs);
 
@@ -97,16 +151,33 @@ public class ReadThroughBookCache implements BookCache {
         return toBookInfo(bookEntity);
     }
 
-    private BookInfo toBookInfo(BookEntity entity) throws CradleStorageException {
-        BookId bookId = new BookId(entity.getName());
-        Collection<PageInfo> pages = loadPageInfo(bookId, false);
-
-        return new BookInfo(new BookId(entity.getName()), entity.getFullName(), entity.getDesc(), entity.getCreated(), pages);
+    private Collection<PageInfo> loadPageInfo(BookId bookId, Instant start, Instant end) {
+        return loadPageInfo(bookId, start, end, false);
     }
 
-    @Override
-    public void updateCachedBook(BookInfo bookInfo) {
-        books.put(bookInfo.getId(), bookInfo);
+    private PageInfo loadLastPageInfo(BookId bookId) {
+        return  loadLastPageInfo(bookId, false);
+    }
+
+    private PageInfo loadFirstPageInfo(BookId bookId) {
+        return loadFirstPageInfo(bookId, false);
+    }
+
+    private BookInfo toBookInfo(BookEntity entity) throws CradleStorageException {
+        try {
+            return new BookInfo(
+                    new BookId(entity.getName()),
+                    entity.getFullName(),
+                    entity.getDesc(),
+                    entity.getCreated(),
+                    raCacheSize,
+                    raCacheInvalidateInterval,
+                    this::loadPageInfo,
+                    this::loadFirstPageInfo,
+                    this::loadLastPageInfo);
+        } catch (RuntimeException e) {
+            throw new CradleStorageException("Inconsistent state of book '"+entity.getName(), e);
+        }
     }
 
     @Override

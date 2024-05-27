@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,22 +19,32 @@ package com.exactpro.cradle.cassandra.dao.messages;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
 import com.exactpro.cradle.Order;
+import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.CassandraFilter;
 import com.exactpro.cradle.cassandra.utils.FilterUtils;
 import com.exactpro.cradle.filters.FilterForGreater;
 import com.exactpro.cradle.filters.FilterForLess;
 
+import javax.annotation.Nonnull;
 import java.time.Instant;
 import java.util.StringJoiner;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
-import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.*;
-import static com.exactpro.cradle.cassandra.dao.messages.CassandraStoredMessageFilter.*;
+import static com.exactpro.cradle.cassandra.dao.messages.CassandraStoredMessageFilter.DATE_FROM;
+import static com.exactpro.cradle.cassandra.dao.messages.CassandraStoredMessageFilter.DATE_TO;
+import static com.exactpro.cradle.cassandra.dao.messages.CassandraStoredMessageFilter.TIME_FROM;
+import static com.exactpro.cradle.cassandra.dao.messages.CassandraStoredMessageFilter.TIME_TO;
+import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_ALIAS_GROUP;
+import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_BOOK;
+import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_FIRST_MESSAGE_DATE;
+import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_FIRST_MESSAGE_TIME;
+import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_PAGE;
+import static java.util.Objects.requireNonNull;
 
 public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMessageBatchEntity> {
-    private final String book, page, groupName;
+    private final @Nonnull String groupName;
+    private final @Nonnull PageId pageId;
 
     /** limit must be strictly positive ( limit greater than 0 ) */
     private final int limit;
@@ -42,16 +52,14 @@ public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMes
     private final FilterForLess<Instant> messageTimeTo;
     private final Order order;
 
-    public CassandraGroupedMessageFilter(String book,
-                                         String page,
+    public CassandraGroupedMessageFilter(PageId pageId,
                                          String groupName,
                                          FilterForGreater<Instant> messageTimeFrom,
                                          FilterForLess<Instant> messageTimeTo,
                                          Order order,
                                          int limit) {
-        this.book = book;
-        this.page = page;
-        this.groupName = groupName;
+        this.pageId = requireNonNull(pageId, "page id can't be null because book and page names are part of partition");
+        this.groupName = requireNonNull(groupName, "group name can't be null because it is part of partition");
         this.messageTimeFrom = messageTimeFrom;
         this.messageTimeTo = messageTimeTo;
         this.order = order;
@@ -88,8 +96,8 @@ public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMes
     @Override
     public BoundStatementBuilder bindParameters(BoundStatementBuilder builder) {
         builder = builder
-                .setString(FIELD_BOOK, book)
-                .setString(FIELD_PAGE, page)
+                .setString(FIELD_BOOK, pageId.getBookId().getName())
+                .setString(FIELD_PAGE, pageId.getName())
                 .setString(FIELD_ALIAS_GROUP, groupName);
 
         if (messageTimeFrom != null)
@@ -100,15 +108,19 @@ public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMes
         return builder;
     }
 
-    public String getBook() {
-        return book;
+    public @Nonnull PageId getPageId() {
+        return pageId;
     }
 
-    public String getPage() {
-        return page;
+    public @Nonnull String getBook() {
+        return pageId.getBookId().getName();
     }
 
-    public String getGroupName() {
+    public @Nonnull String getPage() {
+        return pageId.getName();
+    }
+
+    public @Nonnull String getGroupName() {
         return groupName;
     }
 
@@ -127,8 +139,7 @@ public class CassandraGroupedMessageFilter implements CassandraFilter<GroupedMes
     @Override
     public String toString() {
         return new StringJoiner(", ", CassandraGroupedMessageFilter.class.getSimpleName() + "[", "]")
-                .add("book='" + book + "'")
-                .add("page='" + page + "'")
+                .add("pageId='" + pageId + "'")
                 .add("groupName='" + groupName + "'")
                 .add("limit=" + limit)
                 .add("messageTimeFrom " + messageTimeFrom)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,14 @@
 
 package com.exactpro.cradle;
 
+import java.time.Instant;
 import java.util.Objects;
 
 import com.exactpro.cradle.utils.EscapeUtils;
+
+import javax.annotation.Nonnull;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Identifier of the page within a book
@@ -27,21 +32,30 @@ public class PageId
 {
 	public static final String DELIMITER = EscapeUtils.DELIMITER_STR;
 	
-	private final BookId bookId;
-	private final String name;
-	
-	public PageId(BookId bookId, String pageName)
+	private final @Nonnull BookId bookId;
+	private final @Nonnull Instant start;
+	private final @Nonnull String name;
+
+	public PageId(BookId bookId, Instant start, String pageName)
 	{
-		this.bookId = bookId;
-		this.name = pageName;
+		this.bookId = requireNonNull(bookId, "Book id can't be null");
+		this.start = requireNonNull(start, "Start timestamp can't be null");
+		this.name = requireNonNull(pageName, "Page name can't be null");
 	}
 	
 	
+	@Nonnull
 	public BookId getBookId()
 	{
 		return bookId;
 	}
-	
+
+	@Nonnull
+	public Instant getStart() {
+		return start;
+	}
+
+	@Nonnull
 	public String getName()
 	{
 		return name;
@@ -51,7 +65,7 @@ public class PageId
 	@Override
 	public int hashCode()
 	{
-		return Objects.hash(bookId, name);
+		return Objects.hash(bookId, start, name);
 	}
 	
 	@Override
@@ -64,13 +78,17 @@ public class PageId
 		if (getClass() != obj.getClass())
 			return false;
 		PageId other = (PageId) obj;
-		return Objects.equals(bookId, other.bookId) && Objects.equals(name, other.name);
+		return Objects.equals(bookId, other.bookId) &&
+				Objects.equals(start, other.start) &&
+				Objects.equals(name, other.name);
 	}
 	
 	
 	@Override
 	public String toString()
 	{
-		return EscapeUtils.escape(bookId.toString())+DELIMITER+EscapeUtils.escape(name);
+		return EscapeUtils.escape(bookId.toString())+DELIMITER+
+				EscapeUtils.escape(start.toString())+DELIMITER+
+				EscapeUtils.escape(name);
 	}
 }

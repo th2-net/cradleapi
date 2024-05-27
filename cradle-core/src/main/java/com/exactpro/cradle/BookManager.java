@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -68,19 +69,17 @@ public class BookManager
 		public void run() {
 			logger.debug("Refreshing books");
 			try {
-				List<BookInfo> cachedBookInfos = new ArrayList<>(bookCache.getCachedBooks());
-				List<BookInfo> oldBookInfos = new ArrayList<>(cachedBookInfos);
+				List<BookId> bookIds = bookCache.getCachedBooks().stream()
+						.map(BookInfo::getId)
+						.collect(Collectors.toList());
 
-				for (BookInfo oldBookInfo : oldBookInfos) {
+				for (BookId bookId : bookIds) {
 					try {
-						BookInfo newBookInfo = bookCache.loadBook(oldBookInfo.getId());
-						if (!oldBookInfo.equals(newBookInfo)) {
-							logger.info("Refreshing book {}", newBookInfo.getId().getName());
-							bookCache.updateCachedBook(newBookInfo);
-						}
-
+						BookInfo bookInfo = bookCache.getBook(bookId);
+						logger.debug("Refreshing book {}", bookInfo.getId().getName());
+						bookInfo.refresh();
 					} catch (CradleStorageException e) {
-						logger.error("Refresher could not get new book info for {}: {}", oldBookInfo.getId().getName(), e.getMessage());
+						logger.error("Refresher could not get new book info for {}: {}", bookId.getName(), e.getMessage());
 					}
 				}
 			} catch (Exception e) {

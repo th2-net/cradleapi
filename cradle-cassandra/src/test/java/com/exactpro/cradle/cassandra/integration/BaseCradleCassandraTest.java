@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,14 +22,18 @@ import com.exactpro.cradle.cassandra.CassandraCradleStorage;
 import com.exactpro.cradle.messages.MessageToStore;
 import com.exactpro.cradle.testevents.*;
 import com.exactpro.cradle.utils.CradleStorageException;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -52,28 +56,22 @@ public abstract class BaseCradleCassandraTest {
 
     private static final List<PageInfo> DEFAULT_PAGES = List.of(
             new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX + 0),
-                    DEFAULT_DATA_START,
+                    new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START, DEFAULT_PAGE_PREFIX + 0),
                     DEFAULT_DATA_START.plus(10, ChronoUnit.MINUTES), ""),
             new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX + 1),
-                    DEFAULT_DATA_START.plus(10, ChronoUnit.MINUTES),
+                    new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(10, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 1),
                     DEFAULT_DATA_START.plus(20, ChronoUnit.MINUTES), ""),
             new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX + 2),
-                    DEFAULT_DATA_START.plus(20, ChronoUnit.MINUTES),
+                    new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(20, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 2),
                     DEFAULT_DATA_START.plus(30, ChronoUnit.MINUTES), ""),
             new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX + 3),
-                    DEFAULT_DATA_START.plus(30, ChronoUnit.MINUTES),
+                    new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(30, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 3),
                     DEFAULT_DATA_START.plus(40, ChronoUnit.MINUTES), ""),
             new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX + 4),
-                    DEFAULT_DATA_START.plus(40, ChronoUnit.MINUTES),
+                    new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(40, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 4),
                     DEFAULT_DATA_START.plus(50, ChronoUnit.MINUTES), ""),
             new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_PAGE_PREFIX + 5),
-                    DEFAULT_DATA_START.plus(50, ChronoUnit.MINUTES),
+                    new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(50, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 5),
                     DEFAULT_DATA_START.plus(60, ChronoUnit.MINUTES), ""));
 
 
@@ -81,12 +79,11 @@ public abstract class BaseCradleCassandraTest {
     protected CqlSession session;
     protected CassandraCradleStorage storage;
     protected Instant dataStart = DEFAULT_DATA_START;
-    protected Instant dataEnd = DEFAULT_DATA_END;
     protected BookId bookId = DEFAULT_BOOK_ID;
 
     /*
         Following method should be used in beforeClass if extending class
-        wants to implement it's own logic of initializing books and pages
+        wants to implement its own logic of initializing books and pages
      */
     protected void startUp() throws IOException, InterruptedException, CradleStorageException {
         startUp(false);
@@ -113,7 +110,7 @@ public abstract class BaseCradleCassandraTest {
                     bookId,
                     DEFAULT_PAGES.stream().map(
                             el -> new PageToAdd(
-                                    el.getId().getName(),
+                                    el.getName(),
                                     el.getStarted(),
                                     el.getComment())).collect(Collectors.toList()));
         }
@@ -167,4 +164,12 @@ public abstract class BaseCradleCassandraTest {
         return batch;
     }
 
+    @NotNull
+    protected static Map<PageId, PageInfo> toMap(Collection<PageInfo> result) {
+        return result.stream()
+                .collect(Collectors.toUnmodifiableMap(
+                        PageInfo::getId,
+                        Function.identity()
+                ));
+    }
 }

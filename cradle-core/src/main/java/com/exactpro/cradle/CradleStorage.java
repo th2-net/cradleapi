@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@ import com.exactpro.cradle.messages.StoredMessage;
 import com.exactpro.cradle.messages.StoredMessageBatch;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.resultset.CradleResultSet;
-import com.exactpro.cradle.resultset.EmptyResultSet;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
@@ -56,16 +55,21 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.stream.Collectors;
+
+import static com.exactpro.cradle.Order.DIRECT;
+import static com.exactpro.cradle.Order.REVERSE;
+import static com.exactpro.cradle.resultset.EmptyResultSet.emptyResultSet;
 
 /**
  * Storage which holds information about all data sent or received and test events.
@@ -390,14 +394,13 @@ public abstract class CradleStorage {
 
         BookId id = new BookId(book.getName());
         logger.info("Adding book '{}' to storage", id);
-        if (checkBook(id))
+        if (checkBook(id)) {
             throw new CradleStorageException("Book '" + id + "' is already present in storage");
+        }
 
         doAddBook(book, id);
-        BookInfo newBook = new BookInfo(id, book.getFullName(), book.getDesc(), book.getCreated(), null);
-        getBookCache().updateCachedBook(newBook);
+        BookInfo newBook = getBookCache().getBook(id);
         logger.info("Book '{}' has been added to storage", id);
-
 
         return newBook;
     }
@@ -410,6 +413,10 @@ public abstract class CradleStorage {
      */
     public Collection<BookListEntry> listBooks() {
         return doListBooks();
+    }
+
+    public BookInfo getBook(BookId bookId) throws CradleStorageException {
+        return getBookCache().getBook(bookId);
     }
 
     /**
@@ -448,11 +455,17 @@ public abstract class CradleStorage {
     public BookInfo addPages(BookId bookId, List<PageToAdd> pages) throws CradleStorageException, IOException {
         logger.info("Adding pages {} to book '{}'", pages, bookId);
 
-        BookInfo book = refreshPages(bookId);
-        if (pages == null || pages.isEmpty())
+        BookInfo book = getBookCache().getBook(bookId);
+        if (pages == null || pages.isEmpty()) {
             return book;
+        }
 
-        List<PageInfo> toAdd = checkPages(pages, book);
+        Set<Instant> timestamps = pages.stream()
+                .map(PageToAdd::getStart)
+                .collect(Collectors.toSet());
+        book.invalidate(timestamps);
+
+        List<PageInfo> toAdd = checkAndConvertPages(pages, book);
 
         PageInfo bookLastPage = book.getLastPage();
         PageInfo endedPage = null;
@@ -465,9 +478,9 @@ public abstract class CradleStorage {
         if (bookLastPage != null
                 && bookLastPage.getEnded() == null
                 && lastPageToAdd != null
-                && lastPageToAdd.getStarted().isAfter(bookLastPage.getStarted())) {
+                && lastPageToAdd.getStarted().isAfter(bookLastPage.getId().getStart())) {
 
-            endedPage = PageInfo.ended(bookLastPage, toAdd.get(0).getStarted());
+            endedPage = PageInfo.ended(bookLastPage, toAdd.get(0).getId().getStart());
         }
 
         try {
@@ -478,10 +491,10 @@ public abstract class CradleStorage {
             throw e;
         }
 
-        if (endedPage != null)
-            book.addPage(endedPage);  //Replacing last page with ended one, i.e. updating last page info
-        for (PageInfo newPage : toAdd)
-            book.addPage(newPage);
+        if (endedPage != null) {
+            book.invalidate(endedPage.getId().getStart());
+        }
+        book.invalidate(timestamps);
 
         return book;
     }
@@ -493,14 +506,11 @@ public abstract class CradleStorage {
      * @param bookId ID of the book whose pages to refresh
      * @return refreshed book information
      * @throws CradleStorageException if given bookId is unknown
-     * @throws IOException            if page data reading failed
      */
-    public BookInfo refreshPages(BookId bookId) throws CradleStorageException, IOException {
+    public BookInfo refreshPages(BookId bookId) throws CradleStorageException {
         logger.info("Refreshing pages of book '{}'", bookId);
         BookInfo book = getBookCache().getBook(bookId);
-        Collection<PageInfo> pages = doLoadPages(bookId);
-        book = new BookInfo(book.getId(), book.getFullName(), book.getDesc(), book.getCreated(), pages);
-        getBookCache().updateCachedBook(book);
+        book.refresh();
         return book;
     }
 
@@ -530,13 +540,7 @@ public abstract class CradleStorage {
     public BookInfo refreshBook(String name) throws CradleStorageException {
         logger.info("Refreshing book {} from storage", name);
 
-        BookInfo bookInfo = getBookCache().loadBook(new BookId(name));
-
-        if (bookInfo != null) {
-            getBookCache().updateCachedBook(bookInfo);
-        }
-
-        return bookInfo;
+        return refreshPages(new BookId(name));
     }
 
     /**
@@ -551,14 +555,15 @@ public abstract class CradleStorage {
         logger.info("Removing page '{}'", pageId);
 
         BookId bookId = pageId.getBookId();
-        BookInfo book = refreshPages(bookId);
+        BookInfo book = getBookCache().getBook(bookId);
+        book.invalidate(pageId.getStart());
 
-        String pageName = pageId.getName();
         PageInfo page = book.getPage(pageId);
-        if (page == null)
-            throw new CradleStorageException("Page '" + pageName + "' is not present in book '" + bookId + "'");
+        if (page == null) { // TODO: Should we check page existing ?
+            throw new CradleStorageException("Page '" + pageId.getStart() + "' is not present in book '" + bookId + "'");
+        }
         doRemovePage(page);
-        book.removePage(pageId);
+        book.invalidate(pageId.getStart());
         logger.info("Page '{}' has been removed", pageId);
         return book;
     }
@@ -647,7 +652,7 @@ public abstract class CradleStorage {
         boolean singlePageBatch = true;
         for (var message : batch.getMessages()) {
             Instant ts = message.getTimestamp();
-            if (!lastPage.isValidFor(ts)) {
+            if (lastPage.isNotValidFor(ts)) {
                 lastPage = findPage(bookId, ts);
                 singlePageBatch = false;
             }
@@ -737,7 +742,7 @@ public abstract class CradleStorage {
 
         Map<StoredTestEventId, StoredTestEventId> idMappings = new HashMap<>();
         batch.getTestEvents().forEach((e) -> {
-            if (!page.isValidFor(e.getStartTimestamp())) {
+            if (page.isNotValidFor(e.getStartTimestamp())) {
                 StoredTestEventId id = e.getId();
                 idMappings.put(id, new StoredTestEventId(id.getBookId(), id.getScope(), page.getEnded().minusNanos(1), id.getId()));
             }
@@ -919,7 +924,7 @@ public abstract class CradleStorage {
     public final CradleResultSet<StoredMessage> getMessages(MessageFilter filter) throws IOException, CradleStorageException {
         logger.debug("Filtering messages by {}", filter);
         if (!checkFilter(filter))
-            return new EmptyResultSet<>();
+            return emptyResultSet();
 
         BookInfo book = getBookCache().getBook(filter.getBookId());
         CradleResultSet<StoredMessage> result = doGetMessages(filter, book);
@@ -937,7 +942,7 @@ public abstract class CradleStorage {
     public final CompletableFuture<CradleResultSet<StoredMessage>> getMessagesAsync(MessageFilter filter) throws CradleStorageException {
         logger.debug("Asynchronously getting messages filtered by {}", filter);
         if (!checkFilter(filter))
-            return CompletableFuture.completedFuture(new EmptyResultSet<>());
+            return CompletableFuture.completedFuture(emptyResultSet());
 
         BookInfo book = getBookCache().getBook(filter.getBookId());
         CompletableFuture<CradleResultSet<StoredMessage>> result = doGetMessagesAsync(filter, book);
@@ -962,7 +967,7 @@ public abstract class CradleStorage {
     public final CradleResultSet<StoredMessageBatch> getMessageBatches(MessageFilter filter) throws IOException, CradleStorageException {
         logger.debug("Filtering message batches by {}", filter);
         if (!checkFilter(filter))
-            return new EmptyResultSet<>();
+            return emptyResultSet();
 
         BookInfo book = getBookCache().getBook(filter.getBookId());
         CradleResultSet<StoredMessageBatch> result = doGetMessageBatches(filter, book);
@@ -982,7 +987,9 @@ public abstract class CradleStorage {
     public final CradleResultSet<StoredGroupedMessageBatch> getGroupedMessageBatches(GroupedMessageFilter filter)
             throws CradleStorageException, IOException {
         logger.debug("Filtering grouped message batches by {}", filter);
-        checkAbstractFilter(filter);
+        if (!checkFilter(filter)) {
+            return emptyResultSet();
+        }
 
         BookInfo book = getBookCache().getBook(filter.getBookId());
         CradleResultSet<StoredGroupedMessageBatch> result = doGetGroupedMessageBatches(filter, book);
@@ -1001,7 +1008,7 @@ public abstract class CradleStorage {
     public final CompletableFuture<CradleResultSet<StoredMessageBatch>> getMessageBatchesAsync(MessageFilter filter) throws CradleStorageException {
         logger.debug("Asynchronously getting message batches filtered by {}", filter);
         if (!checkFilter(filter))
-            return CompletableFuture.completedFuture(new EmptyResultSet<>());
+            return CompletableFuture.completedFuture(emptyResultSet());
 
         BookInfo book = getBookCache().getBook(filter.getBookId());
         CompletableFuture<CradleResultSet<StoredMessageBatch>> result = doGetMessageBatchesAsync(filter, book);
@@ -1024,7 +1031,9 @@ public abstract class CradleStorage {
      */
     public final CompletableFuture<CradleResultSet<StoredGroupedMessageBatch>> getGroupedMessageBatchesAsync(GroupedMessageFilter filter) throws CradleStorageException {
         logger.debug("Asynchronously getting grouped message batches filtered by {}", filter);
-        checkAbstractFilter(filter);
+        if (!checkFilter(filter)) {
+            return CompletableFuture.completedFuture(emptyResultSet());
+        }
 
         BookInfo book = getBookCache().getBook(filter.getBookId());
         CompletableFuture<CradleResultSet<StoredGroupedMessageBatch>> result = doGetGroupedMessageBatchesAsync(filter, book);
@@ -1153,7 +1162,7 @@ public abstract class CradleStorage {
     public final CradleResultSet<StoredTestEvent> getTestEvents(TestEventFilter filter) throws CradleStorageException, IOException {
         logger.debug("Filtering test events by {}", filter);
         if (!checkFilter(filter))
-            return new EmptyResultSet<>();
+            return emptyResultSet();
 
         BookInfo book = getBookCache().getBook(filter.getBookId());
         CradleResultSet<StoredTestEvent> result = doGetTestEvents(filter, book);
@@ -1171,7 +1180,7 @@ public abstract class CradleStorage {
     public final CompletableFuture<CradleResultSet<StoredTestEvent>> getTestEventsAsync(TestEventFilter filter) throws CradleStorageException {
         logger.debug("Asynchronously getting test events filtered by {}", filter);
         if (!checkFilter(filter))
-            return CompletableFuture.completedFuture(new EmptyResultSet<>());
+            return CompletableFuture.completedFuture(emptyResultSet());
 
         BookInfo book = getBookCache().getBook(filter.getBookId());
         CompletableFuture<CradleResultSet<StoredTestEvent>> result = doGetTestEventsAsync(filter, book);
@@ -1434,11 +1443,11 @@ public abstract class CradleStorage {
      * @throws CradleStorageException Page was edited but cache wasn't refreshed, try to refresh pages
      */
     public PageInfo updatePageComment(BookId bookId, String pageName, String comment) throws CradleStorageException {
-        getBookCache().getBook(bookId);
         PageInfo updatedPageInfo = doUpdatePageComment(bookId, pageName, comment);
 
         try {
-            updatePage(new PageId(bookId, pageName), updatedPageInfo);
+            BookInfo bookInfo = getBookCache().getBook(bookId);
+            bookInfo.invalidate(updatedPageInfo.getStarted());
         } catch (Exception e) {
             logger.error("Page was edited but cache wasn't refreshed, try to refresh pages");
             throw e;
@@ -1457,11 +1466,11 @@ public abstract class CradleStorage {
      * @throws CradleStorageException Page was edited but cache wasn't refreshed, try to refresh pages
      */
     public PageInfo updatePageName(BookId bookId, String pageName, String newPageName) throws CradleStorageException {
-        getBookCache().getBook(bookId);
         PageInfo updatedPageInfo = doUpdatePageName(bookId, pageName, newPageName);
 
         try {
-            updatePage(new PageId(bookId, pageName), updatedPageInfo);
+            BookInfo bookInfo = getBookCache().getBook(bookId);
+            bookInfo.invalidate(updatedPageInfo.getStarted());
         } catch (Exception e) {
             logger.error("Page was edited but cache wasn't refreshed, try to refresh pages");
             throw e;
@@ -1520,13 +1529,6 @@ public abstract class CradleStorage {
         return doGetScopesAsync(bookId, interval);
     }
 
-    private void updatePage(PageId pageId, PageInfo updatedPageInfo) throws CradleStorageException {
-        BookInfo bookInfo = getBookCache().getBook(pageId.getBookId());
-
-        bookInfo.removePage(pageId);
-        bookInfo.addPage(updatedPageInfo);
-    }
-
     public final void updateEventStatus(StoredTestEvent event, boolean success) throws IOException {
         logger.debug("Updating status of event {}", event.getId());
         doUpdateEventStatus(event, success);
@@ -1546,24 +1548,25 @@ public abstract class CradleStorage {
     }
 
     private Instant checkCollisionAndGetPageEnd(BookInfo book, PageToAdd page, Instant defaultPageEnd) throws CradleStorageException {
-        PageInfo pageInBookBeforeStart = book.findPage(page.getStart());
+        Iterator<PageInfo> reverseIterator = book.getPages(null, page.getStart(), REVERSE);
+        PageInfo pageBefore = reverseIterator.hasNext() ? reverseIterator.next() : null;
 
-        if (pageInBookBeforeStart != null
-                && pageInBookBeforeStart.getEnded() != null
-                && pageInBookBeforeStart.getEnded().isAfter(page.getStart())) {
+        if (pageBefore != null
+                && pageBefore.getEnded() != null
+                && pageBefore.getEnded().isAfter(page.getStart())) {
             throw new CradleStorageException(String.format("Can't add new page in book %s, it collided with current page %s %s-%s",
                     book.getId().getName(),
-                    pageInBookBeforeStart.getId().getName(),
-                    pageInBookBeforeStart.getStarted(),
-                    pageInBookBeforeStart.getEnded()));
+                    pageBefore.getName(),
+                    pageBefore.getStarted(),
+                    pageBefore.getEnded()));
         }
 
-        PageInfo pageInBookAfterStart = book.getNextPage(page.getStart());
-
-        return pageInBookAfterStart == null ? defaultPageEnd : pageInBookAfterStart.getStarted();
+        Iterator<PageInfo> directIterator = book.getPages(page.getStart(), null, DIRECT);
+        PageInfo pageAfter = directIterator.hasNext() ? directIterator.next() : null;
+        return pageAfter == null || Objects.equals(pageAfter, pageBefore) ? defaultPageEnd : pageAfter.getStarted();
     }
 
-    private List<PageInfo> checkPages(List<PageToAdd> pages, BookInfo book) throws CradleStorageException {
+    private List<PageInfo> checkAndConvertPages(List<PageToAdd> pages, BookInfo book) throws CradleStorageException {
         PageInfo lastPage = book.getLastPage();
         if (lastPage != null)  //If book has any pages, i.e. may have some data
         {
@@ -1577,7 +1580,6 @@ public abstract class CradleStorage {
                         nowPlusThreshold));
         }
 
-        Set<String> names = new HashSet<>();
         PageToAdd prevPage = null;
         BookId bookId = book.getId();
         List<PageInfo> result = new ArrayList<>(pages.size());
@@ -1585,20 +1587,15 @@ public abstract class CradleStorage {
             BookPagesNamesChecker.validatePageName(page.getName());
 
             String name = page.getName();
-            if (names.contains(name))
-                throw new CradleStorageException("Duplicated page name: '" + page.getName() + "'");
-            names.add(name);
-
-            if (book.getPage(new PageId(bookId, name)) != null)
-                throw new CradleStorageException("Page '" + name + "' is already present in book '" + bookId + "'");
+            if (book.getPage(new PageId(bookId, page.getStart(), name)) != null)
+                throw new CradleStorageException("Page '" + name + ":"+page.getStart()+"' is already present in book '" + bookId + "'");
 
             if (prevPage != null) {
                 if (!page.getStart().isAfter(prevPage.getStart())) {
                     throw new CradleStorageException("Unordered pages: page '" + name + "' should start after page '" + prevPage.getName() + "'");
                 }
 
-                result.add(new PageInfo(new PageId(bookId, prevPage.getName()),
-                        prevPage.getStart(),
+                result.add(new PageInfo(new PageId(bookId, prevPage.getStart(), prevPage.getName()),
                         checkCollisionAndGetPageEnd(book, prevPage, page.getStart()),
                         prevPage.getComment()));
             }
@@ -1606,8 +1603,7 @@ public abstract class CradleStorage {
         }
 
         if (prevPage != null) {
-            result.add(new PageInfo(new PageId(bookId, prevPage.getName()),
-                    prevPage.getStart(),
+            result.add(new PageInfo(new PageId(bookId, prevPage.getStart(), prevPage.getName()),
                     checkCollisionAndGetPageEnd(book, prevPage, null),
                     prevPage.getComment()));
         }
@@ -1622,15 +1618,23 @@ public abstract class CradleStorage {
         return true;
     }
 
+    private boolean checkFilter(GroupedMessageFilter filter) throws CradleStorageException {
+        checkAbstractFilter(filter);
+
+        //TODO: add more checks
+        return true;
+    }
+
     private void checkAbstractFilter(AbstractFilter filter) throws CradleStorageException {
         BookInfo book = getBookCache().getBook(filter.getBookId());
-        if (filter.getPageId() != null)
+        if (filter.getPageId() != null) {
             checkPage(filter.getPageId(), book.getId());
+        }
     }
 
     private boolean checkFilter(TestEventFilter filter) throws CradleStorageException {
-        BookInfo book = getBookCache().getBook(filter.getBookId());
         checkAbstractFilter(filter);
+        BookInfo book = getBookCache().getBook(filter.getBookId());
 
         if (filter.getParentId() != null && !book.getId().equals(filter.getParentId().getBookId()))
             throw new CradleStorageException("Requested book (" + book.getId() + ") doesn't match book of requested parent (" + filter.getParentId() + ")");
@@ -1650,10 +1654,12 @@ public abstract class CradleStorage {
             Instant pageStarted = page.getStarted(),
                     pageEnded = page.getEnded();
 
-            if (timeFrom != null && pageEnded != null && timeFrom.isAfter(pageEnded))
+            if (timeFrom != null && pageEnded != null && timeFrom.isAfter(pageEnded)) {
                 return false;
-            if (timeTo != null && timeTo.isBefore(pageStarted))
+            }
+            if (timeTo != null && timeTo.isBefore(pageStarted)) {
                 return false;
+            }
         }
 
         return true;
@@ -1666,21 +1672,25 @@ public abstract class CradleStorage {
     public PageInfo findPage(BookId bookId, Instant timestamp) throws CradleStorageException {
         BookInfo book = getBookCache().getBook(bookId);
         PageInfo page = book.findPage(timestamp);
-        if (page == null || (page.getEnded() != null && !timestamp.isBefore(page.getEnded())))  //If page.getEnded().equals(timestamp), timestamp is outside of page
+        if (page == null || (page.getEnded() != null && !timestamp.isBefore(page.getEnded()))) { //If page.getEnded().equals(timestamp), timestamp is outside of page
             throw new PageNotFoundException(String.format("Book '%s' has no page for timestamp %s", bookId, timestamp));
+        }
         return page;
     }
 
     public void checkPage(PageId pageId, BookId bookFromId) throws CradleStorageException {
-        BookInfo book = getBookCache().getBook(bookFromId);
-        if (!bookFromId.equals(pageId.getBookId()))
+        if (!bookFromId.equals(pageId.getBookId())) {
             throw new CradleStorageException("Requested book (" + bookFromId + ") doesn't match book of requested page (" + pageId.getBookId() + ")");
-        if (book.getPage(pageId) == null)
+        }
+        BookInfo book = getBookCache().getBook(bookFromId);
+        if (book.getPage(pageId) == null) {
             throw new CradleStorageException("Page '" + pageId + "' is unknown");
+        }
     }
 
     public void checkPage(PageId pageId) throws CradleStorageException {
-        if (getBookCache().getBook(pageId.getBookId()).getPage(pageId) == null)
+        if (getBookCache().getBook(pageId.getBookId()).getPage(pageId) == null) {
             throw new CradleStorageException("Page '" + pageId + "' is unknown");
+        }
     }
 }
