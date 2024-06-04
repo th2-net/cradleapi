@@ -1,6 +1,4 @@
 dependencies {
-    api platform('com.exactpro.th2:bom:4.6.1')
-
     implementation "com.fasterxml.jackson.core:jackson-databind"
     implementation "org.apache.commons:commons-lang3"
 

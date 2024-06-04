@@ -28,13 +28,6 @@ dependencies {
     testImplementation 'org.testcontainers:cassandra:1.19.8'
 }
 
-def gen_dir = 'build/generated/sources/annotationProcessor/main'
-sourceSets.main.java.srcDirs += [gen_dir]
-
-compileJava {
-    options.annotationProcessorGeneratedSourcesDirectory = file("${projectDir}/${gen_dir}")
-}
-
 test {
     useTestNG() {
         suites "src/test/resources/core.xml"

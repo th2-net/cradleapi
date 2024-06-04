@@ -212,6 +212,10 @@ Test events have mandatory parameters that are verified when storing an event. T
 ### 5.4.0
 * Using separate executor instead of ForkJoinPool.commonPool()
 
+### 5.3.0
++ Migrated to th2 gradle plugin: `0.0.5` (bom: `4.6.1`)
++ Updated bom: `4.6.1`
+
 ### 5.2.0
 * Added page cache for each book to avoid memory leak
 
