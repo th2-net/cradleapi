@@ -209,7 +209,7 @@ Test events have mandatory parameters that are verified when storing an event. T
 
 ## Release notes
 
-### 5.3.0
+### 5.4.0
 * Using separate executor instead of ForkJoinPool.commonPool()
 
 ### 5.2.0

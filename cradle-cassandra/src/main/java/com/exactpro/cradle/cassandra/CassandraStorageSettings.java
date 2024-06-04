@@ -32,7 +32,7 @@ import static com.exactpro.cradle.CradleStorage.DEFAULT_MAX_TEST_EVENT_BATCH_SIZ
 @SuppressWarnings("unused")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CassandraStorageSettings extends CoreStorageSettings {
-    public static final String SCHEMA_VERSION = "5.3.0";
+    public static final String SCHEMA_VERSION = "5.4.0";
     public static final int RANDOM_ACCESS_DAYS_CACHE_SIZE = 10;
     /** One day in milliseconds */
     public static final long RANDOM_ACCESS_DAYS_CACHE_INVALIDATE_INTERVAL = 24 * 60 * 60 * 1_000;
