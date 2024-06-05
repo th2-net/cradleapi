@@ -746,7 +746,9 @@ public class CassandraCradleStorage extends CradleStorage
 				selectExecutor,
 				readAttrs
 		);
-		return iteratorProvider.nextIterator().thenApplyAsync(it -> new CassandraCradleResultSet<>(it, iteratorProvider));
+		return iteratorProvider
+				.nextIterator()
+				.thenApplyAsync(it -> new CassandraCradleResultSet<>(it, iteratorProvider), composingService);
 	}
 
 	@Override
@@ -966,7 +968,9 @@ public class CassandraCradleStorage extends CradleStorage
 				selectExecutor,
 				readAttrs
 		);
-		return iteratorProvider.nextIterator().thenApplyAsync(it -> new CassandraCradleResultSet<>(it, iteratorProvider));
+		return iteratorProvider
+				.nextIterator()
+				.thenApplyAsync(it -> new CassandraCradleResultSet<>(it, iteratorProvider), composingService);
 	}
 
 	@Override
@@ -1010,7 +1014,9 @@ public class CassandraCradleStorage extends CradleStorage
 				selectExecutor,
 				readAttrs
 		);
-		return iteratorProvider.nextIterator().thenApplyAsync(it -> new CassandraCradleResultSet<>(it, iteratorProvider));
+		return iteratorProvider
+				.nextIterator()
+				.thenApplyAsync(it -> new CassandraCradleResultSet<>(it, iteratorProvider), composingService);
 	}
 
 	@Override

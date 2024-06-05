@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ public class SelectQueryExecutor
 	{
 		CompletableFuture<T> f = new CompletableFuture<>();
 		query.get()
-				.whenCompleteAsync((result, error) -> onCompleteSingle(result, error, f, mapper, queryInfo, 0));
+				.whenCompleteAsync((result, error) -> onCompleteSingle(result, error, f, mapper, queryInfo, 0), composingService);
 		return f;
 	}
 
@@ -153,7 +153,7 @@ public class SelectQueryExecutor
 			CompletableFuture.runAsync(
 							() -> logger.debug("Retrying request ({}) '{}' and CL {} with delay {}ms after error: '{}'",
 									retryCount + 1, queryInfo, stmt.getConsistencyLevel(), delay, error.getMessage()),
-							CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS))
+							CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS, composingService))
 					.thenComposeAsync(r -> session.executeAsync(stmt), composingService)
 					.thenApplyAsync(AsyncPagingIterable::one, composingService)
 					.thenApplyAsync(row -> row == null ? null : mapper.apply(row), composingService)
@@ -189,7 +189,7 @@ public class SelectQueryExecutor
 			CompletableFuture.runAsync(
 							() -> logger.debug("Retrying request ({}) '{}' and CL {} with delay {}ms after error: '{}'",
 									retryCount + 1, queryInfo, stmt.getConsistencyLevel(), delay, error.getMessage()),
-							CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS))
+							CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS, composingService))
 					.thenComposeAsync(r -> session.executeAsync(stmt), composingService)
 					.thenApplyAsync(row -> row.map(mapper), composingService)
 					.whenCompleteAsync(

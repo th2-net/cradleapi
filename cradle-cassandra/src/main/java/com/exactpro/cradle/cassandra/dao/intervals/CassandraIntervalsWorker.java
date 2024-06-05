@@ -182,7 +182,7 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
                 () -> operator.getIntervals(bookId.getName(), date, fromTime, toTime, crawlerName, crawlerVersion, crawlerType, readAttrs),
                 converter::getEntity,
                 queryInfo)
-                .thenApplyAsync((result) ->  getIntervalsIterator(result, queryInfo));
+                .thenApplyAsync((result) ->  getIntervalsIterator(result, queryInfo), composingService);
     }
 
     @Override
@@ -273,7 +273,7 @@ public class CassandraIntervalsWorker extends Worker implements IntervalsWorker 
                         () -> operator.getIntervals(bookId.getName(), date, fromTime, toTime, crawlerName, crawlerVersion, crawlerType, readAttrs),
                         converter::getEntity,
                         queryInfo)
-                .thenApplyAsync((result) ->  getIntervalsIterator(result, queryInfo));
+                .thenApplyAsync((result) ->  getIntervalsIterator(result, queryInfo), composingService);
     }
 
     @Override
