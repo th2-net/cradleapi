@@ -1,3 +1,19 @@
+/*
+ * Copyright 2022-2024 Exactpro (Exactpro Systems Limited)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -38,13 +54,16 @@ public class GroupedMessageBatchInserter {
                 .setLocalDate(FIELD_LAST_MESSAGE_DATE, groupedMessageBatch.getLastMessageDate())
                 .setLocalTime(FIELD_LAST_MESSAGE_TIME, groupedMessageBatch.getLastMessageTime())
                 .setInt(FIELD_MESSAGE_COUNT, groupedMessageBatch.getMessageCount())
-                .setBoolean(FIELD_COMPRESSED, groupedMessageBatch.isCompressed())
-                .setSet(FIELD_LABELS, groupedMessageBatch.getLabels(), String.class)
-                .setByteBuffer(FIELD_CONTENT, groupedMessageBatch.getContent())
+                .setBoolean(FIELD_COMPRESSED, groupedMessageBatch.isCompressed());
+
+        if (groupedMessageBatch.getLabels() != null) {
+            builder = builder.setSet(FIELD_LABELS, groupedMessageBatch.getLabels(), String.class);
+        }
+
+        builder = builder.setByteBuffer(FIELD_CONTENT, groupedMessageBatch.getContent())
                 .setInstant(FIELD_REC_DATE, Instant.now())
                 .setInt(FIELD_CONTENT_SIZE, groupedMessageBatch.getContentSize())
                 .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, groupedMessageBatch.getUncompressedContentSize());
-
 
         attributes.apply(builder);
         BoundStatement statement = builder.build();
