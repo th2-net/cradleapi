@@ -209,6 +209,10 @@ Test events have mandatory parameters that are verified when storing an event. T
 
 ## Release notes
 
+### 5.5.0
+* Skip null values for 'labels' and 'messages' fields when writing to Cassandra
+* Migrated to th2 gradle plugin: `0.0.8` (bom: `4.6.1`)
+
 ### 5.4.0
 * Using internal executor instead of ForkJoinPool.commonPool() to process intermediate tasks 
 
