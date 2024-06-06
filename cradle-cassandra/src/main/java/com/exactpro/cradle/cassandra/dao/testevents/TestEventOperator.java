@@ -19,10 +19,8 @@ package com.exactpro.cradle.cassandra.dao.testevents;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.datastax.oss.driver.api.mapper.annotations.Dao;
-import com.datastax.oss.driver.api.mapper.annotations.Delete;
-import com.datastax.oss.driver.api.mapper.annotations.Query;
-import com.datastax.oss.driver.api.mapper.annotations.QueryProvider;
+import com.datastax.oss.driver.api.mapper.annotations.*;
+import com.datastax.oss.driver.api.mapper.entity.saving.NullSavingStrategy;
 import com.exactpro.cradle.cassandra.dao.CommonQueryProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 
@@ -34,6 +32,7 @@ import java.util.function.Function;
 import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.*;
 
 @Dao
+@DefaultNullSavingStrategy(NullSavingStrategy.DO_NOT_SET)
 public interface TestEventOperator {
 	@Query( "SELECT * FROM ${qualifiedTableId} " +
 			"WHERE " +
