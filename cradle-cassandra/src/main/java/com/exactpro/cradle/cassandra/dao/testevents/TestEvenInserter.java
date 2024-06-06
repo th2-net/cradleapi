@@ -63,10 +63,14 @@ public class TestEvenInserter {
 
         if (testEvent.getMessages() != null) {
             builder = builder.setByteBuffer(FIELD_MESSAGES, testEvent.getMessages());
+        } else {
+            builder = builder.unset(FIELD_MESSAGES);
         }
 
         if (testEvent.getLabels() != null) {
             builder = builder.setSet(FIELD_LABELS, testEvent.getLabels(), String.class);
+        } else {
+            builder = builder.unset(FIELD_LABELS);
         }
 
         builder = builder.setByteBuffer(FIELD_CONTENT, testEvent.getContent())

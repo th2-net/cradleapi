@@ -58,6 +58,8 @@ public class GroupedMessageBatchInserter {
 
         if (groupedMessageBatch.getLabels() != null) {
             builder = builder.setSet(FIELD_LABELS, groupedMessageBatch.getLabels(), String.class);
+        } else {
+            builder = builder.unset(FIELD_LABELS);
         }
 
         builder = builder.setByteBuffer(FIELD_CONTENT, groupedMessageBatch.getContent())

@@ -59,6 +59,8 @@ public class MessageBatchInserter {
 
         if (messageBatch.getLabels() != null) {
             builder = builder.setSet(FIELD_LABELS, messageBatch.getLabels(), String.class);
+        } else {
+            builder = builder.unset(FIELD_LABELS);
         }
 
         builder = builder.setByteBuffer(FIELD_CONTENT, messageBatch.getContent())
