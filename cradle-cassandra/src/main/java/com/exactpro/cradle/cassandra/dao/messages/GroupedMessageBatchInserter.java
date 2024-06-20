@@ -60,6 +60,7 @@ public class GroupedMessageBatchInserter {
                 .setInt(FIELD_CONTENT_SIZE, groupedMessageBatch.getContentSize())
                 .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, groupedMessageBatch.getUncompressedContentSize());
 
+        // We skip setting null value to columns to avoid tombstone creation.
         if (groupedMessageBatch.getLabels() != null) {
             builder = builder.setSet(FIELD_LABELS, groupedMessageBatch.getLabels(), String.class);
         }

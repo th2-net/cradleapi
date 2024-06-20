@@ -60,6 +60,7 @@ public class MessageBatchInserter {
                 .setInt(FIELD_CONTENT_SIZE, messageBatch.getContentSize())
                 .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, messageBatch.getUncompressedContentSize());
 
+        // We skip setting null value to columns to avoid tombstone creation.
         if (messageBatch.getLabels() != null) {
             builder = builder.setSet(FIELD_LABELS, messageBatch.getLabels(), String.class);
         }

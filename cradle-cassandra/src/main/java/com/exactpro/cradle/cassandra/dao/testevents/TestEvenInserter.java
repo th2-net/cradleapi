@@ -65,6 +65,7 @@ public class TestEvenInserter {
                 .setInt(FIELD_CONTENT_SIZE, testEvent.getContentSize())
                 .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, testEvent.getUncompressedContentSize());
 
+        // We skip setting null value to columns to avoid tombstone creation.
         if (testEvent.getMessages() != null) {
             builder = builder.setByteBuffer(FIELD_MESSAGES, testEvent.getMessages());
         }
