@@ -54,18 +54,15 @@ public class GroupedMessageBatchInserter {
                 .setLocalDate(FIELD_LAST_MESSAGE_DATE, groupedMessageBatch.getLastMessageDate())
                 .setLocalTime(FIELD_LAST_MESSAGE_TIME, groupedMessageBatch.getLastMessageTime())
                 .setInt(FIELD_MESSAGE_COUNT, groupedMessageBatch.getMessageCount())
-                .setBoolean(FIELD_COMPRESSED, groupedMessageBatch.isCompressed());
-
-        if (groupedMessageBatch.getLabels() != null) {
-            builder = builder.setSet(FIELD_LABELS, groupedMessageBatch.getLabels(), String.class);
-        } else {
-            builder = builder.unset(FIELD_LABELS);
-        }
-
-        builder = builder.setByteBuffer(FIELD_CONTENT, groupedMessageBatch.getContent())
+                .setBoolean(FIELD_COMPRESSED, groupedMessageBatch.isCompressed())
+                .setByteBuffer(FIELD_CONTENT, groupedMessageBatch.getContent())
                 .setInstant(FIELD_REC_DATE, Instant.now())
                 .setInt(FIELD_CONTENT_SIZE, groupedMessageBatch.getContentSize())
                 .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, groupedMessageBatch.getUncompressedContentSize());
+
+        if (groupedMessageBatch.getLabels() != null) {
+            builder = builder.setSet(FIELD_LABELS, groupedMessageBatch.getLabels(), String.class);
+        }
 
         attributes.apply(builder);
         BoundStatement statement = builder.build();

@@ -59,24 +59,19 @@ public class TestEvenInserter {
                 .setInt(FIELD_EVENT_COUNT, testEvent.getEventCount())
                 .setLocalDate(FIELD_END_DATE, testEvent.getEndDate())
                 .setLocalTime(FIELD_END_TIME, testEvent.getEndTime())
-                .setBoolean(FIELD_COMPRESSED, testEvent.isCompressed());
+                .setBoolean(FIELD_COMPRESSED, testEvent.isCompressed())
+                .setByteBuffer(FIELD_CONTENT, testEvent.getContent())
+                .setInstant(FIELD_REC_DATE, Instant.now())
+                .setInt(FIELD_CONTENT_SIZE, testEvent.getContentSize())
+                .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, testEvent.getUncompressedContentSize());
 
         if (testEvent.getMessages() != null) {
             builder = builder.setByteBuffer(FIELD_MESSAGES, testEvent.getMessages());
-        } else {
-            builder = builder.unset(FIELD_MESSAGES);
         }
 
         if (testEvent.getLabels() != null) {
             builder = builder.setSet(FIELD_LABELS, testEvent.getLabels(), String.class);
-        } else {
-            builder = builder.unset(FIELD_LABELS);
         }
-
-        builder = builder.setByteBuffer(FIELD_CONTENT, testEvent.getContent())
-                .setInstant(FIELD_REC_DATE, Instant.now())
-                .setInt(FIELD_CONTENT_SIZE, testEvent.getContentSize())
-                .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, testEvent.getUncompressedContentSize());
 
         attributes.apply(builder);
         BoundStatement statement = builder.build();

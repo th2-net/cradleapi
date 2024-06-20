@@ -31,7 +31,6 @@ import java.util.function.Function;
 import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.*;
 
 public class MessageBatchInserter {
-
     private final CqlSession session;
     private final PreparedStatement insertStatement;
 
@@ -55,18 +54,15 @@ public class MessageBatchInserter {
                 .setLocalTime(FIELD_LAST_MESSAGE_TIME, messageBatch.getLastMessageTime())
                 .setLong(FIELD_LAST_SEQUENCE, messageBatch.getLastSequence())
                 .setInt(FIELD_MESSAGE_COUNT, messageBatch.getMessageCount())
-                .setBoolean(FIELD_COMPRESSED, messageBatch.isCompressed());
-
-        if (messageBatch.getLabels() != null) {
-            builder = builder.setSet(FIELD_LABELS, messageBatch.getLabels(), String.class);
-        } else {
-            builder = builder.unset(FIELD_LABELS);
-        }
-
-        builder = builder.setByteBuffer(FIELD_CONTENT, messageBatch.getContent())
+                .setBoolean(FIELD_COMPRESSED, messageBatch.isCompressed())
+                .setByteBuffer(FIELD_CONTENT, messageBatch.getContent())
                 .setInstant(FIELD_REC_DATE, Instant.now())
                 .setInt(FIELD_CONTENT_SIZE, messageBatch.getContentSize())
                 .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, messageBatch.getUncompressedContentSize());
+
+        if (messageBatch.getLabels() != null) {
+            builder = builder.setSet(FIELD_LABELS, messageBatch.getLabels(), String.class);
+        }
 
         attributes.apply(builder);
         BoundStatement statement = builder.build();
