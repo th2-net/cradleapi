@@ -35,7 +35,7 @@ public class CassandraCradleHelper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CassandraCradleHelper.class);
 
-    private static final String CASSANDRA_IMAGE = "cassandra:3.11.13";
+    private static final String CASSANDRA_IMAGE = "cassandra:4.1.5";
     public static final String LOCAL_DATACENTER_NAME = "datacenter1";
     public static final long BOOK_REFRESH_INTERVAL_MILLIS = 60_000;
     public static final String KEYSPACE_NAME = "test_keyspace";

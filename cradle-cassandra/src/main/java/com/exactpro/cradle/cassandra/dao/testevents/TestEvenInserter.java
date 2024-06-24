@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -59,13 +60,19 @@ public class TestEvenInserter {
                 .setLocalDate(FIELD_END_DATE, testEvent.getEndDate())
                 .setLocalTime(FIELD_END_TIME, testEvent.getEndTime())
                 .setBoolean(FIELD_COMPRESSED, testEvent.isCompressed())
-                .setByteBuffer(FIELD_MESSAGES, testEvent.getMessages())
-                .setSet(FIELD_LABELS, testEvent.getLabels(), String.class)
                 .setByteBuffer(FIELD_CONTENT, testEvent.getContent())
                 .setInstant(FIELD_REC_DATE, Instant.now())
                 .setInt(FIELD_CONTENT_SIZE, testEvent.getContentSize())
                 .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, testEvent.getUncompressedContentSize());
 
+        // We skip setting null value to columns to avoid tombstone creation.
+        if (testEvent.getMessages() != null) {
+            builder = builder.setByteBuffer(FIELD_MESSAGES, testEvent.getMessages());
+        }
+
+        if (testEvent.getLabels() != null) {
+            builder = builder.setSet(FIELD_LABELS, testEvent.getLabels(), String.class);
+        }
 
         attributes.apply(builder);
         BoundStatement statement = builder.build();
