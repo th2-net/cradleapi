@@ -73,6 +73,12 @@ public class BookInfoTest {
         );
     }
 
+    @Test
+    public void test() {
+        System.out.println(BookInfo.currentEpochDay());
+        System.out.println(BookInfo.getEpochDay(Instant.parse("2024-06-24T11:52:48.714975000Z")));
+    }
+
     @Test(dataProvider = "cacheSize")
     public void lazyPageAddTest(int cacheSize) {
         List<PageInfo> operateSource = new ArrayList<>();

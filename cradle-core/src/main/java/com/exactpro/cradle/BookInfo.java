@@ -227,10 +227,14 @@ public class BookInfo {
      * - end - page end timestamp excluded
      */
     public PageInfo findPage(Instant timestamp) {
+        // Check is timestamp before epoch
         long epochDay = getEpochDay(timestamp);
+        // FIXME: remove
+        LOGGER.debug("find page for {} epoch {}, current cache hot: {}, random: {}", timestamp, epochDay, hotCache.asMap().keySet(), randomAccessCache.asMap().keySet());
         if (epochDay < 0) {
             return null;
         }
+        // Check is timestamp >= MAX_EPOCH_DAY
         if (epochDay >= MAX_EPOCH_DAY) {
             PageInfo lastPage = getLastPage();
             if (lastPage != null && lastPage.getEnded() == null) {
@@ -416,6 +420,7 @@ public class BookInfo {
         long currentEpochDay = currentEpochDay();
         long diff = currentEpochDay - epochDate;
         LoadingCache<Long, IPageInterval> cache = 0 <= diff && diff < 2 ? hotCache : randomAccessCache;
+        LOGGER.debug("getPageInterval - current: {}, param: {}", currentEpochDay, epochDate);
         IPageInterval pageInterval = cache.get(epochDate);
         return pageInterval != null
                 ? pageInterval
@@ -431,6 +436,7 @@ public class BookInfo {
         Instant start = toInstant(epochDay);
         Instant end = start.plus(1, ChronoUnit.DAYS).minus(1, ChronoUnit.NANOS);
         Collection<PageInfo> loaded = pagesLoader.load(id, start, end);
+        LOGGER.debug("Loaded - id: {}, epoch: {}, start: {}, end: {}, size: {}", id, epochDay, start, end, loaded.size());
         if (loaded.isEmpty()) {
             return null;
         }
@@ -441,11 +447,11 @@ public class BookInfo {
         return create(id, start, cacheName, loaded);
     }
 
-    private static long currentEpochDay() {
+    static long currentEpochDay() {
         return System.currentTimeMillis() / MILLISECONDS_IN_DAY;
     }
 
-    private static long getEpochDay(Instant instant) {
+    static long getEpochDay(Instant instant) {
         return instant.getEpochSecond() / SECONDS_IN_DAY;
     }
 
