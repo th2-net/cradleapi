@@ -39,7 +39,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static com.exactpro.cradle.BookInfoMetrics.CacheName.HOT;
 import static com.exactpro.cradle.BookInfoMetrics.CacheName.RANDOM;
@@ -81,6 +80,8 @@ public class BookInfo {
 
     // AtomicInitializer call initialize method again if previous value is null
     private final AtomicReference<PageInfo> firstPage = new AtomicReference<>();
+    // AtomicInitializer call initialize method again if previous value is null
+    private final AtomicReference<PageInfo> lastPage = new AtomicReference<>();
     private final PagesLoader pagesLoader;
     private final Function<BookId, PageInfo> firstPageLoader;
     private final Function<BookId, PageInfo> lastPageLoader;
@@ -150,21 +151,11 @@ public class BookInfo {
     }
 
     public @Nullable PageInfo getFirstPage() {
-        PageInfo result = firstPage.get();
-
-        if (result == null) {
-            result = firstPageLoader.apply(id);
-            if (!firstPage.compareAndSet(null, result)) {
-                // another thread has initialized the reference
-                result = firstPage.get();
-            }
-        }
-
-        return result;
+        return getPageInfo(firstPage, firstPageLoader);
     }
 
     public @Nullable PageInfo getLastPage() {
-        return lastPageLoader.apply(id);
+        return getPageInfo(lastPage, lastPageLoader);
     }
 
     public PageInfo getPage(PageId pageId) {
@@ -348,10 +339,12 @@ public class BookInfo {
      */
     void refresh() {
         firstPage.set(null);
+        lastPage.set(null);
         METRICS.incRequest(id, HOT, REFRESH);
         hotCache.invalidateAll();
 
         getFirstPage();
+        getLastPage();
         long currentEpochDay = currentEpochDay();
         for (int shift = HOT_CACHE_SIZE - 1; shift >= 0; shift--) {
             this.hotCache.get(currentEpochDay - shift);
@@ -360,14 +353,43 @@ public class BookInfo {
 
     void invalidate(Instant timestamp) {
         long epochDay = getEpochDay(timestamp);
+        invalidateFistPage(epochDay);
+        invalidateLastPage(epochDay);
         invalidate(epochDay);
     }
 
     void invalidate(Iterable<Instant> timestamps) {
-        StreamSupport.stream(timestamps.spliterator(), false)
-                .map(BookInfo::getEpochDay)
-                .distinct()
-                .forEach(this::invalidate);
+        timestamps.forEach(this::invalidate);
+    }
+
+    private void invalidateFistPage(long epochDay) {
+        PageInfo current = firstPage.get();
+        if (current != null
+                && (epochDay <= getEpochDay(current.getStarted()) || current.getEnded() == null || getEpochDay(current.getEnded()) <= epochDay)
+        ) {
+            firstPage.compareAndSet(current, null);
+        }
+    }
+
+    private void invalidateLastPage(long epochDay) {
+        PageInfo current = lastPage.get();
+        if (current != null && getEpochDay(current.getStarted()) <= epochDay) {
+            lastPage.compareAndSet(current, null);
+        }
+    }
+
+    private PageInfo getPageInfo(AtomicReference<PageInfo> refToPage, Function<BookId, PageInfo> pageLoader) {
+        PageInfo result = refToPage.get();
+
+        if (result == null) {
+            result = pageLoader.apply(id);
+            if (!refToPage.compareAndSet(null, result)) {
+                // another thread has initialized the reference
+                result = refToPage.get();
+            }
+        }
+
+        return result;
     }
 
     private @Nullable Instant calculateBound(@Nullable Instant origin, Supplier<PageInfo> supplier) {
