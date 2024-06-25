@@ -28,6 +28,7 @@ import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
+import com.exactpro.cradle.cassandra.dao.BoundStatementBuilderWrapperSkippingNulls;
 import static com.exactpro.cradle.cassandra.dao.CradleEntity.FIELD_COMPRESSED;
 import static com.exactpro.cradle.cassandra.dao.CradleEntity.FIELD_CONTENT;
 import static com.exactpro.cradle.cassandra.dao.CradleEntity.FIELD_LABELS;
@@ -43,7 +44,7 @@ public class GroupedMessageBatchInserter {
     }
 
     public CompletableFuture<AsyncResultSet> insert(GroupedMessageBatchEntity groupedMessageBatch, Function<BoundStatementBuilder, BoundStatementBuilder> attributes) {
-        BoundStatementBuilder builder = insertStatement.boundStatementBuilder()
+        BoundStatementBuilderWrapperSkippingNulls builderWrapper = new BoundStatementBuilderWrapperSkippingNulls(insertStatement)
                 .setString(FIELD_BOOK, groupedMessageBatch.getBook())
                 .setString(FIELD_PAGE, groupedMessageBatch.getPage())
                 .setString(FIELD_ALIAS_GROUP, groupedMessageBatch.getGroup())
@@ -55,18 +56,14 @@ public class GroupedMessageBatchInserter {
                 .setLocalTime(FIELD_LAST_MESSAGE_TIME, groupedMessageBatch.getLastMessageTime())
                 .setInt(FIELD_MESSAGE_COUNT, groupedMessageBatch.getMessageCount())
                 .setBoolean(FIELD_COMPRESSED, groupedMessageBatch.isCompressed())
+                .setSet(FIELD_LABELS, groupedMessageBatch.getLabels(), String.class)
                 .setByteBuffer(FIELD_CONTENT, groupedMessageBatch.getContent())
                 .setInstant(FIELD_REC_DATE, Instant.now())
                 .setInt(FIELD_CONTENT_SIZE, groupedMessageBatch.getContentSize())
                 .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, groupedMessageBatch.getUncompressedContentSize());
 
-        // We skip setting null value to columns to avoid tombstone creation.
-        if (groupedMessageBatch.getLabels() != null) {
-            builder = builder.setSet(FIELD_LABELS, groupedMessageBatch.getLabels(), String.class);
-        }
-
-        attributes.apply(builder);
-        BoundStatement statement = builder.build();
+        attributes.apply(builderWrapper.getUnderlyingBuilder());
+        BoundStatement statement = builderWrapper.build();
         return session.executeAsync(statement).toCompletableFuture();
     }
 }

@@ -28,6 +28,7 @@ import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
+import com.exactpro.cradle.cassandra.dao.BoundStatementBuilderWrapperSkippingNulls;
 import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.*;
 
 public class TestEvenInserter {
@@ -41,7 +42,7 @@ public class TestEvenInserter {
     }
 
     public CompletableFuture<AsyncResultSet> insert(TestEventEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes) {
-        BoundStatementBuilder builder = insertStatement.boundStatementBuilder()
+        BoundStatementBuilderWrapperSkippingNulls builderWrapper = new BoundStatementBuilderWrapperSkippingNulls(insertStatement)
                 .setString(FIELD_BOOK, testEvent.getBook())
                 .setString(FIELD_PAGE, testEvent.getPage())
                 .setString(FIELD_SCOPE, testEvent.getScope())
@@ -51,6 +52,7 @@ public class TestEvenInserter {
                 .setString(FIELD_ID, testEvent.getId())
 
                 .setString(FIELD_NAME, testEvent.getName())
+                .setString(FIELD_TYPE, testEvent.getType())
                 .setBoolean(FIELD_SUCCESS, testEvent.isSuccess())
                 .setBoolean(FIELD_ROOT, testEvent.isRoot())
                 .setString(FIELD_PARENT_ID, testEvent.getParentId())
@@ -59,26 +61,15 @@ public class TestEvenInserter {
                 .setLocalDate(FIELD_END_DATE, testEvent.getEndDate())
                 .setLocalTime(FIELD_END_TIME, testEvent.getEndTime())
                 .setBoolean(FIELD_COMPRESSED, testEvent.isCompressed())
+                .setByteBuffer(FIELD_MESSAGES, testEvent.getMessages())
+                .setSet(FIELD_LABELS, testEvent.getLabels(), String.class)
                 .setByteBuffer(FIELD_CONTENT, testEvent.getContent())
                 .setInstant(FIELD_REC_DATE, Instant.now())
                 .setInt(FIELD_CONTENT_SIZE, testEvent.getContentSize())
                 .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, testEvent.getUncompressedContentSize());
 
-        // We skip setting null value to columns to avoid tombstone creation.
-        if (testEvent.getType() != null) {
-            builder = builder.setString(FIELD_TYPE, testEvent.getType());
-        }
-
-        if (testEvent.getMessages() != null) {
-            builder = builder.setByteBuffer(FIELD_MESSAGES, testEvent.getMessages());
-        }
-
-        if (testEvent.getLabels() != null) {
-            builder = builder.setSet(FIELD_LABELS, testEvent.getLabels(), String.class);
-        }
-
-        attributes.apply(builder);
-        BoundStatement statement = builder.build();
+        attributes.apply(builderWrapper.getUnderlyingBuilder());
+        BoundStatement statement = builderWrapper.build();
         return session.executeAsync(statement).toCompletableFuture();
     }
 }

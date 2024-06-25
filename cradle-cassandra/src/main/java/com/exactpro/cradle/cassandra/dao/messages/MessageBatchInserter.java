@@ -28,6 +28,7 @@ import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
+import com.exactpro.cradle.cassandra.dao.BoundStatementBuilderWrapperSkippingNulls;
 import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.*;
 
 public class MessageBatchInserter {
@@ -40,7 +41,7 @@ public class MessageBatchInserter {
     }
 
     public CompletableFuture<AsyncResultSet> insert(MessageBatchEntity messageBatch, Function<BoundStatementBuilder, BoundStatementBuilder> attributes) {
-        BoundStatementBuilder builder = insertStatement.boundStatementBuilder()
+        BoundStatementBuilderWrapperSkippingNulls builderWrapper = new BoundStatementBuilderWrapperSkippingNulls(insertStatement)
                 .setString(FIELD_BOOK, messageBatch.getBook())
                 .setString(FIELD_PAGE, messageBatch.getPage())
                 .setString(FIELD_SESSION_ALIAS, messageBatch.getSessionAlias())
@@ -55,18 +56,14 @@ public class MessageBatchInserter {
                 .setLong(FIELD_LAST_SEQUENCE, messageBatch.getLastSequence())
                 .setInt(FIELD_MESSAGE_COUNT, messageBatch.getMessageCount())
                 .setBoolean(FIELD_COMPRESSED, messageBatch.isCompressed())
+                .setSet(FIELD_LABELS, messageBatch.getLabels(), String.class)
                 .setByteBuffer(FIELD_CONTENT, messageBatch.getContent())
                 .setInstant(FIELD_REC_DATE, Instant.now())
                 .setInt(FIELD_CONTENT_SIZE, messageBatch.getContentSize())
                 .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, messageBatch.getUncompressedContentSize());
 
-        // We skip setting null value to columns to avoid tombstone creation.
-        if (messageBatch.getLabels() != null) {
-            builder = builder.setSet(FIELD_LABELS, messageBatch.getLabels(), String.class);
-        }
-
-        attributes.apply(builder);
-        BoundStatement statement = builder.build();
+        attributes.apply(builderWrapper.getUnderlyingBuilder());
+        BoundStatement statement = builderWrapper.build();
         return session.executeAsync(statement).toCompletableFuture();
     }
 }
