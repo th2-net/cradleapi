@@ -57,7 +57,13 @@ public class BookInfoMetrics {
 
     private static final Map<LoadsKey, Summary.Child> PAGE_LOADS_MAP = new ConcurrentHashMap<>();
 
-    public void setPageCacheSize(BookId bookIdId, CacheName cacheName, int value) {
+    private BookInfoMetrics() {}
+
+    public static double getPageCacheSize(BookId bookIdId, CacheName cacheName) {
+        Gauge.Child child = PAGE_CACHE_SIZE_MAP.get(new LoadsKey(bookIdId, cacheName));
+        return child == null ? 0.0 : child.get();
+    }
+    public static void setPageCacheSize(BookId bookIdId, CacheName cacheName, int value) {
         if (cacheName == null) {
             return;
         }
@@ -66,7 +72,11 @@ public class BookInfoMetrics {
         ).set(value);
     }
 
-    public void incRequest(BookId bookId, CacheName cacheName, RequestMethod method) {
+    public static double getRequest(BookId bookId, CacheName cacheName, RequestMethod method) {
+        Counter.Child child = PAGE_REQUEST_MAP.get(new PageRequestKey(bookId, cacheName, method));
+        return child == null ? 0.0 : child.get();
+    }
+    public static void incRequest(BookId bookId, CacheName cacheName, RequestMethod method) {
         if (cacheName == null) {
             return;
         }
@@ -76,13 +86,25 @@ public class BookInfoMetrics {
         ).inc();
     }
 
-    public void incInvalidate(BookId bookId, CacheName cacheName, RemovalCause cause) {
+    public static double getInvalidate(BookId bookId, CacheName cacheName, RemovalCause cause) {
+        Counter.Child child = INVALIDATE_CACHE_MAP.get(new InvalidateKey(bookId, cacheName, cause));
+        return child == null ? 0.0 : child.get();
+    }
+    public static void incInvalidate(BookId bookId, CacheName cacheName, RemovalCause cause) {
         INVALIDATE_CACHE_MAP.computeIfAbsent(
                 new InvalidateKey(bookId, cacheName, cause), key -> INVALIDATE_CACHE_COUNTER.labels(key.toLabels())
         ).inc();
     }
 
-    public void incLoads(BookId bookIdId, CacheName cacheName, int value) {
+    public static double getLoadCount(BookId bookIdId, CacheName cacheName) {
+        Summary.Child child = PAGE_LOADS_MAP.get(new LoadsKey(bookIdId, cacheName));
+        return child == null ? 0.0 : child.get().count;
+    }
+    public static double getLoadSum(BookId bookIdId, CacheName cacheName) {
+        Summary.Child child = PAGE_LOADS_MAP.get(new LoadsKey(bookIdId, cacheName));
+        return child == null ? 0.0 : child.get().sum;
+    }
+    public static void incLoad(BookId bookIdId, CacheName cacheName, int value) {
         LoadsKey loadsKey = new LoadsKey(bookIdId, cacheName);
         PAGE_LOADS_MAP.computeIfAbsent(
                 loadsKey, key -> PAGE_LOADS_COUNTER.labels(key.toLabels())

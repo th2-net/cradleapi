@@ -95,16 +95,18 @@ public class ReadThroughBookCache implements BookCache {
         LocalTime startTime = start != null ? toLocalTime(start) : LocalTime.MIN;
         LocalDate endDate = end != null ? toLocalDate(end) : LocalDate.MAX;
         LocalTime endTime = end != null ? toLocalTime(end) : LocalTime.MAX;
-        for (PageEntity pageEntity : operators.getPageOperator().get(
+        for (PageEntity pageEntity : operators.getPageOperator().getByEnd(
                 bookId.getName(),
-                startDate,
-                startTime,
                 endDate,
                 endTime,
                 readAttrs
         )) {
             if (loadRemoved || pageEntity.getRemoved() == null || pageEntity.getRemoved().equals(DEFAULT_PAGE_REMOVE_TIME)) {
-                result.add(pageEntity.toPageInfo());
+                if (pageEntity.getEndDate() == null && pageEntity.getEndTime() == null
+                    || startDate.isBefore(pageEntity.getEndDate())
+                    || startDate.equals(pageEntity.getEndDate()) && !startTime.isAfter(pageEntity.getEndTime())) {
+                    result.add(pageEntity.toPageInfo());
+                }
             }
         }
         return result;

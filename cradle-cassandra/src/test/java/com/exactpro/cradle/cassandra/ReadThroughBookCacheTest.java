@@ -1,5 +1,5 @@
 /*
- *  Copyright 2023 Exactpro (Exactpro Systems Limited)
+ *  Copyright 2023-2024 Exactpro (Exactpro Systems Limited)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -128,7 +128,7 @@ public class ReadThroughBookCacheTest {
             PagingIterable<PageEntity> iterable = mock(PagingIterable.class);
             doReturn(result.iterator()).when(iterable).iterator();
             return iterable;
-        }).when(pageOperator).get(same(bookId.getName()), any(), any(), any(), any(), same(readAttrs));
+        }).when(pageOperator).getByEnd(same(bookId.getName()), any(), any(), same(readAttrs));
         doReturn(bookEntity).when(bookOperator).get(same(bookId.getName()), same(readAttrs));
     }
 

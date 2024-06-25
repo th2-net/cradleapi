@@ -40,18 +40,16 @@ public interface PageOperator {
 			"WHERE " +
 				FIELD_BOOK +"=:book AND " +
 			    "(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") > (:startDate, :startTime)")
-	PagingIterable<PageEntity> get(String book, LocalDate startDate, LocalTime startTime,
-								   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	PagingIterable<PageEntity> getByStart(String book, LocalDate startDate, LocalTime startTime,
+										  Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Query("SELECT * FROM ${qualifiedTableId} " +
 			"WHERE " +
 			FIELD_BOOK +"=:book AND " +
-			"(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") >= (:startDate, :startTime) " +
-			"AND " +
 			"(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") <= (:endDate, :endTime)")
-	PagingIterable<PageEntity> get(String book, LocalDate startDate, LocalTime startTime,
-								   LocalDate endDate, LocalTime endTime,
-								   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	PagingIterable<PageEntity> getByEnd(String book,
+										LocalDate endDate, LocalTime endTime,
+										Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Query("SELECT * FROM ${qualifiedTableId} " +
 			"WHERE " +

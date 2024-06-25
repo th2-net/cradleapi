@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle;
 
+import com.exactpro.cradle.BookInfoMetrics.CacheName;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import org.slf4j.Logger;
@@ -38,6 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.exactpro.cradle.BookInfoMetrics.CacheName.HOT;
@@ -48,6 +50,10 @@ import static com.exactpro.cradle.BookInfoMetrics.RequestMethod.ITERATE;
 import static com.exactpro.cradle.BookInfoMetrics.RequestMethod.NEXT;
 import static com.exactpro.cradle.BookInfoMetrics.RequestMethod.PREVIOUS;
 import static com.exactpro.cradle.BookInfoMetrics.RequestMethod.REFRESH;
+import static com.exactpro.cradle.BookInfoMetrics.incInvalidate;
+import static com.exactpro.cradle.BookInfoMetrics.incLoad;
+import static com.exactpro.cradle.BookInfoMetrics.incRequest;
+import static com.exactpro.cradle.BookInfoMetrics.setPageCacheSize;
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Collections.unmodifiableNavigableMap;
@@ -57,7 +63,6 @@ import static java.util.Collections.unmodifiableNavigableMap;
  */
 public class BookInfo {
     private static final Logger LOGGER = LoggerFactory.getLogger(BookInfo.class);
-    private static final BookInfoMetrics METRICS = new BookInfoMetrics();
     private static final int HOT_CACHE_SIZE = 2;
     private static final int SECONDS_IN_DAY = 60 * 60 * 24;
     private static final int MILLISECONDS_IN_DAY = SECONDS_IN_DAY * 1_000;
@@ -67,7 +72,7 @@ public class BookInfo {
     private static final BookId EMPTY_BOOK_ID = new BookId("");
 
     static {
-        METRICS.setPageCacheSize(EMPTY_BOOK_ID, HOT, HOT_CACHE_SIZE);
+        setPageCacheSize(EMPTY_BOOK_ID, HOT, HOT_CACHE_SIZE);
     }
 
     private final BookId id;
@@ -113,16 +118,16 @@ public class BookInfo {
 
         this.hotCache = Caffeine.newBuilder()
                 .maximumSize(HOT_CACHE_SIZE)
-                .removalListener((epochDay, pageInterval, cause) -> METRICS.incInvalidate(id, HOT, cause))
+                .removalListener((epochDay, pageInterval, cause) -> incInvalidate(id, HOT, cause))
                 .build(epochDay -> createPageInterval(HOT, epochDay));
 
         this.randomAccessCache = Caffeine.newBuilder()
                 .maximumSize(raCacheSize)
                 .expireAfterWrite(raCacheInvalidateInterval, TimeUnit.MILLISECONDS)
-                .removalListener((epochDay, pageInterval, cause) -> METRICS.incInvalidate(id, RANDOM, cause))
+                .removalListener((epochDay, pageInterval, cause) -> incInvalidate(id, RANDOM, cause))
                 .build(epochDay -> createPageInterval(RANDOM, epochDay));
 
-        METRICS.setPageCacheSize(id, RANDOM, raCacheSize);
+        setPageCacheSize(id, RANDOM, raCacheSize);
     }
 
     public BookId getId() {
@@ -158,7 +163,7 @@ public class BookInfo {
         return getPageInfo(lastPage, lastPageLoader);
     }
 
-    public PageInfo getPage(PageId pageId) {
+    public @Nullable PageInfo getPage(PageId pageId) {
         IPageInterval pageInterval = getPageInterval(pageId.getStart());
         return pageInterval.get(pageId);
     }
@@ -180,6 +185,10 @@ public class BookInfo {
         }
 
         if (getFirstPage() == null) {
+            return emptyIterator();
+        }
+
+        if (rightBoundTimestamp != null && getFirstPage().getStarted().isAfter(rightBoundTimestamp)) {
             return emptyIterator();
         }
 
@@ -217,6 +226,7 @@ public class BookInfo {
         }
         return builder.build()
                 .flatMap(epochDay -> getPageInterval(epochDay).stream(leftTimestamp, rightTimestamp, order))
+                .distinct()
                 .iterator();
     }
 
@@ -229,8 +239,13 @@ public class BookInfo {
     public PageInfo findPage(Instant timestamp) {
         // Check is timestamp before epoch
         long epochDay = getEpochDay(timestamp);
-        // FIXME: remove
-        LOGGER.debug("find page for {} epoch {}, current cache hot: {}, random: {}", timestamp, epochDay, hotCache.asMap().keySet(), randomAccessCache.asMap().keySet());
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("find page for {} epoch {}, current cache hot: {}, random: {}",
+                    timestamp, epochDay, hotCache.asMap().keySet(), randomAccessCache.asMap().keySet());
+        } else if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("find page for {} epoch {}", timestamp, epochDay);
+        }
+
         if (epochDay < 0) {
             return null;
         }
@@ -244,52 +259,7 @@ public class BookInfo {
         }
         // Search in the page interval related to the timestamp
         IPageInterval pageInterval = getPageInterval(epochDay);
-        PageInfo pageInfo = pageInterval.find(timestamp);
-        if (pageInfo != null) {
-            return pageInfo;
-        }
-
-        // Check first page
-        PageInfo firstPage = getFirstPage();
-        if (firstPage == null) {
-            return null;
-        }
-        if (firstPage.getStarted().isAfter(timestamp)) {
-            return null;
-        }
-
-        // Check last page
-        PageInfo lastPage = getLastPage();
-        if (lastPage == null) {
-            return null;
-        }
-        if (lastPage.getEnded() != null && !timestamp.isBefore(lastPage.getEnded())) {
-            return null;
-        }
-
-        // Search in page intervals before the timestamp
-        long firstEpochDay = getEpochDay(firstPage.getStarted());
-        if (epochDay < firstEpochDay) {
-            return null;
-        }
-        if (epochDay > firstEpochDay) {
-            for (long previousEpochDay = epochDay - 1; previousEpochDay >= firstEpochDay; previousEpochDay--) {
-                IPageInterval previousPageInterval = getPageInterval(previousEpochDay);
-                if (previousPageInterval.size() == 0) {
-                    // page interval without new pages
-                    continue;
-                }
-                // sP1 ... | ... eP1 ^ ... gap ... sP2 ... |
-                return previousPageInterval.find(timestamp);
-            }
-            throw new IllegalStateException(
-                    "First page is before requested timestamp, but neither cache contains appropriate page, requested: " +
-                            timestamp + ", first page: " + firstPage.getStarted()
-            );
-        }
-        // | ... sP1 ... eP1 ^ ... gap ... sP2 ... |
-        // sP1 ... eP1 ^ ... | ... gap ... sP2 ... |
-        return null;
+        return pageInterval.find(timestamp);
     }
 
     public PageInfo getNextPage(Instant startTimestamp) {
@@ -299,8 +269,20 @@ public class BookInfo {
         if (currentInterval != null) {
             return currentInterval;
         }
-        pageInterval = getPageInterval(epochDate + 1);
-        return pageInterval.next(startTimestamp);
+
+        PageInfo lastPage = getLastPage();
+        if (lastPage == null) {
+            return null;
+        }
+
+        for (long i = epochDate + 1; i <= getEpochDay(lastPage.getStarted()); i++) {
+            pageInterval = getPageInterval(i);
+            PageInfo pageInfo = pageInterval.next(startTimestamp);
+            if (pageInfo != null) {
+                return pageInfo;
+            }
+        }
+        return null;
     }
 
     public PageInfo getPreviousPage(Instant startTimestamp) {
@@ -310,8 +292,20 @@ public class BookInfo {
         if (currentInterval != null) {
             return currentInterval;
         }
-        pageInterval = getPageInterval(epochDate - 1);
-        return pageInterval.previous(startTimestamp);
+
+        PageInfo firstPage = getFirstPage();
+        if (firstPage == null) {
+            return null;
+        }
+
+        for (long i = epochDate - 1; getEpochDay(firstPage.getStarted()) <= i; i--) {
+            pageInterval = getPageInterval(i);
+            PageInfo pageInfo = pageInterval.previous(startTimestamp);
+            if (pageInfo != null) {
+                return pageInfo;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -341,11 +335,12 @@ public class BookInfo {
      * Refreshes: first page and hot cache
      * Invalidates: random access cache
      */
-    void refresh() {
+    public void refresh() {
         firstPage.set(null);
         lastPage.set(null);
-        METRICS.incRequest(id, HOT, REFRESH);
+        incRequest(id, HOT, REFRESH);
         hotCache.invalidateAll();
+        randomAccessCache.invalidateAll();
 
         getFirstPage();
         getLastPage();
@@ -419,8 +414,8 @@ public class BookInfo {
     private IPageInterval getPageInterval(long epochDate) {
         long currentEpochDay = currentEpochDay();
         long diff = currentEpochDay - epochDate;
-        LoadingCache<Long, IPageInterval> cache = 0 <= diff && diff < 2 ? hotCache : randomAccessCache;
-        LOGGER.debug("getPageInterval - current: {}, param: {}", currentEpochDay, epochDate);
+        LoadingCache<Long, IPageInterval> cache = 0 <= diff && diff < HOT_CACHE_SIZE ? hotCache : randomAccessCache;
+        LOGGER.debug("Get page interval for epoch date {}", epochDate);
         IPageInterval pageInterval = cache.get(epochDate);
         return pageInterval != null
                 ? pageInterval
@@ -432,19 +427,26 @@ public class BookInfo {
         return getPageInterval(epochDate);
     }
 
-    private @Nullable IPageInterval createPageInterval(BookInfoMetrics.CacheName cacheName, Long epochDay) {
+    private @Nullable IPageInterval createPageInterval(CacheName cacheName, Long epochDay) {
         Instant start = toInstant(epochDay);
         Instant end = start.plus(1, ChronoUnit.DAYS).minus(1, ChronoUnit.NANOS);
-        Collection<PageInfo> loaded = pagesLoader.load(id, start, end);
-        LOGGER.debug("Loaded - id: {}, epoch: {}, start: {}, end: {}, size: {}", id, epochDay, start, end, loaded.size());
-        if (loaded.isEmpty()) {
+        Collection<PageInfo> pages = pagesLoader.load(id, start, end);
+        LOGGER.debug("Loaded pages id: {}, epoch: {} [{} - {}], pages: {}",
+                id, epochDay, start, end, pages.size());
+        incLoad(id, cacheName, pages.size());
+        if (pages.isEmpty()) {
             return null;
         }
-        // We shouldn't register `load` when day page interval (interval in the next) is empty because don't register `request` for empty interval.
-        // `EmptyPageInterval` handles `requests` for empty interval and doesn't register `request`
-        // `loads` and `requests` are required for calculating hit / miss rate
-        METRICS.incLoads(id, cacheName, loaded.size());
-        return create(id, start, cacheName, loaded);
+        Collection<PageInfo> filteredPages = pages.stream().filter(pageInfo -> {
+            Instant pageStart = pageInfo.getStarted();
+            Instant pageEnd = pageInfo.getEnded() == null ? Instant.MAX : pageInfo.getEnded();
+            return pageStart.isBefore(end) && !start.isAfter(pageEnd);
+        }).collect(Collectors.toList());
+        if (filteredPages.size() != pages.size()) {
+            LOGGER.warn("Pages has been filtered after loading id: {}, epoch: {} [{} - {}], size: {} -> {}",
+                    id, epochDay, start, end, pages.size(), filteredPages.size());
+        }
+        return create(id, cacheName, filteredPages);
     }
 
     static long currentEpochDay() {
@@ -460,7 +462,6 @@ public class BookInfo {
     }
 
     private interface IPageInterval {
-        int size();
 
         PageInfo get(PageId pageId);
 
@@ -474,11 +475,6 @@ public class BookInfo {
     }
 
     private static final class EmptyPageInterval implements IPageInterval {
-
-        @Override
-        public int size() {
-            return 0;
-        }
 
         @Override
         public PageInfo get(PageId pageId) {
@@ -508,11 +504,11 @@ public class BookInfo {
 
     private static class PageInterval implements IPageInterval {
         private final BookId bookId;
-        private final BookInfoMetrics.CacheName cacheName;
+        private final CacheName cacheName;
         private final Map<PageId, PageInfo> pageById;
         private final NavigableMap<Instant, PageInfo> pageByInstant;
 
-        private PageInterval(BookId bookId, BookInfoMetrics.CacheName cacheName, Map<PageId, PageInfo> pageById, NavigableMap<Instant, PageInfo> pageByInstant) {
+        private PageInterval(BookId bookId, CacheName cacheName, Map<PageId, PageInfo> pageById, NavigableMap<Instant, PageInfo> pageByInstant) {
             this.bookId = bookId;
             this.cacheName = cacheName;
             this.pageById = pageById;
@@ -520,19 +516,14 @@ public class BookInfo {
         }
 
         @Override
-        public int size() {
-            return pageById.size();
-        }
-
-        @Override
         public PageInfo get(PageId pageId) {
-            METRICS.incRequest(bookId, cacheName, GET);
+            incRequest(bookId, cacheName, GET);
             return pageById.get(pageId);
         }
 
         @Override
         public PageInfo find(Instant timestamp) {
-            METRICS.incRequest(bookId, cacheName, FIND);
+            incRequest(bookId, cacheName, FIND);
             Entry<Instant, PageInfo> result = pageByInstant.floorEntry(timestamp);
             if (result == null) {
                 return null;
@@ -549,23 +540,33 @@ public class BookInfo {
 
         @Override
         public PageInfo next(Instant startTimestamp) {
-            METRICS.incRequest(bookId, cacheName, NEXT);
+            incRequest(bookId, cacheName, NEXT);
             Entry<Instant, PageInfo> result = pageByInstant.higherEntry(startTimestamp);
             return result != null ? result.getValue() : null;
         }
 
         @Override
         public PageInfo previous(Instant startTimestamp) {
-            METRICS.incRequest(bookId, cacheName, PREVIOUS);
-            Entry<Instant, PageInfo> result = pageByInstant.lowerEntry(startTimestamp);
-            return result != null ? result.getValue() : null;
+            incRequest(bookId, cacheName, PREVIOUS);
+            Entry<Instant, PageInfo> firstSearch = pageByInstant.lowerEntry(startTimestamp);
+            if (firstSearch != null) {
+                PageInfo pageInfo = firstSearch.getValue();
+                if (pageInfo.getEnded() == null
+                        || pageInfo.getEnded().isAfter(startTimestamp)) {
+                    Entry<Instant, PageInfo> secondSearch = pageByInstant.lowerEntry(pageInfo.getStarted());
+                    return secondSearch != null ? secondSearch.getValue() : null;
+                } else {
+                    return pageInfo;
+                }
+            }
+            return null;
         }
 
         @Override
         public Stream<PageInfo> stream(@Nonnull Instant leftBoundTimestamp,
                                        @Nonnull Instant rightBoundTimestamp,
                                        @Nonnull Order order) {
-            METRICS.incRequest(bookId, cacheName, ITERATE);
+            incRequest(bookId, cacheName, ITERATE);
             Instant start = pageByInstant.floorKey(leftBoundTimestamp);
             NavigableMap<Instant, PageInfo> subMap = pageByInstant.subMap(
                     start == null ? leftBoundTimestamp : start, true,
@@ -586,7 +587,7 @@ public class BookInfo {
         }
     }
 
-    private static PageInterval create(BookId id, Instant start, BookInfoMetrics.CacheName cacheName, Collection<PageInfo> pages) {
+    private static PageInterval create(BookId id, CacheName cacheName, Collection<PageInfo> pages) {
         Map<PageId, PageInfo> pageById = new HashMap<>();
         TreeMap<Instant, PageInfo> pageByInstant = new TreeMap<>();
         for (PageInfo page : pages) {
@@ -605,7 +606,6 @@ public class BookInfo {
                 );
             }
         }
-        LOGGER.debug("Loaded {} pages for the book {}, {}", pages.size(), id, start);
         return new PageInterval(
                 id, cacheName,
                 unmodifiableMap(pageById),
