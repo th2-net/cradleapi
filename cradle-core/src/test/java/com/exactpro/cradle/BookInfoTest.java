@@ -15,7 +15,6 @@
  */
 package com.exactpro.cradle;
 
-import com.exactpro.cradle.BookInfoMetrics.CacheName;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +30,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
-import static com.exactpro.cradle.BookInfoMetrics.getLoadCount;
 import static com.exactpro.cradle.Order.DIRECT;
 import static com.exactpro.cradle.Order.REVERSE;
 import static com.exactpro.cradle.TestPagesLoader.copy;
