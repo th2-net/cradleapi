@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,11 +37,12 @@ public class QueryExecutor {
         this.readConsistencyLevel = readConsistencyLevel;
     }
 
-    private ResultSet executeQuery(String cqlQuery, ConsistencyLevel consistencyLevel) throws IOException {
+    private ResultSet executeQuery(String cqlQuery, ConsistencyLevel consistencyLevel, boolean tracing) throws IOException {
 
         SimpleStatement statement = SimpleStatement.newInstance(cqlQuery)
                 .setTimeout(Duration.ofMillis(timeout))
-                .setConsistencyLevel(consistencyLevel);
+                .setConsistencyLevel(consistencyLevel)
+                .setTracing(tracing);
 
         ResultSet rs = session.execute(statement);
         if (!rs.wasApplied())
@@ -50,11 +51,15 @@ public class QueryExecutor {
     }
 
     public ResultSet executeWrite(String cqlQuery) throws IOException {
-        return executeQuery(cqlQuery, writeConsistencyLevel);
+        return executeQuery(cqlQuery, writeConsistencyLevel, false);
     }
 
     public ResultSet executeRead(String cqlQuery) throws IOException {
-        return executeQuery(cqlQuery, readConsistencyLevel);
+        return executeQuery(cqlQuery, readConsistencyLevel, false);
+    }
+
+    public ResultSet executeReadWithTracing(String cqlQuery) throws IOException {
+        return executeQuery(cqlQuery, readConsistencyLevel, true);
     }
 
     public CqlSession getSession() {

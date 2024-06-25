@@ -19,10 +19,15 @@ package com.exactpro.cradle.cassandra.integration;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.exactpro.cradle.*;
 import com.exactpro.cradle.cassandra.CassandraCradleStorage;
+import com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity;
+import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
 import com.exactpro.cradle.messages.MessageToStore;
 import com.exactpro.cradle.testevents.*;
 import com.exactpro.cradle.utils.CradleStorageException;
+import org.assertj.core.api.Assertions;
 import org.jetbrains.annotations.NotNull;
+import org.testng.annotations.AfterMethod;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -140,7 +145,7 @@ public abstract class BaseCradleCassandraTest {
     Generates test event filled with events
     each of event having `eventDuration` duration
     while batch itself having `batchDuration` duration
- */
+    */
     protected TestEventToStore generateTestEvent (String scope, Instant start, long batchDuration, long eventDuration) throws CradleStorageException {
         StoredTestEventId parentId = new StoredTestEventId(bookId, scope, start, UUID.randomUUID().toString());
         StoredTestEventId id = new StoredTestEventId(bookId, scope, start, UUID.randomUUID().toString());
@@ -162,6 +167,22 @@ public abstract class BaseCradleCassandraTest {
         }
 
         return batch;
+    }
+
+    @AfterMethod(description = "Verify that no tombstones was created")
+    public void ensureNoTombstones() {
+        try {
+            long tombstonesEvents = storage.countTombstones(CassandraCradleHelper.KEYSPACE_NAME, TestEventEntity.TABLE_NAME);
+            Assertions.assertThat(tombstonesEvents).isZero();
+
+            long tombstonesMessages = storage.countTombstones(CassandraCradleHelper.KEYSPACE_NAME, MessageBatchEntity.TABLE_NAME);
+            Assertions.assertThat(tombstonesMessages).isZero();
+
+            long tombstonesGroupedMessages = storage.countTombstones(CassandraCradleHelper.KEYSPACE_NAME, GroupedMessageBatchEntity.TABLE_NAME);
+            Assertions.assertThat(tombstonesGroupedMessages).isZero();
+        } catch (CradleStorageException e) {
+            Assertions.fail(e);
+        }
     }
 
     @NotNull

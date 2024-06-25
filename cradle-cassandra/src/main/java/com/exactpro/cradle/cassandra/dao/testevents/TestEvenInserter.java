@@ -51,7 +51,6 @@ public class TestEvenInserter {
                 .setString(FIELD_ID, testEvent.getId())
 
                 .setString(FIELD_NAME, testEvent.getName())
-                .setString(FIELD_TYPE, testEvent.getType())
                 .setBoolean(FIELD_SUCCESS, testEvent.isSuccess())
                 .setBoolean(FIELD_ROOT, testEvent.isRoot())
                 .setString(FIELD_PARENT_ID, testEvent.getParentId())
@@ -66,6 +65,10 @@ public class TestEvenInserter {
                 .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, testEvent.getUncompressedContentSize());
 
         // We skip setting null value to columns to avoid tombstone creation.
+        if (testEvent.getType() != null) {
+            builder = builder.setString(FIELD_TYPE, testEvent.getType());
+        }
+
         if (testEvent.getMessages() != null) {
             builder = builder.setByteBuffer(FIELD_MESSAGES, testEvent.getMessages());
         }
