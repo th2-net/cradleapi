@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Delete;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
 import com.datastax.oss.driver.api.mapper.annotations.QueryProvider;
+import com.exactpro.cradle.cassandra.dao.BoundStatementBuilderWrapper;
 import com.exactpro.cradle.cassandra.dao.CommonQueryProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 
@@ -63,7 +64,7 @@ public interface GroupedMessageBatchOperator {
 
 	@QueryProvider(providerClass = GroupedMessageBatchInserter.class, entityHelpers = GroupedMessageBatchEntity.class, providerMethod = "insert")
 	CompletableFuture<AsyncResultSet> write(GroupedMessageBatchEntity message,
-											Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+											Function<BoundStatementBuilderWrapper, BoundStatementBuilderWrapper> attributes);
 
 	@Delete(entityClass = GroupedMessageBatchEntity.class)
 	void remove(String book, String page, String groupAlias, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);

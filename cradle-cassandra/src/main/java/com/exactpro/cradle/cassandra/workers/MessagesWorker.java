@@ -406,7 +406,7 @@ public class MessagesWorker extends Worker {
             MessageBatchEntity entity = serializedEntity.getEntity();
             List<SerializedMessageMetadata> meta = serializedEntity.getSerializedEntityData().getSerializedEntityMetadata();
 
-            return mbOperator.write(entity, writeAttrs)
+            return mbOperator.write(entity, writeWrapperAttrs)
                     .thenRunAsync(() -> {
                         messageStatisticsCollector.updateMessageBatchStatistics(bookId,
                                 entity.getPage(),
@@ -446,7 +446,7 @@ public class MessagesWorker extends Worker {
             GroupedMessageBatchEntity entity = serializedEntity.getEntity();
             List<SerializedMessageMetadata> meta = serializedEntity.getSerializedEntityData().getSerializedEntityMetadata();
 
-            CompletableFuture<Void> future = gmbOperator.write(entity, writeAttrs)
+            CompletableFuture<Void> future = gmbOperator.write(entity, writeWrapperAttrs)
                     .thenRunAsync(() -> CompletableFuture.allOf(
                             storePageGroup(entity),
                             storeGroup(entity),

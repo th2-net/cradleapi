@@ -40,6 +40,7 @@ import com.exactpro.cradle.SessionRecordType;
 import com.exactpro.cradle.cassandra.connection.CassandraConnection;
 import com.exactpro.cradle.cassandra.connection.CassandraConnectionSettings;
 import com.exactpro.cradle.cassandra.counters.FrameInterval;
+import com.exactpro.cradle.cassandra.dao.BoundStatementBuilderWrapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
@@ -148,6 +149,7 @@ public class CassandraCradleStorage extends CradleStorage
 	private Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
 			readAttrs,
 			strictReadAttrs;
+	private Function<BoundStatementBuilderWrapper, BoundStatementBuilderWrapper> writeWrapperAttrs;
 	private Function<BatchStatementBuilder, BatchStatementBuilder> batchWriteAttrs;
 	private SelectExecutionPolicy multiRowResultExecPolicy, singleRowResultExecPolicy;
 	private EventsWorker eventsWorker;
@@ -212,6 +214,8 @@ public class CassandraCradleStorage extends CradleStorage
 			readAttrs = builder -> builder.setConsistencyLevel(settings.getReadConsistencyLevel().getValue())
 					.setTimeout(timeout)
 					.setPageSize(resultPageSize);
+			writeWrapperAttrs = builder -> builder.setConsistencyLevel(settings.getWriteConsistencyLevel().getValue())
+					.setTimeout(timeout);
 			strictReadAttrs = builder -> builder.setConsistencyLevel(ConsistencyLevel.ALL)
 					.setTimeout(timeout)
 					.setPageSize(resultPageSize);
@@ -229,7 +233,7 @@ public class CassandraCradleStorage extends CradleStorage
 					operators.getEventBatchMaxDurationOperator(),
 					settings.getEventBatchDurationMillis());
 
-			WorkerSupplies ws = new WorkerSupplies(settings, operators, composingService, bookCache, selectExecutor, writeAttrs, readAttrs, batchWriteAttrs);
+			WorkerSupplies ws = new WorkerSupplies(settings, operators, composingService, bookCache, selectExecutor, writeAttrs, readAttrs, batchWriteAttrs, writeWrapperAttrs);
 			statisticsWorker = new StatisticsWorker(ws, settings.getCounterPersistenceInterval());
 			eventsWorker = new EventsWorker(ws, statisticsWorker, eventBatchDurationWorker);
 			messagesWorker = new MessagesWorker(ws, statisticsWorker, statisticsWorker);

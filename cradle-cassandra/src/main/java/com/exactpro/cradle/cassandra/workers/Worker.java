@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.FetchParameters;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
+import com.exactpro.cradle.cassandra.dao.BoundStatementBuilderWrapper;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -42,8 +43,8 @@ public abstract class Worker {
     protected final ExecutorService composingService;
     protected final BookCache bookCache;
     protected final SelectQueryExecutor selectQueryExecutor;
-    protected final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
-            readAttrs;
+    protected final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs, readAttrs;
+    protected final Function<BoundStatementBuilderWrapper, BoundStatementBuilderWrapper> writeWrapperAttrs;
 
     public Worker(WorkerSupplies workerSupplies) {
         this.settings = workerSupplies.getSettings();
@@ -53,6 +54,7 @@ public abstract class Worker {
         this.selectQueryExecutor = workerSupplies.getSelectExecutor();
         this.writeAttrs = workerSupplies.getWriteAttrs();
         this.readAttrs = workerSupplies.getReadAttrs();
+        this.writeWrapperAttrs = workerSupplies.getWriteWrapperAttrs();
     }
 
     protected CassandraOperators getOperators() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,13 @@ import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
-import com.datastax.oss.driver.api.mapper.annotations.*;
+import com.datastax.oss.driver.api.mapper.annotations.Dao;
+import com.datastax.oss.driver.api.mapper.annotations.QueryProvider;
+import com.datastax.oss.driver.api.mapper.annotations.Select;
+import com.datastax.oss.driver.api.mapper.annotations.Query;
+import com.datastax.oss.driver.api.mapper.annotations.Delete;
+
+import com.exactpro.cradle.cassandra.dao.BoundStatementBuilderWrapper;
 import com.exactpro.cradle.cassandra.dao.CommonQueryProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 
@@ -30,6 +36,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.*;
+
 @Dao
 public interface MessageBatchOperator {
 	@Select
@@ -118,7 +125,7 @@ public interface MessageBatchOperator {
 
 	@QueryProvider(providerClass = MessageBatchInserter.class, entityHelpers = MessageBatchEntity.class, providerMethod = "insert")
 	CompletableFuture<AsyncResultSet> write(MessageBatchEntity batch,
-											Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+											Function<BoundStatementBuilderWrapper, BoundStatementBuilderWrapper> attributes);
 	
 	@Delete(entityClass = MessageBatchEntity.class)
 	void remove(String book, String page, String sessionAlias, String direction,

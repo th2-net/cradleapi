@@ -19,7 +19,6 @@ package com.exactpro.cradle.cassandra.dao.messages;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
-import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.mapper.MapperContext;
 import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
@@ -28,7 +27,7 @@ import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import com.exactpro.cradle.cassandra.dao.BoundStatementBuilderWrapperSkippingNulls;
+import com.exactpro.cradle.cassandra.dao.BoundStatementBuilderWrapper;
 import static com.exactpro.cradle.cassandra.dao.CradleEntity.FIELD_COMPRESSED;
 import static com.exactpro.cradle.cassandra.dao.CradleEntity.FIELD_CONTENT;
 import static com.exactpro.cradle.cassandra.dao.CradleEntity.FIELD_LABELS;
@@ -43,8 +42,8 @@ public class GroupedMessageBatchInserter {
         this.insertStatement = session.prepare(helper.insert().build());
     }
 
-    public CompletableFuture<AsyncResultSet> insert(GroupedMessageBatchEntity groupedMessageBatch, Function<BoundStatementBuilder, BoundStatementBuilder> attributes) {
-        BoundStatementBuilderWrapperSkippingNulls builderWrapper = new BoundStatementBuilderWrapperSkippingNulls(insertStatement)
+    public CompletableFuture<AsyncResultSet> insert(GroupedMessageBatchEntity groupedMessageBatch, Function<BoundStatementBuilderWrapper, BoundStatementBuilderWrapper> attributes) {
+        BoundStatementBuilderWrapper builderWrapper = new BoundStatementBuilderWrapper(insertStatement)
                 .setString(FIELD_BOOK, groupedMessageBatch.getBook())
                 .setString(FIELD_PAGE, groupedMessageBatch.getPage())
                 .setString(FIELD_ALIAS_GROUP, groupedMessageBatch.getGroup())
@@ -62,7 +61,7 @@ public class GroupedMessageBatchInserter {
                 .setInt(FIELD_CONTENT_SIZE, groupedMessageBatch.getContentSize())
                 .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, groupedMessageBatch.getUncompressedContentSize());
 
-        attributes.apply(builderWrapper.getUnderlyingBuilder());
+        attributes.apply(builderWrapper);
         BoundStatement statement = builderWrapper.build();
         return session.executeAsync(statement).toCompletableFuture();
     }

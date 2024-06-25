@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -154,7 +154,7 @@ public class EventsWorker extends Worker {
             TestEventEntity entity = serializedEntity.getEntity();
             List<SerializedEntityMetadata> meta = serializedEntity.getSerializedEntityData().getSerializedEntityMetadata();
 
-            return op.write(entity, writeAttrs)
+            return op.write(entity, writeWrapperAttrs)
                     .thenAcceptAsync(result -> {
                         try {
                             Instant firstTimestamp = meta.get(0).getTimestamp();
