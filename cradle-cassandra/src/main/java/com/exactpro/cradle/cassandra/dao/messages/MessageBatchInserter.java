@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,9 @@ import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.*;
 
+
 public class MessageBatchInserter {
+
     private final CqlSession session;
     private final PreparedStatement insertStatement;
 
@@ -55,15 +57,12 @@ public class MessageBatchInserter {
                 .setLong(FIELD_LAST_SEQUENCE, messageBatch.getLastSequence())
                 .setInt(FIELD_MESSAGE_COUNT, messageBatch.getMessageCount())
                 .setBoolean(FIELD_COMPRESSED, messageBatch.isCompressed())
+                .setSet(FIELD_LABELS, messageBatch.getLabels(), String.class)
                 .setByteBuffer(FIELD_CONTENT, messageBatch.getContent())
                 .setInstant(FIELD_REC_DATE, Instant.now())
                 .setInt(FIELD_CONTENT_SIZE, messageBatch.getContentSize())
                 .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, messageBatch.getUncompressedContentSize());
 
-        // We skip setting null value to columns to avoid tombstone creation.
-        if (messageBatch.getLabels() != null) {
-            builder = builder.setSet(FIELD_LABELS, messageBatch.getLabels(), String.class);
-        }
 
         attributes.apply(builder);
         BoundStatement statement = builder.build();
