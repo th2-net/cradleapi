@@ -111,17 +111,18 @@ public class ReadThroughBookCacheTest {
         doReturn(bookOperator).when(operators).getBookOperator();
         doReturn(pagingIterable).when(pageOperator).getAll(same(bookId.getName()), same(readAttrs));
         doAnswer(invocation -> {
-            LocalDate startDate = invocation.getArgument(1);
-            LocalTime startTime = invocation.getArgument(2);
-            LocalDate endDate = invocation.getArgument(3);
-            LocalTime endTime = invocation.getArgument(4);
+            String bookId = invocation.getArgument(0);
+            LocalDate endDate = invocation.getArgument(1);
+            LocalTime endTime = invocation.getArgument(2);
+
+            endDate = endDate == null ? LocalDate.MAX : endDate;
+            endTime = endTime == null ? LocalTime.MAX : endTime;
 
             List<PageEntity> result = new ArrayList<>();
             for (PageEntity pageEntity : pagingIterable) {
-                if ((startDate == null || !startDate.isAfter(pageEntity.getStartDate())) &&
-                        (startTime == null || !startTime.isAfter(pageEntity.getStartTime())) &&
-                        (endDate == null || pageEntity.getEndDate() == null || !endDate.isBefore(pageEntity.getEndDate())) &&
-                        (endTime == null || pageEntity.getEndTime() == null || !endTime.isBefore(pageEntity.getEndTime()))) {
+                if (pageEntity.getBook().equals(bookId)
+                        && (pageEntity.getStartDate().isBefore(endDate)
+                            || pageEntity.getStartDate().equals(endDate) && !pageEntity.getStartTime().isAfter(endTime))) {
                     result.add(pageEntity);
                 }
             }

@@ -35,7 +35,15 @@ import com.datastax.oss.driver.api.mapper.entity.saving.NullSavingStrategy;
 public interface PageOperator {
 	@Select
 	PagingIterable<PageEntity> getAll(String book, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
+
+	/**
+	 * Executes request to Cassandra to receive several pages
+	 * @param book - book id
+	 * @param startDate - start day
+	 * @param startTime - start time
+	 * @param attributes - request attributes
+	 * @return iterator for all pages which start datetime is greater than requested datetime - (requested datetime ... ]
+	 */
 	@Query( "SELECT * FROM ${qualifiedTableId} " +
 			"WHERE " +
 				FIELD_BOOK +"=:book AND " +
@@ -43,6 +51,14 @@ public interface PageOperator {
 	PagingIterable<PageEntity> getByStart(String book, LocalDate startDate, LocalTime startTime,
 										  Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
+	/**
+	 * Executes request to Cassandra to receive several pages
+	 * @param book - book id
+	 * @param endDate- end day
+	 * @param endTime - end time
+	 * @param attributes - request attributes
+	 * @return iterator for all pages which start datetime is greater or equal than requested datetime - (... requested datetime]
+	 */
 	@Query("SELECT * FROM ${qualifiedTableId} " +
 			"WHERE " +
 			FIELD_BOOK +"=:book AND " +

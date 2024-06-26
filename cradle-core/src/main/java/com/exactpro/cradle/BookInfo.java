@@ -237,7 +237,6 @@ public class BookInfo {
      * - end - page end timestamp excluded
      */
     public PageInfo findPage(Instant timestamp) {
-        // Check is timestamp before epoch
         long epochDay = getEpochDay(timestamp);
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace("find page for {} epoch {}, current cache hot: {}, random: {}",
@@ -249,7 +248,6 @@ public class BookInfo {
         if (epochDay < 0) {
             return null;
         }
-        // Check is timestamp >= MAX_EPOCH_DAY
         if (epochDay >= MAX_EPOCH_DAY) {
             PageInfo lastPage = getLastPage();
             if (lastPage != null && lastPage.getEnded() == null) {
