@@ -226,7 +226,7 @@ public class BookInfo {
         }
         return builder.build()
                 .flatMap(epochDay -> getPageInterval(epochDay).stream(leftTimestamp, rightTimestamp, order))
-                .distinct()
+                .filter(new DropDuplicatesPredicate<>())
                 .iterator();
     }
 
@@ -470,6 +470,22 @@ public class BookInfo {
         PageInfo previous(Instant startTimestamp);
 
         Stream<PageInfo> stream(Instant leftBoundTimestamp, Instant rightBoundTimestamp, Order order);
+    }
+
+    /**
+     * This is stateful predicate because it holds previous checked element in class variable.
+     * You use it to drop duplicated elements in ordered stream without parallel mode.
+     */
+    private static final class DropDuplicatesPredicate<T> implements Predicate<T> {
+        private T previous = null;
+        @Override
+        public boolean test(T t) {
+            if (Objects.equals(previous, t)) {
+                return false;
+            }
+            previous = t;
+            return true;
+        }
     }
 
     private static final class EmptyPageInterval implements IPageInterval {
