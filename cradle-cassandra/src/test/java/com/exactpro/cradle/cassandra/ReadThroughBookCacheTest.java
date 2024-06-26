@@ -129,7 +129,7 @@ public class ReadThroughBookCacheTest {
             PagingIterable<PageEntity> iterable = mock(PagingIterable.class);
             doReturn(result.iterator()).when(iterable).iterator();
             return iterable;
-        }).when(pageOperator).getByEnd(same(bookId.getName()), any(), any(), same(readAttrs));
+        }).when(pageOperator).getAllBefore(same(bookId.getName()), any(), any(), same(readAttrs));
         doReturn(bookEntity).when(bookOperator).get(same(bookId.getName()), same(readAttrs));
     }
 

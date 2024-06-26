@@ -42,14 +42,14 @@ public interface PageOperator {
 	 * @param startDate - start day
 	 * @param startTime - start time
 	 * @param attributes - request attributes
-	 * @return iterator for all pages which start datetime is greater than requested datetime - (requested datetime ... ]
+	 * @return iterator for all pages which start datetime is greater or equal than requested datetime - [requested datetime ... ]
 	 */
 	@Query( "SELECT * FROM ${qualifiedTableId} " +
 			"WHERE " +
 				FIELD_BOOK +"=:book AND " +
-			    "(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") > (:startDate, :startTime)")
-	PagingIterable<PageEntity> getByStart(String book, LocalDate startDate, LocalTime startTime,
-										  Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+			    "(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") >= (:startDate, :startTime)")
+	PagingIterable<PageEntity> getAllAfter(String book, LocalDate startDate, LocalTime startTime,
+										   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	/**
 	 * Executes request to Cassandra to receive several pages
@@ -57,15 +57,15 @@ public interface PageOperator {
 	 * @param endDate- end day
 	 * @param endTime - end time
 	 * @param attributes - request attributes
-	 * @return iterator for all pages which start datetime is greater or equal than requested datetime - (... requested datetime]
+	 * @return iterator for all pages which start datetime is less or equal than requested datetime - [... requested datetime]
 	 */
 	@Query("SELECT * FROM ${qualifiedTableId} " +
 			"WHERE " +
 			FIELD_BOOK +"=:book AND " +
 			"(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") <= (:endDate, :endTime)")
-	PagingIterable<PageEntity> getByEnd(String book,
-										LocalDate endDate, LocalTime endTime,
-										Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	PagingIterable<PageEntity> getAllBefore(String book,
+											LocalDate endDate, LocalTime endTime,
+											Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Query("SELECT * FROM ${qualifiedTableId} " +
 			"WHERE " +

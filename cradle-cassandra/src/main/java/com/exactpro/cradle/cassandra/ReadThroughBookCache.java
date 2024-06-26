@@ -89,13 +89,22 @@ public class ReadThroughBookCache implements BookCache {
         return result;
     }
 
-    public Collection<PageInfo> loadPageInfo(BookId bookId, Instant start, Instant end, boolean loadRemoved) {
+    /**
+     * Executes request to Cassandra and filter results by parameters.
+     * This method can take much time when cradle contains a lot of pages.
+     * @param bookId - book id
+     * @param start - start timestamp (inclusive)
+     * @param end - end timestamp (exclusive)
+     * @param loadRemoved - if true, the method add pages marked as removed into result collection
+     * @return collection with pages which covered interval [start, end) where start is inclusive and end is exclusive.
+     */
+    Collection<PageInfo> loadPageInfo(BookId bookId, Instant start, Instant end, boolean loadRemoved) {
         Collection<PageInfo> result = new ArrayList<>();
         LocalDate startDate = start != null ? toLocalDate(start) : LocalDate.MIN;
         LocalTime startTime = start != null ? toLocalTime(start) : LocalTime.MIN;
         LocalDate endDate = end != null ? toLocalDate(end) : LocalDate.MAX;
         LocalTime endTime = end != null ? toLocalTime(end) : LocalTime.MAX;
-        for (PageEntity pageEntity : operators.getPageOperator().getByEnd(
+        for (PageEntity pageEntity : operators.getPageOperator().getAllBefore(
                 bookId.getName(),
                 endDate,
                 endTime,

@@ -547,17 +547,16 @@ public class BookInfo {
         public PageInfo previous(Instant startTimestamp) {
             incRequest(bookId, cacheName, PREVIOUS);
             Entry<Instant, PageInfo> firstSearch = pageByInstant.lowerEntry(startTimestamp);
-            if (firstSearch != null) {
-                PageInfo pageInfo = firstSearch.getValue();
-                if (pageInfo.getEnded() == null
-                        || pageInfo.getEnded().isAfter(startTimestamp)) {
-                    Entry<Instant, PageInfo> secondSearch = pageByInstant.lowerEntry(pageInfo.getStarted());
-                    return secondSearch != null ? secondSearch.getValue() : null;
-                } else {
-                    return pageInfo;
-                }
+            if (firstSearch == null) {
+                return null;
             }
-            return null;
+            PageInfo pageInfo = firstSearch.getValue();
+            if (pageInfo.getEnded() == null
+                    || pageInfo.getEnded().isAfter(startTimestamp)) {
+                Entry<Instant, PageInfo> secondSearch = pageByInstant.lowerEntry(pageInfo.getStarted());
+                return secondSearch != null ? secondSearch.getValue() : null;
+            }
+            return pageInfo;
         }
 
         @Override
