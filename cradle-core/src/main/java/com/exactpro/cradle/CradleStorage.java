@@ -80,7 +80,7 @@ public abstract class CradleStorage {
     public static final long EMPTY_MESSAGE_INDEX = -1L;
     public static final int DEFAULT_MAX_MESSAGE_BATCH_SIZE = 1024 * 1024;
     public static final int DEFAULT_MAX_TEST_EVENT_BATCH_SIZE = DEFAULT_MAX_MESSAGE_BATCH_SIZE;
-    public static final int DEFAULT_COMPOSING_SERVICE_THREADS = 5;
+    public static final int DEFAULT_COMPOSING_SERVICE_THREADS = 1;
 
     private static final ThreadFactory THREAD_FACTORY = new ThreadFactoryBuilder().setNameFormat("cradle-storage-%d").build();
 
