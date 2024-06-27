@@ -39,32 +39,32 @@ public interface PageOperator {
 	/**
 	 * Executes request to Cassandra to receive several pages
 	 * @param book - book id
-	 * @param startDate - start day
-	 * @param startTime - start time
+	 * @param date - start day
+	 * @param time - start time
 	 * @param attributes - request attributes
 	 * @return iterator for all pages which start datetime is greater or equal than requested datetime - [requested datetime ... ]
 	 */
 	@Query( "SELECT * FROM ${qualifiedTableId} " +
 			"WHERE " +
 				FIELD_BOOK +"=:book AND " +
-			    "(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") >= (:startDate, :startTime)")
-	PagingIterable<PageEntity> getAllAfter(String book, LocalDate startDate, LocalTime startTime,
+			    "(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") >= (:date, :time)")
+	PagingIterable<PageEntity> getAllAfter(String book, LocalDate date, LocalTime time,
 										   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	/**
 	 * Executes request to Cassandra to receive several pages
 	 * @param book - book id
-	 * @param endDate- end day
-	 * @param endTime - end time
+	 * @param date- end day
+	 * @param time - end time
 	 * @param attributes - request attributes
 	 * @return iterator for all pages which start datetime is less or equal than requested datetime - [... requested datetime]
 	 */
 	@Query("SELECT * FROM ${qualifiedTableId} " +
 			"WHERE " +
 			FIELD_BOOK +"=:book AND " +
-			"(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") <= (:endDate, :endTime)")
+			"(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") <= (:date, :time)")
 	PagingIterable<PageEntity> getAllBefore(String book,
-											LocalDate endDate, LocalTime endTime,
+											LocalDate date, LocalTime time,
 											Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Query("SELECT * FROM ${qualifiedTableId} " +
