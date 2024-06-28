@@ -32,6 +32,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -99,25 +100,29 @@ public class ReadThroughBookCache implements BookCache {
      * @return collection with pages which covered interval [start, end) where start is inclusive and end is exclusive.
      */
     Collection<PageInfo> loadPageInfo(BookId bookId, Instant start, Instant end, boolean loadRemoved) {
-        Collection<PageInfo> result = new ArrayList<>();
+        List<PageInfo> result = new ArrayList<>();
         LocalDate startDate = start != null ? toLocalDate(start) : LocalDate.MIN;
         LocalTime startTime = start != null ? toLocalTime(start) : LocalTime.MIN;
         LocalDate endDate = end != null ? toLocalDate(end) : LocalDate.MAX;
         LocalTime endTime = end != null ? toLocalTime(end) : LocalTime.MAX;
-        for (PageEntity pageEntity : operators.getPageOperator().getAllBefore(
+        for (PageEntity pageEntity : operators.getPageOperator().getAllDescBefore(
                 bookId.getName(),
                 endDate,
                 endTime,
                 readAttrs
         )) {
             if (loadRemoved || pageEntity.getRemoved() == null || pageEntity.getRemoved().equals(DEFAULT_PAGE_REMOVE_TIME)) {
-                if (pageEntity.getEndDate() == null && pageEntity.getEndTime() == null
-                    || startDate.isBefore(pageEntity.getEndDate())
-                    || startDate.equals(pageEntity.getEndDate()) && !startTime.isAfter(pageEntity.getEndTime())) {
-                    result.add(pageEntity.toPageInfo());
+                if (pageEntity.getEndDate() != null
+                        && pageEntity.getEndTime() != null
+                        && (startDate.isAfter(pageEntity.getEndDate())
+                            || startDate.equals(pageEntity.getEndDate())
+                                && startTime.isAfter(pageEntity.getEndTime()))) {
+                    break;
                 }
+                result.add(pageEntity.toPageInfo());
             }
         }
+        Collections.reverse(result);
         return result;
     }
 

@@ -34,14 +34,11 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.CassandraStorageSettings.DEFAULT_PAGE_REMOVE_TIME;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.same;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
@@ -110,26 +107,6 @@ public class ReadThroughBookCacheTest {
         doReturn(pageOperator).when(operators).getPageOperator();
         doReturn(bookOperator).when(operators).getBookOperator();
         doReturn(pagingIterable).when(pageOperator).getAll(same(bookId.getName()), same(readAttrs));
-        doAnswer(invocation -> {
-            String bookId = invocation.getArgument(0);
-            LocalDate endDate = invocation.getArgument(1);
-            LocalTime endTime = invocation.getArgument(2);
-
-            endDate = endDate == null ? LocalDate.MAX : endDate;
-            endTime = endTime == null ? LocalTime.MAX : endTime;
-
-            List<PageEntity> result = new ArrayList<>();
-            for (PageEntity pageEntity : pagingIterable) {
-                if (pageEntity.getBook().equals(bookId)
-                        && (pageEntity.getStartDate().isBefore(endDate)
-                            || pageEntity.getStartDate().equals(endDate) && !pageEntity.getStartTime().isAfter(endTime))) {
-                    result.add(pageEntity);
-                }
-            }
-            PagingIterable<PageEntity> iterable = mock(PagingIterable.class);
-            doReturn(result.iterator()).when(iterable).iterator();
-            return iterable;
-        }).when(pageOperator).getAllBefore(same(bookId.getName()), any(), any(), same(readAttrs));
         doReturn(bookEntity).when(bookOperator).get(same(bookId.getName()), same(readAttrs));
     }
 

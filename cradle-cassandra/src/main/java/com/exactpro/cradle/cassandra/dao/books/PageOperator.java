@@ -52,18 +52,22 @@ public interface PageOperator {
 										   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	/**
-	 * Executes request to Cassandra to receive several pages
-	 * @param book - book id
-	 * @param date- end day
-	 * @param time - end time
+	 * Executes request to Cassandra to receive several pages in descending order
+	 *
+	 * @param book       - book id
+	 * @param date       - day part of timestamp filter
+	 * @param time       - time part of timestamp filter
 	 * @param attributes - request attributes
-	 * @return iterator for all pages which start datetime is less or equal than requested datetime - [... requested datetime]
+	 * @return iterator for all pages in descending order which start datetime is less or equal than requested datetime - [... requested datetime]
 	 */
 	@Query("SELECT * FROM ${qualifiedTableId} " +
 			"WHERE " +
 			FIELD_BOOK +"=:book AND " +
-			"(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") <= (:date, :time)")
-	PagingIterable<PageEntity> getAllBefore(String book,
+			"(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") <= (:date, :time) " +
+			"ORDER BY " +
+			FIELD_START_DATE + " DESC, " +
+			FIELD_START_TIME + " DESC")
+	PagingIterable<PageEntity> getAllDescBefore(String book,
 											LocalDate date, LocalTime time,
 											Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
