@@ -51,10 +51,10 @@ public class CassandraStorageSettings extends CoreStorageSettings {
     public static final int DEFAULT_GROUPS_CACHE_SIZE = 10_000;
     public static final int DEFAULT_EVENT_BATCH_DURATION_CACHE_SIZE = 5_000;
     public static final int DEFAULT_PAGE_GROUPS_CACHE_SIZE = 10_000;
-    public static final int DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS = 1000;
+    public static final int DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS = 15000;
     public static final long DEFAULT_EVENT_BATCH_DURATION_MILLIS = 5_000;
     public static final long DEFAULT_TIMEOUT = 5000;
-    public static final CompressionType DEFAULT_COMPRESSION_TYPE = CompressionType.ZLIB;
+    public static final CompressionType DEFAULT_COMPRESSION_TYPE = CompressionType.LZ4;
 
     //we need to use Instant.EPOCH instead of Instant.MIN.
     //when cassandra driver tries to convert Instant.MIN to milliseconds using toEpochMilli() it causes long overflow.

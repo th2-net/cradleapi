@@ -35,23 +35,41 @@ import com.datastax.oss.driver.api.mapper.entity.saving.NullSavingStrategy;
 public interface PageOperator {
 	@Select
 	PagingIterable<PageEntity> getAll(String book, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
+
+	/**
+	 * Executes request to Cassandra to receive several pages
+	 * @param book - book id
+	 * @param date - start day
+	 * @param time - start time
+	 * @param attributes - request attributes
+	 * @return iterator for all pages which start datetime is greater or equal than requested datetime - [requested datetime ... ]
+	 */
 	@Query( "SELECT * FROM ${qualifiedTableId} " +
 			"WHERE " +
 				FIELD_BOOK +"=:book AND " +
-			    "(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") > (:startDate, :startTime)")
-	PagingIterable<PageEntity> get(String book, LocalDate startDate, LocalTime startTime,
-								   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+			    "(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") >= (:date, :time)")
+	PagingIterable<PageEntity> getAllAfter(String book, LocalDate date, LocalTime time,
+										   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
+	/**
+	 * Executes request to Cassandra to receive several pages in descending order
+	 *
+	 * @param book       - book id
+	 * @param date       - day part of timestamp filter
+	 * @param time       - time part of timestamp filter
+	 * @param attributes - request attributes
+	 * @return iterator for all pages in descending order which start datetime is less or equal than requested datetime - [... requested datetime]
+	 */
 	@Query("SELECT * FROM ${qualifiedTableId} " +
 			"WHERE " +
 			FIELD_BOOK +"=:book AND " +
-			"(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") >= (:startDate, :startTime) " +
-			"AND " +
-			"(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") <= (:endDate, :endTime)")
-	PagingIterable<PageEntity> get(String book, LocalDate startDate, LocalTime startTime,
-								   LocalDate endDate, LocalTime endTime,
-								   Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+			"(" + FIELD_START_DATE + ", " + FIELD_START_TIME + ") <= (:date, :time) " +
+			"ORDER BY " +
+			FIELD_START_DATE + " DESC, " +
+			FIELD_START_TIME + " DESC")
+	PagingIterable<PageEntity> getAllDescBefore(String book,
+											LocalDate date, LocalTime time,
+											Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	@Query("SELECT * FROM ${qualifiedTableId} " +
 			"WHERE " +

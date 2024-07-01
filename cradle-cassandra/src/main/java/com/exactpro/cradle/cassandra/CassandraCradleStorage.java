@@ -1028,9 +1028,9 @@ public class CassandraCradleStorage extends CradleStorage
 		if (pageNameEntity == null)
 			throw new CradleStorageException(String.format("Page \"%s\" not found in book \"%s\"", pageName, bookId.getName()));
 
-		PageEntity pageEntity = pageOperator.get(bookId.getName(),
+		PageEntity pageEntity = pageOperator.getAllAfter(bookId.getName(),
 					pageNameEntity.getStartDate(),
-					pageNameEntity.getStartTime().minusNanos(1),
+					pageNameEntity.getStartTime(),
 					readAttrs).one();
 
 		if (pageEntity == null || !pageEntity.getName().equals(pageNameEntity.getName()))
@@ -1073,9 +1073,9 @@ public class CassandraCradleStorage extends CradleStorage
 		if (pageNameEntity == null)
 			throw new CradleStorageException(String.format("Page \"%s\" not found in book \"%s\"", oldPageName, bookId.getName()));
 
-		PageEntity pageEntity = pageOperator.get(bookId.getName(),
+		PageEntity pageEntity = pageOperator.getAllAfter(bookId.getName(),
 				pageNameEntity.getStartDate(),
-				pageNameEntity.getStartTime().minusNanos(1),
+				pageNameEntity.getStartTime(),
 				readAttrs).one();
 
 		if (pageEntity == null || !pageEntity.getName().equals(pageNameEntity.getName()))

@@ -103,6 +103,11 @@ public class PageInfo
 	}
 
 	@Override
+	public int hashCode() {
+		return Objects.hash(id, ended, comment, updated, removed);
+	}
+
+	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;

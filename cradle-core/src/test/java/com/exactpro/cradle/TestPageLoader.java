@@ -31,7 +31,7 @@ public class TestPageLoader implements Function<BookId, PageInfo> {
     @Override
     public PageInfo apply(BookId bookId) {
         return first
-                ? pages.isEmpty() ? null : pages.get(0)
-                : pages.isEmpty() ? null : pages.get(pages.size() - 1);
+                ? pages.isEmpty() ? null : TestPagesLoader.copy(pages.get(0))
+                : pages.isEmpty() ? null : TestPagesLoader.copy(pages.get(pages.size() - 1));
     }
 }

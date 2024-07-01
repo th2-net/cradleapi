@@ -209,6 +209,14 @@ Test events have mandatory parameters that are verified when storing an event. T
 
 ## Release notes
 
+### 5.4.1
+* Page interval in page cache hols all pages covered the interval.<br>
+  Fixed the problem - components reload page interval and last page each time when page starts in day before and ends day after requested period.
+* Corrected default settings:
+  * counterPersistenceInterval: `1000` -> `15000` ms
+  * compressionType: `ZLIB` -> `LZ4`
+  * composingServiceThreads: `5` -> `1`
+
 ### 5.4.0
 * Using internal executor instead of ForkJoinPool.commonPool() to process intermediate tasks 
 
