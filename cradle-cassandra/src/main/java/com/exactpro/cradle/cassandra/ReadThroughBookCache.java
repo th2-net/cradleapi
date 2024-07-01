@@ -122,6 +122,9 @@ public class ReadThroughBookCache implements BookCache {
                 result.add(pageEntity.toPageInfo());
             }
         }
+        if (result.isEmpty()) {
+            return Collections.emptyList();
+        }
         Collections.reverse(result);
         return result;
     }
