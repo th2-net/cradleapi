@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,7 @@ import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
-import com.datastax.oss.driver.api.mapper.annotations.Dao;
-import com.datastax.oss.driver.api.mapper.annotations.Delete;
-import com.datastax.oss.driver.api.mapper.annotations.Query;
-import com.datastax.oss.driver.api.mapper.annotations.QueryProvider;
-import com.datastax.oss.driver.api.mapper.annotations.Select;
+import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.exactpro.cradle.cassandra.dao.CommonQueryProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 
@@ -33,17 +29,7 @@ import java.time.LocalTime;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_BOOK;
-import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_DIRECTION;
-import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_FIRST_MESSAGE_DATE;
-import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_FIRST_MESSAGE_TIME;
-import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_LAST_MESSAGE_DATE;
-import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_LAST_MESSAGE_TIME;
-import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_LAST_SEQUENCE;
-import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_PAGE;
-import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_SEQUENCE;
-import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_SESSION_ALIAS;
-
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.*;
 @Dao
 public interface MessageBatchOperator {
 	@Select

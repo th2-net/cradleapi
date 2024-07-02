@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,11 +32,11 @@ import java.time.LocalTime;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_ALIAS_GROUP;
-import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_BOOK;
-import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_FIRST_MESSAGE_DATE;
 import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_FIRST_MESSAGE_TIME;
+import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_BOOK;
 import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_PAGE;
+import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_ALIAS_GROUP;
+import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_FIRST_MESSAGE_DATE;
 
 
 @Dao

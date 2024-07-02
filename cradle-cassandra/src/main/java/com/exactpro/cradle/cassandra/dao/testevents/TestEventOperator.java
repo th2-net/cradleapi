@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,13 +31,7 @@ import java.time.LocalTime;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.FIELD_BOOK;
-import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.FIELD_ID;
-import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.FIELD_PAGE;
-import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.FIELD_SCOPE;
-import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.FIELD_START_DATE;
-import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.FIELD_START_TIME;
-import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.FIELD_SUCCESS;
+import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.*;
 
 @Dao
 public interface TestEventOperator {
@@ -53,14 +47,16 @@ public interface TestEventOperator {
 			LocalDate startDate, LocalTime startTime, String id, 
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
+
 	@QueryProvider(providerClass = CommonQueryProvider.class, entityHelpers = TestEventEntity.class)
 	CompletableFuture<MappedAsyncPagingIterable<TestEventEntity>> getByFilter(CassandraTestEventFilter filter,
 			SelectQueryExecutor selectQueryExecutor, String queryInfo,
 			Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
+
 	@QueryProvider(providerClass = TestEvenInserter.class, entityHelpers = TestEventEntity.class, providerMethod = "insert")
-	CompletableFuture<AsyncResultSet> write(TestEventEntity testEvent,
-											Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+	CompletableFuture<AsyncResultSet> write(TestEventEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
 
 	@Query( "UPDATE ${qualifiedTableId} " +
 			"SET " +
