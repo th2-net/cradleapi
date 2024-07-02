@@ -30,17 +30,49 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Set;
 
-// This wrapper skips null values to avoid tombstone creation in Cassandra tables
+/**
+* This wrapper skips null values to avoid tombstones creation in Cassandra tables
+*/
 public class BoundStatementBuilderWrapper {
     private BoundStatementBuilder builder;
+
+    public BoundStatementBuilderWrapper setConsistencyLevel(@Nullable ConsistencyLevel consistencyLevel) {
+        builder.setConsistencyLevel(consistencyLevel);
+        return this;
+    }
+
+    public BoundStatementBuilderWrapper setTimeout(@Nullable Duration timeout) {
+        builder.setTimeout(timeout);
+        return this;
+    }
 
     public BoundStatementBuilderWrapper(PreparedStatement statement) {
         builder = statement.boundStatementBuilder();
     }
 
-    public BoundStatementBuilderWrapper setString(@NonNull String name, @Nullable String v) {
+    public BoundStatementBuilderWrapper setBoolean(@NonNull String name, boolean v) {
+        builder = builder.setBoolean(name, v);
+        return this;
+    }
+
+    public BoundStatementBuilderWrapper setByte(@NonNull String name, byte v) {
+        builder = builder.setByte(name, v);
+        return this;
+    }
+
+    public BoundStatementBuilderWrapper setInt(@NonNull String name, int v) {
+        builder = builder.setInt(name, v);
+        return this;
+    }
+
+    public BoundStatementBuilderWrapper setLong(@NonNull String name, long v) {
+        builder = builder.setLong(name, v);
+        return this;
+    }
+
+    public BoundStatementBuilderWrapper setInstant(@NonNull String name, @Nullable Instant v) {
         if (v != null) {
-            builder = builder.setString(name, v);
+            builder = builder.setInstant(name, v);
         }
         return this;
     }
@@ -59,21 +91,6 @@ public class BoundStatementBuilderWrapper {
         return this;
     }
 
-    public BoundStatementBuilderWrapper setBoolean(@NonNull String name, boolean v) {
-        builder = builder.setBoolean(name, v);
-        return this;
-    }
-
-    public BoundStatementBuilderWrapper setInt(@NonNull String name, int v) {
-        builder = builder.setInt(name, v);
-        return this;
-    }
-
-    public BoundStatementBuilderWrapper setLong(@NonNull String name, long v) {
-        builder = builder.setLong(name, v);
-        return this;
-    }
-
     public BoundStatementBuilderWrapper setByteBuffer(@NonNull String name, @Nullable ByteBuffer v) {
         if (v != null) {
             builder = builder.setByteBuffer(name, v);
@@ -81,9 +98,9 @@ public class BoundStatementBuilderWrapper {
         return this;
     }
 
-    public BoundStatementBuilderWrapper setInstant(@NonNull String name, @Nullable Instant v) {
+    public BoundStatementBuilderWrapper setString(@NonNull String name, @Nullable String v) {
         if (v != null) {
-            builder = builder.setInstant(name, v);
+            builder = builder.setString(name, v);
         }
         return this;
     }
@@ -92,16 +109,6 @@ public class BoundStatementBuilderWrapper {
         if (v != null) {
             builder = builder.setSet(name, v, elementsClass);
         }
-        return this;
-    }
-
-    public BoundStatementBuilderWrapper setConsistencyLevel(@Nullable ConsistencyLevel consistencyLevel) {
-        builder.setConsistencyLevel(consistencyLevel);
-        return this;
-    }
-
-    public BoundStatementBuilderWrapper setTimeout(@Nullable Duration timeout) {
-        builder.setTimeout(timeout);
         return this;
     }
 

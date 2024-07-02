@@ -23,7 +23,6 @@ import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.core.cql.TraceEvent;
 import com.exactpro.cradle.BookCache;
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.BookInfo;
@@ -127,8 +126,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.exactpro.cradle.cassandra.utils.StorageUtils.toLocalDate;
@@ -1172,31 +1169,6 @@ public class CassandraCradleStorage extends CradleStorage
 		{
 			throw new CradleStorageException("Error while creating storage", e);
 		}
-	}
-
-	private final Pattern tombstonesPattern = Pattern.compile("Read (\\d+) live rows and (\\d+) tombstone cells");
-	public long countTombstones(String keyspace, String table) throws CradleStorageException {
-		ResultSet rs;
-		try {
-			rs = exec.executeReadWithTracing("SELECT * FROM " + keyspace + '.' + table);
-		} catch (IOException e) {
-			throw new CradleStorageException("Failed to count tombstones", e);
-		}
-
-		long tombstonesSum = 0;
-		for (TraceEvent event: rs.getExecutionInfo().getQueryTrace().getEvents()) {
-			String activity = event.getActivity();
-			if (activity == null) continue;
-
-			Matcher matcher = tombstonesPattern.matcher(activity);
-			if (matcher.matches()) {
-				String tombstonesString = matcher.group(2);
-				long tombstones = Long.parseLong(tombstonesString);
-				tombstonesSum += tombstones;
-			}
-		}
-
-		return tombstonesSum;
 	}
 
 	protected CassandraStorageSettings getSettings()

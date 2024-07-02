@@ -17,17 +17,24 @@
 package com.exactpro.cradle.cassandra.integration;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.exactpro.cradle.*;
+import com.exactpro.cradle.BookInfo;
+import com.exactpro.cradle.BookId;
+import com.exactpro.cradle.BookToAdd;
+import com.exactpro.cradle.PageInfo;
+import com.exactpro.cradle.PageId;
+import com.exactpro.cradle.PageToAdd;
+import com.exactpro.cradle.Direction;
+import com.exactpro.cradle.CoreStorageSettings;
 import com.exactpro.cradle.cassandra.CassandraCradleStorage;
-import com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity;
-import com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
 import com.exactpro.cradle.messages.MessageToStore;
-import com.exactpro.cradle.testevents.*;
+import com.exactpro.cradle.testevents.TestEventToStore;
+import com.exactpro.cradle.testevents.TestEventBatchToStore;
+import com.exactpro.cradle.testevents.StoredTestEventId;
+import com.exactpro.cradle.testevents.TestEventSingleToStoreBuilder;
+import com.exactpro.cradle.testevents.TestEventBatchToStoreBuilder;
 import com.exactpro.cradle.utils.CradleStorageException;
-import org.assertj.core.api.Assertions;
 import org.jetbrains.annotations.NotNull;
-import org.testng.annotations.AfterMethod;
+import org.testng.annotations.Listeners;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -46,6 +53,7 @@ import java.util.stream.Collectors;
  * use tests with embedded cassandra without
  * actually calling any of init or utility methods
  */
+@Listeners(TombstoneCounterListener.class)
 public abstract class BaseCradleCassandraTest {
     protected static final String DEFAULT_PAGE_PREFIX = "test_page_";
     protected static final BookId DEFAULT_BOOK_ID = new BookId("test_book");
@@ -167,22 +175,6 @@ public abstract class BaseCradleCassandraTest {
         }
 
         return batch;
-    }
-
-    @AfterMethod(description = "Verify that no tombstones was created")
-    public void ensureNoTombstones() {
-        try {
-            long tombstonesEvents = storage.countTombstones(CassandraCradleHelper.KEYSPACE_NAME, TestEventEntity.TABLE_NAME);
-            Assertions.assertThat(tombstonesEvents).isZero();
-
-            long tombstonesMessages = storage.countTombstones(CassandraCradleHelper.KEYSPACE_NAME, MessageBatchEntity.TABLE_NAME);
-            Assertions.assertThat(tombstonesMessages).isZero();
-
-            long tombstonesGroupedMessages = storage.countTombstones(CassandraCradleHelper.KEYSPACE_NAME, GroupedMessageBatchEntity.TABLE_NAME);
-            Assertions.assertThat(tombstonesGroupedMessages).isZero();
-        } catch (CradleStorageException e) {
-            Assertions.fail(e);
-        }
     }
 
     @NotNull
