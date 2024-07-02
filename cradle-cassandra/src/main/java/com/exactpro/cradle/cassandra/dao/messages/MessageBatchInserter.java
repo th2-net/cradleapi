@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,11 +28,10 @@ import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
+import com.exactpro.cradle.cassandra.dao.BoundStatementBuilderWrapper;
 import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.*;
 
-
 public class MessageBatchInserter {
-
     private final CqlSession session;
     private final PreparedStatement insertStatement;
 
@@ -42,7 +41,7 @@ public class MessageBatchInserter {
     }
 
     public CompletableFuture<AsyncResultSet> insert(MessageBatchEntity messageBatch, Function<BoundStatementBuilder, BoundStatementBuilder> attributes) {
-        BoundStatementBuilder builder = insertStatement.boundStatementBuilder()
+        BoundStatement statement = BoundStatementBuilderWrapper.builder(insertStatement)
                 .setString(FIELD_BOOK, messageBatch.getBook())
                 .setString(FIELD_PAGE, messageBatch.getPage())
                 .setString(FIELD_SESSION_ALIAS, messageBatch.getSessionAlias())
@@ -61,11 +60,11 @@ public class MessageBatchInserter {
                 .setByteBuffer(FIELD_CONTENT, messageBatch.getContent())
                 .setInstant(FIELD_REC_DATE, Instant.now())
                 .setInt(FIELD_CONTENT_SIZE, messageBatch.getContentSize())
-                .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, messageBatch.getUncompressedContentSize());
+                .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, messageBatch.getUncompressedContentSize())
 
+                .apply(attributes)
+                .build();
 
-        attributes.apply(builder);
-        BoundStatement statement = builder.build();
         return session.executeAsync(statement).toCompletableFuture();
     }
 }

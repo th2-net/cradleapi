@@ -210,6 +210,8 @@ Test events have mandatory parameters that are verified when storing an event. T
 ## Release notes
 
 ### 5.4.1
+* Skip null values for 'type', 'messages' and 'labels' fields when writing to Cassandra to avoid tombstones creation.
+* Migrated to th2 gradle plugin: `0.0.8` (bom: `4.6.1`)
 * Page interval in page cache hols all pages covered the interval.<br>
   Fixed the problem - components reload page interval and last page each time when page starts in day before and ends day after requested period.
 * Corrected default settings:
@@ -218,7 +220,7 @@ Test events have mandatory parameters that are verified when storing an event. T
   * composingServiceThreads: `5` -> `1`
 
 ### 5.4.0
-* Using internal executor instead of ForkJoinPool.commonPool() to process intermediate tasks 
+* Using internal executor instead of ForkJoinPool.commonPool() to process intermediate tasks
 
 ### 5.3.0
 + Migrated to th2 gradle plugin: `0.0.5` (bom: `4.6.1`)

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2022-2024 Exactpro (Exactpro Systems Limited)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.exactpro.cradle.cassandra.dao.messages;
 
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -7,6 +23,7 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.mapper.MapperContext;
 import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
+import com.exactpro.cradle.cassandra.dao.BoundStatementBuilderWrapper;
 
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
@@ -15,7 +32,17 @@ import java.util.function.Function;
 import static com.exactpro.cradle.cassandra.dao.CradleEntity.FIELD_COMPRESSED;
 import static com.exactpro.cradle.cassandra.dao.CradleEntity.FIELD_CONTENT;
 import static com.exactpro.cradle.cassandra.dao.CradleEntity.FIELD_LABELS;
-import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.*;
+import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_ALIAS_GROUP;
+import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_BOOK;
+import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_CONTENT_SIZE;
+import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_FIRST_MESSAGE_DATE;
+import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_FIRST_MESSAGE_TIME;
+import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_LAST_MESSAGE_DATE;
+import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_LAST_MESSAGE_TIME;
+import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_MESSAGE_COUNT;
+import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_PAGE;
+import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_REC_DATE;
+import static com.exactpro.cradle.cassandra.dao.messages.GroupedMessageBatchEntity.FIELD_UNCOMPRESSED_CONTENT_SIZE;
 
 public class GroupedMessageBatchInserter {
     private final CqlSession session;
@@ -26,8 +53,9 @@ public class GroupedMessageBatchInserter {
         this.insertStatement = session.prepare(helper.insert().build());
     }
 
-    public CompletableFuture<AsyncResultSet> insert(GroupedMessageBatchEntity groupedMessageBatch, Function<BoundStatementBuilder, BoundStatementBuilder> attributes) {
-        BoundStatementBuilder builder = insertStatement.boundStatementBuilder()
+    public CompletableFuture<AsyncResultSet> insert(GroupedMessageBatchEntity groupedMessageBatch,
+                                                    Function<BoundStatementBuilder, BoundStatementBuilder> attributes) {
+        BoundStatement statement = BoundStatementBuilderWrapper.builder(insertStatement)
                 .setString(FIELD_BOOK, groupedMessageBatch.getBook())
                 .setString(FIELD_PAGE, groupedMessageBatch.getPage())
                 .setString(FIELD_ALIAS_GROUP, groupedMessageBatch.getGroup())
@@ -43,11 +71,11 @@ public class GroupedMessageBatchInserter {
                 .setByteBuffer(FIELD_CONTENT, groupedMessageBatch.getContent())
                 .setInstant(FIELD_REC_DATE, Instant.now())
                 .setInt(FIELD_CONTENT_SIZE, groupedMessageBatch.getContentSize())
-                .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, groupedMessageBatch.getUncompressedContentSize());
+                .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, groupedMessageBatch.getUncompressedContentSize())
 
+                .apply(attributes)
+                .build();
 
-        attributes.apply(builder);
-        BoundStatement statement = builder.build();
         return session.executeAsync(statement).toCompletableFuture();
     }
 }

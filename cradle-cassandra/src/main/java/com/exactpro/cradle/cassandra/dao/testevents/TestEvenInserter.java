@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -27,6 +28,7 @@ import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
+import com.exactpro.cradle.cassandra.dao.BoundStatementBuilderWrapper;
 import static com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity.*;
 
 public class TestEvenInserter {
@@ -39,8 +41,9 @@ public class TestEvenInserter {
         this.insertStatement = session.prepare(helper.insert().build());
     }
 
-    public CompletableFuture<AsyncResultSet> insert(TestEventEntity testEvent, Function<BoundStatementBuilder, BoundStatementBuilder> attributes) {
-        BoundStatementBuilder builder = insertStatement.boundStatementBuilder()
+    public CompletableFuture<AsyncResultSet> insert(TestEventEntity testEvent,
+                                                    Function<BoundStatementBuilder, BoundStatementBuilder> attributes) {
+        BoundStatement statement = BoundStatementBuilderWrapper.builder(insertStatement)
                 .setString(FIELD_BOOK, testEvent.getBook())
                 .setString(FIELD_PAGE, testEvent.getPage())
                 .setString(FIELD_SCOPE, testEvent.getScope())
@@ -64,11 +67,11 @@ public class TestEvenInserter {
                 .setByteBuffer(FIELD_CONTENT, testEvent.getContent())
                 .setInstant(FIELD_REC_DATE, Instant.now())
                 .setInt(FIELD_CONTENT_SIZE, testEvent.getContentSize())
-                .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, testEvent.getUncompressedContentSize());
+                .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, testEvent.getUncompressedContentSize())
 
+                .apply(attributes)
+                .build();
 
-        attributes.apply(builder);
-        BoundStatement statement = builder.build();
         return session.executeAsync(statement).toCompletableFuture();
     }
 }
