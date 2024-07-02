@@ -32,6 +32,7 @@ import java.util.Random;
 
 import static com.exactpro.cradle.Order.DIRECT;
 import static com.exactpro.cradle.Order.REVERSE;
+import static com.exactpro.cradle.TestPagesLoader.copy;
 import static com.google.common.collect.Lists.newArrayList;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.time.temporal.ChronoUnit.HOURS;
@@ -39,7 +40,6 @@ import static java.time.temporal.ChronoUnit.NANOS;
 import static java.util.Collections.emptyList;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertSame;
 
 public class BookInfoTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(BookInfoTest.class);
@@ -84,32 +84,32 @@ public class BookInfoTest {
 
         for (int addIndex = 0; addIndex < PAGES.size(); addIndex++) {
             PageInfo newPage = PAGES.get(addIndex);
-            operateSource.add(newPage);
+            operateSource.add(copy(newPage));
             bookInfo.invalidate(newPage.getStarted());
 
-            assertSame(bookInfo.getFirstPage(), PAGES.get(0), "iteration - " + addIndex);
-            assertSame(bookInfo.getLastPage(), newPage, "iteration - " + addIndex);
+            assertEquals(bookInfo.getFirstPage(), PAGES.get(0), "iteration - " + addIndex);
+            assertEquals(bookInfo.getLastPage(), newPage, "iteration - " + addIndex);
             assertEquals(bookInfo.getPages(), PAGES.subList(0, addIndex + 1), "iteration - " + addIndex);
 
             for (int checkIndex = addIndex; checkIndex >= 0; checkIndex--) {
                 PageInfo source = PAGES.get(checkIndex);
-                assertSame(bookInfo.getPage(source.getId()), source, "iteration - " + addIndex + '.' + checkIndex);
-                assertSame(bookInfo.findPage(source.getId().getStart()), source, "iteration - " + addIndex + '.' + checkIndex);
+                assertEquals(bookInfo.getPage(source.getId()), source, "iteration - " + addIndex + '.' + checkIndex);
+                assertEquals(bookInfo.findPage(source.getId().getStart()), source, "iteration - " + addIndex + '.' + checkIndex);
 
                 if (source.getEnded() == null) {
-                    assertSame(bookInfo.findPage(Instant.MAX), source, "iteration - " + addIndex + '.' + checkIndex);
+                    assertEquals(bookInfo.findPage(Instant.MAX), source, "iteration - " + addIndex + '.' + checkIndex);
                 } else {
-                    assertSame(bookInfo.findPage(source.getEnded().minus(1, NANOS)), source, "iteration - " + addIndex + '.' + checkIndex);
+                    assertEquals(bookInfo.findPage(source.getEnded().minus(1, NANOS)), source, "iteration - " + addIndex + '.' + checkIndex);
                 }
 
                 if (checkIndex > 0) {
-                    assertSame(bookInfo.getPreviousPage(source.getId().getStart()), PAGES.get(checkIndex - 1), "iteration - " + addIndex + '.' + checkIndex);
+                    assertEquals(bookInfo.getPreviousPage(source.getId().getStart()), PAGES.get(checkIndex - 1), "iteration - " + addIndex + '.' + checkIndex);
                 } else {
                     assertNull(bookInfo.getPreviousPage(source.getId().getStart()), "iteration - " + addIndex + '.' + checkIndex + ", timestamp: " + source.getId().getStart());
                 }
 
                 if (checkIndex < addIndex) {
-                    assertSame(bookInfo.getNextPage(source.getId().getStart()), PAGES.get(checkIndex + 1), "iteration - " + addIndex + '.' + checkIndex);
+                    assertEquals(bookInfo.getNextPage(source.getId().getStart()), PAGES.get(checkIndex + 1), "iteration - " + addIndex + '.' + checkIndex);
                 } else {
                     assertNull(bookInfo.getNextPage(source.getId().getStart()), "iteration - " + addIndex + '.' + checkIndex + ", timestamp: " + source.getId().getStart());
                 }
@@ -346,9 +346,10 @@ public class BookInfoTest {
 
     @Test
     public void findPageTest() {
-        Instant time1 = Instant.parse("2024-02-13T12:00:00Z");
-        Instant time2 = Instant.parse("2024-02-15T12:00:00Z");
-        Instant time3 = Instant.parse("2024-02-15T18:00:00Z");
+        Instant now = Instant.now();
+        Instant time1 = now.minus(1, DAYS).truncatedTo(DAYS).plus(12, HOURS);//  Instant.parse("2024-02-13T12:00:00Z");
+        Instant time2 = now.plus(1, DAYS).truncatedTo(DAYS).plus(12, HOURS);//Instant.parse("2024-02-15T12:00:00Z");
+        Instant time3 = now.plus(1, DAYS).truncatedTo(DAYS).plus(18, HOURS);//Instant.parse("2024-02-15T18:00:00Z");
         List<PageInfo> operateSource = List.of(
                 createPageInfo(time1, time2),
                 createPageInfo(time2, time3),
@@ -509,8 +510,8 @@ public class BookInfoTest {
             int index = RANDOM.nextInt(operateSource.size());
             PageInfo pageForRemove = operateSource.get(index);
 
-            assertSame(bookInfo.getPage(pageForRemove.getId()), pageForRemove, "iteration - " + iteration);
-            assertSame(bookInfo.findPage(pageForRemove.getId().getStart()), pageForRemove, "iteration - " + iteration);
+            assertEquals(bookInfo.getPage(pageForRemove.getId()), pageForRemove, "iteration - " + iteration);
+            assertEquals(bookInfo.findPage(pageForRemove.getId().getStart()), pageForRemove, "iteration - " + iteration);
             assertEquals(bookInfo.getPages(), operateSource, "iteration - " + iteration);
 
             operateSource.remove(index);
@@ -519,15 +520,15 @@ public class BookInfoTest {
             assertNull(bookInfo.getPage(pageForRemove.getId()), "iteration - " + iteration);
 
             for (PageInfo page : operateSource) {
-                assertSame(bookInfo.getPage(page.getId()), page, "iteration - " + iteration);
-                assertSame(bookInfo.findPage(page.getId().getStart()), page, "iteration - " + iteration);
+                assertEquals(bookInfo.getPage(page.getId()), page, "iteration - " + iteration);
+                assertEquals(bookInfo.findPage(page.getId().getStart()), page, "iteration - " + iteration);
             }
         }
     }
 
     @Test
     public void addPageTest() {
-        ArrayList<PageInfo> pages = new ArrayList<>();
+        List<PageInfo> pages = new ArrayList<>();
         BookInfo bookInfo = createBookInfo(pages, 1);
 
         assertNull(bookInfo.getFirstPage());
@@ -535,14 +536,68 @@ public class BookInfoTest {
 
         for (int i = 0; i < PAGES.size(); i++) {
             PageInfo page = PAGES.get(i);
-            pages.add(page);
+            pages.add(copy(page));
             bookInfo.invalidate(page.getStarted());
 
-            assertSame(bookInfo.getFirstPage(), pages.get(0), "iteration - " + i);
-            assertSame(bookInfo.getLastPage(), pages.get(pages.size() - 1), "iteration - " + i);
-            assertSame(bookInfo.getPage(page.getId()), page, "iteration - " + i);
-            assertSame(bookInfo.findPage(page.getId().getStart()), page, "iteration - " + i);
+            assertEquals(bookInfo.getFirstPage(), pages.get(0), "iteration - " + i);
+            assertEquals(bookInfo.getLastPage(), pages.get(pages.size() - 1), "iteration - " + i);
+            assertEquals(bookInfo.getPage(page.getId()), page, "iteration - " + i);
+            assertEquals(bookInfo.findPage(page.getId().getStart()), page, "iteration - " + i);
         }
+    }
+
+    @Test
+    public void getNextPageInfoTest() {
+        Instant now = Instant.now();
+        // -2 00:00 - -1 00:00
+        PageInfo page1 = createPageInfo(now.minus( 2, DAYS).truncatedTo(DAYS), now.minus( 1, DAYS).truncatedTo(DAYS));
+        // -1 00:00 - 1 00:00
+        PageInfo page2 = createPageInfo(page1.getEnded(), now.plus(1, DAYS).truncatedTo(DAYS));
+        // 1 00:00 - 1 12:00
+        PageInfo page3 = createPageInfo(page2.getEnded(), now.plus(1, DAYS).truncatedTo(DAYS).plus(12, HOURS));
+        // 1 12:00 - 2 12:00
+        PageInfo page4 = createPageInfo(page3.getEnded(), now.plus(2, DAYS).truncatedTo(DAYS).plus(12, HOURS));
+        // 2 12:00 - max
+        PageInfo page5 = createPageInfo(page4.getEnded(), null);
+
+        List<PageInfo> pages = newArrayList(page1, page2, page3, page4, page5);
+        BookInfo bookInfo = createBookInfo(pages, 2);
+
+        assertEquals(bookInfo.getNextPage(now.minus(4, DAYS).truncatedTo(DAYS)), page1);
+        assertEquals(bookInfo.getNextPage(now.minus(3, DAYS).truncatedTo(DAYS)), page1);
+        assertEquals(bookInfo.getNextPage(now.minus(2, DAYS).truncatedTo(DAYS)), page2);
+        assertEquals(bookInfo.getNextPage(now.minus(1, DAYS).truncatedTo(DAYS)), page3);
+        assertEquals(bookInfo.getNextPage(now.truncatedTo(DAYS)), page3);
+        assertEquals(bookInfo.getNextPage(now.plus(1, DAYS).truncatedTo(DAYS)), page4);
+        assertEquals(bookInfo.getNextPage(now.plus(2, DAYS).truncatedTo(DAYS)), page5);
+        assertNull(bookInfo.getNextPage(now.plus(3, DAYS).truncatedTo(DAYS)));
+    }
+
+    @Test
+    public void getPreviousPageInfoTest() {
+        Instant now = Instant.now();
+        // -2 00:00 - -1 00:00
+        PageInfo page1 = createPageInfo(now.minus( 2, DAYS).truncatedTo(DAYS), now.minus( 1, DAYS).truncatedTo(DAYS), "page1");
+        // -1 00:00 - 1 00:00
+        PageInfo page2 = createPageInfo(page1.getEnded(), now.plus(1, DAYS).truncatedTo(DAYS), "page2");
+        // 1 00:00 - 1 12:00
+        PageInfo page3 = createPageInfo(page2.getEnded(), now.plus(1, DAYS).truncatedTo(DAYS).plus(12, HOURS), "page3");
+        // 1 12:00 - 2 12:00
+        PageInfo page4 = createPageInfo(page3.getEnded(), now.plus(2, DAYS).truncatedTo(DAYS).plus(12, HOURS), "page4");
+        // 2 12:00 - max
+        PageInfo page5 = createPageInfo(page4.getEnded(), null, "page5");
+
+        List<PageInfo> pages = newArrayList(page1, page2, page3, page4, page5);
+        BookInfo bookInfo = createBookInfo(pages, 2);
+
+        assertNull(bookInfo.getPreviousPage(now.minus(3, DAYS).truncatedTo(DAYS)));
+        assertNull(bookInfo.getPreviousPage(now.minus(2, DAYS).truncatedTo(DAYS)));
+        assertEquals(bookInfo.getPreviousPage(now.minus(1, DAYS).truncatedTo(DAYS)), page1);
+        assertEquals(bookInfo.getPreviousPage(now.truncatedTo(DAYS)), page1);
+        assertEquals(bookInfo.getPreviousPage(now.plus(1, DAYS).truncatedTo(DAYS)), page2);
+        assertEquals(bookInfo.getPreviousPage(now.plus(2, DAYS).truncatedTo(DAYS)), page3);
+        assertEquals(bookInfo.getPreviousPage(now.plus(3, DAYS).truncatedTo(DAYS)), page4);
+        assertEquals(bookInfo.getPreviousPage(now.plus(5, DAYS).truncatedTo(DAYS)), page4);
     }
 
     private static <T> List<T> optionalReverse(Order order, List<T> origin) {
@@ -565,8 +620,12 @@ public class BookInfoTest {
                 new TestPageLoader(pages, false));
     }
 
+    private static PageInfo createPageInfo(Instant start, @Nullable Instant end, String comment) {
+        return new PageInfo(new PageId(BOOK_ID, start, start.toString()), end, comment);
+    }
+
     private static PageInfo createPageInfo(Instant start, @Nullable Instant end) {
-        return new PageInfo(new PageId(BOOK_ID, start, start.toString()), end, "test-comment");
+        return createPageInfo(start, end, "test-comment");
     }
 
     @DataProvider(name = "orders")

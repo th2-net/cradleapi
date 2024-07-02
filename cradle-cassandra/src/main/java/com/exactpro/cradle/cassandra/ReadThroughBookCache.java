@@ -32,6 +32,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -89,24 +90,42 @@ public class ReadThroughBookCache implements BookCache {
         return result;
     }
 
-    public Collection<PageInfo> loadPageInfo(BookId bookId, Instant start, Instant end, boolean loadRemoved) {
-        Collection<PageInfo> result = new ArrayList<>();
+    /**
+     * Executes request to Cassandra and filter results by parameters.
+     * This method can take much time when cradle contains a lot of pages.
+     * @param bookId - book id
+     * @param start - start timestamp (inclusive)
+     * @param end - end timestamp (exclusive)
+     * @param loadRemoved - if true, the method add pages marked as removed into result collection
+     * @return collection with pages which covered interval [start, end) where start is inclusive and end is exclusive.
+     */
+    Collection<PageInfo> loadPageInfo(BookId bookId, Instant start, Instant end, boolean loadRemoved) {
+        List<PageInfo> result = new ArrayList<>();
         LocalDate startDate = start != null ? toLocalDate(start) : LocalDate.MIN;
         LocalTime startTime = start != null ? toLocalTime(start) : LocalTime.MIN;
         LocalDate endDate = end != null ? toLocalDate(end) : LocalDate.MAX;
         LocalTime endTime = end != null ? toLocalTime(end) : LocalTime.MAX;
-        for (PageEntity pageEntity : operators.getPageOperator().get(
+        for (PageEntity pageEntity : operators.getPageOperator().getAllDescBefore(
                 bookId.getName(),
-                startDate,
-                startTime,
                 endDate,
                 endTime,
                 readAttrs
         )) {
             if (loadRemoved || pageEntity.getRemoved() == null || pageEntity.getRemoved().equals(DEFAULT_PAGE_REMOVE_TIME)) {
+                if (pageEntity.getEndDate() != null
+                        && pageEntity.getEndTime() != null
+                        && (startDate.isAfter(pageEntity.getEndDate())
+                            || startDate.equals(pageEntity.getEndDate())
+                                && startTime.isAfter(pageEntity.getEndTime()))) {
+                    break;
+                }
                 result.add(pageEntity.toPageInfo());
             }
         }
+        if (result.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Collections.reverse(result);
         return result;
     }
 

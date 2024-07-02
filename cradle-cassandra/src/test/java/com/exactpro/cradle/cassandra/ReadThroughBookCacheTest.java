@@ -1,5 +1,5 @@
 /*
- *  Copyright 2023 Exactpro (Exactpro Systems Limited)
+ *  Copyright 2023-2024 Exactpro (Exactpro Systems Limited)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -34,14 +34,11 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
 import static com.exactpro.cradle.cassandra.CassandraStorageSettings.DEFAULT_PAGE_REMOVE_TIME;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.same;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
@@ -110,25 +107,6 @@ public class ReadThroughBookCacheTest {
         doReturn(pageOperator).when(operators).getPageOperator();
         doReturn(bookOperator).when(operators).getBookOperator();
         doReturn(pagingIterable).when(pageOperator).getAll(same(bookId.getName()), same(readAttrs));
-        doAnswer(invocation -> {
-            LocalDate startDate = invocation.getArgument(1);
-            LocalTime startTime = invocation.getArgument(2);
-            LocalDate endDate = invocation.getArgument(3);
-            LocalTime endTime = invocation.getArgument(4);
-
-            List<PageEntity> result = new ArrayList<>();
-            for (PageEntity pageEntity : pagingIterable) {
-                if ((startDate == null || !startDate.isAfter(pageEntity.getStartDate())) &&
-                        (startTime == null || !startTime.isAfter(pageEntity.getStartTime())) &&
-                        (endDate == null || pageEntity.getEndDate() == null || !endDate.isBefore(pageEntity.getEndDate())) &&
-                        (endTime == null || pageEntity.getEndTime() == null || !endTime.isBefore(pageEntity.getEndTime()))) {
-                    result.add(pageEntity);
-                }
-            }
-            PagingIterable<PageEntity> iterable = mock(PagingIterable.class);
-            doReturn(result.iterator()).when(iterable).iterator();
-            return iterable;
-        }).when(pageOperator).get(same(bookId.getName()), any(), any(), any(), any(), same(readAttrs));
         doReturn(bookEntity).when(bookOperator).get(same(bookId.getName()), same(readAttrs));
     }
 

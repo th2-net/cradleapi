@@ -33,10 +33,16 @@ public class TestPagesLoader implements PagesLoader {
     @Nonnull
     @Override
     public Collection<PageInfo> load(@Nonnull BookId bookId, @Nullable Instant start, @Nullable Instant end) {
-        return pages.stream()
-                .filter(page -> (start == null || !start.isAfter(page.getId().getStart()))
-                        && (end == null || !end.isBefore(page.getStarted()))
-                )
-                .collect(Collectors.toList());
+        return pages.stream().map(TestPagesLoader::copy).collect(Collectors.toList());
+    }
+
+    public static PageInfo copy(PageInfo pageInfo) {
+        return new PageInfo(
+                pageInfo.getId(),
+                pageInfo.getEnded(),
+                pageInfo.getComment(),
+                pageInfo.getUpdated(),
+                pageInfo.getRemoved()
+        );
     }
 }
