@@ -21,12 +21,10 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
+import com.datastax.oss.driver.api.mapper.annotations.Delete;
+import com.datastax.oss.driver.api.mapper.annotations.Query;
 import com.datastax.oss.driver.api.mapper.annotations.QueryProvider;
 import com.datastax.oss.driver.api.mapper.annotations.Select;
-import com.datastax.oss.driver.api.mapper.annotations.Query;
-import com.datastax.oss.driver.api.mapper.annotations.Delete;
-
-import com.exactpro.cradle.cassandra.dao.BoundStatementBuilderWrapper;
 import com.exactpro.cradle.cassandra.dao.CommonQueryProvider;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 
@@ -35,7 +33,16 @@ import java.time.LocalTime;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.*;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_BOOK;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_DIRECTION;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_FIRST_MESSAGE_DATE;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_FIRST_MESSAGE_TIME;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_LAST_MESSAGE_DATE;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_LAST_MESSAGE_TIME;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_LAST_SEQUENCE;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_PAGE;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_SEQUENCE;
+import static com.exactpro.cradle.cassandra.dao.messages.MessageBatchEntity.FIELD_SESSION_ALIAS;
 
 @Dao
 public interface MessageBatchOperator {
@@ -125,7 +132,7 @@ public interface MessageBatchOperator {
 
 	@QueryProvider(providerClass = MessageBatchInserter.class, entityHelpers = MessageBatchEntity.class, providerMethod = "insert")
 	CompletableFuture<AsyncResultSet> write(MessageBatchEntity batch,
-											Function<BoundStatementBuilderWrapper, BoundStatementBuilderWrapper> attributes);
+											Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
 	@Delete(entityClass = MessageBatchEntity.class)
 	void remove(String book, String page, String sessionAlias, String direction,

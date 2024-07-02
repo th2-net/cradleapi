@@ -20,7 +20,6 @@ import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.exactpro.cradle.BookCache;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
-import com.exactpro.cradle.cassandra.dao.BoundStatementBuilderWrapper;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 
@@ -36,15 +35,12 @@ public class WorkerSupplies {
     private final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs;
     private final Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs;
     private final Function<BatchStatementBuilder, BatchStatementBuilder> batchWriteAttrs;
-    private final Function<BoundStatementBuilderWrapper, BoundStatementBuilderWrapper> writeWrapperAttrs;
-
     public WorkerSupplies(CassandraStorageSettings settings, CassandraOperators operators,
                           ExecutorService composingService, BookCache BookCache,
                           SelectQueryExecutor selectExecutor,
                           Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs,
                           Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs,
-                          Function<BatchStatementBuilder, BatchStatementBuilder> batchWriteAttrs,
-                          Function<BoundStatementBuilderWrapper, BoundStatementBuilderWrapper> writeWrapperAttrs
+                          Function<BatchStatementBuilder, BatchStatementBuilder> batchWriteAttrs
     ) {
         this.settings = settings;
         this.operators = operators;
@@ -54,7 +50,6 @@ public class WorkerSupplies {
         this.writeAttrs = writeAttrs;
         this.readAttrs = readAttrs;
         this.batchWriteAttrs = batchWriteAttrs;
-        this.writeWrapperAttrs = writeWrapperAttrs;
     }
 
     public CassandraStorageSettings getSettings() {
@@ -87,9 +82,5 @@ public class WorkerSupplies {
 
     public Function<BatchStatementBuilder, BatchStatementBuilder> getBatchWriteAttrs() {
         return batchWriteAttrs;
-    }
-
-    public Function<BoundStatementBuilderWrapper, BoundStatementBuilderWrapper> getWriteWrapperAttrs() {
-        return writeWrapperAttrs;
     }
 }

@@ -19,6 +19,7 @@ package com.exactpro.cradle.cassandra.dao.messages;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.mapper.MapperContext;
 import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
@@ -39,8 +40,8 @@ public class MessageBatchInserter {
         this.insertStatement = session.prepare(helper.insert().build());
     }
 
-    public CompletableFuture<AsyncResultSet> insert(MessageBatchEntity messageBatch, Function<BoundStatementBuilderWrapper, BoundStatementBuilderWrapper> attributes) {
-        BoundStatementBuilderWrapper builderWrapper = new BoundStatementBuilderWrapper(insertStatement)
+    public CompletableFuture<AsyncResultSet> insert(MessageBatchEntity messageBatch, Function<BoundStatementBuilder, BoundStatementBuilder> attributes) {
+        BoundStatement statement = BoundStatementBuilderWrapper.builder(insertStatement)
                 .setString(FIELD_BOOK, messageBatch.getBook())
                 .setString(FIELD_PAGE, messageBatch.getPage())
                 .setString(FIELD_SESSION_ALIAS, messageBatch.getSessionAlias())
@@ -59,10 +60,11 @@ public class MessageBatchInserter {
                 .setByteBuffer(FIELD_CONTENT, messageBatch.getContent())
                 .setInstant(FIELD_REC_DATE, Instant.now())
                 .setInt(FIELD_CONTENT_SIZE, messageBatch.getContentSize())
-                .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, messageBatch.getUncompressedContentSize());
+                .setInt(FIELD_UNCOMPRESSED_CONTENT_SIZE, messageBatch.getUncompressedContentSize())
 
-        attributes.apply(builderWrapper);
-        BoundStatement statement = builderWrapper.build();
+                .apply(attributes)
+                .build();
+
         return session.executeAsync(statement).toCompletableFuture();
     }
 }

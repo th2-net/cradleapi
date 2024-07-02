@@ -154,7 +154,7 @@ public class EventsWorker extends Worker {
             TestEventEntity entity = serializedEntity.getEntity();
             List<SerializedEntityMetadata> meta = serializedEntity.getSerializedEntityData().getSerializedEntityMetadata();
 
-            return op.write(entity, writeWrapperAttrs)
+            return op.write(entity, writeAttrs)
                     .thenAcceptAsync(result -> {
                         try {
                             Instant firstTimestamp = meta.get(0).getTimestamp();

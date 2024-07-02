@@ -29,6 +29,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
 * This wrapper skips null values to avoid tombstones creation in Cassandra tables
@@ -46,7 +47,7 @@ public class BoundStatementBuilderWrapper {
         return this;
     }
 
-    public BoundStatementBuilderWrapper(PreparedStatement statement) {
+    private BoundStatementBuilderWrapper(PreparedStatement statement) {
         builder = statement.boundStatementBuilder();
     }
 
@@ -112,7 +113,16 @@ public class BoundStatementBuilderWrapper {
         return this;
     }
 
+    public BoundStatementBuilderWrapper apply(Function<BoundStatementBuilder, BoundStatementBuilder> func) {
+        builder = func.apply(builder);
+        return this;
+    }
+
     public BoundStatement build() {
         return builder.build();
+    }
+
+    public static BoundStatementBuilderWrapper builder(PreparedStatement statement) {
+        return new BoundStatementBuilderWrapper(statement);
     }
 }

@@ -22,7 +22,6 @@ import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.BookInfo;
 import com.exactpro.cradle.FetchParameters;
 import com.exactpro.cradle.cassandra.CassandraStorageSettings;
-import com.exactpro.cradle.cassandra.dao.BoundStatementBuilderWrapper;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -44,7 +43,6 @@ public abstract class Worker {
     protected final BookCache bookCache;
     protected final SelectQueryExecutor selectQueryExecutor;
     protected final Function<BoundStatementBuilder, BoundStatementBuilder> writeAttrs, readAttrs;
-    protected final Function<BoundStatementBuilderWrapper, BoundStatementBuilderWrapper> writeWrapperAttrs;
 
     public Worker(WorkerSupplies workerSupplies) {
         this.settings = workerSupplies.getSettings();
@@ -54,7 +52,6 @@ public abstract class Worker {
         this.selectQueryExecutor = workerSupplies.getSelectExecutor();
         this.writeAttrs = workerSupplies.getWriteAttrs();
         this.readAttrs = workerSupplies.getReadAttrs();
-        this.writeWrapperAttrs = workerSupplies.getWriteWrapperAttrs();
     }
 
     protected CassandraOperators getOperators() {
