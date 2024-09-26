@@ -1,4 +1,4 @@
-# Overview (5.4.2)
+# Overview (5.5.0)
 
 Cradle API is used to work with Cradle - the datalake where th2 stores its data.
 
@@ -208,6 +208,10 @@ Test events have mandatory parameters that are verified when storing an event. T
   * cause: EXPLICIT, REPLACED, COLLECTED, EXPIRED, SIZE
 
 ## Release notes
+
+### 5.5.0
+* Atomicity when adding new pages (`doAddPages` method in CassandraCradleStorage).
+* Updated th2 gradle plugin: `0.1.3` (bom: `4.8.0`)
 
 ### 5.4.2
 * Added ReadTimeoutException and WriteTimeoutException to the list of causes for retry.

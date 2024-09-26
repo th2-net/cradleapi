@@ -21,11 +21,14 @@ import static com.exactpro.cradle.cassandra.dao.books.PageEntity.*;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.PagingIterable;
+import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.mapper.annotations.*;
@@ -132,4 +135,10 @@ public interface PageOperator {
 	CompletableFuture<MappedAsyncPagingIterable<PageEntity>> getPagesForInterval(String book, LocalDate startDate, LocalTime startTime,
 																				LocalDate endDate, LocalTime endTime,
 																				Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+	@QueryProvider(providerClass = PageBatchInserter.class)
+	ResultSet addPages(Collection<PageEntity> pages, PageEntity lastPage, Function<BatchStatementBuilder, BatchStatementBuilder> attributes);
+
+	@SetEntity
+	BoundStatement bind(PageEntity page, BoundStatement boundStatement);
 }

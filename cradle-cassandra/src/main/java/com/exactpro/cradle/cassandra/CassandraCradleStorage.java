@@ -291,47 +291,28 @@ public class CassandraCradleStorage extends CradleStorage
 			throw new IOException("Error while writing info of book '"+bookId+"'", e);
 		}
 	}
-	
+
 	@Override
 	protected void doAddPages(BookId bookId, List<PageInfo> pages, PageInfo lastPage) throws IOException {
-		PageOperator pageOp = operators.getPageOperator();
-		PageNameOperator pageNameOp = operators.getPageNameOperator();
-		
-		String bookName = bookId.getName();
-		for (PageInfo page : pages)
-		{
-			String pageName = page.getName();
-			try
-			{
-				PageNameEntity nameEntity = new PageNameEntity(bookName, pageName, page.getStarted(), page.getComment(), page.getEnded());
-				if (!pageNameOp.writeNew(nameEntity, writeAttrs).wasApplied())
-					throw new IOException("Query to insert page '"+nameEntity.getName()+"' book '" + bookId.getName() + "' was not applied. Probably, page already exists");
-				PageEntity entity = new PageEntity(bookName, pageName, page.getStarted(), page.getComment(), page.getEnded(), page.getUpdated());
-				pageOp.write(entity, writeAttrs);
-			}
-			catch (IOException e)
-			{
-				throw e;
-			}
-			catch (Exception e)
-			{
-				throw new IOException("Error while writing info of page '"+pageName+"'", e);
-			}
-		}
-		
-		if (lastPage != null)
-		{
-			pageOp.update(new PageEntity(lastPage), writeAttrs);
-			pageNameOp.update(new PageNameEntity(lastPage), writeAttrs);
+		List<PageEntity> pagesToAdd = pages.stream()
+				.map(page -> new PageEntity(bookId.getName(), page.getName(), page.getStarted(), page.getComment(), page.getEnded(), page.getUpdated()))
+				.collect(Collectors.toList());
+
+		PageEntity lastPageEntity = lastPage != null ? new PageEntity(lastPage) : null;
+
+		try {
+			operators.getPageOperator().addPages(pagesToAdd, lastPageEntity, batchWriteAttrs);
+		} catch (Exception e) {
+			throw new IOException("Error while adding pages " + pages.stream().map(PageInfo::getName) + '.', e);
 		}
 	}
-	
+
 	@Override
 	protected Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException
 	{
 		return bookCache.loadPageInfo(bookId, false);
 	}
-	
+
 	@Override
 	protected void doRemovePage(PageInfo page) throws CradleStorageException {
 		PageId pageId = page.getId();
