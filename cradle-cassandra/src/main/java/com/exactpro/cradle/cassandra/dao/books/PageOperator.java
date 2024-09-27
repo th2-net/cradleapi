@@ -94,7 +94,7 @@ public interface PageOperator {
 
 	@Update(nullSavingStrategy = NullSavingStrategy.SET_TO_NULL)
 	ResultSet update(PageEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-	
+
 	@Insert
 	ResultSet write(PageEntity entity, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 	
@@ -137,4 +137,7 @@ public interface PageOperator {
 
 	@QueryProvider(providerClass = PageBatchInserter.class)
 	ResultSet addPages(Collection<PageEntity> pages, PageEntity lastPage, Function<BatchStatementBuilder, BatchStatementBuilder> attributes);
+
+	@QueryProvider(providerClass = PageBatchInserter.class)
+	ResultSet updatePageAndPageName(PageEntity entity, Function<BatchStatementBuilder, BatchStatementBuilder> attributes);
 }

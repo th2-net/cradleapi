@@ -136,4 +136,13 @@ public class PageBatchInserter {
 
         return session.execute(attributes.apply(batchBuilder).build());
     }
+
+    public ResultSet updatePageAndPageName(PageEntity entity, Function<BatchStatementBuilder, BatchStatementBuilder> attributes) {
+        BatchStatementBuilder batchBuilder = BatchStatement.builder(DefaultBatchType.LOGGED).addStatements(
+                buildPageStatement(pageInsertStatement, entity),
+                buildPageNameStatement(pageNameInsertStatement, entity)
+        );
+
+        return session.execute(attributes.apply(batchBuilder).build());
+    }
 }

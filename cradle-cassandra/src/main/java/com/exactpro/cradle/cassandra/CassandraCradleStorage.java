@@ -1027,19 +1027,10 @@ public class CassandraCradleStorage extends CradleStorage
 				Instant.now(),
 				pageEntity.getRemoved());
 
-		PageNameEntity updatedPageNameEntity = new PageNameEntity(pageNameEntity.getBook(),
-				pageNameEntity.getName(),
-				pageNameEntity.getStartDate(),
-				pageNameEntity.getStartTime(),
-				comment,
-				pageNameEntity.getEndDate(),
-				pageNameEntity.getEndTime());
-
 		try {
-			pageNameOperator.update(updatedPageNameEntity, readAttrs);
-			pageOperator.update(updatedPageEntity, readAttrs);
+			pageOperator.updatePageAndPageName(updatedPageEntity, batchWriteAttrs);
 		} catch (Exception e) {
-			throw new CradleStorageException(String.format("Failed to update page comment, this might result in broken state, try again. %s", e.getCause()));
+			throw new CradleStorageException("Failed to update page comment.", e);
 		}
 
 		return updatedPageEntity.toPageInfo();
@@ -1082,21 +1073,12 @@ public class CassandraCradleStorage extends CradleStorage
 				Instant.now(),
 				pageEntity.getRemoved());
 
-		PageNameEntity newPageNameEntity = new PageNameEntity(pageNameEntity.getBook(),
-				newPageName,
-				pageNameEntity.getStartDate(),
-				pageNameEntity.getStartTime(),
-				pageNameEntity.getComment(),
-				pageNameEntity.getEndDate(),
-				pageNameEntity.getEndTime());
-
 		pageNameOperator.remove(bookId.getName(), oldPageName, readAttrs);
 
 		try {
-			pageNameOperator.writeNew(newPageNameEntity, readAttrs);
-			pageOperator.update(updatedPageEntity, readAttrs);
+			pageOperator.updatePageAndPageName(updatedPageEntity, batchWriteAttrs);
 		} catch (Exception e) {
-			throw new CradleStorageException(String.format("Failed to update page name, this might result in broken state, try again. %s", e.getCause()));
+			throw new CradleStorageException("Failed to update page name", e);
 		}
 
 		return updatedPageEntity.toPageInfo();
@@ -1172,7 +1154,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		return readAttrs;
 	}
-	
+
 	public Function<BoundStatementBuilder, BoundStatementBuilder> getStrictReadAttrs()
 	{
 		return strictReadAttrs;

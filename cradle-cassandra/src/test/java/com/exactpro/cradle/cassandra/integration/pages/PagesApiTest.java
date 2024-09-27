@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.stream.Collectors;
@@ -189,6 +190,31 @@ public class PagesApiTest extends BaseCradleCassandraTest {
             LOGGER.error(e.getMessage(), e);
             throw e;
         }
+    }
+
+    @Test
+    public void testRenamePage() throws CradleStorageException, IOException {
+        // Preparation
+        BookId testBookId = new BookId("testRenamePage");
+        Instant testBookStart = Instant.now().minus(10, ChronoUnit.DAYS);
+        PageId pageId1 = new PageId(testBookId, Instant.now().plus(BOOK_REFRESH_INTERVAL_MILLIS * 5,
+                MILLIS), "page1");
+        storage.addBook(new BookToAdd(testBookId.getName(), testBookStart));
+        storage.addPage(testBookId, pageId1.getName(), pageId1.getStart(), null);
+
+        Collection<PageInfo> pagesList = storage.getAllPages(testBookId);
+        assertEquals(pagesList.size(), 1);
+
+
+        String newName = pageId1.getName() + "-new";
+        storage.updatePageName(testBookId, pageId1.getName(), newName);
+
+        Collection<PageInfo> pagesListAfterRename = storage.getAllPages(testBookId);
+        assertEquals(pagesListAfterRename.size(), 1);
+        assertEquals(pagesListAfterRename.iterator().next().getName(), newName);
+
+        // this will throw CradleStorageException if page name was not updated in `page_names` table
+        storage.updatePageName(testBookId, newName, pageId1.getName());
     }
 
     @Test(description = "Try to rename page before page action reject threshold",
