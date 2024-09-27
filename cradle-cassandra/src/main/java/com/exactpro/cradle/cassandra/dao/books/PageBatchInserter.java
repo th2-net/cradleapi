@@ -120,15 +120,19 @@ public class PageBatchInserter {
     public ResultSet addPages(Collection<PageEntity> pages, PageEntity lastPage, Function<BatchStatementBuilder, BatchStatementBuilder> attributes) {
         BatchStatementBuilder batchBuilder = BatchStatement.builder(DefaultBatchType.LOGGED);
 
-        for (PageEntity page: pages) batchBuilder.addStatements(
-                buildPageStatement(pageInsertStatement, page),
-                buildPageNameStatement(pageNameInsertStatement, page)
-        );
+        for (PageEntity page: pages) {
+            batchBuilder.addStatements(
+                    buildPageStatement(pageInsertStatement, page),
+                    buildPageNameStatement(pageNameInsertStatement, page)
+            );
+        }
 
-        if (lastPage != null) batchBuilder.addStatements(
-                buildPageStatement(pageUpdateStatement, lastPage),
-                buildPageNameStatement(pageNameUpdateStatement, lastPage)
-        );
+        if (lastPage != null) {
+            batchBuilder.addStatements(
+                    buildPageStatement(pageUpdateStatement, lastPage),
+                    buildPageNameStatement(pageNameUpdateStatement, lastPage)
+            );
+        }
 
         return session.execute(attributes.apply(batchBuilder).build());
     }

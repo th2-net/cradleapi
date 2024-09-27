@@ -1,4 +1,4 @@
-# Overview (5.5.0)
+# Overview (5.4.3)
 
 Cradle API is used to work with Cradle - the datalake where th2 stores its data.
 
@@ -209,8 +209,8 @@ Test events have mandatory parameters that are verified when storing an event. T
 
 ## Release notes
 
-### 5.5.0
-* Atomicity when adding new pages (`doAddPages` method in CassandraCradleStorage).
+### 5.4.3
+* Refactored the CassandraCradleStorage::doAddPages method to execute insert and update operations atomically.
 * Updated th2 gradle plugin: `0.1.3` (bom: `4.8.0`)
 
 ### 5.4.2
