@@ -192,6 +192,34 @@ public class PagesApiTest extends BaseCradleCassandraTest {
         }
     }
 
+    @Test(
+            expectedExceptions = IOException.class,
+            expectedExceptionsMessageRegExp = "Query to insert page 'page1' to book 'testaddexistedpage' failed. Page already exists"
+    )
+    public void testAddExistedPage() throws CradleStorageException, IOException {
+        try {
+            // Preparation
+            BookId testBookId = new BookId("testAddExistedPage");
+            Instant testBookStart = Instant.now();
+            // Adding page before book start time looks strange but the current behavior doesn't affect anybody
+            PageId pageId1 = new PageId(testBookId, testBookStart, "page1");
+            storage.addBook(new BookToAdd(testBookId.getName(), testBookStart));
+            storage.addPage(testBookId, pageId1.getName(), pageId1.getStart(), null);
+            assertEquals(storage.getAllPages(testBookId).size(), 1);
+
+            // Test (adding page with the same name)
+            PageId pageId2 = new PageId(
+                    testBookId,
+                    Instant.now().plus(BOOK_REFRESH_INTERVAL_MILLIS * 5, MILLIS),
+                    "page1"
+            );
+            storage.addPage(testBookId, pageId2.getName(), pageId2.getStart(), null);
+        } catch (IOException | CradleStorageException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
+        }
+    }
+
     @Test
     public void testRenamePage() throws CradleStorageException, IOException {
         // Preparation

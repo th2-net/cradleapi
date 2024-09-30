@@ -294,9 +294,18 @@ public class CassandraCradleStorage extends CradleStorage
 
 	@Override
 	protected void doAddPages(BookId bookId, List<PageInfo> pages, PageInfo lastPage) throws IOException {
+		String bookName = bookId.getName();
+		PageNameOperator pageNameOperator = operators.getPageNameOperator();
+
 		List<PageEntity> pagesToAdd = pages.stream()
-				.map(page -> new PageEntity(bookId.getName(), page.getName(), page.getStarted(), page.getComment(), page.getEnded(), page.getUpdated()))
+				.map(page -> new PageEntity(bookName, page.getName(), page.getStarted(), page.getComment(), page.getEnded(), page.getUpdated()))
 				.collect(Collectors.toList());
+
+		for (PageEntity page: pagesToAdd) {
+			if (pageNameOperator.get(bookName, page.getName()).one() != null) {
+				throw new IOException("Query to insert page '" + page.getName() + "' to book '" + bookName + "' failed. Page already exists");
+			}
+		}
 
 		PageEntity lastPageEntity = lastPage != null ? new PageEntity(lastPage) : null;
 
@@ -308,8 +317,7 @@ public class CassandraCradleStorage extends CradleStorage
 	}
 
 	@Override
-	protected Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException
-	{
+	protected Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException {
 		return bookCache.loadPageInfo(bookId, false);
 	}
 
