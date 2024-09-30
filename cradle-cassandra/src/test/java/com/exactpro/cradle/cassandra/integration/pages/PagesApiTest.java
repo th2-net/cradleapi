@@ -23,6 +23,7 @@ import com.exactpro.cradle.PageInfo;
 import com.exactpro.cradle.cassandra.integration.BaseCradleCassandraTest;
 import com.exactpro.cradle.counters.Interval;
 import com.exactpro.cradle.utils.CradleStorageException;
+import org.assertj.core.api.Assertions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.BeforeClass;
@@ -165,59 +166,51 @@ public class PagesApiTest extends BaseCradleCassandraTest {
         }
     }
 
-    @Test(description = "Try to add the second page before page action reject threshold",
-            expectedExceptions = CradleStorageException.class,
-            expectedExceptionsMessageRegExp = "You can only create pages which start more than.*"
-    )
+    @Test(description = "Try to add the second page before page action reject threshold")
     public void testAddTheSecondPageBeforeThreshold() throws CradleStorageException, IOException {
-        try {
-            // Preparation
-            BookId testBookId = new BookId("testAddPagesToThePast");
-            Instant testBookStart = Instant.now().minus(10, ChronoUnit.DAYS);
-            // Adding page before book start time looks strange but the current behavior doesn't affect anybody
-            PageId pageId1 = new PageId(testBookId, testBookStart.minus(10, DAYS), "page1");
-            storage.addBook(new BookToAdd(testBookId.getName(), testBookStart));
-            storage.addPage(testBookId, pageId1.getName(), pageId1.getStart(), null);
-            assertEquals(storage.getAllPages(testBookId).size(), 1);
+        // Preparation
+        BookId testBookId = new BookId("testAddPagesToThePast");
+        Instant testBookStart = Instant.now().minus(10, ChronoUnit.DAYS);
 
-            // Test
-            PageId pageId2 = new PageId(testBookId,
-                    Instant.now().plus(BOOK_REFRESH_INTERVAL_MILLIS * PAGE_ACTION_REJECTION_THRESHOLD_FACTOR,
-                            MILLIS),
-                    "page2");
-            storage.addPage(testBookId, pageId2.getName(), pageId2.getStart(), null);
-        } catch (IOException | CradleStorageException e) {
-            LOGGER.error(e.getMessage(), e);
-            throw e;
-        }
+        // Adding page before book start time looks strange but the current behavior doesn't affect anybody
+        PageId pageId1 = new PageId(testBookId, testBookStart.minus(10, DAYS), "page1");
+        storage.addBook(new BookToAdd(testBookId.getName(), testBookStart));
+        storage.addPage(testBookId, pageId1.getName(), pageId1.getStart(), null);
+        assertEquals(storage.getAllPages(testBookId).size(), 1);
+
+        // Test
+        PageId pageId2 = new PageId(testBookId,
+                Instant.now().plus(BOOK_REFRESH_INTERVAL_MILLIS * PAGE_ACTION_REJECTION_THRESHOLD_FACTOR,
+                        MILLIS),
+                "page2");
+
+        Assertions.assertThatThrownBy(() -> storage.addPage(testBookId, pageId2.getName(), pageId2.getStart(), null))
+                .isExactlyInstanceOf(CradleStorageException.class)
+                .hasMessageStartingWith("You can only create pages which start more than");
     }
 
-    @Test(
-            expectedExceptions = IOException.class,
-            expectedExceptionsMessageRegExp = "Query to insert page 'page1' to book 'testaddexistedpage' failed. Page already exists"
-    )
+    @Test
     public void testAddExistedPage() throws CradleStorageException, IOException {
-        try {
-            // Preparation
-            BookId testBookId = new BookId("testAddExistedPage");
-            Instant testBookStart = Instant.now();
-            // Adding page before book start time looks strange but the current behavior doesn't affect anybody
-            PageId pageId1 = new PageId(testBookId, testBookStart, "page1");
-            storage.addBook(new BookToAdd(testBookId.getName(), testBookStart));
-            storage.addPage(testBookId, pageId1.getName(), pageId1.getStart(), null);
-            assertEquals(storage.getAllPages(testBookId).size(), 1);
+        // Preparation
+        BookId testBookId = new BookId("testAddExistedPage");
+        Instant testBookStart = Instant.now();
 
-            // Test (adding page with the same name)
-            PageId pageId2 = new PageId(
-                    testBookId,
-                    Instant.now().plus(BOOK_REFRESH_INTERVAL_MILLIS * 5, MILLIS),
-                    "page1"
-            );
-            storage.addPage(testBookId, pageId2.getName(), pageId2.getStart(), null);
-        } catch (IOException | CradleStorageException e) {
-            LOGGER.error(e.getMessage(), e);
-            throw e;
-        }
+        // Adding page before book start time looks strange but the current behavior doesn't affect anybody
+        PageId pageId1 = new PageId(testBookId, testBookStart, "page1");
+        storage.addBook(new BookToAdd(testBookId.getName(), testBookStart));
+        storage.addPage(testBookId, pageId1.getName(), pageId1.getStart(), null);
+        assertEquals(storage.getAllPages(testBookId).size(), 1);
+
+        // Test (adding page with the same name)
+        PageId pageId2 = new PageId(
+                testBookId,
+                Instant.now().plus(BOOK_REFRESH_INTERVAL_MILLIS * 5, MILLIS),
+                "page1"
+        );
+
+        Assertions.assertThatThrownBy(() -> storage.addPage(testBookId, pageId2.getName(), pageId2.getStart(), null))
+                .isExactlyInstanceOf(IOException.class)
+                .hasMessage("Query to insert page 'page1' to book 'testaddexistedpage' failed. Page already exists");
     }
 
     @Test
@@ -245,36 +238,30 @@ public class PagesApiTest extends BaseCradleCassandraTest {
         storage.updatePageName(testBookId, newName, pageId1.getName());
     }
 
-    @Test(description = "Try to rename page before page action reject threshold",
-            expectedExceptions = CradleStorageException.class,
-            expectedExceptionsMessageRegExp = "You can only rename pages which start more than.*"
-    )
+    @Test(description = "Try to rename page before page action reject threshold")
     public void testRenamePageBeforeThreshold() throws CradleStorageException, IOException {
-        try {
-            // Preparation
-            BookId testBookId = new BookId("testRenamePageBeforeThreshold");
-            Instant testBookStart = Instant.now().minus(10, ChronoUnit.DAYS);
-            PageId pageId1 = new PageId(testBookId, Instant.now().plus(BOOK_REFRESH_INTERVAL_MILLIS * PAGE_ACTION_REJECTION_THRESHOLD_FACTOR,
-                    MILLIS), "page1");
-            storage.addBook(new BookToAdd(testBookId.getName(), testBookStart));
-            storage.addPage(testBookId, pageId1.getName(), pageId1.getStart(), null);
-            assertEquals(storage.getAllPages(testBookId).size(), 1);
+        // Preparation
+        BookId testBookId = new BookId("testRenamePageBeforeThreshold");
+        Instant testBookStart = Instant.now().minus(10, ChronoUnit.DAYS);
+        PageId pageId1 = new PageId(testBookId, Instant.now().plus(BOOK_REFRESH_INTERVAL_MILLIS * PAGE_ACTION_REJECTION_THRESHOLD_FACTOR,
+                MILLIS), "page1");
+        storage.addBook(new BookToAdd(testBookId.getName(), testBookStart));
+        storage.addPage(testBookId, pageId1.getName(), pageId1.getStart(), null);
+        assertEquals(storage.getAllPages(testBookId).size(), 1);
 
-            // Test
-            storage.updatePageName(testBookId, pageId1.getName(), pageId1.getName() + "-new");
-        } catch (IOException | CradleStorageException e) {
-            LOGGER.error(e.getMessage(), e);
-            throw e;
-        }
+        // Test
+        Assertions.assertThatThrownBy(() -> storage.updatePageName(testBookId, pageId1.getName(), pageId1.getName() + "-new"))
+                .isExactlyInstanceOf(CradleStorageException.class)
+                .hasMessageStartingWith("You can only rename pages which start more than ");
     }
 
-    @Test(description = "Try to add page with start timestamp between already existed page",
-            expectedExceptions = CradleStorageException.class,
-            expectedExceptionsMessageRegExp = "Can't add new page in book.*"
-    )
-    public void testAddPageInTheMiddleOfExist() throws CradleStorageException, IOException {
+    @Test(description = "Try to add page with start timestamp between already existed page")
+    public void testAddPageInTheMiddleOfExist() throws CradleStorageException {
         List<PageInfo> allPages = new ArrayList<>(storage.getAllPages(bookId));
         PageInfo pageInfo = allPages.get(allPages.size() - 2);
-        storage.addPage(bookId, "invalid-page", pageInfo.getStarted().plus(1, NANOS), null);
+
+        Assertions.assertThatThrownBy(() -> storage.addPage(bookId, "invalid-page", pageInfo.getStarted().plus(1, NANOS), null))
+                .isExactlyInstanceOf(CradleStorageException.class)
+                .hasMessageStartingWith("Can't add new page in book %s, it collided with current page", bookId.getName());
     }
 }
