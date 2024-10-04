@@ -291,47 +291,36 @@ public class CassandraCradleStorage extends CradleStorage
 			throw new IOException("Error while writing info of book '"+bookId+"'", e);
 		}
 	}
-	
+
 	@Override
 	protected void doAddPages(BookId bookId, List<PageInfo> pages, PageInfo lastPage) throws IOException {
-		PageOperator pageOp = operators.getPageOperator();
-		PageNameOperator pageNameOp = operators.getPageNameOperator();
-		
 		String bookName = bookId.getName();
-		for (PageInfo page : pages)
-		{
-			String pageName = page.getName();
-			try
-			{
-				PageNameEntity nameEntity = new PageNameEntity(bookName, pageName, page.getStarted(), page.getComment(), page.getEnded());
-				if (!pageNameOp.writeNew(nameEntity, writeAttrs).wasApplied())
-					throw new IOException("Query to insert page '"+nameEntity.getName()+"' book '" + bookId.getName() + "' was not applied. Probably, page already exists");
-				PageEntity entity = new PageEntity(bookName, pageName, page.getStarted(), page.getComment(), page.getEnded(), page.getUpdated());
-				pageOp.write(entity, writeAttrs);
-			}
-			catch (IOException e)
-			{
-				throw e;
-			}
-			catch (Exception e)
-			{
-				throw new IOException("Error while writing info of page '"+pageName+"'", e);
+		PageNameOperator pageNameOperator = operators.getPageNameOperator();
+
+		List<PageEntity> pagesToAdd = pages.stream()
+				.map(page -> new PageEntity(bookName, page.getName(), page.getStarted(), page.getComment(), page.getEnded(), page.getUpdated()))
+				.collect(Collectors.toList());
+
+		for (PageEntity page: pagesToAdd) {
+			if (pageNameOperator.get(bookName, page.getName()).one() != null) {
+				throw new IOException("Query to insert page '" + page.getName() + "' to book '" + bookName + "' failed. Page already exists");
 			}
 		}
-		
-		if (lastPage != null)
-		{
-			pageOp.update(new PageEntity(lastPage), writeAttrs);
-			pageNameOp.update(new PageNameEntity(lastPage), writeAttrs);
+
+		PageEntity lastPageEntity = lastPage != null ? new PageEntity(lastPage) : null;
+
+		try {
+			operators.getPageOperator().addPages(pagesToAdd, lastPageEntity, batchWriteAttrs);
+		} catch (Exception e) {
+			throw new IOException("Error while adding pages " + pages.stream().map(PageInfo::getName) + '.', e);
 		}
 	}
-	
+
 	@Override
-	protected Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException
-	{
+	protected Collection<PageInfo> doLoadPages(BookId bookId) throws CradleStorageException {
 		return bookCache.loadPageInfo(bookId, false);
 	}
-	
+
 	@Override
 	protected void doRemovePage(PageInfo page) throws CradleStorageException {
 		PageId pageId = page.getId();
@@ -1046,19 +1035,10 @@ public class CassandraCradleStorage extends CradleStorage
 				Instant.now(),
 				pageEntity.getRemoved());
 
-		PageNameEntity updatedPageNameEntity = new PageNameEntity(pageNameEntity.getBook(),
-				pageNameEntity.getName(),
-				pageNameEntity.getStartDate(),
-				pageNameEntity.getStartTime(),
-				comment,
-				pageNameEntity.getEndDate(),
-				pageNameEntity.getEndTime());
-
 		try {
-			pageNameOperator.update(updatedPageNameEntity, readAttrs);
-			pageOperator.update(updatedPageEntity, readAttrs);
+			pageOperator.updatePageAndPageName(updatedPageEntity, batchWriteAttrs);
 		} catch (Exception e) {
-			throw new CradleStorageException(String.format("Failed to update page comment, this might result in broken state, try again. %s", e.getCause()));
+			throw new CradleStorageException("Failed to update page comment.", e);
 		}
 
 		return updatedPageEntity.toPageInfo();
@@ -1101,21 +1081,12 @@ public class CassandraCradleStorage extends CradleStorage
 				Instant.now(),
 				pageEntity.getRemoved());
 
-		PageNameEntity newPageNameEntity = new PageNameEntity(pageNameEntity.getBook(),
-				newPageName,
-				pageNameEntity.getStartDate(),
-				pageNameEntity.getStartTime(),
-				pageNameEntity.getComment(),
-				pageNameEntity.getEndDate(),
-				pageNameEntity.getEndTime());
-
 		pageNameOperator.remove(bookId.getName(), oldPageName, readAttrs);
 
 		try {
-			pageNameOperator.writeNew(newPageNameEntity, readAttrs);
-			pageOperator.update(updatedPageEntity, readAttrs);
+			pageOperator.updatePageAndPageName(updatedPageEntity, batchWriteAttrs);
 		} catch (Exception e) {
-			throw new CradleStorageException(String.format("Failed to update page name, this might result in broken state, try again. %s", e.getCause()));
+			throw new CradleStorageException("Failed to update page name", e);
 		}
 
 		return updatedPageEntity.toPageInfo();
@@ -1191,7 +1162,7 @@ public class CassandraCradleStorage extends CradleStorage
 	{
 		return readAttrs;
 	}
-	
+
 	public Function<BoundStatementBuilder, BoundStatementBuilder> getStrictReadAttrs()
 	{
 		return strictReadAttrs;
