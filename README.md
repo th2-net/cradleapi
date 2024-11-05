@@ -1,4 +1,4 @@
-# Overview (5.4.3)
+# Overview (5.4.4)
 
 Cradle API is used to work with Cradle - the datalake where th2 stores its data.
 
@@ -208,6 +208,9 @@ Test events have mandatory parameters that are verified when storing an event. T
   * cause: EXPLICIT, REPLACED, COLLECTED, EXPIRED, SIZE
 
 ## Release notes
+
+### 5.4.4
+* Fixed the problem - page cache doesn't work correct when storage has removed page(s)
 
 ### 5.4.3
 * Refactored the CassandraCradleStorage methods (doAddPages, doUpdatePageName, doUpdatePageComment) to execute insert and update operations atomically.

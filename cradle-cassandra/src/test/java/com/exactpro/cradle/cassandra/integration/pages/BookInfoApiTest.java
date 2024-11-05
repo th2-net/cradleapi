@@ -21,6 +21,7 @@ import com.exactpro.cradle.BookToAdd;
 import com.exactpro.cradle.Order;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.PageInfo;
+import com.exactpro.cradle.PageToAdd;
 import com.exactpro.cradle.cassandra.CassandraCradleStorage;
 import com.exactpro.cradle.cassandra.integration.CassandraCradleHelper;
 import com.exactpro.cradle.utils.CradleStorageException;
@@ -37,6 +38,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.exactpro.cradle.BookInfoMetrics.CacheName.HOT;
 import static com.exactpro.cradle.BookInfoMetrics.CacheName.RANDOM;
@@ -54,6 +56,9 @@ public class BookInfoApiTest {
     private static final Instant NOW = Instant.now();
     private static final BookId BOOK_ID = new BookId("test_book");
 
+    private static final PageInfo PAGE_0 = new PageInfo( // -2 00:00 - -1 00:00
+            new PageId(BOOK_ID, NOW.minus(2, DAYS).truncatedTo(DAYS), "page-0"),
+            NOW.minus(1, DAYS).truncatedTo(DAYS), "");
     private static final PageInfo PAGE_1 = new PageInfo( // -1 00:00 - 1 00:00
             new PageId(BOOK_ID, NOW.minus(1, DAYS).truncatedTo(DAYS), "page-1"),
             NOW.plus(1, DAYS).truncatedTo(DAYS), "");
@@ -77,9 +82,10 @@ public class BookInfoApiTest {
     public void beforeClass() throws IOException, CradleStorageException {
         storage = CassandraCradleHelper.getInstance().getStorage();
         storage.addBook(new BookToAdd(BOOK_ID.getName(), NOW.minus(100, DAYS)));
-        for (PageInfo page : PAGES) {
-            storage.addPage(BOOK_ID, page.getName(), page.getStarted(), page.getComment());
-        }
+        storage.addPages(BOOK_ID, Stream.concat(Stream.of(PAGE_0), PAGES.stream())
+                .map(pageInfo -> new PageToAdd(pageInfo.getName(), pageInfo.getStarted(), pageInfo.getComment()))
+                .collect(Collectors.toList()));
+        storage.removePage(PAGE_0.getId());
     }
 
     @BeforeMethod
@@ -145,7 +151,7 @@ public class BookInfoApiTest {
         assertFalse(bookInfo.getPages(NOW.minus(4, DAYS), NOW.minus(3, DAYS), order).hasNext());
         assertLoadCount(hotCacheLoad, randomCacheLoad, "after get pages before first page");
 
-        assertLoadCount(hotCacheLoad, randomCacheLoad, "after get [1, 2] pages");
+        assertLoadCount(hotCacheLoad, randomCacheLoad, "before get [1, 2] pages");
         assertEquals(
                 extractNames(bookInfo.getPages(
                         NOW.minus(1, DAYS).truncatedTo(DAYS),
@@ -156,7 +162,7 @@ public class BookInfoApiTest {
         );
         assertLoadCount(hotCacheLoad, randomCacheLoad += 1, "after get [1, 2] pages");
 
-        assertLoadCount(hotCacheLoad, randomCacheLoad, "after get [3, 4] pages");
+        assertLoadCount(hotCacheLoad, randomCacheLoad, "before get [3, 4] pages");
         assertEquals(
                 extractNames(bookInfo.getPages(
                         NOW.plus(1, DAYS).truncatedTo(DAYS)

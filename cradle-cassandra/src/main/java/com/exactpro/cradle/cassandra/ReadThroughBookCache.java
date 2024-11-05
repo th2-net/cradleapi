@@ -130,7 +130,7 @@ public class ReadThroughBookCache implements BookCache {
     }
 
     public PageInfo loadLastPageInfo(BookId bookId, boolean loadRemoved) {
-        for (PageEntity pageEntity : operators.getPageOperator().getLast(
+        for (PageEntity pageEntity : operators.getPageOperator().getAllDesc(
                 bookId.getName(),
                 readAttrs
         )) {
@@ -142,10 +142,7 @@ public class ReadThroughBookCache implements BookCache {
     }
 
     public PageInfo loadFirstPageInfo(BookId bookId, boolean loadRemoved) {
-        for (PageEntity pageEntity : operators.getPageOperator().getFirst(
-                bookId.getName(),
-                readAttrs
-        )) {
+        for (PageEntity pageEntity : operators.getPageOperator().getAll(bookId.getName(), readAttrs)) {
             if (loadRemoved || pageEntity.getRemoved() == null || pageEntity.getRemoved().equals(DEFAULT_PAGE_REMOVE_TIME)) {
                 return pageEntity.toPageInfo();
             }
