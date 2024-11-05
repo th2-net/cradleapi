@@ -179,7 +179,7 @@ public class MessageBatchIteratorProviderTest extends BaseCradleCassandraTest {
             List<StoredMessageBatch> expected = storedData.get(new MessageBatchIteratorProviderTest.StoredMessageKey(FIRST_SESSION_ALIAS, Direction.FIRST));
 
             Assertions.assertThat(actual)
-                    .usingElementComparatorIgnoringFields("recDate")
+                    .usingRecursiveFieldByFieldElementComparatorIgnoringFields("recDate")
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException | CradleStorageException e) {
             logger.error(e.getMessage(), e);
@@ -190,7 +190,7 @@ public class MessageBatchIteratorProviderTest extends BaseCradleCassandraTest {
     @Test(description = "Gets messages from page by session_alias and direction")
     public void getMessagesFromSessionAndPage() throws CradleStorageException, ExecutionException, InterruptedException {
         try {
-            MessageFilter messageFilter =  new MessageFilter(bookId, SECOND_SESSION_ALIAS, Direction.SECOND, pages.get(1).getId());
+            MessageFilter messageFilter =  new MessageFilter(bookId, SECOND_SESSION_ALIAS, Direction.SECOND, activePages.get(1).getId());
             MessageBatchesIteratorProvider iteratorProvider = createIteratorProvider(messageFilter);
 
             CompletableFuture<CassandraCradleResultSet<StoredMessageBatch>> rsFuture = iteratorProvider.nextIterator()
@@ -200,7 +200,7 @@ public class MessageBatchIteratorProviderTest extends BaseCradleCassandraTest {
             List<StoredMessageBatch> expected = storedData.get(new MessageBatchIteratorProviderTest.StoredMessageKey(SECOND_SESSION_ALIAS, Direction.SECOND)).subList(1,2);
 
             Assertions.assertThat(actual)
-                    .usingElementComparatorIgnoringFields("recDate")
+                    .usingRecursiveFieldByFieldElementComparatorIgnoringFields("recDate")
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException | CradleStorageException e) {
             logger.error(e.getMessage(), e);
@@ -211,7 +211,7 @@ public class MessageBatchIteratorProviderTest extends BaseCradleCassandraTest {
     @Test(description = "Gets messages from page by session_alias and direction")
     public void getMessagesFromEmptyPage() throws CradleStorageException, ExecutionException, InterruptedException {
         try {
-            MessageFilter messageFilter =  new MessageFilter(bookId, FIRST_SESSION_ALIAS, Direction.FIRST, pages.get(4).getId());
+            MessageFilter messageFilter =  new MessageFilter(bookId, FIRST_SESSION_ALIAS, Direction.FIRST, activePages.get(4).getId());
             MessageBatchesIteratorProvider iteratorProvider = createIteratorProvider(messageFilter);
 
             CompletableFuture<CassandraCradleResultSet<StoredMessageBatch>> rsFuture = iteratorProvider.nextIterator()
@@ -221,7 +221,7 @@ public class MessageBatchIteratorProviderTest extends BaseCradleCassandraTest {
             List<StoredMessageBatch> expected = Collections.emptyList();
 
             Assertions.assertThat(actual)
-                    .usingElementComparatorIgnoringFields("recDate")
+                    .usingRecursiveFieldByFieldElementComparatorIgnoringFields("recDate")
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException | CradleStorageException e) {
             logger.error(e.getMessage(), e);

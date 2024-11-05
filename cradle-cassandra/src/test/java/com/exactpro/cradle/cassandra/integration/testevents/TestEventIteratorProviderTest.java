@@ -194,7 +194,7 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
     @Test(description = "Gets all TestEvents from page with specific scope")
     public void getTestEventsFromPage() throws CradleStorageException, ExecutionException, InterruptedException {
         try {
-            TestEventFilter filter = new TestEventFilter(bookId, FIRST_SCOPE, pages.get(2).getId());
+            TestEventFilter filter = new TestEventFilter(bookId, FIRST_SCOPE, activePages.get(2).getId());
             TestEventIteratorProvider iteratorProvider = createIteratorProvider(filter, dataStart);
 
             CompletableFuture<CassandraCradleResultSet<StoredTestEvent>> rsFuture = iteratorProvider.nextIterator()
@@ -214,7 +214,7 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
     @Test(description = "Gets TestEvents from empty page")
     public void getTestEventsFromEmptyPage() throws CradleStorageException, ExecutionException, InterruptedException {
         try {
-            TestEventFilter filter = new TestEventFilter(bookId, FIRST_SCOPE, pages.get(4).getId());
+            TestEventFilter filter = new TestEventFilter(bookId, FIRST_SCOPE, activePages.get(4).getId());
             TestEventIteratorProvider iteratorProvider = createIteratorProvider(filter, dataStart);
 
             CompletableFuture<CassandraCradleResultSet<StoredTestEvent>> rsFuture = iteratorProvider.nextIterator()
@@ -235,7 +235,7 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
     public void getTestEventsFromTimestamp() throws CradleStorageException, ExecutionException, InterruptedException {
         try {
             TestEventFilter filter = new TestEventFilter(bookId, SECOND_SCOPE);
-            filter.setStartTimestampFrom(FilterForGreater.forGreater(pages.get(2).getStarted()));
+            filter.setStartTimestampFrom(FilterForGreater.forGreater(activePages.get(2).getStarted()));
             TestEventIteratorProvider iteratorProvider = createIteratorProvider(filter, dataStart);
 
             CompletableFuture<CassandraCradleResultSet<StoredTestEvent>> rsFuture = iteratorProvider.nextIterator()

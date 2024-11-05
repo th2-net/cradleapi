@@ -36,6 +36,7 @@ import com.exactpro.cradle.utils.CradleStorageException;
 import org.jetbrains.annotations.NotNull;
 import org.testng.annotations.Listeners;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -47,6 +48,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Following class should be extended in order to
@@ -56,43 +58,36 @@ import java.util.stream.Collectors;
 @Listeners(TombstoneCounterListener.class)
 public abstract class BaseCradleCassandraTest {
     protected static final String DEFAULT_PAGE_PREFIX = "test_page_";
-    protected static final BookId DEFAULT_BOOK_ID = new BookId("test_book");
     private final static String EVENT_NAME = "default_event_name";
-    private static final Instant DEFAULT_DATA_END = Instant.now();
-    private static final Instant DEFAULT_DATA_START = DEFAULT_DATA_END.minus(1, ChronoUnit.HOURS);
     public static final String protocol = "default_message_protocol";
     public static final String CONTENT = "default_content";
 
     private final long storeActionRejectionThreshold = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
 
+    protected final Instant dataStart = Instant.now().minus(1, ChronoUnit.HOURS);
+    protected final BookId bookId = generateBookId();
 
-
-    private static final List<PageInfo> DEFAULT_PAGES = List.of(
-            new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START, DEFAULT_PAGE_PREFIX + 0),
-                    DEFAULT_DATA_START.plus(10, ChronoUnit.MINUTES), ""),
-            new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(10, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 1),
-                    DEFAULT_DATA_START.plus(20, ChronoUnit.MINUTES), ""),
-            new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(20, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 2),
-                    DEFAULT_DATA_START.plus(30, ChronoUnit.MINUTES), ""),
-            new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(30, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 3),
-                    DEFAULT_DATA_START.plus(40, ChronoUnit.MINUTES), ""),
-            new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(40, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 4),
-                    DEFAULT_DATA_START.plus(50, ChronoUnit.MINUTES), ""),
-            new PageInfo(
-                    new PageId(DEFAULT_BOOK_ID, DEFAULT_DATA_START.plus(50, ChronoUnit.MINUTES), DEFAULT_PAGE_PREFIX + 5),
-                    DEFAULT_DATA_START.plus(60, ChronoUnit.MINUTES), ""));
-
-
-    protected List<PageInfo> pages = DEFAULT_PAGES;
     protected CqlSession session;
     protected CassandraCradleStorage storage;
-    protected Instant dataStart = DEFAULT_DATA_START;
-    protected BookId bookId = DEFAULT_BOOK_ID;
+    protected List<PageInfo> allPages;
+    protected List<PageInfo> activePages;
+
+    private final PageToAdd page_r2 = new PageToAdd(DEFAULT_PAGE_PREFIX + -2, dataStart.minus(20, ChronoUnit.MINUTES), "");
+    private final PageToAdd page_r1 = new PageToAdd(DEFAULT_PAGE_PREFIX + -1, dataStart.minus(10, ChronoUnit.MINUTES), "");
+    private final PageToAdd page_a0 = new PageToAdd(DEFAULT_PAGE_PREFIX + 0, dataStart, "");
+    private final PageToAdd page_a1 = new PageToAdd(DEFAULT_PAGE_PREFIX + 1, dataStart.plus(10, ChronoUnit.MINUTES), "");
+    private final PageToAdd page_a2 = new PageToAdd(DEFAULT_PAGE_PREFIX + 2, dataStart.plus(20, ChronoUnit.MINUTES), "");
+    private final PageToAdd page_a3 = new PageToAdd(DEFAULT_PAGE_PREFIX + 3, dataStart.plus(30, ChronoUnit.MINUTES), "");
+    private final PageToAdd page_a4 = new PageToAdd(DEFAULT_PAGE_PREFIX + 4, dataStart.plus(40, ChronoUnit.MINUTES), "");
+    private final PageToAdd page_a5 = new PageToAdd(DEFAULT_PAGE_PREFIX + 5, dataStart.plus(50, ChronoUnit.MINUTES), "");
+
+    private final List<PageToAdd> pagesToAdd = List.of(
+            page_r2, page_r1,
+            page_a0, page_a1, page_a2, page_a3, page_a4, page_a5
+    );
+    private final List<PageId> pageIdToRemove = Stream.of(page_r2, page_r1)
+            .map(page -> new PageId(bookId, page.getStart(), page.getName()))
+            .collect(Collectors.toList());
 
     /*
         Following method should be used in beforeClass if extending class
@@ -101,9 +96,15 @@ public abstract class BaseCradleCassandraTest {
     protected void startUp() throws IOException, InterruptedException, CradleStorageException {
         startUp(false);
     }
-
     private BookId generateBookId() {
         return new BookId(getClass().getSimpleName() + "Book");
+    }
+
+    @Nonnull
+    private List<PageInfo> extractPagesAfterStart(List<PageInfo> allPages, Instant dataStart) {
+        return allPages.stream()
+                .filter(pageInfo -> !pageInfo.getStarted().isBefore(dataStart))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -113,28 +114,24 @@ public abstract class BaseCradleCassandraTest {
      */
     protected abstract void generateData() throws CradleStorageException, IOException;
 
-    protected void startUp(boolean generateBookPages) throws IOException, InterruptedException, CradleStorageException {
+    protected void startUp(boolean generateBookPages) throws IOException, CradleStorageException {
         this.session = CassandraCradleHelper.getInstance().getSession();
         this.storage = CassandraCradleHelper.getInstance().getStorage();
-        this.bookId = generateBookId();
 
         if (generateBookPages) {
-            setUpBooksAndPages(
-                    bookId,
-                    DEFAULT_PAGES.stream().map(
-                            el -> new PageToAdd(
-                                    el.getName(),
-                                    el.getStarted(),
-                                    el.getComment())).collect(Collectors.toList()));
+            setUpBooksAndPages(bookId, pagesToAdd, pageIdToRemove, dataStart);
         }
     }
 
-    protected void setUpBooksAndPages(BookId bookId, List<PageToAdd> pagesToAdd) throws CradleStorageException, IOException {
+    private void setUpBooksAndPages(BookId bookId, List<PageToAdd> pagesToAdd, List<PageId> pageIdToRemove, Instant dataStart) throws CradleStorageException, IOException {
         storage.addBook(new BookToAdd(bookId.getName(), dataStart));
 
         BookInfo book = storage.addPages(bookId, pagesToAdd);
-
-        pages = new ArrayList<>(book.getPages());
+        for (PageId pageId : pageIdToRemove) {
+            storage.removePage(pageId);
+        }
+        allPages = new ArrayList<>(book.getPages());
+        activePages = extractPagesAfterStart(allPages, dataStart);
     }
 
     protected MessageToStore generateMessage(String sessionAlias, Direction direction, int minutesFromStart, long sequence) throws CradleStorageException {
