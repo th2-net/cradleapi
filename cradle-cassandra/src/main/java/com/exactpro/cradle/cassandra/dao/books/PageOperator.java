@@ -39,6 +39,21 @@ public interface PageOperator {
 	PagingIterable<PageEntity> getAll(String book, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 	/**
+	 * Executes request to Cassandra to receive several pages in descending order
+	 *
+	 * @param book       - book id
+	 * @param attributes - request attributes
+	 * @return iterator for all pages in descending order
+	 */
+	@Query("SELECT * FROM ${qualifiedTableId} " +
+			"WHERE " +
+			FIELD_BOOK +"=:book " +
+			"ORDER BY " +
+			FIELD_START_DATE + " DESC, " +
+			FIELD_START_TIME + " DESC")
+	PagingIterable<PageEntity> getAllDesc(String book, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
+
+	/**
 	 * Executes request to Cassandra to receive several pages
 	 * @param book - book id
 	 * @param date - start day
@@ -72,24 +87,6 @@ public interface PageOperator {
 	PagingIterable<PageEntity> getAllDescBefore(String book,
 											LocalDate date, LocalTime time,
 											Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-
-	@Query("SELECT * FROM ${qualifiedTableId} " +
-			"WHERE " +
-			FIELD_BOOK +"=:book " +
-			"ORDER BY " +
-			FIELD_START_DATE + " DESC, " +
-			FIELD_START_TIME + " DESC " +
-			"LIMIT 1")
-	PagingIterable<PageEntity> getLast(String book, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
-
-	@Query("SELECT * FROM ${qualifiedTableId} " +
-			"WHERE " +
-			FIELD_BOOK +"=:book " +
-			"ORDER BY " +
-			FIELD_START_DATE + " ASC, " +
-			FIELD_START_TIME + " ASC " +
-			"LIMIT 1")
-	PagingIterable<PageEntity> getFirst(String book, Function<BoundStatementBuilder, BoundStatementBuilder> attributes);
 
 
 	@Update(nullSavingStrategy = NullSavingStrategy.SET_TO_NULL)

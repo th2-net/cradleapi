@@ -560,7 +560,7 @@ public abstract class CradleStorage {
 
         PageInfo page = book.getPage(pageId);
         if (page == null) { // TODO: Should we check page existing ?
-            throw new CradleStorageException("Page '" + pageId.getStart() + "' is not present in book '" + bookId + "'");
+            throw new CradleStorageException("Page '" + pageId + "' is not present in book '" + bookId + "'");
         }
         doRemovePage(page);
         book.invalidate(pageId.getStart());

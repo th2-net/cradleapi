@@ -65,7 +65,7 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
     public void startUp () throws IOException, InterruptedException, CradleStorageException {
         super.startUp(true);
 
-        setUpOperators ();
+        setUpOperators();
         generateData();
     }
 
@@ -91,9 +91,9 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
 
             List<GroupedMessageBatchToStore> data = List.of(b1, b2, b3);
             storedData = List.of(
-                    MessageTestUtils.groupedMessageBatchToStored(pages.get(0).getId(), null, b1),
-                    MessageTestUtils.groupedMessageBatchToStored(pages.get(1).getId(), null, b2),
-                    MessageTestUtils.groupedMessageBatchToStored(pages.get(2).getId(), null, b3));
+                    MessageTestUtils.groupedMessageBatchToStored(activePages.get(0).getId(), null, b1),
+                    MessageTestUtils.groupedMessageBatchToStored(activePages.get(1).getId(), null, b2),
+                    MessageTestUtils.groupedMessageBatchToStored(activePages.get(2).getId(), null, b3));
 
             for (var el : data) {
                 storage.storeGroupedMessageBatch(el);
@@ -134,7 +134,7 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
             List<StoredGroupedMessageBatch> expected = storedData;
 
             assertThat(actual)
-                    .usingElementComparatorIgnoringFields("recDate")
+                    .usingRecursiveFieldByFieldElementComparatorIgnoringFields("recDate")
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException e) {
             logger.error(e.getMessage(), e);
@@ -156,7 +156,7 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
             List<StoredGroupedMessageBatch> expected = storedData.subList(0, 2);
 
             assertThat(actual)
-                    .usingElementComparatorIgnoringFields("recDate")
+                    .usingRecursiveFieldByFieldElementComparatorIgnoringFields("recDate")
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException e) {
             logger.error(e.getMessage(), e);
@@ -167,7 +167,7 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
     @Test(description = "Gets grouped messages from iterator provider starting with second page")
     public void getGroupedMessagesAfterSecondPageTest () throws ExecutionException, InterruptedException, CradleStorageException {
         GroupedMessageFilter groupedMessageFilter = new GroupedMessageFilter(bookId, GROUP_NAME);
-        groupedMessageFilter.setFrom(FilterForGreater.forGreaterOrEquals(pages.get(1).getStarted()));
+        groupedMessageFilter.setFrom(FilterForGreater.forGreaterOrEquals(activePages.get(1).getStarted()));
         GroupedMessageIteratorProvider iteratorProvider = createIteratorProvider(groupedMessageFilter);
 
         CompletableFuture<CassandraCradleResultSet<StoredGroupedMessageBatch>> rsFuture = iteratorProvider.nextIterator()
@@ -178,7 +178,7 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
             List<StoredGroupedMessageBatch> expected = storedData.subList(1, 3);
 
             assertThat(actual)
-                    .usingElementComparatorIgnoringFields("recDate")
+                    .usingRecursiveFieldByFieldElementComparatorIgnoringFields("recDate")
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException e) {
             logger.error(e.getMessage(), e);
@@ -195,7 +195,7 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
     @Test(description = "Gets grouped messages from iterator provider starting with second page and limit 1")
     public void getGroupedMessagesAfterSecondPageWithLimitTest () throws ExecutionException, InterruptedException, CradleStorageException {
         GroupedMessageFilter groupedMessageFilter = new GroupedMessageFilter(bookId, GROUP_NAME);
-        groupedMessageFilter.setFrom(FilterForGreater.forGreaterOrEquals(pages.get(1).getStarted()));
+        groupedMessageFilter.setFrom(FilterForGreater.forGreaterOrEquals(activePages.get(1).getStarted()));
         groupedMessageFilter.setLimit(1);
         GroupedMessageIteratorProvider iteratorProvider = createIteratorProvider(groupedMessageFilter);
 
@@ -207,7 +207,7 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
             List<StoredGroupedMessageBatch> expected = storedData.subList(1, 2);
 
             assertThat(actual)
-                    .usingElementComparatorIgnoringFields("recDate")
+                    .usingRecursiveFieldByFieldElementComparatorIgnoringFields("recDate")
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException e) {
             logger.error(e.getMessage(), e);
@@ -218,7 +218,7 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
     @Test(description = "Gets grouped messages from second page")
     public void getGroupedMessagesFromSecondPage () throws ExecutionException, InterruptedException, CradleStorageException {
         GroupedMessageFilter groupedMessageFilter = new GroupedMessageFilter(bookId, GROUP_NAME);
-        groupedMessageFilter.setFrom(FilterForGreater.forGreaterOrEquals(pages.get(1).getStarted()));
+        groupedMessageFilter.setFrom(FilterForGreater.forGreaterOrEquals(activePages.get(1).getStarted()));
         groupedMessageFilter.setLimit(1);
         GroupedMessageIteratorProvider iteratorProvider = createIteratorProvider(groupedMessageFilter);
 
@@ -230,7 +230,7 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
             List<StoredGroupedMessageBatch> expected = storedData.subList(1, 2);
 
             assertThat(actual)
-                    .usingElementComparatorIgnoringFields("recDate")
+                    .usingRecursiveFieldByFieldElementComparatorIgnoringFields("recDate")
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException e) {
             logger.error(e.getMessage(), e);
@@ -241,7 +241,7 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
     @Test(description = "Gets grouped messages from empty page")
     public void getGroupedMessagesFromEmptyPage () throws ExecutionException, InterruptedException, CradleStorageException {
         GroupedMessageFilter groupedMessageFilter = new GroupedMessageFilter(bookId, GROUP_NAME);
-        groupedMessageFilter.setFrom(FilterForGreater.forGreaterOrEquals(pages.get(3).getStarted()));
+        groupedMessageFilter.setFrom(FilterForGreater.forGreaterOrEquals(activePages.get(3).getStarted()));
         groupedMessageFilter.setLimit(1);
         GroupedMessageIteratorProvider iteratorProvider = createIteratorProvider(groupedMessageFilter);
 
@@ -253,7 +253,7 @@ public class GroupedMessageIteratorProviderTest extends BaseCradleCassandraTest 
             List<StoredGroupedMessageBatch> expected = Collections.emptyList();
 
             assertThat(actual)
-                    .usingElementComparatorIgnoringFields("recDate")
+                    .usingRecursiveFieldByFieldElementComparatorIgnoringFields("recDate")
                     .isEqualTo(expected);
         } catch (InterruptedException | ExecutionException e) {
             logger.error(e.getMessage(), e);

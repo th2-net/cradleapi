@@ -181,7 +181,7 @@ public class MessageIteratorProviderTest extends BaseCradleCassandraTest {
     @Test(description = "Gets messages second page")
     public void getGroupedMessagesFromSecondPage () throws CradleStorageException, ExecutionException, InterruptedException {
         try {
-            MessageFilter messageFilter =  new MessageFilter(bookId, SECOND_SESSION_ALIAS, Direction.SECOND, pages.get(1).getId());
+            MessageFilter messageFilter =  new MessageFilter(bookId, SECOND_SESSION_ALIAS, Direction.SECOND, activePages.get(1).getId());
             MessagesIteratorProvider iteratorProvider = createIteratorProvider(messageFilter);
 
             CompletableFuture<CassandraCradleResultSet<StoredMessage>> rsFuture = iteratorProvider.nextIterator()
@@ -201,7 +201,7 @@ public class MessageIteratorProviderTest extends BaseCradleCassandraTest {
     @Test(description = "Gets messages from empty page")
     public void getGroupedMessagesFromEmptyPageTest () throws CradleStorageException, ExecutionException, InterruptedException {
         try {
-            MessageFilter messageFilter =  new MessageFilter(bookId, FIRST_SESSION_ALIAS, Direction.FIRST, pages.get(3).getId());
+            MessageFilter messageFilter =  new MessageFilter(bookId, FIRST_SESSION_ALIAS, Direction.FIRST, activePages.get(3).getId());
             MessagesIteratorProvider iteratorProvider = createIteratorProvider(messageFilter);
 
             CompletableFuture<CassandraCradleResultSet<StoredMessage>> rsFuture = iteratorProvider.nextIterator()
