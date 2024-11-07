@@ -42,7 +42,7 @@ public class FilteredGroupedMessageBatchIterator extends MappedIterator<StoredGr
 	}
 
 	@Override
-	Iterator<StoredGroupedMessageBatch> createTargetIterator(Iterator<StoredGroupedMessageBatch> sourceIterator)
+	Iterator<StoredGroupedMessageBatch> getTargetIterator(Iterator<StoredGroupedMessageBatch> sourceIterator)
 	{
 		Predicate<StoredGroupedMessageBatch> filterPredicate = createFilterPredicate();
 		return Streams.stream(sourceIterator)

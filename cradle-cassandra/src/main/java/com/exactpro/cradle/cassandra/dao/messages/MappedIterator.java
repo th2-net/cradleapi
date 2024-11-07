@@ -23,26 +23,33 @@ public abstract class MappedIterator<S, T> implements Iterator<T>
 {
 	private final int limit;
 	private final AtomicInteger returned;
-	private final Iterator<T> targetIterator;
+	private final Iterator<S> sourceIterator;
+	private Iterator<T> targetIterator;
 
 	public MappedIterator(Iterator<S> sourceIterator, int limit, AtomicInteger returned)
 	{
-		this.targetIterator = createTargetIterator(sourceIterator);
+		this.sourceIterator = sourceIterator;
 		this.limit = limit;
 		this.returned = returned;
 	}
 	
-	abstract Iterator<T> createTargetIterator(Iterator<S> sourceIterator);
+	abstract Iterator<T> getTargetIterator(Iterator<S> sourceIterator);
 
 	@Override
 	public boolean hasNext()
 	{
+		if(targetIterator == null) {
+			targetIterator = getTargetIterator(sourceIterator);
+		}
 		return (limit <= 0 || returned.get() < limit) && targetIterator.hasNext();
 	}
 
 	@Override
 	public T next()
 	{
+		if(targetIterator == null) {
+			targetIterator = getTargetIterator(sourceIterator);
+		}
 		returned.incrementAndGet();
 		return targetIterator.next();
 	}

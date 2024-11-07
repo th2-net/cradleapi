@@ -119,8 +119,20 @@ public class BaseMessageApiTest extends BaseCradleCassandraTest {
             GroupedMessageBatchToStore b6 = new GroupedMessageBatchToStore(GROUP3_NAME, 1024, storeActionRejectionThreshold);
             b6.addMessage(generateMessage(SESSION_ALIAS6, Direction.FIRST, 53, 15L));
             b6.addMessage(generateMessage(SESSION_ALIAS6, Direction.SECOND, 55, 16L));
-            List<GroupedMessageBatchToStore> data = List.of(b1, b2, b3, b4, b5, b6);
 
+            GroupedMessageBatchToStore b7 = new GroupedMessageBatchToStore(GROUP3_NAME, 1024, storeActionRejectionThreshold);
+            b7.addMessage(generateMessage(SESSION_ALIAS6, Direction.FIRST, 55, 17L));
+            b7.addMessage(generateMessage(SESSION_ALIAS6, Direction.SECOND, 55, 18L));
+
+            GroupedMessageBatchToStore b8 = new GroupedMessageBatchToStore(GROUP3_NAME, 1024, storeActionRejectionThreshold);
+            b8.addMessage(generateMessage(SESSION_ALIAS6, Direction.FIRST, 56, 18L));
+            b8.addMessage(generateMessage(SESSION_ALIAS6, Direction.FIRST, 58, 19L));
+            b8.addMessage(generateMessage(SESSION_ALIAS6, Direction.SECOND, 59, 20L));
+
+            GroupedMessageBatchToStore b9 = new GroupedMessageBatchToStore(GROUP3_NAME, 1024, storeActionRejectionThreshold);
+            b9.addMessage(generateMessage(SESSION_ALIAS6, Direction.FIRST, 60, 21L));
+
+            List<GroupedMessageBatchToStore> data = List.of(b1, b2, b3, b4, b5, b6, b7, b8, b9);
             for (GroupedMessageBatchToStore el : data) {
                 storage.storeGroupedMessageBatch(el);
             }

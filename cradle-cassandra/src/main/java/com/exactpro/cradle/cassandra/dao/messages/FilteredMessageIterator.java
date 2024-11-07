@@ -50,7 +50,7 @@ public class FilteredMessageIterator extends MappedIterator<StoredMessageBatch, 
 	}
 
 	@Override
-	Iterator<StoredMessage> createTargetIterator(Iterator<StoredMessageBatch> sourceIterator)
+	Iterator<StoredMessage> getTargetIterator(Iterator<StoredMessageBatch> sourceIterator)
 	{
 		Predicate<StoredMessage> filterPredicate = createFilterPredicate();
 		return Streams.stream(sourceIterator)
