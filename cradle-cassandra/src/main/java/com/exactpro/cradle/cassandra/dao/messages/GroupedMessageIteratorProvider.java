@@ -182,22 +182,37 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 			return CompletableFuture.completedFuture(null);
 		}
 
-		// There is no way to make queries with limit work 100% of the cases through cassandra query filtering with only first_message_time and first_message_date being clustering columns.
-		// It is required to have last_message_time, last_message_date to make DB filtering possible
-		// We have to rely on programmatic filtering for now
+		CassandraGroupedMessageFilter cassandraFilter;
+		if(this.order == Order.DIRECT) {
+			// There is no way to make queries with limit work 100% of the cases through cassandra query filtering with only first_message_time and first_message_date being clustering columns.
+			// It is required to have last_message_time, last_message_date to make DB filtering possible
+			// We have to rely on programmatic filtering for now
 
-		// Example:
-		// batch1: t1 - t1
-		// batch2: t1 - t2
-		//
-		// start time filter >= t1 + 5
-		// limit: 1
-		//
-		// If we put first_message_time >= t1 + 5 clause in cassandra query we will not receive both batches
-		// If we put first_message_time >= t1 and LIMIT 1 clauses in cassandra query we will receive batch1 and we will programmatically filter it.
-		// Only if we put first_message_time >= t1 without LIMIT clause we will receive batch1 and batch2 and we will be able to filter batch1 programmatically and return batch2 to user.
+			// Example 1:
+			// startTime from user: 18:00 LIMIT: 1 ORDER: DIRECT
+			//
+			// Batches on the page:
+			//   batch1: 17:59 - 17:59
+			//   batch2: 18:01 - 18:01
+			//
+			// first query from getNearestBatchTime: give me the last batch out of all pages where start time <= 18:00 -> batch1
+			// second query with start 17:59 limit 1 and direction DIRECT: cassandra returns batch1, this batch is later programmatically filtered as last_message_time < 18:00. User haven't received batch2 as it should.
+			//
 
-		CassandraGroupedMessageFilter cassandraFilter = createFilter(nextPage, 0);
+			// Example 2:
+			// startTime from user: 18:00 LIMIT: 1 ORDER: DIRECT
+			//
+			// Batches on the page:
+			//   batch1: 17:59 - 17:59
+			//   batch2: 17:59 - 18:01
+			//
+			// first query from getNearestBatchTime: give me the last batch out of all pages where start time <= 18:00 -> batch2
+			// second query with start 17:59 limit 1 and direction DIRECT: cassandra returns batch1, this batch is later programmatically filtered as last_message_time < 18:00. User haven't received batch2 as it should.
+
+			cassandraFilter = createFilter(nextPage, 0);
+		} else {
+			cassandraFilter = createFilter(nextPage, max(limit - returned.get(), 0));
+		}
 
 
 		logger.debug("Getting next iterator for '{}' by filter {}", getRequestInfo(), cassandraFilter);

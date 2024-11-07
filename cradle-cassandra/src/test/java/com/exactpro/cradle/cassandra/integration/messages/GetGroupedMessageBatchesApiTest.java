@@ -16,6 +16,7 @@
 
 package com.exactpro.cradle.cassandra.integration.messages;
 
+import com.exactpro.cradle.Order;
 import com.exactpro.cradle.messages.GroupedMessageFilter;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.assertj.core.api.Assertions;
@@ -70,13 +71,14 @@ public class GetGroupedMessageBatchesApiTest extends BaseMessageApiTest {
                 .build();
         var actual = storage.getGroupedMessageBatches(filter);
         var resultAsList = Lists.newArrayList(actual.asIterable());
-        Assertions.assertThat(resultAsList.size()).isEqualTo(6);
+        Assertions.assertThat(resultAsList.size()).isEqualTo(7);
         Assertions.assertThat(resultAsList.get(0).getMessages().size()).isEqualTo(4);
         Assertions.assertThat(resultAsList.get(1).getMessages().size()).isEqualTo(1);
         Assertions.assertThat(resultAsList.get(2).getMessages().size()).isEqualTo(1);
         Assertions.assertThat(resultAsList.get(3).getMessages().size()).isEqualTo(2);
         Assertions.assertThat(resultAsList.get(4).getMessages().size()).isEqualTo(2);
         Assertions.assertThat(resultAsList.get(5).getMessages().size()).isEqualTo(3);
+        Assertions.assertThat(resultAsList.get(6).getMessages().size()).isEqualTo(1);
     }
 
 
@@ -248,7 +250,7 @@ public class GetGroupedMessageBatchesApiTest extends BaseMessageApiTest {
         Assertions.assertThat(resultAsList.get(0).getMessages().size()).isEqualTo(3);
 
         Assertions.assertThat(resultAsList.get(0).getFirstTimestamp()).isEqualTo(dataStart.plus(56, ChronoUnit.MINUTES));
-        Assertions.assertThat(resultAsList.get(0).getLastTimestamp()).isEqualTo(dataStart.plus(60, ChronoUnit.MINUTES));
+        Assertions.assertThat(resultAsList.get(0).getLastTimestamp()).isEqualTo(dataStart.plus(59, ChronoUnit.MINUTES));
     }
 
     @Test(description = "Get grouped messages with limit 1 with time borders corresponding batch8 but not equal to first and last timestamp")
@@ -269,7 +271,7 @@ public class GetGroupedMessageBatchesApiTest extends BaseMessageApiTest {
         Assertions.assertThat(resultAsList.get(0).getMessages().size()).isEqualTo(3);
 
         Assertions.assertThat(resultAsList.get(0).getFirstTimestamp()).isEqualTo(dataStart.plus(56, ChronoUnit.MINUTES));
-        Assertions.assertThat(resultAsList.get(0).getLastTimestamp()).isEqualTo(dataStart.plus(60, ChronoUnit.MINUTES));
+        Assertions.assertThat(resultAsList.get(0).getLastTimestamp()).isEqualTo(dataStart.plus(59, ChronoUnit.MINUTES));
     }
 
     @Test(description = "Get grouped messages with limit 1 with start time limit corresponding to batch5 but less than its start time.")
@@ -309,6 +311,71 @@ public class GetGroupedMessageBatchesApiTest extends BaseMessageApiTest {
         Assertions.assertThat(resultAsList.get(0).getMessages().size()).isEqualTo(3);
 
         Assertions.assertThat(resultAsList.get(0).getFirstTimestamp()).isEqualTo(dataStart.plus(56, ChronoUnit.MINUTES));
+        Assertions.assertThat(resultAsList.get(0).getLastTimestamp()).isEqualTo(dataStart.plus(59, ChronoUnit.MINUTES));
+    }
+
+    @Test(description = "Get grouped messages with limit 1 with start time limit is the same as start time of the batch")
+    public void getGroupedMessagesWithLimitInReverseStartTimesEqual() throws CradleStorageException, IOException {
+        GroupedMessageFilter filter = GroupedMessageFilter.builder()
+                .groupName(GROUP3_NAME)
+                .bookId(bookId)
+                .timestampFrom().isGreaterThanOrEqualTo(dataStart.plus(60, ChronoUnit.MINUTES))
+                .order(Order.REVERSE)
+                .limit(1)
+                .build();
+
+
+        // Expected batch9 from BaseMessageApiTest
+        var actual = storage.getGroupedMessageBatches(filter);
+        var resultAsList = Lists.newArrayList(actual.asIterable());
+        Assertions.assertThat(resultAsList.size()).isEqualTo(1);
+        Assertions.assertThat(resultAsList.get(0).getMessages().size()).isEqualTo(1);
+
+        Assertions.assertThat(resultAsList.get(0).getFirstTimestamp()).isEqualTo(dataStart.plus(60, ChronoUnit.MINUTES));
         Assertions.assertThat(resultAsList.get(0).getLastTimestamp()).isEqualTo(dataStart.plus(60, ChronoUnit.MINUTES));
+    }
+
+    @Test(description = "Get grouped messages with limit 1.")
+    public void getGroupedMessagesWithLimitInReverseStartTimeRequestLessThanStartTimeBatch() throws CradleStorageException, IOException {
+        GroupedMessageFilter filter = GroupedMessageFilter.builder()
+                .groupName(GROUP3_NAME)
+                .bookId(bookId)
+                .timestampFrom().isGreaterThanOrEqualTo(dataStart.plus(59, ChronoUnit.MINUTES))
+                .order(Order.REVERSE)
+                .limit(1)
+                .build();
+
+
+        // Expected batch9 from BaseMessageApiTest
+        var actual = storage.getGroupedMessageBatches(filter);
+        var resultAsList = Lists.newArrayList(actual.asIterable());
+        Assertions.assertThat(resultAsList.size()).isEqualTo(1);
+        Assertions.assertThat(resultAsList.get(0).getMessages().size()).isEqualTo(1);
+
+        Assertions.assertThat(resultAsList.get(0).getFirstTimestamp()).isEqualTo(dataStart.plus(60, ChronoUnit.MINUTES));
+        Assertions.assertThat(resultAsList.get(0).getLastTimestamp()).isEqualTo(dataStart.plus(60, ChronoUnit.MINUTES));
+    }
+
+    @Test(description = "Get grouped messages with limit 1.")
+    public void getGroupedMessagesWithLimitInReverseStartTimeRequestInTheMiddleOfTheBatch() throws CradleStorageException, IOException {
+        GroupedMessageFilter filter = GroupedMessageFilter.builder()
+                .groupName(GROUP3_NAME)
+                .bookId(bookId)
+                .timestampFrom().isGreaterThanOrEqualTo(dataStart.plus(58, ChronoUnit.MINUTES))
+                .timestampTo().isLessThanOrEqualTo(dataStart.plus(59, ChronoUnit.MINUTES))
+                .order(Order.REVERSE)
+                .limit(1)
+                .build();
+
+
+        // Expected batch8 from BaseMessageApiTest
+        var actual = storage.getGroupedMessageBatches(filter);
+        var resultAsList = Lists.newArrayList(actual.asIterable());
+        Assertions.assertThat(resultAsList.size()).isEqualTo(1);
+        System.out.println(resultAsList.get(0).getFirstTimestamp() + " " + resultAsList.get(0).getLastTimestamp());
+        Assertions.assertThat(resultAsList.get(0).getMessages().size()).isEqualTo(3);
+
+        Assertions.assertThat(resultAsList.get(0).getFirstTimestamp()).isEqualTo(dataStart.plus(56, ChronoUnit.MINUTES));
+        Assertions.assertThat(resultAsList.get(0).getLastTimestamp()).isEqualTo(dataStart.plus(59, ChronoUnit.MINUTES));
     }
 }

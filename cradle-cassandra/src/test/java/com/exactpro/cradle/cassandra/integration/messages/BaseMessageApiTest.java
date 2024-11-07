@@ -127,9 +127,12 @@ public class BaseMessageApiTest extends BaseCradleCassandraTest {
             GroupedMessageBatchToStore b8 = new GroupedMessageBatchToStore(GROUP3_NAME, 1024, storeActionRejectionThreshold);
             b8.addMessage(generateMessage(SESSION_ALIAS6, Direction.FIRST, 56, 18L));
             b8.addMessage(generateMessage(SESSION_ALIAS6, Direction.FIRST, 58, 19L));
-            b8.addMessage(generateMessage(SESSION_ALIAS6, Direction.SECOND, 60, 20L));
+            b8.addMessage(generateMessage(SESSION_ALIAS6, Direction.SECOND, 59, 20L));
 
-            List<GroupedMessageBatchToStore> data = List.of(b1, b2, b3, b4, b5, b6, b7, b8);
+            GroupedMessageBatchToStore b9 = new GroupedMessageBatchToStore(GROUP3_NAME, 1024, storeActionRejectionThreshold);
+            b9.addMessage(generateMessage(SESSION_ALIAS6, Direction.FIRST, 60, 21L));
+
+            List<GroupedMessageBatchToStore> data = List.of(b1, b2, b3, b4, b5, b6, b7, b8, b9);
             for (GroupedMessageBatchToStore el : data) {
                 storage.storeGroupedMessageBatch(el);
             }
