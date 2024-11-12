@@ -120,17 +120,21 @@ public class BaseMessageApiTest extends BaseCradleCassandraTest {
             b6.addMessage(generateMessage(SESSION_ALIAS6, Direction.FIRST, 53, 15L));
             b6.addMessage(generateMessage(SESSION_ALIAS6, Direction.SECOND, 55, 16L));
 
+            // page 6 contains 2 messages from batch 7, 3 from batch 8 and 1 from batch 1
+            // contains 1 group test_group3
+            // contains 1 session alias test_session_alias6
+            // Those batches are added to test different cases with limit 1 filter.
             GroupedMessageBatchToStore b7 = new GroupedMessageBatchToStore(GROUP3_NAME, 1024, storeActionRejectionThreshold);
-            b7.addMessage(generateMessage(SESSION_ALIAS6, Direction.FIRST, 55, 17L));
-            b7.addMessage(generateMessage(SESSION_ALIAS6, Direction.SECOND, 55, 18L));
+            b7.addMessage(generateMessage(SESSION_ALIAS6, Direction.FIRST, 65, 17L));
+            b7.addMessage(generateMessage(SESSION_ALIAS6, Direction.SECOND, 65, 18L));
 
             GroupedMessageBatchToStore b8 = new GroupedMessageBatchToStore(GROUP3_NAME, 1024, storeActionRejectionThreshold);
-            b8.addMessage(generateMessage(SESSION_ALIAS6, Direction.FIRST, 56, 18L));
-            b8.addMessage(generateMessage(SESSION_ALIAS6, Direction.FIRST, 58, 19L));
-            b8.addMessage(generateMessage(SESSION_ALIAS6, Direction.SECOND, 59, 20L));
+            b8.addMessage(generateMessage(SESSION_ALIAS6, Direction.FIRST, 66, 18L));
+            b8.addMessage(generateMessage(SESSION_ALIAS6, Direction.FIRST, 68, 19L));
+            b8.addMessage(generateMessage(SESSION_ALIAS6, Direction.SECOND, 69, 20L));
 
             GroupedMessageBatchToStore b9 = new GroupedMessageBatchToStore(GROUP3_NAME, 1024, storeActionRejectionThreshold);
-            b9.addMessage(generateMessage(SESSION_ALIAS6, Direction.FIRST, 60, 21L));
+            b9.addMessage(generateMessage(SESSION_ALIAS6, Direction.FIRST, 70, 21L));
 
             List<GroupedMessageBatchToStore> data = List.of(b1, b2, b3, b4, b5, b6, b7, b8, b9);
             for (GroupedMessageBatchToStore el : data) {

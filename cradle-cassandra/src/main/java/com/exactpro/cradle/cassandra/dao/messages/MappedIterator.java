@@ -33,13 +33,13 @@ public abstract class MappedIterator<S, T> implements Iterator<T>
 		this.returned = returned;
 	}
 	
-	abstract Iterator<T> getTargetIterator(Iterator<S> sourceIterator);
+	abstract Iterator<T> createTargetIterator(Iterator<S> sourceIterator);
 
 	@Override
 	public boolean hasNext()
 	{
 		if(targetIterator == null) {
-			targetIterator = getTargetIterator(sourceIterator);
+			targetIterator = createTargetIterator(sourceIterator);
 		}
 		return (limit <= 0 || returned.get() < limit) && targetIterator.hasNext();
 	}
@@ -48,7 +48,7 @@ public abstract class MappedIterator<S, T> implements Iterator<T>
 	public T next()
 	{
 		if(targetIterator == null) {
-			targetIterator = getTargetIterator(sourceIterator);
+			targetIterator = createTargetIterator(sourceIterator);
 		}
 		returned.incrementAndGet();
 		return targetIterator.next();
