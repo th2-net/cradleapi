@@ -182,7 +182,38 @@ public class GroupedMessageIteratorProvider extends IteratorProvider<StoredGroup
 			return CompletableFuture.completedFuture(null);
 		}
 
-		CassandraGroupedMessageFilter cassandraFilter = createFilter(nextPage, max(limit - returned.get(), 0));
+		CassandraGroupedMessageFilter cassandraFilter;
+		if(this.order == Order.DIRECT) {
+			// There is no way to make queries with limit work 100% of the cases through cassandra query filtering with only first_message_time and first_message_date being clustering columns.
+			// It is required to have last_message_time, last_message_date to make DB filtering possible
+			// We have to rely on programmatic filtering for now
+
+			// Example 1:
+			// startTime from user: 18:00 LIMIT: 1 ORDER: DIRECT
+			//
+			// Batches on the page:
+			//   batch1: 17:59 - 17:59
+			//   batch2: 18:01 - 18:01
+			//
+			// first query from getNearestBatchTime: give me the last batch out of all pages where start time <= 18:00 -> batch1
+			// second query with start 17:59 limit 1 and direction DIRECT: cassandra returns batch1, this batch is later programmatically filtered as last_message_time < 18:00. User haven't received batch2 as it should.
+			//
+
+			// Example 2:
+			// startTime from user: 18:00 LIMIT: 1 ORDER: DIRECT
+			//
+			// Batches on the page:
+			//   batch1: 17:59 - 17:59
+			//   batch2: 17:59 - 18:01
+			//
+			// first query from getNearestBatchTime: give me the last batch out of all pages where start time <= 18:00 -> batch2
+			// second query with start 17:59 limit 1 and direction DIRECT: cassandra returns batch1, this batch is later programmatically filtered as last_message_time < 18:00. User haven't received batch2 as it should.
+
+			cassandraFilter = createFilter(nextPage, 0);
+		} else {
+			cassandraFilter = createFilter(nextPage, max(limit - returned.get(), 0));
+		}
+
 
 		logger.debug("Getting next iterator for '{}' by filter {}", getRequestInfo(), cassandraFilter);
 		return op.getByFilter(cassandraFilter, selectQueryExecutor, getRequestInfo(), readAttrs)

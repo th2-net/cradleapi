@@ -25,14 +25,12 @@ public abstract class MappedIterator<S, T> implements Iterator<T>
 	private final AtomicInteger returned;
 	private final Iterator<T> targetIterator;
 
-	public MappedIterator(Iterator<S> sourceIterator, int limit, AtomicInteger returned)
+	public MappedIterator(Iterator<T> targetIterator, int limit, AtomicInteger returned)
 	{
-		this.targetIterator = createTargetIterator(sourceIterator);
+		this.targetIterator = targetIterator;
 		this.limit = limit;
 		this.returned = returned;
 	}
-	
-	abstract Iterator<T> createTargetIterator(Iterator<S> sourceIterator);
 
 	@Override
 	public boolean hasNext()
