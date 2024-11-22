@@ -29,31 +29,25 @@ import java.util.function.Predicate;
 
 public class FilteredGroupedMessageBatchIterator extends MappedIterator<StoredGroupedMessageBatch, StoredGroupedMessageBatch>
 {
-	private final FilterForGreater<Instant> filterFrom;
-	private final FilterForLess<Instant> filterTo;
-
-
 	public FilteredGroupedMessageBatchIterator(Iterator<StoredGroupedMessageBatch> sourceIterator, GroupedMessageFilter filter,
 			int limit, AtomicInteger returned)
 	{
-		super(sourceIterator, limit, returned);
-		filterFrom = filter.getFrom();
-		filterTo = filter.getTo(); 
+		super(createTargetIterator(sourceIterator, filter), limit, returned);
 	}
 
-	@Override
-	Iterator<StoredGroupedMessageBatch> createTargetIterator(Iterator<StoredGroupedMessageBatch> sourceIterator)
+
+	private static Iterator<StoredGroupedMessageBatch> createTargetIterator(Iterator<StoredGroupedMessageBatch> sourceIterator, GroupedMessageFilter filter)
 	{
-		Predicate<StoredGroupedMessageBatch> filterPredicate = createFilterPredicate();
+		Predicate<StoredGroupedMessageBatch> filterPredicate = createFilterPredicate(filter);
 		return Streams.stream(sourceIterator)
 				.filter(filterPredicate)
 				.iterator();
 	}
 
-	private Predicate<StoredGroupedMessageBatch> createFilterPredicate()
+	private static Predicate<StoredGroupedMessageBatch> createFilterPredicate(GroupedMessageFilter filter)
 	{
 		return storedMessageBatch ->
-				(filterFrom == null || filterFrom.check(storedMessageBatch.getLastTimestamp()))
-						&& (filterTo == null || filterTo.check(storedMessageBatch.getFirstTimestamp()));
+				(filter.getFrom() == null || filter.getFrom().check(storedMessageBatch.getLastTimestamp()))
+						&& (filter.getTo() == null || filter.getTo().check(storedMessageBatch.getFirstTimestamp()));
 	}
 }
