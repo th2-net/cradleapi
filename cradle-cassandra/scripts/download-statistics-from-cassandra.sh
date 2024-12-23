@@ -15,7 +15,6 @@
 # limitations under the License.
 
 # FIXME: rename arguments by source table name
-# FIXME: extract cqlsh build command to a separate method
 # FIXME: add start / end parameters
 # FIXME: added method for entity_statistics, message_statistics, session_statistics
 
@@ -281,15 +280,32 @@ remove_file() {
   rm "${file}"
 }
 
+build_cassandra_command() {
+  query="${1}"
+
+  command="cqlsh --keyspace '${CASSANDRA_KEYSPACE}' --execute \"${query}\""
+  if [ -n "${CASSANDRA_USERNAME}" ]; then
+    command="${command} --username '${CASSANDRA_USERNAME}'"
+  fi
+  if [ -n "${CASSANDRA_PASSWORD}" ]; then
+    command="${command} --password '${CASSANDRA_PASSWORD}'"
+  fi
+  if [ -n "${CASSANDRA_CONNECT_TIMEOUT}" ]; then
+    command="${command} --connect-timeout ${CASSANDRA_CONNECT_TIMEOUT}"
+  fi
+  if [ -n "${CASSANDRA_REQUEST_TIMEOUT}" ]; then
+    command="${command} --request-timeout ${CASSANDRA_REQUEST_TIMEOUT}"
+  fi
+  if [ -n "${CASSANDRA_HOST}" ]; then
+    command="${command} '${CASSANDRA_HOST}'"
+  fi
+  echo "${command}"
+}
+
 download_books() {
   echo "INFO: downloading books ..."
-  cqlsh --keyspace "${CASSANDRA_KEYSPACE}" \
-        --username "${CASSANDRA_USERNAME}" \
-        --password "${CASSANDRA_PASSWORD}" \
-        --connect-timeout "${CASSANDRA_CONNECT_TIMEOUT}" \
-        --request-timeout "${CASSANDRA_REQUEST_TIMEOUT}" \
-        --execute "COPY books TO '${DIR_DATA}/${FILE_BOOKS_CSV}' WITH HEADER = TRUE;" \
-        "${CASSANDRA_HOST}" >> "${DIR_LOGS}/${FILE_CQLSH_LOG}" 2>&1
+  command=$(build_cassandra_command "COPY books TO '${DIR_DATA}/${FILE_BOOKS_CSV}' WITH HEADER = TRUE;")
+  eval "${command}" >> "${DIR_LOGS}/${FILE_CQLSH_LOG}" 2>&1
   check_command_execution_status 'download books' $?
 }
 
@@ -303,13 +319,8 @@ download_using_book() {
   while read -r book; do
     temp_file=$(mktemp)
     echo "INFO: downloading ${entity_name} for ${book} book to ${temp_file} ..."
-    cqlsh --keyspace "${CASSANDRA_KEYSPACE}" \
-          --username "${CASSANDRA_USERNAME}" \
-          --password "${CASSANDRA_PASSWORD}" \
-          --connect-timeout "${CASSANDRA_CONNECT_TIMEOUT}" \
-          --request-timeout "${CASSANDRA_REQUEST_TIMEOUT}" \
-          --execute "SELECT * FROM ${table_name} WHERE book='${book}';" \
-          "${CASSANDRA_HOST}" | grep "^ " | sed 's/^ *//; s/ *| */,/g' > "${temp_file}"
+    command=$(build_cassandra_command "SELECT * FROM ${table_name} WHERE book='${book}';")
+    eval "${command}" | grep "^ " | sed 's/^ *//; s/ *| */,/g' > "${temp_file}"
     exit_code=$?
 
     if [ "${exit_code}" -eq 0 ]; then
@@ -354,13 +365,19 @@ download_sessions_statistics() {
         echo "DEBUG: downloading sessions statistics for ${book}/${page}/${session}/${direction} book/page/session/direction to ${temp_file} ..."
 
 #              --execute "SELECT * FROM message_statistics WHERE book='${book}' AND page='${page}' AND session_alias='${session}' AND direction='${direction}' AND frame_type=${CRADLE_STATISTIC_FRAME_HOUR};" \
-        cqlsh --keyspace "${CASSANDRA_KEYSPACE}" \
-              --username "${CASSANDRA_USERNAME}" \
-              --password "${CASSANDRA_PASSWORD}" \
-              --connect-timeout "${CASSANDRA_CONNECT_TIMEOUT}" \
-              --request-timeout "${CASSANDRA_REQUEST_TIMEOUT}" \
-              --execute "SELECT book, page, session_alias, direction, MAX(frame_start) as frame_start, SUM(entity_count) as entity_count, SUM(entity_size) as entity_size from message_statistics WHERE book='${book}' AND page='${page}' AND session_alias='${session}' AND direction='${direction}' AND frame_type=${CRADLE_STATISTIC_FRAME_HOUR};" \
-              "${CASSANDRA_HOST}" | grep "^ " | sed 's/^ *//; s/ *| */,/g' | grep -v 'null,null,null,null,null,0,0' > "${temp_file}"
+        command=$(build_cassandra_command "SELECT \
+            book, page, session_alias, direction,
+            MAX(frame_start) as frame_start, \
+            SUM(entity_count) as entity_count, \
+            SUM(entity_size) as entity_size \
+          FROM message_statistics \
+          WHERE book='${book}' AND \
+            page='${page}' AND \
+            session_alias='${session}' AND \
+            direction='${direction}' AND \
+            frame_type=${CRADLE_STATISTIC_FRAME_HOUR};" \
+        )
+        eval "${command}" | grep "^ " | sed 's/^ *//; s/ *| */,/g' | grep -v 'null,null,null,null,null,0,0' > "${temp_file}"
         exit_code=$?
 
         if [ "${exit_code}" -eq 0 ]; then
@@ -393,13 +410,18 @@ download_entity_statistics() {
     page_start_time=$(echo "${page_line}" | cut -d',' -f3 | sed 's/[\r\n]//g')
     echo "INFO: downloading ${entity_name} statistics for ${book}/${page} book/page ${page_start_date} ${page_start_time} ..."
     temp_file=$(mktemp)
-    cqlsh --keyspace "${CASSANDRA_KEYSPACE}" \
-          --username "${CASSANDRA_USERNAME}" \
-          --password "${CASSANDRA_PASSWORD}" \
-          --connect-timeout "${CASSANDRA_CONNECT_TIMEOUT}" \
-          --request-timeout "${CASSANDRA_REQUEST_TIMEOUT}" \
-          --execute "SELECT book, page, MAX(frame_start) as frame_start, SUM(entity_count) as entity_count, SUM(entity_size) as entity_size from entity_statistics WHERE book='${book}' AND page='${page}' AND entity_type=${entity_type} AND frame_type=${CRADLE_STATISTIC_FRAME_HOUR};" \
-          "${CASSANDRA_HOST}" | grep "^ " | sed 's/^ *//; s/ *| */,/g' | grep -v 'null,null,null,0,0' > "${temp_file}"
+    command=$(build_cassandra_command "SELECT \
+        book, page, \
+        MAX(frame_start) as frame_start, \
+        SUM(entity_count) as entity_count, \
+        SUM(entity_size) as entity_size \
+      FROM entity_statistics \
+      WHERE book='${book}' AND \
+        page='${page}' AND \
+        entity_type=${entity_type} AND \
+        frame_type=${CRADLE_STATISTIC_FRAME_HOUR};" \
+    )
+    eval "${command}" | grep "^ " | sed 's/^ *//; s/ *| */,/g' | grep -v 'null,null,null,0,0' > "${temp_file}"
     exit_code=$?
 
     if [ "${exit_code}" -eq 0 ]; then
