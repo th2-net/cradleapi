@@ -15,6 +15,8 @@
 # limitations under the License.
 
 # FIXME: rename arguments by source table name
+# FIXME: extract cqlsh build command to a separate method
+# FIXME: add start / end parameters
 # FIXME: added method for entity_statistics, message_statistics, session_statistics
 
 SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 || exit ; pwd -P )"
@@ -35,21 +37,30 @@ DOWNLOAD_MODE_SESSIONS_STATISTICS='sessions-statistics'
 DOWNLOAD_MODE_MESSAGES_STATISTICS='events-statistics'
 DOWNLOAD_MODE_EVENTS_STATISTICS='events-statistics'
 
-ARG_CASSANDRA_REQUEST_TIMEOUT='cassandra-request-timeout'
-ARG_CASSANDRA_CONNECT_TIMEOUT='cassandra-connect-timeout'
-ARG_CASSANDRA_HOST='cassandra-host'
-ARG_CASSANDRA_KEYSPACE='cassandra-keyspace'
-ARG_CASSANDRA_USERNAME='cassandra-username'
-ARG_CASSANDRA_PASSWORD='cassandra-password'
-ARG_DOWNLOAD_MODE='download-mode'
-ARG_BOOKS_CSV='books-csv'
-ARG_PAGES_CSV='pages-csv'
-ARG_SESSIONS_CSV='sessions-csv'
-ARG_SCOPES_CSV='scopes-csv'
-ARG_SESSIONS_STATISTICS_CSV='sessions-statistics-csv'
-ARG_MESSAGES_STATISTICS_CSV='messages-statistics-csv'
-ARG_EVENTS_STATISTICS_CSV='events-statistics-csv'
-ARG_CQLSH_LOG='cqlsh-log'
+ARG_CASSANDRA_REQUEST_TIMEOUT='--cassandra-request-timeout'
+ARG_CASSANDRA_CONNECT_TIMEOUT='--cassandra-connect-timeout'
+ARG_CASSANDRA_HOST='--cassandra-host'
+ARG_CASSANDRA_KEYSPACE='--cassandra-keyspace'
+ARG_CASSANDRA_USERNAME='--cassandra-username'
+ARG_CASSANDRA_PASSWORD='--cassandra-password'
+ARG_DOWNLOAD_MODE='--download-mode'
+ARG_BOOKS_CSV='--books-csv'
+ARG_PAGES_CSV='--pages-csv'
+ARG_SESSIONS_CSV='--sessions-csv'
+ARG_SCOPES_CSV='--scopes-csv'
+ARG_SESSIONS_STATISTICS_CSV='--sessions-statistics-csv'
+ARG_MESSAGES_STATISTICS_CSV='--messages-statistics-csv'
+ARG_EVENTS_STATISTICS_CSV='--events-statistics-csv'
+ARG_CQLSH_LOG='--cqlsh-log'
+
+DEFAULT_BOOKS_CSV='books.csv'
+DEFAULT_PAGES_CSV='pages.csv'
+DEFAULT_SESSIONS_CSV='sessions.csv'
+DEFAULT_SCOPES_CSV='scopes.csv'
+DEFAULT_SESSIONS_STATISTICS_CSV='session-statistics.csv'
+DEFAULT_MESSAGES_STATISTICS_CSV='messages-statistics.csv'
+DEFAULT_EVENTS_STATISTICS_CSV='events-statistics.csv'
+DEFAULT_CQLSH_LOG='cqlsh.log'
 
 CRADLE_DIRECTIONS=('1' '2')
 CRADLE_MESSAGE_ENTITY_TYPE=1
@@ -65,12 +76,12 @@ init() {
 
 download_mode_help() {
   echo ' Download:'
-  echo "  Arg: --${ARG_DOWNLOAD_MODE} - one of values:"
+  echo "  Arg: ${ARG_DOWNLOAD_MODE} - one of values:"
   echo "    * ${DOWNLOAD_MODE_BOOKS} - download books into ${DIR_DATA_NAME}/${FILE_BOOKS_CSV}"
   echo "    * ${DOWNLOAD_MODE_PAGES} - download pages for each books defined in ${DIR_DATA_NAME}/${FILE_BOOKS_CSV} into ${DIR_DATA_NAME}/${FILE_PAGES_CSV}"
   echo "    * ${DOWNLOAD_MODE_SESSIONS} - download sessions for each books defined in ${DIR_DATA_NAME}/${FILE_BOOKS_CSV} into ${DIR_DATA_NAME}/${FILE_SESSIONS_CSV}"
   echo "    * ${DOWNLOAD_MODE_SCOPES} - download scopes for each books defined in ${DIR_DATA_NAME}/${FILE_BOOKS_CSV} into ${DIR_DATA_NAME}/${FILE_SCOPES_CSV}"
-  echo "    * ${DOWNLOAD_MODE_SESSIONS_STATISTICS} - calculate session statistics, write into ${DIR_ANALYTICS_NAME}/${FILE_SESSION_STATISTICS_CSV}. Use data for calculation:"
+  echo "    * ${DOWNLOAD_MODE_SESSIONS_STATISTICS} - calculate session statistics, write into ${DIR_ANALYTICS_NAME}/${FILE_SESSIONS_STATISTICS_CSV}. Use data for calculation:"
   echo "      - pages defined in ${DIR_DATA_NAME}/${FILE_PAGES_CSV}"
   echo "      - sessions defined in ${DIR_DATA_NAME}/${FILE_SESSIONS_CSV}"
   echo "    * ${DOWNLOAD_MODE_MESSAGES_STATISTICS} - calculate messages statistics, write into ${DIR_ANALYTICS_NAME}/${FILE_MESSAGES_STATISTICS_CSV}. Use data for calculation:"
@@ -82,37 +93,37 @@ download_mode_help() {
 args_help() {
   echo 'Help:'
   echo ' Cassandra:'
-  echo "  Arg: --${ARG_CASSANDRA_REQUEST_TIMEOUT} - specify the default request timeout in seconds"
-  echo "  Arg: --${ARG_CASSANDRA_CONNECT_TIMEOUT} - specify the connection timeout in seconds"
-  echo "  Arg: --${ARG_CASSANDRA_HOST} - cassandra host"
-  echo "  Arg: --${ARG_CASSANDRA_KEYSPACE} - cassandra keyspace"
-  echo "  Arg: --${ARG_CASSANDRA_USERNAME} - authenticate as user"
-  echo "  Arg: --${ARG_CASSANDRA_PASSWORD} - authenticate using password"
+  echo "  Arg: ${ARG_CASSANDRA_REQUEST_TIMEOUT} (optional) - specify the default request timeout in seconds"
+  echo "  Arg: ${ARG_CASSANDRA_CONNECT_TIMEOUT} (optional) - specify the connection timeout in seconds"
+  echo "  Arg: ${ARG_CASSANDRA_HOST} (optional) - cassandra host"
+  echo "  Arg: ${ARG_CASSANDRA_KEYSPACE} (required) - cassandra keyspace"
+  echo "  Arg: ${ARG_CASSANDRA_USERNAME} (optional) - authenticate as user"
+  echo "  Arg: ${ARG_CASSANDRA_PASSWORD} (optional) - authenticate using password"
   download_mode_help
   echo ' Data files:'
-  echo "  Arg: --${ARG_BOOKS_CSV} - file name for storing / using books information in ${DIR_DATA_NAME} dir"
-  echo "  Arg: --${ARG_PAGES_CSV} - file name for storing / using pages information in ${DIR_DATA_NAME} dir"
-  echo "  Arg: --${ARG_SESSIONS_CSV} - file name for storing / using sessions information in ${DIR_DATA_NAME} dir"
-  echo "  Arg: --${ARG_SCOPES_CSV} - file name for storing / using scopes information in ${DIR_DATA_NAME} dir"
+  echo "  Arg: ${ARG_BOOKS_CSV} (optional, default is '${DEFAULT_BOOKS_CSV}') - file name for storing / using books information in ${DIR_DATA_NAME} dir"
+  echo "  Arg: ${ARG_PAGES_CSV} (optional, default is '${DEFAULT_PAGES_CSV}') - file name for storing / using pages information in ${DIR_DATA_NAME} dir"
+  echo "  Arg: ${ARG_SESSIONS_CSV} (optional, default is '${DEFAULT_SESSIONS_CSV}') - file name for storing / using sessions information in ${DIR_DATA_NAME} dir"
+  echo "  Arg: ${ARG_SCOPES_CSV} (optional, default is '${DEFAULT_SCOPES_CSV}') - file name for storing / using scopes information in ${DIR_DATA_NAME} dir"
   echo ' Analytics files:'
-  echo "  Arg: --${ARG_SESSIONS_STATISTICS_CSV} - file name for storing session information in ${DIR_ANALYTICS_NAME} dir"
-  echo "  Arg: --${ARG_MESSAGES_STATISTICS_CSV} - file name for storing messages information in ${DIR_ANALYTICS_NAME} dir"
-  echo "  Arg: --${ARG_EVENTS_STATISTICS_CSV} - file name for storing events information in ${DIR_ANALYTICS_NAME} dir"
+  echo "  Arg: ${ARG_SESSIONS_STATISTICS_CSV} (optional, default is '${DEFAULT_SESSIONS_STATISTICS_CSV}') - file name for storing session information in ${DIR_ANALYTICS_NAME} dir"
+  echo "  Arg: ${ARG_MESSAGES_STATISTICS_CSV} (optional, default is '${DEFAULT_MESSAGES_STATISTICS_CSV}') - file name for storing messages information in ${DIR_ANALYTICS_NAME} dir"
+  echo "  Arg: ${ARG_EVENTS_STATISTICS_CSV} (optional, default is '${DEFAULT_EVENTS_STATISTICS_CSV}') - file name for storing events information in ${DIR_ANALYTICS_NAME} dir"
   echo ' Log files:'
-  echo "  Arg: --${ARG_CQLSH_LOG} - file name for writing system output / error from cqlsh in ${DIR_LOGS} dir"
+  echo "  Arg: ${ARG_CQLSH_LOG} (optional, default is '${DEFAULT_CQLSH_LOG}') - file name for writing system output / error from cqlsh in ${DIR_LOGS} dir"
 }
 
 parse_args() {
   export DOWNLOAD_MODE=''
 
-  export FILE_BOOKS_CSV='books.csv'
-  export FILE_PAGES_CSV='pages.csv'
-  export FILE_SESSIONS_CSV='sessions.csv'
-  export FILE_SCOPES_CSV='scopes.csv'
-  export FILE_SESSION_STATISTICS_CSV='session-statistics.csv'
-  export FILE_MESSAGES_STATISTICS_CSV='messages-statistics.csv'
-  export FILE_EVENTS_STATISTICS_CSV='events-statistics.csv'
-  export FILE_CQLSH_LOG='cqlsh.log'
+  export FILE_BOOKS_CSV="${DEFAULT_BOOKS_CSV}"
+  export FILE_PAGES_CSV="${DEFAULT_PAGES_CSV}"
+  export FILE_SESSIONS_CSV="${DEFAULT_SESSIONS_CSV}"
+  export FILE_SCOPES_CSV="${DEFAULT_SCOPES_CSV}"
+  export FILE_SESSIONS_STATISTICS_CSV="${DEFAULT_SESSIONS_STATISTICS_CSV}"
+  export FILE_MESSAGES_STATISTICS_CSV="${DEFAULT_MESSAGES_STATISTICS_CSV}"
+  export FILE_EVENTS_STATISTICS_CSV="${DEFAULT_EVENTS_STATISTICS_CSV}"
+  export FILE_CQLSH_LOG="${DEFAULT_CQLSH_LOG}"
 
   export CASSANDRA_KEYSPACE=''
   export CASSANDRA_REQUEST_TIMEOUT=10
@@ -127,77 +138,77 @@ parse_args() {
         args_help
         exit 0
         ;;
-      "--${ARG_DOWNLOAD_MODE}")
+      "${ARG_DOWNLOAD_MODE}")
         DOWNLOAD_MODE="$2"
         export DOWNLOAD_MODE
         shift 2
         ;;
-      "--${ARG_BOOKS_CSV}")
+      "${ARG_BOOKS_CSV}")
         FILE_BOOKS_CSV="$2"
         export FILE_BOOKS_CSV
         shift 2
         ;;
-      "--${ARG_PAGES_CSV}")
+      "${ARG_PAGES_CSV}")
         FILE_PAGES_CSV="$2"
         export FILE_PAGES_CSV
         shift 2
         ;;
-      "--${ARG_SESSIONS_CSV}")
+      "${ARG_SESSIONS_CSV}")
         FILE_SESSIONS_CSV="$2"
         export FILE_SESSIONS_CSV
         shift 2
         ;;
-      "--${ARG_SCOPES_CSV}")
+      "${ARG_SCOPES_CSV}")
         FILE_SCOPES_CSV="$2"
         export FILE_SCOPES_CSV
         shift 2
         ;;
-      "--${ARG_SESSIONS_STATISTICS_CSV}")
-        FILE_SESSION_STATISTICS_CSV="$2"
-        export FILE_SESSION_STATISTICS_CSV
+      "${ARG_SESSIONS_STATISTICS_CSV}")
+        FILE_SESSIONS_STATISTICS_CSV="$2"
+        export FILE_SESSIONS_STATISTICS_CSV
         shift 2
         ;;
-      "--${ARG_MESSAGES_STATISTICS_CSV}")
+      "${ARG_MESSAGES_STATISTICS_CSV}")
         FILE_MESSAGES_STATISTICS_CSV="$2"
         export FILE_MESSAGES_STATISTICS_CSV
         shift 2
         ;;
-      "--${ARG_EVENTS_STATISTICS_CSV}")
+      "${ARG_EVENTS_STATISTICS_CSV}")
         FILE_EVENTS_STATISTICS_CSV="$2"
         export FILE_EVENTS_STATISTICS_CSV
         shift 2
         ;;
-      "--${ARG_CQLSH_LOG}")
+      "${ARG_CQLSH_LOG}")
         FILE_CQLSH_LOG="$2"
         export FILE_CQLSH_LOG
         shift 2
         ;;
-      "--${ARG_CASSANDRA_KEYSPACE}")
+      "${ARG_CASSANDRA_KEYSPACE}")
         CASSANDRA_KEYSPACE="$2"
         export CASSANDRA_KEYSPACE
         shift 2
         ;;
-      "--${ARG_CASSANDRA_REQUEST_TIMEOUT}")
+      "${ARG_CASSANDRA_REQUEST_TIMEOUT}")
         CASSANDRA_REQUEST_TIMEOUT="$2"
         export CASSANDRA_REQUEST_TIMEOUT
         shift 2
         ;;
-      "--${ARG_CASSANDRA_CONNECT_TIMEOUT}")
+      "${ARG_CASSANDRA_CONNECT_TIMEOUT}")
         CASSANDRA_CONNECT_TIMEOUT="$2"
         export CASSANDRA_CONNECT_TIMEOUT
         shift 2
         ;;
-      "--${ARG_CASSANDRA_HOST}")
+      "${ARG_CASSANDRA_HOST}")
         CASSANDRA_HOST="$2"
         export CASSANDRA_HOST
         shift 2
         ;;
-      "--${ARG_CASSANDRA_USERNAME}")
+      "${ARG_CASSANDRA_USERNAME}")
         CASSANDRA_USERNAME="$2"
         export CASSANDRA_USERNAME
         shift 2
         ;;
-      "--${ARG_CASSANDRA_PASSWORD}")
+      "${ARG_CASSANDRA_PASSWORD}")
         CASSANDRA_PASSWORD="$2"
         export CASSANDRA_PASSWORD
         shift 2
@@ -209,6 +220,12 @@ parse_args() {
         ;;
     esac
   done
+
+  if [ -z "${CASSANDRA_KEYSPACE}" ]; then
+    echo "CRITICAL: Cassandra keyspace can't be empty, please specify ${ARG_CASSANDRA_KEYSPACE} argument"
+    args_help
+    exit 2
+  fi
 
   echo 'Parameters:'
   echo ' Cassandra:'
@@ -226,11 +243,11 @@ parse_args() {
   echo "  Arg: ${ARG_SESSIONS_CSV} = ${FILE_SESSIONS_CSV}"
   echo "  Arg: ${ARG_SCOPES_CSV} = ${FILE_SCOPES_CSV}"
   echo ' Analytics files:'
-  echo "  Arg: ${ARG_SESSIONS_STATISTICS_CSV} = ${FILE_SESSION_STATISTICS_CSV}"
+  echo "  Arg: ${ARG_SESSIONS_STATISTICS_CSV} = ${FILE_SESSIONS_STATISTICS_CSV}"
   echo "  Arg: ${ARG_MESSAGES_STATISTICS_CSV} = ${FILE_MESSAGES_STATISTICS_CSV}"
   echo "  Arg: ${ARG_EVENTS_STATISTICS_CSV} = ${FILE_EVENTS_STATISTICS_CSV}"
   echo ' Log files:'
-  echo "  Arg: --${ARG_CQLSH_LOG} = ${FILE_CQLSH_LOG}"
+  echo "  Arg: ${ARG_CQLSH_LOG} = ${FILE_CQLSH_LOG}"
 }
 
 check_command_execution_status() {
@@ -240,7 +257,7 @@ check_command_execution_status() {
     echo "INFO: ${comment} - success"
   else
     echo "CRITICAL: ${comment} - failure ($exit_code)"
-    exit 3
+    exit 30
   fi
 }
 
@@ -349,9 +366,9 @@ download_sessions_statistics() {
         if [ "${exit_code}" -eq 0 ]; then
           if [ "${header_written}" = 'false' ]; then
             header_written='true'
-            copy_csv_header "${temp_file}" "${DIR_ANALYTICS}/${FILE_SESSION_STATISTICS_CSV}"
+            copy_csv_header "${temp_file}" "${DIR_ANALYTICS}/${FILE_SESSIONS_STATISTICS_CSV}"
           fi
-          copy_csv_body "${temp_file}" "${DIR_ANALYTICS}/${FILE_SESSION_STATISTICS_CSV}"
+          copy_csv_body "${temp_file}" "${DIR_ANALYTICS}/${FILE_SESSIONS_STATISTICS_CSV}"
         fi
         remove_file "${temp_file}"
 
@@ -443,6 +460,6 @@ case "${DOWNLOAD_MODE}" in
   *)
     echo "CRITICAL: unknown ${ARG_DOWNLOAD_MODE}: ${DOWNLOAD_MODE}"
     download_mode_help
-    exit 2
+    exit 20
     ;;
 esac
