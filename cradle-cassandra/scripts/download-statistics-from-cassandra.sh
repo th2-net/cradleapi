@@ -257,8 +257,8 @@ parse_args() {
 }
 
 check_command_execution_status() {
-  comment="${1}"
-  exit_code="${2}"
+  local comment="${1}"
+  local exit_code="${2}"
   if [ "${exit_code}" -eq 0 ]; then
     echo "INFO: ${comment} - success"
   else
@@ -268,27 +268,27 @@ check_command_execution_status() {
 }
 
 copy_csv_header() {
-  source="${1}"
-  target="${2}"
+  local source="${1}"
+  local target="${2}"
   echo "INFO: copying CSV header from ${source} to ${target}"
   head -n 1 "${source}" > "${target}"
 }
 
 copy_csv_body() {
-  source="${1}"
-  target="${2}"
+  local source="${1}"
+  local target="${2}"
   echo "INFO: copying CSV body from ${source} to ${target}"
   tail -n +2 "${source}" >> "${target}"
 }
 
 remove_file() {
-  file="${1}"
+  local file="${1}"
   echo "DEBUG: removing ${file}"
   rm "${file}"
 }
 
 build_cassandra_command() {
-  query="${1}"
+  local query="${1}"
 
   command="cqlsh --keyspace '${CASSANDRA_KEYSPACE}' --execute \"${query}\""
   if [ -n "${CASSANDRA_USERNAME}" ]; then
@@ -317,13 +317,13 @@ download_books() {
 }
 
 download_using_book() {
-  comment="${1}"
-  table_name="${2}"
-  output_file_name="${3}"
+  local comment="${1}"
+  local table_name="${2}"
+  local output_file_name="${3}"
 
   echo "INFO: downloading ${comment} ..."
   header_written=false
-  while read -r book; do
+  while IFS= read -r book; do
     temp_file=$(mktemp)
     echo "INFO: downloading ${comment} for ${book} book to ${temp_file} ..."
     command=$(build_cassandra_command "SELECT * FROM ${table_name} WHERE book='${book}';")
@@ -403,9 +403,9 @@ download_message_statistics() {
 }
 
 download_from_entity_statistics() {
-  comment="${1}"
-  entity_type="${2}"
-  output_file_name="${3}"
+  local comment="${1}"
+  local entity_type="${2}"
+  local output_file_name="${3}"
 
   echo "INFO: downloading ${comment} statistics ..."
   header_written='false'
