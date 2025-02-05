@@ -96,7 +96,7 @@ download_mode_help() {
   echo "      - pages defined in ${DIR_DATA_NAME}/${FILE_PAGES_CSV}"
 }
 
-args_help() {
+print_help() {
   echo 'Help:'
   echo ' Cassandra:'
   echo "  Arg: ${ARG_CASSANDRA_REQUEST_TIMEOUT} (optional) - specify the default request timeout in seconds"
@@ -120,108 +120,91 @@ args_help() {
 }
 
 parse_args() {
-  export DOWNLOAD_MODE=''
-
-  export FILE_BOOKS_CSV="${DEFAULT_BOOKS_CSV}"
-  export FILE_PAGES_CSV="${DEFAULT_PAGES_CSV}"
-  export FILE_SESSIONS_CSV="${DEFAULT_SESSIONS_CSV}"
-  export FILE_SCOPES_CSV="${DEFAULT_SCOPES_CSV}"
-  export FILE_MESSAGE_STATISTICS_CSV="${DEFAULT_MESSAGE_STATISTICS_CSV}"
-  export FILE_MESSAGE_ENTITY_STATISTICS_CSV="${DEFAULT_MESSAGE_ENTITY_STATISTICS_CSV}"
-  export FILE_EVENT_ENTITY_STATISTICS_CSV="${DEFAULT_EVENT_ENTITY_STATISTICS_CSV}"
-  export FILE_CQLSH_LOG="${DEFAULT_CQLSH_LOG}"
-
-  export CASSANDRA_KEYSPACE=''
-  export CASSANDRA_REQUEST_TIMEOUT=10
-  export CASSANDRA_CONNECT_TIMEOUT=5
-  export CASSANDRA_HOST='127.0.0.1'
-  export CASSANDRA_USERNAME=''
-  export CASSANDRA_PASSWORD=''
+  DOWNLOAD_MODE=''
+  FILE_BOOKS_CSV="${DEFAULT_BOOKS_CSV}"
+  FILE_PAGES_CSV="${DEFAULT_PAGES_CSV}"
+  FILE_SESSIONS_CSV="${DEFAULT_SESSIONS_CSV}"
+  FILE_SCOPES_CSV="${DEFAULT_SCOPES_CSV}"
+  FILE_MESSAGE_STATISTICS_CSV="${DEFAULT_MESSAGE_STATISTICS_CSV}"
+  FILE_MESSAGE_ENTITY_STATISTICS_CSV="${DEFAULT_MESSAGE_ENTITY_STATISTICS_CSV}"
+  FILE_EVENT_ENTITY_STATISTICS_CSV="${DEFAULT_EVENT_ENTITY_STATISTICS_CSV}"
+  FILE_CQLSH_LOG="${DEFAULT_CQLSH_LOG}"
+  CASSANDRA_KEYSPACE=''
+  CASSANDRA_REQUEST_TIMEOUT=10
+  CASSANDRA_CONNECT_TIMEOUT=5
+  CASSANDRA_HOST='127.0.0.1'
+  CASSANDRA_USERNAME=''
+  CASSANDRA_PASSWORD=''
 
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
       --help)
-        args_help
+        print_help
         exit 0
         ;;
       "${ARG_DOWNLOAD_MODE}")
         DOWNLOAD_MODE="$2"
-        export DOWNLOAD_MODE
         shift 2
         ;;
       "${ARG_BOOKS_CSV}")
         FILE_BOOKS_CSV="$2"
-        export FILE_BOOKS_CSV
         shift 2
         ;;
       "${ARG_PAGES_CSV}")
         FILE_PAGES_CSV="$2"
-        export FILE_PAGES_CSV
         shift 2
         ;;
       "${ARG_SESSIONS_CSV}")
         FILE_SESSIONS_CSV="$2"
-        export FILE_SESSIONS_CSV
         shift 2
         ;;
       "${ARG_SCOPES_CSV}")
         FILE_SCOPES_CSV="$2"
-        export FILE_SCOPES_CSV
         shift 2
         ;;
       "${ARG_MESSAGE_STATISTICS_CSV}")
         FILE_MESSAGE_STATISTICS_CSV="$2"
-        export FILE_MESSAGE_STATISTICS_CSV
         shift 2
         ;;
       "${ARG_MESSAGE_ENTITY_STATISTICS_CSV}")
         FILE_MESSAGE_ENTITY_STATISTICS_CSV="$2"
-        export FILE_MESSAGE_ENTITY_STATISTICS_CSV
         shift 2
         ;;
       "${ARG_EVENT_ENTITY_STATISTICS_CSV}")
         FILE_EVENT_ENTITY_STATISTICS_CSV="$2"
-        export FILE_EVENT_ENTITY_STATISTICS_CSV
         shift 2
         ;;
       "${ARG_CQLSH_LOG}")
         FILE_CQLSH_LOG="$2"
-        export FILE_CQLSH_LOG
         shift 2
         ;;
       "${ARG_CASSANDRA_KEYSPACE}")
         CASSANDRA_KEYSPACE="$2"
-        export CASSANDRA_KEYSPACE
         shift 2
         ;;
       "${ARG_CASSANDRA_REQUEST_TIMEOUT}")
         CASSANDRA_REQUEST_TIMEOUT="$2"
-        export CASSANDRA_REQUEST_TIMEOUT
         shift 2
         ;;
       "${ARG_CASSANDRA_CONNECT_TIMEOUT}")
         CASSANDRA_CONNECT_TIMEOUT="$2"
-        export CASSANDRA_CONNECT_TIMEOUT
         shift 2
         ;;
       "${ARG_CASSANDRA_HOST}")
         CASSANDRA_HOST="$2"
-        export CASSANDRA_HOST
         shift 2
         ;;
       "${ARG_CASSANDRA_USERNAME}")
         CASSANDRA_USERNAME="$2"
-        export CASSANDRA_USERNAME
         shift 2
         ;;
       "${ARG_CASSANDRA_PASSWORD}")
         CASSANDRA_PASSWORD="$2"
-        export CASSANDRA_PASSWORD
         shift 2
         ;;
       *)
         echo "CRITICAL: Unknown option: $1"
-        args_help
+        print_help
         exit 1
         ;;
     esac
@@ -229,7 +212,7 @@ parse_args() {
 
   if [ -z "${CASSANDRA_KEYSPACE}" ]; then
     echo "CRITICAL: Cassandra keyspace can't be empty, please specify ${ARG_CASSANDRA_KEYSPACE} argument"
-    args_help
+    print_help
     exit 2
   fi
 
@@ -254,6 +237,22 @@ parse_args() {
   echo "  Arg: ${ARG_EVENT_ENTITY_STATISTICS_CSV} = ${FILE_EVENT_ENTITY_STATISTICS_CSV}"
   echo ' Log files:'
   echo "  Arg: ${ARG_CQLSH_LOG} = ${FILE_CQLSH_LOG}"
+
+  export DOWNLOAD_MODE="${DOWNLOAD_MODE}"
+  export FILE_BOOKS_CSV="${FILE_BOOKS_CSV}"
+  export FILE_PAGES_CSV="${FILE_PAGES_CSV}"
+  export FILE_SESSIONS_CSV="${FILE_SESSIONS_CSV}"
+  export FILE_SCOPES_CSV="${FILE_SCOPES_CSV}"
+  export FILE_MESSAGE_STATISTICS_CSV="${FILE_MESSAGE_STATISTICS_CSV}"
+  export FILE_MESSAGE_ENTITY_STATISTICS_CSV="${FILE_MESSAGE_ENTITY_STATISTICS_CSV}"
+  export FILE_EVENT_ENTITY_STATISTICS_CSV="${FILE_EVENT_ENTITY_STATISTICS_CSV}"
+  export FILE_CQLSH_LOG="${FILE_CQLSH_LOG}"
+  export CASSANDRA_KEYSPACE="${CASSANDRA_KEYSPACE}"
+  export CASSANDRA_REQUEST_TIMEOUT="${CASSANDRA_REQUEST_TIMEOUT}"
+  export CASSANDRA_CONNECT_TIMEOUT="${CASSANDRA_CONNECT_TIMEOUT}"
+  export CASSANDRA_HOST="${CASSANDRA_HOST}"
+  export CASSANDRA_USERNAME="${CASSANDRA_USERNAME}"
+  export CASSANDRA_PASSWORD="${CASSANDRA_PASSWORD}"
 }
 
 check_command_execution_status() {
