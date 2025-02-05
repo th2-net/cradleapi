@@ -394,56 +394,43 @@ download_scopes() {
 download_message_statistics() {
   echo "INFO: downloading message statistics ..."
   m_start_0=$(date +%s%3N)
-  header_written='false'
 
+  queries_temp_file=$(mktemp)
   while IFS= read -r page_line; do
     book=$(echo "${page_line}" | cut -d',' -f1 | sed 's/[\r\n]//g')
     page=$(echo "${page_line}" | cut -d',' -f7 | sed 's/[\r\n]//g')
     page_start_date=$(echo "${page_line}" | cut -d',' -f2 | sed 's/[\r\n]//g')
     page_start_time=$(echo "${page_line}" | cut -d',' -f3 | sed 's/[\r\n]//g')
-    echo "INFO: downloading message statistics for ${book}/${page} book/page ${page_start_date} ${page_start_time} ..."
-    m_start_1=$(date +%s%3N)
     while IFS= read -r session_line; do
       session=$(echo "${session_line}" | cut -d',' -f2 | sed 's/[\r\n]//g')
       for direction in "${CRADLE_DIRECTIONS[@]}"; do
-        temp_file=$(mktemp)
-        echo "DEBUG: downloading message statistics for ${book}/${page}/${session}/${direction} book/page/session/direction to ${temp_file} ..."
-        m_start_2=$(date +%s%3N)
-#              --execute "SELECT * FROM message_statistics WHERE book='${book}' AND page='${page}' AND session_alias='${session}' AND direction='${direction}' AND frame_type=${CRADLE_STATISTIC_FRAME_HOUR};" \
-        command=$(build_cassandra_command "SELECT \
+        echo "SELECT \
             book, page, session_alias, direction,
-            MAX(frame_start) as frame_start, \
-            SUM(entity_count) as entity_count, \
-            SUM(entity_size) as entity_size \
+            MAX(frame_start) as max_frame_start, \
+            SUM(entity_count) as sum_entity_count, \
+            SUM(entity_size) as sum_entity_size \
           FROM message_statistics \
           WHERE book='${book}' AND \
             page='${page}' AND \
             session_alias='${session}' AND \
             direction='${direction}' AND \
-            frame_type=${CRADLE_STATISTIC_FRAME_HOUR};" \
-        )
-        eval "${command}" | grep "^ " | sed 's/^ *//; s/ *| */,/g' | grep -v 'null,null,null,null,null,0,0' > "${temp_file}"
-        exit_code=$?
-
-        if [ "${exit_code}" -eq 0 ]; then
-          if [ "${header_written}" = 'false' ]; then
-            header_written='true'
-            copy_csv_header "${temp_file}" "${DIR_ANALYTICS}/${FILE_MESSAGE_STATISTICS_CSV}"
-          fi
-          copy_csv_body "${temp_file}" "${DIR_ANALYTICS}/${FILE_MESSAGE_STATISTICS_CSV}"
-        fi
-        remove_file "${temp_file}"
-
-        m_end_2=$(date +%s%3N)
-        m_elapsed_2=$((m_end_2 - m_start_2))
-        check_command_execution_status "downloaded message statistics for ${book}/${page}/${session}/${direction} book/page/session/direction in ${m_elapsed_2}" "${exit_code}"
+            frame_type=${CRADLE_STATISTIC_FRAME_HOUR};" >> "${queries_temp_file}"
+        echo "DEBUG: written query for ${book}/${page}/${session}/${direction} book/page/session/direction"
       done
     done < <(tail -n +2 "${DIR_DATA}/${FILE_SESSIONS_CSV}" | grep "^${book},")
-
-    m_end_1=$(date +%s%3N)
-    m_elapsed_1=$((m_end_1 - m_start_1))
-    echo "INFO: downloaded message statistics for ${book}/${page} book/page ${page_start_date} ${page_start_time} in ${m_elapsed_1}"
   done < <(tail -n +2 "${DIR_DATA}/${FILE_PAGES_CSV}")
+
+  temp_file=$(mktemp)
+  command=$(build_cassandra_command_use_file "${queries_temp_file}")
+  eval "${command}" | grep "^ " | sed 's/^ *//; s/ *| */,/g' | grep -v 'null,null,null,null,null,0,0' > "${temp_file}"
+  exit_code=$?
+
+  if [ "${exit_code}" -eq 0 ]; then
+    copy_csv_header "${temp_file}" "${DIR_ANALYTICS}/${FILE_MESSAGE_STATISTICS_CSV}"
+    copy_csv_body "${temp_file}" "${DIR_ANALYTICS}/${FILE_MESSAGE_STATISTICS_CSV}"
+  fi
+  remove_file "${temp_file}"
+  remove_file "${queries_temp_file}"
 
   m_end_0=$(date +%s%3N)
   m_elapsed_0=$((m_end_0 - m_start_0))
@@ -457,7 +444,6 @@ download_from_entity_statistics() {
 
   echo "INFO: downloading ${comment} statistics ..."
   m_start_0=$(date +%s%3N)
-  header_written='false'
 
   queries_temp_file=$(mktemp)
   while IFS= read -r page_line; do
@@ -467,9 +453,9 @@ download_from_entity_statistics() {
     page_start_time=$(echo "${page_line}" | cut -d',' -f3 | sed 's/[\r\n]//g')
     echo "SELECT \
             book, page, \
-            MAX(frame_start) as frame_start, \
-            SUM(entity_count) as entity_count, \
-            SUM(entity_size) as entity_size \
+            MAX(frame_start) as max_frame_start, \
+            SUM(entity_count) as sum_entity_count, \
+            SUM(entity_size) as sum_entity_size \
           FROM entity_statistics \
           WHERE book='${book}' AND \
             page='${page}' AND \
@@ -484,10 +470,7 @@ download_from_entity_statistics() {
   exit_code=$?
 
   if [ "${exit_code}" -eq 0 ]; then
-    if [ "${header_written}" = 'false' ]; then
-      header_written='true'
-      copy_csv_header "${temp_file}" "${DIR_ANALYTICS}/${output_file_name}"
-    fi
+    copy_csv_header "${temp_file}" "${DIR_ANALYTICS}/${output_file_name}"
     copy_csv_body "${temp_file}" "${DIR_ANALYTICS}/${output_file_name}"
   fi
   remove_file "${temp_file}"
