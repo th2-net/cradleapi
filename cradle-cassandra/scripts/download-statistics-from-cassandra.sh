@@ -289,10 +289,11 @@ remove_file() {
   rm "${file}"
 }
 
-build_cassandra_command_use_file() {
-  local file="${1}"
+build_cassandra_command() {
+  local parameter="${1}"
+  local command
 
-  command="cqlsh --keyspace '${CASSANDRA_KEYSPACE}' --file \"${file}\""
+  command="cqlsh --keyspace '${CASSANDRA_KEYSPACE}' ${parameter}"
   if [ -n "${CASSANDRA_USERNAME}" ]; then
     command="${command} --username '${CASSANDRA_USERNAME}'"
   fi
@@ -311,32 +312,20 @@ build_cassandra_command_use_file() {
   echo "${command}"
 }
 
-build_cassandra_command() {
-  local query="${1}"
+build_cassandra_command_use_file() {
+  local file="${1}"
+  build_cassandra_command "--file \"${file}\""
+}
 
-  command="cqlsh --keyspace '${CASSANDRA_KEYSPACE}' --execute \"${query}\""
-  if [ -n "${CASSANDRA_USERNAME}" ]; then
-    command="${command} --username '${CASSANDRA_USERNAME}'"
-  fi
-  if [ -n "${CASSANDRA_PASSWORD}" ]; then
-    command="${command} --password '${CASSANDRA_PASSWORD}'"
-  fi
-  if [ -n "${CASSANDRA_CONNECT_TIMEOUT}" ]; then
-    command="${command} --connect-timeout ${CASSANDRA_CONNECT_TIMEOUT}"
-  fi
-  if [ -n "${CASSANDRA_REQUEST_TIMEOUT}" ]; then
-    command="${command} --request-timeout ${CASSANDRA_REQUEST_TIMEOUT}"
-  fi
-  if [ -n "${CASSANDRA_HOST}" ]; then
-    command="${command} '${CASSANDRA_HOST}'"
-  fi
-  echo "${command}"
+build_cassandra_command_use_query() {
+  local query="${1}"
+  build_cassandra_command "--execute \"${query}\""
 }
 
 download_books() {
   echo "INFO: downloading books ..."
   m_start_0=$(date +%s%3N)
-  command=$(build_cassandra_command "COPY books TO '${DIR_DATA}/${FILE_BOOKS_CSV}' WITH HEADER = TRUE;")
+  command=$(build_cassandra_command_use_query "COPY books TO '${DIR_DATA}/${FILE_BOOKS_CSV}' WITH HEADER = TRUE;")
   eval "${command}" >> "${DIR_LOGS}/${FILE_CQLSH_LOG}" 2>&1
   exit_code=$?
   m_end_0=$(date +%s%3N)
@@ -356,7 +345,7 @@ download_using_book() {
     temp_file=$(mktemp)
     echo "INFO: downloading ${comment} for ${book} book to ${temp_file} ..."
     m_start_1=$(date +%s%3N)
-    command=$(build_cassandra_command "SELECT * FROM ${table_name} WHERE book='${book}';")
+    command=$(build_cassandra_command_use_query "SELECT * FROM ${table_name} WHERE book='${book}';")
     eval "${command}" | grep "^ " | sed 's/^ *//; s/ *| */,/g' > "${temp_file}"
     exit_code=$?
 
