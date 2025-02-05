@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2024 Exactpro (Exactpro Systems Limited)
+# Copyright 2024-2025 Exactpro (Exactpro Systems Limited)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -257,8 +257,8 @@ parse_args() {
 }
 
 check_command_execution_status() {
-  comment="${1}"
-  exit_code="${2}"
+  local comment="${1}"
+  local exit_code="${2}"
   if [ "${exit_code}" -eq 0 ]; then
     echo "INFO: ${comment} - success"
   else
@@ -268,29 +268,32 @@ check_command_execution_status() {
 }
 
 copy_csv_header() {
-  source="${1}"
-  target="${2}"
+  local source="${1}"
+  local target="${2}"
   echo "INFO: copying CSV header from ${source} to ${target}"
   head -n 1 "${source}" > "${target}"
 }
 
 copy_csv_body() {
-  source="${1}"
-  target="${2}"
+  local source="${1}"
+  local target="${2}"
   echo "INFO: copying CSV body from ${source} to ${target}"
-  tail -n +2 "${source}" >> "${target}"
+  local header
+  header=$(head -1 "${target}")
+  grep -v "${header}" "${source}" >> "${target}"
 }
 
 remove_file() {
-  file="${1}"
+  local file="${1}"
   echo "DEBUG: removing ${file}"
   rm "${file}"
 }
 
 build_cassandra_command() {
-  query="${1}"
+  local parameter="${1}"
+  local command
 
-  command="cqlsh --keyspace '${CASSANDRA_KEYSPACE}' --execute \"${query}\""
+  command="cqlsh --keyspace '${CASSANDRA_KEYSPACE}' ${parameter}"
   if [ -n "${CASSANDRA_USERNAME}" ]; then
     command="${command} --username '${CASSANDRA_USERNAME}'"
   fi
@@ -309,24 +312,40 @@ build_cassandra_command() {
   echo "${command}"
 }
 
+build_cassandra_command_use_file() {
+  local file="${1}"
+  build_cassandra_command "--file \"${file}\""
+}
+
+build_cassandra_command_use_query() {
+  local query="${1}"
+  build_cassandra_command "--execute \"${query}\""
+}
+
 download_books() {
   echo "INFO: downloading books ..."
-  command=$(build_cassandra_command "COPY books TO '${DIR_DATA}/${FILE_BOOKS_CSV}' WITH HEADER = TRUE;")
+  m_start_0=$(date +%s%3N)
+  command=$(build_cassandra_command_use_query "COPY books TO '${DIR_DATA}/${FILE_BOOKS_CSV}' WITH HEADER = TRUE;")
   eval "${command}" >> "${DIR_LOGS}/${FILE_CQLSH_LOG}" 2>&1
-  check_command_execution_status 'download books' $?
+  exit_code=$?
+  m_end_0=$(date +%s%3N)
+  m_elapsed_0=$((m_end_0 - m_start_0))
+  check_command_execution_status "downloaded books in ${m_elapsed_0} ms" "${exit_code}"
 }
 
 download_using_book() {
-  comment="${1}"
-  table_name="${2}"
-  output_file_name="${3}"
+  local comment="${1}"
+  local table_name="${2}"
+  local output_file_name="${3}"
 
   echo "INFO: downloading ${comment} ..."
+  m_start_0=$(date +%s%3N)
   header_written=false
-  while read -r book; do
+  while IFS= read -r book; do
     temp_file=$(mktemp)
     echo "INFO: downloading ${comment} for ${book} book to ${temp_file} ..."
-    command=$(build_cassandra_command "SELECT * FROM ${table_name} WHERE book='${book}';")
+    m_start_1=$(date +%s%3N)
+    command=$(build_cassandra_command_use_query "SELECT * FROM ${table_name} WHERE book='${book}';")
     eval "${command}" | grep "^ " | sed 's/^ *//; s/ *| */,/g' > "${temp_file}"
     exit_code=$?
 
@@ -339,8 +358,14 @@ download_using_book() {
     fi
     remove_file "${temp_file}"
 
-    check_command_execution_status "download ${comment} for ${book} book" "${exit_code}"
+    m_end_1=$(date +%s%3N)
+    m_elapsed_1=$((m_end_1 - m_start_1))
+    check_command_execution_status "downloaded ${comment} for ${book} book in ${m_elapsed_1} ms" "${exit_code}"
   done < <(tail -n +2 "${DIR_DATA}/${FILE_BOOKS_CSV}" | cut -d',' -f1)
+
+  m_end_0=$(date +%s%3N)
+  m_elapsed_0=$((m_end_0 - m_start_0))
+  echo "INFO: downloaded ${comment} in ${m_elapsed_0} ms"
 }
 
 download_pages() {
@@ -357,91 +382,92 @@ download_scopes() {
 
 download_message_statistics() {
   echo "INFO: downloading message statistics ..."
-  header_written='false'
+  m_start_0=$(date +%s%3N)
 
+  queries_temp_file=$(mktemp)
   while IFS= read -r page_line; do
     book=$(echo "${page_line}" | cut -d',' -f1 | sed 's/[\r\n]//g')
     page=$(echo "${page_line}" | cut -d',' -f7 | sed 's/[\r\n]//g')
     page_start_date=$(echo "${page_line}" | cut -d',' -f2 | sed 's/[\r\n]//g')
     page_start_time=$(echo "${page_line}" | cut -d',' -f3 | sed 's/[\r\n]//g')
-    echo "INFO: downloading message statistics for ${book}/${page} book/page ${page_start_date} ${page_start_time} ..."
     while IFS= read -r session_line; do
       session=$(echo "${session_line}" | cut -d',' -f2 | sed 's/[\r\n]//g')
       for direction in "${CRADLE_DIRECTIONS[@]}"; do
-        temp_file=$(mktemp)
-        echo "DEBUG: downloading message statistics for ${book}/${page}/${session}/${direction} book/page/session/direction to ${temp_file} ..."
-
-#              --execute "SELECT * FROM message_statistics WHERE book='${book}' AND page='${page}' AND session_alias='${session}' AND direction='${direction}' AND frame_type=${CRADLE_STATISTIC_FRAME_HOUR};" \
-        command=$(build_cassandra_command "SELECT \
+        echo "SELECT \
             book, page, session_alias, direction,
-            MAX(frame_start) as frame_start, \
-            SUM(entity_count) as entity_count, \
-            SUM(entity_size) as entity_size \
+            MAX(frame_start) as max_frame_start, \
+            SUM(entity_count) as sum_entity_count, \
+            SUM(entity_size) as sum_entity_size \
           FROM message_statistics \
           WHERE book='${book}' AND \
             page='${page}' AND \
             session_alias='${session}' AND \
             direction='${direction}' AND \
-            frame_type=${CRADLE_STATISTIC_FRAME_HOUR};" \
-        )
-        eval "${command}" | grep "^ " | sed 's/^ *//; s/ *| */,/g' | grep -v 'null,null,null,null,null,0,0' > "${temp_file}"
-        exit_code=$?
-
-        if [ "${exit_code}" -eq 0 ]; then
-          if [ "${header_written}" = 'false' ]; then
-            header_written='true'
-            copy_csv_header "${temp_file}" "${DIR_ANALYTICS}/${FILE_MESSAGE_STATISTICS_CSV}"
-          fi
-          copy_csv_body "${temp_file}" "${DIR_ANALYTICS}/${FILE_MESSAGE_STATISTICS_CSV}"
-        fi
-        remove_file "${temp_file}"
-
-        check_command_execution_status "download message statistics for ${book}/${page}/${session}/${direction} book/page/session/direction" "${exit_code}"
+            frame_type=${CRADLE_STATISTIC_FRAME_HOUR};" >> "${queries_temp_file}"
+        echo "DEBUG: written query for ${book}/${page}/${session}/${direction} book/page/session/direction"
       done
     done < <(tail -n +2 "${DIR_DATA}/${FILE_SESSIONS_CSV}" | grep "^${book},")
   done < <(tail -n +2 "${DIR_DATA}/${FILE_PAGES_CSV}")
+
+  temp_file=$(mktemp)
+  command=$(build_cassandra_command_use_file "${queries_temp_file}")
+  eval "${command}" | grep "^ " | sed 's/^ *//; s/ *| */,/g' | grep -v 'null,null,null,null,null,0,0' > "${temp_file}"
+  exit_code=$?
+
+  if [ "${exit_code}" -eq 0 ]; then
+    copy_csv_header "${temp_file}" "${DIR_ANALYTICS}/${FILE_MESSAGE_STATISTICS_CSV}"
+    copy_csv_body "${temp_file}" "${DIR_ANALYTICS}/${FILE_MESSAGE_STATISTICS_CSV}"
+  fi
+  remove_file "${temp_file}"
+  remove_file "${queries_temp_file}"
+
+  m_end_0=$(date +%s%3N)
+  m_elapsed_0=$((m_end_0 - m_start_0))
+  echo "INFO: downloaded message statistics in ${m_elapsed_0} ms"
 }
 
 download_from_entity_statistics() {
-  comment="${1}"
-  entity_type="${2}"
-  output_file_name="${3}"
+  local comment="${1}"
+  local entity_type="${2}"
+  local output_file_name="${3}"
 
   echo "INFO: downloading ${comment} statistics ..."
-  header_written='false'
+  m_start_0=$(date +%s%3N)
 
+  queries_temp_file=$(mktemp)
   while IFS= read -r page_line; do
     book=$(echo "${page_line}" | cut -d',' -f1 | sed 's/[\r\n]//g')
     page=$(echo "${page_line}" | cut -d',' -f7 | sed 's/[\r\n]//g')
     page_start_date=$(echo "${page_line}" | cut -d',' -f2 | sed 's/[\r\n]//g')
     page_start_time=$(echo "${page_line}" | cut -d',' -f3 | sed 's/[\r\n]//g')
-    echo "INFO: downloading ${comment} statistics for ${book}/${page} book/page ${page_start_date} ${page_start_time} ..."
-    temp_file=$(mktemp)
-    command=$(build_cassandra_command "SELECT \
-        book, page, \
-        MAX(frame_start) as frame_start, \
-        SUM(entity_count) as entity_count, \
-        SUM(entity_size) as entity_size \
-      FROM entity_statistics \
-      WHERE book='${book}' AND \
-        page='${page}' AND \
-        entity_type=${entity_type} AND \
-        frame_type=${CRADLE_STATISTIC_FRAME_HOUR};" \
-    )
-    eval "${command}" | grep "^ " | sed 's/^ *//; s/ *| */,/g' | grep -v 'null,null,null,0,0' > "${temp_file}"
-    exit_code=$?
-
-    if [ "${exit_code}" -eq 0 ]; then
-      if [ "${header_written}" = 'false' ]; then
-        header_written='true'
-        copy_csv_header "${temp_file}" "${DIR_ANALYTICS}/${output_file_name}"
-      fi
-      copy_csv_body "${temp_file}" "${DIR_ANALYTICS}/${output_file_name}"
-    fi
-    remove_file "${temp_file}"
-
-    check_command_execution_status "download ${comment} statistics for ${book}/${page} book/page" "${exit_code}"
+    echo "SELECT \
+            book, page, \
+            MAX(frame_start) as max_frame_start, \
+            SUM(entity_count) as sum_entity_count, \
+            SUM(entity_size) as sum_entity_size \
+          FROM entity_statistics \
+          WHERE book='${book}' AND \
+            page='${page}' AND \
+            entity_type=${entity_type} AND \
+            frame_type=${CRADLE_STATISTIC_FRAME_HOUR};" >> "${queries_temp_file}"
+    echo "DEBUG: written query for ${comment} statistics for ${book}/${page} book/page ${page_start_date} ${page_start_time}"
   done < <(tail -n +2 "${DIR_DATA}/${FILE_PAGES_CSV}")
+
+  temp_file=$(mktemp)
+  command=$(build_cassandra_command_use_file "${queries_temp_file}")
+  eval "${command}" | grep "^ " | sed 's/^ *//; s/ *| */,/g' | grep -v 'null,null,null,0,0' > "${temp_file}"
+  exit_code=$?
+
+  if [ "${exit_code}" -eq 0 ]; then
+    copy_csv_header "${temp_file}" "${DIR_ANALYTICS}/${output_file_name}"
+    copy_csv_body "${temp_file}" "${DIR_ANALYTICS}/${output_file_name}"
+  fi
+  remove_file "${temp_file}"
+  remove_file "${queries_temp_file}"
+
+  m_end_0=$(date +%s%3N)
+  m_elapsed_0=$((m_end_0 - m_start_0))
+  echo "INFO: downloaded ${comment} statistics in ${m_elapsed_0} ms"
 }
 
 download_message_entity_statistics() {
