@@ -38,8 +38,11 @@ DOWNLOAD_MODE_ALL='all'
 DOWNLOAD_MODE_BOOKS='books'
 DOWNLOAD_MODE_PAGES='pages'
 DOWNLOAD_MODE_SESSIONS='sessions'
+DOWNLOAD_MODE_PAGE_SESSIONS='page-sessions'
 DOWNLOAD_MODE_GROUPS='groups'
+DOWNLOAD_MODE_PAGE_GROUPS='page-groups'
 DOWNLOAD_MODE_SCOPES='scopes'
+DOWNLOAD_MODE_PAGE_SCOPES='page-scopes'
 DOWNLOAD_MODE_MESSAGE_STATISTICS='message-statistics'
 DOWNLOAD_MODE_MESSAGE_ENTITY_STATISTICS='message-entity-statistics'
 DOWNLOAD_MODE_EVENT_ENTITY_STATISTICS='event-entity-statistics'
@@ -56,8 +59,11 @@ ARG_DOWNLOAD_MODE='--download-mode'
 ARG_BOOKS_CSV="--${DOWNLOAD_MODE_BOOKS}-csv"
 ARG_PAGES_CSV="--${DOWNLOAD_MODE_PAGES}-csv"
 ARG_SESSIONS_CSV="--${DOWNLOAD_MODE_SESSIONS}-csv"
+ARG_PAGE_SESSIONS_CSV="--${DOWNLOAD_MODE_PAGE_SESSIONS}-csv"
 ARG_GROUPS_CSV="--${DOWNLOAD_MODE_GROUPS}-csv"
+ARG_PAGE_GROUPS_CSV="--${DOWNLOAD_MODE_PAGE_GROUPS}-csv"
 ARG_SCOPES_CSV="--${DOWNLOAD_MODE_SCOPES}-csv"
+ARG_PAGE_SCOPES_CSV="--${DOWNLOAD_MODE_PAGE_SCOPES}-csv"
 ARG_MESSAGE_STATISTICS_CSV="--${DOWNLOAD_MODE_MESSAGE_STATISTICS}-csv"
 ARG_MESSAGE_ENTITY_STATISTICS_CSV="--${DOWNLOAD_MODE_MESSAGE_ENTITY_STATISTICS}-csv"
 ARG_EVENT_ENTITY_STATISTICS_CSV="--${DOWNLOAD_MODE_EVENT_ENTITY_STATISTICS}-csv"
@@ -68,8 +74,11 @@ ARG_CQLSH_LOG='--cqlsh-log'
 DEFAULT_BOOKS_CSV="${DOWNLOAD_MODE_BOOKS}.csv"
 DEFAULT_PAGES_CSV="${DOWNLOAD_MODE_PAGES}.csv"
 DEFAULT_SESSIONS_CSV="${DOWNLOAD_MODE_SESSIONS}.csv"
+DEFAULT_PAGE_SESSIONS_CSV="${DOWNLOAD_MODE_PAGE_SESSIONS}.csv"
 DEFAULT_GROUPS_CSV="${DOWNLOAD_MODE_GROUPS}.csv"
+DEFAULT_PAGE_GROUPS_CSV="${DOWNLOAD_MODE_PAGE_GROUPS}.csv"
 DEFAULT_SCOPES_CSV="${DOWNLOAD_MODE_SCOPES}.csv"
+DEFAULT_PAGE_SCOPES_CSV="${DOWNLOAD_MODE_PAGE_SCOPES}.csv"
 DEFAULT_MESSAGE_STATISTICS_CSV="${DOWNLOAD_MODE_MESSAGE_STATISTICS}.csv"
 DEFAULT_MESSAGE_ENTITY_STATISTICS_CSV="${DOWNLOAD_MODE_MESSAGE_ENTITY_STATISTICS}.csv"
 DEFAULT_EVENT_ENTITY_STATISTICS_CSV="${DOWNLOAD_MODE_EVENT_ENTITY_STATISTICS}.csv"
@@ -77,12 +86,16 @@ DEFAULT_GROUPED_MESSAGES_CSV="${DOWNLOAD_MODE_GROUPED_MESSAGES}.csv"
 DEFAULT_TEST_EVENTS_CSV="${DOWNLOAD_MODE_TEST_EVENTS}.csv"
 DEFAULT_CQLSH_LOG='cqlsh.log'
 
-CRADLE_DIRECTIONS=('1' '2')
+DEFAULT_QUERIES_BATCH_SIZE=1000
+DEFAULT_CASSANDRA_REQUEST_TIMEOUT=60
+DEFAULT_CASSANDRA_CONNECT_TIMEOUT=30
+DEFAULT_CASSANDRA_HOST='127.0.0.1'
+
+
 CRADLE_MESSAGE_ENTITY_TYPE=1
 CRADLE_EVENT_ENTITY_TYPE=2
 CRADLE_STATISTIC_FRAME_HOUR=4
 
-QUERIES_BATCH_SIZE=1000
 
 init() {
   mkdir -p "${DIR_DATA}"
@@ -95,23 +108,30 @@ download_mode_help() {
   echo ' Download:'
   echo "  Arg: ${ARG_DOWNLOAD_MODE} - one of values:"
   echo "    * ${DOWNLOAD_MODE_BOOKS} - download books into ${DIR_DATA_NAME}/${FILE_BOOKS_CSV}"
-  echo "    * ${DOWNLOAD_MODE_PAGES} - download pages for each books defined in ${DIR_DATA_NAME}/${FILE_BOOKS_CSV} into ${DIR_DATA_NAME}/${FILE_PAGES_CSV}"
-  echo "    * ${DOWNLOAD_MODE_SESSIONS} - download sessions for each books defined in ${DIR_DATA_NAME}/${FILE_BOOKS_CSV} into ${DIR_DATA_NAME}/${FILE_SESSIONS_CSV}"
-  echo "    * ${DOWNLOAD_MODE_GROUPS} - download session groups for each books defined in ${DIR_DATA_NAME}/${FILE_BOOKS_CSV} into ${DIR_DATA_NAME}/${FILE_GROUPS_CSV}"
-  echo "    * ${DOWNLOAD_MODE_SCOPES} - download scopes for each books defined in ${DIR_DATA_NAME}/${FILE_BOOKS_CSV} into ${DIR_DATA_NAME}/${FILE_SCOPES_CSV}"
-  echo "    * ${DOWNLOAD_MODE_MESSAGE_STATISTICS} - calculate statistics by message_statistics table, write into ${DIR_ANALYTICS_NAME}/${FILE_MESSAGE_STATISTICS_CSV}. Use data for calculation:"
+  echo "    * ${DOWNLOAD_MODE_PAGES} - download pages for each book defined in ${DIR_DATA_NAME}/${FILE_BOOKS_CSV} into ${DIR_DATA_NAME}/${FILE_PAGES_CSV}. Use data for calculation:"
+  echo "      - books defined in ${DIR_DATA_NAME}/${FILE_BOOKS_CSV}"
+  echo "    * ${DOWNLOAD_MODE_SESSIONS} - download sessions for each book defined in ${DIR_DATA_NAME}/${FILE_BOOKS_CSV} into ${DIR_DATA_NAME}/${FILE_SESSIONS_CSV}. Use data for calculation:"
+  echo "      - books defined in ${DIR_DATA_NAME}/${FILE_BOOKS_CSV}"
+  echo "    * ${DOWNLOAD_MODE_PAGE_SESSIONS} - download sessions for each book and page defined in ${DIR_DATA_NAME}/${FILE_BOOKS_CSV} into ${DIR_DATA_NAME}/${FILE_PAGE_SESSIONS_CSV}. Use data for calculation:"
   echo "      - pages defined in ${DIR_DATA_NAME}/${FILE_PAGES_CSV}"
-  echo "      - sessions defined in ${DIR_DATA_NAME}/${FILE_SESSIONS_CSV}"
+  echo "    * ${DOWNLOAD_MODE_GROUPS} - download session groups for each book defined in ${DIR_DATA_NAME}/${FILE_BOOKS_CSV} into ${DIR_DATA_NAME}/${FILE_GROUPS_CSV}. Use data for calculation:"
+  echo "      - books defined in ${DIR_DATA_NAME}/${FILE_BOOKS_CSV}"
+  echo "    * ${DOWNLOAD_MODE_PAGE_GROUPS} - download session groups for each book and page defined in ${DIR_DATA_NAME}/${FILE_BOOKS_CSV} into ${DIR_DATA_NAME}/${FILE_PAGE_GROUPS_CSV}. Use data for calculation:"
+  echo "      - pages defined in ${DIR_DATA_NAME}/${FILE_PAGES_CSV}"
+  echo "    * ${DOWNLOAD_MODE_SCOPES} - download scopes for each book defined in ${DIR_DATA_NAME}/${FILE_BOOKS_CSV} into ${DIR_DATA_NAME}/${FILE_SCOPES_CSV}. Use data for calculation:"
+  echo "      - books defined in ${DIR_DATA_NAME}/${FILE_BOOKS_CSV}"
+  echo "    * ${DOWNLOAD_MODE_PAGE_SCOPES} - download scopes for each book and page defined in ${DIR_DATA_NAME}/${FILE_BOOKS_CSV} into ${DIR_DATA_NAME}/${FILE_PAGE_SCOPES_CSV}. Use data for calculation:"
+  echo "      - pages defined in ${DIR_DATA_NAME}/${FILE_PAGES_CSV}"
+  echo "    * ${DOWNLOAD_MODE_MESSAGE_STATISTICS} - calculate statistics by message_statistics table, write into ${DIR_ANALYTICS_NAME}/${FILE_MESSAGE_STATISTICS_CSV}. Use data for calculation:"
+  echo "      - page-sessions defined in ${DIR_DATA_NAME}/${FILE_PAGE_SESSIONS_CSV}"
   echo "    * ${DOWNLOAD_MODE_MESSAGE_ENTITY_STATISTICS} - calculate message statistics by entity_statistics table, write into ${DIR_ANALYTICS_NAME}/${FILE_MESSAGE_ENTITY_STATISTICS_CSV}. Use data for calculation:"
   echo "      - pages defined in ${DIR_DATA_NAME}/${FILE_PAGES_CSV}"
   echo "    * ${DOWNLOAD_MODE_EVENT_ENTITY_STATISTICS} - calculate events statistics by entity_statistics table, write into ${DIR_ANALYTICS_NAME}/${FILE_EVENT_ENTITY_STATISTICS_CSV}. Use data for calculation:"
   echo "      - pages defined in ${DIR_DATA_NAME}/${FILE_PAGES_CSV}"
   echo "    * ${DOWNLOAD_MODE_GROUPED_MESSAGES} - calculate message statistics by grouped_messages table, write into ${DIR_ANALYTICS_NAME}/${FILE_GROUPED_MESSAGES_CSV}. Use data for calculation:"
-  echo "      - pages defined in ${DIR_DATA_NAME}/${FILE_PAGES_CSV}"
-  echo "      - groups defined in ${DIR_DATA_NAME}/${FILE_GROUPS_CSV}"
+  echo "      - page-groups defined in ${DIR_DATA_NAME}/${FILE_PAGE_GROUPS_CSV}"
   echo "    * ${DOWNLOAD_MODE_TEST_EVENTS} - calculate events statistics by test_events table, write into ${DIR_ANALYTICS_NAME}/${FILE_TEST_EVENTS_CSV}. Use data for calculation:"
-  echo "      - pages defined in ${DIR_DATA_NAME}/${FILE_PAGES_CSV}"
-  echo "      - scopes defined in ${DIR_DATA_NAME}/${FILE_SCOPES_CSV}"
+  echo "      - page-scopes  defined in ${DIR_DATA_NAME}/${FILE_PAGE_SCOPES_CSV}"
 }
 
 print_help() {
@@ -128,8 +148,11 @@ print_help() {
   echo "  Arg: ${ARG_BOOKS_CSV} (optional, default is '${DEFAULT_BOOKS_CSV}') - file name for storing / using books information in ${DIR_DATA_NAME} dir"
   echo "  Arg: ${ARG_PAGES_CSV} (optional, default is '${DEFAULT_PAGES_CSV}') - file name for storing / using pages information in ${DIR_DATA_NAME} dir"
   echo "  Arg: ${ARG_SESSIONS_CSV} (optional, default is '${DEFAULT_SESSIONS_CSV}') - file name for storing / using sessions information in ${DIR_DATA_NAME} dir"
+  echo "  Arg: ${ARG_PAGE_SESSIONS_CSV} (optional, default is '${DEFAULT_PAGE_SESSIONS_CSV}') - file name for storing / using sessions per book and page information in ${DIR_DATA_NAME} dir"
   echo "  Arg: ${ARG_GROUPS_CSV} (optional, default is '${DEFAULT_GROUPS_CSV}') - file name for storing / using session groups information in ${DIR_DATA_NAME} dir"
+  echo "  Arg: ${ARG_PAGE_GROUPS_CSV} (optional, default is '${DEFAULT_PAGE_GROUPS_CSV}') - file name for storing / using session groups per book and page information in ${DIR_DATA_NAME} dir"
   echo "  Arg: ${ARG_SCOPES_CSV} (optional, default is '${DEFAULT_SCOPES_CSV}') - file name for storing / using scopes information in ${DIR_DATA_NAME} dir"
+  echo "  Arg: ${ARG_PAGE_SCOPES_CSV} (optional, default is '${DEFAULT_PAGE_SCOPES_CSV}') - file name for storing / using scopes per book and page information in ${DIR_DATA_NAME} dir"
   echo ' Analytics files:'
   echo "  Arg: ${ARG_MESSAGE_STATISTICS_CSV} (optional, default is '${DEFAULT_MESSAGE_STATISTICS_CSV}') - file name for storing session information in ${DIR_ANALYTICS_NAME} dir"
   echo "  Arg: ${ARG_MESSAGE_ENTITY_STATISTICS_CSV} (optional, default is '${DEFAULT_MESSAGE_ENTITY_STATISTICS_CSV}') - file name for storing messages information in ${DIR_ANALYTICS_NAME} dir"
@@ -145,8 +168,11 @@ parse_args() {
   FILE_BOOKS_CSV="${DEFAULT_BOOKS_CSV}"
   FILE_PAGES_CSV="${DEFAULT_PAGES_CSV}"
   FILE_SESSIONS_CSV="${DEFAULT_SESSIONS_CSV}"
+  FILE_PAGE_SESSIONS_CSV="${DEFAULT_PAGE_SESSIONS_CSV}"
   FILE_GROUPS_CSV="${DEFAULT_GROUPS_CSV}"
+  FILE_PAGE_GROUPS_CSV="${DEFAULT_PAGE_GROUPS_CSV}"
   FILE_SCOPES_CSV="${DEFAULT_SCOPES_CSV}"
+  FILE_PAGE_SCOPES_CSV="${DEFAULT_PAGE_SCOPES_CSV}"
   FILE_MESSAGE_STATISTICS_CSV="${DEFAULT_MESSAGE_STATISTICS_CSV}"
   FILE_MESSAGE_ENTITY_STATISTICS_CSV="${DEFAULT_MESSAGE_ENTITY_STATISTICS_CSV}"
   FILE_EVENT_ENTITY_STATISTICS_CSV="${DEFAULT_EVENT_ENTITY_STATISTICS_CSV}"
@@ -154,9 +180,9 @@ parse_args() {
   FILE_TEST_EVENTS_CSV="${DEFAULT_TEST_EVENTS_CSV}"
   FILE_CQLSH_LOG="${DEFAULT_CQLSH_LOG}"
   CASSANDRA_KEYSPACE=''
-  CASSANDRA_REQUEST_TIMEOUT=10
-  CASSANDRA_CONNECT_TIMEOUT=5
-  CASSANDRA_HOST='127.0.0.1'
+  CASSANDRA_REQUEST_TIMEOUT="${DEFAULT_CASSANDRA_REQUEST_TIMEOUT}"
+  CASSANDRA_CONNECT_TIMEOUT="${DEFAULT_CASSANDRA_CONNECT_TIMEOUT}"
+  CASSANDRA_HOST="${DEFAULT_CASSANDRA_HOST}"
   CASSANDRA_USERNAME=''
   CASSANDRA_PASSWORD=''
 
@@ -182,12 +208,24 @@ parse_args() {
         FILE_SESSIONS_CSV="$2"
         shift 2
         ;;
+      "${ARG_PAGE_SESSIONS_CSV}")
+        FILE_PAGE_SESSIONS_CSV="$2"
+        shift 2
+        ;;
       "${ARG_GROUPS_CSV}")
         FILE_GROUPS_CSV="$2"
         shift 2
         ;;
+      "${ARG_PAGE_GROUPS_CSV}")
+        FILE_PAGE_GROUPS_CSV="$2"
+        shift 2
+        ;;
       "${ARG_SCOPES_CSV}")
         FILE_SCOPES_CSV="$2"
+        shift 2
+        ;;
+      "${ARG_PAGE_SCOPES_CSV}")
+        FILE_PAGE_SCOPES_CSV="$2"
         shift 2
         ;;
       "${ARG_MESSAGE_STATISTICS_CSV}")
@@ -266,8 +304,11 @@ parse_args() {
   echo "  Arg: ${ARG_BOOKS_CSV} = ${FILE_BOOKS_CSV}"
   echo "  Arg: ${ARG_PAGES_CSV} = ${FILE_PAGES_CSV}"
   echo "  Arg: ${ARG_SESSIONS_CSV} = ${FILE_SESSIONS_CSV}"
+  echo "  Arg: ${ARG_PAGE_SESSIONS_CSV} = ${FILE_PAGE_SESSIONS_CSV}"
   echo "  Arg: ${ARG_GROUPS_CSV} = ${FILE_GROUPS_CSV}"
+  echo "  Arg: ${ARG_PAGE_GROUPS_CSV} = ${FILE_PAGE_GROUPS_CSV}"
   echo "  Arg: ${ARG_SCOPES_CSV} = ${FILE_SCOPES_CSV}"
+  echo "  Arg: ${ARG_PAGE_SCOPES_CSV} = ${FILE_PAGE_SCOPES_CSV}"
   echo ' Analytics files:'
   echo "  Arg: ${ARG_MESSAGE_STATISTICS_CSV} = ${FILE_MESSAGE_STATISTICS_CSV}"
   echo "  Arg: ${ARG_MESSAGE_ENTITY_STATISTICS_CSV} = ${FILE_MESSAGE_ENTITY_STATISTICS_CSV}"
@@ -281,8 +322,11 @@ parse_args() {
   export FILE_BOOKS_CSV="${FILE_BOOKS_CSV}"
   export FILE_PAGES_CSV="${FILE_PAGES_CSV}"
   export FILE_SESSIONS_CSV="${FILE_SESSIONS_CSV}"
+  export FILE_PAGE_SESSIONS_CSV="${FILE_PAGE_SESSIONS_CSV}"
   export FILE_GROUPS_CSV="${FILE_GROUPS_CSV}"
+  export FILE_PAGE_GROUPS_CSV="${FILE_PAGE_GROUPS_CSV}"
   export FILE_SCOPES_CSV="${FILE_SCOPES_CSV}"
+  export FILE_PAGE_SCOPES_CSV="${FILE_PAGE_SCOPES_CSV}"
   export FILE_MESSAGE_STATISTICS_CSV="${FILE_MESSAGE_STATISTICS_CSV}"
   export FILE_MESSAGE_ENTITY_STATISTICS_CSV="${FILE_MESSAGE_ENTITY_STATISTICS_CSV}"
   export FILE_EVENT_ENTITY_STATISTICS_CSV="${FILE_EVENT_ENTITY_STATISTICS_CSV}"
@@ -409,6 +453,45 @@ download_using_book() {
   echo "INFO: downloaded ${comment} in ${m_elapsed_0} ms"
 }
 
+download_using_page() {
+  local m_start_0
+  local m_end_0
+  local m_elapsed_0
+  local queries_temp_file
+  local comment="${1}"
+  local table_name="${2}"
+  local output_file_name="${3}"
+
+  echo "INFO: downloading ${comment} ..."
+  m_start_0=$(date +%s%3N)
+  header_written=false
+  queries_temp_file=$(mktemp)
+  while IFS= read -r page_line; do
+    local book
+    local page
+    book=$(echo "${page_line}" | cut -d',' -f1 | sed 's/[\r\n]//g')
+    page=$(echo "${page_line}" | cut -d',' -f7 | sed 's/[\r\n]//g')
+
+    echo "SELECT * FROM ${table_name} WHERE book='${book}' AND page='${page}';" >> "${queries_temp_file}"
+    echo "DEBUG: written query for ${comment} for ${book}/${page} book/page"
+
+    if [[ $(wc -l < "${queries_temp_file}") -ge "${DEFAULT_QUERIES_BATCH_SIZE}" ]]; then
+      header_written=$(execute_and_copy_result "${queries_temp_file}" 'no-null-value' "${DIR_DATA}/${output_file_name}" "${header_written}")
+      remove_file "${queries_temp_file}"
+      queries_temp_file=$(mktemp)
+    fi
+  done < <(tail -n +2 "${DIR_DATA}/${FILE_PAGES_CSV}")
+
+  if [ -s  "${queries_temp_file}" ]; then
+    header_written=$(execute_and_copy_result "${queries_temp_file}" 'no-null-value' "${DIR_DATA}/${output_file_name}" "${header_written}")
+    remove_file "${queries_temp_file}"
+  fi
+
+  m_end_0=$(date +%s%3N)
+  m_elapsed_0=$((m_end_0 - m_start_0))
+  echo "INFO: downloaded ${comment} in ${m_elapsed_0} ms"
+}
+
 download_pages() {
   download_using_book "pages" "pages" "${FILE_PAGES_CSV}"
 }
@@ -417,42 +500,57 @@ download_sessions() {
   download_using_book "sessions" "sessions" "${FILE_SESSIONS_CSV}"
 }
 
+download_page_sessions() {
+  download_using_page "page-sessions" "page_sessions" "${FILE_PAGE_SESSIONS_CSV}"
+}
+
 download_groups() {
   download_using_book "groups" "groups" "${FILE_GROUPS_CSV}"
+}
+
+download_page_groups() {
+  download_using_page "page-groups" "page_groups" "${FILE_PAGE_GROUPS_CSV}"
 }
 
 download_scopes() {
   download_using_book "scopes" "scopes" "${FILE_SCOPES_CSV}"
 }
 
+download_page_scopes() {
+  download_using_page "page-scopes" "page_scopes" "${FILE_PAGE_SCOPES_CSV}"
+}
+
 download_message_statistics() {
+  local m_start_0
+  local m_end_0
+  local m_elapsed_0
+  local queries_temp_file
+
   echo "INFO: downloading message statistics ..."
   m_start_0=$(date +%s%3N)
 
   queries_temp_file=$(mktemp)
-  while IFS= read -r page_line; do
-    book=$(echo "${page_line}" | cut -d',' -f1 | sed 's/[\r\n]//g')
-    page=$(echo "${page_line}" | cut -d',' -f7 | sed 's/[\r\n]//g')
-    page_start_date=$(echo "${page_line}" | cut -d',' -f2 | sed 's/[\r\n]//g')
-    page_start_time=$(echo "${page_line}" | cut -d',' -f3 | sed 's/[\r\n]//g')
-    while IFS= read -r session_line; do
-      session=$(echo "${session_line}" | cut -d',' -f2 | sed 's/[\r\n]//g')
-      for direction in "${CRADLE_DIRECTIONS[@]}"; do
-        echo "SELECT \
-            book, page, session_alias, direction,
-            MAX(frame_start) as max_frame_start, \
-            SUM(entity_count) as sum_entity_count, \
-            SUM(entity_size) as sum_entity_size \
-          FROM message_statistics \
-          WHERE book='${book}' AND \
-            page='${page}' AND \
-            session_alias='${session}' AND \
-            direction='${direction}' AND \
-            frame_type=${CRADLE_STATISTIC_FRAME_HOUR};" >> "${queries_temp_file}"
-        echo "DEBUG: written query for ${book}/${page}/${session}/${direction} book/page/session/direction"
-      done
-    done < <(tail -n +2 "${DIR_DATA}/${FILE_SESSIONS_CSV}" | grep "^${book},")
-  done < <(tail -n +2 "${DIR_DATA}/${FILE_PAGES_CSV}")
+  while IFS= read -r page_session_line; do
+    local book
+    local page
+    local session
+    book=$(echo "${page_session_line}" | cut -d',' -f1 | sed 's/[\r\n]//g')
+    page=$(echo "${page_session_line}" | cut -d',' -f2 | sed 's/[\r\n]//g')
+    session=$(echo "${page_session_line}" | cut -d',' -f3 | sed 's/[\r\n]//g')
+    direction=$(echo "${page_session_line}" | cut -d',' -f4 | sed 's/[\r\n]//g')
+    echo "SELECT \
+        book, page, session_alias, direction,
+        MAX(frame_start) as max_frame_start, \
+        SUM(entity_count) as sum_entity_count, \
+        SUM(entity_size) as sum_entity_size \
+      FROM message_statistics \
+      WHERE book='${book}' AND \
+        page='${page}' AND \
+        session_alias='${session}' AND \
+        direction='${direction}' AND \
+        frame_type=${CRADLE_STATISTIC_FRAME_HOUR};" >> "${queries_temp_file}"
+    echo "DEBUG: written query for ${book}/${page}/${session}/${direction} book/page/session/direction"
+  done < <(tail -n +2 "${DIR_DATA}/${FILE_PAGE_SESSIONS_CSV}")
 
   execute_and_copy_result "${queries_temp_file}" 'null,null,null,null,null,0,0' "${DIR_ANALYTICS}/${FILE_MESSAGE_STATISTICS_CSV}" 'false' > /dev/null
   remove_file "${queries_temp_file}"
@@ -463,6 +561,10 @@ download_message_statistics() {
 }
 
 download_from_entity_statistics() {
+  local m_start_0
+  local m_end_0
+  local m_elapsed_0
+  local queries_temp_file
   local comment="${1}"
   local entity_type="${2}"
   local output_file_name="${3}"
@@ -472,10 +574,10 @@ download_from_entity_statistics() {
 
   queries_temp_file=$(mktemp)
   while IFS= read -r page_line; do
+    local book
+    local page
     book=$(echo "${page_line}" | cut -d',' -f1 | sed 's/[\r\n]//g')
     page=$(echo "${page_line}" | cut -d',' -f7 | sed 's/[\r\n]//g')
-    page_start_date=$(echo "${page_line}" | cut -d',' -f2 | sed 's/[\r\n]//g')
-    page_start_time=$(echo "${page_line}" | cut -d',' -f3 | sed 's/[\r\n]//g')
     echo "SELECT \
             book, page, \
             MAX(frame_start) as max_frame_start, \
@@ -486,7 +588,7 @@ download_from_entity_statistics() {
             page='${page}' AND \
             entity_type=${entity_type} AND \
             frame_type=${CRADLE_STATISTIC_FRAME_HOUR};" >> "${queries_temp_file}"
-    echo "DEBUG: written query for ${comment} statistics for ${book}/${page} book/page ${page_start_date} ${page_start_time}"
+    echo "DEBUG: written query for ${comment} statistics for ${book}/${page} book/page"
   done < <(tail -n +2 "${DIR_DATA}/${FILE_PAGES_CSV}")
 
   execute_and_copy_result "${queries_temp_file}" 'null,null,null,0,0' "${DIR_ANALYTICS}/${output_file_name}" 'false' > /dev/null
@@ -506,38 +608,41 @@ download_event_entity_statistics() {
 }
 
 download_grouped_messages() {
+  local m_start_0
+  local m_end_0
+  local m_elapsed_0
+  local queries_temp_file
   echo "INFO: downloading grouped message ..."
   m_start_0=$(date +%s%3N)
 
   header_written='false'
   queries_temp_file=$(mktemp)
-  while IFS= read -r page_line; do
-    book=$(echo "${page_line}" | cut -d',' -f1 | sed 's/[\r\n]//g')
-    page=$(echo "${page_line}" | cut -d',' -f7 | sed 's/[\r\n]//g')
-    page_start_date=$(echo "${page_line}" | cut -d',' -f2 | sed 's/[\r\n]//g')
-    page_start_time=$(echo "${page_line}" | cut -d',' -f3 | sed 's/[\r\n]//g')
-    while IFS= read -r group_line; do
-      group=$(echo "${group_line}" | cut -d',' -f2 | sed 's/[\r\n]//g')
-      echo "SELECT \
-          book, page, alias_group, \
-          MAX(rec_date) as max_rec_date, \
-          SUM(message_count) as sum_message_count, \
-          SUM(z_content_size) as sum_z_content_size, \
-          SUM(z_content_uncompressed_size) as sum_z_content_uncompressed_size \
-        FROM grouped_messages \
-        WHERE book='${book}' AND \
-          page='${page}' AND \
-          alias_group='${group}';" >> "${queries_temp_file}"
-      echo "DEBUG: written query for ${book}/${page}/${group} book/page/group"
+  while IFS= read -r page_group_line; do
+    local book
+    local page
+    local group
+    book=$(echo "${page_group_line}" | cut -d',' -f1 | sed 's/[\r\n]//g')
+    page=$(echo "${page_group_line}" | cut -d',' -f2 | sed 's/[\r\n]//g')
+    group=$(echo "${page_group_line}" | cut -d',' -f3 | sed 's/[\r\n]//g')
+    echo "SELECT \
+        book, page, alias_group, \
+        MAX(rec_date) as max_rec_date, \
+        SUM(message_count) as sum_message_count, \
+        SUM(z_content_size) as sum_z_content_size, \
+        SUM(z_content_uncompressed_size) as sum_z_content_uncompressed_size \
+      FROM grouped_messages \
+      WHERE book='${book}' AND \
+        page='${page}' AND \
+        alias_group='${group}';" >> "${queries_temp_file}"
+    echo "DEBUG: written query for ${book}/${page}/${group} book/page/group"
 
-      if [[ $(wc -l < "${queries_temp_file}") -ge "${QUERIES_BATCH_SIZE}" ]]; then
-        header_written=$(execute_and_copy_result "${queries_temp_file}" 'null,null,null,null,0,0,0' "${DIR_ANALYTICS}/${FILE_GROUPED_MESSAGES_CSV}" "${header_written}")
-        remove_file "${queries_temp_file}"
-        queries_temp_file=$(mktemp)
-      fi
+    if [[ $(wc -l < "${queries_temp_file}") -ge "${DEFAULT_QUERIES_BATCH_SIZE}" ]]; then
+      header_written=$(execute_and_copy_result "${queries_temp_file}" 'null,null,null,null,0,0,0' "${DIR_ANALYTICS}/${FILE_GROUPED_MESSAGES_CSV}" "${header_written}")
+      remove_file "${queries_temp_file}"
+      queries_temp_file=$(mktemp)
+    fi
 
-    done < <(tail -n +2 "${DIR_DATA}/${FILE_GROUPS_CSV}" | grep "^${book},")
-  done < <(tail -n +2 "${DIR_DATA}/${FILE_PAGES_CSV}")
+  done < <(tail -n +2 "${DIR_DATA}/${FILE_PAGE_GROUPS_CSV}")
 
   if [ -s  "${queries_temp_file}" ]; then
     header_written=$(execute_and_copy_result "${queries_temp_file}" 'null,null,null,null,0,0,0' "${DIR_ANALYTICS}/${FILE_GROUPED_MESSAGES_CSV}" "${header_written}")
@@ -550,38 +655,40 @@ download_grouped_messages() {
 }
 
 download_test_events() {
+  local m_start_0
+  local m_end_0
+  local m_elapsed_0
+  local queries_temp_file
   echo "INFO: downloading test events ..."
   m_start_0=$(date +%s%3N)
 
   header_written='false'
   queries_temp_file=$(mktemp)
-  while IFS= read -r page_line; do
-    book=$(echo "${page_line}" | cut -d',' -f1 | sed 's/[\r\n]//g')
-    page=$(echo "${page_line}" | cut -d',' -f7 | sed 's/[\r\n]//g')
-    page_start_date=$(echo "${page_line}" | cut -d',' -f2 | sed 's/[\r\n]//g')
-    page_start_time=$(echo "${page_line}" | cut -d',' -f3 | sed 's/[\r\n]//g')
-    while IFS= read -r scope_line; do
-      scope=$(echo "${scope_line}" | cut -d',' -f2 | sed 's/[\r\n]//g')
-      echo "SELECT \
-          book, page, scope, \
-          MAX(rec_date) as max_rec_date, \
-          SUM(event_count) as sum_event_count, \
-          SUM(z_content_size) as sum_z_content_size, \
-          SUM(z_content_uncompressed_size) as sum_z_content_uncompressed_size \
-        FROM test_events \
-        WHERE book='${book}' AND \
-          page='${page}' AND \
-          scope='${scope}';" >> "${queries_temp_file}"
-      echo "DEBUG: written query for ${book}/${page}/${scope} book/page/scope"
+  while IFS= read -r page_scope_line; do
+    local book
+    local page
+    local scope
+    book=$(echo "${page_scope_line}" | cut -d',' -f1 | sed 's/[\r\n]//g')
+    page=$(echo "${page_scope_line}" | cut -d',' -f2 | sed 's/[\r\n]//g')
+    scope=$(echo "${page_scope_line}" | cut -d',' -f3 | sed 's/[\r\n]//g')
+    echo "SELECT \
+        book, page, scope, \
+        MAX(rec_date) as max_rec_date, \
+        SUM(event_count) as sum_event_count, \
+        SUM(z_content_size) as sum_z_content_size, \
+        SUM(z_content_uncompressed_size) as sum_z_content_uncompressed_size \
+      FROM test_events \
+      WHERE book='${book}' AND \
+        page='${page}' AND \
+        scope='${scope}';" >> "${queries_temp_file}"
+    echo "DEBUG: written query for ${book}/${page}/${scope} book/page/scope"
 
-      if [[ $(wc -l < "${queries_temp_file}") -ge "${QUERIES_BATCH_SIZE}" ]]; then
-        header_written=$(execute_and_copy_result "${queries_temp_file}" 'null,null,null,null,0,0,0' "${DIR_ANALYTICS}/${FILE_TEST_EVENTS_CSV}" "${header_written}")
-        remove_file "${queries_temp_file}"
-        queries_temp_file=$(mktemp)
-      fi
-
-    done < <(tail -n +2 "${DIR_DATA}/${FILE_SCOPES_CSV}" | grep "^${book},")
-  done < <(tail -n +2 "${DIR_DATA}/${FILE_PAGES_CSV}")
+    if [[ $(wc -l < "${queries_temp_file}") -ge "${DEFAULT_QUERIES_BATCH_SIZE}" ]]; then
+      header_written=$(execute_and_copy_result "${queries_temp_file}" 'null,null,null,null,0,0,0' "${DIR_ANALYTICS}/${FILE_TEST_EVENTS_CSV}" "${header_written}")
+      remove_file "${queries_temp_file}"
+      queries_temp_file=$(mktemp)
+    fi
+  done < <(tail -n +2 "${DIR_DATA}/${FILE_PAGE_SCOPES_CSV}")
 
   if [ -s  "${queries_temp_file}" ]; then
     header_written=$(execute_and_copy_result "${queries_temp_file}" 'null,null,null,null,0,0,0' "${DIR_ANALYTICS}/${FILE_TEST_EVENTS_CSV}" "${header_written}")
@@ -631,11 +738,20 @@ case "${DOWNLOAD_MODE}" in
   "${DOWNLOAD_MODE_SESSIONS}")
     download_sessions
     ;;
+  "${DOWNLOAD_MODE_PAGE_SESSIONS}")
+    download_page_sessions
+    ;;
   "${DOWNLOAD_MODE_GROUPS}")
     download_groups
     ;;
+  "${DOWNLOAD_MODE_PAGE_GROUPS}")
+    download_page_groups
+    ;;
   "${DOWNLOAD_MODE_SCOPES}")
     download_scopes
+    ;;
+  "${DOWNLOAD_MODE_PAGE_SCOPES}")
+    download_page_scopes
     ;;
   "${DOWNLOAD_MODE_MESSAGE_STATISTICS}")
     download_message_statistics
@@ -656,8 +772,11 @@ case "${DOWNLOAD_MODE}" in
     download_books
     download_pages
     download_sessions
+    download_page_sessions
     download_groups
+    download_page_groups
     download_scopes
+    download_page_scopes
     download_message_statistics
     download_message_entity_statistics
     download_event_entity_statistics
