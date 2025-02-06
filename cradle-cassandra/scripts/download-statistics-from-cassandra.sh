@@ -628,8 +628,8 @@ download_grouped_messages() {
         book, page, alias_group, \
         MAX(rec_date) as max_rec_date, \
         SUM(message_count) as sum_message_count, \
-        SUM(z_content_size) as sum_z_content_size, \
-        SUM(z_content_uncompressed_size) as sum_z_content_uncompressed_size \
+        SUM(CAST(z_content_size AS BIGINT)) as sum_z_content_size, \
+        SUM(CAST(z_content_uncompressed_size AS BIGINT)) as sum_z_content_uncompressed_size \
       FROM grouped_messages \
       WHERE book='${book}' AND \
         page='${page}' AND \
@@ -675,8 +675,8 @@ download_test_events() {
         book, page, scope, \
         MAX(rec_date) as max_rec_date, \
         SUM(event_count) as sum_event_count, \
-        SUM(z_content_size) as sum_z_content_size, \
-        SUM(z_content_uncompressed_size) as sum_z_content_uncompressed_size \
+        SUM(CAST(z_content_size AS BIGINT)) as sum_z_content_size, \
+        SUM(CAST(z_content_uncompressed_size AS BIGINT)) as sum_z_content_uncompressed_size \
       FROM test_events \
       WHERE book='${book}' AND \
         page='${page}' AND \
