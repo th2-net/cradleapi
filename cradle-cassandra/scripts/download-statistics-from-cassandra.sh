@@ -724,7 +724,7 @@ execute_and_copy_result() {
   fi
 
   while IFS=: read -r file line_num error_type; do
-    echo "ERROR: ${error_type} happened for query: $(sed -n "${line_num}p" "${file}")" >&2
+    echo "ERROR: ${error_type} happened for query: $(sed -n "$((line_num - 1))p" "${file}")" >&2
   done < "${error_file}"
 
   remove_file "${temp_file}"
