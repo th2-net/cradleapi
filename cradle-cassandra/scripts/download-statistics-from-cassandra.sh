@@ -540,9 +540,9 @@ download_message_statistics() {
     direction=$(echo "${page_session_line}" | cut -d',' -f4 | sed 's/[\r\n]//g')
     echo "SELECT \
         book, page, session_alias, direction,
-        MAX(frame_start) as max_frame_start, \
-        SUM(entity_count) as sum_entity_count, \
-        SUM(entity_size) as sum_entity_size \
+        MAX(frame_start) AS max_frame_start, \
+        SUM(CAST(entity_count AS BIGINT)) AS sum_entity_count, \
+        SUM(CAST(entity_size AS BIGINT)) AS sum_entity_size \
       FROM message_statistics \
       WHERE book='${book}' AND \
         page='${page}' AND \
@@ -581,8 +581,8 @@ download_from_entity_statistics() {
     echo "SELECT \
             book, page, \
             MAX(frame_start) as max_frame_start, \
-            SUM(entity_count) as sum_entity_count, \
-            SUM(entity_size) as sum_entity_size \
+            SUM(CAST(entity_count AS BIGINT)) AS sum_entity_count, \
+            SUM(CAST(entity_size AS BIGINT)) AS sum_entity_size \
           FROM entity_statistics \
           WHERE book='${book}' AND \
             page='${page}' AND \
@@ -626,10 +626,10 @@ download_grouped_messages() {
     group=$(echo "${page_group_line}" | cut -d',' -f3 | sed 's/[\r\n]//g')
     echo "SELECT \
         book, page, alias_group, \
-        MAX(rec_date) as max_rec_date, \
-        SUM(message_count) as sum_message_count, \
-        SUM(CAST(z_content_size AS BIGINT)) as sum_z_content_size, \
-        SUM(CAST(z_content_uncompressed_size AS BIGINT)) as sum_z_content_uncompressed_size \
+        MAX(rec_date) AS max_rec_date, \
+        SUM(CAST(message_count AS BIGINT)) AS sum_message_count, \
+        SUM(CAST(z_content_size AS BIGINT)) AS sum_z_content_size, \
+        SUM(CAST(z_content_uncompressed_size AS BIGINT)) AS sum_z_content_uncompressed_size \
       FROM grouped_messages \
       WHERE book='${book}' AND \
         page='${page}' AND \
@@ -673,10 +673,10 @@ download_test_events() {
     scope=$(echo "${page_scope_line}" | cut -d',' -f3 | sed 's/[\r\n]//g')
     echo "SELECT \
         book, page, scope, \
-        MAX(rec_date) as max_rec_date, \
-        SUM(event_count) as sum_event_count, \
-        SUM(CAST(z_content_size AS BIGINT)) as sum_z_content_size, \
-        SUM(CAST(z_content_uncompressed_size AS BIGINT)) as sum_z_content_uncompressed_size \
+        MAX(rec_date) AS max_rec_date, \
+        SUM(CAST(event_count AS BIGINT)) AS sum_event_count, \
+        SUM(CAST(z_content_size AS BIGINT)) AS sum_z_content_size, \
+        SUM(CAST(z_content_uncompressed_size AS BIGINT)) AS sum_z_content_uncompressed_size \
       FROM test_events \
       WHERE book='${book}' AND \
         page='${page}' AND \
