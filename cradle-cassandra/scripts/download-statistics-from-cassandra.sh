@@ -38,10 +38,13 @@ DOWNLOAD_MODE_ALL='all'
 DOWNLOAD_MODE_BOOKS='books'
 DOWNLOAD_MODE_PAGES='pages'
 DOWNLOAD_MODE_SESSIONS='sessions'
+DOWNLOAD_MODE_GROUPS='groups'
 DOWNLOAD_MODE_SCOPES='scopes'
 DOWNLOAD_MODE_MESSAGE_STATISTICS='message-statistics'
 DOWNLOAD_MODE_MESSAGE_ENTITY_STATISTICS='message-entity-statistics'
 DOWNLOAD_MODE_EVENT_ENTITY_STATISTICS='event-entity-statistics'
+DOWNLOAD_MODE_GROUPED_MESSAGES='grouped-messages'
+DOWNLOAD_MODE_TEST_EVENTS='test-events'
 
 ARG_CASSANDRA_REQUEST_TIMEOUT='--cassandra-request-timeout'
 ARG_CASSANDRA_CONNECT_TIMEOUT='--cassandra-connect-timeout'
@@ -50,28 +53,36 @@ ARG_CASSANDRA_KEYSPACE='--cassandra-keyspace'
 ARG_CASSANDRA_USERNAME='--cassandra-username'
 ARG_CASSANDRA_PASSWORD='--cassandra-password'
 ARG_DOWNLOAD_MODE='--download-mode'
-ARG_BOOKS_CSV='--books-csv'
-ARG_PAGES_CSV='--pages-csv'
-ARG_SESSIONS_CSV='--sessions-csv'
-ARG_SCOPES_CSV='--scopes-csv'
-ARG_MESSAGE_STATISTICS_CSV='--message-statistics-csv'
-ARG_MESSAGE_ENTITY_STATISTICS_CSV='--message-entity-statistics-csv'
-ARG_EVENT_ENTITY_STATISTICS_CSV='--event-entity-statistics-csv'
+ARG_BOOKS_CSV="--${DOWNLOAD_MODE_BOOKS}-csv"
+ARG_PAGES_CSV="--${DOWNLOAD_MODE_PAGES}-csv"
+ARG_SESSIONS_CSV="--${DOWNLOAD_MODE_SESSIONS}-csv"
+ARG_GROUPS_CSV="--${DOWNLOAD_MODE_GROUPS}-csv"
+ARG_SCOPES_CSV="--${DOWNLOAD_MODE_SCOPES}-csv"
+ARG_MESSAGE_STATISTICS_CSV="--${DOWNLOAD_MODE_MESSAGE_STATISTICS}-csv"
+ARG_MESSAGE_ENTITY_STATISTICS_CSV="--${DOWNLOAD_MODE_MESSAGE_ENTITY_STATISTICS}-csv"
+ARG_EVENT_ENTITY_STATISTICS_CSV="--${DOWNLOAD_MODE_EVENT_ENTITY_STATISTICS}-csv"
+ARG_GROUPED_MESSAGES_CSV="--${DOWNLOAD_MODE_GROUPED_MESSAGES}-csv"
+ARG_TEST_EVENTS_CSV="--${DOWNLOAD_MODE_TEST_EVENTS}-csv"
 ARG_CQLSH_LOG='--cqlsh-log'
 
-DEFAULT_BOOKS_CSV='books.csv'
-DEFAULT_PAGES_CSV='pages.csv'
-DEFAULT_SESSIONS_CSV='sessions.csv'
-DEFAULT_SCOPES_CSV='scopes.csv'
-DEFAULT_MESSAGE_STATISTICS_CSV='message-statistics.csv'
-DEFAULT_MESSAGE_ENTITY_STATISTICS_CSV='message-entity-statistics.csv'
-DEFAULT_EVENT_ENTITY_STATISTICS_CSV='event-entity-statistics.csv'
+DEFAULT_BOOKS_CSV="${DOWNLOAD_MODE_BOOKS}.csv"
+DEFAULT_PAGES_CSV="${DOWNLOAD_MODE_PAGES}.csv"
+DEFAULT_SESSIONS_CSV="${DOWNLOAD_MODE_SESSIONS}.csv"
+DEFAULT_GROUPS_CSV="${DOWNLOAD_MODE_GROUPS}.csv"
+DEFAULT_SCOPES_CSV="${DOWNLOAD_MODE_SCOPES}.csv"
+DEFAULT_MESSAGE_STATISTICS_CSV="${DOWNLOAD_MODE_MESSAGE_STATISTICS}.csv"
+DEFAULT_MESSAGE_ENTITY_STATISTICS_CSV="${DOWNLOAD_MODE_MESSAGE_ENTITY_STATISTICS}.csv"
+DEFAULT_EVENT_ENTITY_STATISTICS_CSV="${DOWNLOAD_MODE_EVENT_ENTITY_STATISTICS}.csv"
+DEFAULT_GROUPED_MESSAGES_CSV="${DOWNLOAD_MODE_GROUPED_MESSAGES}.csv"
+DEFAULT_TEST_EVENTS_CSV="${DOWNLOAD_MODE_TEST_EVENTS}.csv"
 DEFAULT_CQLSH_LOG='cqlsh.log'
 
 CRADLE_DIRECTIONS=('1' '2')
 CRADLE_MESSAGE_ENTITY_TYPE=1
 CRADLE_EVENT_ENTITY_TYPE=2
 CRADLE_STATISTIC_FRAME_HOUR=4
+
+QUERIES_BATCH_SIZE=1000
 
 init() {
   mkdir -p "${DIR_DATA}"
@@ -86,6 +97,7 @@ download_mode_help() {
   echo "    * ${DOWNLOAD_MODE_BOOKS} - download books into ${DIR_DATA_NAME}/${FILE_BOOKS_CSV}"
   echo "    * ${DOWNLOAD_MODE_PAGES} - download pages for each books defined in ${DIR_DATA_NAME}/${FILE_BOOKS_CSV} into ${DIR_DATA_NAME}/${FILE_PAGES_CSV}"
   echo "    * ${DOWNLOAD_MODE_SESSIONS} - download sessions for each books defined in ${DIR_DATA_NAME}/${FILE_BOOKS_CSV} into ${DIR_DATA_NAME}/${FILE_SESSIONS_CSV}"
+  echo "    * ${DOWNLOAD_MODE_GROUPS} - download session groups for each books defined in ${DIR_DATA_NAME}/${FILE_BOOKS_CSV} into ${DIR_DATA_NAME}/${FILE_GROUPS_CSV}"
   echo "    * ${DOWNLOAD_MODE_SCOPES} - download scopes for each books defined in ${DIR_DATA_NAME}/${FILE_BOOKS_CSV} into ${DIR_DATA_NAME}/${FILE_SCOPES_CSV}"
   echo "    * ${DOWNLOAD_MODE_MESSAGE_STATISTICS} - calculate statistics by message_statistics table, write into ${DIR_ANALYTICS_NAME}/${FILE_MESSAGE_STATISTICS_CSV}. Use data for calculation:"
   echo "      - pages defined in ${DIR_DATA_NAME}/${FILE_PAGES_CSV}"
@@ -94,9 +106,15 @@ download_mode_help() {
   echo "      - pages defined in ${DIR_DATA_NAME}/${FILE_PAGES_CSV}"
   echo "    * ${DOWNLOAD_MODE_EVENT_ENTITY_STATISTICS} - calculate events statistics by entity_statistics table, write into ${DIR_ANALYTICS_NAME}/${FILE_EVENT_ENTITY_STATISTICS_CSV}. Use data for calculation:"
   echo "      - pages defined in ${DIR_DATA_NAME}/${FILE_PAGES_CSV}"
+  echo "    * ${DOWNLOAD_MODE_GROUPED_MESSAGES} - calculate message statistics by grouped_messages table, write into ${DIR_ANALYTICS_NAME}/${FILE_GROUPED_MESSAGES_CSV}. Use data for calculation:"
+  echo "      - pages defined in ${DIR_DATA_NAME}/${FILE_PAGES_CSV}"
+  echo "      - groups defined in ${DIR_DATA_NAME}/${FILE_GROUPS_CSV}"
+  echo "    * ${DOWNLOAD_MODE_TEST_EVENTS} - calculate events statistics by test_events table, write into ${DIR_ANALYTICS_NAME}/${FILE_TEST_EVENTS_CSV}. Use data for calculation:"
+  echo "      - pages defined in ${DIR_DATA_NAME}/${FILE_PAGES_CSV}"
+  echo "      - scopes defined in ${DIR_DATA_NAME}/${FILE_SCOPES_CSV}"
 }
 
-args_help() {
+print_help() {
   echo 'Help:'
   echo ' Cassandra:'
   echo "  Arg: ${ARG_CASSANDRA_REQUEST_TIMEOUT} (optional) - specify the default request timeout in seconds"
@@ -110,118 +128,119 @@ args_help() {
   echo "  Arg: ${ARG_BOOKS_CSV} (optional, default is '${DEFAULT_BOOKS_CSV}') - file name for storing / using books information in ${DIR_DATA_NAME} dir"
   echo "  Arg: ${ARG_PAGES_CSV} (optional, default is '${DEFAULT_PAGES_CSV}') - file name for storing / using pages information in ${DIR_DATA_NAME} dir"
   echo "  Arg: ${ARG_SESSIONS_CSV} (optional, default is '${DEFAULT_SESSIONS_CSV}') - file name for storing / using sessions information in ${DIR_DATA_NAME} dir"
+  echo "  Arg: ${ARG_GROUPS_CSV} (optional, default is '${DEFAULT_GROUPS_CSV}') - file name for storing / using session groups information in ${DIR_DATA_NAME} dir"
   echo "  Arg: ${ARG_SCOPES_CSV} (optional, default is '${DEFAULT_SCOPES_CSV}') - file name for storing / using scopes information in ${DIR_DATA_NAME} dir"
   echo ' Analytics files:'
   echo "  Arg: ${ARG_MESSAGE_STATISTICS_CSV} (optional, default is '${DEFAULT_MESSAGE_STATISTICS_CSV}') - file name for storing session information in ${DIR_ANALYTICS_NAME} dir"
   echo "  Arg: ${ARG_MESSAGE_ENTITY_STATISTICS_CSV} (optional, default is '${DEFAULT_MESSAGE_ENTITY_STATISTICS_CSV}') - file name for storing messages information in ${DIR_ANALYTICS_NAME} dir"
   echo "  Arg: ${ARG_EVENT_ENTITY_STATISTICS_CSV} (optional, default is '${DEFAULT_EVENT_ENTITY_STATISTICS_CSV}') - file name for storing events information in ${DIR_ANALYTICS_NAME} dir"
+  echo "  Arg: ${ARG_GROUPED_MESSAGES_CSV} (optional, default is '${DEFAULT_GROUPED_MESSAGES_CSV}') - file name for storing grouped message information in ${DIR_ANALYTICS_NAME} dir"
+  echo "  Arg: ${ARG_TEST_EVENTS_CSV} (optional, default is '${DEFAULT_TEST_EVENTS_CSV}') - file name for storing test events information in ${DIR_ANALYTICS_NAME} dir"
   echo ' Log files:'
   echo "  Arg: ${ARG_CQLSH_LOG} (optional, default is '${DEFAULT_CQLSH_LOG}') - file name for writing system output / error from cqlsh in ${DIR_LOGS} dir"
 }
 
 parse_args() {
-  export DOWNLOAD_MODE=''
-
-  export FILE_BOOKS_CSV="${DEFAULT_BOOKS_CSV}"
-  export FILE_PAGES_CSV="${DEFAULT_PAGES_CSV}"
-  export FILE_SESSIONS_CSV="${DEFAULT_SESSIONS_CSV}"
-  export FILE_SCOPES_CSV="${DEFAULT_SCOPES_CSV}"
-  export FILE_MESSAGE_STATISTICS_CSV="${DEFAULT_MESSAGE_STATISTICS_CSV}"
-  export FILE_MESSAGE_ENTITY_STATISTICS_CSV="${DEFAULT_MESSAGE_ENTITY_STATISTICS_CSV}"
-  export FILE_EVENT_ENTITY_STATISTICS_CSV="${DEFAULT_EVENT_ENTITY_STATISTICS_CSV}"
-  export FILE_CQLSH_LOG="${DEFAULT_CQLSH_LOG}"
-
-  export CASSANDRA_KEYSPACE=''
-  export CASSANDRA_REQUEST_TIMEOUT=10
-  export CASSANDRA_CONNECT_TIMEOUT=5
-  export CASSANDRA_HOST='127.0.0.1'
-  export CASSANDRA_USERNAME=''
-  export CASSANDRA_PASSWORD=''
+  DOWNLOAD_MODE=''
+  FILE_BOOKS_CSV="${DEFAULT_BOOKS_CSV}"
+  FILE_PAGES_CSV="${DEFAULT_PAGES_CSV}"
+  FILE_SESSIONS_CSV="${DEFAULT_SESSIONS_CSV}"
+  FILE_GROUPS_CSV="${DEFAULT_GROUPS_CSV}"
+  FILE_SCOPES_CSV="${DEFAULT_SCOPES_CSV}"
+  FILE_MESSAGE_STATISTICS_CSV="${DEFAULT_MESSAGE_STATISTICS_CSV}"
+  FILE_MESSAGE_ENTITY_STATISTICS_CSV="${DEFAULT_MESSAGE_ENTITY_STATISTICS_CSV}"
+  FILE_EVENT_ENTITY_STATISTICS_CSV="${DEFAULT_EVENT_ENTITY_STATISTICS_CSV}"
+  FILE_GROUPED_MESSAGES_CSV="${DEFAULT_GROUPED_MESSAGES_CSV}"
+  FILE_TEST_EVENTS_CSV="${DEFAULT_TEST_EVENTS_CSV}"
+  FILE_CQLSH_LOG="${DEFAULT_CQLSH_LOG}"
+  CASSANDRA_KEYSPACE=''
+  CASSANDRA_REQUEST_TIMEOUT=10
+  CASSANDRA_CONNECT_TIMEOUT=5
+  CASSANDRA_HOST='127.0.0.1'
+  CASSANDRA_USERNAME=''
+  CASSANDRA_PASSWORD=''
 
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
       --help)
-        args_help
+        print_help
         exit 0
         ;;
       "${ARG_DOWNLOAD_MODE}")
         DOWNLOAD_MODE="$2"
-        export DOWNLOAD_MODE
         shift 2
         ;;
       "${ARG_BOOKS_CSV}")
         FILE_BOOKS_CSV="$2"
-        export FILE_BOOKS_CSV
         shift 2
         ;;
       "${ARG_PAGES_CSV}")
         FILE_PAGES_CSV="$2"
-        export FILE_PAGES_CSV
         shift 2
         ;;
       "${ARG_SESSIONS_CSV}")
         FILE_SESSIONS_CSV="$2"
-        export FILE_SESSIONS_CSV
+        shift 2
+        ;;
+      "${ARG_GROUPS_CSV}")
+        FILE_GROUPS_CSV="$2"
         shift 2
         ;;
       "${ARG_SCOPES_CSV}")
         FILE_SCOPES_CSV="$2"
-        export FILE_SCOPES_CSV
         shift 2
         ;;
       "${ARG_MESSAGE_STATISTICS_CSV}")
         FILE_MESSAGE_STATISTICS_CSV="$2"
-        export FILE_MESSAGE_STATISTICS_CSV
         shift 2
         ;;
       "${ARG_MESSAGE_ENTITY_STATISTICS_CSV}")
         FILE_MESSAGE_ENTITY_STATISTICS_CSV="$2"
-        export FILE_MESSAGE_ENTITY_STATISTICS_CSV
         shift 2
         ;;
       "${ARG_EVENT_ENTITY_STATISTICS_CSV}")
         FILE_EVENT_ENTITY_STATISTICS_CSV="$2"
-        export FILE_EVENT_ENTITY_STATISTICS_CSV
+        shift 2
+        ;;
+      "${ARG_GROUPED_MESSAGES_CSV}")
+        FILE_GROUPED_MESSAGES_CSV="$2"
+        shift 2
+        ;;
+      "${ARG_TEST_EVENTS_CSV}")
+        FILE_TEST_EVENTS_CSV="$2"
         shift 2
         ;;
       "${ARG_CQLSH_LOG}")
         FILE_CQLSH_LOG="$2"
-        export FILE_CQLSH_LOG
         shift 2
         ;;
       "${ARG_CASSANDRA_KEYSPACE}")
         CASSANDRA_KEYSPACE="$2"
-        export CASSANDRA_KEYSPACE
         shift 2
         ;;
       "${ARG_CASSANDRA_REQUEST_TIMEOUT}")
         CASSANDRA_REQUEST_TIMEOUT="$2"
-        export CASSANDRA_REQUEST_TIMEOUT
         shift 2
         ;;
       "${ARG_CASSANDRA_CONNECT_TIMEOUT}")
         CASSANDRA_CONNECT_TIMEOUT="$2"
-        export CASSANDRA_CONNECT_TIMEOUT
         shift 2
         ;;
       "${ARG_CASSANDRA_HOST}")
         CASSANDRA_HOST="$2"
-        export CASSANDRA_HOST
         shift 2
         ;;
       "${ARG_CASSANDRA_USERNAME}")
         CASSANDRA_USERNAME="$2"
-        export CASSANDRA_USERNAME
         shift 2
         ;;
       "${ARG_CASSANDRA_PASSWORD}")
         CASSANDRA_PASSWORD="$2"
-        export CASSANDRA_PASSWORD
         shift 2
         ;;
       *)
         echo "CRITICAL: Unknown option: $1"
-        args_help
+        print_help
         exit 1
         ;;
     esac
@@ -229,7 +248,7 @@ parse_args() {
 
   if [ -z "${CASSANDRA_KEYSPACE}" ]; then
     echo "CRITICAL: Cassandra keyspace can't be empty, please specify ${ARG_CASSANDRA_KEYSPACE} argument"
-    args_help
+    print_help
     exit 2
   fi
 
@@ -247,13 +266,35 @@ parse_args() {
   echo "  Arg: ${ARG_BOOKS_CSV} = ${FILE_BOOKS_CSV}"
   echo "  Arg: ${ARG_PAGES_CSV} = ${FILE_PAGES_CSV}"
   echo "  Arg: ${ARG_SESSIONS_CSV} = ${FILE_SESSIONS_CSV}"
+  echo "  Arg: ${ARG_GROUPS_CSV} = ${FILE_GROUPS_CSV}"
   echo "  Arg: ${ARG_SCOPES_CSV} = ${FILE_SCOPES_CSV}"
   echo ' Analytics files:'
   echo "  Arg: ${ARG_MESSAGE_STATISTICS_CSV} = ${FILE_MESSAGE_STATISTICS_CSV}"
   echo "  Arg: ${ARG_MESSAGE_ENTITY_STATISTICS_CSV} = ${FILE_MESSAGE_ENTITY_STATISTICS_CSV}"
   echo "  Arg: ${ARG_EVENT_ENTITY_STATISTICS_CSV} = ${FILE_EVENT_ENTITY_STATISTICS_CSV}"
+  echo "  Arg: ${ARG_GROUPED_MESSAGES_CSV} = ${FILE_GROUPED_MESSAGES_CSV}"
+  echo "  Arg: ${ARG_TEST_EVENTS_CSV} = ${FILE_TEST_EVENTS_CSV}"
   echo ' Log files:'
   echo "  Arg: ${ARG_CQLSH_LOG} = ${FILE_CQLSH_LOG}"
+
+  export DOWNLOAD_MODE="${DOWNLOAD_MODE}"
+  export FILE_BOOKS_CSV="${FILE_BOOKS_CSV}"
+  export FILE_PAGES_CSV="${FILE_PAGES_CSV}"
+  export FILE_SESSIONS_CSV="${FILE_SESSIONS_CSV}"
+  export FILE_GROUPS_CSV="${FILE_GROUPS_CSV}"
+  export FILE_SCOPES_CSV="${FILE_SCOPES_CSV}"
+  export FILE_MESSAGE_STATISTICS_CSV="${FILE_MESSAGE_STATISTICS_CSV}"
+  export FILE_MESSAGE_ENTITY_STATISTICS_CSV="${FILE_MESSAGE_ENTITY_STATISTICS_CSV}"
+  export FILE_EVENT_ENTITY_STATISTICS_CSV="${FILE_EVENT_ENTITY_STATISTICS_CSV}"
+  export FILE_GROUPED_MESSAGES_CSV="${FILE_GROUPED_MESSAGES_CSV}"
+  export FILE_TEST_EVENTS_CSV="${FILE_TEST_EVENTS_CSV}"
+  export FILE_CQLSH_LOG="${FILE_CQLSH_LOG}"
+  export CASSANDRA_KEYSPACE="${CASSANDRA_KEYSPACE}"
+  export CASSANDRA_REQUEST_TIMEOUT="${CASSANDRA_REQUEST_TIMEOUT}"
+  export CASSANDRA_CONNECT_TIMEOUT="${CASSANDRA_CONNECT_TIMEOUT}"
+  export CASSANDRA_HOST="${CASSANDRA_HOST}"
+  export CASSANDRA_USERNAME="${CASSANDRA_USERNAME}"
+  export CASSANDRA_PASSWORD="${CASSANDRA_PASSWORD}"
 }
 
 check_command_execution_status() {
@@ -270,14 +311,14 @@ check_command_execution_status() {
 copy_csv_header() {
   local source="${1}"
   local target="${2}"
-  echo "INFO: copying CSV header from ${source} to ${target}"
+  echo "INFO: copying CSV header from ${source} to ${target}" >&2
   head -n 1 "${source}" > "${target}"
 }
 
 copy_csv_body() {
   local source="${1}"
   local target="${2}"
-  echo "INFO: copying CSV body from ${source} to ${target}"
+  echo "INFO: copying CSV body from ${source} to ${target}" >&2
   local header
   header=$(head -1 "${target}")
   grep -v "${header}" "${source}" >> "${target}"
@@ -285,7 +326,7 @@ copy_csv_body() {
 
 remove_file() {
   local file="${1}"
-  echo "DEBUG: removing ${file}"
+  echo "DEBUG: removing ${file}" >&2
   rm "${file}"
 }
 
@@ -376,6 +417,10 @@ download_sessions() {
   download_using_book "sessions" "sessions" "${FILE_SESSIONS_CSV}"
 }
 
+download_groups() {
+  download_using_book "groups" "groups" "${FILE_GROUPS_CSV}"
+}
+
 download_scopes() {
   download_using_book "scopes" "scopes" "${FILE_SCOPES_CSV}"
 }
@@ -409,16 +454,7 @@ download_message_statistics() {
     done < <(tail -n +2 "${DIR_DATA}/${FILE_SESSIONS_CSV}" | grep "^${book},")
   done < <(tail -n +2 "${DIR_DATA}/${FILE_PAGES_CSV}")
 
-  temp_file=$(mktemp)
-  command=$(build_cassandra_command_use_file "${queries_temp_file}")
-  eval "${command}" | grep "^ " | sed 's/^ *//; s/ *| */,/g' | grep -v 'null,null,null,null,null,0,0' > "${temp_file}"
-  exit_code=$?
-
-  if [ "${exit_code}" -eq 0 ]; then
-    copy_csv_header "${temp_file}" "${DIR_ANALYTICS}/${FILE_MESSAGE_STATISTICS_CSV}"
-    copy_csv_body "${temp_file}" "${DIR_ANALYTICS}/${FILE_MESSAGE_STATISTICS_CSV}"
-  fi
-  remove_file "${temp_file}"
+  execute_and_copy_result "${queries_temp_file}" 'null,null,null,null,null,0,0' "${DIR_ANALYTICS}/${FILE_MESSAGE_STATISTICS_CSV}" 'false' > /dev/null
   remove_file "${queries_temp_file}"
 
   m_end_0=$(date +%s%3N)
@@ -453,16 +489,7 @@ download_from_entity_statistics() {
     echo "DEBUG: written query for ${comment} statistics for ${book}/${page} book/page ${page_start_date} ${page_start_time}"
   done < <(tail -n +2 "${DIR_DATA}/${FILE_PAGES_CSV}")
 
-  temp_file=$(mktemp)
-  command=$(build_cassandra_command_use_file "${queries_temp_file}")
-  eval "${command}" | grep "^ " | sed 's/^ *//; s/ *| */,/g' | grep -v 'null,null,null,0,0' > "${temp_file}"
-  exit_code=$?
-
-  if [ "${exit_code}" -eq 0 ]; then
-    copy_csv_header "${temp_file}" "${DIR_ANALYTICS}/${output_file_name}"
-    copy_csv_body "${temp_file}" "${DIR_ANALYTICS}/${output_file_name}"
-  fi
-  remove_file "${temp_file}"
+  execute_and_copy_result "${queries_temp_file}" 'null,null,null,0,0' "${DIR_ANALYTICS}/${output_file_name}" 'false' > /dev/null
   remove_file "${queries_temp_file}"
 
   m_end_0=$(date +%s%3N)
@@ -478,6 +505,119 @@ download_event_entity_statistics() {
   download_from_entity_statistics "event entity" "${CRADLE_EVENT_ENTITY_TYPE}" "${FILE_EVENT_ENTITY_STATISTICS_CSV}"
 }
 
+download_grouped_messages() {
+  echo "INFO: downloading grouped message ..."
+  m_start_0=$(date +%s%3N)
+
+  header_written='false'
+  queries_temp_file=$(mktemp)
+  while IFS= read -r page_line; do
+    book=$(echo "${page_line}" | cut -d',' -f1 | sed 's/[\r\n]//g')
+    page=$(echo "${page_line}" | cut -d',' -f7 | sed 's/[\r\n]//g')
+    page_start_date=$(echo "${page_line}" | cut -d',' -f2 | sed 's/[\r\n]//g')
+    page_start_time=$(echo "${page_line}" | cut -d',' -f3 | sed 's/[\r\n]//g')
+    while IFS= read -r group_line; do
+      group=$(echo "${group_line}" | cut -d',' -f2 | sed 's/[\r\n]//g')
+      echo "SELECT \
+          book, page, alias_group, \
+          MAX(rec_date) as max_rec_date, \
+          SUM(message_count) as sum_message_count, \
+          SUM(z_content_size) as sum_z_content_size, \
+          SUM(z_content_uncompressed_size) as sum_z_content_uncompressed_size \
+        FROM grouped_messages \
+        WHERE book='${book}' AND \
+          page='${page}' AND \
+          alias_group='${group}';" >> "${queries_temp_file}"
+      echo "DEBUG: written query for ${book}/${page}/${group} book/page/group"
+
+      if [[ $(wc -l < "${queries_temp_file}") -ge "${QUERIES_BATCH_SIZE}" ]]; then
+        header_written=$(execute_and_copy_result "${queries_temp_file}" 'null,null,null,null,0,0,0' "${DIR_ANALYTICS}/${FILE_GROUPED_MESSAGES_CSV}" "${header_written}")
+        remove_file "${queries_temp_file}"
+        queries_temp_file=$(mktemp)
+      fi
+
+    done < <(tail -n +2 "${DIR_DATA}/${FILE_GROUPS_CSV}" | grep "^${book},")
+  done < <(tail -n +2 "${DIR_DATA}/${FILE_PAGES_CSV}")
+
+  if [ -s  "${queries_temp_file}" ]; then
+    header_written=$(execute_and_copy_result "${queries_temp_file}" 'null,null,null,null,0,0,0' "${DIR_ANALYTICS}/${FILE_GROUPED_MESSAGES_CSV}" "${header_written}")
+    remove_file "${queries_temp_file}"
+  fi
+
+  m_end_0=$(date +%s%3N)
+  m_elapsed_0=$((m_end_0 - m_start_0))
+  echo "INFO: downloaded grouped message in ${m_elapsed_0} ms"
+}
+
+download_test_events() {
+  echo "INFO: downloading test events ..."
+  m_start_0=$(date +%s%3N)
+
+  header_written='false'
+  queries_temp_file=$(mktemp)
+  while IFS= read -r page_line; do
+    book=$(echo "${page_line}" | cut -d',' -f1 | sed 's/[\r\n]//g')
+    page=$(echo "${page_line}" | cut -d',' -f7 | sed 's/[\r\n]//g')
+    page_start_date=$(echo "${page_line}" | cut -d',' -f2 | sed 's/[\r\n]//g')
+    page_start_time=$(echo "${page_line}" | cut -d',' -f3 | sed 's/[\r\n]//g')
+    while IFS= read -r scope_line; do
+      scope=$(echo "${scope_line}" | cut -d',' -f2 | sed 's/[\r\n]//g')
+      echo "SELECT \
+          book, page, scope, \
+          MAX(rec_date) as max_rec_date, \
+          SUM(event_count) as sum_event_count, \
+          SUM(z_content_size) as sum_z_content_size, \
+          SUM(z_content_uncompressed_size) as sum_z_content_uncompressed_size \
+        FROM test_events \
+        WHERE book='${book}' AND \
+          page='${page}' AND \
+          scope='${scope}';" >> "${queries_temp_file}"
+      echo "DEBUG: written query for ${book}/${page}/${scope} book/page/scope"
+
+      if [[ $(wc -l < "${queries_temp_file}") -ge "${QUERIES_BATCH_SIZE}" ]]; then
+        header_written=$(execute_and_copy_result "${queries_temp_file}" 'null,null,null,null,0,0,0' "${DIR_ANALYTICS}/${FILE_TEST_EVENTS_CSV}" "${header_written}")
+        remove_file "${queries_temp_file}"
+        queries_temp_file=$(mktemp)
+      fi
+
+    done < <(tail -n +2 "${DIR_DATA}/${FILE_SCOPES_CSV}" | grep "^${book},")
+  done < <(tail -n +2 "${DIR_DATA}/${FILE_PAGES_CSV}")
+
+  if [ -s  "${queries_temp_file}" ]; then
+    header_written=$(execute_and_copy_result "${queries_temp_file}" 'null,null,null,null,0,0,0' "${DIR_ANALYTICS}/${FILE_TEST_EVENTS_CSV}" "${header_written}")
+    remove_file "${queries_temp_file}"
+  fi
+
+  m_end_0=$(date +%s%3N)
+  m_elapsed_0=$((m_end_0 - m_start_0))
+  echo "INFO: downloaded test events in ${m_elapsed_0} ms"
+}
+
+execute_and_copy_result() {
+  local queries_file="${1}"
+  local null_line="${2}"
+  local output_file="${3}"
+  local header_written="${4}"
+
+  local temp_file
+
+  temp_file=$(mktemp)
+  command=$(build_cassandra_command_use_file "${queries_file}")
+  eval "${command}" | grep "^ " | sed 's/^ *//; s/ *| */,/g' | grep -v "${null_line}" > "${temp_file}"
+  exit_code=$?
+
+  if [ "${exit_code}" -eq 0 ]; then
+    if [ "${header_written}" = 'false' ]; then
+      header_written='true'
+      copy_csv_header "${temp_file}" "${output_file}"
+    fi
+    copy_csv_body "${temp_file}" "${output_file}"
+  fi
+
+  remove_file "${temp_file}"
+  echo "${header_written}"
+}
+
 parse_args "$@"
 init
 
@@ -491,6 +631,9 @@ case "${DOWNLOAD_MODE}" in
   "${DOWNLOAD_MODE_SESSIONS}")
     download_sessions
     ;;
+  "${DOWNLOAD_MODE_GROUPS}")
+    download_groups
+    ;;
   "${DOWNLOAD_MODE_SCOPES}")
     download_scopes
     ;;
@@ -503,14 +646,23 @@ case "${DOWNLOAD_MODE}" in
   "${DOWNLOAD_MODE_EVENT_ENTITY_STATISTICS}")
     download_event_entity_statistics
     ;;
+  "${DOWNLOAD_MODE_GROUPED_MESSAGES}")
+    download_grouped_messages
+    ;;
+  "${DOWNLOAD_MODE_TEST_EVENTS}")
+    download_test_events
+    ;;
   "${DOWNLOAD_MODE_ALL}")
     download_books
     download_pages
     download_sessions
+    download_groups
     download_scopes
     download_message_statistics
     download_message_entity_statistics
     download_event_entity_statistics
+    download_grouped_messages
+    download_test_events
     ;;
   *)
     echo "CRITICAL: unknown ${ARG_DOWNLOAD_MODE}: ${DOWNLOAD_MODE}"
