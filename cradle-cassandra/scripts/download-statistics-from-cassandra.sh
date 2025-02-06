@@ -707,10 +707,12 @@ execute_and_copy_result() {
   local header_written="${4}"
 
   local temp_file
+  local error_file
 
   temp_file=$(mktemp)
+  error_file=$(mktemp)
   command=$(build_cassandra_command_use_file "${queries_file}")
-  eval "${command}" | grep "^ " | sed 's/^ *//; s/ *| */,/g' | grep -v "${null_line}" > "${temp_file}"
+  eval "${command}" 2> "${error_file}" | grep "^ " | sed 's/^ *//; s/ *| */,/g' | grep -v "${null_line}" > "${temp_file}"
   exit_code=$?
 
   if [ "${exit_code}" -eq 0 ]; then
@@ -721,7 +723,12 @@ execute_and_copy_result() {
     copy_csv_body "${temp_file}" "${output_file}"
   fi
 
+  while IFS=: read -r file line_num error_type; do
+    echo "ERROR: ${error_type} happened for query: $(sed -n "${line_num}p" "${file}")" >&2
+  done < "${error_file}"
+
   remove_file "${temp_file}"
+  remove_file "${error_file}"
   echo "${header_written}"
 }
 
