@@ -3,6 +3,10 @@ plugins {
     id "com.exactpro.th2.gradle.publish" version "0.2.1"
 }
 
+th2JavaRelease {
+    targetJavaVersion.set(JavaVersion.VERSION_11)
+}
+
 allprojects {
     version = release_version
     group = 'com.exactpro.th2'
@@ -29,8 +33,6 @@ subprojects {
         }
     }
 
-    sourceCompatibility = JavaVersion.VERSION_11 //Java version compatibility to use when compiling Java source.
-    targetCompatibility = JavaVersion.VERSION_11 //Java version to generate classes for.
     compileJava.options.debugOptions.debugLevel = 'source,lines,vars' // Include debug information
 
     dependencies {
