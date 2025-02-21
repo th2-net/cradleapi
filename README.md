@@ -6,7 +6,7 @@ Cradle API has implementation for Apache Cassandra, wrapping interaction with th
 
 # Getting started
 
-To build Cradle API binaries you will need to have JDK 8 or higher.
+To build Cradle API binaries you will need to have JDK 11 or higher.
 
 Clone the project to some directory, navigate to that directory and execute the following command:
 ```
