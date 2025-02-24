@@ -20,7 +20,7 @@ dependencies {
     annotationProcessor "com.datastax.oss:java-driver-mapper-processor"
     // ---
 
-    testImplementation 'org.testng:testng:7.10.2'
+    testImplementation 'org.testng:testng:7.11.0'
     testImplementation 'org.assertj:assertj-core:3.27.3'
     testImplementation "org.apache.logging.log4j:log4j-slf4j2-impl"
     testImplementation 'org.apache.logging.log4j:log4j-core'
