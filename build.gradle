@@ -1,6 +1,5 @@
 plugins {
-    id "com.exactpro.th2.gradle.base" version "0.1.3"
-    id "com.exactpro.th2.gradle.publish" version "0.2.2"
+    alias(libs.plugins.th2.publish)
 }
 
 th2JavaRelease {
@@ -36,6 +35,6 @@ subprojects {
     compileJava.options.debugOptions.debugLevel = 'source,lines,vars' // Include debug information
 
     dependencies {
-        implementation 'io.prometheus:simpleclient_dropwizard:0.16.0'
+        implementation(libs.simpleclient.dropwizard)
     }
 }
