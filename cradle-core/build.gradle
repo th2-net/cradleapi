@@ -4,14 +4,14 @@ dependencies {
 
     implementation "org.slf4j:slf4j-api"
     implementation 'com.google.guava:guava'
-    implementation 'org.lz4:lz4-java:1.8.0'
+    implementation(libs.lz4.java)
 
-    implementation 'com.github.ben-manes.caffeine:caffeine:3.2.0'
+    implementation(libs.caffeine)
 
     testImplementation 'org.apache.logging.log4j:log4j-slf4j2-impl'
     testImplementation 'org.apache.logging.log4j:log4j-core'
-    testImplementation 'org.testng:testng:7.11.0'
-    testImplementation 'org.assertj:assertj-core:3.27.3'
+    testImplementation(libs.testng)
+    testImplementation(libs.assertj.core)
 }
 
 test {
@@ -22,8 +22,4 @@ jar {
     manifest {
         attributes("Specification-Title": "Cradle Core")
     }
-}
-
-dependencyCheck {
-    suppressionFile = "${rootDir}/suppressions.xml"
 }

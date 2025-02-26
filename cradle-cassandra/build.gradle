@@ -7,7 +7,7 @@ dependencies {
     api project(":cradle-core")
 
     implementation "org.apache.commons:commons-lang3"
-    implementation 'com.exactpro.th2:task-utils:0.1.2'
+    implementation(libs.task.utils)
 
     implementation "com.datastax.oss:java-driver-core"
     implementation "com.datastax.oss:java-driver-query-builder"
@@ -16,16 +16,16 @@ dependencies {
     implementation 'com.google.guava:guava'
 
     // this section is required to bypass failing vulnerability check caused by cassandra driver's transitive dependencies
-    annotationProcessor platform('com.exactpro.th2:bom:4.10.0')
+    annotationProcessor platform(libs.th2.bom)
     annotationProcessor "com.datastax.oss:java-driver-mapper-processor"
     // ---
 
-    testImplementation 'org.testng:testng:7.11.0'
-    testImplementation 'org.assertj:assertj-core:3.27.3'
+    testImplementation(libs.testng)
+    testImplementation(libs.assertj.core)
     testImplementation "org.apache.logging.log4j:log4j-slf4j2-impl"
     testImplementation 'org.apache.logging.log4j:log4j-core'
-    testImplementation 'org.mockito:mockito-core:5.15.2'
-    testImplementation 'org.testcontainers:cassandra:1.20.5'
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.cassandra)
 }
 
 test {
@@ -45,8 +45,4 @@ jar {
     manifest {
         attributes("Specification-Title": "Cradle Cassandra")
     }
-}
-
-dependencyCheck {
-    suppressionFile = "${rootDir}/suppressions.xml"
 }
