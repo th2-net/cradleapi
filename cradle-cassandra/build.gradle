@@ -46,7 +46,3 @@ jar {
         attributes("Specification-Title": "Cradle Cassandra")
     }
 }
-
-dependencyCheck {
-    suppressionFile = "${rootDir}/suppressions.xml"
-}
