@@ -13,6 +13,8 @@ jobs:
     uses: th2-net/.github/.github/workflows/compound-java-dev.yml@main
     with:
       build-target: 'Sonatype'
+      integration-test-enabled: true
+      integration-test-projects: "['cradle-cassandra']"
     secrets:
       sonatypeUsername: ${{ secrets.SONATYPE_NEXUS_USERNAME }}
       sonatypePassword: ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
