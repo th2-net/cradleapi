@@ -1,5 +1,5 @@
 [versions]
-th2-plugin = "0.2.3"
+th2-plugin = "0.2.4"
 
 [libraries]
 th2-bom = { group = "com.exactpro.th2", name = "bom", version = "4.11.0" }
