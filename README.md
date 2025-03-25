@@ -216,6 +216,7 @@ Test events have mandatory parameters that are verified when storing an event. T
 * Updated:
   * th2 gradle plugin: `0.2.4` (bom: `4.11.0`)
   * task-utils: `0.1.4`
+  * cassandra: `1.20.6`
   * caffeine: `3.2.0`
 
 ### 5.4.4
