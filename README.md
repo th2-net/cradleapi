@@ -1,4 +1,4 @@
-# Overview (5.4.4)
+# Overview (5.5.0)
 
 Cradle API is used to work with Cradle - the datalake where th2 stores its data.
 
@@ -208,6 +208,14 @@ Test events have mandatory parameters that are verified when storing an event. T
   * cause: EXPLICIT, REPLACED, COLLECTED, EXPIRED, SIZE
 
 ## Release notes
+
+### 5.5.0
+* Executes cassandra operators initialisation in a separate thread to exclude hung upping during schema creation
+  * Added `initOperatorsDurationSeconds` option to configure expected time for initialisation operations
+* Updated:
+  * th2 gradle plugin: `0.2.4` (bom: `4.11.0`)
+  * cassandra: `1.20.6`
+  * caffeine: `3.2.0`
 
 ### 5.4.4
 * Fixed the problem - page cache doesn't work correct when storage has removed page(s)
