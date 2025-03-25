@@ -1,5 +1,5 @@
 /*
- *  Copyright 2023-2024 Exactpro (Exactpro Systems Limited)
+ *  Copyright 2023-2025 Exactpro (Exactpro Systems Limited)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -227,7 +227,9 @@ public class CassandraCradleStorage extends CradleStorage
 					settings.getEventBatchDurationMillis());
 
 			WorkerSupplies ws = new WorkerSupplies(settings, operators, composingService, bookCache, selectExecutor, writeAttrs, readAttrs, batchWriteAttrs);
-			statisticsWorker = new StatisticsWorker(ws, settings.getCounterPersistenceInterval());
+			statisticsWorker = new StatisticsWorker(ws,
+					settings.getCounterPersistenceInterval(),
+					settings.getCounterPersistenceMaxParallelQueries());
 			eventsWorker = new EventsWorker(ws, statisticsWorker, eventBatchDurationWorker);
 			messagesWorker = new MessagesWorker(ws, statisticsWorker, statisticsWorker);
 			statisticsWorker.start();
