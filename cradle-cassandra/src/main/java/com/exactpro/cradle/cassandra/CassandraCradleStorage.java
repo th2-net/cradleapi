@@ -1124,7 +1124,7 @@ public class CassandraCradleStorage extends CradleStorage
 		return CompletableFuture.supplyAsync(() -> {
 			CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(session).build();
 			return new CassandraOperators(dataMapper, settings);
-		}).get(settings.getInitOperatorsDurationMillis(), TimeUnit.MILLISECONDS);
+		}).get(settings.getInitOperatorsDurationSeconds(), TimeUnit.SECONDS);
 	}
 	
 	protected void createStorage() throws CradleStorageException

@@ -63,7 +63,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
     //when cassandra driver tries to convert Instant.MAX to milliseconds using toEpochMilli() it causes long overflow.
     public static final Instant MAX_EPOCH_INSTANT = Instant.ofEpochMilli(Long.MAX_VALUE);
     public static final Instant DEFAULT_PAGE_REMOVE_TIME = MAX_EPOCH_INSTANT;
-    public static final long DEFAULT_INIT_OPERATORS_DURATION_MILLIS = 10_000;
+    public static final long DEFAULT_INIT_OPERATORS_DURATION_SECONDS = 60;
 
     @JsonIgnore
     private NetworkTopologyStrategy networkTopologyStrategy;
@@ -102,7 +102,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
 
     private CompressionType compressionType = DEFAULT_COMPRESSION_TYPE;
 
-    private long initOperatorsDurationMillis = DEFAULT_INIT_OPERATORS_DURATION_MILLIS;
+    private long initOperatorsDurationSeconds = DEFAULT_INIT_OPERATORS_DURATION_SECONDS;
 
     public CassandraStorageSettings() {
     }
@@ -163,7 +163,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
         setStoreIndividualMessageSessions(settings.isStoreIndividualMessageSessions());
         this.compressionType = settings.getCompressionType();
 
-        this.initOperatorsDurationMillis = settings.getInitOperatorsDurationMillis();
+        this.initOperatorsDurationSeconds = settings.getInitOperatorsDurationSeconds();
     }
 
 
@@ -401,12 +401,12 @@ public class CassandraStorageSettings extends CoreStorageSettings {
         this.compressionType = compressionType;
     }
 
-    public long getInitOperatorsDurationMillis() {
-        return initOperatorsDurationMillis;
+    public long getInitOperatorsDurationSeconds() {
+        return initOperatorsDurationSeconds;
     }
 
-    public void setInitOperatorsDurationMillis(long initOperatorsDurationMillis) {
-        this.initOperatorsDurationMillis = initOperatorsDurationMillis;
+    public void setInitOperatorsDurationSeconds(long initOperatorsDurationSeconds) {
+        this.initOperatorsDurationSeconds = initOperatorsDurationSeconds;
     }
 
     @Override
@@ -443,7 +443,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
                 ", eventBatchDurationMillis=" + eventBatchDurationMillis +
                 ", storeIndividualMessageSessions=" + isStoreIndividualMessageSessions() +
                 ", compressionType=" + compressionType +
-                ", initOperatorsDurationMillis=" + initOperatorsDurationMillis +
+                ", initOperatorsDurationSeconds=" + initOperatorsDurationSeconds +
                 '}';
     }
 }
