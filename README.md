@@ -213,6 +213,8 @@ Test events have mandatory parameters that are verified when storing an event. T
 
 * Provided option to limit parallel queries for statistic persistence
   * Added `counterPersistenceMaxParallelQueries` option to configure how many queries can be executed in parallel for statistic persistence.
+* Executes cassandra operators initialisation in a separate thread to exclude hung upping during schema creation
+    * Added `initOperatorsDurationSeconds` option to configure expected time for initialisation operations
 * Updated:
   * th2 gradle plugin: `0.2.4` (bom: `4.11.0`)
   * task-utils: `0.1.4`

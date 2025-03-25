@@ -123,6 +123,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -1120,10 +1122,11 @@ public class CassandraCradleStorage extends CradleStorage
 			LOGGER.info("Already connected to Cassandra");
 	}
 	
-	protected CassandraOperators createOperators(CqlSession session, CassandraStorageSettings settings)
-	{
-		CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(session).build();
-		return new CassandraOperators(dataMapper, settings);
+	protected CassandraOperators createOperators(CqlSession session, CassandraStorageSettings settings) throws ExecutionException, InterruptedException, TimeoutException {
+		return CompletableFuture.supplyAsync(() -> {
+			CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(session).build();
+			return new CassandraOperators(dataMapper, settings);
+		}).get(settings.getInitOperatorsDurationSeconds(), TimeUnit.SECONDS);
 	}
 	
 	protected void createStorage() throws CradleStorageException
