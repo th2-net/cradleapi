@@ -56,6 +56,7 @@ ARG_CASSANDRA_KEYSPACE='--cassandra-keyspace'
 ARG_CASSANDRA_USERNAME='--cassandra-username'
 ARG_CASSANDRA_PASSWORD='--cassandra-password'
 ARG_DOWNLOAD_MODE='--download-mode'
+ARG_EXCLUDE_REC_DATE='--exclude-rec-date'
 ARG_BOOKS_CSV="--${DOWNLOAD_MODE_BOOKS}-csv"
 ARG_PAGES_CSV="--${DOWNLOAD_MODE_PAGES}-csv"
 ARG_SESSIONS_CSV="--${DOWNLOAD_MODE_SESSIONS}-csv"
@@ -159,6 +160,7 @@ print_help() {
   echo "  Arg: ${ARG_EVENT_ENTITY_STATISTICS_CSV} (optional, default is '${DEFAULT_EVENT_ENTITY_STATISTICS_CSV}') - file name for storing events information in ${DIR_ANALYTICS_NAME} dir"
   echo "  Arg: ${ARG_GROUPED_MESSAGES_CSV} (optional, default is '${DEFAULT_GROUPED_MESSAGES_CSV}') - file name for storing grouped message information in ${DIR_ANALYTICS_NAME} dir"
   echo "  Arg: ${ARG_TEST_EVENTS_CSV} (optional, default is '${DEFAULT_TEST_EVENTS_CSV}') - file name for storing test events information in ${DIR_ANALYTICS_NAME} dir"
+  echo "  Arg: ${ARG_EXCLUDE_REC_DATE} (optional, by default the 'rec_date' column will be included for test events and messages)"
   echo ' Log files:'
   echo "  Arg: ${ARG_CQLSH_LOG} (optional, default is '${DEFAULT_CQLSH_LOG}') - file name for writing system output / error from cqlsh in ${DIR_LOGS} dir"
 }
@@ -185,6 +187,7 @@ parse_args() {
   CASSANDRA_HOST="${DEFAULT_CASSANDRA_HOST}"
   CASSANDRA_USERNAME=''
   CASSANDRA_PASSWORD=''
+  EXCLUDE_REC_DATE='n'
 
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -276,6 +279,10 @@ parse_args() {
         CASSANDRA_PASSWORD="$2"
         shift 2
         ;;
+      "${ARG_EXCLUDE_REC_DATE}")
+        unset EXCLUDE_REC_DATE
+        shift 1
+        ;;
       *)
         echo "CRITICAL: Unknown option: $1"
         print_help
@@ -315,6 +322,7 @@ parse_args() {
   echo "  Arg: ${ARG_EVENT_ENTITY_STATISTICS_CSV} = ${FILE_EVENT_ENTITY_STATISTICS_CSV}"
   echo "  Arg: ${ARG_GROUPED_MESSAGES_CSV} = ${FILE_GROUPED_MESSAGES_CSV}"
   echo "  Arg: ${ARG_TEST_EVENTS_CSV} = ${FILE_TEST_EVENTS_CSV}"
+  echo "  Arg: ${ARG_EXCLUDE_REC_DATE} = ${EXCLUDE_REC_DATE:-y}"
   echo ' Log files:'
   echo "  Arg: ${ARG_CQLSH_LOG} = ${FILE_CQLSH_LOG}"
 
@@ -626,7 +634,7 @@ download_grouped_messages() {
     group=$(echo "${page_group_line}" | cut -d',' -f3 | sed 's/[\r\n]//g')
     echo "SELECT \
         book, page, alias_group, \
-        MAX(rec_date) AS max_rec_date, \
+        ${EXCLUDE_REC_DATE:+MAX(rec_date) AS max_rec_date,} \
         SUM(CAST(message_count AS BIGINT)) AS sum_message_count, \
         SUM(CAST(z_content_size AS BIGINT)) AS sum_z_content_size, \
         SUM(CAST(z_content_uncompressed_size AS BIGINT)) AS sum_z_content_uncompressed_size \
@@ -673,7 +681,7 @@ download_test_events() {
     scope=$(echo "${page_scope_line}" | cut -d',' -f3 | sed 's/[\r\n]//g')
     echo "SELECT \
         book, page, scope, \
-        MAX(rec_date) AS max_rec_date, \
+        ${EXCLUDE_REC_DATE:+MAX(rec_date) AS max_rec_date,} \
         SUM(CAST(event_count AS BIGINT)) AS sum_event_count, \
         SUM(CAST(z_content_size AS BIGINT)) AS sum_z_content_size, \
         SUM(CAST(z_content_uncompressed_size AS BIGINT)) AS sum_z_content_uncompressed_size \
