@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,21 +37,31 @@ public enum FrameType {
     public long getMillisInFrame () {
         return millisInFrame;
     }
+
     /**
      * Calculates start time (inclusive) for the given time
      * @param time for which frame start is calculated
      * @return start time(inclusive) for a given time
      */
     public Instant getFrameStart(Instant time) {
-        long millis = time.toEpochMilli();
-        long millisAdjusted = (millis / millisInFrame) * millisInFrame;
+        long millisAdjusted = getFrameStartMillis(time);
         return Instant.ofEpochMilli(millisAdjusted);
+    }
+
+    /**
+     * Calculates start time (inclusive) for the given time
+     * @param time for which frame start is calculated
+     * @return start time(inclusive) in milliseconds for a given time
+     */
+    public long getFrameStartMillis(Instant time) {
+        long millis = time.toEpochMilli();
+        return (millis / millisInFrame) * millisInFrame;
     }
 
     /**
      * Calculates end time (exclusive) for the given time
      * @param time for which frame end is calculated
-     * @return end time(excluseve) for a given time
+     * @return end time(exclusive) for a given time
      */
     public Instant getFrameEnd(Instant time) {
         return getFrameStart(time.plusMillis(millisInFrame));

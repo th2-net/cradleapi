@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,14 @@ package com.exactpro.cradle.cassandra.counters;
 import com.exactpro.cradle.FrameType;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
 
 public class TimeFrameRecordSamples<V> {
     private final FrameType frameType;
-    private final Map<Instant, TimeFrameRecord<V>> samples;
+    private final Map<Long, TimeFrameRecord<V>> samples;
     private final TimeFrameRecordFactory<V> recordFactory;
 
     TimeFrameRecordSamples(FrameType frameType, TimeFrameRecordFactory<V> recordFactory) {
@@ -35,18 +35,18 @@ public class TimeFrameRecordSamples<V> {
     }
 
     public synchronized Collection<TimeFrameRecord<V>> extractAll() {
-        Collection<TimeFrameRecord<V>> result = new LinkedList<>(samples.values());
+        Collection<TimeFrameRecord<V>> result = new ArrayList<>(samples.values());
         samples.clear();
         return result;
     }
 
     public synchronized void update(Instant time, V record) {
-        Instant frameStart = frameType.getFrameStart(time);
-        if (samples.containsKey(frameStart)) {
-            TimeFrameRecord<V> frameRecord = samples.get(frameStart);
-            frameRecord.update(record);
+        Long frameStart = frameType.getFrameStartMillis(time);
+        TimeFrameRecord<V> frameRecord = samples.get(frameStart);
+        if (frameRecord == null) {
+            samples.put(frameStart, recordFactory.create(Instant.ofEpochMilli(frameStart), record));
         } else {
-            samples.put(frameStart, recordFactory.create(frameStart, record));
+            frameRecord.update(record);
         }
     }
 }
