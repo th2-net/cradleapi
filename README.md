@@ -212,6 +212,7 @@ Test events have mandatory parameters that are verified when storing an event. T
 ### 5.5.0
 * Executes cassandra operators initialisation in a separate thread to exclude hung upping during schema creation
   * Added `initOperatorsDurationSeconds` option to configure expected time for initialisation operations
+* Optimised logic of collecting statistic data.
 * Updated:
   * th2 gradle plugin: `0.2.4` (bom: `4.11.0`)
   * cassandra: `1.20.6`
