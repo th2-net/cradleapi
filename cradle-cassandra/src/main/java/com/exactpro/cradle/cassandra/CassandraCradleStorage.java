@@ -229,7 +229,9 @@ public class CassandraCradleStorage extends CradleStorage
 					settings.getEventBatchDurationMillis());
 
 			WorkerSupplies ws = new WorkerSupplies(settings, operators, composingService, bookCache, selectExecutor, writeAttrs, readAttrs, batchWriteAttrs);
-			statisticsWorker = new StatisticsWorker(ws, settings.getCounterPersistenceInterval());
+			statisticsWorker = new StatisticsWorker(ws,
+					settings.getCounterPersistenceInterval(),
+					settings.getCounterPersistenceMaxParallelQueries());
 			eventsWorker = new EventsWorker(ws, statisticsWorker, eventBatchDurationWorker);
 			messagesWorker = new MessagesWorker(ws, statisticsWorker, statisticsWorker);
 			statisticsWorker.start();

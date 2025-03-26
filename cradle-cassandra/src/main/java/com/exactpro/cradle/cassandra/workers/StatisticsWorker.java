@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,12 +55,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class StatisticsWorker implements Runnable, EntityStatisticsCollector, MessageStatisticsCollector, SessionStatisticsCollector {
 
-    private static final Logger logger = LoggerFactory.getLogger(StatisticsWorker.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(StatisticsWorker.class);
     private static final int MAX_BATCH_STATEMENTS = 16384;
 
     private static final ThreadFactory THREAD_FACTORY = new ThreadFactoryBuilder().setNameFormat("cradle-statistics-worker-%d").build();
@@ -72,27 +71,27 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
     private final Function<BatchStatementBuilder, BatchStatementBuilder> batchWriteAttrs;
     private final boolean isEnabled;
 
-    public StatisticsWorker (WorkerSupplies workerSupplies, long persistenceInterval) {
-        this.futures = new FutureTracker<>();
+    public StatisticsWorker (WorkerSupplies workerSupplies, long persistenceInterval, int parallel) {
+        this.futures = FutureTracker.create(parallel);
         this.operators = workerSupplies.getOperators();
         this.batchWriteAttrs = workerSupplies.getBatchWriteAttrs();
         this.interval = persistenceInterval;
         this.bookCounterCaches = new ConcurrentHashMap<>();
         this.isEnabled = (interval != 0);
-        logger.info("Statistics worker status is {}", this.isEnabled);
+        LOGGER.info("Statistics worker status is {}", this.isEnabled);
     }
 
     private ScheduledExecutorService executorService;
     public void start() {
         if (!isEnabled) {
-            logger.info("Counter persistence service is disabled");
+            LOGGER.info("Counter persistence service is disabled");
             return;
         }
 
-        logger.info("Starting executor for StatisticsWorker");
+        LOGGER.info("Starting executor for StatisticsWorker");
         executorService = Executors.newScheduledThreadPool(1, THREAD_FACTORY);
         executorService.scheduleAtFixedRate(this, 0, interval, TimeUnit.MILLISECONDS);
-        logger.info("StatisticsWorker executor started");
+        LOGGER.info("StatisticsWorker executor started");
     }
 
     public void stop() {
@@ -104,28 +103,37 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
         // ensure that cache is empty before executor service initiating shutdown
         if (bookCounterCachesNotEmpty()) {
-            logger.info("Waiting statistics cache depletion");
+            LOGGER.info("Waiting statistics cache depletion");
             while (bookCounterCachesNotEmpty())
                 try {
                     Thread.sleep(100); // FIXME: find another way to wait the empty cache state
                 } catch (InterruptedException e) {
-                    logger.error("Interrupted while waiting statistics cache depletion");
+                    LOGGER.error("Interrupted while waiting statistics cache depletion");
                 }
         }
 
         // shut down executor service and wait for current job to complete
-        logger.info("Shutting down StatisticsWorker executor");
+        LOGGER.info("Shutting down StatisticsWorker executor");
         executorService.shutdown();
         try {
-            logger.debug("Waiting StatisticsWorker jobs to complete");
-            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS); // FIXME: limit await timeout
-            logger.debug("StatisticsWorker shutdown complete");
+            LOGGER.debug("Waiting StatisticsWorker jobs to complete");
+            if (executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS)) {
+                LOGGER.info("StatisticsWorker shutdown complete");
+            } else {
+                int neverCommencedTasks = executorService.shutdownNow().size();
+                LOGGER.warn("StatisticsWorker executor service can't be stopped gracefully, " +
+                        "{} tasks will never be commenced", neverCommencedTasks);
+            }
         } catch (InterruptedException e) {
-            logger.error("Interrupted while waiting jobs to complete");
+            LOGGER.error("Interrupted while waiting jobs to complete", e);
         }
 
         // After executor service stops, we need to wait for futures to complete
-        futures.awaitRemaining();
+        try {
+            futures.awaitRemaining();
+        } catch (InterruptedException e) {
+            LOGGER.error("Interrupted while waiting tracked features to complete");
+        }
     }
 
     private BookStatisticsRecordsCaches getBookStatisticsRecordsCaches(BookId bookId) {
@@ -194,27 +202,17 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
     }
 
 
-    private void persistEntityCounters(BookId bookId, BookStatisticsRecordsCaches.EntityKey key, FrameType frameType, Collection<TimeFrameRecord<Counter>> records) {
+    private void persistEntityCounters(BookId bookId,
+                                       BookStatisticsRecordsCaches.EntityKey key,
+                                       FrameType frameType,
+                                       Collection<TimeFrameRecord<Counter>> records) throws InterruptedException {
 
-        logger.trace("Persisting {} entity counters for {}:{}:{}", records.size(), bookId, key, frameType);
+        LOGGER.trace("Persisting {} entity counters for {}:{}:{}",
+                records.size(),
+                bookId,
+                key,
+                frameType);
         final EntityStatisticsOperator op = operators.getEntityStatisticsOperator();
-
-        final Consumer<List<EntityStatisticsEntity>> persistor = (List<EntityStatisticsEntity> batch) -> {
-
-            logger.debug("Persisting batch of {} entity statistic records", batch.size());
-            CompletableFuture<AsyncResultSet> future = op.update(batch, batchWriteAttrs);
-            futures.track(future);
-            future.whenComplete((result, e) -> {
-                if (e != null) {
-                    logger.error("Exception persisting message counters, rescheduling", e);
-                    TimeFrameRecordSamples<Counter> samples = getBookStatisticsRecordsCaches(bookId)
-                                                                        .getEntityCounterCache()
-                                                                        .get(key)
-                                                                        .getRecordSamples(frameType);
-                    batch.forEach(record -> samples.update(record.getFrameStart(), new Counter(record.getEntityCount(), record.getEntitySize())));
-                }
-            });
-        };
 
         List<EntityStatisticsEntity> batch = new ArrayList<>();
         for (TimeFrameRecord<Counter> counter : records) {
@@ -226,39 +224,53 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
                                                     counter.getRecord().getEntityCount(),
                                                     counter.getRecord().getEntitySize()));
             if (batch.size() >= MAX_BATCH_STATEMENTS) {
-                persistor.accept(batch);
+                persistEntityCounters(op, bookId, key, frameType, batch);
                 batch = new ArrayList<>();
             }
         }
 
         // persist any leftover batch
-        if (batch.size() > 0) {
-            persistor.accept(batch);
+        if (!batch.isEmpty()) {
+            persistEntityCounters(op, bookId, key, frameType, batch);
         }
     }
 
 
-    private void persistMessageCounters(BookId bookId, BookStatisticsRecordsCaches.MessageKey key, FrameType frameType, Collection<TimeFrameRecord<Counter>> records) {
+    private void persistEntityCounters(EntityStatisticsOperator op,
+                                       BookId bookId,
+                                       BookStatisticsRecordsCaches.EntityKey key,
+                                       FrameType frameType,
+                                       List<EntityStatisticsEntity> batch) throws InterruptedException {
+        LOGGER.debug("Persisting batch of {} entity statistic records", batch.size());
+        CompletableFuture<AsyncResultSet> future = op.update(batch, batchWriteAttrs);
+        if(!futures.track(future)) {
+            LOGGER.warn("Update entity statistic feature isn't tracked");
+        }
+        future.whenComplete((result, e) -> {
+            if (e != null) {
+                LOGGER.error("Exception persisting message counters, rescheduling", e);
+                TimeFrameRecordSamples<Counter> samples = getBookStatisticsRecordsCaches(bookId)
+                        .getEntityCounterCache()
+                        .get(key)
+                        .getRecordSamples(frameType);
+                batch.forEach(record -> samples.update(record.getFrameStart(), new Counter(record.getEntityCount(), record.getEntitySize())));
+            }
+        });
+    }
 
-        logger.trace("Persisting {} message counters for {}:{}:{}:{}", records.size(), bookId, key.getSessionAlias(), key.getDirection(), frameType);
+
+    private void persistMessageCounters(BookId bookId,
+                                        BookStatisticsRecordsCaches.MessageKey key,
+                                        FrameType frameType,
+                                        Collection<TimeFrameRecord<Counter>> records) throws InterruptedException {
+
+        LOGGER.trace("Persisting {} message counters for {}:{}:{}:{}",
+                records.size(),
+                bookId,
+                key.getSessionAlias(),
+                key.getDirection(),
+                frameType);
         final MessageStatisticsOperator op = operators.getMessageStatisticsOperator();
-
-        final Consumer<List<MessageStatisticsEntity>> persistor = (List<MessageStatisticsEntity> batch) -> {
-
-            logger.debug("Persisting batch of {} message statistic records", batch.size());
-            CompletableFuture<AsyncResultSet> future = op.update(batch, batchWriteAttrs);
-            futures.track(future);
-            future.whenComplete((result, e) -> {
-                if (e != null) {
-                    logger.error("Exception persisting message counters, rescheduling", e);
-                    TimeFrameRecordSamples<Counter> samples = getBookStatisticsRecordsCaches(bookId)
-                                                                        .getMessageCounterCache()
-                                                                        .get(key)
-                                                                        .getRecordSamples(frameType);
-                    batch.forEach(record -> samples.update(record.getFrameStart(), new Counter(record.getEntityCount(), record.getEntitySize())));
-                }
-            });
-        };
 
         List<MessageStatisticsEntity> batch = new ArrayList<>();
         for (TimeFrameRecord<Counter> counter : records) {
@@ -271,48 +283,55 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
                                                     counter.getRecord().getEntityCount(),
                                                     counter.getRecord().getEntitySize()));
             if (batch.size() >= MAX_BATCH_STATEMENTS) {
-                persistor.accept(batch);
+                persistMessageCounters(op, bookId, key, frameType, batch);
                 batch = new ArrayList<>();
             }
         }
 
         // persist any leftover batch
-        if (batch.size() > 0) {
-            persistor.accept(batch);
+        if (!batch.isEmpty()) {
+            persistMessageCounters(op, bookId, key, frameType, batch);
         }
     }
 
 
-    private void persistSessionStatistics(BookId bookId, BookStatisticsRecordsCaches.SessionRecordKey key, FrameType frameType, Collection<TimeFrameRecord<SessionList>> records) {
+    private void persistMessageCounters(MessageStatisticsOperator op,
+                                        BookId bookId,
+                                        BookStatisticsRecordsCaches.MessageKey key,
+                                        FrameType frameType,
+                                        List<MessageStatisticsEntity> batch) throws InterruptedException {
+        LOGGER.debug("Persisting batch of {} message statistic records", batch.size());
+        CompletableFuture<AsyncResultSet> future = op.update(batch, batchWriteAttrs);
+        if(!futures.track(future)) {
+            LOGGER.warn("Update message statistic feature isn't tracked");
+        }
+        future.whenComplete((result, e) -> {
+            if (e != null) {
+                LOGGER.error("Exception persisting message counters, rescheduling", e);
+                TimeFrameRecordSamples<Counter> samples = getBookStatisticsRecordsCaches(bookId)
+                        .getMessageCounterCache()
+                        .get(key)
+                        .getRecordSamples(frameType);
+                batch.forEach(record -> samples.update(record.getFrameStart(), new Counter(record.getEntityCount(), record.getEntitySize())));
+            }
+        });
+    }
 
-        logger.trace("Persisting session statistics for {}:{}:{}:{} with {} records"
-                                                                                    , bookId
-                                                                                    , key.getPage()
-                                                                                    , key.getRecordType()
-                                                                                    , frameType
-                                                                                    , records.size());
+
+    private void persistSessionStatistics(BookId bookId,
+                                          BookStatisticsRecordsCaches.SessionRecordKey key,
+                                          FrameType frameType,
+                                          Collection<TimeFrameRecord<SessionList>> records) throws InterruptedException {
+
+        LOGGER.trace("Persisting session statistics for {}:{}:{}:{} with {} records",
+                bookId ,
+                key.getPage() ,
+                key.getRecordType() ,
+                frameType ,
+                records.size());
 
         final SessionStatisticsOperator op = operators.getSessionStatisticsOperator();
         final LimitedCache<SessionStatisticsEntity> cache = operators.getSessionStatisticsCache();
-
-        final Consumer<List<SessionStatisticsEntity>> persistor = (List<SessionStatisticsEntity> batch) -> {
-
-            logger.debug("Persisting batch of {} session statistic records", batch.size());
-            CompletableFuture<AsyncResultSet> future = op.write(batch, batchWriteAttrs);
-            futures.track(future);
-            future.whenComplete((result, e) -> {
-                if (e != null) {
-                    logger.error("Exception persisting session statistics, rescheduling", e);
-                    TimeFrameRecordSamples<SessionList> samples = getBookStatisticsRecordsCaches(bookId)
-                                                                            .getSessionRecordCache()
-                                                                            .get(key)
-                                                                            .getRecordSamples(frameType);
-                    batch.forEach(record -> samples.update(record.getFrameStart(), new SessionList(record.getSession())));
-                } else {
-                    batch.forEach(cache::store);
-                }
-            });
-        };
 
         List<SessionStatisticsEntity> batch = new ArrayList<>();
 
@@ -325,33 +344,56 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
                                                                                 sessionsRecord.getFrameStart(),
                                                                                 session);
                 if (!cache.contains(entity)) {
-                    logger.trace("Batching {}", entity);
+                    LOGGER.trace("Batching {}", entity);
                     batch.add(entity);
                 } else {
-                    logger.trace("{} found in cache, ignoring", entity);
+                    LOGGER.trace("{} found in cache, ignoring", entity);
                 }
 
                 if (batch.size() >= MAX_BATCH_STATEMENTS) {
-                    persistor.accept(batch);
+                    persistSessionStatistics(op, cache, bookId, key, frameType, batch);
                     batch = new ArrayList<>();
                 }
             }
         }
 
         // persist any leftover batch
-        if (batch.size() > 0) {
-            persistor.accept(batch);
+        if (!batch.isEmpty()) {
+            persistSessionStatistics(op, cache, bookId, key, frameType, batch);
         }
     }
 
+
+    private void persistSessionStatistics(SessionStatisticsOperator op,
+                                          LimitedCache<SessionStatisticsEntity> cache,
+                                          BookId bookId,
+                                          BookStatisticsRecordsCaches.SessionRecordKey key,
+                                          FrameType frameType,
+                                          List<SessionStatisticsEntity> batch) throws InterruptedException {
+        LOGGER.debug("Persisting batch of {} session statistic records", batch.size());
+        CompletableFuture<AsyncResultSet> future = op.write(batch, batchWriteAttrs);
+        if(!futures.track(future)) {
+            LOGGER.warn("Update session statistic feature isn't tracked");
+        }
+        future.whenComplete((result, e) -> {
+            if (e != null) {
+                LOGGER.error("Exception persisting session statistics, rescheduling", e);
+                TimeFrameRecordSamples<SessionList> samples = getBookStatisticsRecordsCaches(bookId)
+                        .getSessionRecordCache()
+                        .get(key)
+                        .getRecordSamples(frameType);
+                batch.forEach(record -> samples.update(record.getFrameStart(), new SessionList(record.getSession())));
+            } else {
+                batch.forEach(cache::store);
+            }
+        });
+    }
 
 
     private <K extends BookStatisticsRecordsCaches.RecordKey, V> void processRecords(
             BookId bookId,
             BookStatisticsRecordsCaches.RecordCache<K, V> recordCache,
-            Persistor<K, V> persistor)
-
-    {
+            Persistor<K, V> persistor) throws InterruptedException {
         Collection<K> keys = recordCache.getKeys();
         for (K key : keys) {
             TimeFrameRecordCache<V> timeFrameRecords = recordCache.extract(key);
@@ -365,7 +407,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
 
     @Override
     public void run() {
-        logger.trace("executing StatisticsWorker job");
+        LOGGER.trace("executing StatisticsWorker job");
 
         try {
             for (BookId bookId: bookCounterCaches.keySet()) {
@@ -382,14 +424,14 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
                 processRecords(bookId, bookStatisticsRecordsCaches.getSessionRecordCache(), this::persistSessionStatistics);
             }
         } catch (Exception e) {
-            logger.error("Exception processing job", e);
+            LOGGER.error("Exception processing job", e);
         }
 
-        logger.trace("StatisticsWorker job complete");
+        LOGGER.trace("StatisticsWorker job complete");
     }
 
-
+    @FunctionalInterface
     private interface Persistor<K extends BookStatisticsRecordsCaches.RecordKey, V> {
-        void persist(BookId bookId, K key, FrameType frameType, Collection<TimeFrameRecord<V>> records);
+        void persist(BookId bookId, K key, FrameType frameType, Collection<TimeFrameRecord<V>> records) throws InterruptedException;
     }
 }
