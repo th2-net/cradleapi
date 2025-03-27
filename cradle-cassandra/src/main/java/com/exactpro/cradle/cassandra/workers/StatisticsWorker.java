@@ -95,11 +95,13 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
     }
 
     public void stop() {
-        if (!isEnabled)
+        if (!isEnabled) {
             return;
+        }
 
-        if (executorService == null)
+        if (executorService == null) {
             throw new IllegalStateException("Can not stop statistics worker as it is not started");
+        }
 
         boolean interrupted = false;
         // ensure that cache is empty before executor service initiating shutdown
@@ -109,7 +111,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
                 try {
                     Thread.sleep(100); // FIXME: find another way to wait the empty cache state
                 } catch (InterruptedException e) {
-                    LOGGER.error("Interrupted while waiting statistics cache depletion");
+                    LOGGER.error("Interrupted while waiting statistics cache depletion", e);
                     interrupted = true;
                 }
         }
@@ -135,7 +137,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
         try {
             futures.awaitRemaining();
         } catch (InterruptedException e) {
-            LOGGER.error("Interrupted while waiting tracked futures to complete");
+            LOGGER.error("Interrupted while waiting tracked futures to complete", e);
             interrupted = true;
         }
 
