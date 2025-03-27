@@ -101,6 +101,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
         if (executorService == null)
             throw new IllegalStateException("Can not stop statistics worker as it is not started");
 
+        boolean interrupted = false;
         // ensure that cache is empty before executor service initiating shutdown
         if (bookCounterCachesNotEmpty()) {
             LOGGER.info("Waiting statistics cache depletion");
@@ -109,6 +110,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
                     Thread.sleep(100); // FIXME: find another way to wait the empty cache state
                 } catch (InterruptedException e) {
                     LOGGER.error("Interrupted while waiting statistics cache depletion");
+                    interrupted = true;
                 }
         }
 
@@ -126,13 +128,19 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
             }
         } catch (InterruptedException e) {
             LOGGER.error("Interrupted while waiting jobs to complete", e);
+            interrupted = true;
         }
 
         // After executor service stops, we need to wait for futures to complete
         try {
             futures.awaitRemaining();
         } catch (InterruptedException e) {
-            LOGGER.error("Interrupted while waiting tracked features to complete");
+            LOGGER.error("Interrupted while waiting tracked futures to complete");
+            interrupted = true;
+        }
+
+        if (interrupted) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -244,7 +252,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
         LOGGER.debug("Persisting batch of {} entity statistic records", batch.size());
         CompletableFuture<AsyncResultSet> future = op.update(batch, batchWriteAttrs);
         if(!futures.track(future)) {
-            LOGGER.warn("Update entity statistic feature isn't tracked");
+            LOGGER.warn("Update entity statistic future isn't tracked");
         }
         future.whenComplete((result, e) -> {
             if (e != null) {
@@ -303,7 +311,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
         LOGGER.debug("Persisting batch of {} message statistic records", batch.size());
         CompletableFuture<AsyncResultSet> future = op.update(batch, batchWriteAttrs);
         if(!futures.track(future)) {
-            LOGGER.warn("Update message statistic feature isn't tracked");
+            LOGGER.warn("Update message statistic future isn't tracked");
         }
         future.whenComplete((result, e) -> {
             if (e != null) {
@@ -373,7 +381,7 @@ public class StatisticsWorker implements Runnable, EntityStatisticsCollector, Me
         LOGGER.debug("Persisting batch of {} session statistic records", batch.size());
         CompletableFuture<AsyncResultSet> future = op.write(batch, batchWriteAttrs);
         if(!futures.track(future)) {
-            LOGGER.warn("Update session statistic feature isn't tracked");
+            LOGGER.warn("Update session statistic future isn't tracked");
         }
         future.whenComplete((result, e) -> {
             if (e != null) {
