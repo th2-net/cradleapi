@@ -211,7 +211,6 @@ Test events have mandatory parameters that are verified when storing an event. T
 
 ### 5.5.1
 * Fixed the problem - grouped messages queries with limit on number of batches to return could return no batches when there is a batch that falls under condition.
-* Updated th2 gradle plugin: `0.1.5`
 
 ### 5.5.0
 
