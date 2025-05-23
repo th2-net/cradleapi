@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
     public static final int DEFAULT_EVENT_BATCH_DURATION_CACHE_SIZE = 5_000;
     public static final int DEFAULT_PAGE_GROUPS_CACHE_SIZE = 10_000;
     public static final int DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS = 15000;
+    public static final int DEFAULT_COUNTER_PERSISTENCE_MAX_PARALLEL_QUERIES = 128;
     public static final long DEFAULT_EVENT_BATCH_DURATION_MILLIS = 5_000;
     public static final long DEFAULT_TIMEOUT = 5000;
     public static final CompressionType DEFAULT_COMPRESSION_TYPE = CompressionType.LZ4;
@@ -63,6 +64,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
     //when cassandra driver tries to convert Instant.MAX to milliseconds using toEpochMilli() it causes long overflow.
     public static final Instant MAX_EPOCH_INSTANT = Instant.ofEpochMilli(Long.MAX_VALUE);
     public static final Instant DEFAULT_PAGE_REMOVE_TIME = MAX_EPOCH_INSTANT;
+    public static final long DEFAULT_INIT_OPERATORS_DURATION_SECONDS = 60;
 
     @JsonIgnore
     private NetworkTopologyStrategy networkTopologyStrategy;
@@ -92,6 +94,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
     private int groupsCacheSize = DEFAULT_GROUPS_CACHE_SIZE;
     private int eventBatchDurationCacheSize = DEFAULT_EVENT_BATCH_DURATION_CACHE_SIZE;
     private int counterPersistenceInterval = DEFAULT_COUNTER_PERSISTENCE_INTERVAL_MS;
+    private int counterPersistenceMaxParallelQueries = DEFAULT_COUNTER_PERSISTENCE_MAX_PARALLEL_QUERIES;
     private int composingServiceThreads = DEFAULT_COMPOSING_SERVICE_THREADS;
 
     private SelectExecutionPolicy multiRowResultExecutionPolicy;
@@ -100,6 +103,8 @@ public class CassandraStorageSettings extends CoreStorageSettings {
     private long eventBatchDurationMillis = DEFAULT_EVENT_BATCH_DURATION_MILLIS;
 
     private CompressionType compressionType = DEFAULT_COMPRESSION_TYPE;
+
+    private long initOperatorsDurationSeconds = DEFAULT_INIT_OPERATORS_DURATION_SECONDS;
 
     public CassandraStorageSettings() {
     }
@@ -152,6 +157,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
         this.groupsCacheSize = settings.getGroupsCacheSize();
         this.sessionStatisticsCacheSize = settings.getSessionStatisticsCacheSize();
         this.counterPersistenceInterval = settings.getCounterPersistenceInterval();
+        this.counterPersistenceMaxParallelQueries = settings.getCounterPersistenceMaxParallelQueries();
         this.composingServiceThreads = settings.getComposingServiceThreads();
         setBookRefreshIntervalMillis(settings.getBookRefreshIntervalMillis());
         this.eventBatchDurationMillis = settings.getEventBatchDurationMillis();
@@ -159,6 +165,8 @@ public class CassandraStorageSettings extends CoreStorageSettings {
 
         setStoreIndividualMessageSessions(settings.isStoreIndividualMessageSessions());
         this.compressionType = settings.getCompressionType();
+
+        this.initOperatorsDurationSeconds = settings.getInitOperatorsDurationSeconds();
     }
 
 
@@ -344,6 +352,14 @@ public class CassandraStorageSettings extends CoreStorageSettings {
         this.counterPersistenceInterval = counterPersistenceInterval;
     }
 
+    public int getCounterPersistenceMaxParallelQueries() {
+        return counterPersistenceMaxParallelQueries;
+    }
+
+    public void setCounterPersistenceMaxParallelQueries(int counterPersistenceMaxParallelQueries) {
+        this.counterPersistenceMaxParallelQueries = counterPersistenceMaxParallelQueries;
+    }
+
     public int getComposingServiceThreads() {
         return composingServiceThreads;
     }
@@ -396,6 +412,14 @@ public class CassandraStorageSettings extends CoreStorageSettings {
         this.compressionType = compressionType;
     }
 
+    public long getInitOperatorsDurationSeconds() {
+        return initOperatorsDurationSeconds;
+    }
+
+    public void setInitOperatorsDurationSeconds(long initOperatorsDurationSeconds) {
+        this.initOperatorsDurationSeconds = initOperatorsDurationSeconds;
+    }
+
     @Override
     public String toString() {
         return "CassandraStorageSettings{" +
@@ -423,6 +447,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
                 ", groupsCacheSize=" + groupsCacheSize +
                 ", eventBatchDurationCacheSize=" + eventBatchDurationCacheSize +
                 ", counterPersistenceInterval=" + counterPersistenceInterval +
+                ", counterPersistenceMaxParallelQueries=" + counterPersistenceMaxParallelQueries +
                 ", composingServiceThreads=" + composingServiceThreads +
                 ", multiRowResultExecutionPolicy=" + multiRowResultExecutionPolicy +
                 ", singleRowResultExecutionPolicy=" + singleRowResultExecutionPolicy +
@@ -430,6 +455,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
                 ", eventBatchDurationMillis=" + eventBatchDurationMillis +
                 ", storeIndividualMessageSessions=" + isStoreIndividualMessageSessions() +
                 ", compressionType=" + compressionType +
+                ", initOperatorsDurationSeconds=" + initOperatorsDurationSeconds +
                 '}';
     }
 }

@@ -1,6 +1,9 @@
 plugins {
-    id "com.exactpro.th2.gradle.base" version "0.1.5"
-    id "com.exactpro.th2.gradle.publish" version "0.1.5"
+    alias(libs.plugins.th2.publish)
+}
+
+dependencyCheck {
+    suppressionFile = "suppressions.xml"
 }
 
 allprojects {
@@ -14,26 +17,21 @@ subprojects {
 
     repositories {
         mavenCentral()
-        maven {
-            name 'Sonatype_snapshots'
-            url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
-        }
 
         maven {
             name 'Sonatype_releases'
             url 'https://s01.oss.sonatype.org/content/repositories/releases/'
         }
+
         configurations.configureEach {
             resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
             resolutionStrategy.cacheDynamicVersionsFor 0, 'seconds'
         }
     }
 
-    sourceCompatibility = JavaVersion.VERSION_11 //Java version compatibility to use when compiling Java source.
-    targetCompatibility = JavaVersion.VERSION_11 //Java version to generate classes for.
     compileJava.options.debugOptions.debugLevel = 'source,lines,vars' // Include debug information
 
     dependencies {
-        implementation 'io.prometheus:simpleclient_dropwizard:0.16.0'
+        implementation(libs.simpleclient.dropwizard)
     }
 }

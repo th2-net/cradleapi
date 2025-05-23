@@ -1,4 +1,4 @@
-# Overview (5.4.5)
+# Overview (5.5.1)
 
 Cradle API is used to work with Cradle - the datalake where th2 stores its data.
 
@@ -6,7 +6,7 @@ Cradle API has implementation for Apache Cassandra, wrapping interaction with th
 
 # Getting started
 
-To build Cradle API binaries you will need to have JDK 8 or higher.
+To build Cradle API binaries you will need to have JDK 11 or higher.
 
 Clone the project to some directory, navigate to that directory and execute the following command:
 ```
@@ -209,9 +209,22 @@ Test events have mandatory parameters that are verified when storing an event. T
 
 ## Release notes
 
-### 5.4.5
+### 5.5.1
 * Fixed the problem - grouped messages queries with limit on number of batches to return could return no batches when there is a batch that falls under condition.
 * Updated th2 gradle plugin: `0.1.5`
+
+### 5.5.0
+
+* Provided option to limit parallel queries for statistic persistence
+  * Added `counterPersistenceMaxParallelQueries` option to configure how many queries can be executed in parallel for statistic persistence.
+* Executes cassandra operators initialisation in a separate thread to exclude hung upping during schema creation
+    * Added `initOperatorsDurationSeconds` option to configure expected time for initialisation operations
+* Optimised logic of collecting statistic data.
+* Updated:
+  * th2 gradle plugin: `0.2.4` (bom: `4.11.0`)
+  * task-utils: `0.1.4`
+  * cassandra: `1.20.6`
+  * caffeine: `3.2.0`
 
 ### 5.4.4
 * Fixed the problem - page cache doesn't work correct when storage has removed page(s)

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2023-2024 Exactpro (Exactpro Systems Limited)
+ *  Copyright 2023-2025 Exactpro (Exactpro Systems Limited)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -123,6 +123,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -227,7 +229,9 @@ public class CassandraCradleStorage extends CradleStorage
 					settings.getEventBatchDurationMillis());
 
 			WorkerSupplies ws = new WorkerSupplies(settings, operators, composingService, bookCache, selectExecutor, writeAttrs, readAttrs, batchWriteAttrs);
-			statisticsWorker = new StatisticsWorker(ws, settings.getCounterPersistenceInterval());
+			statisticsWorker = new StatisticsWorker(ws,
+					settings.getCounterPersistenceInterval(),
+					settings.getCounterPersistenceMaxParallelQueries());
 			eventsWorker = new EventsWorker(ws, statisticsWorker, eventBatchDurationWorker);
 			messagesWorker = new MessagesWorker(ws, statisticsWorker, statisticsWorker);
 			statisticsWorker.start();
@@ -1118,10 +1122,11 @@ public class CassandraCradleStorage extends CradleStorage
 			LOGGER.info("Already connected to Cassandra");
 	}
 	
-	protected CassandraOperators createOperators(CqlSession session, CassandraStorageSettings settings)
-	{
-		CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(session).build();
-		return new CassandraOperators(dataMapper, settings);
+	protected CassandraOperators createOperators(CqlSession session, CassandraStorageSettings settings) throws ExecutionException, InterruptedException, TimeoutException {
+		return CompletableFuture.supplyAsync(() -> {
+			CassandraDataMapper dataMapper = new CassandraDataMapperBuilder(session).build();
+			return new CassandraOperators(dataMapper, settings);
+		}).get(settings.getInitOperatorsDurationSeconds(), TimeUnit.SECONDS);
 	}
 	
 	protected void createStorage() throws CradleStorageException
