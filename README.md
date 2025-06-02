@@ -1,4 +1,4 @@
-# Overview (5.5.0)
+# Overview (5.5.1)
 
 Cradle API is used to work with Cradle - the datalake where th2 stores its data.
 
@@ -208,6 +208,9 @@ Test events have mandatory parameters that are verified when storing an event. T
   * cause: EXPLICIT, REPLACED, COLLECTED, EXPIRED, SIZE
 
 ## Release notes
+
+### 5.5.1
+* Fixed the problem - grouped messages queries with limit on number of batches to return could return no batches when there is a batch that falls under condition.
 
 ### 5.5.0
 

@@ -34,28 +34,18 @@ import java.util.function.Predicate;
 
 public class FilteredMessageIterator extends MappedIterator<StoredMessageBatch, StoredMessage>
 {
-	private final FilterForAny<Long> sequence;
-	private final FilterForGreater<Instant> timestampFrom;
-	private final FilterForLess<Instant> timestampTo;
-	private final Order order;
-
 	public FilteredMessageIterator(Iterator<StoredMessageBatch> batchIterator, MessageFilter filter, int limit,
 			AtomicInteger returned)
 	{
-		super(batchIterator, limit, returned);
-		sequence = filter == null ? null : filter.getSequence();
-		timestampFrom = filter == null ? null : filter.getTimestampFrom();
-		timestampTo = filter == null ? null : filter.getTimestampTo();
-		order = filter == null ? Order.DIRECT : filter.getOrder();
+		super(createTargetIterator(batchIterator, filter), limit, returned);
 	}
 
-	@Override
-	Iterator<StoredMessage> createTargetIterator(Iterator<StoredMessageBatch> sourceIterator)
+	private static Iterator<StoredMessage> createTargetIterator(Iterator<StoredMessageBatch> sourceIterator, MessageFilter filter)
 	{
-		Predicate<StoredMessage> filterPredicate = createFilterPredicate();
+		Predicate<StoredMessage> filterPredicate = createFilterPredicate(filter);
 		return Streams.stream(sourceIterator)
 				.flatMap(b -> {
-					if (order.equals(Order.REVERSE)) {
+					if (filter.getOrder().equals(Order.REVERSE)) {
 						var elements  = new ArrayList<>(b.getMessages());
 						Collections.reverse(elements);
 
@@ -68,8 +58,11 @@ public class FilteredMessageIterator extends MappedIterator<StoredMessageBatch, 
 				.iterator();
 	}
 
-	private Predicate<StoredMessage> createFilterPredicate()
+	private static Predicate<StoredMessage> createFilterPredicate(MessageFilter filter)
 	{
+		FilterForAny<Long> sequence = filter == null ? null : filter.getSequence();
+		FilterForGreater<Instant> timestampFrom = filter == null ? null : filter.getTimestampFrom();
+		FilterForLess<Instant> timestampTo = filter == null ? null : filter.getTimestampTo();
 		return storedMessage ->
 					(sequence == null || sequence.check(storedMessage.getId().getSequence()))
 					&& (timestampFrom == null || timestampFrom.check(storedMessage.getTimestamp()))

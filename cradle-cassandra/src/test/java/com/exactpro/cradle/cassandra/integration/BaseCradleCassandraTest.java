@@ -64,7 +64,7 @@ public abstract class BaseCradleCassandraTest {
 
     private final long storeActionRejectionThreshold = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
 
-    protected final Instant dataStart = Instant.now().minus(1, ChronoUnit.HOURS);
+    protected final Instant dataStart = Instant.now().minus(70, ChronoUnit.MINUTES);
     protected final BookId bookId = generateBookId();
 
     protected CqlSession session;
@@ -80,10 +80,11 @@ public abstract class BaseCradleCassandraTest {
     private final PageToAdd page_a3 = new PageToAdd(DEFAULT_PAGE_PREFIX + 3, dataStart.plus(30, ChronoUnit.MINUTES), "");
     private final PageToAdd page_a4 = new PageToAdd(DEFAULT_PAGE_PREFIX + 4, dataStart.plus(40, ChronoUnit.MINUTES), "");
     private final PageToAdd page_a5 = new PageToAdd(DEFAULT_PAGE_PREFIX + 5, dataStart.plus(50, ChronoUnit.MINUTES), "");
+    private final PageToAdd page_a6 = new PageToAdd(DEFAULT_PAGE_PREFIX + 6, dataStart.plus(60, ChronoUnit.MINUTES), "");
 
     private final List<PageToAdd> pagesToAdd = List.of(
             page_r2, page_r1,
-            page_a0, page_a1, page_a2, page_a3, page_a4, page_a5
+            page_a0, page_a1, page_a2, page_a3, page_a4, page_a5, page_a6
     );
     private final List<PageId> pageIdToRemove = Stream.of(page_r2, page_r1)
             .map(page -> new PageId(bookId, page.getStart(), page.getName()))
