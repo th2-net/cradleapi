@@ -96,6 +96,7 @@ public abstract class CradleStorage {
 
     private final long storeActionRejectionThreshold;
     private final boolean storeIndividualMessageSessions;
+    private final boolean updateStatusBeforeStoringEvent;
 
     public CradleStorage(
             ExecutorService composingService,
@@ -116,6 +117,7 @@ public abstract class CradleStorage {
         this.pageActionRejectionThreshold = settings.calculatePageActionRejectionThreshold();
         this.storeActionRejectionThreshold = settings.calculateStoreActionRejectionThreshold();
         this.storeIndividualMessageSessions = settings.isStoreIndividualMessageSessions();
+        this.updateStatusBeforeStoringEvent = settings.isUpdateStatusBeforeStoringEvent();
         entitiesFactory = new CradleEntitiesFactory(maxMessageBatchSize, maxTestEventBatchSize, storeActionRejectionThreshold);
     }
 
@@ -157,7 +159,7 @@ public abstract class CradleStorage {
 
     protected abstract void doStoreTestEvent(TestEventToStore event, PageInfo page) throws IOException, CradleStorageException;
 
-    protected abstract CompletableFuture<Void> doStoreTestEventAsync(TestEventToStore event, PageInfo page) throws IOException, CradleStorageException;
+    protected abstract CompletableFuture<Void> doStoreTestEventAsync(TestEventToStore event, PageInfo page);
 
     protected abstract void doUpdateParentTestEvents(TestEventToStore event) throws IOException;
 
@@ -816,28 +818,19 @@ public abstract class CradleStorage {
         TestEventUtils.validateTestEvent(event, getBookCache().getBook(id.getBookId()), storeActionRejectionThreshold);
         final TestEventToStore alignedEvent = alignEventTimestampsToPage(event, page);
 
-        CompletableFuture<Void> result = doStoreTestEventAsync(alignedEvent, page);
-        result.whenCompleteAsync((r, error) -> {
-            if (error != null)
-                LOGGER.error("Error while storing test event {} asynchronously", id, error);
-            else
-                LOGGER.debug("Test event {} has been stored asynchronously", id);
-        }, composingService);
-
-        if (alignedEvent.getParentId() == null)
-            return result;
-
-        return result.thenComposeAsync(r -> {
-            LOGGER.debug("Updating parents of test event {} asynchronously", id);
-            CompletableFuture<Void> result2 = doUpdateParentTestEventsAsync(alignedEvent);
-            result2.whenCompleteAsync((r2, error) -> {
-                if (error != null)
-                    LOGGER.error("Error while updating parents of test event {} asynchronously", id, error);
-                else
-                    LOGGER.debug("Parents of test event {} have been updated asynchronously", alignedEvent.getId());
-            }, composingService);
-            return result2;
-        }, composingService);
+        if (updateStatusBeforeStoringEvent) {
+            if (alignedEvent.getParentId() == null) {
+                return doStoreTestEventAndLogAsync(page, id, alignedEvent);
+            }
+            CompletableFuture<Void> result = doUpdateParentTestEventsAndLogAsync(id, alignedEvent);
+            return result.thenComposeAsync(r -> doStoreTestEventAndLogAsync(page, id, alignedEvent), composingService);
+        } else {
+            CompletableFuture<Void> result = doStoreTestEventAndLogAsync(page, id, alignedEvent);
+            if (alignedEvent.getParentId() == null) {
+                return result;
+            }
+            return result.thenComposeAsync(r -> doUpdateParentTestEventsAndLogAsync(id, alignedEvent), composingService);
+        }
     }
 
 
@@ -1530,6 +1523,31 @@ public abstract class CradleStorage {
                 LOGGER.debug("Status of event {} updated asynchronously", event.getId());
         }, composingService);
         return result;
+    }
+
+    private CompletableFuture<Void> doStoreTestEventAndLogAsync(PageInfo page, StoredTestEventId id, TestEventToStore alignedEvent) {
+        CompletableFuture<Void> result = doStoreTestEventAsync(alignedEvent, page);
+        result.whenCompleteAsync((r, error) -> {
+            if (error != null) {
+                LOGGER.error("Error while storing test event {} asynchronously", id, error);
+            } else {
+                LOGGER.debug("Test event {} has been stored asynchronously", id);
+            }
+        }, composingService);
+        return result;
+    }
+
+    private CompletableFuture<Void> doUpdateParentTestEventsAndLogAsync(StoredTestEventId id, TestEventToStore alignedEvent) {
+        LOGGER.debug("Updating parents of test event {} asynchronously", id);
+        CompletableFuture<Void> result2 = doUpdateParentTestEventsAsync(alignedEvent);
+        result2.whenCompleteAsync((r2, error) -> {
+            if (error != null) {
+                LOGGER.error("Error while updating parents of test event {} asynchronously", id, error);
+            } else {
+                LOGGER.debug("Parents of test event {} have been updated asynchronously", alignedEvent.getId());
+            }
+        }, composingService);
+        return result2;
     }
 
     private Instant checkCollisionAndGetPageEnd(BookInfo book, PageToAdd page, Instant defaultPageEnd) throws CradleStorageException {

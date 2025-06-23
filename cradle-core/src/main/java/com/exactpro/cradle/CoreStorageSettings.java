@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2023-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,10 @@ public class CoreStorageSettings {
     public static final long DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS = 60000;
     public static final int PAGE_ACTION_REJECTION_THRESHOLD_FACTOR = 2;
     public static final boolean DEFAULT_STORE_INDIVIDUAL_MESSAGE_SESSIONS = true;
+    public static final boolean DEFAULT_UPDATE_STATUS_BEFORE_STORING_EVENT = false;
     private long bookRefreshIntervalMillis = DEFAULT_BOOK_REFRESH_INTERVAL_MILLIS;
+
+    private boolean updateStatusBeforeStoringEvent = DEFAULT_UPDATE_STATUS_BEFORE_STORING_EVENT;
 
     /**
      * if `true`, the {@link CradleStorage#storeGroupedMessageBatch} method converts {@link GroupedMessageBatchToStore} to {@link MessageBatchToStore} and stores them.
@@ -55,5 +58,13 @@ public class CoreStorageSettings {
 
     public void setStoreIndividualMessageSessions(boolean storeIndividualMessageSessions) {
         this.storeIndividualMessageSessions = storeIndividualMessageSessions;
+    }
+
+    public boolean isUpdateStatusBeforeStoringEvent() {
+        return updateStatusBeforeStoringEvent;
+    }
+
+    public void setUpdateStatusBeforeStoringEvent(boolean updateStatusBeforeStoringEvent) {
+        this.updateStatusBeforeStoringEvent = updateStatusBeforeStoringEvent;
     }
 }
