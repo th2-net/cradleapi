@@ -160,6 +160,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
         this.counterPersistenceMaxParallelQueries = settings.getCounterPersistenceMaxParallelQueries();
         this.composingServiceThreads = settings.getComposingServiceThreads();
         setBookRefreshIntervalMillis(settings.getBookRefreshIntervalMillis());
+        setUpdateStatusBeforeStoringEvent(settings.isUpdateStatusBeforeStoringEvent());
         this.eventBatchDurationMillis = settings.getEventBatchDurationMillis();
         this.eventBatchDurationCacheSize = settings.getEventBatchDurationCacheSize();
 
@@ -452,6 +453,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
                 ", multiRowResultExecutionPolicy=" + multiRowResultExecutionPolicy +
                 ", singleRowResultExecutionPolicy=" + singleRowResultExecutionPolicy +
                 ", bookRefreshIntervalMillis=" + getBookRefreshIntervalMillis() +
+                ", updateStatusBeforeStoringEvent=" + isUpdateStatusBeforeStoringEvent() +
                 ", eventBatchDurationMillis=" + eventBatchDurationMillis +
                 ", storeIndividualMessageSessions=" + isStoreIndividualMessageSessions() +
                 ", compressionType=" + compressionType +
