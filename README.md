@@ -211,7 +211,10 @@ Test events have mandatory parameters that are verified when storing an event. T
 
 ### 5.6.0
 * Provided ability to update parent event status before storing child event.
-  Added `updateStatusBeforeStoringEvent` option into core cradle settings
+  Added `updateStatusBeforeStoringEvent` (default is `false`) option into core cradle settings
+* Delayed parent event status update if parent hasn't been stored on child event storing
+  Added `maxFailedEventUpdateTimeoutMs` (default is `3600000`)option into core cradle settings
+  Added `minFailedEventUpdateTimeoutMs` (default is `100`)option into core cradle settings
 * Updated:
   * caffeine: `3.2.1`
 

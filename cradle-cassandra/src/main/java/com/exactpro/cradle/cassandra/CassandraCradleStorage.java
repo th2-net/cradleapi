@@ -121,6 +121,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -142,6 +144,8 @@ public class CassandraCradleStorage extends CradleStorage
 
 	private final long pageActionRejectionThreshold;
 
+	protected final ConcurrentMap<StoredTestEventId, CompletableFuture<Boolean>> statusUpdateIds = new ConcurrentHashMap<>();
+
 	private CassandraOperators operators;
 	private QueryExecutor exec;
 	private SelectQueryExecutor selectExecutor;
@@ -158,7 +162,7 @@ public class CassandraCradleStorage extends CradleStorage
 	private IntervalsWorker intervalsWorker;
 
 
-	public CassandraCradleStorage(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings, 
+	public CassandraCradleStorage(CassandraConnectionSettings connectionSettings, CassandraStorageSettings storageSettings,
 			ExecutorService composingService) throws CradleStorageException
 	{
 		super(composingService, storageSettings.getComposingServiceThreads(), storageSettings.getMaxMessageBatchSize(), storageSettings.getMaxTestEventBatchSize(), storageSettings);
@@ -451,7 +455,7 @@ public class CassandraCradleStorage extends CradleStorage
 		if (event.isSuccess())
 			return CompletableFuture.completedFuture(null);
 		
-		return failEventAndParents(event.getParentId());
+		return failEventAndParents(event.getParentId()).thenAccept(r -> {});
 	}
 	
 	@Override
@@ -1174,7 +1178,7 @@ public class CassandraCradleStorage extends CradleStorage
 		return strictReadAttrs;
 	}
 	
-	protected CompletableFuture<Void> failEventAndParents(StoredTestEventId eventId)
+	protected CompletableFuture<Boolean> failEventAndParents(StoredTestEventId eventId)
 	{
 		try
 		{
@@ -1182,21 +1186,22 @@ public class CassandraCradleStorage extends CradleStorage
 					.thenComposeAsync((event) -> {
 						if (event == null) {
 							LOGGER.warn("Event for updating failed status isn't found: {}", eventId);
-							return CompletableFuture.completedFuture(null);
+							reschedule(eventId);
+							return CompletableFuture.completedFuture(Boolean.FALSE);
 						}
 						if (!event.isSuccess()) {
 							LOGGER.debug("Event failed status is already updated: {}", eventId);
-							return CompletableFuture.completedFuture(null);
+							return CompletableFuture.completedFuture(Boolean.TRUE);
 						}
 						
-						CompletableFuture<Void> update = doUpdateEventStatusAsync(event, false)
+						CompletableFuture<Boolean> update = doUpdateEventStatusAsync(event, false)
 								.whenComplete((r, error) -> {
 									if (error != null) {
 										LOGGER.error("Error while updating failed status of {} event", eventId, error);
 									} else {
 										LOGGER.debug("Updated failed status of {} event", eventId);
 									}
-								});
+								}).thenApply(r -> Boolean.TRUE);
 						if (event.getParentId() != null)
 							return update.thenComposeAsync((u) -> failEventAndParents(event.getParentId()), composingService);
 						return update;
@@ -1399,5 +1404,41 @@ public class CassandraCradleStorage extends CradleStorage
 					interval.getEnd());
 			throw new CradleStorageException(error, e);
 		}
+	}
+
+	private void reschedule(StoredTestEventId eventId, long delayMillis) {
+		statusUpdateIds.compute(eventId, (id, future) -> {
+			if (future != null) {
+				future.cancel(false);
+			}
+			LOGGER.debug("Reschedule failed status update for {} event after {} millis", eventId, delayMillis);
+			return CompletableFuture.runAsync(() -> {},
+							CompletableFuture.delayedExecutor(delayMillis, TimeUnit.MILLISECONDS, composingService))
+					.thenComposeAsync(r -> failEventAndParents(id))
+					.whenCompleteAsync((updated, error) -> {
+						if (error != null) {
+							LOGGER.error("Error while reschedule status update for {} event", eventId, error);
+						}
+						long nextDelay = delayMillis * 2;
+						CompletableFuture<Boolean> previousFuture = statusUpdateIds.remove(eventId);
+						if (previousFuture != null) previousFuture.cancel(false);
+
+						if (nextDelay > this.settings.getMaxFailedEventUpdateTimeoutMs()) {
+							LOGGER.warn("Max reschedule status update timeout {} exceeded for {} event",
+									this.settings.getMaxFailedEventUpdateTimeoutMs(), eventId);
+							return;
+						}
+
+						if (updated) {
+							LOGGER.debug("Reschedule succeed for {} event", eventId);
+						} else {
+							reschedule(eventId, delayMillis * 2);
+						}
+					}, composingService);
+		});
+	}
+
+	private void reschedule(StoredTestEventId eventId) {
+		reschedule(eventId, this.settings.getMinFailedEventUpdateTimeoutMs());
 	}
 }
