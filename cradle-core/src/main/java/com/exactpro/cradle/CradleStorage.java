@@ -1539,15 +1539,15 @@ public abstract class CradleStorage {
 
     private CompletableFuture<Void> doUpdateParentTestEventsAndLogAsync(StoredTestEventId id, TestEventToStore alignedEvent) {
         LOGGER.debug("Updating parents of test event {} asynchronously", id);
-        CompletableFuture<Void> result2 = doUpdateParentTestEventsAsync(alignedEvent);
-        result2.whenCompleteAsync((r2, error) -> {
+        CompletableFuture<Void> result = doUpdateParentTestEventsAsync(alignedEvent);
+        result.whenCompleteAsync((r2, error) -> {
             if (error != null) {
                 LOGGER.error("Error while updating parents of test event {} asynchronously", id, error);
             } else {
                 LOGGER.debug("Parents of test event {} have been updated asynchronously", alignedEvent.getId());
             }
         }, composingService);
-        return result2;
+        return result;
     }
 
     private Instant checkCollisionAndGetPageEnd(BookInfo book, PageToAdd page, Instant defaultPageEnd) throws CradleStorageException {

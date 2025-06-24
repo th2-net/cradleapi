@@ -1,17 +1,17 @@
 /*
- *  Copyright 2023-2025 Exactpro (Exactpro Systems Limited)
+ * Copyright 2023-2025 Exactpro (Exactpro Systems Limited)
  *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.exactpro.cradle.cassandra;
@@ -132,6 +132,7 @@ import java.util.stream.Collectors;
 import static com.exactpro.cradle.cassandra.utils.StorageUtils.toLocalDate;
 import static com.exactpro.cradle.cassandra.utils.StorageUtils.toLocalTime;
 
+@SuppressWarnings("unused")
 public class CassandraCradleStorage extends CradleStorage
 {
 	private final Logger LOGGER = LoggerFactory.getLogger(CassandraCradleStorage.class);
@@ -757,7 +758,7 @@ public class CassandraCradleStorage extends CradleStorage
 				interval.getStart().toString(),
 				interval.getEnd().toString());
 
-		LOGGER.info("Getting {}", queryInfo);
+		LOGGER.info("Getting message counters {}", queryInfo);
 		MessageStatisticsIteratorProvider iteratorProvider = new MessageStatisticsIteratorProvider(queryInfo,
 				operators,
 				getBookCache().getBook(bookId),
@@ -807,7 +808,7 @@ public class CassandraCradleStorage extends CradleStorage
 				interval.getStart().toString(),
 				interval.getEnd().toString());
 
-		LOGGER.info("Getting {}", queryInfo);
+		LOGGER.info("Getting counters {}", queryInfo);
 
 
 		EntityStatisticsIteratorProvider iteratorProvider = new EntityStatisticsIteratorProvider(queryInfo,
@@ -855,7 +856,7 @@ public class CassandraCradleStorage extends CradleStorage
 				interval.getStart().toString(),
 				interval.getEnd().toString());
 
-		LOGGER.info("Getting {}", queryInfo);
+		LOGGER.info("Getting message count {}", queryInfo);
 
 		List<FrameInterval> slices = StorageUtils.sliceInterval(interval);
 
@@ -905,7 +906,7 @@ public class CassandraCradleStorage extends CradleStorage
 				interval.getStart().toString(),
 				interval.getEnd().toString());
 
-		LOGGER.info("Getting {}", queryInfo);
+		LOGGER.info("Getting count {}", queryInfo);
 
 		List<FrameInterval> slices = StorageUtils.sliceInterval(interval);
 
@@ -1179,10 +1180,23 @@ public class CassandraCradleStorage extends CradleStorage
 		{
 			return getTestEventAsync(eventId)
 					.thenComposeAsync((event) -> {
-						if (event == null || !event.isSuccess())  //Invalid event ID or event is already failed, which means that its parents are already updated
+						if (event == null) {
+							LOGGER.warn("Event for updating failed status isn't found: {}", eventId);
 							return CompletableFuture.completedFuture(null);
+						}
+						if (!event.isSuccess()) {
+							LOGGER.debug("Event failed status is already updated: {}", eventId);
+							return CompletableFuture.completedFuture(null);
+						}
 						
-						CompletableFuture<Void> update = doUpdateEventStatusAsync(event, false);
+						CompletableFuture<Void> update = doUpdateEventStatusAsync(event, false)
+								.whenComplete((r, error) -> {
+									if (error != null) {
+										LOGGER.error("Error while updating failed status of {} event", eventId, error);
+									} else {
+										LOGGER.debug("Updated failed status of {} event", eventId);
+									}
+								});
 						if (event.getParentId() != null)
 							return update.thenComposeAsync((u) -> failEventAndParents(event.getParentId()), composingService);
 						return update;
