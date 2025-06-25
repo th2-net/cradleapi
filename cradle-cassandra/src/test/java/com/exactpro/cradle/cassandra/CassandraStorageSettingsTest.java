@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,8 @@ public class CassandraStorageSettingsTest {
         defaultSettings.setEventBatchDurationCacheSize(defaultSettings.getEventBatchDurationCacheSize() + 10);
         defaultSettings.setCompressionType(Arrays.stream(CompressionType.values()).filter(item -> item != defaultSettings.getCompressionType()).findFirst().orElseThrow());
         defaultSettings.setInitOperatorsDurationSeconds(defaultSettings.getInitOperatorsDurationSeconds() + 10);
+        defaultSettings.setMaxFailedEventUpdateTimeoutMs(defaultSettings.getMaxFailedEventUpdateTimeoutMs() + 10);
+        defaultSettings.setMinFailedEventUpdateTimeoutMs(defaultSettings.getMinFailedEventUpdateTimeoutMs() + 10);
 
         CassandraStorageSettings copy = new CassandraStorageSettings(defaultSettings);
         Assertions.assertThat(copy)

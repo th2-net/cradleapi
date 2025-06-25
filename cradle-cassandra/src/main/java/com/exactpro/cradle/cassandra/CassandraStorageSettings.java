@@ -66,6 +66,9 @@ public class CassandraStorageSettings extends CoreStorageSettings {
     public static final Instant DEFAULT_PAGE_REMOVE_TIME = MAX_EPOCH_INSTANT;
     public static final long DEFAULT_INIT_OPERATORS_DURATION_SECONDS = 60;
 
+    public static final int DEFAULT_MAX_FAILED_EVENT_UPDATE_TIMEOUT_MS = 60 * 60 * 1_000;
+    public static final int DEFAULT_MIN_FAILED_EVENT_UPDATE_TIMEOUT_MS = 100;
+
     @JsonIgnore
     private NetworkTopologyStrategy networkTopologyStrategy;
     private long timeout = DEFAULT_TIMEOUT;
@@ -105,6 +108,8 @@ public class CassandraStorageSettings extends CoreStorageSettings {
     private CompressionType compressionType = DEFAULT_COMPRESSION_TYPE;
 
     private long initOperatorsDurationSeconds = DEFAULT_INIT_OPERATORS_DURATION_SECONDS;
+    private long maxFailedEventUpdateTimeoutMs = DEFAULT_MAX_FAILED_EVENT_UPDATE_TIMEOUT_MS;
+    private long minFailedEventUpdateTimeoutMs = DEFAULT_MIN_FAILED_EVENT_UPDATE_TIMEOUT_MS;
 
     public CassandraStorageSettings() {
     }
@@ -168,6 +173,8 @@ public class CassandraStorageSettings extends CoreStorageSettings {
         this.compressionType = settings.getCompressionType();
 
         this.initOperatorsDurationSeconds = settings.getInitOperatorsDurationSeconds();
+        this.maxFailedEventUpdateTimeoutMs = settings.getMaxFailedEventUpdateTimeoutMs();
+        this.minFailedEventUpdateTimeoutMs = settings.getMinFailedEventUpdateTimeoutMs();
     }
 
 
@@ -421,6 +428,22 @@ public class CassandraStorageSettings extends CoreStorageSettings {
         this.initOperatorsDurationSeconds = initOperatorsDurationSeconds;
     }
 
+    public long getMaxFailedEventUpdateTimeoutMs() {
+        return maxFailedEventUpdateTimeoutMs;
+    }
+
+    public void setMaxFailedEventUpdateTimeoutMs(long maxFailedEventUpdateTimeoutMs) {
+        this.maxFailedEventUpdateTimeoutMs = maxFailedEventUpdateTimeoutMs;
+    }
+
+    public long getMinFailedEventUpdateTimeoutMs() {
+        return minFailedEventUpdateTimeoutMs;
+    }
+
+    public void setMinFailedEventUpdateTimeoutMs(long minFailedEventUpdateTimeoutMs) {
+        this.minFailedEventUpdateTimeoutMs = minFailedEventUpdateTimeoutMs;
+    }
+
     @Override
     public String toString() {
         return "CassandraStorageSettings{" +
@@ -458,6 +481,8 @@ public class CassandraStorageSettings extends CoreStorageSettings {
                 ", storeIndividualMessageSessions=" + isStoreIndividualMessageSessions() +
                 ", compressionType=" + compressionType +
                 ", initOperatorsDurationSeconds=" + initOperatorsDurationSeconds +
+                ", maxRescheduleFailedStatusEventUpdateTimeoutMillis=" + maxFailedEventUpdateTimeoutMs +
+                ", minRescheduleFailedStatusEventUpdateTimeoutMillis=" + minFailedEventUpdateTimeoutMs +
                 '}';
     }
 }
