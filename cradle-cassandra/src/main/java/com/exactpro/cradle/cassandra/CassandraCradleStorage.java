@@ -436,8 +436,10 @@ public class CassandraCradleStorage extends CradleStorage
 	@Override
 	protected void doUpdateParentTestEvents(TestEventToStore event) throws IOException
 	{
-		if (event.isSuccess())
+		if (event.isSuccess()) {
+			LOGGER.debug("Skipped parents update of text event {} because event success {}", event.getId(), event.isSuccess());
 			return;
+		}
 		
 		try
 		{
@@ -1408,7 +1410,7 @@ public class CassandraCradleStorage extends CradleStorage
 
 	private void rescheduleFailEventAndParents(StoredTestEventId eventId, long delayMillis) {
 		statusUpdateIds.computeIfAbsent(eventId, id -> {
-			LOGGER.debug("Reschedule failed status update for {} event after {} millis", eventId, delayMillis);
+			LOGGER.debug("Reschedule failed status update for {} event in {} millis", eventId, delayMillis);
 			return CompletableFuture.runAsync(() -> {},
 							CompletableFuture.delayedExecutor(delayMillis, TimeUnit.MILLISECONDS, composingService))
 					.thenComposeAsync(r -> failEventAndParents(id), composingService)
@@ -1427,7 +1429,7 @@ public class CassandraCradleStorage extends CradleStorage
 						}
 
 						if (updated) {
-							LOGGER.debug("Reschedule succeed for {} event", eventId);
+							LOGGER.debug("Reschedule status update succeed for {} event", eventId);
 						} else {
 							rescheduleFailEventAndParents(eventId, delayMillis * 2);
 						}
