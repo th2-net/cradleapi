@@ -1186,7 +1186,7 @@ public class CassandraCradleStorage extends CradleStorage
 					.thenComposeAsync((event) -> {
 						if (event == null) {
 							LOGGER.warn("Event for updating failed status isn't found: {}", eventId);
-							reschedule(eventId);
+							rescheduleFailEventAndParents(eventId);
 							return CompletableFuture.completedFuture(Boolean.FALSE);
 						}
 						if (!event.isSuccess()) {
@@ -1406,15 +1406,12 @@ public class CassandraCradleStorage extends CradleStorage
 		}
 	}
 
-	private void reschedule(StoredTestEventId eventId, long delayMillis) {
-		statusUpdateIds.compute(eventId, (id, future) -> {
-			if (future != null) {
-				future.cancel(false);
-			}
+	private void rescheduleFailEventAndParents(StoredTestEventId eventId, long delayMillis) {
+		statusUpdateIds.computeIfAbsent(eventId, id -> {
 			LOGGER.debug("Reschedule failed status update for {} event after {} millis", eventId, delayMillis);
 			return CompletableFuture.runAsync(() -> {},
 							CompletableFuture.delayedExecutor(delayMillis, TimeUnit.MILLISECONDS, composingService))
-					.thenComposeAsync(r -> failEventAndParents(id))
+					.thenComposeAsync(r -> failEventAndParents(id), composingService)
 					.whenCompleteAsync((updated, error) -> {
 						if (error != null) {
 							LOGGER.error("Error while reschedule status update for {} event", eventId, error);
@@ -1432,13 +1429,13 @@ public class CassandraCradleStorage extends CradleStorage
 						if (updated) {
 							LOGGER.debug("Reschedule succeed for {} event", eventId);
 						} else {
-							reschedule(eventId, delayMillis * 2);
+							rescheduleFailEventAndParents(eventId, delayMillis * 2);
 						}
 					}, composingService);
 		});
 	}
 
-	private void reschedule(StoredTestEventId eventId) {
-		reschedule(eventId, this.settings.getMinFailedEventUpdateTimeoutMs());
+	private void rescheduleFailEventAndParents(StoredTestEventId eventId) {
+		rescheduleFailEventAndParents(eventId, this.settings.getMinFailedEventUpdateTimeoutMs());
 	}
 }
