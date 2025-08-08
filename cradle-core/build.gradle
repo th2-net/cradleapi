@@ -4,6 +4,7 @@ dependencies {
 
     implementation "org.slf4j:slf4j-api"
     implementation 'com.google.guava:guava'
+    implementation(libs.jsr305)
     implementation(libs.lz4.java)
 
     implementation(libs.caffeine)
