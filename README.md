@@ -24,10 +24,7 @@ repositories {
 Alternatively, you can use pre-built artifacts by adding the following repository to your Gradle project:
 ```
 repositories {
-	maven {
-		name 'Sonatype_releases'
-		url 'https://s01.oss.sonatype.org/content/repositories/releases/'
-	}
+	mavenCentral()
 	...
 }
 ```
