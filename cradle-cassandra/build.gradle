@@ -1,3 +1,7 @@
+plugins {
+    alias(libs.plugins.jmh)
+}
+
 configurations.configureEach {
     exclude group: 'com.esri.geometry'
     exclude group: 'org.apache.tinkerpop'
@@ -5,6 +9,9 @@ configurations.configureEach {
 
 dependencies {
     api project(":cradle-core")
+
+    jmh(libs.jmh.core)
+    jmh(libs.jmh.generator.annprocess)
 
     implementation "org.apache.commons:commons-lang3"
     implementation(libs.task.utils)

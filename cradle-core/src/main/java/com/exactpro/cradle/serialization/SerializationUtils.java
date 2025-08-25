@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,6 +77,16 @@ public class SerializationUtils {
 		return body;
 	}
 
+	static ByteBuffer readBufferedBody(ByteBuffer buffer) {
+		int bodyLen = buffer.getInt();
+		if (bodyLen < 0) {
+			return null;
+		}
+		ByteBuffer body = ByteBuffer.wrap(buffer.array(), buffer.position(), bodyLen);
+		buffer.position(buffer.position() + bodyLen);
+		return body;
+	}
+
 	static String readString(ByteBuffer buffer) throws SerializationException {
 		return readString(buffer, buffer.getInt());
 	}
@@ -117,7 +127,7 @@ public class SerializationUtils {
 	static boolean readSingleBoolean(ByteBuffer buffer) {
 		return buffer.get() == 1;
 	}
-	
+
 	static SerializationException incorrectMagicNumber(String name, int expected, int actual) {
 		return new SerializationException(String.format(INVALID_MAGIC_NUMBER_FORMAT, name,
 				Integer.toHexString(expected), Integer.toHexString(actual)));

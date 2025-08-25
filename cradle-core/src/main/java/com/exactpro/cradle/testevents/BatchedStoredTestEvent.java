@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,14 @@
 package com.exactpro.cradle.testevents;
 
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.*;
 
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.messages.StoredMessageId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Holds information about one test event stored in batch of events ({@link TestEventBatch})
@@ -29,8 +32,9 @@ import com.exactpro.cradle.messages.StoredMessageId;
 //This class is not a child of StoredTestEventSingle because it is used in serialization which doesn't work with super() constructor with arguments for final fields
 public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 {
+	private final Logger LOGGER = LoggerFactory.getLogger(BatchedStoredTestEvent.class);
 	private static final long serialVersionUID = -1350827714114261304L;
-	
+
 	private final StoredTestEventId id;
 	private final String name,
 			type;
@@ -38,7 +42,8 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 	private final Instant endTimestamp;
 	private final boolean success;
 	private final byte[] content;
-	
+	private final ByteBuffer bufferedContent;
+
 	private final transient TestEventBatch batch;
 	private final transient PageId pageId;
 	
@@ -51,15 +56,15 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 		
 		this.endTimestamp = event.getEndTimestamp();
 		this.success = event.isSuccess();
-		
+
 		byte[] eventContent = event.getContent();
-		if (eventContent == null)
+		if (eventContent == null) {
 			this.content = null;
-		else
-		{
+		} else {
 			this.content = new byte[eventContent.length];
 			System.arraycopy(eventContent, 0, this.content, 0, this.content.length);
 		}
+		this.bufferedContent = null;
 		
 		this.batch = batch;
 		this.pageId = pageId;
@@ -68,6 +73,12 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 	protected BatchedStoredTestEvent(StoredTestEventId id, String name, String type, StoredTestEventId parentId,
 									 Instant endTimestamp, boolean success, byte[] content,
 									 TestEventBatch batch, PageId pageId) {
+		this(id, name, type, parentId, endTimestamp, success, content, null, batch, pageId);
+	}
+
+	protected BatchedStoredTestEvent(StoredTestEventId id, String name, String type, StoredTestEventId parentId,
+									 Instant endTimestamp, boolean success, byte[] content, ByteBuffer bufferedContent,
+									 TestEventBatch batch, PageId pageId) {
 		this.id = id;
 		this.name = name;
 		this.type = type;
@@ -75,6 +86,7 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 		this.endTimestamp = endTimestamp;
 		this.success = success;
 		this.content = content;
+		this.bufferedContent = bufferedContent;
 		this.batch = batch;
 		this.pageId = pageId;
 	}
@@ -124,11 +136,20 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 	}
 	
 	@Override
-	public byte[] getContent()
-	{
+	public byte[] getContent() {
+		if (content == null) {
+			if (bufferedContent == null) {
+				return null;
+			}
+			LOGGER.warn("Extracting content from buffered view. Migrate to buffer");
+			byte[] body = new byte[bufferedContent.remaining()];
+			int position = bufferedContent.position();
+			bufferedContent.get(body);
+			bufferedContent.position(position);
+			return body;
+		}
 		return content;
 	}
-	
 
 	public PageId getPageId()
 	{
