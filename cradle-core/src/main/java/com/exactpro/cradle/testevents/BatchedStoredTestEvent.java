@@ -151,6 +151,16 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 		return content;
 	}
 
+	public ByteBuffer getBufferedContent() {
+		if (bufferedContent == null) {
+			if (content == null) {
+				return null;
+			}
+			return ByteBuffer.wrap(content);
+		}
+		return bufferedContent;
+	}
+
 	public PageId getPageId()
 	{
 		return pageId;
