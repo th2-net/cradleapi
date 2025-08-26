@@ -50,26 +50,39 @@ import java.util.zip.DataFormatException;
 public class TestEventEntityUtils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestEventEntityUtils.class);
+    private static final String LABEL_TYPE = "type";
+    private static final String LABEL_BATCH = "batch";
+    private static final String LABEL_BATCHED_EVENT = "batched-event";
+    private static final String LABEL_SINGLE_EVENT = "single-event";
+
+
     private static final Counter RESTORE_DURATION = Counter.build()
             .name("cradle_test_event_restore_duration_seconds")
-            .help("Time spent restoring event data from optionally compressed content")
+            .help("Time spent restoring batch / batched-event / single-event data from optionally compressed content")
+            .labelNames(LABEL_TYPE)
             .register();
     private static final Counter DESERIALISATION_DURATION = Counter.build()
             .name("cradle_test_event_deserialisation_duration_seconds")
-            .help("Time spent deserializing events or batches")
-            .labelNames("type")
+            .help("Time spent deserializing batch / batched-event / single-event")
+            .labelNames(LABEL_TYPE)
             .register();
-    private static final Counter.Child DESERIALISATION_EVENT_DURATION = DESERIALISATION_DURATION.labels("event");
-    private static final Counter.Child DESERIALISATION_EVENT_BATCH_DURATION = DESERIALISATION_DURATION.labels("batch");
-    private static final Counter EVENTS_TOTAL = Counter.build()
+    private static final Counter CONTENT_SIZE = Counter.build()
+            .name("cradle_test_event_deserialisation_content_bytes_total")
+            .help("Total size of content processed during event deserialization")
+            .labelNames(LABEL_TYPE)
+            .register();
+    private static final Counter ITEMS_TOTAL = Counter.build()
             .name("cradle_test_event_deserialized_total")
-            .help("Number of deserialized events")
-            .register();
-    private static final Counter BATCHES_TOTAL = Counter.build()
-            .name("cradle_test_event_batch_deserialized_total")
-            .help("Number of deserialized event batches")
+            .help("Number of deserialized batch / batched-event / single-event")
+            .labelNames(LABEL_TYPE)
             .register();
 
+    private static final Metric batchMetric = new Metric(
+            RESTORE_DURATION, DESERIALISATION_DURATION, CONTENT_SIZE, ITEMS_TOTAL, LABEL_BATCH);
+    private static final Metric batchedEventMetric = new Metric(
+            RESTORE_DURATION, DESERIALISATION_DURATION, CONTENT_SIZE, ITEMS_TOTAL, LABEL_BATCHED_EVENT);
+    private static final Metric singleEventMetric = new Metric(
+            RESTORE_DURATION, DESERIALISATION_DURATION, CONTENT_SIZE, ITEMS_TOTAL, LABEL_SINGLE_EVENT);
 
     public static StoredTestEvent toStoredTestEvent(TestEventEntity testEventEntity, PageId pageId)
             throws IOException, CradleStorageException, DataFormatException, CradleIdException, CompressException {
@@ -78,24 +91,20 @@ public class TestEventEntityUtils {
 
         long t0 = System.nanoTime();
         byte[] content = restoreContent(testEventEntity, eventId);
+        int contentSize = content == null ? 0 : content.length;
         long t1 = System.nanoTime();
-        RESTORE_DURATION.inc((t1 - t0) / 1_000_000_000.0);
-
-        StoredTestEvent result;
+        double restoreSec = (t1 - t0) / 1_000_000_000.0;
         if (testEventEntity.isEventBatch()) {
             StoredTestEventBatch batch = toStoredTestEventBatch(testEventEntity, pageId, eventId, content);
-            result = batch;
-            double duration = (System.nanoTime() - t1) / 1_000_000_000.0;
-            BATCHES_TOTAL.inc();
-            EVENTS_TOTAL.inc(batch.getTestEventsCount());
-            DESERIALISATION_EVENT_DURATION.inc(duration);
-            DESERIALISATION_EVENT_BATCH_DURATION.inc(duration);
+            double deserializationSec = (System.nanoTime() - t1) / 1_000_000_000.0;
+            batchMetric.inc(restoreSec, deserializationSec, contentSize, 1);
+            batchedEventMetric.inc(restoreSec, deserializationSec, contentSize, batch.getTestEventsCount());
+            return batch;
         } else {
-            result = toStoredTestEventSingle(testEventEntity, pageId, eventId, content);
-            EVENTS_TOTAL.inc();
-            DESERIALISATION_EVENT_DURATION.inc((System.nanoTime() - t1) / 1_000_000_000.0);
+            StoredTestEventSingle event = toStoredTestEventSingle(testEventEntity, pageId, eventId, content);
+            singleEventMetric.inc(restoreSec, (System.nanoTime() - t1) / 1_000_000_000.0, contentSize, 1);
+            return event;
         }
-        return result;
     }
 
 
@@ -224,5 +233,26 @@ public class TestEventEntityUtils {
             builder.setContent(ByteBuffer.wrap(content));
 
         return new SerializedEntity<>(serializedEntityData, builder.build());
+    }
+
+    private static class Metric {
+        private final Counter.Child restore;
+        private final Counter.Child deserialization;
+        private final Counter.Child content;
+        private final Counter.Child count;
+
+        private Metric(Counter restore, Counter deserialization, Counter content, Counter count, String type) {
+            this.restore = restore.labels(type);
+            this.deserialization = deserialization.labels(type);
+            this.content = content.labels(type);
+            this.count = count.labels(type);
+        }
+
+        private void inc(double restoreSec, double deserializationSec, int contentSize,  int count) {
+            this.restore.inc(restoreSec);
+            this.deserialization.inc(deserializationSec);
+            this.content.inc(contentSize);
+            this.count.inc(count);
+        }
     }
 }
