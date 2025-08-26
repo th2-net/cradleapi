@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,10 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.zip.DataFormatException;
@@ -104,5 +107,41 @@ config.ignoreAllOverriddenEquals();
         Assertions.assertThat(newEvent)
                 .usingRecursiveComparison(config)
                 .isEqualTo(event);
+    }
+
+    @Test(dataProvider = "events")
+    public void eventEntityToLw(TestEventToStore event) throws CradleStorageException, IOException, CradleIdException, CompressException {
+        SerializedEntity<SerializedEntityMetadata, TestEventEntity> serializedEntity = TestEventEntityUtils.toSerializedEntity(event, page, CompressionType.ZLIB, 2000);
+        TestEventEntity entity = serializedEntity.getEntity();
+        StoredTestEvent newEvent = TestEventEntityUtils.toLwStoredTestEvent(entity, page);
+
+        Comparator<Object> byteBufferVsArrayComparator = (a, b) -> {
+            byte[] left = toBytes(a);
+            byte[] right = toBytes(b);
+            return Arrays.equals(left, right) ? 0 : 1;
+        };
+
+        RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
+        config.ignoreFieldsMatchingRegexes("pageId", ".*\\.pageId", "error", ".*\\.error", "recDate", ".*\\.recDate", "lastStartTimestamp", ".*\\.lastStartTimestamp", "messages", ".*\\.messages", ".*\\.batch");
+        config.registerComparatorForType(byteBufferVsArrayComparator, ByteBuffer.class);
+        config.ignoreAllOverriddenEquals();
+        Assertions.assertThat(newEvent)
+                .usingRecursiveComparison(config)
+                .isEqualTo(event);
+    }
+
+    private static byte[] toBytes(Object o) {
+        if (o == null) {
+            return null;
+        } else if (o instanceof ByteBuffer) {
+            ByteBuffer copy = ((ByteBuffer)o).asReadOnlyBuffer();
+            byte[] arr = new byte[copy.remaining()];
+            copy.get(arr);
+            return arr;
+        } else if (o instanceof byte[]) {
+            return (byte[])o;
+        } else {
+            throw new IllegalArgumentException("Unsupported type: " + o);
+        }
     }
 }

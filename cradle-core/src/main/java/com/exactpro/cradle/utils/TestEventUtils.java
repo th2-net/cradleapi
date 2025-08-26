@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,10 +34,12 @@ import com.exactpro.cradle.testevents.TestEventBatch;
 import com.exactpro.cradle.testevents.TestEventSingle;
 import com.exactpro.cradle.testevents.TestEventSingleToStore;
 import com.exactpro.cradle.testevents.TestEventToStore;
+import com.exactpro.cradle.testevents.lw.LwBatchedStoredTestEvent;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -152,6 +154,16 @@ public class TestEventUtils {
     public static Collection<BatchedStoredTestEvent> deserializeTestEvents(byte[] contentBytes, StoredTestEventId id)
             throws IOException {
         return deserializer.deserializeBatchEntries(contentBytes, new EventBatchCommonParams(id));
+    }
+
+    public static Collection<LwBatchedStoredTestEvent> deserializeLwTestEvents(@Nonnull ByteBuffer content, StoredTestEventId id)
+            throws IOException {
+        content.mark();
+        try {
+            return deserializer.deserializeLwBatchEntries(content, new EventBatchCommonParams(id));
+        } finally {
+            content.reset();
+        }
     }
 
 

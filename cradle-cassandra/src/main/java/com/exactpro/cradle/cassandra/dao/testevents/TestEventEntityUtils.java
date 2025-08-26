@@ -27,6 +27,9 @@ import com.exactpro.cradle.testevents.StoredTestEventBatch;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.StoredTestEventSingle;
 import com.exactpro.cradle.testevents.TestEventToStore;
+import com.exactpro.cradle.testevents.lw.LwBatchedStoredTestEvent;
+import com.exactpro.cradle.testevents.lw.LwStoredTestEventBatch;
+import com.exactpro.cradle.testevents.lw.LwStoredTestEventSingle;
 import com.exactpro.cradle.utils.CompressException;
 import com.exactpro.cradle.utils.CompressionType;
 import com.exactpro.cradle.utils.CradleIdException;
@@ -107,6 +110,28 @@ public class TestEventEntityUtils {
         }
     }
 
+    public static StoredTestEvent toLwStoredTestEvent(TestEventEntity testEventEntity, PageId pageId)
+            throws IOException, CradleStorageException, CradleIdException, CompressException {
+        StoredTestEventId eventId = createId(testEventEntity, pageId.getBookId());
+        LOGGER.trace("Creating lw test event '{}' from entity", eventId);
+
+        long t0 = System.nanoTime();
+        ByteBuffer content = lwRestoreContent(testEventEntity, eventId);
+        int contentSize = content == null ? 0 : content.remaining();
+        long t1 = System.nanoTime();
+        double restoreSec = (t1 - t0) / 1_000_000_000.0;
+        if (testEventEntity.isEventBatch()) {
+            LwStoredTestEventBatch batch = toLwStoredTestEventBatch(testEventEntity, pageId, eventId, content);
+            double deserializationSec = (System.nanoTime() - t1) / 1_000_000_000.0;
+            batchMetric.inc(restoreSec, deserializationSec, contentSize, 1);
+            batchedEventMetric.inc(restoreSec, deserializationSec, contentSize, batch.getTestEventsCount());
+            return batch;
+        } else {
+            LwStoredTestEventSingle event = toLwStoredTestEventSingle(testEventEntity, pageId, eventId, content);
+            singleEventMetric.inc(restoreSec, (System.nanoTime() - t1) / 1_000_000_000.0, contentSize, 1);
+            return event;
+        }
+    }
 
     private static StoredTestEventId createId(TestEventEntity testEventEntity, BookId bookId)
     {
@@ -128,6 +153,20 @@ public class TestEventEntityUtils {
         if (testEventEntity.isCompressed()) {
             LOGGER.trace("Decompressing content of test event '{}'", eventId);
             return CompressionType.decompressData(result);
+        }
+        return result;
+    }
+
+    private static ByteBuffer lwRestoreContent(TestEventEntity testEventEntity, StoredTestEventId eventId) throws CompressException {
+        ByteBuffer content = testEventEntity.getContent();
+        if (content == null)
+            return null;
+
+        ByteBuffer result = content;
+        if (testEventEntity.isCompressed()) {
+            LOGGER.trace("Decompressing content of lw test event '{}'", eventId);
+            result = ByteBuffer.allocate(testEventEntity.getUncompressedContentSize());
+            CompressionType.lwDecompressData(content, result);
         }
         return result;
     }
@@ -161,12 +200,29 @@ public class TestEventEntityUtils {
                 TestEventEntityUtils.getEndTimestamp(testEventEntity), testEventEntity.isSuccess(), content, messages, pageId, null, testEventEntity.getRecDate());
     }
 
+    private static LwStoredTestEventSingle toLwStoredTestEventSingle(TestEventEntity testEventEntity, PageId pageId, StoredTestEventId eventId, ByteBuffer content)
+            throws IOException, CradleIdException
+    {
+        Set<StoredMessageId> messages = restoreMessages(testEventEntity, pageId.getBookId());
+        return new LwStoredTestEventSingle(eventId, testEventEntity.getName(), testEventEntity.getType(), createParentId(testEventEntity),
+                TestEventEntityUtils.getEndTimestamp(testEventEntity), testEventEntity.isSuccess(), content, messages, pageId, null, testEventEntity.getRecDate());
+    }
+
     private static StoredTestEventBatch toStoredTestEventBatch(TestEventEntity testEventEntity, PageId pageId, StoredTestEventId eventId, byte[] content)
             throws IOException, CradleStorageException, CradleIdException
     {
         Collection<BatchedStoredTestEvent> children = TestEventUtils.deserializeTestEvents(content, eventId);
         Map<StoredTestEventId, Set<StoredMessageId>> messages = restoreBatchMessages(testEventEntity, pageId.getBookId());
         return new StoredTestEventBatch(eventId, testEventEntity.getName(), testEventEntity.getType(), createParentId(testEventEntity),
+                children, messages, pageId, null, testEventEntity.getRecDate());
+    }
+
+    private static LwStoredTestEventBatch toLwStoredTestEventBatch(TestEventEntity testEventEntity, PageId pageId, StoredTestEventId eventId, ByteBuffer content)
+            throws IOException, CradleStorageException, CradleIdException
+    {
+        Collection<LwBatchedStoredTestEvent> children = TestEventUtils.deserializeLwTestEvents(content, eventId);
+        Map<StoredTestEventId, Set<StoredMessageId>> messages = restoreBatchMessages(testEventEntity, pageId.getBookId());
+        return new LwStoredTestEventBatch(eventId, testEventEntity.getName(), testEventEntity.getType(), createParentId(testEventEntity),
                 children, messages, pageId, null, testEventEntity.getRecDate());
     }
 

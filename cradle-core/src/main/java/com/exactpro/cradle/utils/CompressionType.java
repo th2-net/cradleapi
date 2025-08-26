@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2023-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,6 +80,30 @@ public enum CompressionType {
                 throw new CompressException("Data can't be decompressed", e);
             }
         }
+
+        @Override
+        public ByteBuffer decompress(ByteBuffer src, ByteBuffer dest) throws CompressException {
+            Inflater inflater = new Inflater();
+            inflater.setInput(src);
+
+            try {
+                while (!inflater.finished()) {
+                    int written = inflater.inflate(dest);
+                    if (written == 0) {
+                        if (inflater.needsInput()) break;
+                        if (inflater.needsDictionary()) {
+                            throw new IllegalStateException("Preset dictionary required");
+                        }
+                    }
+                }
+                dest.flip();
+                return dest;
+            } catch (DataFormatException e) {
+                throw new CompressException("Data can't be decompressed", e);
+            } finally {
+                inflater.end();
+            }
+        }
     },
     LZ4 {
         private final LZ4Compressor COMPRESSOR = LZ4Factory.fastestInstance().fastCompressor();
@@ -109,10 +133,17 @@ public enum CompressionType {
         public byte[] decompress(byte[] data) {
             return DECOMPRESSOR.decompress(data, MAGIC_BYTES.length + Integer.BYTES, ByteBuffer.wrap(data).getInt(MAGIC_BYTES.length));
         }
+
+        @Override
+        public ByteBuffer decompress(ByteBuffer src, ByteBuffer dest) {
+            DECOMPRESSOR.decompress(src, MAGIC_BYTES.length + Integer.BYTES, dest, dest.position(), dest.remaining());
+            return dest;
+        }
     };
 
     public abstract byte[] compress(byte[] data) throws CompressException;
     public abstract byte[] decompress(byte[] data) throws CompressException;
+    public abstract ByteBuffer decompress(ByteBuffer src, ByteBuffer dest) throws CompressException;
 
     public boolean isDecompressable(byte[] data) {
         byte[] magicBytes = getMagicBytes();
@@ -121,6 +152,19 @@ public enum CompressionType {
         }
         for (int i = 0; i < magicBytes.length; i++) {
             if (magicBytes[i] != data[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean isDecompressable(ByteBuffer buffer) {
+        byte[] magicBytes = getMagicBytes();
+        if (magicBytes.length > buffer.remaining()) {
+            return false;
+        }
+        for (int i = 0; i < magicBytes.length; i++) {
+            if (magicBytes[i] != buffer.get(buffer.position() + i)) {
                 return false;
             }
         }
@@ -144,5 +188,21 @@ public enum CompressionType {
                                                     .map(type -> type.name() + ":[" + encoder.encode(type.getMagicBytes()) + "]")
                                                     .collect(Collectors.joining(",")));
         }
+    }
+
+    public static ByteBuffer lwDecompressData(ByteBuffer src, ByteBuffer dest) throws CompressException {
+        if (src == null || src.remaining() == 0) {
+            throw new CompressException("Data is empty or null");
+        }
+        for (CompressionType compressionType : CompressionType.values()) {
+            if (compressionType.isDecompressable(src)) {
+                return compressionType.decompress(src, dest);
+            }
+        }
+        BaseEncoding encoder = BaseEncoding.base16();
+        throw new CompressException("Compression format is undetected. Decoded data: " + encoder.encode(src.array(), 0, Math.min(10, src.remaining()))
+                + ", supported formats: " + Arrays.stream(CompressionType.values())
+                .map(type -> type.name() + ":[" + encoder.encode(type.getMagicBytes()) + "]")
+                .collect(Collectors.joining(",")));
     }
 }
