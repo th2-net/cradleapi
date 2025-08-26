@@ -56,8 +56,11 @@ public class TestEventEntityUtils {
             .register();
     private static final Counter DESERIALISATION_DURATION = Counter.build()
             .name("cradle_test_event_deserialisation_duration_seconds")
-            .help("Time spent deserializing events")
+            .help("Time spent deserializing events or batches")
+            .labelNames("type")
             .register();
+    private static final Counter.Child DESERIALISATION_EVENT_DURATION = DESERIALISATION_DURATION.labels("event");
+    private static final Counter.Child DESERIALISATION_EVENT_BATCH_DURATION = DESERIALISATION_DURATION.labels("batch");
     private static final Counter EVENTS_TOTAL = Counter.build()
             .name("cradle_test_event_deserialized_total")
             .help("Number of deserialized events")
@@ -82,13 +85,16 @@ public class TestEventEntityUtils {
         if (testEventEntity.isEventBatch()) {
             StoredTestEventBatch batch = toStoredTestEventBatch(testEventEntity, pageId, eventId, content);
             result = batch;
+            double duration = (System.nanoTime() - t1) / 1_000_000_000.0;
+            BATCHES_TOTAL.inc();
             EVENTS_TOTAL.inc(batch.getTestEventsCount());
+            DESERIALISATION_EVENT_DURATION.inc(duration);
+            DESERIALISATION_EVENT_BATCH_DURATION.inc(duration);
         } else {
             result = toStoredTestEventSingle(testEventEntity, pageId, eventId, content);
             EVENTS_TOTAL.inc();
+            DESERIALISATION_EVENT_DURATION.inc((System.nanoTime() - t1) / 1_000_000_000.0);
         }
-        BATCHES_TOTAL.inc();
-        DESERIALISATION_DURATION.inc((System.nanoTime() - t1) / 1_000_000_000.0);
         return result;
     }
 
