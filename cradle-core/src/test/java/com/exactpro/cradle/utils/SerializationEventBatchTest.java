@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
 import com.exactpro.cradle.testevents.BatchedStoredTestEventBuilder;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import org.assertj.core.api.Assertions;
-import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -69,10 +68,7 @@ public class SerializationEventBatchTest {
 		byte[] serialize = serializer.serializeEventRecord(build);
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
 		BatchedStoredTestEvent deserialize = deserializer.deserializeBatchEntry(serialize, commonParams);
-
-		RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
-		config.ignoreFields("bufferedContent");
-		Assertions.assertThat(deserialize).usingRecursiveComparison(config).isEqualTo(build);
+		Assertions.assertThat(deserialize).usingRecursiveComparison().isEqualTo(build);
 	}
 
 
@@ -84,9 +80,7 @@ public class SerializationEventBatchTest {
 		byte[] serialize = serializer.serializeEventBatch(build).getSerializedData();
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
 		List<BatchedStoredTestEvent> deserialize = deserializer.deserializeBatchEntries(serialize, commonParams);
-		RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
-		config.ignoreFields("bufferedContent");
-		Assertions.assertThat(build).usingRecursiveFieldByFieldElementComparator(config).isEqualTo(deserialize);
+		Assertions.assertThat(build).usingRecursiveFieldByFieldElementComparator().isEqualTo(deserialize);
 	}
 
 	@Test
@@ -99,9 +93,7 @@ public class SerializationEventBatchTest {
 		byte[] serialized = serializer.serializeEventRecord(build);
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
 		BatchedStoredTestEvent deserialized = deserializer.deserializeBatchEntry(serialized, commonParams);
-		RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
-		config.ignoreFields("bufferedContent");
-		Assertions.assertThat(deserialized).usingRecursiveComparison(config).isEqualTo(build);
+		Assertions.assertThat(deserialized).usingRecursiveComparison().isEqualTo(build);
 	}
 
 	static BatchedStoredTestEvent createBatchedStoredTestEvent(String name, EventBatchCommonParams commonParams) {

@@ -94,7 +94,7 @@ public class EventBatchDeserializer {
 		eventBuilder.setParentId(readId(common, buffer));
 		eventBuilder.setEndTimestamp(readInstant(buffer));
 		eventBuilder.setSuccess(readSingleBoolean(buffer));
-		eventBuilder.setBufferedContent(readBufferedBody(buffer));
+		eventBuilder.setContent(readBody(buffer));
 
 		return eventBuilder.build();
 	}
