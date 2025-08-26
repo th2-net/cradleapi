@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
 import com.exactpro.cradle.utils.TimeUtils;
+import io.prometheus.client.Counter;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,15 +49,47 @@ import java.util.zip.DataFormatException;
 
 public class TestEventEntityUtils {
 
-    private static final Logger logger = LoggerFactory.getLogger(TestEventEntityUtils.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestEventEntityUtils.class);
+    private static final Counter RESTORE_DURATION = Counter.build()
+            .name("cradle_test_event_restore_duration_seconds")
+            .help("Time spent restoring event data from optionally compressed content")
+            .register();
+    private static final Counter DESERIALISATION_DURATION = Counter.build()
+            .name("cradle_test_event_deserialisation_duration_seconds")
+            .help("Time spent deserializing events")
+            .register();
+    private static final Counter EVENTS_TOTAL = Counter.build()
+            .name("cradle_test_event_deserialized_total")
+            .help("Number of deserialized events")
+            .register();
+    private static final Counter BATCHES_TOTAL = Counter.build()
+            .name("cradle_test_event_batch_deserialized_total")
+            .help("Number of deserialized event batches")
+            .register();
+
 
     public static StoredTestEvent toStoredTestEvent(TestEventEntity testEventEntity, PageId pageId)
             throws IOException, CradleStorageException, DataFormatException, CradleIdException, CompressException {
         StoredTestEventId eventId = createId(testEventEntity, pageId.getBookId());
-        logger.trace("Creating test event '{}' from entity", eventId);
+        LOGGER.trace("Creating test event '{}' from entity", eventId);
 
+        long t0 = System.nanoTime();
         byte[] content = restoreContent(testEventEntity, eventId);
-        return testEventEntity.isEventBatch() ? toStoredTestEventBatch(testEventEntity, pageId, eventId, content) : toStoredTestEventSingle(testEventEntity, pageId, eventId, content);
+        long t1 = System.nanoTime();
+        RESTORE_DURATION.inc((t1 - t0) / 1_000_000_000.0);
+
+        StoredTestEvent result;
+        if (testEventEntity.isEventBatch()) {
+            StoredTestEventBatch batch = toStoredTestEventBatch(testEventEntity, pageId, eventId, content);
+            result = batch;
+            EVENTS_TOTAL.inc(batch.getTestEventsCount());
+        } else {
+            result = toStoredTestEventSingle(testEventEntity, pageId, eventId, content);
+            EVENTS_TOTAL.inc();
+        }
+        BATCHES_TOTAL.inc();
+        DESERIALISATION_DURATION.inc((System.nanoTime() - t1) / 1_000_000_000.0);
+        return result;
     }
 
 
@@ -78,7 +111,7 @@ public class TestEventEntityUtils {
 
         byte[] result = content.array();
         if (testEventEntity.isCompressed()) {
-            logger.trace("Decompressing content of test event '{}'", eventId);
+            LOGGER.trace("Decompressing content of test event '{}'", eventId);
             return CompressionType.decompressData(result);
         }
         return result;
@@ -136,7 +169,7 @@ public class TestEventEntityUtils {
                                                                                                  int maxUncompressedSize) throws IOException, CompressException {
         TestEventEntity.TestEventEntityBuilder builder = TestEventEntity.builder();
 
-        logger.debug("Creating entity from test event '{}'", event.getId());
+        LOGGER.debug("Creating entity from test event '{}'", event.getId());
 
         SerializedEntityData<SerializedEntityMetadata> serializedEntityData = TestEventUtils.getTestEventContent(event);
         byte[] content = serializedEntityData.getSerializedData();
@@ -148,7 +181,7 @@ public class TestEventEntityUtils {
         } else {
             builder.setUncompressedContentSize(content.length);
             if (content.length > maxUncompressedSize) {
-                logger.trace("Compressing content of test event '{}'", event.getId());
+                LOGGER.trace("Compressing content of test event '{}'", event.getId());
                 content = compressionType.compress(content);
                 compressed = true;
             }
