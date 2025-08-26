@@ -17,6 +17,16 @@ subprojects {
 
     repositories {
         mavenCentral()
+
+        maven {
+            name 'maven'
+            url 'https://repo1.maven.org/maven2/'
+        }
+
+        configurations.configureEach {
+            resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+            resolutionStrategy.cacheDynamicVersionsFor 0, 'seconds'
+        }
     }
 
     compileJava.options.debugOptions.debugLevel = 'source,lines,vars' // Include debug information
