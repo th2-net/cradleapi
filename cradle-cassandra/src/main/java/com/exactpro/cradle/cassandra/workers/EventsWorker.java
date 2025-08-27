@@ -132,7 +132,6 @@ public class EventsWorker extends Worker {
                 EVENTS_READ_METRIC.inc(key, testEvent.asLwBatch().getTestEventsCount());
             }
         }
-        EVENTS_READ_METRIC.inc(key, testEvent.isSingle() ? 1 : testEvent.asBatch().getTestEventsCount());
         EVENT_BATCHES_READ_METRIC.inc(key);
     }
 
