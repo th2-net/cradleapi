@@ -18,8 +18,10 @@ package com.exactpro.cradle.cassandra.dao.testevents;
 
 import com.exactpro.cradle.BookId;
 import com.exactpro.cradle.CoreStorageSettings;
+import com.exactpro.cradle.Direction;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.SerializedEntity;
+import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
@@ -27,7 +29,6 @@ import com.exactpro.cradle.testevents.TestEventSingleToStore;
 import com.exactpro.cradle.testevents.TestEventSingleToStoreBuilder;
 import com.exactpro.cradle.utils.CompressException;
 import com.exactpro.cradle.utils.CompressionType;
-import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -41,7 +42,6 @@ import org.testcontainers.shaded.org.apache.commons.lang3.RandomStringUtils;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.UUID;
-import java.util.zip.DataFormatException;
 
 import static org.openjdk.jmh.annotations.Mode.Throughput;
 import static org.openjdk.jmh.annotations.Scope.Thread;
@@ -55,8 +55,9 @@ public class TestEventEntityUtilsBenchmark {
 
     @State(Thread)
     public static class TestEventEntityState {
-        private static final int MAX_SIZE = 1_024 * 1_024;
         private static final long THRESHOLD = new CoreStorageSettings().calculateStoreActionRejectionThreshold();
+        private static final int MAX_SIZE = 1_024 * 1_024;
+        private static final String SESSION_ALIAS = "benchmark-session-alias";
 
         private TestEventEntity eventEntity;
         private TestEventEntity batchEntity;
@@ -64,23 +65,35 @@ public class TestEventEntityUtilsBenchmark {
         @Param({"1024", "256000", "512000"})
         public int bodySize = 0;
 
+        @Param({"true", "false"})
+        public boolean compressed = true;
+
+        @Param({"0", "1", "5"})
+        public int messages = 0;
+
         @Setup
         public void init() throws CradleStorageException, IOException, CompressException {
             StoredTestEventId parentId = new StoredTestEventId(BOOK_ID, SCOPE, Instant.now(), UUID.randomUUID().toString());
             StoredTestEventId batchId = new StoredTestEventId(BOOK_ID, SCOPE, Instant.now(), UUID.randomUUID().toString());
             StoredTestEventId eventId = new StoredTestEventId(BOOK_ID, SCOPE, Instant.now(), UUID.randomUUID().toString());
 
-            TestEventSingleToStore event = new TestEventSingleToStoreBuilder(THRESHOLD)
+            TestEventSingleToStoreBuilder eventBuilder = new TestEventSingleToStoreBuilder(THRESHOLD)
                     .id(eventId)
                     .parentId(parentId)
                     .name("benchmark-event-name")
                     .type("benchmark-event-type")
                     .success(true)
                     .endTimestamp(Instant.now())
-                    .content(RandomStringUtils.randomAlphabetic(bodySize).getBytes())
-                    .build();
+                    .content(RandomStringUtils.randomAlphabetic(bodySize).getBytes());
+            for (int i = 0; i < messages; i++) {
+                eventBuilder.message(
+                        new StoredMessageId(BOOK_ID, SESSION_ALIAS, Direction.FIRST, Instant.now(), System.nanoTime())
+                );
+            }
+            TestEventSingleToStore event = eventBuilder.build();
 
-            SerializedEntity<SerializedEntityMetadata, TestEventEntity> serializedEntity = TestEventEntityUtils.toSerializedEntity(event, PAGE_ID, CompressionType.LZ4, Integer.MAX_VALUE);
+            SerializedEntity<SerializedEntityMetadata, TestEventEntity> serializedEntity = TestEventEntityUtils
+                    .toSerializedEntity(event, PAGE_ID, CompressionType.LZ4, compressed ? 0 : Integer.MAX_VALUE);
             eventEntity = serializedEntity.getEntity();
 
             TestEventBatchToStore batch = new TestEventBatchToStore(batchId,
@@ -90,32 +103,33 @@ public class TestEventEntityUtilsBenchmark {
                     THRESHOLD);
             batch.addTestEvent(event);
 
-            serializedEntity = TestEventEntityUtils.toSerializedEntity(batch, PAGE_ID, CompressionType.LZ4, Integer.MAX_VALUE);
+            serializedEntity = TestEventEntityUtils
+                    .toSerializedEntity(batch, PAGE_ID, CompressionType.LZ4, compressed ? 0 : Integer.MAX_VALUE);
             batchEntity = serializedEntity.getEntity();
         }
     }
 
     @Benchmark
     @BenchmarkMode(Throughput)
-    public void benchmarkDeserializeEvent(Blackhole blackhole, TestEventEntityState state) throws IOException, DataFormatException, CradleStorageException, CompressException, CradleIdException {
+    public void benchmarkDeserializeEvent(Blackhole blackhole, TestEventEntityState state) {
         blackhole.consume(TestEventEntityUtils.toStoredTestEvent(state.eventEntity, PAGE_ID));
     }
 
     @Benchmark
     @BenchmarkMode(Throughput)
-    public void benchmarkDeserializeLwEvent(Blackhole blackhole, TestEventEntityState state) throws IOException, CradleStorageException, CompressException, CradleIdException {
+    public void benchmarkDeserializeLwEvent(Blackhole blackhole, TestEventEntityState state) {
         blackhole.consume(TestEventEntityUtils.toLwStoredTestEvent(state.eventEntity, PAGE_ID));
     }
 
     @Benchmark
     @BenchmarkMode(Throughput)
-    public void benchmarkDeserializeBatch(Blackhole blackhole, TestEventEntityState state) throws IOException, DataFormatException, CradleStorageException, CompressException, CradleIdException {
+    public void benchmarkDeserializeBatch(Blackhole blackhole, TestEventEntityState state) {
         blackhole.consume(TestEventEntityUtils.toStoredTestEvent(state.batchEntity, PAGE_ID));
     }
 
     @Benchmark
     @BenchmarkMode(Throughput)
-    public void benchmarkDeserializeLwBatch(Blackhole blackhole, TestEventEntityState state) throws IOException, CradleStorageException, CompressException, CradleIdException {
+    public void benchmarkDeserializeLwBatch(Blackhole blackhole, TestEventEntityState state) {
         blackhole.consume(TestEventEntityUtils.toLwStoredTestEvent(state.batchEntity, PAGE_ID));
     }
 }

@@ -187,6 +187,15 @@ public class TestEventEntityUtils {
         return TestEventUtils.deserializeLinkedMessageIds(result, bookId);
     }
 
+    private static Set<StoredMessageId> restoreLwMessages(TestEventEntity testEventEntity, BookId bookId)
+            throws IOException {
+        ByteBuffer messages = testEventEntity.getMessages();
+        if (messages == null)
+            return null;
+
+        return TestEventUtils.deserializeLinkedMessageIds(messages, bookId);
+    }
+
     private static Map<StoredTestEventId, Set<StoredMessageId>> restoreBatchMessages(TestEventEntity testEventEntity, BookId bookId)
             throws IOException {
         ByteBuffer messages = testEventEntity.getMessages();
@@ -195,6 +204,14 @@ public class TestEventEntityUtils {
 
         byte[] result = messages.array();
         return TestEventUtils.deserializeBatchLinkedMessageIds(result, bookId);
+    }
+
+    private static Map<StoredTestEventId, Set<StoredMessageId>> restoreLwBatchMessages(
+            TestEventEntity testEventEntity, BookId bookId) throws IOException {
+        ByteBuffer messages = testEventEntity.getMessages();
+        if (messages == null) return null;
+
+        return TestEventUtils.deserializeBatchLinkedMessageIds(messages, bookId);
     }
 
 
@@ -209,7 +226,7 @@ public class TestEventEntityUtils {
     private static LwStoredTestEventSingle toLwStoredTestEventSingle(TestEventEntity testEventEntity, PageId pageId, StoredTestEventId eventId, ByteBuffer content)
             throws IOException, CradleIdException
     {
-        Set<StoredMessageId> messages = restoreMessages(testEventEntity, pageId.getBookId());
+        Set<StoredMessageId> messages = restoreLwMessages(testEventEntity, pageId.getBookId());
         return new LwStoredTestEventSingle(eventId, testEventEntity.getName(), testEventEntity.getType(), createParentId(testEventEntity),
                 TestEventEntityUtils.getEndTimestamp(testEventEntity), testEventEntity.isSuccess(), content, messages, pageId, null, testEventEntity.getRecDate());
     }
@@ -227,7 +244,7 @@ public class TestEventEntityUtils {
             throws IOException, CradleStorageException, CradleIdException
     {
         Collection<LwBatchedStoredTestEvent> children = TestEventUtils.deserializeLwTestEvents(content, eventId);
-        Map<StoredTestEventId, Set<StoredMessageId>> messages = restoreBatchMessages(testEventEntity, pageId.getBookId());
+        Map<StoredTestEventId, Set<StoredMessageId>> messages = restoreLwBatchMessages(testEventEntity, pageId.getBookId());
         return new LwStoredTestEventBatch(eventId, testEventEntity.getName(), testEventEntity.getType(), createParentId(testEventEntity),
                 children, messages, pageId, null, testEventEntity.getRecDate());
     }

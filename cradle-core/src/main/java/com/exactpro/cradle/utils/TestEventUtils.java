@@ -216,12 +216,20 @@ public class TestEventUtils {
         return EventMessageIdDeserializer.deserializeLinkedMessageIds(bytes, bookId);
     }
 
+    public static Set<StoredMessageId> deserializeLinkedMessageIds(ByteBuffer buffer, BookId bookId) throws IOException {
+        return EventMessageIdDeserializer.deserializeLinkedMessageIds(buffer, bookId);
+    }
+
     public static byte[] serializeLinkedMessageIds(Set<StoredMessageId> messageIds) throws IOException {
         return EventMessageIdSerializer.serializeLinkedMessageIds(messageIds);
     }
 
     public static Map<StoredTestEventId, Set<StoredMessageId>> deserializeBatchLinkedMessageIds(byte[] bytes, BookId bookId) throws IOException {
         return EventMessageIdDeserializer.deserializeBatchLinkedMessageIds(bytes, bookId);
+    }
+
+    public static Map<StoredTestEventId, Set<StoredMessageId>> deserializeBatchLinkedMessageIds(ByteBuffer buffer, BookId bookId) throws IOException {
+        return EventMessageIdDeserializer.deserializeBatchLinkedMessageIds(buffer, bookId);
     }
 
     public static byte[] serializeBatchLinkedMessageIds(Map<StoredTestEventId, Set<StoredMessageId>> ids) throws IOException {
