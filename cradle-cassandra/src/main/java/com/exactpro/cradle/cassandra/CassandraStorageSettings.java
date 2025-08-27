@@ -1,17 +1,17 @@
 /*
  * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.exactpro.cradle.cassandra;
@@ -68,6 +68,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
 
     public static final int DEFAULT_MAX_FAILED_EVENT_UPDATE_TIMEOUT_MS = 60 * 60 * 1_000;
     public static final int DEFAULT_MIN_FAILED_EVENT_UPDATE_TIMEOUT_MS = 100;
+    public static final boolean DEFAULT_ENABLE_LIGHT_WEIGHT_MODE = false;
 
     @JsonIgnore
     private NetworkTopologyStrategy networkTopologyStrategy;
@@ -110,6 +111,8 @@ public class CassandraStorageSettings extends CoreStorageSettings {
     private long initOperatorsDurationSeconds = DEFAULT_INIT_OPERATORS_DURATION_SECONDS;
     private long maxFailedEventUpdateTimeoutMs = DEFAULT_MAX_FAILED_EVENT_UPDATE_TIMEOUT_MS;
     private long minFailedEventUpdateTimeoutMs = DEFAULT_MIN_FAILED_EVENT_UPDATE_TIMEOUT_MS;
+
+    private boolean enableLightWeightMode = DEFAULT_ENABLE_LIGHT_WEIGHT_MODE;
 
     public CassandraStorageSettings() {
     }
@@ -175,6 +178,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
         this.initOperatorsDurationSeconds = settings.getInitOperatorsDurationSeconds();
         this.maxFailedEventUpdateTimeoutMs = settings.getMaxFailedEventUpdateTimeoutMs();
         this.minFailedEventUpdateTimeoutMs = settings.getMinFailedEventUpdateTimeoutMs();
+        this.enableLightWeightMode = settings.isEnableLightWeightMode();
     }
 
 
@@ -444,6 +448,14 @@ public class CassandraStorageSettings extends CoreStorageSettings {
         this.minFailedEventUpdateTimeoutMs = minFailedEventUpdateTimeoutMs;
     }
 
+    public boolean isEnableLightWeightMode() {
+        return enableLightWeightMode;
+    }
+
+    public void setEnableLightWeightMode(boolean enableLightWeightMode) {
+        this.enableLightWeightMode = enableLightWeightMode;
+    }
+
     @Override
     public String toString() {
         return "CassandraStorageSettings{" +
@@ -483,6 +495,7 @@ public class CassandraStorageSettings extends CoreStorageSettings {
                 ", initOperatorsDurationSeconds=" + initOperatorsDurationSeconds +
                 ", maxRescheduleFailedStatusEventUpdateTimeoutMillis=" + maxFailedEventUpdateTimeoutMs +
                 ", minRescheduleFailedStatusEventUpdateTimeoutMillis=" + minFailedEventUpdateTimeoutMs +
+                ", enableLightWeightMode=" + enableLightWeightMode +
                 '}';
     }
 }

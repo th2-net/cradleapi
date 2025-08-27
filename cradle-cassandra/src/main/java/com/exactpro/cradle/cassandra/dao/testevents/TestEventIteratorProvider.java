@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,6 @@ import java.util.function.Function;
 import static com.exactpro.cradle.cassandra.utils.FilterUtils.findFirstPage;
 import static com.exactpro.cradle.cassandra.utils.FilterUtils.findFirstTimestamp;
 import static com.exactpro.cradle.cassandra.utils.FilterUtils.findLastTimestamp;
-import static com.exactpro.cradle.cassandra.workers.EventsWorker.mapTestEventEntity;
 import static java.lang.Math.max;
 
 public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent> {
@@ -73,12 +72,14 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 	private final Iterator<PageInfo> pageProvider;
 	private final TestEventFilter filter;
 	private final FilterForGreater<Instant> leftBoundFilter;
+	private final TestEventEntityToStoredMapper mapper;
 
 	public TestEventIteratorProvider(String requestInfo, TestEventFilter filter, CassandraOperators operators, BookInfo book,
 									 ExecutorService composingService, SelectQueryExecutor selectQueryExecutor,
 									 EventBatchDurationWorker eventBatchDurationWorker,
 									 Function<BoundStatementBuilder, BoundStatementBuilder> readAttrs,
-									 Instant actualFrom) {
+									 Instant actualFrom,
+									 TestEventEntityToStoredMapper mapper) {
 		super(requestInfo);
 		this.op = operators.getTestEventOperator();
 		this.entityConverter = operators.getTestEventEntityConverter();
@@ -89,6 +90,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 		this.limit = filter.getLimit();
 		this.leftBoundFilter = createLeftBoundFilter(book, eventBatchDurationWorker, actualFrom, readAttrs, filter);
 		this.filter = filter;
+		this.mapper = mapper;
 
 		this.pageProvider = book.getPages(
 			// we must calculate the first timestamp by origin filter because
@@ -123,7 +125,7 @@ public class TestEventIteratorProvider extends IteratorProvider<StoredTestEvent>
 							getRequestInfo());
 					ConvertingIterator<TestEventEntity, StoredTestEvent> convertingIterator = new ConvertingIterator<>(
 							pagedIterator, entity ->
-							mapTestEventEntity(nextPage.getId(), entity));
+							mapper.convert(entity, nextPage.getId()));
 					FilteringIterator<StoredTestEvent> filteringIterator = new FilteringIterator<>(
 							convertingIterator,
 							convertedEntity -> !convertedEntity.getLastStartTimestamp().isBefore(actualFrom));

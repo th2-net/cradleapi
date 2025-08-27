@@ -48,7 +48,7 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.zip.DataFormatException;
+import java.util.concurrent.CompletionException;
 
 public class TestEventEntityUtils {
 
@@ -87,49 +87,55 @@ public class TestEventEntityUtils {
     private static final Metric singleEventMetric = new Metric(
             RESTORE_DURATION, DESERIALISATION_DURATION, CONTENT_SIZE, ITEMS_TOTAL, LABEL_SINGLE_EVENT);
 
-    public static StoredTestEvent toStoredTestEvent(TestEventEntity testEventEntity, PageId pageId)
-            throws IOException, CradleStorageException, DataFormatException, CradleIdException, CompressException {
-        StoredTestEventId eventId = createId(testEventEntity, pageId.getBookId());
-        LOGGER.trace("Creating test event '{}' from entity", eventId);
+    public static StoredTestEvent toStoredTestEvent(TestEventEntity testEventEntity, PageId pageId) {
+        try {
+            StoredTestEventId eventId = createId(testEventEntity, pageId.getBookId());
+            LOGGER.trace("Creating test event '{}' from entity", eventId);
 
-        long t0 = System.nanoTime();
-        byte[] content = restoreContent(testEventEntity, eventId);
-        int contentSize = content == null ? 0 : content.length;
-        long t1 = System.nanoTime();
-        double restoreSec = (t1 - t0) / 1_000_000_000.0;
-        if (testEventEntity.isEventBatch()) {
-            StoredTestEventBatch batch = toStoredTestEventBatch(testEventEntity, pageId, eventId, content);
-            double deserializationSec = (System.nanoTime() - t1) / 1_000_000_000.0;
-            batchMetric.inc(restoreSec, deserializationSec, contentSize, 1);
-            batchedEventMetric.inc(restoreSec, deserializationSec, contentSize, batch.getTestEventsCount());
-            return batch;
-        } else {
-            StoredTestEventSingle event = toStoredTestEventSingle(testEventEntity, pageId, eventId, content);
-            singleEventMetric.inc(restoreSec, (System.nanoTime() - t1) / 1_000_000_000.0, contentSize, 1);
-            return event;
+            long t0 = System.nanoTime();
+            byte[] content = restoreContent(testEventEntity, eventId);
+            int contentSize = content == null ? 0 : content.length;
+            long t1 = System.nanoTime();
+            double restoreSec = (t1 - t0) / 1_000_000_000.0;
+            if (testEventEntity.isEventBatch()) {
+                StoredTestEventBatch batch = toStoredTestEventBatch(testEventEntity, pageId, eventId, content);
+                double deserializationSec = (System.nanoTime() - t1) / 1_000_000_000.0;
+                batchMetric.inc(restoreSec, deserializationSec, contentSize, 1);
+                batchedEventMetric.inc(restoreSec, deserializationSec, contentSize, batch.getTestEventsCount());
+                return batch;
+            } else {
+                StoredTestEventSingle event = toStoredTestEventSingle(testEventEntity, pageId, eventId, content);
+                singleEventMetric.inc(restoreSec, (System.nanoTime() - t1) / 1_000_000_000.0, contentSize, 1);
+                return event;
+            }
+        } catch (IOException | CradleStorageException | CradleIdException | CompressException e) {
+            throw new CompletionException("Error while converting test event entity into Cradle test event", e);
         }
     }
 
-    public static StoredTestEvent toLwStoredTestEvent(TestEventEntity testEventEntity, PageId pageId)
-            throws IOException, CradleStorageException, CradleIdException, CompressException {
-        StoredTestEventId eventId = createId(testEventEntity, pageId.getBookId());
-        LOGGER.trace("Creating lw test event '{}' from entity", eventId);
+    public static StoredTestEvent toLwStoredTestEvent(TestEventEntity testEventEntity, PageId pageId) throws CompletionException {
+        try {
+            StoredTestEventId eventId = createId(testEventEntity, pageId.getBookId());
+            LOGGER.trace("Creating lw test event '{}' from entity", eventId);
 
-        long t0 = System.nanoTime();
-        ByteBuffer content = lwRestoreContent(testEventEntity, eventId);
-        int contentSize = content == null ? 0 : content.remaining();
-        long t1 = System.nanoTime();
-        double restoreSec = (t1 - t0) / 1_000_000_000.0;
-        if (testEventEntity.isEventBatch()) {
-            LwStoredTestEventBatch batch = toLwStoredTestEventBatch(testEventEntity, pageId, eventId, content);
-            double deserializationSec = (System.nanoTime() - t1) / 1_000_000_000.0;
-            batchMetric.inc(restoreSec, deserializationSec, contentSize, 1);
-            batchedEventMetric.inc(restoreSec, deserializationSec, contentSize, batch.getTestEventsCount());
-            return batch;
-        } else {
-            LwStoredTestEventSingle event = toLwStoredTestEventSingle(testEventEntity, pageId, eventId, content);
-            singleEventMetric.inc(restoreSec, (System.nanoTime() - t1) / 1_000_000_000.0, contentSize, 1);
-            return event;
+            long t0 = System.nanoTime();
+            ByteBuffer content = lwRestoreContent(testEventEntity, eventId);
+            int contentSize = content == null ? 0 : content.remaining();
+            long t1 = System.nanoTime();
+            double restoreSec = (t1 - t0) / 1_000_000_000.0;
+            if (testEventEntity.isEventBatch()) {
+                LwStoredTestEventBatch batch = toLwStoredTestEventBatch(testEventEntity, pageId, eventId, content);
+                double deserializationSec = (System.nanoTime() - t1) / 1_000_000_000.0;
+                batchMetric.inc(restoreSec, deserializationSec, contentSize, 1);
+                batchedEventMetric.inc(restoreSec, deserializationSec, contentSize, batch.getTestEventsCount());
+                return batch;
+            } else {
+                LwStoredTestEventSingle event = toLwStoredTestEventSingle(testEventEntity, pageId, eventId, content);
+                singleEventMetric.inc(restoreSec, (System.nanoTime() - t1) / 1_000_000_000.0, contentSize, 1);
+                return event;
+            }
+        } catch (IOException | CradleStorageException | CradleIdException | CompressException e) {
+            throw new CompletionException("Error while converting lw test event entity into Cradle test event", e);
         }
     }
 

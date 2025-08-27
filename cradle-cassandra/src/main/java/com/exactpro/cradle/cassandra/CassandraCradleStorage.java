@@ -68,6 +68,8 @@ import com.exactpro.cradle.cassandra.dao.testevents.PageScopeEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.PageScopesIteratorProvider;
 import com.exactpro.cradle.cassandra.dao.testevents.PageScopesOperator;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeEntity;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntityToStoredMapper;
+import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntityUtils;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
 import com.exactpro.cradle.cassandra.iterators.PagedIterator;
 import com.exactpro.cradle.cassandra.keyspaces.CradleInfoKeyspaceCreator;
@@ -237,7 +239,10 @@ public class CassandraCradleStorage extends CradleStorage
 			statisticsWorker = new StatisticsWorker(ws,
 					settings.getCounterPersistenceInterval(),
 					settings.getCounterPersistenceMaxParallelQueries());
-			eventsWorker = new EventsWorker(ws, statisticsWorker, eventBatchDurationWorker);
+			TestEventEntityToStoredMapper eventMapper = settings.isEnableLightWeightMode()
+					? TestEventEntityUtils::toLwStoredTestEvent
+					: TestEventEntityUtils::toStoredTestEvent;
+			eventsWorker = new EventsWorker(ws, statisticsWorker, eventBatchDurationWorker, eventMapper);
 			messagesWorker = new MessagesWorker(ws, statisticsWorker, statisticsWorker);
 			statisticsWorker.start();
 			intervalsWorker = new CassandraIntervalsWorker(ws);
