@@ -2,7 +2,7 @@
 th2-plugin = "0.3.6"
 
 [libraries]
-th2-bom = { group = "com.exactpro.th2", name = "bom", version = "4.13.2" }
+th2-bom = { group = "com.exactpro.th2", name = "bom", version = "4.14.1" }
 task-utils = { group = "com.exactpro.th2", name = "task-utils", version = "0.1.4" }
 caffeine = { group = "com.github.ben-manes.caffeine", name = "caffeine", version = "3.2.2" }
 simpleclient-dropwizard = { group = "io.prometheus", name = "simpleclient_dropwizard", version = "0.16.0" }
