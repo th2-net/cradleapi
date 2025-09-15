@@ -23,6 +23,7 @@ import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.SerializedEntity;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
+import com.exactpro.cradle.testevents.EventTestUtils;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
@@ -31,21 +32,15 @@ import com.exactpro.cradle.testevents.TestEventSingleToStoreBuilder;
 import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CompressException;
 import com.exactpro.cradle.utils.CompressionType;
-import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
-import org.assertj.core.api.Assertions;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.zip.DataFormatException;
 
 import static com.exactpro.cradle.cassandra.TestUtils.createContent;
 
@@ -96,52 +91,19 @@ public class TestEventEntityTest {
 
 
     @Test(dataProvider = "events")
-    public void eventEntity(TestEventToStore event) throws CradleStorageException, IOException, DataFormatException, CradleIdException, CompressException {
+    public void eventEntity(TestEventToStore event) throws IOException, CompressException {
         SerializedEntity<SerializedEntityMetadata, TestEventEntity> serializedEntity = TestEventEntityUtils.toSerializedEntity(event, page, CompressionType.ZLIB, 2000);
         TestEventEntity entity = serializedEntity.getEntity();
         StoredTestEvent newEvent = TestEventEntityUtils.toStoredTestEvent(entity, page);
 
-        RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
-        config.ignoreFieldsMatchingRegexes("pageId", ".*\\.pageId", "error", ".*\\.error", "recDate", ".*\\.recDate", "lastStartTimestamp", ".*\\.lastStartTimestamp");
-config.ignoreAllOverriddenEquals();
-        Assertions.assertThat(newEvent)
-                .usingRecursiveComparison(config)
-                .isEqualTo(event);
-    }
+        RecursiveComparisonConfiguration configuration = RecursiveComparisonConfiguration.builder()
+                .withIgnoredFieldsMatchingRegexes("pageId", ".*\\.pageId",
+                        "error", ".*\\.error",
+                        "recDate", ".*\\.recDate",
+                        "lastStartTimestamp", ".*\\.lastStartTimestamp")
+                .withIgnoreAllOverriddenEquals(true)
+                .build();
 
-    @Test(dataProvider = "events")
-    public void eventEntityToLw(TestEventToStore event) throws CradleStorageException, IOException, CradleIdException, CompressException {
-        SerializedEntity<SerializedEntityMetadata, TestEventEntity> serializedEntity = TestEventEntityUtils.toSerializedEntity(event, page, CompressionType.ZLIB, 2000);
-        TestEventEntity entity = serializedEntity.getEntity();
-        StoredTestEvent newEvent = TestEventEntityUtils.toLwStoredTestEvent(entity, page);
-
-        Comparator<Object> byteBufferVsArrayComparator = (a, b) -> {
-            byte[] left = toBytes(a);
-            byte[] right = toBytes(b);
-            return Arrays.equals(left, right) ? 0 : 1;
-        };
-
-        RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
-        config.ignoreFieldsMatchingRegexes("pageId", ".*\\.pageId", "error", ".*\\.error", "recDate", ".*\\.recDate", "lastStartTimestamp", ".*\\.lastStartTimestamp", "messages", ".*\\.messages", ".*\\.batch");
-        config.registerComparatorForType(byteBufferVsArrayComparator, ByteBuffer.class);
-        config.ignoreAllOverriddenEquals();
-        Assertions.assertThat(newEvent)
-                .usingRecursiveComparison(config)
-                .isEqualTo(event);
-    }
-
-    private static byte[] toBytes(Object o) {
-        if (o == null) {
-            return null;
-        } else if (o instanceof ByteBuffer) {
-            ByteBuffer copy = ((ByteBuffer)o).asReadOnlyBuffer();
-            byte[] arr = new byte[copy.remaining()];
-            copy.get(arr);
-            return arr;
-        } else if (o instanceof byte[]) {
-            return (byte[])o;
-        } else {
-            throw new IllegalArgumentException("Unsupported type: " + o);
-        }
+        EventTestUtils.assertEvents(newEvent, event, configuration);
     }
 }

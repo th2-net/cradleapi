@@ -184,13 +184,13 @@ public enum CompressionType {
         } else {
             BaseEncoding encoder = BaseEncoding.base16();
             throw new CompressException("Compression format is undetected. Decoded data: " + encoder.encode(data, 0, Math.min(10, data.length))
-                                        + ", supported formats: " + Arrays.stream(CompressionType.values())
-                                                    .map(type -> type.name() + ":[" + encoder.encode(type.getMagicBytes()) + "]")
-                                                    .collect(Collectors.joining(",")));
+                    + ", supported formats: " + Arrays.stream(CompressionType.values())
+                    .map(type -> type.name() + ":[" + encoder.encode(type.getMagicBytes()) + "]")
+                    .collect(Collectors.joining(",")));
         }
     }
 
-    public static ByteBuffer lwDecompressData(ByteBuffer src, ByteBuffer dest) throws CompressException {
+    public static ByteBuffer decompressData(ByteBuffer src, ByteBuffer dest) throws CompressException {
         if (src == null || src.remaining() == 0) {
             throw new CompressException("Data is empty or null");
         }
@@ -200,7 +200,8 @@ public enum CompressionType {
             }
         }
         BaseEncoding encoder = BaseEncoding.base16();
-        throw new CompressException("Compression format is undetected. Decoded data: " + encoder.encode(src.array(), 0, Math.min(10, src.remaining()))
+        throw new CompressException("Compression format is undetected. Decoded data: "
+                + encoder.encode(src.array(), 0, Math.min(10, src.remaining()))
                 + ", supported formats: " + Arrays.stream(CompressionType.values())
                 .map(type -> type.name() + ":[" + encoder.encode(type.getMagicBytes()) + "]")
                 .collect(Collectors.joining(",")));

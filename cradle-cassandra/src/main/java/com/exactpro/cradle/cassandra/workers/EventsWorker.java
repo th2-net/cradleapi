@@ -123,14 +123,10 @@ public class EventsWorker extends Worker {
 
     private static void updateEventReadMetrics(StoredTestEvent testEvent) {
         StreamLabel key = new StreamLabel(testEvent.getId().getBookId().getName(), testEvent.getScope());
-        if (testEvent.isSingle() || testEvent.isLwSingle()) {
+        if (testEvent.isSingle()) {
             EVENTS_READ_METRIC.inc(key);
-        } else {
-            if (testEvent.isBatch()) {
-                EVENTS_READ_METRIC.inc(key, testEvent.asBatch().getTestEventsCount());
-            } else if (testEvent.isLwBatch()) {
-                EVENTS_READ_METRIC.inc(key, testEvent.asLwBatch().getTestEventsCount());
-            }
+        } else if (testEvent.isBatch()) {
+            EVENTS_READ_METRIC.inc(key, testEvent.asBatch().getTestEventsCount());
         }
         EVENT_BATCHES_READ_METRIC.inc(key);
     }

@@ -16,8 +16,11 @@
 
 package com.exactpro.cradle.testevents;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.messages.StoredMessageId;
@@ -30,31 +33,48 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 	private final Instant endTimestamp;
 	private final boolean success;
 	private final Set<StoredMessageId> messages;
-	private final byte[] content;
-	
+	private final ByteBuffer contentBuffer;
+
+	private final int arrayOffset;
+	private final int remaining;
+	private final AtomicReference<byte[]> content = new AtomicReference<>();
+
 	public StoredTestEventSingle(StoredTestEventId id, String name, String type, StoredTestEventId parentId,
-			Instant endTimestamp, boolean success, byte[] eventContent, Set<StoredMessageId> eventMessages, PageId pageId, String error, Instant recDate)
-	{
+								 Instant endTimestamp, boolean success, ByteBuffer content,
+								 Set<StoredMessageId> eventMessages, PageId pageId, String error, Instant recDate) {
 		super(id, name, type, parentId, pageId, error, recDate);
 		
 		this.endTimestamp = endTimestamp;
 		this.success = success;
-		
-		if (eventContent == null)
-			this.content = null;
-		else
-		{
-			this.content = new byte[eventContent.length];
-			System.arraycopy(eventContent, 0, this.content, 0, this.content.length);
+
+		this.contentBuffer = content;
+		if (this.contentBuffer == null) {
+			arrayOffset = -1;
+			remaining = -1;
+		} else {
+			arrayOffset = this.contentBuffer.arrayOffset();
+			remaining = this.contentBuffer.remaining();
 		}
-		
-		this.messages = eventMessages != null && eventMessages.size() > 0 ? Collections.unmodifiableSet(new HashSet<>(eventMessages)) : null;
+
+		this.messages = eventMessages != null && !eventMessages.isEmpty() ? Set.copyOf(eventMessages) : null;
 	}
-	
-	public StoredTestEventSingle(TestEventSingle event, PageId pageId)
-	{
+
+	/**
+	 * @deprecated this api is deprecated by read performance reason.<br>
+	 * 				Migrate to {@link StoredTestEventSingle#StoredTestEventSingle(StoredTestEventId, String, String, StoredTestEventId, Instant, boolean, ByteBuffer, Set, PageId, String, Instant)}
+	 */
+	@Deprecated(since = "5.6.0")
+	public StoredTestEventSingle(StoredTestEventId id, String name, String type, StoredTestEventId parentId,
+								 Instant endTimestamp, boolean success, byte[] content,
+								 Set<StoredMessageId> eventMessages, PageId pageId, String error, Instant recDate) {
+		this(id, name, type, parentId, endTimestamp, success, ByteBuffer.wrap(content),
+				eventMessages, pageId, error, recDate);
+	}
+
+	public StoredTestEventSingle(TestEventSingle event, PageId pageId) {
 		this(event.getId(), event.getName(), event.getType(), event.getParentId(),
-				event.getEndTimestamp(), event.isSuccess(), event.getContent(), event.getMessages(), pageId, null, null);
+				event.getEndTimestamp(), event.isSuccess(), event.getContentBuffer(),
+				event.getMessages(), pageId, null, null);
 	}
 	
 	
@@ -77,9 +97,24 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 	}
 	
 	@Override
-	public byte[] getContent()
-	{
-		return content;
+	@Deprecated
+	public byte[] getContent() {
+		if (contentBuffer == null) { return null; }
+		return content.accumulateAndGet(null, (curr, x) -> {
+			if (curr == null) {
+				byte[] result = new byte[remaining];
+				contentBuffer.mark();
+				contentBuffer.get(result, arrayOffset, remaining);
+				contentBuffer.reset();
+				return result;
+			}
+			return curr;
+		});
+	}
+
+	@Override
+	public ByteBuffer getContentBuffer() {
+		return contentBuffer;
 	}
 
 	@Override
@@ -107,11 +142,13 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 
 	@Override
 	public String toString() {
+		String contentAsText = contentBuffer == null
+				? null : StandardCharsets.UTF_8.decode(contentBuffer.asReadOnlyBuffer()).toString();
 		return "StoredTestEventSingle{" +
 				"endTimestamp=" + endTimestamp +
 				", success=" + success +
 				", messages=" + messages +
-				", content=" + Arrays.toString(content) +
+				", content=" + contentAsText +
 				'}';
 	}
 }

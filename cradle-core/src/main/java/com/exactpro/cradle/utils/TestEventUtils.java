@@ -34,7 +34,6 @@ import com.exactpro.cradle.testevents.TestEventBatch;
 import com.exactpro.cradle.testevents.TestEventSingle;
 import com.exactpro.cradle.testevents.TestEventSingleToStore;
 import com.exactpro.cradle.testevents.TestEventToStore;
-import com.exactpro.cradle.testevents.lw.LwBatchedStoredTestEvent;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,40 +145,19 @@ public class TestEventUtils {
     /**
      * Deserializes test events from given bytes
      *
-     * @param contentBytes to deserialize events from
+     * @param content      to deserialize events from
      * @param id           is batchId
-     * @return collection of deserialized test events
+     * @return collection  of deserialized test events
      * @throws IOException if deserialization failed
      */
-    public static Collection<BatchedStoredTestEvent> deserializeTestEvents(byte[] contentBytes, StoredTestEventId id)
-            throws IOException {
-        return deserializer.deserializeBatchEntries(contentBytes, new EventBatchCommonParams(id));
-    }
-
-    public static Collection<LwBatchedStoredTestEvent> deserializeLwTestEvents(@Nonnull ByteBuffer content, StoredTestEventId id)
+    public static Collection<BatchedStoredTestEvent> deserializeTestEvents(@Nonnull ByteBuffer content, StoredTestEventId id)
             throws IOException {
         content.mark();
         try {
-            return deserializer.deserializeLwBatchEntries(content, new EventBatchCommonParams(id));
+            return deserializer.deserializeBatchEntries(content, new EventBatchCommonParams(id));
         } finally {
             content.reset();
         }
-    }
-
-
-    /**
-     * Decompresses given ByteBuffer and deserializes test events
-     *
-     * @param content    to deserialize events from
-     * @param eventId    batch id. Required to specify common event params like bookId, scope
-     * @param compressed flag that indicates if content needs to be decompressed first
-     * @return collection of deserialized test events
-     * @throws IOException if deserialization failed
-     */
-    public static Collection<BatchedStoredTestEvent> bytesToTestEvents(ByteBuffer content, StoredTestEventId eventId, boolean compressed)
-            throws IOException, CompressException {
-        byte[] contentBytes = getTestEventContentBytes(content, compressed);
-        return deserializeTestEvents(contentBytes, eventId);
     }
 
     public static byte[] getTestEventContentBytes(ByteBuffer content, boolean compressed) throws CompressException {

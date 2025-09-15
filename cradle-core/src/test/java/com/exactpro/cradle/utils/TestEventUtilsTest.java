@@ -24,6 +24,7 @@ import com.exactpro.cradle.testevents.TestEventSingleToStoreBuilder;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.time.Instant;
 
 public class TestEventUtilsTest {
@@ -47,7 +48,8 @@ public class TestEventUtilsTest {
                 .parentId(parentId)
                 .build());
 
-        byte[] bytes = TestEventUtils.serializeTestEvents(batch.getTestEvents()).getSerializedData();
+        ByteBuffer bytes = ByteBuffer.wrap(
+                TestEventUtils.serializeTestEvents(batch.getTestEvents()).getSerializedData());
         TestEventUtils.deserializeTestEvents(bytes, batchId);
     }
 }

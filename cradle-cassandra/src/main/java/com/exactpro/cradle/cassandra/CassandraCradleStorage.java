@@ -239,9 +239,7 @@ public class CassandraCradleStorage extends CradleStorage
 			statisticsWorker = new StatisticsWorker(ws,
 					settings.getCounterPersistenceInterval(),
 					settings.getCounterPersistenceMaxParallelQueries());
-			TestEventEntityToStoredMapper eventMapper = settings.isEnableLightWeightMode()
-					? TestEventEntityUtils::toLwStoredTestEvent
-					: TestEventEntityUtils::toStoredTestEvent;
+			TestEventEntityToStoredMapper eventMapper = TestEventEntityUtils::toStoredTestEvent;
 			eventsWorker = new EventsWorker(ws, statisticsWorker, eventBatchDurationWorker, eventMapper);
 			messagesWorker = new MessagesWorker(ws, statisticsWorker, statisticsWorker);
 			statisticsWorker.start();

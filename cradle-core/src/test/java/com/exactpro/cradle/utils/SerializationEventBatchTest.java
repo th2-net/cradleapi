@@ -68,6 +68,7 @@ public class SerializationEventBatchTest {
 		byte[] serialize = serializer.serializeEventRecord(build);
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
 		BatchedStoredTestEvent deserialize = deserializer.deserializeBatchEntry(serialize, commonParams);
+		deserialize.getContent(); // call to init deprecated content
 		Assertions.assertThat(deserialize).usingRecursiveComparison().isEqualTo(build);
 	}
 
@@ -80,6 +81,9 @@ public class SerializationEventBatchTest {
 		byte[] serialize = serializer.serializeEventBatch(build).getSerializedData();
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
 		List<BatchedStoredTestEvent> deserialize = deserializer.deserializeBatchEntries(serialize, commonParams);
+		for (BatchedStoredTestEvent batchedStoredTestEvent : deserialize) {
+			batchedStoredTestEvent.getContent(); // call to init deprecated content
+		}
 		Assertions.assertThat(build).usingRecursiveFieldByFieldElementComparator().isEqualTo(deserialize);
 	}
 
@@ -93,6 +97,7 @@ public class SerializationEventBatchTest {
 		byte[] serialized = serializer.serializeEventRecord(build);
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
 		BatchedStoredTestEvent deserialized = deserializer.deserializeBatchEntry(serialized, commonParams);
+		deserialized.getContent(); // call to init deprecated content
 		Assertions.assertThat(deserialized).usingRecursiveComparison().isEqualTo(build);
 	}
 

@@ -19,7 +19,6 @@ package com.exactpro.cradle.serialization;
 import com.exactpro.cradle.testevents.BatchedStoredTestEvent;
 import com.exactpro.cradle.testevents.BatchedStoredTestEventBuilder;
 import com.exactpro.cradle.testevents.StoredTestEventId;
-import com.exactpro.cradle.testevents.lw.LwBatchedStoredTestEvent;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -68,31 +67,6 @@ public class EventBatchDeserializer {
 		return eventList;
 	}
 
-	public List<LwBatchedStoredTestEvent> deserializeLwBatchEntries(ByteBuffer buffer, EventBatchCommonParams common)
-			throws SerializationException {
-		int magicNumber = buffer.getInt();
-		if (magicNumber != EVENT_BATCH_MAGIC) {
-			throw SerializationUtils.incorrectMagicNumber("EVENT_BATCH", magicNumber, EVENT_BATCH_MAGIC);
-		}
-
-		byte protocolVer = buffer.get();
-		if (protocolVer != EVENT_BATCH_PROTOCOL_VER) {
-			throw new SerializationException(String.format(NOT_SUPPORTED_PROTOCOL_FORMAT, "event batches",
-					protocolVer, EVENT_BATCH_PROTOCOL_VER));
-		}
-
-		int batchesCount = buffer.getInt();
-		List<LwBatchedStoredTestEvent> eventList = new ArrayList<>(batchesCount);
-		for (int i = 0; i < batchesCount; ++i) {
-			int msgLen = buffer.getInt();
-			ByteBuffer msgBuf = ByteBuffer.wrap(buffer.array(), buffer.position(), msgLen);
-			LwBatchedStoredTestEvent batchedStoredTestEvent = this.deserializeLwBatchEntry(msgBuf, common);
-			buffer.position(buffer.position() + msgLen);
-			eventList.add(batchedStoredTestEvent);
-		}
-		return eventList;
-	}
-
 	public BatchedStoredTestEvent deserializeBatchEntry(byte[] buffer, EventBatchCommonParams common) throws SerializationException {
 		return this.deserializeBatchEntry(ByteBuffer.wrap(buffer), common);
 	}
@@ -120,26 +94,8 @@ public class EventBatchDeserializer {
 		eventBuilder.setParentId(readId(common, buffer));
 		eventBuilder.setEndTimestamp(readInstant(buffer));
 		eventBuilder.setSuccess(readSingleBoolean(buffer));
-		eventBuilder.setContent(readBody(buffer));
+		eventBuilder.setContent(readBufferedBody(buffer));
 
 		return eventBuilder.build();
-	}
-
-	public LwBatchedStoredTestEvent deserializeLwBatchEntry(ByteBuffer buffer, EventBatchCommonParams common) throws SerializationException {
-		short magicNumber = buffer.getShort();
-		if (magicNumber != EVENT_BATCH_ENT_MAGIC) {
-			throw SerializationUtils.incorrectMagicNumber(LwBatchedStoredTestEvent.class.getSimpleName(), magicNumber, EVENT_BATCH_ENT_MAGIC);
-		}
-
-		StoredTestEventId id = readId(common, buffer);
-		String name = readString(buffer);
-		String type = readString(buffer);
-		StoredTestEventId parentId = readId(common, buffer);
-		Instant endTimestamp = readInstant(buffer);
-		boolean success = readSingleBoolean(buffer);
-		ByteBuffer content = readBufferedBody(buffer);
-
-		return new LwBatchedStoredTestEvent(id, name, type, parentId,
-				endTimestamp, success, content, null, null);
 	}
 }

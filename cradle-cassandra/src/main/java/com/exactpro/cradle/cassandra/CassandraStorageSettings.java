@@ -68,7 +68,6 @@ public class CassandraStorageSettings extends CoreStorageSettings {
 
     public static final int DEFAULT_MAX_FAILED_EVENT_UPDATE_TIMEOUT_MS = 60 * 60 * 1_000;
     public static final int DEFAULT_MIN_FAILED_EVENT_UPDATE_TIMEOUT_MS = 100;
-    public static final boolean DEFAULT_ENABLE_LIGHT_WEIGHT_MODE = false;
 
     @JsonIgnore
     private NetworkTopologyStrategy networkTopologyStrategy;
@@ -111,8 +110,6 @@ public class CassandraStorageSettings extends CoreStorageSettings {
     private long initOperatorsDurationSeconds = DEFAULT_INIT_OPERATORS_DURATION_SECONDS;
     private long maxFailedEventUpdateTimeoutMs = DEFAULT_MAX_FAILED_EVENT_UPDATE_TIMEOUT_MS;
     private long minFailedEventUpdateTimeoutMs = DEFAULT_MIN_FAILED_EVENT_UPDATE_TIMEOUT_MS;
-
-    private boolean enableLightWeightMode = DEFAULT_ENABLE_LIGHT_WEIGHT_MODE;
 
     public CassandraStorageSettings() {
     }
@@ -178,7 +175,6 @@ public class CassandraStorageSettings extends CoreStorageSettings {
         this.initOperatorsDurationSeconds = settings.getInitOperatorsDurationSeconds();
         this.maxFailedEventUpdateTimeoutMs = settings.getMaxFailedEventUpdateTimeoutMs();
         this.minFailedEventUpdateTimeoutMs = settings.getMinFailedEventUpdateTimeoutMs();
-        this.enableLightWeightMode = settings.isEnableLightWeightMode();
     }
 
 
@@ -448,14 +444,6 @@ public class CassandraStorageSettings extends CoreStorageSettings {
         this.minFailedEventUpdateTimeoutMs = minFailedEventUpdateTimeoutMs;
     }
 
-    public boolean isEnableLightWeightMode() {
-        return enableLightWeightMode;
-    }
-
-    public void setEnableLightWeightMode(boolean enableLightWeightMode) {
-        this.enableLightWeightMode = enableLightWeightMode;
-    }
-
     @Override
     public String toString() {
         return "CassandraStorageSettings{" +
@@ -495,7 +483,6 @@ public class CassandraStorageSettings extends CoreStorageSettings {
                 ", initOperatorsDurationSeconds=" + initOperatorsDurationSeconds +
                 ", maxRescheduleFailedStatusEventUpdateTimeoutMillis=" + maxFailedEventUpdateTimeoutMs +
                 ", minRescheduleFailedStatusEventUpdateTimeoutMillis=" + minFailedEventUpdateTimeoutMs +
-                ", enableLightWeightMode=" + enableLightWeightMode +
                 '}';
     }
 }

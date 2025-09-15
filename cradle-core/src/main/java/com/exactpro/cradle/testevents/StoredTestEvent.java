@@ -17,8 +17,6 @@
 package com.exactpro.cradle.testevents;
 
 import com.exactpro.cradle.PageId;
-import com.exactpro.cradle.testevents.lw.LwStoredTestEventBatch;
-import com.exactpro.cradle.testevents.lw.LwStoredTestEventSingle;
 import com.exactpro.cradle.utils.CradleStorageException;
 
 import java.time.Instant;
@@ -110,36 +108,20 @@ public abstract class StoredTestEvent implements TestEvent
 	{
 		return this instanceof StoredTestEventSingle;
 	}
-	public final boolean isLwSingle()
-	{
-		return this instanceof LwStoredTestEventSingle;
-	}
 
 	public final boolean isBatch()
 	{
 		return this instanceof StoredTestEventBatch;
-	}
-	public final boolean isLwBatch()
-	{
-		return this instanceof LwStoredTestEventBatch;
 	}
 
 	public final StoredTestEventSingle asSingle()
 	{
 		return (StoredTestEventSingle)this;
 	}
-	public final LwStoredTestEventSingle asLwSingle()
-	{
-		return (LwStoredTestEventSingle)this;
-	}
 
 	public final StoredTestEventBatch asBatch()
 	{
 		return (StoredTestEventBatch)this;
-	}
-	public final LwStoredTestEventBatch asLwBatch()
-	{
-		return (LwStoredTestEventBatch)this;
 	}
 
 	public abstract Instant getLastStartTimestamp();

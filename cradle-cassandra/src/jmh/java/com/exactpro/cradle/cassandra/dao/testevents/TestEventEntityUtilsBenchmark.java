@@ -117,19 +117,7 @@ public class TestEventEntityUtilsBenchmark {
 
     @Benchmark
     @BenchmarkMode(Throughput)
-    public void benchmarkDeserializeLwEvent(Blackhole blackhole, TestEventEntityState state) {
-        blackhole.consume(TestEventEntityUtils.toLwStoredTestEvent(state.eventEntity, PAGE_ID));
-    }
-
-    @Benchmark
-    @BenchmarkMode(Throughput)
     public void benchmarkDeserializeBatch(Blackhole blackhole, TestEventEntityState state) {
         blackhole.consume(TestEventEntityUtils.toStoredTestEvent(state.batchEntity, PAGE_ID));
-    }
-
-    @Benchmark
-    @BenchmarkMode(Throughput)
-    public void benchmarkDeserializeLwBatch(Blackhole blackhole, TestEventEntityState state) {
-        blackhole.consume(TestEventEntityUtils.toLwStoredTestEvent(state.batchEntity, PAGE_ID));
     }
 }

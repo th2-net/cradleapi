@@ -32,6 +32,7 @@ import org.openjdk.jmh.infra.Blackhole;
 import org.testcontainers.shaded.org.apache.commons.lang3.RandomStringUtils;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -51,7 +52,7 @@ public class TestEventUtilsBenchmark {
         private StoredTestEventId batchId;
         private TestEventBatchToStore batch;
         private TestEventSingleToStore event;
-        private byte[] serializedEventBatch;
+        private ByteBuffer serializedEventBatch;
 
         @Param({"1024", "256000", "512000"})
         public int bodySize = 0;
@@ -80,7 +81,8 @@ public class TestEventUtilsBenchmark {
 
             batch.addTestEvent(event);
 
-            serializedEventBatch = TestEventUtils.serializeTestEvents(batch.getTestEvents()).getSerializedData();
+            serializedEventBatch = ByteBuffer.wrap(
+                    TestEventUtils.serializeTestEvents(batch.getTestEvents()).getSerializedData());
         }
     }
 
