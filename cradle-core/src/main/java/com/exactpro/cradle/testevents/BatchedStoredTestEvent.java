@@ -160,20 +160,26 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 		if (this == o) return true;
 		if (!(o instanceof BatchedStoredTestEvent)) return false;
 		BatchedStoredTestEvent that = (BatchedStoredTestEvent) o;
-		return isSuccess() == that.isSuccess()
-				&& Objects.equals(getId(), that.getId())
-				&& Objects.equals(getName(), that.getName())
-				&& Objects.equals(getType(), that.getType())
-				&& Objects.equals(getParentId(), that.getParentId())
-				&& Objects.equals(getEndTimestamp(), that.getEndTimestamp())
-				&& Arrays.equals(getContent(), that.getContent())
-				&& Objects.equals(getPageId(), that.getPageId());
+		return Objects.equals(id, that.id)
+				&& Objects.equals(parentId, that.parentId)
+				&& Objects.equals(pageId, that.pageId)
+				&& Objects.equals(name, that.name)
+				&& Objects.equals(type, that.type)
+				&& Objects.equals(endTimestamp, that.endTimestamp)
+				&& success == that.success
+				&& Objects.equals(contentBuffer, that.contentBuffer);
 	}
 
 	@Override
 	public int hashCode() {
-		int result = Objects.hash(getId(), getName(), getType(), getParentId(), getEndTimestamp(), isSuccess(), getPageId());
-		result = 31 * result + Arrays.hashCode(getContent());
+		int result = Objects.hashCode(getId());
+		result = 31 * result + Objects.hashCode(parentId);
+		result = 31 * result + Objects.hashCode(pageId);
+		result = 31 * result + Objects.hashCode(name);
+		result = 31 * result + Objects.hashCode(type);
+		result = 31 * result + Objects.hashCode(endTimestamp);
+		result = 31 * result + Objects.hashCode(success);
+		result = 31 * result + Objects.hashCode(contentBuffer);
 		return result;
 	}
 

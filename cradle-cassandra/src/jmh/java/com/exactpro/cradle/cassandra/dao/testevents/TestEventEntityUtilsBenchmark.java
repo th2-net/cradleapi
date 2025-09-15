@@ -29,6 +29,7 @@ import com.exactpro.cradle.testevents.TestEventSingleToStore;
 import com.exactpro.cradle.testevents.TestEventSingleToStoreBuilder;
 import com.exactpro.cradle.utils.CompressException;
 import com.exactpro.cradle.utils.CompressionType;
+import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -111,13 +112,13 @@ public class TestEventEntityUtilsBenchmark {
 
     @Benchmark
     @BenchmarkMode(Throughput)
-    public void benchmarkDeserializeEvent(Blackhole blackhole, TestEventEntityState state) {
+    public void benchmarkDeserializeEvent(Blackhole blackhole, TestEventEntityState state) throws CradleStorageException, IOException, CompressException, CradleIdException {
         blackhole.consume(TestEventEntityUtils.toStoredTestEvent(state.eventEntity, PAGE_ID));
     }
 
     @Benchmark
     @BenchmarkMode(Throughput)
-    public void benchmarkDeserializeBatch(Blackhole blackhole, TestEventEntityState state) {
+    public void benchmarkDeserializeBatch(Blackhole blackhole, TestEventEntityState state) throws CradleStorageException, IOException, CompressException, CradleIdException {
         blackhole.consume(TestEventEntityUtils.toStoredTestEvent(state.batchEntity, PAGE_ID));
     }
 }

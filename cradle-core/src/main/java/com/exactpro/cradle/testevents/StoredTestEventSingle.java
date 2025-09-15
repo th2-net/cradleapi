@@ -118,19 +118,21 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (!(o instanceof StoredTestEventSingle)) return false;
-		StoredTestEventSingle single = (StoredTestEventSingle) o;
-		return isSuccess() == single.isSuccess()
-				&& Objects.equals(getEndTimestamp(), single.getEndTimestamp())
-				&& Objects.equals(getMessages(), single.getMessages())
-				&& Arrays.equals(getContent(), single.getContent());
+		if (o == null || getClass() != o.getClass()) return false;
+
+		StoredTestEventSingle that = (StoredTestEventSingle) o;
+		return Objects.equals(endTimestamp, that.endTimestamp)
+				&& success == that.success
+				&& Objects.equals(messages, that.messages)
+				&& Objects.equals(contentBuffer, that.contentBuffer);
 	}
 
 	@Override
 	public int hashCode() {
-		int result = Objects.hash(getEndTimestamp(), isSuccess(), getMessages());
-		result = 31 * result + Arrays.hashCode(getContent());
+		int result = Objects.hashCode(endTimestamp);
+		result = 31 * result + Boolean.hashCode(success);
+		result = 31 * result + Objects.hashCode(messages);
+		result = 31 * result + Objects.hashCode(contentBuffer);
 		return result;
 	}
 

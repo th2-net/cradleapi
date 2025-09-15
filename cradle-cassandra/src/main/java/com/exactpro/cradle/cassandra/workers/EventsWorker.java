@@ -223,7 +223,9 @@ public class EventsWorker extends Worker {
                         return null;
 
                     try {
-                        return TestEventEntityUtils.toStoredTestEvent(entity, pageId);
+                        StoredTestEvent testEvent = TestEventEntityUtils.toStoredTestEvent(entity, pageId);
+                        updateEventReadMetrics(testEvent);
+                        return  testEvent;
                     } catch (Exception e) {
                         throw new CompletionException("Error while converting data of event " + id + " into test event", e);
                     }
