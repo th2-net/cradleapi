@@ -145,6 +145,22 @@ public class TestEventUtils {
     /**
      * Deserializes test events from given bytes
      *
+     * @param contentBytes to deserialize events from
+     * @param id           is batchId
+     * @return collection of deserialized test events
+     * @throws IOException if deserialization failed
+     * @deprecated this api is deprecated by read performance reason.<br>
+     * 	 * 				Migrate to {@link #deserializeTestEvents(ByteBuffer, StoredTestEventId)}
+     */
+    @Deprecated(since = "5.6.0")
+    public static Collection<BatchedStoredTestEvent> deserializeTestEvents(byte[] contentBytes, StoredTestEventId id)
+            throws IOException {
+        return deserializer.deserializeBatchEntries(contentBytes, new EventBatchCommonParams(id));
+    }
+
+    /**
+     * Deserializes test events from given bytes
+     *
      * @param content      to deserialize events from
      * @param id           is batchId
      * @return collection  of deserialized test events
@@ -158,6 +174,22 @@ public class TestEventUtils {
         } finally {
             content.reset();
         }
+    }
+
+    /**
+     * Decompresses given ByteBuffer and deserializes test events
+     *
+     * @param content    to deserialize events from
+     * @param eventId    batch id. Required to specify common event params like bookId, scope
+     * @param compressed flag that indicates if content needs to be decompressed first
+     * @return collection of deserialized test events
+     * @throws IOException if deserialization failed
+     */
+    @Deprecated(since = "5.6.0")
+    public static Collection<BatchedStoredTestEvent> bytesToTestEvents(ByteBuffer content, StoredTestEventId eventId, boolean compressed)
+            throws IOException, CompressException {
+        byte[] contentBytes = getTestEventContentBytes(content, compressed);
+        return deserializeTestEvents(contentBytes, eventId);
     }
 
     public static byte[] getTestEventContentBytes(ByteBuffer content, boolean compressed) throws CompressException {
@@ -190,6 +222,11 @@ public class TestEventUtils {
         return EventMessageIdSerializer.serializeLinkedMessageIds(event.asSingle().getMessages());
     }
 
+    /**
+     * @deprecated this api is deprecated by read performance reason.<br>
+     * 				Migrate to {@link #deserializeLinkedMessageIds(ByteBuffer, BookId)}
+     */
+    @Deprecated(since = "5.6.0")
     public static Set<StoredMessageId> deserializeLinkedMessageIds(byte[] bytes, BookId bookId) throws IOException {
         return EventMessageIdDeserializer.deserializeLinkedMessageIds(bytes, bookId);
     }
@@ -202,10 +239,15 @@ public class TestEventUtils {
         return EventMessageIdSerializer.serializeLinkedMessageIds(messageIds);
     }
 
+    /**
+     * @deprecated this api is deprecated by read performance reason.<br>
+     * 				Migrate to {@link #deserializeBatchLinkedMessageIds(ByteBuffer, BookId)}
+     */
+    @Deprecated(since = "5.6.0")
     public static Map<StoredTestEventId, Set<StoredMessageId>> deserializeBatchLinkedMessageIds(byte[] bytes, BookId bookId) throws IOException {
         return EventMessageIdDeserializer.deserializeBatchLinkedMessageIds(bytes, bookId);
     }
-
+    
     public static Map<StoredTestEventId, Set<StoredMessageId>> deserializeBatchLinkedMessageIds(ByteBuffer buffer, BookId bookId) throws IOException {
         return EventMessageIdDeserializer.deserializeBatchLinkedMessageIds(buffer, bookId);
     }

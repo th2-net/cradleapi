@@ -30,7 +30,12 @@ public class CradleSerializationUtils
 		dos.writeShort(bytes.length);
 		dos.write(bytes);
 	}
-	
+
+	/**
+	 * @deprecated this api is deprecated by read performance reason.<br>
+	 * 				Migrate to {@link #readString(ByteBuffer)}
+	 */
+	@Deprecated(since = "5.6.0")
 	public static String readString(DataInputStream dis) throws IOException
 	{
 		int length = dis.readShort();
@@ -52,7 +57,12 @@ public class CradleSerializationUtils
 		dos.writeLong(i.getEpochSecond());
 		dos.writeInt(i.getNano());
 	}
-	
+
+	/**
+	 * @deprecated this api is deprecated by read performance reason.<br>
+	 * 				Migrate to {@link #readInstant(ByteBuffer)}
+	 */
+	@Deprecated(since = "5.6.0")
 	public static Instant readInstant(DataInputStream dis) throws IOException
 	{
 		return Instant.ofEpochSecond(dis.readLong(), dis.readInt());

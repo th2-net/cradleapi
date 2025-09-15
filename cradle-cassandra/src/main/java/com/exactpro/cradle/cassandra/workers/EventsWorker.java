@@ -29,7 +29,6 @@ import com.exactpro.cradle.cassandra.dao.cache.CachedScope;
 import com.exactpro.cradle.cassandra.dao.testevents.PageScopeEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.ScopeEntity;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntity;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntityToStoredMapper;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntityUtils;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventIteratorProvider;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventOperator;
@@ -41,6 +40,8 @@ import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventFilter;
 import com.exactpro.cradle.testevents.TestEventToStore;
+import com.exactpro.cradle.utils.CompressException;
+import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TimeUtils;
 import io.prometheus.client.Counter;
@@ -48,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -106,19 +108,21 @@ public class EventsWorker extends Worker {
 
     private final EntityStatisticsCollector entityStatisticsCollector;
     private final EventBatchDurationWorker durationWorker;
-    private final TestEventEntityToStoredMapper mapper;
 
-    public EventsWorker(WorkerSupplies workerSupplies, EntityStatisticsCollector entityStatisticsCollector, EventBatchDurationWorker durationWorker, TestEventEntityToStoredMapper mapper) {
+    public EventsWorker(WorkerSupplies workerSupplies, EntityStatisticsCollector entityStatisticsCollector, EventBatchDurationWorker durationWorker) {
         super(workerSupplies);
         this.entityStatisticsCollector = entityStatisticsCollector;
         this.durationWorker = durationWorker;
-        this.mapper = mapper;
     }
 
-    private StoredTestEvent mapTestEventEntity(TestEventEntity entity, PageId pageId) {
-        StoredTestEvent testEvent = mapper.convert(entity, pageId);
-        updateEventReadMetrics(testEvent);
-        return testEvent;
+    public static StoredTestEvent mapTestEventEntity(PageId pageId, TestEventEntity entity) {
+        try {
+            StoredTestEvent testEvent = TestEventEntityUtils.toStoredTestEvent(entity, pageId);
+            updateEventReadMetrics(testEvent);
+            return testEvent;
+        } catch (CradleStorageException | CradleIdException | IOException | CompressException e) {
+            throw new CompletionException("Error while converting test event entity into Cradle test event", e);
+        }
     }
 
     private static void updateEventReadMetrics(StoredTestEvent testEvent) {
@@ -219,7 +223,7 @@ public class EventsWorker extends Worker {
                         return null;
 
                     try {
-                        return mapTestEventEntity(entity, pageId);
+                        return TestEventEntityUtils.toStoredTestEvent(entity, pageId);
                     } catch (Exception e) {
                         throw new CompletionException("Error while converting data of event " + id + " into test event", e);
                     }
@@ -243,8 +247,7 @@ public class EventsWorker extends Worker {
                 filter, getOperators(), book, composingService, selectQueryExecutor,
                 durationWorker,
                 composeReadAttrs(filter.getFetchParameters()),
-                startTimestamp,
-                this::mapTestEventEntity);
+                startTimestamp);
         return provider.nextIterator()
                 .thenApply(r -> new CassandraCradleResultSet<>(r, provider));
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,8 +42,6 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 	private final boolean success;
 	private final ByteBuffer contentBuffer;
 
-	private final int arrayOffset;
-	private final int remaining;
 	private final AtomicReference<byte[]> content = new AtomicReference<>();
 
 	private final transient TestEventBatch batch;
@@ -63,13 +61,10 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 		this.parentId = parentId;
 		this.endTimestamp = endTimestamp;
 		this.success = success;
-		this.contentBuffer = content;
-		if (this.contentBuffer == null) {
-			arrayOffset = -1;
-			remaining = -1;
+		if (content == null) {
+			this.contentBuffer = null;
 		} else {
-			arrayOffset = this.contentBuffer.arrayOffset();
-			remaining = this.contentBuffer.remaining();
+			this.contentBuffer = content.isReadOnly() ? content : content.asReadOnlyBuffer();
 		}
 		this.batch = batch;
 		this.pageId = pageId;
@@ -125,10 +120,9 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 		if (contentBuffer == null) { return null; }
 		return content.accumulateAndGet(null, (curr, x) -> {
 			if (curr == null) {
-				byte[] result = new byte[remaining];
-				contentBuffer.mark();
-				contentBuffer.get(result, arrayOffset, remaining);
-				contentBuffer.reset();
+				ByteBuffer buffer = getContentBuffer();
+				byte[] result = new byte[buffer.remaining()];
+				buffer.get(result);
 				return result;
 			}
 			return curr;
@@ -137,7 +131,7 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 
 	@Override
 	public ByteBuffer getContentBuffer() {
-		return contentBuffer;
+		return contentBuffer == null ? null : contentBuffer.asReadOnlyBuffer();
 	}
 
 

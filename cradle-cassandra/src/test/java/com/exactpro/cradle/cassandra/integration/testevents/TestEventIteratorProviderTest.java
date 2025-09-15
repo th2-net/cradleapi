@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import com.exactpro.cradle.cassandra.EventBatchDurationWorker;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapper;
 import com.exactpro.cradle.cassandra.dao.CassandraDataMapperBuilder;
 import com.exactpro.cradle.cassandra.dao.CassandraOperators;
-import com.exactpro.cradle.cassandra.dao.testevents.TestEventEntityUtils;
 import com.exactpro.cradle.cassandra.dao.testevents.TestEventIteratorProvider;
 import com.exactpro.cradle.cassandra.integration.BaseCradleCassandraTest;
 import com.exactpro.cradle.cassandra.integration.CassandraCradleHelper;
@@ -160,8 +159,7 @@ public class TestEventIteratorProviderTest extends BaseCradleCassandraTest {
                     new SelectQueryExecutor(session, composingService, new PageSizeAdjustingPolicy(1, 2), null),
                     eventBatchDurationWorker,
                     storage.getReadAttrs(),
-                    actualFrom,
-                    TestEventEntityUtils::toStoredTestEvent); // TODO: Implement other mode
+                    actualFrom);
         } catch (CradleStorageException e) {
             logger.error(e.getMessage(), e);
             throw e;

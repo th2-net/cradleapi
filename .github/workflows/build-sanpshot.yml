@@ -13,8 +13,6 @@ jobs:
     uses: th2-net/.github/.github/workflows/compound-java-dev.yml@main
     with:
       build-target: 'Sonatype'
-      scanner-enabled: false # FIXME: remove this option before merge
-      strict-scanner: false # FIXME: remove this option before merge
       integration-test-enabled: true
       integration-test-projects: "['cradle-cassandra']"
     secrets:

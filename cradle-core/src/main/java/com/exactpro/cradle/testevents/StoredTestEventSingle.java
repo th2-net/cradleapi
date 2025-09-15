@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,8 +35,6 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 	private final Set<StoredMessageId> messages;
 	private final ByteBuffer contentBuffer;
 
-	private final int arrayOffset;
-	private final int remaining;
 	private final AtomicReference<byte[]> content = new AtomicReference<>();
 
 	public StoredTestEventSingle(StoredTestEventId id, String name, String type, StoredTestEventId parentId,
@@ -47,13 +45,10 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 		this.endTimestamp = endTimestamp;
 		this.success = success;
 
-		this.contentBuffer = content;
-		if (this.contentBuffer == null) {
-			arrayOffset = -1;
-			remaining = -1;
+		if (content == null) {
+			this.contentBuffer = null;
 		} else {
-			arrayOffset = this.contentBuffer.arrayOffset();
-			remaining = this.contentBuffer.remaining();
+			this.contentBuffer = content.isReadOnly() ? content : content.asReadOnlyBuffer();
 		}
 
 		this.messages = eventMessages != null && !eventMessages.isEmpty() ? Set.copyOf(eventMessages) : null;
@@ -102,10 +97,9 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 		if (contentBuffer == null) { return null; }
 		return content.accumulateAndGet(null, (curr, x) -> {
 			if (curr == null) {
-				byte[] result = new byte[remaining];
-				contentBuffer.mark();
-				contentBuffer.get(result, arrayOffset, remaining);
-				contentBuffer.reset();
+				ByteBuffer buffer = getContentBuffer();
+				byte[] result = new byte[buffer.remaining()];
+				buffer.get(result);
 				return result;
 			}
 			return curr;
@@ -114,7 +108,7 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 
 	@Override
 	public ByteBuffer getContentBuffer() {
-		return contentBuffer;
+		return contentBuffer == null ? null : contentBuffer.asReadOnlyBuffer();
 	}
 
 	@Override

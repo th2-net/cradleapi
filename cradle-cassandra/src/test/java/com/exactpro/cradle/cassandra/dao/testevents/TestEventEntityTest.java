@@ -32,6 +32,7 @@ import com.exactpro.cradle.testevents.TestEventSingleToStoreBuilder;
 import com.exactpro.cradle.testevents.TestEventToStore;
 import com.exactpro.cradle.utils.CompressException;
 import com.exactpro.cradle.utils.CompressionType;
+import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.testng.annotations.DataProvider;
@@ -91,7 +92,7 @@ public class TestEventEntityTest {
 
 
     @Test(dataProvider = "events")
-    public void eventEntity(TestEventToStore event) throws IOException, CompressException {
+    public void eventEntity(TestEventToStore event) throws CradleStorageException, IOException, CradleIdException, CompressException {
         SerializedEntity<SerializedEntityMetadata, TestEventEntity> serializedEntity = TestEventEntityUtils.toSerializedEntity(event, page, CompressionType.ZLIB, 2000);
         TestEventEntity entity = serializedEntity.getEntity();
         StoredTestEvent newEvent = TestEventEntityUtils.toStoredTestEvent(entity, page);

@@ -33,7 +33,11 @@ import static com.exactpro.cradle.serialization.Serialization.EventMessageIdsCon
 import static com.exactpro.cradle.serialization.Serialization.NOT_SUPPORTED_PROTOCOL_FORMAT;
 
 public class EventMessageIdDeserializer {
-
+	/**
+	 * @deprecated this api is deprecated by read performance reason.<br>
+	 * 				Migrate to {@link #deserializeLinkedMessageIds(ByteBuffer, BookId)}
+	 */
+	@Deprecated(since = "5.6.0")
 	public static Set<StoredMessageId> deserializeLinkedMessageIds(byte[] bytes, BookId bookId) throws IOException
 	{
 		if (bytes == null || bytes.length == 0)
@@ -72,6 +76,42 @@ public class EventMessageIdDeserializer {
 		}
 	}
 
+	public static Set<StoredMessageId> deserializeLinkedMessageIds(ByteBuffer buffer, BookId bookId) throws IOException {
+		if (buffer == null || buffer.remaining() == 0)
+			return null;
+
+		byte version = buffer.get();
+		if (version != VERSION)
+			throw new SerializationException(String.format(NOT_SUPPORTED_PROTOCOL_FORMAT, "linkedMessageIds",
+					VERSION, version));
+		byte mark = buffer.get();
+		if (mark != SINGLE_EVENT_LINKS)
+			throw new IOException("Unexpected data mark. Expected " + SINGLE_EVENT_LINKS + ", got " + mark);
+
+		int size = buffer.getInt();
+		Set<StoredMessageId> result = new HashSet<>(size);
+		if (size == 1) {
+			String sessionAlias = CradleSerializationUtils.readString(buffer);
+			Direction direction = readDirection(buffer);
+			if (direction == null)
+				throw new IOException("Invalid direction");
+			Instant timestamp = CradleSerializationUtils.readInstant(buffer);
+			result.add(new StoredMessageId(bookId, sessionAlias, direction, timestamp, buffer.getLong()));
+			return result;
+		}
+
+		while (result.size() < size) {
+			String sessionAlias = CradleSerializationUtils.readString(buffer);
+			readDirectionIds(bookId, sessionAlias, result, buffer);
+		}
+		return result;
+	}
+
+	/**
+	 * @deprecated this api is deprecated by read performance reason.<br>
+	 * 				Migrate to {@link #deserializeBatchLinkedMessageIds(ByteBuffer, BookId)}
+	 */
+	@Deprecated(since = "5.6.0")
 	public static Map<StoredTestEventId, Set<StoredMessageId>> deserializeBatchLinkedMessageIds(byte[] bytes, BookId bookId) throws IOException
 	{
 		if (bytes == null || bytes.length == 0)
@@ -114,37 +154,6 @@ public class EventMessageIdDeserializer {
 			}
 			return result;
 		}
-	}
-
-	public static Set<StoredMessageId> deserializeLinkedMessageIds(ByteBuffer buffer, BookId bookId) throws IOException {
-		if (buffer == null || buffer.remaining() == 0)
-			return null;
-
-		byte version = buffer.get();
-		if (version != VERSION)
-			throw new SerializationException(String.format(NOT_SUPPORTED_PROTOCOL_FORMAT, "linkedMessageIds",
-					VERSION, version));
-		byte mark = buffer.get();
-		if (mark != SINGLE_EVENT_LINKS)
-			throw new IOException("Unexpected data mark. Expected " + SINGLE_EVENT_LINKS + ", got " + mark);
-
-		int size = buffer.getInt();
-		Set<StoredMessageId> result = new HashSet<>(size);
-		if (size == 1) {
-			String sessionAlias = CradleSerializationUtils.readString(buffer);
-			Direction direction = readDirection(buffer);
-			if (direction == null)
-				throw new IOException("Invalid direction");
-			Instant timestamp = CradleSerializationUtils.readInstant(buffer);
-			result.add(new StoredMessageId(bookId, sessionAlias, direction, timestamp, buffer.getLong()));
-			return result;
-		}
-
-		while (result.size() < size) {
-			String sessionAlias = CradleSerializationUtils.readString(buffer);
-			readDirectionIds(bookId, sessionAlias, result, buffer);
-		}
-		return result;
 	}
 
 	public static Map<StoredTestEventId, Set<StoredMessageId>> deserializeBatchLinkedMessageIds(ByteBuffer buffer, BookId bookId) throws IOException {
@@ -215,13 +224,6 @@ public class EventMessageIdDeserializer {
 			readDirectionIds(direction, sessionAlias, bookId, result, dis);
 	}
 
-	private static void readDirectionIds(
-			BookId bookId, String sessionAlias, Collection<StoredMessageId> result, ByteBuffer buffer) throws IOException {
-		Direction direction;
-		while ((direction = readDirection(buffer)) != null)
-			readDirectionIds(direction, sessionAlias, bookId, result, buffer);
-	}
-
 	private static Direction readDirection(DataInputStream dis) throws IOException
 	{
 		byte direction = dis.readByte();
@@ -232,6 +234,13 @@ public class EventMessageIdDeserializer {
 		else if (direction == DIRECTION_SECOND)
 			return Direction.SECOND;
 		throw new IOException("Unknown direction - "+direction);
+	}
+
+	private static void readDirectionIds(
+			BookId bookId, String sessionAlias, Collection<StoredMessageId> result, ByteBuffer buffer) throws IOException {
+		Direction direction;
+		while ((direction = readDirection(buffer)) != null)
+			readDirectionIds(direction, sessionAlias, bookId, result, buffer);
 	}
 
 	private static Direction readDirection(ByteBuffer buffer) throws IOException {
