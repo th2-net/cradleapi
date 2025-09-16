@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateEv
 public class SerializationEventBatchTest {
 
 	@Test
-	public void checkSize1() throws SerializationException {
+	public void checkSize1() {
 		BatchedStoredTestEvent build = createBatchedStoredTestEvent("Test even1234567890", createCommonParams());
 		EventBatchSerializer serializer = new EventBatchSerializer();
 		ByteBuffer buffer = ByteBuffer.allocate(10_000);
@@ -51,7 +51,7 @@ public class SerializationEventBatchTest {
 	}
 
 	@Test
-	public void checkSize2() throws SerializationException {
+	public void checkSize2() {
 		Collection<BatchedStoredTestEvent> build = createBatchEvents();
 		EventBatchSerializer serializer = new EventBatchSerializer();
 		ByteBuffer buffer = ByteBuffer.allocate(10_000);
@@ -68,6 +68,7 @@ public class SerializationEventBatchTest {
 		byte[] serialize = serializer.serializeEventRecord(build);
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
 		BatchedStoredTestEvent deserialize = deserializer.deserializeBatchEntry(serialize, commonParams);
+		deserialize.getContent(); // call to init deprecated content
 		Assertions.assertThat(deserialize).usingRecursiveComparison().isEqualTo(build);
 	}
 
@@ -80,6 +81,23 @@ public class SerializationEventBatchTest {
 		byte[] serialize = serializer.serializeEventBatch(build).getSerializedData();
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
 		List<BatchedStoredTestEvent> deserialize = deserializer.deserializeBatchEntries(serialize, commonParams);
+		for (BatchedStoredTestEvent batchedStoredTestEvent : deserialize) {
+			batchedStoredTestEvent.getContent(); // call to init deprecated content
+		}
+		Assertions.assertThat(build).usingRecursiveFieldByFieldElementComparator().isEqualTo(deserialize);
+	}
+
+	@Test
+	public void serializeDeserialize3() throws Exception {
+		EventBatchCommonParams commonParams = createCommonParams();
+		List<BatchedStoredTestEvent> build = createBatchEvents(commonParams);
+		EventBatchSerializer serializer = new EventBatchSerializer();
+		ByteBuffer serialize = ByteBuffer.wrap(serializer.serializeEventBatch(build).getSerializedData());
+		EventBatchDeserializer deserializer = new EventBatchDeserializer();
+		List<BatchedStoredTestEvent> deserialize = deserializer.deserializeBatchEntries(serialize, commonParams);
+		for (BatchedStoredTestEvent batchedStoredTestEvent : deserialize) {
+			batchedStoredTestEvent.getContent(); // call to init deprecated content
+		}
 		Assertions.assertThat(build).usingRecursiveFieldByFieldElementComparator().isEqualTo(deserialize);
 	}
 
@@ -93,6 +111,21 @@ public class SerializationEventBatchTest {
 		byte[] serialized = serializer.serializeEventRecord(build);
 		EventBatchDeserializer deserializer = new EventBatchDeserializer();
 		BatchedStoredTestEvent deserialized = deserializer.deserializeBatchEntry(serialized, commonParams);
+		deserialized.getContent(); // call to init deprecated content
+		Assertions.assertThat(deserialized).usingRecursiveComparison().isEqualTo(build);
+	}
+
+	@Test
+	public void serializeDeserialize4UnicodeCharacters() throws Exception {
+		EventBatchCommonParams commonParams = createCommonParams();
+		String name = generateUnicodeString((1 << 18), 50);
+		String content = generateUnicodeString((1 << 19), 10);
+		BatchedStoredTestEvent build = createBatchedStoredTestEventWithContent(name, commonParams, content);
+		EventBatchSerializer serializer = new EventBatchSerializer();
+		ByteBuffer serialized = ByteBuffer.wrap(serializer.serializeEventRecord(build));
+		EventBatchDeserializer deserializer = new EventBatchDeserializer();
+		BatchedStoredTestEvent deserialized = deserializer.deserializeBatchEntry(serialized, commonParams);
+		deserialized.getContent(); // call to init deprecated content
 		Assertions.assertThat(deserialized).usingRecursiveComparison().isEqualTo(build);
 	}
 
@@ -110,7 +143,7 @@ public class SerializationEventBatchTest {
 		builder.setParentId(new StoredTestEventId(commonParams.getBookId(), scope, startTime, UUID.randomUUID().toString()));
 		builder.setName(name);
 		builder.setType(name + " ----");
-		builder.setContent(content.repeat(10).getBytes(StandardCharsets.UTF_8));
+		builder.setContent(ByteBuffer.wrap(content.repeat(10).getBytes(StandardCharsets.UTF_8)));
 		return builder.build();
 	}
 

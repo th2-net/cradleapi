@@ -18,11 +18,6 @@ subprojects {
     repositories {
         mavenCentral()
 
-        maven {
-            name 'Sonatype_releases'
-            url 'https://s01.oss.sonatype.org/content/repositories/releases/'
-        }
-
         configurations.configureEach {
             resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
             resolutionStrategy.cacheDynamicVersionsFor 0, 'seconds'

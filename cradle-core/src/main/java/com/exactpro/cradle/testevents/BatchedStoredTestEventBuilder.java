@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.exactpro.cradle.testevents;
 
 import com.exactpro.cradle.PageId;
 
+import java.nio.ByteBuffer;
 import java.time.Instant;
 
 public class BatchedStoredTestEventBuilder {
@@ -29,7 +30,7 @@ public class BatchedStoredTestEventBuilder {
 	private Instant endTimestamp;
 
 	private boolean success;
-	private byte[] content;
+	private ByteBuffer content;
 	private PageId pageId;
 
 	private StoredTestEventBatch batch;
@@ -64,7 +65,17 @@ public class BatchedStoredTestEventBuilder {
 		return this;
 	}
 
+	/**
+	 * @deprecated this api is deprecated by read performance reason.<br>
+	 * 				Migrate to {@link #setContent(ByteBuffer)}
+	 */
+	@Deprecated(since = "5.6.0")
 	public BatchedStoredTestEventBuilder setContent(byte[] content) {
+		this.content = ByteBuffer.wrap(content);
+		return this;
+	}
+
+	public BatchedStoredTestEventBuilder setContent(ByteBuffer content) {
 		this.content = content;
 		return this;
 	}

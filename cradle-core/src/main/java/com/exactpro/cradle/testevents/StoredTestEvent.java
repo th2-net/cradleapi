@@ -108,17 +108,17 @@ public abstract class StoredTestEvent implements TestEvent
 	{
 		return this instanceof StoredTestEventSingle;
 	}
-	
+
 	public final boolean isBatch()
 	{
 		return this instanceof StoredTestEventBatch;
 	}
-	
+
 	public final StoredTestEventSingle asSingle()
 	{
 		return (StoredTestEventSingle)this;
 	}
-	
+
 	public final StoredTestEventBatch asBatch()
 	{
 		return (StoredTestEventBatch)this;

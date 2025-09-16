@@ -1,3 +1,7 @@
+plugins {
+    id 'java-test-fixtures'
+}
+
 dependencies {
     implementation "com.fasterxml.jackson.core:jackson-databind"
     implementation "org.apache.commons:commons-lang3"
@@ -13,6 +17,8 @@ dependencies {
     testImplementation 'org.apache.logging.log4j:log4j-core'
     testImplementation(libs.testng)
     testImplementation(libs.assertj.core)
+
+    testFixturesImplementation(libs.assertj.core)
 }
 
 test {

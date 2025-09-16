@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -148,12 +149,32 @@ public class TestEventUtils {
      * @param id           is batchId
      * @return collection of deserialized test events
      * @throws IOException if deserialization failed
+     * @deprecated this api is deprecated by read performance reason.<br>
+     * 	 * 				Migrate to {@link #deserializeTestEvents(ByteBuffer, StoredTestEventId)}
      */
+    @Deprecated(since = "5.6.0")
     public static Collection<BatchedStoredTestEvent> deserializeTestEvents(byte[] contentBytes, StoredTestEventId id)
             throws IOException {
         return deserializer.deserializeBatchEntries(contentBytes, new EventBatchCommonParams(id));
     }
 
+    /**
+     * Deserializes test events from given bytes
+     *
+     * @param content      to deserialize events from
+     * @param id           is batchId
+     * @return collection  of deserialized test events
+     * @throws IOException if deserialization failed
+     */
+    public static Collection<BatchedStoredTestEvent> deserializeTestEvents(@Nonnull ByteBuffer content, StoredTestEventId id)
+            throws IOException {
+        content.mark();
+        try {
+            return deserializer.deserializeBatchEntries(content, new EventBatchCommonParams(id));
+        } finally {
+            content.reset();
+        }
+    }
 
     /**
      * Decompresses given ByteBuffer and deserializes test events
@@ -164,6 +185,7 @@ public class TestEventUtils {
      * @return collection of deserialized test events
      * @throws IOException if deserialization failed
      */
+    @Deprecated(since = "5.6.0")
     public static Collection<BatchedStoredTestEvent> bytesToTestEvents(ByteBuffer content, StoredTestEventId eventId, boolean compressed)
             throws IOException, CompressException {
         byte[] contentBytes = getTestEventContentBytes(content, compressed);
@@ -200,16 +222,34 @@ public class TestEventUtils {
         return EventMessageIdSerializer.serializeLinkedMessageIds(event.asSingle().getMessages());
     }
 
+    /**
+     * @deprecated this api is deprecated by read performance reason.<br>
+     * 				Migrate to {@link #deserializeLinkedMessageIds(ByteBuffer, BookId)}
+     */
+    @Deprecated(since = "5.6.0")
     public static Set<StoredMessageId> deserializeLinkedMessageIds(byte[] bytes, BookId bookId) throws IOException {
         return EventMessageIdDeserializer.deserializeLinkedMessageIds(bytes, bookId);
+    }
+
+    public static Set<StoredMessageId> deserializeLinkedMessageIds(ByteBuffer buffer, BookId bookId) throws IOException {
+        return EventMessageIdDeserializer.deserializeLinkedMessageIds(buffer, bookId);
     }
 
     public static byte[] serializeLinkedMessageIds(Set<StoredMessageId> messageIds) throws IOException {
         return EventMessageIdSerializer.serializeLinkedMessageIds(messageIds);
     }
 
+    /**
+     * @deprecated this api is deprecated by read performance reason.<br>
+     * 				Migrate to {@link #deserializeBatchLinkedMessageIds(ByteBuffer, BookId)}
+     */
+    @Deprecated(since = "5.6.0")
     public static Map<StoredTestEventId, Set<StoredMessageId>> deserializeBatchLinkedMessageIds(byte[] bytes, BookId bookId) throws IOException {
         return EventMessageIdDeserializer.deserializeBatchLinkedMessageIds(bytes, bookId);
+    }
+    
+    public static Map<StoredTestEventId, Set<StoredMessageId>> deserializeBatchLinkedMessageIds(ByteBuffer buffer, BookId bookId) throws IOException {
+        return EventMessageIdDeserializer.deserializeBatchLinkedMessageIds(buffer, bookId);
     }
 
     public static byte[] serializeBatchLinkedMessageIds(Map<StoredTestEventId, Set<StoredMessageId>> ids) throws IOException {

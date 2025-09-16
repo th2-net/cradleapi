@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,11 +94,8 @@ public class EventBatchDeserializer {
 		eventBuilder.setParentId(readId(common, buffer));
 		eventBuilder.setEndTimestamp(readInstant(buffer));
 		eventBuilder.setSuccess(readSingleBoolean(buffer));
-		eventBuilder.setContent(readBody(buffer));
-		
+		eventBuilder.setContent(readBufferedBody(buffer));
+
 		return eventBuilder.build();
 	}
-
-
-	
 }

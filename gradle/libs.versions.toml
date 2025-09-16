@@ -1,7 +1,11 @@
 [versions]
 th2-plugin = "0.3.7"
+jmh = "1.37"
 
 [libraries]
+jmh-core = { group = "org.openjdk.jmh", name = "jmh-core", version.ref = "jmh" }
+jmh-generator-annprocess = { group = "org.openjdk.jmh", name = "jmh-generator-annprocess", version.ref = "jmh" }
+
 th2-bom = { group = "com.exactpro.th2", name = "bom", version = "4.14.1" }
 task-utils = { group = "com.exactpro.th2", name = "task-utils", version = "0.1.4" }
 caffeine = { group = "com.github.ben-manes.caffeine", name = "caffeine", version = "3.2.2" }
@@ -12,5 +16,7 @@ mockito-core = { group = "org.mockito", name = "mockito-core", version = "5.19.0
 cassandra = { group = "org.testcontainers", name = "cassandra", version = "1.21.3" }
 testng = { group = "org.testng", name = "testng", version = "7.11.0" }
 jsr305 = { group = "com.google.code.findbugs", name = "jsr305", version = "3.0.2" }
+
 [plugins]
 th2-publish = { id = "com.exactpro.th2.gradle.publish", version.ref = "th2-plugin" }
+jmh = { id = "me.champeau.jmh", version = "0.7.3" }

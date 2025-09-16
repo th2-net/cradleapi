@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Set;
 
@@ -47,12 +49,19 @@ public class TestEventSingleToStore extends TestEventToStore implements TestEven
     }
 
     @Override
+    @Deprecated
     public byte[] getContent() {
         return content;
     }
 
     public void setContent(byte[] content) {
         this.content = content;
+    }
+
+    @Override
+    public ByteBuffer getContentBuffer() {
+        if (content == null) { return null; }
+        return ByteBuffer.wrap(content);
     }
 
 
@@ -80,5 +89,17 @@ public class TestEventSingleToStore extends TestEventToStore implements TestEven
                 throw new CradleStorageException("Book of message (" +
                         messageBookId + ") differs from the event book (" + eventBookId + ")");
         }
+    }
+
+    @Override
+    public String toString() {
+        String contentAsText = content == null
+                ? null :StandardCharsets.UTF_8.decode(ByteBuffer.wrap(content)).toString();
+        return "TestEventSingleToStore{" +
+                "endTimestamp=" + endTimestamp +
+                ", success=" + success +
+                ", messages=" + messages +
+                ", content=" + contentAsText +
+                '}';
     }
 }

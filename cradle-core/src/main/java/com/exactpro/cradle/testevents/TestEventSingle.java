@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,18 @@
 
 package com.exactpro.cradle.testevents;
 
+import java.nio.ByteBuffer;
+
 /**
  * Interface for all single (individual) test events
  */
-public interface TestEventSingle extends TestEvent
-{
+public interface TestEventSingle extends TestEvent {
+
+	/**
+	 * @deprecated this api is deprecated by read performance reason.<br>
+	 * 				Migrate to {@link #getContentBuffer()}
+	 */
+	@Deprecated(since = "5.6.0")
 	byte[] getContent();
+	ByteBuffer getContentBuffer();
 }

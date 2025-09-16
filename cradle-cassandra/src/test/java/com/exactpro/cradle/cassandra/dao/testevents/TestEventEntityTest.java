@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.cassandra.dao.SerializedEntity;
 import com.exactpro.cradle.messages.StoredMessageId;
 import com.exactpro.cradle.serialization.SerializedEntityMetadata;
+import com.exactpro.cradle.testevents.EventTestUtils;
 import com.exactpro.cradle.testevents.StoredTestEvent;
 import com.exactpro.cradle.testevents.StoredTestEventId;
 import com.exactpro.cradle.testevents.TestEventBatchToStore;
@@ -33,7 +34,6 @@ import com.exactpro.cradle.utils.CompressException;
 import com.exactpro.cradle.utils.CompressionType;
 import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
-import org.assertj.core.api.Assertions;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -42,7 +42,6 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.zip.DataFormatException;
 
 import static com.exactpro.cradle.cassandra.TestUtils.createContent;
 
@@ -93,16 +92,19 @@ public class TestEventEntityTest {
 
 
     @Test(dataProvider = "events")
-    public void eventEntity(TestEventToStore event) throws CradleStorageException, IOException, DataFormatException, CradleIdException, CompressException {
+    public void eventEntity(TestEventToStore event) throws CradleStorageException, IOException, CradleIdException, CompressException {
         SerializedEntity<SerializedEntityMetadata, TestEventEntity> serializedEntity = TestEventEntityUtils.toSerializedEntity(event, page, CompressionType.ZLIB, 2000);
         TestEventEntity entity = serializedEntity.getEntity();
         StoredTestEvent newEvent = TestEventEntityUtils.toStoredTestEvent(entity, page);
 
-        RecursiveComparisonConfiguration config = new RecursiveComparisonConfiguration();
-        config.ignoreFieldsMatchingRegexes("pageId", ".*\\.pageId", "error", ".*\\.error", "recDate", ".*\\.recDate", "lastStartTimestamp", ".*\\.lastStartTimestamp");
-config.ignoreAllOverriddenEquals();
-        Assertions.assertThat(newEvent)
-                .usingRecursiveComparison(config)
-                .isEqualTo(event);
+        RecursiveComparisonConfiguration configuration = RecursiveComparisonConfiguration.builder()
+                .withIgnoredFieldsMatchingRegexes("pageId", ".*\\.pageId",
+                        "error", ".*\\.error",
+                        "recDate", ".*\\.recDate",
+                        "lastStartTimestamp", ".*\\.lastStartTimestamp")
+                .withIgnoreAllOverriddenEquals(true)
+                .build();
+
+        EventTestUtils.assertEvents(newEvent, event, configuration);
     }
 }

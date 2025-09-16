@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.exactpro.cradle.cassandra.retries.SelectQueryExecutor;
+import io.prometheus.client.Summary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +34,17 @@ import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
  * @param <E> - class of entities obtained from Cassandra
  */
 public class PagedIterator<E> implements Iterator<E> {
-	private final Logger logger = LoggerFactory.getLogger(PagedIterator.class);
+	private final Logger LOGGER = LoggerFactory.getLogger(PagedIterator.class);
+
+	private static final String HAS_NEXT_METHOD = "has_next";
+	private static final String NEXT_METHOD = "next";
+	private static final Summary PAGE_ITERATOR = Summary.build()
+			.name("cradle_page_iterator_duration_seconds")
+			.help("Cassandra pages loads via iterator")
+			.labelNames("method")
+			.register();
+	private static final Summary.Child PAGE_ITERATOR_NEXT = PAGE_ITERATOR.labels(NEXT_METHOD);
+	private static final Summary.Child PAGE_ITERATOR_HAS_NEXT = PAGE_ITERATOR.labels(HAS_NEXT_METHOD);
 
 	private MappedAsyncPagingIterable<E> paginator;
 	private final SelectQueryExecutor selectQueryExecutor;
@@ -52,7 +63,7 @@ public class PagedIterator<E> implements Iterator<E> {
 		this.id = Long.toHexString(hash);
 		String prefix = String.format("init: [%s]", id);
 
-		logger.trace("{} creating iterator", prefix);
+		LOGGER.trace("{} creating iterator", prefix);
 
 		this.paginator = paginator;
 		this.selectQueryExecutor = selectQueryExecutor;
@@ -61,57 +72,61 @@ public class PagedIterator<E> implements Iterator<E> {
 		this.rowsIterator = paginator.currentPage().iterator();
 		fetchNextPage();
 
-		logger.trace("{} iterator created", prefix);
+		LOGGER.trace("{} iterator created", prefix);
 	}
 
 	private int fetchCalls;
 	private void fetchNextPage() {
 		fetchCalls++;
 		final String prefix = String.format("fetchNextPage: [%s-%d]", id, fetchCalls);
-		logger.trace("{} enter", prefix);
+		LOGGER.trace("{} enter", prefix);
 
 		if (paginator.hasMorePages()) {
-			logger.trace("{} prefetching", prefix);
+			LOGGER.trace("{} prefetching", prefix);
 			nextPage = selectQueryExecutor.fetchNextPage(paginator, mapper, queryInfo)
 					.whenComplete((r, e) -> {
 						if (e != null) {
-							logger.error("{} Exception fetching next page", prefix, e);
+							LOGGER.error("{} Exception fetching next page", prefix, e);
 						} else
-							logger.trace("{} page prefetching complete", prefix, e);
+							LOGGER.trace("{} page prefetching complete", prefix, e);
 					});
 		} else {
-			logger.trace("{} no more pages to prefetch", prefix);
+			LOGGER.trace("{} no more pages to prefetch", prefix);
 			nextPage = null;
 		}
 
-		logger.trace("{} exit", prefix);
+		LOGGER.trace("{} exit", prefix);
 	}
 
 
 	@Override
 	public boolean hasNext() {
-		if (rowsIterator == null)
-			return false;
-
-		if (!rowsIterator.hasNext()) {
-			try {
-				rowsIterator = nextIterator();
-			} catch (Exception e) {
-				throw new RuntimeException(String.format("Exception getting next page [%s])", id), e);
-			}
-
-			if (rowsIterator == null || !rowsIterator.hasNext())
+		try(Summary.Timer ignored = PAGE_ITERATOR_HAS_NEXT.startTimer()) {
+			if (rowsIterator == null)
 				return false;
+
+			if (!rowsIterator.hasNext()) {
+				try {
+					rowsIterator = nextIterator();
+				} catch (Exception e) {
+					throw new RuntimeException(String.format("Exception getting next page [%s])", id), e);
+				}
+
+				if (rowsIterator == null || !rowsIterator.hasNext())
+					return false;
+			}
+			return true;
 		}
-		return true;
 	}
 
 
 	private int rowsFetched;
 	@Override
 	public E next()	{
-		rowsFetched++;
-		return rowsIterator.next();
+		try(Summary.Timer ignored = PAGE_ITERATOR_NEXT.startTimer()) {
+			rowsFetched++;
+			return rowsIterator.next();
+		}
 	}
 
 
@@ -119,15 +134,15 @@ public class PagedIterator<E> implements Iterator<E> {
 	private Iterator<E> nextIterator() throws IllegalStateException, InterruptedException, ExecutionException {
 		nextCalls++;
 		final String prefix = String.format("nextIterator: [%s-%d]", id, nextCalls);
-		logger.trace("{} changing page after {} rows fetched", prefix, rowsFetched);
+		LOGGER.trace("{} changing page after {} rows fetched", prefix, rowsFetched);
 
 		if (nextPage != null) {
 			paginator = nextPage.get();
 			fetchNextPage();
-			logger.trace("{} page changed", prefix);
+			LOGGER.trace("{} page changed", prefix);
 			return paginator.currentPage().iterator();
 		} else {
-			logger.trace("{} no page to change to", prefix);
+			LOGGER.trace("{} no page to change to", prefix);
 			return null;
 		}
 	}

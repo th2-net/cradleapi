@@ -1,4 +1,4 @@
-# Overview (5.6.0)
+# Overview (5.7.0)
 
 Cradle API is used to work with Cradle - the datalake where th2 stores its data.
 
@@ -24,10 +24,7 @@ repositories {
 Alternatively, you can use pre-built artifacts by adding the following repository to your Gradle project:
 ```
 repositories {
-	maven {
-		name 'Sonatype_releases'
-		url 'https://s01.oss.sonatype.org/content/repositories/releases/'
-	}
+	mavenCentral()
 	...
 }
 ```
@@ -195,12 +192,17 @@ Test events have mandatory parameters that are verified when storing an event. T
 
 ## Metrics
 
-* `cradle_page_cache_size`               (type: Gauge,   labels: book, cache)         - Size of page cache.
-* `cradle_page_cache_page_request_total` (type: Counter, labels: book, cache, method) - Page requests number from cache
-* `cradle_page_cache_invalidate_total`   (type: Counter, labels: book, cache, cause)  - Cache invalidates
-* `cradle_page_cache_page_loads_total`   (type: Summary, labels: book, cache)         - Page loads number to cache
+* `cradle_page_cache_size`                                (type: Gauge,   labels: book, cache)                               - Size of page cache.
+* `cradle_page_cache_page_request_total`                  (type: Counter, labels: book, cache, method)                       - Page requests number from cache
+* `cradle_page_cache_invalidate_total`                    (type: Counter, labels: book, cache, cause)                        - Cache invalidates
+* `cradle_page_cache_page_loads_total`                    (type: Summary, labels: book, cache)                               - Page loads number to cache
   * `_count` - loaded page day intervals
   * `_sum` - loaded pages
+* `cradle_page_iterator_duration_seconds`                 (type: Summary, labels: method [has_next, next])                   - Cassandra pages loads via iterator
+* `cradle_test_event_restore_duration_seconds`            (type: Counter, labels: type [batch, batched-event, single-event]) - Time spent restoring batch / batched-event / single-event data from optionally compressed content 
+* `cradle_test_event_deserialisation_duration_seconds`    (type: Counter, labels: type [batch, batched-event, single-event]) - Time spent deserializing batch / batched-event / single-event 
+* `cradle_test_event_deserialisation_content_bytes_total` (type: Counter, labels: type [batch, batched-event, single-event]) - Total size of content processed during event deserialization 
+* `cradle_test_event_deserialized_total`                  (type: Counter, labels: type [batch, batched-event, single-event]) - Number of deserialized batch / batched-event / single-event 
 
 ### Labels:
   * cache: HOT, RANDOM
@@ -208,6 +210,20 @@ Test events have mandatory parameters that are verified when storing an event. T
   * cause: EXPLICIT, REPLACED, COLLECTED, EXPIRED, SIZE
 
 ## Release notes
+
+### 5.7.0
+
+* Added `TestEventSingle.getContentBuffer` method returns read only `ByteBuffer`.
+  The `TestEventSingle.getContent` method is deprecated (it shouldn't recommend for using in `BatchedStoredTestEvent`, `StoredTestEventSingle` implementations)
+* Provided metrics: 
+  * `cradle_page_iterator_duration_seconds`
+  * `cradle_test_event_restore_duration_seconds`
+  * `cradle_test_event_deserialisation_duration_seconds`
+  * `cradle_test_event_deserialisation_content_bytes_total`
+  * `cradle_test_event_deserialized_total`
+* Updated:
+  * th2 bom: `4.14.1`
+  * caffeine: `3.2.2`
 
 ### 5.6.0
 * Provided ability to update parent event status before storing child event.<br>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import com.exactpro.cradle.utils.CradleIdException;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.TestEventUtils;
 import com.exactpro.cradle.utils.TimeUtils;
+import io.prometheus.client.Counter;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,21 +45,65 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.zip.DataFormatException;
 
 public class TestEventEntityUtils {
 
-    private static final Logger logger = LoggerFactory.getLogger(TestEventEntityUtils.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestEventEntityUtils.class);
+    private static final String LABEL_TYPE = "type";
+    private static final String LABEL_BATCH = "batch";
+    private static final String LABEL_BATCHED_EVENT = "batched-event";
+    private static final String LABEL_SINGLE_EVENT = "single-event";
 
-    public static StoredTestEvent toStoredTestEvent(TestEventEntity testEventEntity, PageId pageId)
-            throws IOException, CradleStorageException, DataFormatException, CradleIdException, CompressException {
+
+    private static final Counter RESTORE_DURATION = Counter.build()
+            .name("cradle_test_event_restore_duration_seconds")
+            .help("Time spent restoring batch / batched-event / single-event data from optionally compressed content")
+            .labelNames(LABEL_TYPE)
+            .register();
+    private static final Counter DESERIALISATION_DURATION = Counter.build()
+            .name("cradle_test_event_deserialisation_duration_seconds")
+            .help("Time spent deserializing batch / batched-event / single-event")
+            .labelNames(LABEL_TYPE)
+            .register();
+    private static final Counter CONTENT_SIZE = Counter.build()
+            .name("cradle_test_event_deserialisation_content_bytes_total")
+            .help("Total size of content processed during event deserialization")
+            .labelNames(LABEL_TYPE)
+            .register();
+    private static final Counter ITEMS_TOTAL = Counter.build()
+            .name("cradle_test_event_deserialized_total")
+            .help("Number of deserialized batch / batched-event / single-event")
+            .labelNames(LABEL_TYPE)
+            .register();
+
+    private static final Metric batchMetric = new Metric(
+            RESTORE_DURATION, DESERIALISATION_DURATION, CONTENT_SIZE, ITEMS_TOTAL, LABEL_BATCH);
+    private static final Metric batchedEventMetric = new Metric(
+            RESTORE_DURATION, DESERIALISATION_DURATION, CONTENT_SIZE, ITEMS_TOTAL, LABEL_BATCHED_EVENT);
+    private static final Metric singleEventMetric = new Metric(
+            RESTORE_DURATION, DESERIALISATION_DURATION, CONTENT_SIZE, ITEMS_TOTAL, LABEL_SINGLE_EVENT);
+
+    public static StoredTestEvent toStoredTestEvent(TestEventEntity testEventEntity, PageId pageId) throws CompressException, CradleStorageException, IOException, CradleIdException {
         StoredTestEventId eventId = createId(testEventEntity, pageId.getBookId());
-        logger.trace("Creating test event '{}' from entity", eventId);
+        LOGGER.trace("Creating test event '{}' from entity", eventId);
 
-        byte[] content = restoreContent(testEventEntity, eventId);
-        return testEventEntity.isEventBatch() ? toStoredTestEventBatch(testEventEntity, pageId, eventId, content) : toStoredTestEventSingle(testEventEntity, pageId, eventId, content);
+        long t0 = System.nanoTime();
+        ByteBuffer content = restoreContent(testEventEntity, eventId);
+        int contentSize = content == null ? 0 : content.remaining();
+        long t1 = System.nanoTime();
+        double restoreSec = (t1 - t0) / 1_000_000_000.0;
+        if (testEventEntity.isEventBatch()) {
+            StoredTestEventBatch batch = toStoredTestEventBatch(testEventEntity, pageId, eventId, content);
+            double deserializationSec = (System.nanoTime() - t1) / 1_000_000_000.0;
+            batchMetric.inc(restoreSec, deserializationSec, contentSize, 1);
+            batchedEventMetric.inc(restoreSec, deserializationSec, contentSize, batch.getTestEventsCount());
+            return batch;
+        } else {
+            StoredTestEventSingle event = toStoredTestEventSingle(testEventEntity, pageId, eventId, content);
+            singleEventMetric.inc(restoreSec, (System.nanoTime() - t1) / 1_000_000_000.0, contentSize, 1);
+            return event;
+        }
     }
-
 
     private static StoredTestEventId createId(TestEventEntity testEventEntity, BookId bookId)
     {
@@ -70,16 +115,16 @@ public class TestEventEntityUtils {
         return StringUtils.isEmpty(testEventEntity.getParentId()) ? null : StoredTestEventId.fromString(testEventEntity.getParentId());
     }
 
-
-    private static byte[] restoreContent(TestEventEntity testEventEntity, StoredTestEventId eventId) throws CompressException {
+    private static ByteBuffer restoreContent(TestEventEntity testEventEntity, StoredTestEventId eventId) throws CompressException {
         ByteBuffer content = testEventEntity.getContent();
         if (content == null)
             return null;
 
-        byte[] result = content.array();
+        ByteBuffer result = content;
         if (testEventEntity.isCompressed()) {
-            logger.trace("Decompressing content of test event '{}'", eventId);
-            return CompressionType.decompressData(result);
+            LOGGER.trace("Decompressing content of test event '{}'", eventId);
+            result = ByteBuffer.allocate(testEventEntity.getUncompressedContentSize());
+            CompressionType.decompressData(content, result);
         }
         return result;
     }
@@ -90,22 +135,18 @@ public class TestEventEntityUtils {
         if (messages == null)
             return null;
 
-        byte[] result = messages.array();
-        return TestEventUtils.deserializeLinkedMessageIds(result, bookId);
+        return TestEventUtils.deserializeLinkedMessageIds(messages, bookId);
     }
 
-    private static Map<StoredTestEventId, Set<StoredMessageId>> restoreBatchMessages(TestEventEntity testEventEntity, BookId bookId)
-            throws IOException {
+    private static Map<StoredTestEventId, Set<StoredMessageId>> restoreBatchMessages(
+            TestEventEntity testEventEntity, BookId bookId) throws IOException {
         ByteBuffer messages = testEventEntity.getMessages();
-        if (messages == null)
-            return null;
+        if (messages == null) return null;
 
-        byte[] result = messages.array();
-        return TestEventUtils.deserializeBatchLinkedMessageIds(result, bookId);
+        return TestEventUtils.deserializeBatchLinkedMessageIds(messages, bookId);
     }
 
-
-    private static StoredTestEventSingle toStoredTestEventSingle(TestEventEntity testEventEntity, PageId pageId, StoredTestEventId eventId, byte[] content)
+    private static StoredTestEventSingle toStoredTestEventSingle(TestEventEntity testEventEntity, PageId pageId, StoredTestEventId eventId, ByteBuffer content)
             throws IOException, CradleIdException
     {
         Set<StoredMessageId> messages = restoreMessages(testEventEntity, pageId.getBookId());
@@ -113,9 +154,9 @@ public class TestEventEntityUtils {
                 TestEventEntityUtils.getEndTimestamp(testEventEntity), testEventEntity.isSuccess(), content, messages, pageId, null, testEventEntity.getRecDate());
     }
 
-    private static StoredTestEventBatch toStoredTestEventBatch(TestEventEntity testEventEntity, PageId pageId, StoredTestEventId eventId, byte[] content)
-            throws IOException, CradleStorageException, CradleIdException
-    {
+    private static StoredTestEventBatch toStoredTestEventBatch(TestEventEntity testEventEntity, PageId pageId,
+                                                               StoredTestEventId eventId, ByteBuffer content)
+            throws IOException, CradleStorageException, CradleIdException {
         Collection<BatchedStoredTestEvent> children = TestEventUtils.deserializeTestEvents(content, eventId);
         Map<StoredTestEventId, Set<StoredMessageId>> messages = restoreBatchMessages(testEventEntity, pageId.getBookId());
         return new StoredTestEventBatch(eventId, testEventEntity.getName(), testEventEntity.getType(), createParentId(testEventEntity),
@@ -136,7 +177,7 @@ public class TestEventEntityUtils {
                                                                                                  int maxUncompressedSize) throws IOException, CompressException {
         TestEventEntity.TestEventEntityBuilder builder = TestEventEntity.builder();
 
-        logger.debug("Creating entity from test event '{}'", event.getId());
+        LOGGER.debug("Creating entity from test event '{}'", event.getId());
 
         SerializedEntityData<SerializedEntityMetadata> serializedEntityData = TestEventUtils.getTestEventContent(event);
         byte[] content = serializedEntityData.getSerializedData();
@@ -148,7 +189,7 @@ public class TestEventEntityUtils {
         } else {
             builder.setUncompressedContentSize(content.length);
             if (content.length > maxUncompressedSize) {
-                logger.trace("Compressing content of test event '{}'", event.getId());
+                LOGGER.trace("Compressing content of test event '{}'", event.getId());
                 content = compressionType.compress(content);
                 compressed = true;
             }
@@ -185,5 +226,26 @@ public class TestEventEntityUtils {
             builder.setContent(ByteBuffer.wrap(content));
 
         return new SerializedEntity<>(serializedEntityData, builder.build());
+    }
+
+    private static class Metric {
+        private final Counter.Child restore;
+        private final Counter.Child deserialization;
+        private final Counter.Child content;
+        private final Counter.Child count;
+
+        private Metric(Counter restore, Counter deserialization, Counter content, Counter count, String type) {
+            this.restore = restore.labels(type);
+            this.deserialization = deserialization.labels(type);
+            this.content = content.labels(type);
+            this.count = count.labels(type);
+        }
+
+        private void inc(double restoreSec, double deserializationSec, int contentSize,  int count) {
+            this.restore.inc(restoreSec);
+            this.deserialization.inc(deserializationSec);
+            this.content.inc(contentSize);
+            this.count.inc(count);
+        }
     }
 }

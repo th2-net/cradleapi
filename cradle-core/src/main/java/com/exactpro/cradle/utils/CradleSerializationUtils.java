@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.exactpro.cradle.utils;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.time.Instant;
 
 public class CradleSerializationUtils
@@ -29,12 +30,24 @@ public class CradleSerializationUtils
 		dos.writeShort(bytes.length);
 		dos.write(bytes);
 	}
-	
+
+	/**
+	 * @deprecated this api is deprecated by read performance reason.<br>
+	 * 				Migrate to {@link #readString(ByteBuffer)}
+	 */
+	@Deprecated(since = "5.6.0")
 	public static String readString(DataInputStream dis) throws IOException
 	{
 		int length = dis.readShort();
 		byte[] bytes = new byte[length];
 		dis.readFully(bytes);
+		return new String(bytes);
+	}
+
+	public static String readString(ByteBuffer buffer) {
+		int length = buffer.getShort();
+		byte[] bytes = new byte[length];
+		buffer.get(bytes);
 		return new String(bytes);
 	}
 	
@@ -44,9 +57,18 @@ public class CradleSerializationUtils
 		dos.writeLong(i.getEpochSecond());
 		dos.writeInt(i.getNano());
 	}
-	
+
+	/**
+	 * @deprecated this api is deprecated by read performance reason.<br>
+	 * 				Migrate to {@link #readInstant(ByteBuffer)}
+	 */
+	@Deprecated(since = "5.6.0")
 	public static Instant readInstant(DataInputStream dis) throws IOException
 	{
 		return Instant.ofEpochSecond(dis.readLong(), dis.readInt());
+	}
+
+	public static Instant readInstant(ByteBuffer buffer) {
+		return Instant.ofEpochSecond(buffer.getLong(), buffer.getInt());
 	}
 }
