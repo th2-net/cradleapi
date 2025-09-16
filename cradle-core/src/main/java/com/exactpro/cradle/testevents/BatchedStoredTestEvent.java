@@ -18,7 +18,6 @@ package com.exactpro.cradle.testevents;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -185,8 +184,6 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 
 	@Override
 	public String toString() {
-		String contentAsText = contentBuffer == null
-				? null : StandardCharsets.UTF_8.decode(contentBuffer.asReadOnlyBuffer()).toString();
 		return "BatchedStoredTestEvent{" +
 				"id=" + id +
 				", name='" + name + '\'' +
@@ -194,7 +191,7 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 				", parentId=" + parentId +
 				", endTimestamp=" + endTimestamp +
 				", success=" + success +
-				", content=" + contentAsText +
+				", content=" + contentBuffer +
 				", pageId=" + pageId +
 				'}';
 	}

@@ -17,7 +17,6 @@
 package com.exactpro.cradle.testevents;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -138,13 +137,11 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 
 	@Override
 	public String toString() {
-		String contentAsText = contentBuffer == null
-				? null : StandardCharsets.UTF_8.decode(contentBuffer.asReadOnlyBuffer()).toString();
 		return "StoredTestEventSingle{" +
 				"endTimestamp=" + endTimestamp +
 				", success=" + success +
 				", messages=" + messages +
-				", content=" + contentAsText +
+				", content=" + contentBuffer +
 				'}';
 	}
 }
