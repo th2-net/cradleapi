@@ -42,7 +42,7 @@ import static com.exactpro.cradle.serialization.EventsSizeCalculator.calculateEv
 public class SerializationEventBatchTest {
 
 	@Test
-	public void checkSize1() throws SerializationException {
+	public void checkSize1() {
 		BatchedStoredTestEvent build = createBatchedStoredTestEvent("Test even1234567890", createCommonParams());
 		EventBatchSerializer serializer = new EventBatchSerializer();
 		ByteBuffer buffer = ByteBuffer.allocate(10_000);
@@ -51,7 +51,7 @@ public class SerializationEventBatchTest {
 	}
 
 	@Test
-	public void checkSize2() throws SerializationException {
+	public void checkSize2() {
 		Collection<BatchedStoredTestEvent> build = createBatchEvents();
 		EventBatchSerializer serializer = new EventBatchSerializer();
 		ByteBuffer buffer = ByteBuffer.allocate(10_000);
@@ -143,7 +143,7 @@ public class SerializationEventBatchTest {
 		builder.setParentId(new StoredTestEventId(commonParams.getBookId(), scope, startTime, UUID.randomUUID().toString()));
 		builder.setName(name);
 		builder.setType(name + " ----");
-		builder.setContent(content.repeat(10).getBytes(StandardCharsets.UTF_8));
+		builder.setContent(ByteBuffer.wrap(content.repeat(10).getBytes(StandardCharsets.UTF_8)));
 		return builder.build();
 	}
 

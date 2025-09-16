@@ -49,10 +49,7 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 		if (content == null) {
 			this.contentBuffer = null;
 		} else {
-			if (!content.hasArray()) {
-				throw new IllegalArgumentException(name + '.' + type + " event content hasn't got array");
-			}
-			this.contentBuffer = ByteBuffer.wrap(content.array(), content.position(), content.remaining());
+			this.contentBuffer = content.isReadOnly() ? content : content.asReadOnlyBuffer();
 		}
 
 		this.messages = eventMessages == null || eventMessages.isEmpty() ? null : unmodifiableSet(eventMessages);
@@ -73,35 +70,35 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 	public StoredTestEventSingle(TestEventSingle event, PageId pageId) {
 		this(event.getId(), event.getName(), event.getType(), event.getParentId(),
 				event.getEndTimestamp(), event.isSuccess(), event.getContentBuffer(),
-				event.getMessages(), pageId, null, null);
+				prepareMessageIdSet(event.getMessages()), pageId, null, null);
 	}
-	
-	
+
+
 	@Override
 	public Instant getEndTimestamp()
 	{
 		return endTimestamp;
 	}
-	
+
 	@Override
 	public boolean isSuccess()
 	{
 		return success;
 	}
-	
+
 	@Override
 	public Set<StoredMessageId> getMessages()
 	{
 		return messages;
 	}
-	
+
 	@Override
 	@Deprecated
 	public byte[] getContent() {
 		if (contentBuffer == null) { return null; }
 		return content.accumulateAndGet(null, (curr, x) -> {
 			if (curr == null) {
-				ByteBuffer buffer = contentBuffer.asReadOnlyBuffer();
+				ByteBuffer buffer = getContentBuffer();
 				byte[] result = new byte[buffer.remaining()];
 				buffer.get(result);
 				return result;
@@ -112,7 +109,7 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 
 	@Override
 	public ByteBuffer getContentBuffer() {
-		return contentBuffer;
+		return contentBuffer == null ? null : contentBuffer.asReadOnlyBuffer();
 	}
 
 	@Override
@@ -148,5 +145,9 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 				", messages=" + messages +
 				", content=" + contentBuffer +
 				'}';
+	}
+
+	private static Set<StoredMessageId> prepareMessageIdSet(Set<StoredMessageId> messages) {
+		return messages != null && !messages.isEmpty() ? Set.copyOf(messages) : null;
 	}
 }

@@ -31,7 +31,6 @@ import com.exactpro.cradle.utils.TestEventUtils;
 import org.assertj.core.api.Assertions;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
-import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
 import java.time.Instant;
@@ -153,7 +152,6 @@ public class EventSingleTest {
     }
 
     @Test
-    @Ignore // FIXME: ignored for perf test
     public void storedEventMessagesAreIndependent() throws CradleStorageException {
         TestEventSingleToStore event = validEvent().message(new StoredMessageId(BOOK, "Session1", Direction.FIRST, START_TIMESTAMP, 1))
                 .message(new StoredMessageId(BOOK, "Session2", Direction.SECOND, START_TIMESTAMP, 2))
