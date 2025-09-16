@@ -24,6 +24,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.exactpro.cradle.PageId;
 import com.exactpro.cradle.messages.StoredMessageId;
 
+import static java.util.Collections.unmodifiableSet;
+
 /**
  * Holds information about single (individual) test event stored in Cradle
  */
@@ -53,7 +55,7 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 			this.contentBuffer = ByteBuffer.wrap(content.array(), content.position(), content.remaining());
 		}
 
-		this.messages = eventMessages != null && !eventMessages.isEmpty() ? Set.copyOf(eventMessages) : null;
+		this.messages = eventMessages == null || eventMessages.isEmpty() ? null : unmodifiableSet(eventMessages);
 	}
 
 	/**
