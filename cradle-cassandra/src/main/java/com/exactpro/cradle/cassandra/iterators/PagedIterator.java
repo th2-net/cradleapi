@@ -40,7 +40,7 @@ public class PagedIterator<E> implements Iterator<E> {
 	private static final String NEXT_METHOD = "next";
 	private static final Summary PAGE_ITERATOR = Summary.build()
 			.name("cradle_page_iterator_duration_seconds")
-			.help("Page loads number to cache")
+			.help("Cassandra pages loads via iterator")
 			.labelNames("method")
 			.register();
 	private static final Summary.Child PAGE_ITERATOR_NEXT = PAGE_ITERATOR.labels(NEXT_METHOD);
