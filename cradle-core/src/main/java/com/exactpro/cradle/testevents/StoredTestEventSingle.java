@@ -47,7 +47,10 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 		if (content == null) {
 			this.contentBuffer = null;
 		} else {
-			this.contentBuffer = content.isReadOnly() ? content : content.asReadOnlyBuffer();
+			if (!content.hasArray()) {
+				throw new IllegalArgumentException(name + '.' + type + " event content hasn't got array");
+			}
+			this.contentBuffer = ByteBuffer.wrap(content.array(), content.position(), content.remaining());
 		}
 
 		this.messages = eventMessages != null && !eventMessages.isEmpty() ? Set.copyOf(eventMessages) : null;
@@ -96,7 +99,7 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 		if (contentBuffer == null) { return null; }
 		return content.accumulateAndGet(null, (curr, x) -> {
 			if (curr == null) {
-				ByteBuffer buffer = getContentBuffer();
+				ByteBuffer buffer = contentBuffer.asReadOnlyBuffer();
 				byte[] result = new byte[buffer.remaining()];
 				buffer.get(result);
 				return result;
@@ -107,7 +110,7 @@ public class StoredTestEventSingle extends StoredTestEvent implements TestEventS
 
 	@Override
 	public ByteBuffer getContentBuffer() {
-		return contentBuffer == null ? null : contentBuffer.asReadOnlyBuffer();
+		return contentBuffer;
 	}
 
 	@Override

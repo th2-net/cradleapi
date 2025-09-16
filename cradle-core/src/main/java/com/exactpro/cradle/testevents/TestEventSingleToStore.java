@@ -61,7 +61,7 @@ public class TestEventSingleToStore extends TestEventToStore implements TestEven
     @Override
     public ByteBuffer getContentBuffer() {
         if (content == null) { return null; }
-        return ByteBuffer.wrap(content).asReadOnlyBuffer();
+        return ByteBuffer.wrap(content);
     }
 
 

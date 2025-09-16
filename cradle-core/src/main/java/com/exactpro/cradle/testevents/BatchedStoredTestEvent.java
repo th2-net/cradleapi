@@ -63,7 +63,10 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 		if (content == null) {
 			this.contentBuffer = null;
 		} else {
-			this.contentBuffer = content.isReadOnly() ? content : content.asReadOnlyBuffer();
+			if (!content.hasArray()) {
+				throw new IllegalArgumentException(name + '.' + type + " event content hasn't got array");
+			}
+			this.contentBuffer = ByteBuffer.wrap(content.array(), content.position(), content.remaining());
 		}
 		this.batch = batch;
 		this.pageId = pageId;
@@ -119,7 +122,7 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 		if (contentBuffer == null) { return null; }
 		return content.accumulateAndGet(null, (curr, x) -> {
 			if (curr == null) {
-				ByteBuffer buffer = getContentBuffer();
+				ByteBuffer buffer = contentBuffer.asReadOnlyBuffer();
 				byte[] result = new byte[buffer.remaining()];
 				buffer.get(result);
 				return result;
@@ -130,7 +133,7 @@ public class BatchedStoredTestEvent implements TestEventSingle, Serializable
 
 	@Override
 	public ByteBuffer getContentBuffer() {
-		return contentBuffer == null ? null : contentBuffer.asReadOnlyBuffer();
+		return contentBuffer;
 	}
 
 
