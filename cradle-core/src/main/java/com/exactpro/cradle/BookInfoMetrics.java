@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2024-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,12 +40,14 @@ public class BookInfoMetrics {
             .name("cradle_page_cache_page_request_total")
             .help("Page requests number from cache")
             .labelNames(BOOK_LABEL, CACHE_NAME_LABEL, REQUEST_METHOD_LABEL)
+            .withoutExemplars()
             .register();
     private static final Map<PageRequestKey, Counter.Child> PAGE_REQUEST_MAP = new ConcurrentHashMap<>();
     private static final Counter INVALIDATE_CACHE_COUNTER = Counter.build()
             .name("cradle_page_cache_invalidate_total")
             .help("Cache invalidates")
             .labelNames(BOOK_LABEL, CACHE_NAME_LABEL, INVALIDATE_CAUSE_LABEL)
+            .withoutExemplars()
             .register();
     private static final Map<InvalidateKey, Counter.Child> INVALIDATE_CACHE_MAP = new ConcurrentHashMap<>();
 
@@ -59,6 +61,7 @@ public class BookInfoMetrics {
 
     private BookInfoMetrics() {}
 
+    @SuppressWarnings("unused")
     public static double getPageCacheSize(BookId bookIdId, CacheName cacheName) {
         Gauge.Child child = PAGE_CACHE_SIZE_MAP.get(new LoadsKey(bookIdId, cacheName));
         return child == null ? 0.0 : child.get();
@@ -72,6 +75,7 @@ public class BookInfoMetrics {
         ).set(value);
     }
 
+    @SuppressWarnings("unused")
     public static double getRequest(BookId bookId, CacheName cacheName, RequestMethod method) {
         Counter.Child child = PAGE_REQUEST_MAP.get(new PageRequestKey(bookId, cacheName, method));
         return child == null ? 0.0 : child.get();
@@ -86,6 +90,7 @@ public class BookInfoMetrics {
         ).inc();
     }
 
+    @SuppressWarnings("unused")
     public static double getInvalidate(BookId bookId, CacheName cacheName, RemovalCause cause) {
         Counter.Child child = INVALIDATE_CACHE_MAP.get(new InvalidateKey(bookId, cacheName, cause));
         return child == null ? 0.0 : child.get();
@@ -100,6 +105,7 @@ public class BookInfoMetrics {
         Summary.Child child = PAGE_LOADS_MAP.get(new LoadsKey(bookIdId, cacheName));
         return child == null ? 0.0 : child.get().count;
     }
+    @SuppressWarnings("unused")
     public static double getLoadSum(BookId bookIdId, CacheName cacheName) {
         Summary.Child child = PAGE_LOADS_MAP.get(new LoadsKey(bookIdId, cacheName));
         return child == null ? 0.0 : child.get().sum;

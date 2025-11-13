@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -354,12 +355,12 @@ public class MessageBatchToStoreTest {
                 .build(), MAX_SIZE, storeActionRejectionThreshold);
         StoredMessage storedMsg = batch.getFirstMessage();
         byte[] bytes = MessageUtils.serializeMessages(batch).getSerializedData();
-        StoredMessage msg = MessageUtils.deserializeMessages(bytes, batch.id).iterator().next();
+        StoredMessage msg = MessageUtils.deserializeMessages(ByteBuffer.wrap(bytes), batch.id).iterator().next();
         Assert.assertEquals(msg, storedMsg, "Message should be completely serialized/deserialized");
     }
 
 
-    static class IdData {
+    public static class IdData {
         final BookId book;
         final String sessionAlias;
         final Direction direction;

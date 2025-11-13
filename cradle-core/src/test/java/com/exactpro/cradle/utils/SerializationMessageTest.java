@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ public class SerializationMessageTest {
 		builder.putMetadata("key1", "value1");
 		builder.putMetadata("key2", "value2");
 		builder.putMetadata("key3", "value3");
-		builder.setContent("Message".repeat(10).getBytes(StandardCharsets.UTF_8));
+		builder.setContent(ByteBuffer.wrap("Message".repeat(10).getBytes(StandardCharsets.UTF_8)));
 		builder.setBookId(commonParams.getBookId());
 		StoredMessage build = builder.build();
 		MessageSerializer serializer = new MessageSerializer();
@@ -77,7 +77,7 @@ public class SerializationMessageTest {
 		builder.setIndex(123456789010111213L);
 		builder.setDirection(Direction.SECOND);
 		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.00Z").plusNanos(51234));
-		builder.setContent("Message".repeat(10).getBytes(StandardCharsets.UTF_8));
+		builder.setContent(ByteBuffer.wrap("Message".repeat(10).getBytes(StandardCharsets.UTF_8)));
 		builder.setBookId(commonParams.getBookId());
 		StoredMessage build = builder.build();
 		MessageSerializer serializer = new MessageSerializer();
@@ -102,7 +102,7 @@ public class SerializationMessageTest {
 		builder.putMetadata(metaDataKey, metaDataValue);
 		builder.putMetadata(metaDataKey, metaDataValue);
 		String messageContent = generateUnicodeString((1 << 17), 150);
-		builder.setContent(messageContent.repeat(10).getBytes(StandardCharsets.UTF_8));
+		builder.setContent(ByteBuffer.wrap(messageContent.repeat(10).getBytes(StandardCharsets.UTF_8)));
 		StoredMessage build = builder.build();
 		MessageSerializer serializer = new MessageSerializer();
 		byte[] serialized = serializer.serialize(build);
@@ -123,7 +123,7 @@ public class SerializationMessageTest {
 		builder.setIndex(123456789010111213L);
 		builder.setDirection(commonParams.getDirection());
 		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.00Z"));
-		builder.setContent(new byte[0]);
+		builder.setContent(ByteBuffer.allocate(0));
 		builder.setBookId(commonParams.getBookId());
 		StoredMessage build = builder.build();
 		MessageSerializer serializer = new MessageSerializer();
@@ -135,14 +135,14 @@ public class SerializationMessageTest {
 	}
 
 	@Test
-	public void checkMessageLength() throws SerializationException {
+	public void checkMessageLength() {
 		StoredMessageBuilder builder = new StoredMessageBuilder();
 		builder.setSessionAlias("stream_name12345");
 		builder.setIndex(123456789010111213L);
 		builder.setDirection(Direction.SECOND);
 		builder.setBookId(new BookId("book_name1234"));
 		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.00Z").plusNanos(51234));
-		builder.setContent("Message".repeat(10).getBytes(StandardCharsets.UTF_8));
+		builder.setContent(ByteBuffer.wrap("Message".repeat(10).getBytes(StandardCharsets.UTF_8)));
 		StoredMessage build = builder.build();
 		MessageSerializer serializer = new MessageSerializer();
 
@@ -174,29 +174,29 @@ public class SerializationMessageTest {
 		builder.putMetadata("key1", "value1");
 		builder.putMetadata("key2", "value2");
 		builder.putMetadata("key3", "value3");
-		builder.setContent("Message".repeat(10).getBytes(StandardCharsets.UTF_8));
+		builder.setContent(ByteBuffer.wrap("Message".repeat(10).getBytes(StandardCharsets.UTF_8)));
 
 		List<StoredMessage> stMessage = new ArrayList<>(10);
 		stMessage.add(builder.build());
 
 		builder.setIndex(123456789010111214L);
 		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.01Z"));
-		builder.setContent("Message".repeat(10).getBytes(StandardCharsets.UTF_8));
+		builder.setContent(ByteBuffer.wrap("Message".repeat(10).getBytes(StandardCharsets.UTF_8)));
 		stMessage.add(builder.build());
 
 		builder.setIndex(123456789010111215L);
 		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.01Z"));
-		builder.setContent("Message".repeat(10).getBytes(StandardCharsets.UTF_8));
+		builder.setContent(ByteBuffer.wrap("Message".repeat(10).getBytes(StandardCharsets.UTF_8)));
 		stMessage.add(builder.build());
 
 		builder.setIndex(123456789010111216L);
 		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.02Z"));
-		builder.setContent("Message2".repeat(10).getBytes(StandardCharsets.UTF_8));
+		builder.setContent(ByteBuffer.wrap("Message2".repeat(10).getBytes(StandardCharsets.UTF_8)));
 		stMessage.add(builder.build());
 
 		builder.setIndex(123456789010111217L);
 		builder.setTimestamp(Instant.parse("2007-12-03T10:15:30.03Z"));
-		builder.setContent("Message3".repeat(10).getBytes(StandardCharsets.UTF_8));
+		builder.setContent(ByteBuffer.wrap("Message3".repeat(10).getBytes(StandardCharsets.UTF_8)));
 		stMessage.add(builder.build());
 
 		return stMessage;
@@ -225,7 +225,7 @@ public class SerializationMessageTest {
 	}
 
 	@Test
-	public void checkMessageBatchLength() throws SerializationException {
+	public void checkMessageBatchLength() {
 		MessageSerializer serializer = new MessageSerializer();
 
 		ByteBuffer buffer = ByteBuffer.allocate(10_000);

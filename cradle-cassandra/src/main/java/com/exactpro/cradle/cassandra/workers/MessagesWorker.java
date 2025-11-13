@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,6 +98,7 @@ public class MessagesWorker extends Worker {
                     .name("cradle_message_read_total")
                     .help("Fetched messages")
                     .labelNames(StreamLabel.LABEL_NAMES)
+                    .withoutExemplars()
                     .register()
     );
     private static final MetricHolder<StreamLabel> MESSAGE_BATCH_READ_METRIC = new MetricHolder<>(
@@ -105,6 +106,7 @@ public class MessagesWorker extends Worker {
                     .name("cradle_message_batch_read_total")
                     .help("Fetched message batches")
                     .labelNames(StreamLabel.LABEL_NAMES)
+                    .withoutExemplars()
                     .register()
     );
     private static final MetricHolder<StreamLabel> MESSAGE_STORE_METRIC = new MetricHolder<>(
@@ -112,6 +114,7 @@ public class MessagesWorker extends Worker {
                     .name("cradle_message_stored_total")
                     .help("Stored messages")
                     .labelNames(StreamLabel.LABEL_NAMES)
+                    .withoutExemplars()
                     .register()
     );
     private static final MetricHolder<StreamLabel> MESSAGE_BATCH_STORE_METRIC = new MetricHolder<>(
@@ -119,6 +122,7 @@ public class MessagesWorker extends Worker {
                     .name("cradle_message_batch_stored_total")
                     .help("Stored message batches")
                     .labelNames(StreamLabel.LABEL_NAMES)
+                    .withoutExemplars()
                     .register()
     );
     private static final MetricHolder<StreamLabel> MESSAGE_STORE_UNCOMPRESSED_BYTES = new MetricHolder<>(
@@ -126,6 +130,7 @@ public class MessagesWorker extends Worker {
                     .name("cradle_message_stored_uncompressed_bytes_total")
                     .help("Stored uncompressed message bytes")
                     .labelNames(StreamLabel.LABEL_NAMES)
+                    .withoutExemplars()
                     .register()
     );
     private static final MetricHolder<StreamLabel> MESSAGE_STORE_COMPRESSED_BYTES = new MetricHolder<>(
@@ -133,6 +138,7 @@ public class MessagesWorker extends Worker {
                     .name("cradle_message_stored_compressed_bytes_total")
                     .help("Stored compressed message bytes")
                     .labelNames(StreamLabel.LABEL_NAMES)
+                    .withoutExemplars()
                     .register()
     );
 

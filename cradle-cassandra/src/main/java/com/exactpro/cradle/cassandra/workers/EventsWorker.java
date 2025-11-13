@@ -68,6 +68,7 @@ public class EventsWorker extends Worker {
                     .name("cradle_test_events_read_total")
                     .help("Fetched test events")
                     .labelNames(StreamLabel.LABEL_NAMES)
+                    .withoutExemplars()
                     .register()
     );
     private static final MetricHolder<StreamLabel> EVENT_BATCHES_READ_METRIC = new MetricHolder<>(
@@ -75,6 +76,7 @@ public class EventsWorker extends Worker {
                     .name("cradle_test_event_batches_read_total")
                     .help("Fetched test event batches")
                     .labelNames(StreamLabel.LABEL_NAMES)
+                    .withoutExemplars()
                     .register()
     );
     private static final MetricHolder<StreamLabel> EVENTS_STORE_METRIC = new MetricHolder<>(
@@ -82,6 +84,7 @@ public class EventsWorker extends Worker {
                     .name("cradle_test_events_stored_total")
                     .help("Stored test events")
                     .labelNames(StreamLabel.LABEL_NAMES)
+                    .withoutExemplars()
                     .register()
     );
     private static final MetricHolder<StreamLabel> EVENT_BATCHES_STORE_METRIC = new MetricHolder<>(
@@ -89,6 +92,7 @@ public class EventsWorker extends Worker {
                     .name("cradle_test_event_batches_stored_total")
                     .help("Stored test event batches")
                     .labelNames(StreamLabel.LABEL_NAMES)
+                    .withoutExemplars()
                     .register()
     );
     private static final MetricHolder<StreamLabel> EVENTS_STORE_UNCOMPRESSED_BYTES = new MetricHolder<>(
@@ -96,6 +100,7 @@ public class EventsWorker extends Worker {
                     .name("cradle_test_events_stored_uncompressed_bytes_total")
                     .help("Stored uncompressed event bytes")
                     .labelNames(StreamLabel.LABEL_NAMES)
+                    .withoutExemplars()
                     .register()
     );
     private static final MetricHolder<StreamLabel> EVENTS_STORE_COMPRESSED_BYTES = new MetricHolder<>(
@@ -103,6 +108,7 @@ public class EventsWorker extends Worker {
                     .name("cradle_test_events_stored_compressed_bytes_total")
                     .help("Stored compressed event bytes")
                     .labelNames(StreamLabel.LABEL_NAMES)
+                    .withoutExemplars()
                     .register()
     );
 

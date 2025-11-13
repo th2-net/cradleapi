@@ -59,21 +59,25 @@ public class TestEventEntityUtils {
             .name("cradle_test_event_restore_duration_seconds")
             .help("Time spent restoring batch / batched-event / single-event data from optionally compressed content")
             .labelNames(LABEL_TYPE)
+            .withoutExemplars()
             .register();
     private static final Counter DESERIALISATION_DURATION = Counter.build()
             .name("cradle_test_event_deserialisation_duration_seconds")
             .help("Time spent deserializing batch / batched-event / single-event")
             .labelNames(LABEL_TYPE)
+            .withoutExemplars()
             .register();
     private static final Counter CONTENT_SIZE = Counter.build()
             .name("cradle_test_event_deserialisation_content_bytes_total")
             .help("Total size of content processed during event deserialization")
             .labelNames(LABEL_TYPE)
+            .withoutExemplars()
             .register();
     private static final Counter ITEMS_TOTAL = Counter.build()
             .name("cradle_test_event_deserialized_total")
             .help("Number of deserialized batch / batched-event / single-event")
             .labelNames(LABEL_TYPE)
+            .withoutExemplars()
             .register();
 
     private static final Metric batchMetric = new Metric(
