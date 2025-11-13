@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,14 @@
 
 package com.exactpro.cradle.cassandra.dao.messages;
 
-import com.datastax.oss.driver.shaded.guava.common.collect.Streams;
-import com.exactpro.cradle.filters.FilterForGreater;
-import com.exactpro.cradle.filters.FilterForLess;
 import com.exactpro.cradle.messages.GroupedMessageFilter;
 import com.exactpro.cradle.messages.StoredGroupedMessageBatch;
 
-import java.time.Instant;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Predicate;
+
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterators;
 
 public class FilteredGroupedMessageBatchIterator extends MappedIterator<StoredGroupedMessageBatch, StoredGroupedMessageBatch>
 {
@@ -39,9 +37,7 @@ public class FilteredGroupedMessageBatchIterator extends MappedIterator<StoredGr
 	private static Iterator<StoredGroupedMessageBatch> createTargetIterator(Iterator<StoredGroupedMessageBatch> sourceIterator, GroupedMessageFilter filter)
 	{
 		Predicate<StoredGroupedMessageBatch> filterPredicate = createFilterPredicate(filter);
-		return Streams.stream(sourceIterator)
-				.filter(filterPredicate)
-				.iterator();
+		return Iterators.filter(sourceIterator, filterPredicate);
 	}
 
 	private static Predicate<StoredGroupedMessageBatch> createFilterPredicate(GroupedMessageFilter filter)
