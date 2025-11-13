@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,7 +91,7 @@ public class MessageBatchEntityUtils {
         StoredMessageId batchId = createId(entity, pageId.getBookId());
         logger.debug("Creating message batch '{}' from entity", batchId);
 
-        byte[] content = restoreContent(entity, batchId);
+        ByteBuffer content = restoreContent(entity, batchId);
         List<StoredMessage> storedMessages = MessageUtils.deserializeMessages(content, batchId);
         return new StoredMessageBatch(storedMessages, pageId, entity.getRecDate());
     }
@@ -106,16 +106,16 @@ public class MessageBatchEntityUtils {
     }
 
 
-    private static byte[] restoreContent(MessageBatchEntity entity, StoredMessageId messageBatchId) throws CompressException {
+    private static ByteBuffer restoreContent(MessageBatchEntity entity, StoredMessageId messageBatchId) throws CompressException {
         ByteBuffer content = entity.getContent();
         if (content == null)
             return null;
 
-        byte[] result = content.array();
         if (entity.isCompressed()) {
             logger.trace("Decompressing content of message batch '{}'", messageBatchId);
-            return CompressionType.decompressData(result);
+            ByteBuffer result = ByteBuffer.allocate(entity.getUncompressedContentSize());
+            return CompressionType.decompressData(content, result);
         }
-        return result;
+        return content;
     }
 }

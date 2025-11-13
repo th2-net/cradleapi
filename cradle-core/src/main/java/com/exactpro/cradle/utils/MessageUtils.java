@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,7 +111,7 @@ public class MessageUtils
 	 * @return collection of deserialized messages
 	 * @throws IOException if deserialization failed
 	 */
-	public static List<StoredMessage> deserializeMessages(byte[] contentBytes, BookId bookId) throws IOException
+	public static List<StoredMessage> deserializeMessages(ByteBuffer contentBytes, BookId bookId) throws IOException
 	{
 		return deserializer.deserializeBatch(contentBytes, new MessageCommonParams(bookId));
 	}
@@ -123,42 +123,8 @@ public class MessageUtils
 	 * @return collection of deserialized messages
 	 * @throws IOException if deserialization failed
 	 */
-	public static List<StoredMessage> deserializeMessages(byte[] contentBytes, StoredMessageId batchId) throws IOException
+	public static List<StoredMessage> deserializeMessages(ByteBuffer contentBytes, StoredMessageId batchId) throws IOException
 	{
 		return deserializer.deserializeBatch(contentBytes, new MessageCommonParams(batchId));
-	}
-
-	/**
-	 * Decompresses given ByteBuffer and deserializes messages till message with needed ID is found
-	 * @param content to deserialize needed message from
-	 * @param compressed flag that indicates if content needs to be decompressed first
-	 * @param id of message to find
-	 * @return deserialized message, if found, null otherwise
-	 * @throws IOException if deserialization failed
-	 */
-	public static StoredMessage bytesToOneMessage(ByteBuffer content, boolean compressed, StoredMessageId id) throws IOException, CompressException {
-		byte[] contentBytes = getMessageContentBytes(content, compressed);
-		return deserializeOneMessage(contentBytes, id);
-	}
-	
-	/**
-	 * Decompresses given ByteBuffer and deserializes all messages
-	 * @param content to deserialize messages from
-	 * @param id batch id. Required to specify common message params like bookId, sessionAlias, direction
-	 * @param compressed flag that indicates if content needs to be decompressed first
-	 * @return collection of deserialized messages
-	 * @throws IOException if deserialization failed
-	 */
-	public static List<StoredMessage> bytesToMessages(ByteBuffer content, StoredMessageId id, boolean compressed) throws IOException, CompressException {
-		byte[] contentBytes = getMessageContentBytes(content, compressed);
-		return deserializeMessages(contentBytes, id);
-	}
-	
-	private static byte[] getMessageContentBytes(ByteBuffer content, boolean compressed) throws CompressException {
-		byte[] contentBytes = content.array();
-		if (!compressed)
-			return contentBytes;
-		
-		return CompressionType.decompressData(contentBytes);
 	}
 }

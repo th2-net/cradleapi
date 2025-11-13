@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,16 +28,16 @@ import java.util.List;
 
 import static com.exactpro.cradle.serialization.Serialization.MessageBatchConst.*;
 import static com.exactpro.cradle.serialization.Serialization.NOT_SUPPORTED_PROTOCOL_FORMAT;
+import static com.exactpro.cradle.serialization.SerializationUtils.readBufferedBody;
 import static com.exactpro.cradle.serialization.SerializationUtils.readInstant;
 import static com.exactpro.cradle.serialization.SerializationUtils.readString;
-import static com.exactpro.cradle.serialization.SerializationUtils.readBody;
 
 public class MessageDeserializer {
 
-	public boolean checkMessageBatchHeader(byte[] array) {
+    public boolean checkMessageBatchHeader(byte[] array) {
 		return ByteBuffer.wrap(array, 0, 4).getInt() == MESSAGE_BATCH_MAGIC;
 	}
-	
+
 	public List<StoredMessage> deserializeBatch(byte[] buffer, MessageCommonParams commonParams) throws SerializationException {
 		return this.deserializeBatch(ByteBuffer.wrap(buffer), commonParams);
 	}
@@ -102,16 +102,8 @@ public class MessageDeserializer {
 		builder.setMessageId(readMessageId(buffer, commonParams));
 		builder.setProtocol(readString(buffer));
 		readMessageMetaData(buffer, builder);
-		builder.setContent(readBody(buffer));
+		builder.setContent(readBufferedBody(buffer));
 		return builder.build();
-	}
-	
-	private Direction getDirection(int ordinal) throws SerializationException {
-		Direction[] values = Direction.values();
-		if (values.length > ordinal && ordinal >= 0)
-			return values[ordinal];
-		throw new SerializationException(String.format("Invalid ordinal for enum (Direction): %d. Values: [0-%d]",
-				ordinal, values.length - 1));
 	}
 
 	private StoredMessageId readMessageId(ByteBuffer buffer, MessageCommonParams commonParams) throws SerializationException {

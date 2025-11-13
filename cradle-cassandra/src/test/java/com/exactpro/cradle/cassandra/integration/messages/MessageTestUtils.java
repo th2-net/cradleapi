@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2022-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ public class MessageTestUtils {
                                 .setDirection(el.getDirection())
                                 .setTimestamp(el.getTimestamp())
                                 .setIndex(el.getSequence())
-                                .setContent(el.getContent())
+                                .setContent(el.getContentBuffer())
                                 .setProtocol(el.getProtocol())
                                 .build()).collect(Collectors.toList()),
                 pageId,
@@ -49,7 +49,7 @@ public class MessageTestUtils {
                                 .setDirection(el.getDirection())
                                 .setTimestamp(el.getTimestamp())
                                 .setIndex(el.getSequence())
-                                .setContent(el.getContent())
+                                .setContent(el.getContentBuffer())
                                 .setProtocol(el.getProtocol())
                                 .build()).collect(Collectors.toList()),
                 pageId,
@@ -63,7 +63,7 @@ public class MessageTestUtils {
                 .setDirection(storedMessage.getDirection())
                 .setTimestamp(storedMessage.getTimestamp())
                 .setIndex(storedMessage.getSequence())
-                .setContent(storedMessage.getContent())
+                .setContent(storedMessage.getContentBuffer())
                 .setProtocol(storedMessage.getProtocol())
                 .setPageId(pageId)
                 .build();

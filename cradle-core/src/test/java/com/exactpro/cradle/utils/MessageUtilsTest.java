@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Iterator;
@@ -70,7 +71,7 @@ public class MessageUtilsTest {
     public void messageIds() throws IOException {
         byte[] bytes = MessageUtils.serializeMessages(batch).getSerializedData();
 
-        Collection<StoredMessage> restored = MessageUtils.deserializeMessages(bytes, batch.getId());
+        Collection<StoredMessage> restored = MessageUtils.deserializeMessages(ByteBuffer.wrap(bytes), batch.getId());
         Iterator<StoredMessage> it = restored.iterator();
 
         Assert.assertEquals(it.next().getId(), msg1.getId(), "1st message ID");

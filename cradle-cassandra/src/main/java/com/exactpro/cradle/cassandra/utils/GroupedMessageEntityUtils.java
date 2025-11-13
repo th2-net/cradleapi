@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,21 +89,21 @@ public class GroupedMessageEntityUtils {
     public static StoredGroupedMessageBatch toStoredGroupedMessageBatch(GroupedMessageBatchEntity entity, PageId pageId) throws DataFormatException, IOException, CompressException {
         logger.debug("Creating grouped message batch from entity");
 
-        byte[] content = restoreContent(entity, entity.getGroup());
+        ByteBuffer content = restoreContent(entity, entity.getGroup());
         List<StoredMessage> storedMessages = MessageUtils.deserializeMessages(content, pageId.getBookId());
         return new StoredGroupedMessageBatch(entity.getGroup(), storedMessages, pageId, entity.getRecDate());
     }
 
-    private static byte[] restoreContent(GroupedMessageBatchEntity entity, String group) throws CompressException {
+    private static ByteBuffer restoreContent(GroupedMessageBatchEntity entity, String group) throws CompressException {
         ByteBuffer content = entity.getContent();
         if (content == null)
             return null;
 
-        byte[] result = content.array();
         if (entity.isCompressed()) {
             logger.trace("Decompressing content of grouped message batch '{}'", group);
-            return CompressionType.decompressData(result);
+            ByteBuffer result = ByteBuffer.allocate(entity.getUncompressedContentSize());
+            return CompressionType.decompressData(content, result);
         }
-        return result;
+        return content;
     }
 }

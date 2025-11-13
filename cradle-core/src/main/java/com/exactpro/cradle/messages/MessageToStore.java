@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.exactpro.cradle.serialization.MessagesSizeCalculator;
 import com.exactpro.cradle.utils.CradleStorageException;
 import com.exactpro.cradle.utils.MessageUtils;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /**
@@ -72,6 +73,12 @@ public class MessageToStore implements CradleMessage {
     @Override
     public byte[] getContent() {
         return content;
+    }
+
+    @Override
+    public ByteBuffer getContentBuffer() {
+        if (content == null) { return null; }
+        return ByteBuffer.wrap(content);
     }
 
     @Override
