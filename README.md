@@ -1,4 +1,4 @@
-# Overview (5.7.0)
+# Overview (5.7.1)
 
 Cradle API is used to work with Cradle - the datalake where th2 stores its data.
 
@@ -210,6 +210,14 @@ Test events have mandatory parameters that are verified when storing an event. T
   * cause: EXPLICIT, REPLACED, COLLECTED, EXPIRED, SIZE
 
 ## Release notes
+
+### 5.7.1
+
+* [[GH-342] Migrate from org.lz4.lz4-java to at.yawk.lz4.lz4-java](https://github.com/th2-net/cradleapi/issues/342)
+* Updated:
+  * th2 gradle plugin: `0.3.10` (bom: `4.14.2`)
+  * caffeine: `3.2.3`
+  * 
 
 ### 5.7.0
 
