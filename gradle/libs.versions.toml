@@ -1,5 +1,5 @@
 [versions]
-th2-plugin = "0.3.11"
+th2-plugin = "0.3.13"
 jmh = "1.37"
 
 [libraries]
